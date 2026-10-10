@@ -23,7 +23,7 @@ name = { en = "Icons", zh = "图标", ja = "アイコン" }
 description = { en = "Which icon set the terminal interface draws: Nerd Font glyphs, or plain characters for fonts without them.", zh = "终端界面用哪一套图标：Nerd Font 的图标，或者没装这种字体时用的普通字符。", ja = "ターミナル画面のアイコン：Nerd Font のアイコンか、そのフォントがない場合の普通の文字か。" }
 
 # 时间线的几个开关（终端蓝图 `docs/blueprint/tui.md`「时间线」第 18、20 条，2026-10-10 项目主人：通用页要能改、是终端自己的）。
-# 出厂值同 `tui-demo/resources/timeline.json`；终端连上时读、改了当场照新的画。
+# 出厂值同 `resources/timeline.json`；终端连上时读、改了当场照新的画。
 [settings.timeline_fold]
 type = "bool"
 default = true
@@ -60,7 +60,7 @@ name = { en = "Limit timeline area height", zh = "限制时间线区域高度", 
 description = { en = "Show only the latest lines of the running steps.", zh = "进行中的步骤只显示最新的几行。", ja = "実行中のステップは最新の数行だけ表示する。" }
 
 # 吉祥物的两个开关（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-11 项目主人：搬进配置页）。
-# 出厂值同 `tui-demo/resources/layout.json`；人格设了头像的照样画头像，不受这两项管（「空会话的首页」第 10 条）。
+# 出厂值同 `resources/layout.json`；人格设了头像的照样画头像，不受这两项管（「空会话的首页」第 10 条）。
 [settings.mascot_home]
 type = "bool"
 default = true

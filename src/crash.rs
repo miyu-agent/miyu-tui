@@ -34,7 +34,8 @@ pub fn record(info: &PanicHookInfo<'_>) -> Option<PathBuf> {
 /// 一次崩溃写成的一段：时刻和版本一行，报错连位置，调用栈，末尾空一行隔开下一次。
 fn entry(time: &str, message: &str, backtrace: &str) -> String {
     format!(
-        "── {time} miyu-tui-demo {}\n{message}\n{backtrace}\n\n",
+        "── {time} {} {}\n{message}\n{backtrace}\n\n",
+        env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION")
     )
 }
@@ -48,9 +49,9 @@ mod tests {
         let text = entry(
             "2026-09-30 03:10:00",
             "panicked at src/ui/menu.rs:40:9:\nrange end index 1 out of range for slice of length 0",
-            "   0: miyu_tui_demo::ui::menu::lines\n             at ./src/ui/menu.rs:40:9",
+            "   0: miyu_tui::ui::menu::lines\n             at ./src/ui/menu.rs:40:9",
         );
-        assert!(text.starts_with("── 2026-09-30 03:10:00 miyu-tui-demo "));
+        assert!(text.starts_with("── 2026-09-30 03:10:00 miyu-tui "));
         assert!(text.contains("range end index 1") && text.contains("src/ui/menu.rs:40:9"));
         assert!(text.ends_with("\n\n"), "和下一次之间空一行");
     }
