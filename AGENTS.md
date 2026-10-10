@@ -11,3 +11,4 @@ Miyu 的终端界面（头）：一个程序 `miyu-tui`，经本机套接字说 
 - 给人看的字照三种语言（`resources/text/`）；界面上只放人要的，说法照通用软件的短句。
 - 图纸在 `docs/blueprint/tui.md`；改了界面先改图纸。
 - 本机测：沙箱数据根（`MIYU_HOME` 指到临时目录），不碰 `~/.miyu`，不重启别人在用的核心。
+- 平台：主要照 Linux、macOS（M 系列）做和测。Windows 上要编得过（格式、clippy、文档、单元测试照跑），伪终端测试只在 Linux、macOS 上跑：ConPTY 转按键的时序不稳，Esc 这类键会偶发丢。Unix 专用的写法关在 `cfg(unix)` 里，测试照写死的 Unix 路径、`/bin/sh` 脚本的也是。
