@@ -44,7 +44,7 @@ pub fn launch(args: impl IntoIterator<Item = String>) -> io::Result<Launch> {
             help: true,
             ..usual
         }),
-        [flag, id] if flag == "--resume" && miyu_kernel::id::SessionId::parse(id).is_ok() => {
+        [flag, id] if flag == "--resume" && miyu_client::protocol::SessionId::parse(id).is_ok() => {
             Ok(Launch {
                 start: Start::Resume(id.clone()),
                 ..usual

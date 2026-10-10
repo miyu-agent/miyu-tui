@@ -1,6 +1,6 @@
 //! 测试用：照仓库的资源目录读一种语言的字，转成界面用的那份（和核心经 `human.get` 交出来的一样）。
 
-use miyu_store::resources::ResourceRoot;
+use miyu_client::places::ResourceRoot;
 use serde_json::json;
 
 use super::Human;
@@ -10,7 +10,7 @@ impl Human {
     pub fn from_resources(language: &str) -> Human {
         let root =
             ResourceRoot::at(std::path::Path::new(miyu_client::WORKSPACE_ROOT).join("resources"));
-        let stored = miyu_store::human::Human::load(&root, language).expect("资源读得懂");
+        let stored = miyu_client::texts::Human::load(&root, language).expect("资源读得懂");
         let said: serde_json::Map<String, serde_json::Value> = stored
             .said_entries()
             .map(|(key, source)| (key.to_string(), json!(source)))

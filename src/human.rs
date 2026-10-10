@@ -3,9 +3,9 @@
 
 use std::collections::BTreeMap;
 
-use miyu_kernel::event::Said;
-use miyu_kernel::template::Template;
-use miyu_store::human::{Face, clean};
+use miyu_client::protocol::Said;
+use miyu_client::protocol::Template;
+use miyu_client::texts::{Face, clean};
 use serde_json::Value;
 
 /// 一种语言的字。

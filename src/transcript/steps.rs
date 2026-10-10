@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use serde_json::Value;
 
-use miyu_kernel::event::Said;
+use miyu_client::protocol::Said;
 
 use crate::config::{Timeline, ToolKind};
 use crate::core::ToolStatus;

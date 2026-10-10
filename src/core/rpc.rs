@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, ReadHalf, WriteHalf};
 use tokio::sync::mpsc;
 
-use miyu_ipc::Connection;
+use miyu_client::connect::Connection;
 
 /// 连着核心的一头。
 pub struct Rpc {

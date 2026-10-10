@@ -1,5 +1,5 @@
 //! 连上核心、握手、开会话、订阅（蓝图 `tui.md`「连核心」第 2–4、7、8 条）。断了以后重连也走这里：每次拉起核心
-//! 都换令牌，连上以后再读（`miyu_ipc` 连的时候读）。
+//! 都换令牌，连上以后再读（门面 `miyu_client::connect` 连的时候读）。
 
 use std::io;
 use std::path::Path;
@@ -7,9 +7,9 @@ use std::process::Command as Process;
 
 use serde_json::json;
 
-use miyu_ipc::{ConnectError, StartError};
-use miyu_store::env::Env;
-use miyu_store::root::DataRoot;
+use miyu_client::connect::{ConnectError, StartError};
+use miyu_client::places::DataRoot;
+use miyu_client::places::Env;
 
 use super::Update;
 use super::limits::Limits;
@@ -23,7 +23,7 @@ pub(super) async fn connect() -> Result<Rpc, Update> {
     let connected = match std::env::var_os("MIYU_CORE_BIN") {
         Some(bin) => {
             let path = Path::new(&bin).to_path_buf();
-            miyu_ipc::connect_or_start(&root, move || {
+            miyu_client::connect::connect_or_start(&root, move || {
                 let mut core = Process::new(bin);
                 core.arg("core");
                 core
@@ -31,10 +31,12 @@ pub(super) async fn connect() -> Result<Rpc, Update> {
             .await
             .map_err(|e| start_failed(e, &path))
         }
-        None => miyu_ipc::connect(&root).await.map_err(|e| match e {
-            ConnectError::NotRunning => Update::NoCoreBin,
-            e => Update::Failed(e.to_string()),
-        }),
+        None => miyu_client::connect::connect(&root)
+            .await
+            .map_err(|e| match e {
+                ConnectError::NotRunning => Update::NoCoreBin,
+                e => Update::Failed(e.to_string()),
+            }),
     };
     let (connection, token) = connected?;
     let mut rpc = Rpc::new(connection);
@@ -42,8 +44,8 @@ pub(super) async fn connect() -> Result<Rpc, Update> {
     let hello = json!({
         "protocol": [1, 1],
         "head": {"kind": "tui", "version": env!("CARGO_PKG_VERSION")},
-        // 系统的语言（核心 8-2：`ui.language` 是 `auto` 时核心照它说话），照 `miyu_store::env::locale`，和命令行认的一样。
-        "locale": miyu_store::env::locale().unwrap_or_default(),
+        // 系统的语言（核心 8-2：`ui.language` 是 `auto` 时核心照它说话），照 `miyu_client::places::locale`，和命令行认的一样。
+        "locale": miyu_client::places::locale().unwrap_or_default(),
         "caps": {"input": true},
         "token": token,
     });
@@ -155,7 +157,7 @@ mod tests {
     use std::io;
     use std::path::Path;
 
-    use miyu_ipc::StartError;
+    use miyu_client::connect::StartError;
 
     use super::{Chosen, Update, create_params, start_failed};
 

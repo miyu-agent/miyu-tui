@@ -139,7 +139,7 @@ fn save(blob: &str, data: &[u8]) -> Option<PathBuf> {
 /// 一个 blob 存在哪：机器共用的缓存目录下 `tui/link-cards/blobs/`，名字照 blob（内容的哈希，只留字母数字）。同一份
 /// 内容只存一次，重启以后照样在（2026-10-02 项目主人报：重启以后链接都要重新出卡片）。
 pub fn blob_path(blob: &str) -> Option<PathBuf> {
-    let root = miyu_store::root::cache_root(&miyu_store::env::Env::current()).ok()?;
+    let root = miyu_client::places::cache_root(&miyu_client::places::Env::current()).ok()?;
     let name: String = blob.chars().filter(char::is_ascii_alphanumeric).collect();
     Some(cards_dir(&root).join("blobs").join(name))
 }
