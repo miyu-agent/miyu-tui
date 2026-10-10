@@ -6,7 +6,10 @@ use std::io;
 use crate::core::Start;
 
 /// `-h` 印的用法（`miyu tui -h` 原样转给它，核心 I9：要完整）。
-pub const USAGE: &str = "Usage: miyu-tui-demo [--resume <session UUID> | --page <page> | config]
+pub const USAGE: &str = concat!(
+    "Usage: ",
+    env!("CARGO_PKG_NAME"),
+    " [--resume <session UUID> | --page <page> | config]
 
   (no arguments)        start as configured (ui.startup: new or recent session)
   --resume <UUID>       open this session; fail if it can't be loaded
@@ -14,7 +17,8 @@ pub const USAGE: &str = "Usage: miyu-tui-demo [--resume <session UUID> | --page 
   --page oobe           walk through the first-run guide again
   -h, --help            print this help
 
-Environment: MIYU_HOME, MIYU_RESOURCES, MIYU_CORE_BIN, MIYU_TUI_IME=0 (don't switch the input method)";
+Environment: MIYU_HOME, MIYU_RESOURCES, MIYU_CORE_BIN, MIYU_TUI_IME=0 (don't switch the input method)"
+);
 
 /// 认得的页名。认不出的照常打开首页、不报错。
 const PAGES: [&str; 2] = ["config", "oobe"];

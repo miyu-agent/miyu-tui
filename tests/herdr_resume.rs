@@ -82,11 +82,8 @@ fn real_herdr_restores_two_panes_to_their_own_sessions() {
     ]));
     let bin = home.root().join("bin");
     std::fs::create_dir_all(&bin).expect("隔离 herdr 验收前提成立");
-    std::os::unix::fs::symlink(
-        env!("CARGO_BIN_EXE_miyu-tui-demo"),
-        bin.join("miyu-tui-demo"),
-    )
-    .expect("隔离 herdr 验收前提成立");
+    std::os::unix::fs::symlink(env!("CARGO_BIN_EXE_miyu-tui"), bin.join("miyu-tui"))
+        .expect("隔离 herdr 验收前提成立");
     let config = home.root().join("herdr-config/herdr");
     std::fs::create_dir_all(&config).expect("隔离 herdr 验收前提成立");
     std::fs::write(
@@ -143,7 +140,7 @@ fn real_herdr_restores_two_panes_to_their_own_sessions() {
         (p1, "pane_one_question", "pane_one_answer"),
         (p2, "pane_two_question", "pane_two_answer"),
     ] {
-        h.api(&["pane", "run", pane, "miyu-tui-demo"]);
+        h.api(&["pane", "run", pane, "miyu-tui"]);
         h.wait(pane, "Tab");
         h.api(&["pane", "run", pane, question]);
         h.wait(pane, answer);

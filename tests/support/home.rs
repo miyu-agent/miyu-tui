@@ -188,7 +188,7 @@ impl Home {
             lang,
             &[],
             &[],
-            env!("CARGO_BIN_EXE_miyu-tui-demo"),
+            env!("CARGO_BIN_EXE_miyu-tui"),
             cols,
         )
     }
@@ -200,7 +200,7 @@ impl Home {
             lang,
             env,
             &[],
-            env!("CARGO_BIN_EXE_miyu-tui-demo"),
+            env!("CARGO_BIN_EXE_miyu-tui"),
             cols,
         )
     }

@@ -44,14 +44,7 @@ pub struct Tui {
 
 impl Tui {
     fn spawn(home: &Path, work: &Path, lang: &str, env: &[(&str, &str)], args: &[&str]) -> Tui {
-        Self::program(
-            home,
-            work,
-            lang,
-            env,
-            args,
-            env!("CARGO_BIN_EXE_miyu-tui-demo"),
-        )
+        Self::program(home, work, lang, env, args, env!("CARGO_BIN_EXE_miyu-tui"))
     }
 
     /// 在伪终端运行指定程序，仅供隔离的 herdr 恢复实测。

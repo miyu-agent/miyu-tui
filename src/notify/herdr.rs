@@ -258,7 +258,7 @@ mod resume_tests {
             reports: Some(tx),
             worker: None,
             session: None,
-            command: "miyu-tui-demo".into(),
+            command: "miyu-tui".into(),
             pane: "p1".into(),
             next: 100,
             last: None,
@@ -271,18 +271,9 @@ mod resume_tests {
         drop(h);
         let reports: Vec<_> = rx.into_iter().collect();
         assert_eq!(reports.len(), 7);
-        assert_eq!(
-            &reports[1][11..],
-            ["--", "miyu-tui-demo", "--resume", "first"]
-        );
-        assert_eq!(
-            &reports[2][11..],
-            ["--", "miyu-tui-demo", "--resume", "first"]
-        );
-        assert_eq!(
-            &reports[3][11..],
-            ["--", "miyu-tui-demo", "--resume", "second"]
-        );
+        assert_eq!(&reports[1][11..], ["--", "miyu-tui", "--resume", "first"]);
+        assert_eq!(&reports[2][11..], ["--", "miyu-tui", "--resume", "first"]);
+        assert_eq!(&reports[3][11..], ["--", "miyu-tui", "--resume", "second"]);
         assert_eq!(reports[4][1], "release-agent");
         assert_eq!(reports[5].len(), 11);
         assert_eq!(reports[6][1], "release-agent");
