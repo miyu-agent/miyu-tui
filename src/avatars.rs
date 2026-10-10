@@ -22,7 +22,7 @@ pub struct Avatars {
 impl Avatars {
     /// 照机器共用的缓存目录。
     pub fn cached() -> Self {
-        miyu_store::root::cache_root(&miyu_store::env::Env::current())
+        miyu_client::places::cache_root(&miyu_client::places::Env::current())
             .map(|root| Self::at(root.join("tui").join("avatars")))
             .unwrap_or_default()
     }

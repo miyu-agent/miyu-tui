@@ -66,7 +66,7 @@ use ratatui::crossterm::event::{
 };
 use ratatui::crossterm::{cursor, execute, terminal};
 
-use miyu_store::env::Env;
+use miyu_client::places::Env;
 
 use app::App;
 use config::Config;
@@ -192,7 +192,7 @@ fn run(
     });
     let to_main = sender.clone();
     // 点开看的 mermaid 大图放在机器共用的缓存目录下（蓝图「图片、公式和 mermaid 图」第 4 条）。
-    let zoom_dir = miyu_store::root::cache_root(&Env::current())
+    let zoom_dir = miyu_client::places::cache_root(&Env::current())
         .ok()
         .map(|root| root.join("tui").join("diagrams"));
     let figures = figures::Figures::start(graphics, &config.figures, zoom_dir, move |done| {

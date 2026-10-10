@@ -4,7 +4,7 @@
 
 use serde_json::Value;
 
-use miyu_kernel::event::Said;
+use miyu_client::protocol::Said;
 
 use super::Limits;
 use super::kinds::{EndReason, Level, ToolStatus};

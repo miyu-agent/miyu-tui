@@ -7,11 +7,11 @@ use std::io::Write;
 use std::panic::PanicHookInfo;
 use std::path::PathBuf;
 
-use miyu_store::env::Env;
+use miyu_client::places::Env;
 
 /// 记下这一次崩溃，交回记在哪；缓存目录找不到、写不进去的交回 `None`（已经在崩了，不再多事）。
 pub fn record(info: &PanicHookInfo<'_>) -> Option<PathBuf> {
-    let dir = miyu_store::root::cache_root(&Env::current())
+    let dir = miyu_client::places::cache_root(&Env::current())
         .ok()?
         .join("tui");
     fs::create_dir_all(&dir).ok()?;

@@ -3,7 +3,7 @@
 use serde_json::json;
 
 use super::Human;
-use miyu_kernel::event::Said;
+use miyu_client::protocol::Said;
 
 fn said(key: &str, fields: &[(&str, &str)]) -> Said {
     Said {

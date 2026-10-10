@@ -16,7 +16,7 @@ fn an_agent_step_says_the_job_then_the_description_and_opens_on_the_prompt() {
     let mut f = Fixture::new();
     f.human = crate::human::Human::from_resources("zh");
     let t0 = Instant::now();
-    let said = miyu_kernel::event::Said {
+    let said = miyu_client::protocol::Said {
         key: "software/basesystem/agent/started".into(),
         fields: [
             ("job".to_string(), "j10".to_string()),

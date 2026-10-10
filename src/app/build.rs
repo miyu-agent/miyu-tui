@@ -34,12 +34,13 @@ impl App {
         input.set_attach_rule(paste::attach_rule(&config));
         // 输入历史连上以后照 `package.list` 放进终端这个包的状态目录（`app/packages.rs`）；这里先记着 9-1 以前的老位置
         // （数据根的 `state/tui/history.jsonl`），拿不到状态目录的照旧用它。单元测试不记：数据根是人在用的。
-        let old_history = miyu_store::root::DataRoot::locate(&miyu_store::env::Env::current())
-            .ok()
-            .filter(|_| !cfg!(test))
-            .map(|root| root.state().join("tui").join("history.jsonl"));
+        let old_history =
+            miyu_client::places::DataRoot::locate(&miyu_client::places::Env::current())
+                .ok()
+                .filter(|_| !cfg!(test))
+                .map(|root| root.state().join("tui").join("history.jsonl"));
         // 提示音、暂存的截图放机器缓存目录（「系统通知」第 5 条、「输入框」第 12 条）；找不到的不响、贴不了图。
-        let cache = miyu_store::root::cache_root(&miyu_store::env::Env::current()).ok();
+        let cache = miyu_client::places::cache_root(&miyu_client::places::Env::current()).ok();
         let sounds = cache.as_ref().map(|root| root.join("tui").join("sounds"));
         let staging = cache
             .as_ref()
