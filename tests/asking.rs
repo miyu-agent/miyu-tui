@@ -176,10 +176,11 @@ fn asking_to_run_outside_the_sandbox_shows_the_line_and_allow_once_runs_it() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("试试");
-    tui.wait_for("在沙盒外试一下");
+    // 等抽屉里才有的那一句：命令的短标题会先出现在时间线那一步上，那时抽屉还没开（CI 上偶发红过）。
+    tui.wait_for("沙盒外运行");
     let screen = tui.lines().join("\n");
     assert!(screen.contains("$ echo outside"), "{screen}");
-    assert!(screen.contains("沙盒外运行"), "{screen}");
+    assert!(screen.contains("在沙盒外试一下"), "{screen}");
     tui.key(b"\r");
     tui.wait_for("跑完了。");
 }
