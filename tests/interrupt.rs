@@ -23,7 +23,7 @@ fn an_interrupt_after_she_has_spoken_keeps_the_turn() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("说两句");
-    tui.wait_for("…");
+    tui.wait_for_line("…");
     tui.key(b"\x1b");
     tui.pump(Duration::from_millis(100));
     tui.key(b"\x1b");
@@ -74,7 +74,7 @@ fn slash_stop_interrupts_and_keeps_the_queued_message_without_starting_a_turn() 
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("说两句");
-    tui.wait_for("…");
+    tui.wait_for_line("…");
     tui.say("排着的一句");
     tui.wait_for("↳ 排着的一句");
     tui.say("/stop");

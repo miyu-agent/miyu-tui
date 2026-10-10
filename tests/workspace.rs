@@ -33,15 +33,18 @@ fn resuming_from_another_directory_says_where_she_works() {
     tui.wait_for("在这。");
     tui.wait_for("切换到当前目录");
     let screen = tui.lines().join("\n");
-    let line = tui
-        .lines()
-        .into_iter()
-        .find(|l| l.contains("切换到当前目录"))
-        .unwrap_or_default();
-    assert!(
-        line.contains("工作区：") && line.contains(&work),
-        "{screen}"
-    );
+    // 那句通知从「工作区：」写到「切换到当前目录」，路径长了会折成几行（macOS 的临时目录很长）：取左边正文那一截拼起来再找。
+    let lines = tui.lines();
+    let from = lines.iter().position(|l| l.contains("工作区："));
+    let to = lines.iter().position(|l| l.contains("切换到当前目录"));
+    let notice: String = match (from, to) {
+        (Some(from), Some(to)) if from <= to => lines[from..=to]
+            .iter()
+            .map(|l| l.split('│').next().unwrap_or_default().trim())
+            .collect(),
+        _ => String::new(),
+    };
+    assert!(notice.contains(&work), "{screen}");
     // 侧边栏的工作区是会话的，不是终端所在的。
     assert!(screen.matches(&work).count() >= 2, "{screen}");
     assert!(!screen.contains("miyu-tui-elsewhere"), "{screen}");

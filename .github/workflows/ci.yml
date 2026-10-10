@@ -37,7 +37,7 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
       - name: 测试
-        run: cargo test --locked
+        run: cargo test --locked --no-fail-fast
       - name: 行数（每个 .rs 不超过 500 行，测试也算）
         if: runner.os == 'Linux'
         shell: bash
