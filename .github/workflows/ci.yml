@@ -37,7 +37,12 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
       - name: 测试
+        if: runner.os != 'Windows'
         run: cargo test --locked --no-fail-fast
+      # Windows 上伪终端测试靠 ConPTY 转按键，Esc 这类键的时序不稳，每轮冒一条不同的偶发红；只跑单元测试（AGENTS.md）。
+      - name: 测试（Windows 只跑单元测试）
+        if: runner.os == 'Windows'
+        run: cargo test --locked --no-fail-fast --bins
       - name: 行数（每个 .rs 不超过 500 行，测试也算）
         if: runner.os == 'Linux'
         shell: bash
