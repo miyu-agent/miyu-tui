@@ -42,6 +42,19 @@ fn item_index(tui: &Tui, name: &str) -> usize {
         .unwrap_or_else(|| panic!("页里没有「{name}」：{items:?}"))
 }
 
+/// 等屏幕上的 `text` 没了（窗关上了）。
+fn gone(tui: &mut Tui, text: &str) {
+    let end = Instant::now() + support::WAIT;
+    while tui.shows(text) {
+        assert!(
+            Instant::now() < end,
+            "「{text}」一直在：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(50));
+    }
+}
+
 /// 等个人设置文件里出现 `want`。
 fn wait_settings(home: &Home, tui: &mut Tui, want: &str) {
     let end = Instant::now() + support::WAIT;
@@ -177,13 +190,18 @@ fn a_new_provider_keeps_its_key_in_the_secret_store_and_an_added_model_can_be_de
     let secrets =
         std::fs::read_to_string(home.root().join("system/secrets.toml")).unwrap_or_default();
     assert!(secrets.contains("zen-key"), "key 进了密钥库");
-    // 给它手加一个模型，存下；再删掉，存下。
+    // 给它手加一个模型，存下；再删掉，存下。每一步等界面跟上再按下一个键：文件写进去了，供应商的窗不一定已经关上，
+    // 键快过界面会落到别的地方（Windows 上见过：回车落在列表上，开了供应商的窗）。
+    gone(&mut tui, "[ 保存 ]");
     tui.key(b"n");
     tui.wait_for("添加模型");
     tui.key(b"\r");
     tui.type_text("big");
+    tui.wait_for("big");
     tui.key(b"\r");
+    tui.pump(Duration::from_millis(200));
     tui.key(TAB);
+    tui.pump(Duration::from_millis(200));
     tui.key(b"\r");
     wait_settings(&home, &mut tui, "[providers.zen.models.big]");
     tui.key(b"l");
