@@ -51,8 +51,10 @@ mod tests {
     #[test]
     fn a_file_from_disk_carries_its_path_and_a_pasted_one_does_not() {
         let got = json!({"blob": "sha256:aa", "name": "晚霞.png"});
-        let from_disk = with_path(got.clone(), Path::new("/home/me/图/晚霞.png"));
-        assert_eq!(from_disk["path"], "/home/me/图/晚霞.png");
+        // 照这台机器的写法拼一个绝对路径：`/home/...` 在 Windows 上不算绝对路径。
+        let file = std::env::temp_dir().join("图").join("晚霞.png");
+        let from_disk = with_path(got.clone(), &file);
+        assert_eq!(from_disk["path"], file.display().to_string());
         assert_eq!(from_disk["blob"], "sha256:aa", "回应原样留着");
         let pasted = Path::new("/home/me/.cache/miyu/tui/pasted/4242/0a1b.png");
         assert!(

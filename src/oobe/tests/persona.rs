@@ -240,9 +240,14 @@ fn an_avatar_path_is_uploaded_then_set_on_the_new_persona() {
     // 头像在名字下面：拖进来的路径带引号的去掉引号。
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     assert_eq!(oobe.persona.focus, crate::oobe::persona::Slot::Avatar);
-    oobe.paste("'/tmp/miyu-avatar.png'");
+    // 照这台机器的写法拼一个绝对路径（`/tmp/...` 在 Windows 上会被补上盘符）；文件不在，原样交。
+    let avatar = std::env::temp_dir()
+        .join("miyu-avatar.png")
+        .display()
+        .to_string();
+    oobe.paste(&format!("'{avatar}'"));
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    assert_eq!(oobe.persona.avatar.text(), "/tmp/miyu-avatar.png");
+    assert_eq!(oobe.persona.avatar.text(), avatar);
     for _ in 0..4 {
         oobe.key(key(KeyCode::Char('j')), t0, &texts);
     }
@@ -250,7 +255,7 @@ fn an_avatar_path_is_uploaded_then_set_on_the_new_persona() {
     let sent = asks(&mut oobe);
     assert!(sent.iter().all(|(_, m, _)| *m != "persona.set"), "先传头像");
     let (tag, params) = find(&sent, "blob.put");
-    assert_eq!(params, json!({"path": "/tmp/miyu-avatar.png"}));
+    assert_eq!(params, json!({"path": avatar}));
     oobe.answer(
         tag,
         Ok(json!({"blob": "sha256:ab", "kind": "image", "media_type": "image/png", "name": "miyu-avatar.png"})),

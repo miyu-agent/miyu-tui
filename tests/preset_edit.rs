@@ -77,6 +77,10 @@ fn a_new_preset_has_its_features_toggled_with_space_and_is_deleted() {
 }
 
 #[test]
+#[cfg_attr(
+    windows,
+    ignore = "ConPTY 测具注入的 Ctrl+A 字节（0x01）不变成带 Ctrl 的 a 键记录；真终端里按的是带 Ctrl 的键"
+)]
 fn ctrl_a_turns_every_feature_off_then_on_again() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = made(&home);

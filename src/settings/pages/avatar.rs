@@ -105,13 +105,15 @@ mod tests {
         let mut page = opened();
         press(&mut page, KeyCode::Enter);
         assert!(matches!(page.popup, Some(Popup::Line(_))), "开编辑窗");
-        for c in "/tmp/a.png".chars() {
+        // 照这台机器的写法拼一个绝对路径（`/tmp/...` 在 Windows 上会被补上盘符）；文件不在，原样交。
+        let typed = std::env::temp_dir().join("a.png").display().to_string();
+        for c in typed.chars() {
             press(&mut page, KeyCode::Char(c));
         }
         press(&mut page, KeyCode::Enter);
         let asks = page.take_asks();
         assert_eq!(asks[0].1, "blob.put");
-        assert_eq!(asks[0].2, json!({"path": "/tmp/a.png"}));
+        assert_eq!(asks[0].2, json!({"path": typed}));
         let texts = Config::builtin().unwrap().text.settings;
         page.answer(asks[0].0, Ok(json!({"blob": "sha256:cd"})), &texts);
         let asks = page.take_asks();
