@@ -170,11 +170,7 @@ fn ticked_ones_go_on_one_confirmation_and_the_pick_stays_in_place() {
     // 等列表本身只剩两行：「2 个」在「已删除 2 个会话」里就有，等它会在列表刷新以前往下走（Windows 的 CI 上红过）。
     let end = Instant::now() + support::WAIT;
     while rows(&tui).len() != 2 {
-        assert!(
-            Instant::now() < end,
-            "列表没刷新：{:?}",
-            rows(&tui)
-        );
+        assert!(Instant::now() < end, "列表没刷新：{:?}", rows(&tui));
         tui.pump(Duration::from_millis(50));
     }
     // 光标停在原来的位置（第三行），下面的补上来；只剩两个就停在最后一个。
