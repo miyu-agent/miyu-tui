@@ -1,6 +1,9 @@
 //! 配置页改人格（蓝图 `tui.md`「配置页」第 36、37、41 条，核心 P-3）：`a` 填名字就建；人格提示词交给 `$EDITOR`，带版本防覆盖；
 //! 示范对话一对一对地加；`d` 删除。编辑器用一个小脚本：把固定的字写进交给它的文件。
 
+// 假编辑器是 /bin/sh 写的脚本，Windows 上跑不了（Windows 上没设编辑器的本来也不开，`app/settings.rs`）：只在 Unix 上跑。
+#![cfg(unix)]
+
 mod support;
 
 use std::path::{Path, PathBuf};
@@ -39,7 +42,6 @@ fn editor(work: &Path, text: &str, also: Option<&Path>) -> String {
         ));
     }
     std::fs::write(&script, body).expect("写得进去");
-    #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755))

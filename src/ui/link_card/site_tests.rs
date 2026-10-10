@@ -207,8 +207,10 @@ fn video_and_article_layouts_match_the_saved_samples() {
         std::fs::write(dir.join("video.txt"), &video).unwrap();
         std::fs::write(dir.join("article.txt"), &article).unwrap();
     }
-    assert_eq!(video, include_str!("samples/video.txt"));
-    assert_eq!(article, include_str!("samples/article.txt"));
+    // Windows 上检出的样本可能是 CRLF 换行：比之前统一成 LF。
+    let lf = |s: &str| s.replace("\r\n", "\n");
+    assert_eq!(video, lf(include_str!("samples/video.txt")));
+    assert_eq!(article, lf(include_str!("samples/article.txt")));
 }
 
 #[test]
