@@ -24,16 +24,20 @@ fn sample<T: serde::de::DeserializeOwned>(jsonl: &str) -> T {
     serde_json::from_value(event["body"].clone()).unwrap()
 }
 
+/// 钉住的那份核心检出里的协议样本（设计 32 第四节第 3 条）。
+fn events(name: &str) -> String {
+    let path = std::path::Path::new(miyu_client::WORKSPACE_ROOT)
+        .join("docs/designs/samples/events")
+        .join(name);
+    std::fs::read_to_string(&path).expect("核心检出里有这份样本")
+}
+
 fn asked() -> Asked {
-    sample(include_str!(
-        "../../../docs/designs/samples/events/question.asked.jsonl"
-    ))
+    sample(&events("question.asked.jsonl"))
 }
 
 fn approval() -> Approval {
-    sample(include_str!(
-        "../../../docs/designs/samples/events/tool.approval_requested.jsonl"
-    ))
+    sample(&events("tool.approval_requested.jsonl"))
 }
 
 /// 两道题：第一道单选（带短名），第二道能多选（没有短名）。

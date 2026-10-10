@@ -20,9 +20,9 @@ pub const ROWS: u16 = 40;
 /// 等一样东西出现最多等多久。
 pub const WAIT: Duration = Duration::from_secs(15);
 
-/// 仓库里出厂的资源目录（工具的显示名、核心给人看的字）。
+/// 钉住的那份核心检出里出厂的资源目录（工具的显示名、核心给人看的字；设计 32 第四节第 3 条）。
 fn resources() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../resources")
+    Path::new(miyu_client::WORKSPACE_ROOT).join("resources")
 }
 
 mod home;

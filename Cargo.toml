@@ -13,10 +13,10 @@ serde_json = "1"
 # 收尾行上写做完的时刻，要本地时间；仓库别处也用它（crates/miyu-log）。
 jiff = "0.2"
 # 连核心：和 miyu ask 用同一套（crates/miyu-cli）。只认数据根、拉起核心、本机令牌这几样。
-miyu-ipc = { path = "../crates/miyu-ipc" }
-miyu-store = { path = "../crates/miyu-store" }
+miyu-ipc = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6" }
+miyu-store = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6" }
 # 工具结果那一句（`Said`）的类型：推送里的 `human` 照它读，和核心同一份定义。
-miyu-kernel = { path = "../crates/miyu-kernel" }
+miyu-kernel = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6" }
 # 她的回答按 Markdown 画（蓝图 tui.md「她的回答：Markdown」）；旧版用的也是它。
 pulldown-cmark = { version = "0.13", default-features = false }
 # 编辑、写入的差异按行比：和 crates/miyu-endpoint 用的是同一个。
@@ -56,11 +56,13 @@ rustix = { version = "1", features = ["stdio", "process"] }
 # 伪终端里的端到端测试（`tests/pty.rs`，蓝图「守着它的」）：测试进程里起一个照剧本回话的核心（和端点的测试同一套），
 # 在伪终端里起真的界面连上去，读屏幕、发按键。只在测试里用。
 [dev-dependencies]
-miyu-core = { path = "../crates/miyu-core" }
-miyu-endpoint = { path = "../crates/miyu-endpoint" }
-miyu-models = { path = "../crates/miyu-models" }
-miyu-session = { path = "../crates/miyu-session", features = ["testkit"] }
-miyu-tool = { path = "../crates/miyu-tool" }
+miyu-core = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6" }
+miyu-endpoint = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6" }
+miyu-models = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6" }
+miyu-session = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6", features = ["testkit"] }
+# 测试照钉住的那份核心检出读出厂资源、协议样本（设计 32 第四节第 3 条）。
+miyu-client = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6", features = ["testkit"] }
+miyu-tool = { git = "https://github.com/miyu-agent/miyu", rev = "114e4af7f667000360acf5377fb727805def20b6" }
 portable-pty = "0.9"
 vt100 = "0.16"
 

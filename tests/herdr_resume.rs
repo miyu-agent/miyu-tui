@@ -112,8 +112,8 @@ fn real_herdr_restores_two_panes_to_their_own_sessions() {
             ("MIYU_HOME".into(), home.root().display().to_string()),
             (
                 "MIYU_RESOURCES".into(),
-                Path::new(env!("CARGO_MANIFEST_DIR"))
-                    .join("../resources")
+                Path::new(miyu_client::WORKSPACE_ROOT)
+                    .join("resources")
                     .display()
                     .to_string(),
             ),

@@ -26,7 +26,7 @@ pub struct Piece {
     pub joined: bool,
 }
 
-/// 这一步的字的样子：出错的整行红（竖线不跟着红，见 [`rail`]）；别的暗，悬停时变亮。
+/// 这一步的字的样子：出错的整行红（竖线不跟着红，见 `rail`）；别的暗，悬停时变亮。
 pub fn style(step: &Step, hovered: bool) -> Style {
     if step.failed() {
         theme::error()

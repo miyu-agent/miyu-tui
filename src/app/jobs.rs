@@ -17,7 +17,7 @@ use crate::jobs::PanelItem;
 pub enum Panel {
     /// 后台面板：选中第几行、点开了哪一条（编号）、结束了的收起来的展开了没有。
     Background {
-        /// 选中第几行（[`Board::panel_items`] 的第几个）。
+        /// 选中第几行（`Board::panel_items` 的第几个）。
         selected: usize,
         /// 点开的那一条的编号。
         open: Option<u64>,

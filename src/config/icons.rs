@@ -120,10 +120,10 @@ mod tests {
 
     #[test]
     fn every_tool_the_core_ships_has_a_nerd_icon() {
-        // 2026-10-07 项目主人：工具的图标别忘了加。核心基础系统的每件工具（`resources/software/basesystem/tools/`）在
+        // 2026-10-07 项目主人：工具的图标别忘了加。核心基础系统的每件工具（钉住的那份核心检出里的 `resources/software/basesystem/tools/`）在
         // Nerd Font 那一套里都要有自己的一个，核心加了新工具这里当场红。
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../resources/software/basesystem/tools");
+        let dir = std::path::Path::new(miyu_client::WORKSPACE_ROOT)
+            .join("resources/software/basesystem/tools");
         let nerd = &builtin().unwrap()[0];
         let mut missing: Vec<String> = std::fs::read_dir(&dir)
             .unwrap()

@@ -385,7 +385,7 @@ async fn fresh(
     Ok((id, joined))
 }
 
-/// 订阅另一个会话，不等回应（回应里的限额由 [`take`] 交给界面）。
+/// 订阅另一个会话，不等回应（回应里的限额由 `take` 交给界面）。
 async fn watch(rpc: &mut Rpc, session: &str) -> io::Result<String> {
     let params = json!({"session": session, "stream": "events"});
     rpc.send("subscribe", params).await

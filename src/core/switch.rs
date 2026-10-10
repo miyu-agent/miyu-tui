@@ -1,4 +1,4 @@
-//! 切会话、补发（蓝图 `tui.md`「会话列表 `/sessions`」第 5–8 条）：带 `after` 订阅，补发来的照 [`Replay`] 读，
+//! 切会话、补发（蓝图 `tui.md`「会话列表 `/sessions`」第 5–8 条）：带 `after` 订阅，补发来的照 `Replay` 读，
 //! 同一个序号只办一次；启动时进最近的那个会话。
 
 use std::io;
@@ -19,7 +19,7 @@ pub(super) async fn replay(rpc: &mut Rpc, link: &mut Link, session: &str) -> io:
     rpc.send("subscribe", params).await
 }
 
-/// 读一条推来的事件：读过的序号不再办（重新订阅两段之间会重复）；补发中的照 [`Replay`] 读。
+/// 读一条推来的事件：读过的序号不再办（重新订阅两段之间会重复）；补发中的照 `Replay` 读。
 pub(super) fn event(link: &mut Link, session: &str, event: &Value) -> Vec<Push> {
     if let Some(seq) = event["seq"].as_u64() {
         let last = link.seen.entry(session.to_string()).or_default();

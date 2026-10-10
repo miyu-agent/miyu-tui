@@ -8,7 +8,8 @@ use super::Human;
 impl Human {
     /// 照仓库 `resources/` 读 `language` 那一种。
     pub fn from_resources(language: &str) -> Human {
-        let root = ResourceRoot::at(concat!(env!("CARGO_MANIFEST_DIR"), "/../resources"));
+        let root =
+            ResourceRoot::at(std::path::Path::new(miyu_client::WORKSPACE_ROOT).join("resources"));
         let stored = miyu_store::human::Human::load(&root, language).expect("资源读得懂");
         let said: serde_json::Map<String, serde_json::Value> = stored
             .said_entries()
