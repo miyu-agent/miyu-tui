@@ -1,6 +1,7 @@
 //! 附件照模型收（蓝图 `tui.md`「输入框」第 12 条「照模型收」）：模型收不了图片的，`Ctrl+V` 贴进来的图收成文件块、提示一句，
 //! 发出去写路径；收得了的照旧是附件。终端送来的粘贴（`Ctrl+Shift+V`、拖文件）照原样是字（2026-10-10 项目主人）。
-//! 剪贴板用工作目录里的假 `wl-paste`（放在 `PATH` 前面），不碰跑测试那台机器上的剪贴板。
+//! 剪贴板用工作目录里的假 `wl-paste`（放在 `PATH` 前面），不碰跑测试那台机器上的剪贴板；`wl-paste` 只有 Linux 上读，
+//! 按 `Ctrl+V` 的那两条只在 Linux 上跑（macOS 读剪贴板走 `osascript`，Windows 另有一套）。
 
 mod support;
 
@@ -8,6 +9,7 @@ use miyu_session::testkit::{Play, Script};
 use support::Home;
 
 /// 一家、一个模型，配置里写明它只收文字。
+#[cfg(target_os = "linux")]
 const BLIND: &str = "[providers.fake]\ndriver = \"openai-chat\"\nbase_url = \"http://127.0.0.1:9/v1\"\n\n[providers.fake.models.m]\ninputs = [\"text\"]\n\n[models]\nchat = \"fake/m\"\n";
 /// 同一个模型，收图。
 const SEEING: &str = "[providers.fake]\ndriver = \"openai-chat\"\nbase_url = \"http://127.0.0.1:9/v1\"\n\n[providers.fake.models.m]\ninputs = [\"text\", \"image\"]\n\n[models]\nchat = \"fake/m\"\n";
@@ -25,6 +27,7 @@ fn drop_in(tui: &mut support::Tui, path: &str) {
 }
 
 /// 一个假的 `wl-paste`：剪贴板里是文件管理器复制的这个文件（`text/uri-list`）。交回要设的 `PATH`。
+#[cfg(target_os = "linux")]
 fn copied(home: &Home, path: &str) -> String {
     let bin = home.work.join("bin");
     std::fs::create_dir_all(&bin).expect("建得了目录");
@@ -43,6 +46,7 @@ fn copied(home: &Home, path: &str) -> String {
 }
 
 /// 起界面：剪贴板是上面那个假的。
+#[cfg(target_os = "linux")]
 fn with_clipboard(home: &Home, path: &str) -> support::Tui {
     let path_env = copied(home, path);
     home.tui_with(
@@ -55,6 +59,7 @@ fn with_clipboard(home: &Home, path: &str) -> support::Tui {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn a_model_that_cannot_see_images_gets_the_path_instead() {
     let home = Home::with_settings(Script::new([Play::Says("好。")]), BLIND);
     let path = picture(&home);
@@ -71,6 +76,7 @@ fn a_model_that_cannot_see_images_gets_the_path_instead() {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn a_model_that_sees_images_still_gets_an_attachment() {
     let home = Home::with_settings(Script::new([Play::Says("好。")]), SEEING);
     let path = picture(&home);

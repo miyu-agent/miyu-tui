@@ -235,6 +235,20 @@ impl Tui {
         }
     }
 
+    /// 等到屏幕上有一整行（去掉两头的空白）就是 `text`，最多 [`WAIT`]。别处带着这几个字的不算：比如首页的工作目录放不下时
+    /// 以 `…` 打头（macOS 的临时目录很长），等她吐出的那个 `…` 就要只认整行。
+    pub fn wait_for_line(&mut self, text: &str) {
+        let end = Instant::now() + WAIT;
+        while !self.lines().iter().any(|l| l.trim() == text) {
+            assert!(
+                Instant::now() < end,
+                "等不到整行「{text}」，屏幕是：\n{}",
+                self.lines().join("\n")
+            );
+            self.pump(Duration::from_millis(50));
+        }
+    }
+
     /// 光标在哪：（行, 列），从 0 数。
     pub fn cursor(&self) -> (u16, u16) {
         self.screen.screen().cursor_position()
