@@ -189,11 +189,11 @@ impl Renderer<'_> {
             Tag::Heading { level, .. } => {
                 self.flush();
                 self.gap();
-                // 不写 `#`；一级标题加下划线，别的级别一个样（蓝图「她的回答：Markdown」第 3 条）。
+                // 不写 `#`；只加粗、不上颜色，一级标题加下划线，别的级别一个样（蓝图「她的回答：Markdown」第 3 条）。
                 let style = if level == HeadingLevel::H1 {
-                    theme::md_heading().add_modifier(Modifier::UNDERLINED)
+                    theme::md_title().add_modifier(Modifier::UNDERLINED)
                 } else {
-                    theme::md_heading()
+                    theme::md_title()
                 };
                 self.styles.push(style);
             }

@@ -223,6 +223,12 @@ pub fn md_heading() -> Style {
     fg(|p| p.md_heading).add_modifier(Modifier::BOLD)
 }
 
+/// 回答里 Markdown 的标题：只加粗，不上颜色，和正文同色（2026-10-12 项目主人：原来是标题色 `md_heading`；那个颜色
+/// 配置页的分组标题还在用）。一级标题另加下划线（`markdown/mod.rs`）。
+pub fn md_title() -> Style {
+    Style::new().add_modifier(Modifier::BOLD)
+}
+
 /// Markdown 的粗体：原色加粗（2026-09-29 项目主人：原来蓝色，和暗蓝的链接挨得近）。
 pub fn md_bold() -> Style {
     fg(|p| p.md_bold).add_modifier(Modifier::BOLD)
