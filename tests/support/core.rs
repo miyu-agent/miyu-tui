@@ -131,23 +131,22 @@ fn frozen(orders: &mut UnboundedReceiver<Switch>) -> bool {
     }
 }
 
-/// 照核心起来时那样造一份：配置读登记的全部配置项接上出厂软件包清单声明的（终端的 `tui.*` 这些，照发行包的样子：程序
-/// 都算在），环境变量一个都不认。
+/// 照核心起来时那样造一份：配置读登记的全部配置项接上软件包清单声明的（出厂的，加上装进家里的终端的 `tui.*` 这些，照
+/// 发行包的样子：程序都算在），环境变量一个都不认。
 fn build(root: &DataRoot, script: Arc<Script>, tools: bool, token: String) -> Core {
     let admin = AccountId::parse("alice").expect("账号合写法");
     let shipped_root = ResourceRoot::at(resources());
-    let mut shipped = miyu_store::packages::Packages::shipped(&shipped_root).read();
+    let found = || miyu_store::packages::Packages::new(&shipped_root, root, &admin).read();
     let config = Config::load(
         root,
         &admin,
         None,
-        miyu_core::settings::Packaged::as_released(&mut shipped).all(),
+        miyu_core::settings::Packaged::as_released(&mut found()).all(),
         miyu_endpoint::config::Environment::of(&[]),
     );
     let catalog = if tools {
-        // 照出厂的那一层清单登记（核心 F-2 起：装了的内置包才登记工具）。
-        let found = miyu_store::packages::Packages::shipped(&shipped_root).read();
-        miyu_core::tools(&shipped_root, &found).expect("工具登记得上")
+        // 照出厂的、装了的清单登记（核心 F-2 起：装了的内置包才登记工具）。
+        miyu_core::tools(&shipped_root, &found()).expect("工具登记得上")
     } else {
         Catalog::default()
     };
