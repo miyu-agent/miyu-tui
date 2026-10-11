@@ -369,3 +369,11 @@ fn an_image_without_words_shows_its_file_name() {
     );
     assert!(text("<img src=\"/tmp/dog.webp\">").contains("[图片: dog.webp]"));
 }
+
+#[test]
+fn a_link_across_a_line_break_after_a_local_picture_does_not_crash() {
+    // review A1（2026-10-11）：一段话里先有本机的图，后面的链接文字跨了换行。换行时先把收了的字排掉、接着画图，
+    // 链接记着的起点不能还指着排掉以前的位置（原来越界崩溃，重开会话照样崩）。
+    let got = lines("看图 ![](a.png) 详见 [说明\n文档](https://x.y)", 60);
+    assert!(got.iter().any(|l| l.contains("文档")), "{got:?}");
+}
