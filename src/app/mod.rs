@@ -47,7 +47,7 @@ use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use crate::human::Human;
-use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind, MouseEventKind};
+use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
 use ratatui::layout::Position;
 
 use crate::body_view::BodyView;
@@ -60,10 +60,8 @@ use crate::focus::Focus;
 use crate::history::History;
 use crate::input::{Action, Draft, InputBox, PasteRule};
 use crate::jobs::{Board, Feed};
-use crate::mascot::{Gaze, Idle, Perch};
 use crate::menu::Menu;
 use crate::notify::Notifier;
-use crate::pulse::Pulse;
 use crate::side_select::SideSelect;
 use crate::tips::Tips;
 use crate::transcript::Transcript;
@@ -132,14 +130,8 @@ pub struct App {
     pub mention: crate::mention::Mention,
     /// 输入历史列表（`Ctrl+R`）。
     pub history: History,
-    /// 运行状态行正在写的词。
-    pub pulse: Pulse,
-    /// 首页的吉祥物朝哪看（`tui.md`「空会话的首页」第 6、7 条）。
-    pub gaze: Gaze,
-    /// 首页吉祥物的待机小动作。
-    pub idle: Idle,
-    /// 首页吉祥物看鼠标还是看输入光标：最近一次动鼠标、按键的时刻。
-    pub attention: crate::mascot::Attention,
+    /// 吉祥物和运行状态行会动的那几样（`mascot.rs`，蓝图 `app.md`）。
+    pub mascot: mascot::MascotState,
     /// 工作目录，家目录写成 `~`：侧边栏照它写。
     pub cwd: String,
     /// 输入框空着时写哪条提示。
@@ -190,12 +182,8 @@ pub struct App {
     focus: Focus,
     /// 鼠标悬停在子代理状态行的第几行（第 0 行是上面的空行）。
     pub agents_hover: Option<usize>,
-    /// 首页吉祥物被列表顶上去以后待在哪。
-    pub perch: Perch,
     /// Ctrl+C 打断时要退回排着的话，走到哪一步了（`takeback.rs`）。
     takeback: Option<takeback::Takeback>,
-    /// 吉祥物的嘴（`tui.md`「空会话的首页」第 9 条）。
-    pub mouth: crate::mascot::Mouth,
     /// 鼠标最后在哪一格；还没动过是 `None`。
     pub pointer: Option<Position>,
     /// 框下面那一行的临时提示。
@@ -284,20 +272,7 @@ impl App {
 
     /// 处理一个终端事件。
     pub fn handle(&mut self, event: Event) {
-        // 有人按键、动鼠标、粘贴：吉祥物停下待机的晃（`tui.md`「空会话的首页」第 8 条）。
-        if matches!(event, Event::Key(_) | Event::Mouse(_) | Event::Paste(_)) {
-            self.idle.poke(Instant::now());
-        }
-        // 看鼠标还是看输入光标：记下最近一次动鼠标、按键的时刻（第 6 条）。
-        match &event {
-            Event::Key(_) | Event::Paste(_) => self.attention.typed(Instant::now()),
-            Event::Mouse(m)
-                if matches!(m.kind, MouseEventKind::Moved | MouseEventKind::Drag(_)) =>
-            {
-                self.attention.pointed(Instant::now());
-            }
-            _ => {}
-        }
+        self.mascot.heard(&event, Instant::now());
         // 引导开着：按键、鼠标、粘贴都归它（`oobe.rs`）。
         if self.oobe.is_some() {
             self.oobe_event(event);

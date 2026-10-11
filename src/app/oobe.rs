@@ -279,7 +279,7 @@ impl App {
                 now < *at
                     + ms(look.react.name_ms) * u32::try_from(name.chars().count()).unwrap_or(0)
             })
-            || self.gaze.moving();
+            || self.mascot.gaze.moving();
         let calm = matches!(
             oobe.step,
             crate::oobe::Step::Welcome | crate::oobe::Step::Done
@@ -290,7 +290,7 @@ impl App {
             look.stars.frame_ms
         } else {
             let idle = crate::ui::oobe_idle_look(&self.config.mascot, &self.config.oobe.idle);
-            return self.idle.wake(now, &idle);
+            return self.mascot.idle.wake(now, &idle);
         };
         Some(now + ms(beat))
     }
