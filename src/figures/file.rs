@@ -10,7 +10,7 @@ use crate::markdown::Size;
 
 /// 读图，缩到最多 `max_cols` 列宽，放到正好铺满格子的透明画布上。`size` 是 `<img>` 写的宽高（像素）：
 /// 写了的照它，只写一个的另一个照原图的比例算，没写的照图本身。`.svg` 文件照回答里写的 `<svg>` 画
-/// （不读它引用的外部东西），`fonts` 是它用的中文字体。
+/// （不读它引用的外部东西），`look` 里有它用的中文字体、最大读多大的文件。
 ///
 /// # Errors
 ///
@@ -21,13 +21,21 @@ pub fn draw(
     cell: Cell,
     max_cols: u16,
     max_rows: u16,
-    fonts: &[String],
+    look: &crate::config::FigureLook,
 ) -> Result<(RgbaImage, Fit), String> {
     let file = crate::local::resolve(url).ok_or("读不出工作目录")?;
     let failed = |e: &dyn std::fmt::Display| format!("{}：{e}", file.display());
+    // 只读普通文件、不超过上限：地址是模型写的，/dev/tty、FIFO 原来会读终端吃掉按键、卡在打开上（review A4）。
+    let meta = std::fs::metadata(&file).map_err(|e| failed(&e))?;
+    if !meta.is_file() {
+        return Err(failed(&"不是普通文件"));
+    }
+    if meta.len() > look.max_file_bytes {
+        return Err(failed(&format!("超过 {} 字节", look.max_file_bytes)));
+    }
     if is_svg(&file) {
         let text = std::fs::read_to_string(&file).map_err(|e| failed(&e))?;
-        let tree = super::svg::tree(&text, fonts).map_err(|e| failed(&e))?;
+        let tree = super::svg::tree(&text, &look.fonts).map_err(|e| failed(&e))?;
         let natural = tree.size();
         let wanted = sized(size, (natural.width(), natural.height()));
         return super::svg::raster_at(&tree, wanted, cell, max_cols, max_rows);

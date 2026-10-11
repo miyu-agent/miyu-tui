@@ -16,6 +16,8 @@ pub struct FigureLook {
     pub preview_room: Room,
     /// mermaid 图里的字体，照先后找；都没有的由 resvg 从系统里找。
     pub fonts: Vec<String>,
+    /// 本机的图片文件最大读多少字节；超了的、不是普通文件的不读（review A4）。
+    pub max_file_bytes: u64,
     /// 块级公式的字号是一格高的几倍。
     pub math_scale: f32,
     /// 最多记着几张做好的图。

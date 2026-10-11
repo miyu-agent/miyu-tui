@@ -134,7 +134,7 @@ fn draw(
     let mut zoom = None;
     let (image, fit) = match job.kind {
         FigureKind::Image | FigureKind::Preview => {
-            file::draw(&job.source, job.size, cell, job.cols, max_rows, &look.fonts)?
+            file::draw(&job.source, job.size, cell, job.cols, max_rows, look)?
         }
         FigureKind::Svg => svg::draw(&job.source, &look.fonts, cell, job.cols, max_rows)?,
         // 源码是核心画好、换了主题色的 SVG（`diagrams.rs`）。
