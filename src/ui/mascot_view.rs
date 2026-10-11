@@ -78,7 +78,8 @@ pub fn paint(frame: &mut Frame, rect: Rect, look: &mascot::Look, pose: &mascot::
             if !area.contains(at) {
                 continue;
             }
-            if let Some(cell) = cell
+            // 吉祥物包查过了；画的时候再挡一道，不让控制字符进画面（review A3）。
+            if let Some(cell) = cell.filter(|c| mascot::package::drawable(c.mark))
                 && let Some(slot) = buf.cell_mut(at)
             {
                 // 吉祥物包写了颜色的照它，没写的照主题（「吉祥物包」第 4 条）。

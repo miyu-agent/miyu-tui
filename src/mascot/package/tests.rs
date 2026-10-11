@@ -48,3 +48,17 @@ fn a_model_that_breaks_a_rule_is_refused_whole() {
     let big = format!(r#"{{"ramp": "{}"}}"#, "x".repeat(super::MAX_BYTES));
     assert!(refused(&big).contains("larger"));
 }
+
+#[test]
+fn control_or_wide_characters_cannot_reach_the_terminal() {
+    // review A3（2026-10-11）：明暗那串字、眼睛和嘴的字经 set_char 直接进画面缓冲，绕过了画面库的控制字符过滤；
+    // 一个纯数据的吉祥物包写进 ESC 就能重置、操控终端。控制字符、不占一格的字整份拒掉。
+    let esc = char::from(0x1b);
+    assert!(read(format!(r#"{{"ramp": " a{esc}c"}}"#).as_bytes()).is_err());
+    assert!(read(format!(r#"{{"face": {{"eye_mark": "{esc}"}}}}"#).as_bytes()).is_err());
+    assert!(
+        read(r#"{"face": {"line_mark": "中"}}"#.as_bytes()).is_err(),
+        "占两格的"
+    );
+    assert!(read(r#"{"ramp": " .oO"}"#.as_bytes()).is_ok());
+}
