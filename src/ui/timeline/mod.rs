@@ -55,6 +55,38 @@ pub fn rows(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
     }
     // 同一时刻只转一处（`tui.md`「时间线」第 19 条）。
     let active = segment.active();
+    // 限制着、进行中、没人点过的：最多露一步完整思考、完整命令的高度（第 20 条）。只排露得出来的那几步：从最后一步往前排，
+    // 够了就停（review D1，2026-10-11：原来每帧把所有步整份排一遍、编辑步每帧算一次差异，再截得只剩十几行，步越多越卡）。
+    if ctx.config.timeline.limit_live && !segment.finished && segment.open.is_none() {
+        let cap = live_cap(&ctx.config.timeline);
+        let mut tail: Vec<Vec<Row>> = Vec::new();
+        let mut count = out.len();
+        for (j, step) in segment.steps.iter().enumerate().rev() {
+            let mut chunk = Vec::new();
+            if j > 0 || !out.is_empty() {
+                let failed = j > 0 && segment.steps[j - 1].failed();
+                chunk.push(connector(ctx, failed));
+            }
+            chunk.extend(step_rows(
+                Target::Step(entry, j),
+                step,
+                active == Some(j),
+                ctx,
+            ));
+            count += chunk.len();
+            tail.push(chunk);
+            if count >= cap {
+                break;
+            }
+        }
+        out.extend(tail.into_iter().rev().flatten());
+        clip_live(&mut out, ctx);
+        // 里面的步也点不开：只露十几行，点开了多半看不全。链接、拖选照常。
+        for row in &mut out {
+            row.target = None;
+        }
+        return out;
+    }
     for (j, step) in segment.steps.iter().enumerate() {
         if !out.is_empty() {
             // 上一步出错：竖线一路红到这一步的标题（`tui.md`「时间线」第 12 条）。
@@ -67,14 +99,6 @@ pub fn rows(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
             active == Some(j),
             ctx,
         ));
-    }
-    // 限制着、进行中、没人点过的：最多露一步完整思考、完整命令的高度（第 20 条）。
-    if ctx.config.timeline.limit_live && !segment.finished && segment.open.is_none() {
-        clip_live(&mut out, ctx);
-        // 里面的步也点不开：只露十几行，点开了多半看不全。链接、拖选照常。
-        for row in &mut out {
-            row.target = None;
-        }
     }
     out
 }

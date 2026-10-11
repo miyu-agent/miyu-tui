@@ -13,6 +13,7 @@ use crate::ui::test_support::Fixture;
 
 mod images;
 mod language;
+mod live_tail;
 mod mcp;
 mod tabs;
 
