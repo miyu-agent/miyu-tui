@@ -217,6 +217,13 @@ fn first_row(
         if relaid && let Some(top) = view.top {
             view.top = Some(remap(&view.rows, rows, top));
         }
+        // 选区：字重新折过的（窗口变宽变窄）行列对不上了，不要了；只是上面多了、少了几行（图加载好、一段收起）的，两头
+        // 照「在哪一条的第几行」找回来（review C3，2026-10-11：原来照行号记，反色漂到别处，复制到别的字）。
+        let reflowed = view.area.width != area.width;
+        view.select = view.select.filter(|_| !reflowed).map(|(a, b)| {
+            let at = |(row, col): crate::body_view::Point| (remap(&view.rows, rows, row), col);
+            (at(a), at(b))
+        });
     }
     // 一轮结束按住了：视口长高的那几行记进底边，第一行不往回退（`view.hold`）。
     if std::mem::take(&mut view.hold) && view.floor_end > 0 {
