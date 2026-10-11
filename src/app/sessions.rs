@@ -315,12 +315,6 @@ impl App {
         }
     }
 
-    /// 花了多少写成字（`$0.42 + ¥1.30`，一笔都算不出的是 `None`）：侧边栏、框下面那一行用。
-    pub fn spent(&self) -> Option<String> {
-        let bill = self.talk.bill_total();
-        crate::money::amounts(&bill, &self.link.currency, &self.config.layout.currencies)
-    }
-
     /// 切进子代理状态行里第 `index` 个子代理的会话（「切进子会话」第 1 条）。
     pub(super) fn enter_agent(&mut self, index: usize) {
         let child = self

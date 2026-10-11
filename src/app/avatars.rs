@@ -6,8 +6,8 @@ use std::path::PathBuf;
 
 use serde_json::json;
 
-use super::new_session::{Kind, Pick};
-use super::{App, Panel};
+use super::App;
+use super::new_session::Pick;
 use crate::core::{Command, Update};
 use crate::oobe::asker::TAG_BASE;
 
@@ -36,7 +36,7 @@ pub enum Avatar {
 
 /// 首页画谁的头像：人格框开着的照光标停的那一行（`under`），选过的照选的，测具设的照设的，开了会话的照会话的，都没有的
 /// 照默认的。「无人格」（编号空着）没有头像。
-fn home_persona<'a>(
+pub(super) fn home_persona<'a>(
     under: Option<&'a str>,
     pick: &'a Pick,
     session: Option<&'a str>,
@@ -50,7 +50,7 @@ fn home_persona<'a>(
 }
 
 /// 侧边栏画谁的头像：开着的会话的人格（侧边栏只在开了会话以后有）。
-fn sidebar_persona(session: Option<&str>) -> Option<&str> {
+pub(super) fn sidebar_persona(session: Option<&str>) -> Option<&str> {
     session.filter(|id| !id.is_empty())
 }
 
@@ -79,50 +79,6 @@ impl App {
         });
     }
 
-    /// 这一处的人格和它的头像的版本；没有头像的是 `None`。
-    fn wanted(&self, place: Place) -> Option<(&str, &str)> {
-        let session = self.talk.transcript.persona.as_deref();
-        let persona = match place {
-            Place::Home => {
-                let under = match self.boxes.panel {
-                    Some(Panel::Pick {
-                        kind: Kind::Persona,
-                        selected,
-                    }) => Some(
-                        self.pick_list(Kind::Persona)
-                            .0
-                            .get(selected)
-                            .map_or("", |p| p.id.as_str()),
-                    ),
-                    _ => None,
-                };
-                home_persona(under, &self.talk.persona, session)
-            }
-            Place::Sidebar => sidebar_persona(session),
-        }?;
-        let row = self
-            .pick_list(Kind::Persona)
-            .0
-            .iter()
-            .find(|p| p.id == persona)?;
-        Some((persona, row.avatar.as_deref()?))
-    }
-
-    /// 这一处画什么。终端显示不了图的、要不到的当没有头像。
-    pub fn avatar(&self, place: Place) -> Avatar {
-        if !self.media.figures.borrow().shows() {
-            return Avatar::None;
-        }
-        let Some((_, version)) = self.wanted(place) else {
-            return Avatar::None;
-        };
-        match self.media.avatars.file(version) {
-            Some(path) => Avatar::File(path),
-            None if self.media.avatars.refused(version) => Avatar::None,
-            None => Avatar::Waiting,
-        }
-    }
-
     /// 挑一张还没存的头像去要（`tick`）。
     pub(super) fn ask_avatars(&mut self) {
         if !self.media.figures.borrow().shows() {
@@ -130,7 +86,7 @@ impl App {
         }
         let wanted: Vec<(String, String)> = [Place::Home, Place::Sidebar]
             .into_iter()
-            .filter_map(|place| self.wanted(place))
+            .filter_map(|place| self.seen().wanted(place))
             .map(|(p, v)| (p.to_string(), v.to_string()))
             .collect();
         let refs: Vec<(&str, &str)> = wanted

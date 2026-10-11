@@ -241,7 +241,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         return;
     }
     // 还在问 `ui.welcomed`：整屏空着，免得进引导前闪一下首页（「第一次打开的引导」第 1 条）。
-    if app.welcome_pending(std::time::Instant::now()) {
+    if app.seen().welcome_pending(std::time::Instant::now()) {
         return;
     }
     // 不在首页、够宽时右边分出侧边栏，别的都画在主列里（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。

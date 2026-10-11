@@ -25,7 +25,7 @@ enum Shown {
 
 /// 这一处有没有那一块：吉祥物的开关开着，或者有头像。
 pub fn slot_shown(app: &App, place: Place) -> bool {
-    mascot_on(app, place) || app.avatar(place) != Avatar::None
+    mascot_on(app, place) || app.seen().avatar(place) != Avatar::None
 }
 
 /// 吉祥物在这一处画不画（首页、侧边栏各一个开关）。
@@ -38,7 +38,7 @@ fn mascot_on(app: &App, place: Place) -> bool {
 
 /// 在 `rect`（吉祥物那么大的一块）里画：头像，或者吉祥物。`far` 照吉祥物的（在侧边栏）。
 pub fn draw(frame: &mut Frame, rect: Rect, app: &mut App, place: Place, far: bool) {
-    let shown = match app.avatar(place) {
+    let shown = match app.seen().avatar(place) {
         Avatar::File(path) => picture(frame, &app.media.figures, rect, &path),
         Avatar::Waiting => Shown::Waiting,
         Avatar::None => Shown::Unable,

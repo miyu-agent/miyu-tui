@@ -81,29 +81,6 @@ impl App {
         *slot = Some(rows);
     }
 
-    /// 一个会话在用量表里写什么：标题，没标题的照预览，会话列表里没有的（子代理、删掉的）写短编号（最后 8 位）。
-    pub fn usage_name(&self, session: &str) -> String {
-        let known = self
-            .talk
-            .sessions_seen
-            .iter()
-            .flatten()
-            .find(|s| s.session == session);
-        known
-            .and_then(|s| s.title.clone().or_else(|| s.preview.clone()))
-            .unwrap_or_else(|| {
-                let tail: String = session
-                    .chars()
-                    .rev()
-                    .take(8)
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect();
-                format!("#{tail}")
-            })
-    }
-
     /// 框开着时的按键。
     pub(super) fn usage_key(&mut self, (tab, scroll, money): (usize, usize, bool), key: KeyEvent) {
         let page = self.screen.panel_rows.len().max(1);

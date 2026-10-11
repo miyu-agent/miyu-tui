@@ -341,11 +341,11 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     }
     let total = app.talk.usage_total();
     // 工作目录照会话的（核心 9-7 上）；还没开会话、核心旧的照终端所在的。
-    let cwd = app.current_workspace();
+    let cwd = app.seen().current_workspace();
     let (mut info, id_row) = info_lines(&app.talk.transcript, &total, &app.config, inner, cwd);
     // 会话名下面、短编号后面写人格、预设，一样一行（「新会话：人格、工作区」第 3、6 条）。
     if let Some(row) = id_row {
-        for (n, label) in app.session_picks().into_iter().enumerate() {
+        for (n, label) in app.seen().session_picks().into_iter().enumerate() {
             info.insert(
                 row + 1 + n,
                 Line::styled(format!("  {label}"), theme::dim()),
@@ -353,7 +353,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
         }
     }
     // 「用量」那一段最后接花了多少（核心 8-15）：用量那一段在最后，接在后面就是。
-    info.extend(spent_lines(app.spent(), &app.config));
+    info.extend(spent_lines(app.seen().spent(), &app.config));
     let tall = u16::try_from(info.len()).unwrap_or(u16::MAX);
     let at = Rect::new(area.x + 1, top, inner, tall).intersection(area);
     // 写了字的行记下来，给侧边栏的选字用（第 7 条）。
