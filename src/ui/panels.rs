@@ -10,74 +10,78 @@ use super::{
     background, effort_list, help, languages, model_list, persona_list, session_list, spin_frame,
     usage,
 };
-use crate::app::App;
+use crate::app::Seen;
 
 /// 开着的框排成的行，最多 `max` 行。
 pub(super) fn content(
-    app: &App,
+    seen: &Seen,
     width: u16,
     now: Instant,
     max: usize,
 ) -> (Chrome, Vec<Line<'static>>, Vec<Option<usize>>) {
-    match app.boxes.panel {
+    match seen.boxes.panel {
         Some(crate::app::Panel::Help { scroll }) => {
-            let (chrome, lines) = help::lines(&app.config, width, scroll, max);
+            let (chrome, lines) = help::lines(seen.config, width, scroll, max);
             let map = vec![None; lines.len()];
             (chrome, lines, map)
         }
-        Some(crate::app::Panel::Models) => match &app.boxes.model_list {
+        Some(crate::app::Panel::Models) => match &seen.boxes.model_list {
             Some(list) => model_list::lines(
                 list,
-                app.talk.transcript.model_ref(),
-                &app.config,
+                seen.talk.transcript.model_ref(),
+                seen.config,
                 width,
                 max,
             ),
             None => Default::default(),
         },
-        Some(crate::app::Panel::Sessions) => match &app.boxes.session_list {
+        Some(crate::app::Panel::Sessions) => match &seen.boxes.session_list {
             Some(list) => session_list::lines(
                 list,
-                app.talk.main_session().as_deref(),
-                &app.cwd,
-                &app.config,
+                seen.talk.main_session().as_deref(),
+                seen.cwd,
+                seen.config,
                 width,
                 max,
-                spin_frame(app),
+                spin_frame(seen),
             ),
             None => Default::default(),
         },
         Some(crate::app::Panel::Effort { selected }) => effort_list::lines(
-            app.boxes.efforts.as_ref(),
+            seen.boxes.efforts.as_ref(),
             selected,
-            &app.config,
+            seen.config,
             width,
             max,
         ),
-        Some(crate::app::Panel::Language { selected }) => {
-            languages::lines(&app.config, &app.link.system_language, selected, width, max)
-        }
+        Some(crate::app::Panel::Language { selected }) => languages::lines(
+            seen.config,
+            &seen.link.system_language,
+            selected,
+            width,
+            max,
+        ),
         Some(crate::app::Panel::Usage { tab, scroll, money }) => {
-            let (chrome, lines) = usage::lines(app, (tab, scroll, money), width, max);
+            let (chrome, lines) = usage::lines(seen, (tab, scroll, money), width, max);
             let map = vec![None; lines.len()];
             (chrome, lines, map)
         }
         Some(crate::app::Panel::Pick { kind, selected }) => {
-            let (list, default) = app.seen().pick_list(kind);
+            let (list, default) = seen.pick_list(kind);
             persona_list::lines(
                 list,
                 default,
                 kind,
                 selected,
-                &app.config.text.persona_box,
+                &seen.config.text.persona_box,
                 width,
                 max,
             )
         }
         _ => background::lines(
-            app.boxes.panel,
-            &app.talk.board,
-            &app.config,
+            seen.boxes.panel,
+            &seen.talk.board,
+            seen.config,
             width,
             now,
             max,

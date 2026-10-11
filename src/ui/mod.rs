@@ -372,7 +372,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     // 后台面板排成的行（第 3 条）；帮助框（`/help`）这些框一样放在这个位置（`panels.rs`）。
     let (panel_chrome, panel_lines, panel_rows) =
-        panels::content(app, width, now, usize::from(inner));
+        panels::content(&app.seen(), width, now, usize::from(inner));
     let menu_shown = menu::rows(app.config.layout.menu_rows, inner);
     // 框里的几条，放得下框的加上上下两条边（`tui.md`「斜杠命令列表」第 3 条）。
     let items = if app.boxes.panel.is_some() {
@@ -442,15 +442,19 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         panel_chrome,
         panel_lines,
     );
-    app.screen.areas.button = section("footer", || footer::draw(frame, areas.footer, app));
+    app.screen.areas.button = section("footer", || {
+        footer::draw(frame, areas.footer, &app.seen(), &app.screen)
+    });
     // 不在首页才有正文可翻。
     app.screen.areas.bottom = if home {
         Rect::default()
     } else {
         // 只用正文那一边（有侧边栏时不碰它的竖线）。
-        bottom_button::draw(frame, app, main)
+        bottom_button::draw(frame, &app.seen(), &app.screen, main)
     };
-    section("agents", || agents::draw(frame, areas.agents, app));
+    section("agents", || {
+        agents::draw(frame, areas.agents, &app.seen(), &app.screen)
+    });
     section("sidebar", || sidebar::draw(frame, sidebar, app));
     // 提示最后画，浮在正文上面；底边紧贴输入框，在回答时紧贴运行状态行（`tui.md`「提示」）；开着框时贴着框的上边。
     let toast_bottom = if running {
@@ -470,7 +474,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 mod tests;
 
 /// 转圈转到第几帧：照界面起来以后过了多久，一帧 `timeline.spinner_ms`。
-fn spin_frame(app: &App) -> usize {
-    let spinner_ms = app.config.timeline.spinner_ms.max(1);
-    usize::try_from(app.screen.started.elapsed().as_millis() / u128::from(spinner_ms)).unwrap_or(0)
+fn spin_frame(seen: &crate::app::Seen) -> usize {
+    let spinner_ms = seen.config.timeline.spinner_ms.max(1);
+    usize::try_from(seen.started.elapsed().as_millis() / u128::from(spinner_ms)).unwrap_or(0)
 }

@@ -6,7 +6,7 @@ use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
 use super::{GAP, amounts, tokens};
-use crate::app::{App, UsageData};
+use crate::app::{Seen, UsageData};
 use crate::core::UsageRow;
 use crate::{meter, theme};
 
@@ -124,8 +124,8 @@ fn clip(spans: Vec<Span<'static>>, width: usize) -> Line<'static> {
 }
 
 /// 次数、token、金额、缺价那几格（每张表的后半截一样）。
-fn tail(app: &App, row: &UsageRow) -> Vec<Cell> {
-    let texts = &app.config.text.usage;
+fn tail(seen: &Seen, row: &UsageRow) -> Vec<Cell> {
+    let texts = &seen.config.text.usage;
     let unpriced = if row.bill.unpriced > 0 {
         texts
             .unpriced
@@ -136,19 +136,19 @@ fn tail(app: &App, row: &UsageRow) -> Vec<Cell> {
     vec![
         Cell::right(texts.requests.replace("{n}", &row.requests.to_string())),
         Cell::right(meter::short(row.tokens)),
-        Cell::left(amounts(app, &row.bill).unwrap_or_default()),
+        Cell::left(amounts(seen, &row.bill).unwrap_or_default()),
         Cell::dim(unpriced),
     ]
 }
 
 /// 按天的表：今天在最上，今天那一行标「今天」，没用的日子不列。
 pub(super) fn days(
-    app: &App,
+    seen: &Seen,
     data: &UsageData,
     rows: &[UsageRow],
     width: u16,
 ) -> Vec<Line<'static>> {
-    let texts = &app.config.text.usage;
+    let texts = &seen.config.text.usage;
     let today = data.today.to_string();
     let rows: Vec<Vec<Cell>> = rows
         .iter()
@@ -162,7 +162,7 @@ pub(super) fn days(
                 String::new()
             };
             let mut row = vec![Cell::left(day), Cell::dim(mark)];
-            row.extend(tail(app, r));
+            row.extend(tail(seen, r));
             row
         })
         .collect();
@@ -171,13 +171,13 @@ pub(super) fn days(
 
 /// 按模型：照 token 多少排，一个模型一行，名字后面接占比条和百分比；最下面一行用途占比。
 pub(super) fn models(
-    app: &App,
+    seen: &Seen,
     data: &UsageData,
     rows: &[UsageRow],
     width: u16,
 ) -> Vec<Line<'static>> {
     let all = tokens(rows).max(1);
-    let cells = usize::from(app.config.layout.usage.share_cells);
+    let cells = usize::from(seen.config.layout.usage.share_cells);
     let mut sorted: Vec<&UsageRow> = rows.iter().collect();
     sorted.sort_by_key(|r| std::cmp::Reverse(r.tokens));
     let table_rows: Vec<Vec<Cell>> = sorted
@@ -189,7 +189,7 @@ pub(super) fn models(
                 bar(share, cells),
                 Cell::right(percent(share)),
             ];
-            row.extend(tail(app, r));
+            row.extend(tail(seen, r));
             row
         })
         .collect();
@@ -198,21 +198,21 @@ pub(super) fn models(
         && !purposes.is_empty()
     {
         out.push(Line::default());
-        out.push(purpose_line(app, purposes, width));
+        out.push(purpose_line(seen, purposes, width));
     }
     out
 }
 
 /// 按会话：照 token 多少排，一个会话一行；标题照会话列表，没有的写短编号。
-pub(super) fn sessions(app: &App, rows: &[UsageRow], width: u16) -> Vec<Line<'static>> {
+pub(super) fn sessions(seen: &Seen, rows: &[UsageRow], width: u16) -> Vec<Line<'static>> {
     let mut sorted: Vec<&UsageRow> = rows.iter().collect();
     sorted.sort_by_key(|r| std::cmp::Reverse(r.tokens));
     let table_rows: Vec<Vec<Cell>> = sorted
         .iter()
         .map(|r| {
             let id = r.session.clone().unwrap_or_default();
-            let mut row = vec![Cell::left(app.seen().usage_name(&id))];
-            row.extend(tail(app, r));
+            let mut row = vec![Cell::left(seen.usage_name(&id))];
+            row.extend(tail(seen, r));
             row
         })
         .collect();
@@ -220,8 +220,8 @@ pub(super) fn sessions(app: &App, rows: &[UsageRow], width: u16) -> Vec<Line<'st
 }
 
 /// 用途占比一行：「主对话 91% · 起标题 2% · 回顾 1%」，照 token 多少排。
-fn purpose_line(app: &App, rows: &[UsageRow], width: u16) -> Line<'static> {
-    let texts = &app.config.text.usage;
+fn purpose_line(seen: &Seen, rows: &[UsageRow], width: u16) -> Line<'static> {
+    let texts = &seen.config.text.usage;
     let all = tokens(rows).max(1);
     let mut sorted: Vec<&UsageRow> = rows.iter().collect();
     sorted.sort_by_key(|r| std::cmp::Reverse(r.tokens));

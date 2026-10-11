@@ -6,7 +6,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::text::Span;
 
-use crate::app::App;
+use crate::app::{Screen, Seen};
 use crate::theme;
 
 /// 按钮在哪一格：输入框右边框外面空一格的那一格；外面没有两列空白的是 `None`。
@@ -16,21 +16,21 @@ pub fn place(frame: Rect, text: Rect, screen: Rect) -> Option<Rect> {
 }
 
 /// 不在底部时画，交回按钮在哪（不画的是空的）。
-pub fn draw(frame: &mut Frame, app: &App, screen: Rect) -> Rect {
-    let areas = &app.screen.areas;
-    let Some(at) = place(areas.frame, areas.text, screen).filter(|_| app.screen.view.top.is_some())
+pub fn draw(frame: &mut Frame, seen: &Seen, shown: &Screen, screen: Rect) -> Rect {
+    let areas = &shown.areas;
+    let Some(at) = place(areas.frame, areas.text, screen).filter(|_| shown.view.top.is_some())
     else {
         return Rect::default();
     };
-    let hovered = app.screen.pointer.is_some_and(|p| at.contains(p));
+    let hovered = shown.pointer.is_some_and(|p| at.contains(p));
     let style = if hovered {
         theme::hover()
-    } else if app.screen.view.rows.len() > app.screen.view.seen_end {
+    } else if shown.view.rows.len() > shown.view.seen_end {
         theme::accent()
     } else {
         theme::dim()
     };
-    let mark = &app.config.layout.bottom_mark;
+    let mark = &seen.config.layout.bottom_mark;
     frame.render_widget(Span::styled(mark.clone(), style), at);
     at
 }

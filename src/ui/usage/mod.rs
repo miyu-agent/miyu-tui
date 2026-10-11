@@ -15,7 +15,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::panel::Chrome;
 use crate::app::usage::Loaded;
-use crate::app::{App, UsageData};
+use crate::app::{Seen, UsageData};
 use crate::core::{Bill, UsageRow};
 use crate::{money, theme};
 
@@ -97,27 +97,27 @@ pub(super) const GAP: &str = "   ";
 
 /// 框和露出来的行：标签那一行、空一行，再从第 `scroll` 行起最多露到 `max` 行。
 pub fn lines(
-    app: &App,
+    seen: &Seen,
     (tab, scroll, by_money): (usize, usize, bool),
     width: u16,
     max: usize,
 ) -> (Chrome, Vec<Line<'static>>) {
-    let texts = &app.config.text.usage;
+    let texts = &seen.config.text.usage;
     let chrome = Chrome::new(&texts.title, Vec::new()).hint(&texts.hint);
-    let Some(data) = app.boxes.usage.as_ref() else {
+    let Some(data) = seen.boxes.usage.as_ref() else {
         return (chrome, Vec::new());
     };
     let total = match &data.total {
-        Some(Ok(rows)) => rows.first().and_then(|r| amounts(app, &r.bill)),
+        Some(Ok(rows)) => rows.first().and_then(|r| amounts(seen, &r.bill)),
         _ => None,
     };
     let mut out = vec![tabs(texts, tab, total, width), Line::default()];
     // 换页不改框的高度：照四页里最高的那一页留地方，矮的下面空着（2026-10-07 项目主人）。
     let tallest = (0..TABS)
-        .map(|page| body(app, data, (page, by_money), width).len())
+        .map(|page| body(seen, data, (page, by_money), width).len())
         .max()
         .unwrap_or(0);
-    let body = body(app, data, (tab, by_money), width);
+    let body = body(seen, data, (tab, by_money), width);
     let room = max.saturating_sub(out.len()).max(1);
     let start = scroll.min(body.len().saturating_sub(room));
     out.extend(body.into_iter().skip(start).take(room));
@@ -127,21 +127,21 @@ pub fn lines(
 }
 
 /// 那一页标签以下有几行：按键滚到头照它停。
-pub fn body_rows(app: &App, (tab, by_money): (usize, bool), width: u16) -> usize {
-    app.boxes
+pub fn body_rows(seen: &Seen, (tab, by_money): (usize, bool), width: u16) -> usize {
+    seen.boxes
         .usage
         .as_ref()
-        .map_or(0, |data| body(app, data, (tab, by_money), width).len())
+        .map_or(0, |data| body(seen, data, (tab, by_money), width).len())
 }
 
 /// 一页的内容：要的那一样没回来、拒了、空的先说；都有了交给那一页排。
 fn body(
-    app: &App,
+    seen: &Seen,
     data: &UsageData,
     (tab, by_money): (usize, bool),
     width: u16,
 ) -> Vec<Line<'static>> {
-    let texts = &app.config.text.usage;
+    let texts = &seen.config.text.usage;
     let primary: &Loaded = match tab {
         0 | 1 => &data.days,
         2 => &data.models,
@@ -159,10 +159,10 @@ fn body(
         Some(Ok(rows)) => rows,
     };
     match tab {
-        0 => overview::page(app, data, rows, by_money, width),
-        1 => charts::recent(app, data, rows, width),
-        2 => tables::models(app, data, rows, width),
-        _ => tables::sessions(app, rows, width),
+        0 => overview::page(seen, data, rows, by_money, width),
+        1 => charts::recent(seen, data, rows, width),
+        2 => tables::models(seen, data, rows, width),
+        _ => tables::sessions(seen, rows, width),
     }
 }
 
@@ -193,8 +193,8 @@ fn tabs(texts: &Texts, tab: usize, total: Option<String>, width: u16) -> Line<'s
 }
 
 /// 一份账的金额（`$0.42 + ¥1.30`）；一笔都没有的是 `None`。
-pub(super) fn amounts(app: &App, bill: &Bill) -> Option<String> {
-    money::amounts(bill, &app.link.currency, &app.config.layout.currencies)
+pub(super) fn amounts(seen: &Seen, bill: &Bill) -> Option<String> {
+    money::amounts(bill, &seen.link.currency, &seen.config.layout.currencies)
 }
 
 /// 一行行里一共多少 token。
