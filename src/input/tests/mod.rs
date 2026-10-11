@@ -255,6 +255,23 @@ fn word_jumps_and_word_delete() {
 }
 
 #[test]
+fn word_jumps_and_deletes_take_whole_characters() {
+    // review C6（2026-10-11）：按字符分词类，分解形式的 é（e 加 U+0301）、1️⃣ 的组合符号算成标点，光标停在一个字中间，
+    // Ctrl+W 删掉半个字。照字素簇分。
+    let word = "cafe\u{301}";
+    let mut e = typed(&format!("{word} ok"));
+    e.move_to(word.len(), false);
+    e.word_left(false);
+    assert_eq!(e.cursor(), 0);
+    e.word_right(false);
+    assert_eq!(e.cursor(), word.len());
+    assert_eq!(e.word_at(0), (0, word.len()));
+    let mut e = typed("x 1\u{fe0f}\u{20e3}");
+    e.delete_word();
+    assert_eq!(e.text(), "x ");
+}
+
+#[test]
 fn a_run_of_chinese_is_one_word() {
     let mut e = typed("中文，测试");
     e.delete_word();

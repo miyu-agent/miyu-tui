@@ -258,18 +258,18 @@ impl Editor {
 
     /// `pos` 所在的词的范围，给双击选词用：和 `pos` 处的字同一种的一整串（蓝图 `tui.md`「按键」Ctrl+←）。
     pub fn word_at(&self, pos: usize) -> (usize, usize) {
-        let Some(kind) = self.text[pos..].chars().next().map(kind) else {
+        let Some(kind) = self.text[pos..].graphemes(true).next().map(kind) else {
             return (pos, pos);
         };
         let start = self.text[..pos]
-            .char_indices()
+            .grapheme_indices(true)
             .rev()
-            .take_while(|(_, c)| self::kind(*c) == kind)
+            .take_while(|(_, g)| self::kind(g) == kind)
             .last()
             .map_or(pos, |(i, _)| i);
         let end = self.text[pos..]
-            .char_indices()
-            .find(|(_, c)| self::kind(*c) != kind)
+            .grapheme_indices(true)
+            .find(|(_, g)| self::kind(g) != kind)
             .map_or(self.text.len(), |(i, _)| pos + i);
         (start, end)
     }
@@ -284,12 +284,14 @@ impl Editor {
     /// 按词往右跳：先跳过空白，再跳过一个词，落在词尾。
     pub fn word_right(&mut self, extend: bool) {
         let rest = &self.text[self.cursor..];
-        let first = rest.char_indices().find(|(_, c)| kind(*c) != Kind::Space);
-        let end = first.map_or(rest.len(), |(at, c)| {
-            let k = kind(c);
+        let first = rest
+            .grapheme_indices(true)
+            .find(|(_, g)| kind(g) != Kind::Space);
+        let end = first.map_or(rest.len(), |(at, g)| {
+            let k = kind(g);
             rest[at..]
-                .char_indices()
-                .find(|(_, c)| kind(*c) != k)
+                .grapheme_indices(true)
+                .find(|(_, g)| kind(g) != k)
                 .map_or(rest.len(), |(i, _)| at + i)
         });
         let at = self.cursor + end;
@@ -315,16 +317,16 @@ impl Editor {
     /// `pos` 往左，跳过空白再跳过一个词，落在那个词的开头。
     fn word_start(&self, pos: usize) -> usize {
         let before = &self.text[..pos];
-        let mut chars = before
-            .char_indices()
+        let mut cells = before
+            .grapheme_indices(true)
             .rev()
-            .skip_while(|(_, c)| kind(*c) == Kind::Space);
-        let Some((mut start, c)) = chars.next() else {
+            .skip_while(|(_, g)| kind(g) == Kind::Space);
+        let Some((mut start, g)) = cells.next() else {
             return 0;
         };
-        let k = kind(c);
-        for (i, c) in chars {
-            if kind(c) != k {
+        let k = kind(g);
+        for (i, g) in cells {
+            if kind(g) != k {
                 break;
             }
             start = i;
@@ -413,8 +415,11 @@ enum Kind {
     Word,
 }
 
-/// 空白、标点（中英文的都算），其余（字母、数字、汉字）算词里的字。所以一串中文到空白或标点为止是一个词。
-fn kind(c: char) -> Kind {
+/// 空白、标点（中英文的都算），其余（字母、数字、汉字）算词里的字。所以一串中文到空白或标点为止是一个词。照一个字素簇
+/// 打头的那个字分：分解形式的 é、1️⃣ 后面的组合符号跟着它，不另算标点（review C6，2026-10-11：原来按字符分，光标停在
+/// 一个字中间，Ctrl+W 删掉半个字）。
+fn kind(cell: &str) -> Kind {
+    let c = cell.chars().next().unwrap_or(' ');
     if c.is_whitespace() {
         Kind::Space
     } else if c.is_alphanumeric() || c == '_' {
