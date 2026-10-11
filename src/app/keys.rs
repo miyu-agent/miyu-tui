@@ -27,7 +27,9 @@ impl App {
                         .iter()
                         .any(|e| e.queued && !e.hidden);
                     if !queued && let Some(back) = self.transcript.untouched() {
-                        self.takeback = Some(super::takeback::Takeback::Interrupting(back));
+                        let session = self.transcript.session.clone();
+                        self.takeback =
+                            Some(super::takeback::Takeback::Interrupting(session, back));
                     }
                     self.core.send(Command::Interrupt { send: true });
                 } else {
