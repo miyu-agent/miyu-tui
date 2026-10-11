@@ -66,6 +66,26 @@ pub enum Waiting {
     Welcomed,
 }
 
+impl Waiting {
+    /// 读东西的（列表、默认的、详情）：断线了忘掉、重连时再要；别的是动作（试、存、写），断线了照被拒办。
+    pub fn reads(&self) -> bool {
+        matches!(
+            self,
+            Self::Models
+                | Self::Detect
+                | Self::Catalog
+                | Self::AllProviders
+                | Self::Pools
+                | Self::PersonaDefault
+                | Self::PersonaGet(_)
+                | Self::PersonaRead(..)
+                | Self::Presets
+                | Self::PresetDefault
+                | Self::PresetGet(_)
+        )
+    }
+}
+
 /// 攒着要发的、等着回来的。
 #[derive(Debug, Default)]
 pub struct Asker {
@@ -102,9 +122,9 @@ impl Asker {
         self.waiting.values().any(|w| w == what)
     }
 
-    /// 断开了：等着的都不会回来了。
-    pub fn forget(&mut self) {
-        self.waiting.clear();
+    /// 断开了：等着的都不会回来了，交回它们（引导照被拒办动作、重新要读的，`link.rs`）。
+    pub fn forget(&mut self) -> Vec<Waiting> {
         self.queued.clear();
+        self.waiting.drain().map(|(_, waiting)| waiting).collect()
     }
 }

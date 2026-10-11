@@ -5,6 +5,7 @@
 pub mod asker;
 pub mod field;
 mod focus;
+mod link;
 pub mod look;
 pub mod model;
 pub mod motion;
@@ -278,6 +279,18 @@ impl Oobe {
         let Some(waiting) = self.asker.settle(tag) else {
             return false;
         };
+        self.apply(waiting, result, now, texts);
+        true
+    }
+
+    /// 交给等着它的那一步：写标记的记下成没成，接模型、人格、预设的归各自那一步；走到下一步、回上一步照它交回的。
+    fn apply(
+        &mut self,
+        waiting: Waiting,
+        result: Result<Value, Refusal>,
+        now: Instant,
+        texts: &Texts,
+    ) {
         let moved = match &waiting {
             Waiting::Icons => Move::Stay,
             Waiting::Welcomed => {
@@ -322,15 +335,6 @@ impl Oobe {
             self.badge = Some((name, now));
         }
         self.moved(moved, now);
-        true
-    }
-
-    /// 连上、断开。断开时等着的都不会回来了：在试、在存的退回去。
-    pub fn link(&mut self, online: bool) {
-        self.online = online;
-        if !online {
-            self.asker.forget();
-        }
     }
 
     /// 走完了：回车以后散开的动画播完、写标记的回应也回来了。交回写标记没成时核心的原话。

@@ -1,5 +1,6 @@
 //! 引导走到哪、按键、回应（「第一次打开的引导」）：拿假钟一步步走，查发给核心的请求和交给 App 办的。
 
+mod link;
 mod persona;
 mod preset;
 
@@ -162,7 +163,7 @@ fn offline_the_last_enter_still_leaves_and_says_it_was_not_recorded() {
     oobe.step = Step::Preset;
     oobe.moved(super::Move::Next, t0);
     oobe.done_at = t0.checked_sub(Duration::from_secs(60));
-    oobe.link(false);
+    oobe.offline("核心断开连接", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let leave = Duration::from_millis(oobe.look.done.leave_ms);
     assert!(matches!(oobe.closing(t0 + leave, leave), Some(Some(_))));
