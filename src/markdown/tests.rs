@@ -28,17 +28,19 @@ fn lines(text: &str, width: u16) -> Vec<String> {
 
 #[test]
 fn headings_drop_their_hashes_and_blocks_are_spaced() {
-    // 不写 `#`；一级标题加下划线，别的级别一个样（`tui.md`「她的回答：Markdown」第 3 条）。
+    // 不写 `#`；一级标题加下划线，别的级别一个样（`tui.md`「她的回答：Markdown」第 3 条）。只加粗、不上颜色，和正文同色
+    // （2026-10-12 项目主人：原来是标题色）。
+    use ratatui::style::{Modifier, Style};
     assert_eq!(lines("# 标题\n正文", 30), vec!["标题", "", "正文"]);
     assert_eq!(lines("### 小小节", 30), vec!["小小节"]);
     let top = &draw("# 标题", 30)[0].folded.spans[0];
     assert_eq!(
         top.style,
-        theme::md_heading().add_modifier(ratatui::style::Modifier::UNDERLINED)
+        Style::new().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
     );
     let second = &draw("## 小节", 30)[0].folded.spans[0];
     let third = &draw("#### 小小节", 30)[0].folded.spans[0];
-    assert_eq!(second.style, theme::md_heading());
+    assert_eq!(second.style, Style::new().add_modifier(Modifier::BOLD));
     assert_eq!(third.style, second.style, "二级以下一个样");
 }
 

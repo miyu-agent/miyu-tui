@@ -113,7 +113,7 @@ pub struct Palette {
     pub warn: Tone,
     /// 复制成了的提示框。
     pub good: Tone,
-    /// Markdown 的标题。
+    /// 配置页弹窗里分组的标题（回答里 Markdown 的标题不上颜色，2026-10-12 起不用它）。
     pub md_heading: Tone,
     /// 粗体。
     pub md_bold: Tone,
