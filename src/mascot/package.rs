@@ -91,6 +91,13 @@ fn check(look: &Look) -> Result<(), String> {
     if look.ramp.chars().count() < 2 {
         return Err("`ramp` needs at least two characters".into());
     }
+    let marks = look
+        .ramp
+        .chars()
+        .chain([look.face.eye_mark, look.face.line_mark]);
+    if marks.into_iter().any(|c| !drawable(c)) {
+        return Err("`ramp`, `eye_mark` and `line_mark` take printable one-cell characters".into());
+    }
     let numbers = look
         .shapes
         .iter()
@@ -108,6 +115,11 @@ fn check(look: &Look) -> Result<(), String> {
         return Err("`radii` must be positive".into());
     }
     Ok(())
+}
+
+/// 画进格子的字：不能是控制字符，要正好占一格。这几样经 `set_char` 直接进画面缓冲，画面库不替它过滤（review A3）。
+pub fn drawable(c: char) -> bool {
+    !c.is_control() && unicode_width::UnicodeWidthChar::width(c) == Some(1)
 }
 
 #[cfg(test)]
