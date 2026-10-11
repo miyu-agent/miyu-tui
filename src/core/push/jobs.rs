@@ -98,9 +98,8 @@ pub(super) fn effects(body: &Value, out: &mut Vec<Push>) {
             Some("job.started") => out.push(Push::JobStarted(JobStart {
                 call_id: call_id.to_string(),
                 job: text(&effect["job"]),
-                // 派子代理的工具 2026-10-01 从 `agent` 改名 `subagent`，旧会话里冻着旧名：两个都认。
-                // 只认新名字（2026-10-01 项目主人：旧名 `agent` 不留兼容）。
-                agent: effect["what"] == "subagent",
+                // 任务的种类照协议是 `agent`、`command`：10-01 改名 `subagent` 的是工具，不是这一格（review，2026-10-11）。
+                agent: effect["what"] == "agent",
                 title: text(&effect["title"]),
                 session: effect["session"].as_str().map(str::to_string),
                 foreground: effect["foreground"] == true,
@@ -118,7 +117,7 @@ impl JobStart {
         JobStart {
             call_id: String::new(),
             job: text(&item["job"]),
-            agent: item["what"] == "subagent",
+            agent: item["what"] == "agent",
             title: text(&item["title"]),
             session: item["session"].as_str().map(str::to_string),
             foreground: item["foreground"] == true,
