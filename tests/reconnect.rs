@@ -77,3 +77,36 @@ fn what_the_core_wrote_while_reconnecting_is_caught_up() {
     tui.wait_for("核心重启时已停止");
     assert!(!tui.shows("1 个后台命令"), "{}", tui.lines().join("\n"));
 }
+
+/// 切会话、新会话的历史还在读的时候（review B1）：回车不发，字留在输入框，弹「正在切换会话」；这时断了线，重连以后
+/// 照样换上来。原来回车的话画进原来那个、发给了新的；断了线补发永远不结束，一直停在原来那个会话。
+#[test]
+fn a_switch_cut_off_by_the_core_going_away_lands_after_reconnecting() {
+    let home = Home::new(Script::new([
+        Play::Says("第 1 号的回答。"),
+        Play::Says("第 2 号的回答。"),
+    ]));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("第 1 号的话");
+    tui.wait_for("第 1 号的回答。");
+    tui.say("/new");
+    tui.pump(std::time::Duration::from_millis(200));
+    tui.say("第 2 号的话");
+    tui.wait_for("第 2 号的回答。");
+    tui.say("/sessions");
+    tui.wait_for("2 个");
+    tui.key(b"\x1b[B");
+    // 冻住核心再选：要第 1 号最新一页的请求停在路上。
+    home.freeze_core();
+    tui.key(b"\r");
+    tui.pump(std::time::Duration::from_millis(300));
+    tui.say("这时候说的");
+    tui.wait_for("正在切换会话");
+    assert!(tui.input().contains("这时候说的"), "{}", tui.input());
+    home.stop_core();
+    tui.wait_for(DOWN);
+    home.restart_core();
+    tui.wait_for("第 1 号的回答。");
+    assert!(!tui.shows("第 2 号的回答。"), "{}", tui.lines().join("\n"));
+}

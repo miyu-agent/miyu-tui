@@ -14,6 +14,18 @@ impl App {
             self.hint(note, false);
             return false;
         }
+        !self.switching()
+    }
+
+    /// 切会话还没换上来（新会话的历史还在读，通常不到一秒）：命令已经对着新会话，看着的还是原来那个，对着会话的命令
+    /// 这一下不做，字留在输入框，弹「正在切换会话」（review B1，2026-10-11：原来回车的话画进原来那个、发给了新的）。
+    /// 交回是不是在切。
+    pub(super) fn switching(&mut self) -> bool {
+        if self.opening.is_none() {
+            return false;
+        }
+        let note = self.config.text.switching.clone();
+        self.hint(note, false);
         true
     }
 
