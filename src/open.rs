@@ -73,10 +73,12 @@ fn opener(url: &str) -> Command {
     c
 }
 
+/// Windows：不经过 `cmd`（review，2026-10-11：原来 `cmd /C start "" 地址`，Rust 不给 `&` 加引号，地址里的 `&` 被 cmd 当成
+/// 命令分隔，既截断地址，也能跑后面的命令）。交给系统的协议处理程序，地址整个是一个参数。
 #[cfg(windows)]
 fn opener(url: &str) -> Command {
-    let mut c = Command::new("cmd");
-    c.args(["/C", "start", "", url]);
+    let mut c = Command::new("rundll32.exe");
+    c.args(["url.dll,FileProtocolHandler", url]);
     c
 }
 
@@ -90,6 +92,15 @@ fn opener(url: &str) -> Command {
 #[cfg(test)]
 mod tests {
     use super::open;
+
+    #[cfg(windows)]
+    #[test]
+    fn an_ampersand_in_a_link_is_not_a_command_separator() {
+        let url = "https://x.test/?a=1&calc";
+        let c = super::opener(url);
+        assert_ne!(c.get_program(), "cmd", "不经过 cmd");
+        assert!(c.get_args().any(|a| a == url), "地址整个是一个参数");
+    }
 
     #[test]
     fn other_schemes_are_refused() {
