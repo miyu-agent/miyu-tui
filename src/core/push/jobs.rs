@@ -143,9 +143,12 @@ pub(super) fn reported(body: &Value) -> Push {
     })
 }
 
-/// `message.user`：这个界面发的交回序号，别处来的交回谁发的、说了什么。`mine` 照 `cause` 认。
+/// `message.user`：这个界面发的交回序号，长期目标开一轮的交回第几轮，别处来的交回谁发的、说了什么。`mine` 照 `cause` 认。
 pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
     let seq = event["seq"].as_u64()?;
+    if let Some(round) = super::goal::round(event, seq) {
+        return Some(round);
+    }
     let by = &event["by"];
     if by["kind"] == "person" && event["cause"].as_str().is_some_and(mine) {
         return Some(Push::UserMessage(seq));

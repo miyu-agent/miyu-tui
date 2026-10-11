@@ -193,6 +193,12 @@
     "removed": "已清除标题",
     "too_long": "标题最多 {max} 个字"
   },
+  "goal": {
+    "mark": "● ",
+    "round": "长期目标 · 第 {round} 轮",
+    "some_round": "长期目标",
+    "none": "无长期目标"
+  },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {
     "title": "命令",

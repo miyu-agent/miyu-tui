@@ -11,6 +11,7 @@ use super::kinds::{EndReason, Level, ToolStatus};
 
 mod asking;
 mod called;
+mod goal;
 mod jobs;
 
 pub use asking::Asking;
@@ -126,6 +127,14 @@ pub enum Push {
     UserMessage(u64),
     /// 不是这个界面发的一句落了盘：别的 harness、子代理的留言、主会话的交代、同一个人在别处说的（蓝图「别处来的话」）。
     Foreign(Foreign),
+    /// 长期目标开一轮的那一句落了盘（`message.user`，模块 `goal` 发的；蓝图「长期目标」第 4 条）：它的序号，第几轮（认不出
+    /// 的没有）。
+    GoalRound {
+        /// 那一句的序号：开轮时照它归到那一轮。
+        seq: u64,
+        /// 第几轮。
+        round: Option<u32>,
+    },
     /// 派出去一个后台任务（工具结果 `effects` 里的 `job.started`）。
     JobStarted(JobStart),
     /// 按页读时页里带的、派出去在切点前的任务（核心 9-6 再补）：只记进任务表，不另订阅子代理的会话。

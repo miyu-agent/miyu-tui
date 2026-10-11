@@ -147,6 +147,26 @@ fn a_compacted_line_has_a_green_dot_that_is_not_copied() {
 }
 
 #[test]
+fn a_round_the_goal_opened_is_a_dim_line_with_a_dim_dot() {
+    // 2026-10-12 项目主人选的「暗色一行」，问了一句「暗色圆点？」：圆点也暗，不像压好了那一行是绿的（蓝图「长期目标」第 4 条）。
+    use crate::transcript::{Kind, Transcript};
+    use crate::ui::test_support::Fixture;
+    let f = Fixture::new();
+    let mut t = Transcript::default();
+    t.note(Kind::Goal, "长期目标 · 第 3 轮".into());
+    t.entries[0].mark = Some("● ".into());
+    let rows = super::entry_rows(0, &t.entries[0], &f.ctx());
+    let spans = &rows[0].line.spans;
+    let dot = spans.iter().find(|s| s.content == "● ").unwrap();
+    assert_eq!(dot.style, theme::dim(), "圆点暗");
+    let words = spans
+        .iter()
+        .find(|s| s.content.starts_with("长期"))
+        .unwrap();
+    assert_eq!(words.style, theme::dim(), "字暗");
+}
+
+#[test]
 fn a_recap_leads_with_a_dim_reference_mark_and_folds_under_its_words() {
     // 2026-10-01 项目主人：回顾不要行首的粗竖线，换成暗色的 `※`。
     use crate::transcript::{Kind, Transcript};

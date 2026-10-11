@@ -193,6 +193,12 @@
     "removed": "タイトルを外しました",
     "too_long": "タイトルは {max} 文字まで"
   },
+  "goal": {
+    "mark": "● ",
+    "round": "長期目標 · {round} ラウンド目",
+    "some_round": "長期目標",
+    "none": "長期目標はありません"
+  },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {
     "title": "コマンド",

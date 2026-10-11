@@ -19,6 +19,7 @@ use localize::localized;
 
 mod attach;
 mod figures;
+mod goal;
 mod icons;
 mod layout;
 mod localize;
@@ -33,6 +34,7 @@ mod words;
 
 pub use attach::{AttachLook, AttachTexts};
 pub use figures::{FigureLook, Room};
+pub use goal::GoalTexts;
 pub use icons::Icons;
 pub use layout::{Bar, Dots, Layout, Shimmer, TodoMarks};
 pub use mention::{MentionLook, MentionTexts};
@@ -174,6 +176,8 @@ pub struct Texts {
     pub models: ModelTexts,
     /// 改名的提示。
     pub rename: RenameTexts,
+    /// 长期目标的字（蓝图「长期目标」）。
+    pub goal: GoalTexts,
     /// 输入历史列表上的字（蓝图「输入历史列表」）。
     pub history: HistoryTexts,
     /// 斜杠命令列表上的字（蓝图「斜杠命令列表」）。

@@ -14,6 +14,7 @@ mod entry;
 mod failure;
 mod foreign;
 mod fresh;
+mod goal;
 mod gone;
 mod jobs;
 mod model;
@@ -351,6 +352,7 @@ impl Transcript {
                 }
             }
             // 别处来的话、后台任务：界面照会话、任务表先办了（`app/sessions.rs`），正文不直接收。
+            Push::GoalRound { seq, round } => self.goal_round(seq, round, &texts.goal),
             Push::Foreign(_)
             | Push::JobStarted(_)
             | Push::JobEarlier(_)

@@ -15,6 +15,7 @@ mod done;
 mod failure;
 mod folds;
 mod foreign;
+mod goal;
 mod level;
 mod link;
 mod model;
