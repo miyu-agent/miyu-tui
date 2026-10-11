@@ -13,6 +13,8 @@ mod compaction;
 mod entry;
 mod failure;
 mod foreign;
+mod fresh;
+mod gone;
 mod jobs;
 mod model;
 mod pages;
@@ -84,6 +86,8 @@ pub struct Transcript {
     pub link: Link,
     /// 会话编号：连上以后才有。
     pub session: Option<String>,
+    /// 会话不存在了（review B3）：下一句话先换一份空的正文，再开新会话（`gone.rs`）。
+    pub gone: bool,
     /// 会话名称：核心起了名字（`session.meta_changed`）才有。
     pub title: Option<String>,
     /// 实际的权限级别。新会话从工作区、不只读开始（`protocol.md` `session.create` 第 2 条）。
@@ -140,50 +144,6 @@ pub struct Transcript {
     pub workspace: Option<String>,
     /// 接上时已经说过她在哪干活了（`workspace.rs`）。
     workspace_told: bool,
-}
-
-impl Default for Transcript {
-    fn default() -> Self {
-        Self {
-            entries: Vec::new(),
-            blocks: HashMap::new(),
-            unnamed: Vec::new(),
-            calls: HashMap::new(),
-            running: None,
-            clock: clock::Clock::default(),
-            model: None,
-            link: Link::Connecting,
-            session: None,
-            title: None,
-            level: Level::Workspace,
-            total: Usage::default(),
-            bill: Bill::default(),
-            persona: None,
-            preset: None,
-            turn_usage: Usage::default(),
-            turn_level: Level::Workspace,
-            context: 0,
-            cache: CacheWatch::default(),
-            limits: Limits::default(),
-            compacting: None,
-            manual_compaction: false,
-            spoke: false,
-            manual: false,
-            cleared: false,
-            speed: None,
-            retry: None,
-            failure: None,
-            models: model::ModelWatch::default(),
-            turn: None,
-            reverted: Vec::new(),
-            next_id: 0,
-            older: pages::Older::default(),
-            workspace: None,
-            workspace_told: false,
-            returned: Vec::new(),
-            opened_by: Vec::new(),
-        }
-    }
 }
 
 impl Transcript {
@@ -244,6 +204,7 @@ impl Transcript {
             | Update::Human(_)
             | Update::Older { .. }
             | Update::Workspace { .. }
+            | Update::SessionGone(_)
             | Update::DirChecked(_) => {}
             Update::CoolingUntil(until) => self.cooling_until(until),
             Update::CurrentModel(current) => self.current_model(current),

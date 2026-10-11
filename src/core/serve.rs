@@ -1,7 +1,7 @@
 //! 在一条连接上收发（蓝图 `tui.md`「连核心」「后台命令、子代理和侧边栏」「切进子会话」）：命令对着主会话，或者切进了
 //! 的子会话；推来的照会话分，主会话的直接交给界面，另外订阅着的包成 [`Update::Elsewhere`]。
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::io;
 
 use serde_json::json;
@@ -9,55 +9,13 @@ use tokio::sync::mpsc;
 
 use super::awaiting::Awaiting;
 use super::connect::{create, subscribe};
-use super::replay::Replay;
+use super::link::Link;
 use super::request::request;
 use super::rpc::Rpc;
 use super::sessions;
 use super::spawn::Served;
-use super::{Command, Level, Update, page, upload};
+use super::{Command, Update, page, upload};
 use super::{asides, config};
-
-/// 跨重连都记着的：主会话、会话还没开时切的权限级别、另外订阅着的会话、命令对着哪个会话。
-#[derive(Debug, Default)]
-pub struct Link {
-    /// 主会话：界面开的那个。`/new` 以后、说第一句话以前没有。
-    pub main: Option<String>,
-    /// 会话还没开时切的权限级别：开会话时补发（「权限级别」第 2 条）。
-    pub pending: Option<Level>,
-    /// 另外订阅着的：子代理的会话、`/new` 以后还有任务在跑的旧会话。
-    pub watched: BTreeSet<String>,
-    /// 切进了哪个子会话：命令对着它；没切是 `None`，对着主会话（「切进子会话」第 3 条）。
-    pub viewing: Option<String>,
-    /// 每个会话读到的最后一个序号：同一个序号只办一次，掉了队照它补（「会话列表」第 6、7 条）。
-    pub seen: HashMap<String, u64>,
-    /// 正在补发的会话：补发来的照 [`Replay`] 读，回应到了算补完。
-    pub replays: HashMap<String, Replay>,
-    /// 按页读的会话读到哪了：再往前要哪一页（核心 9-6 下）。
-    pub pages: HashMap<String, page::Marks>,
-    /// 还没开会话时在 `/model` 选的：开会话时带上（「配置与模型」第 1 条）。
-    pub pending_model: Option<String>,
-    /// 新会话的人格框选的：开会话时带上，造成了才清（人格写错被拒的，下一次照样带，不悄悄换默认）。
-    pub pending_persona: Option<String>,
-    /// 新会话的预设框选的：和 `pending_persona` 一样。
-    pub pending_preset: Option<String>,
-    /// 还没开会话时 `/workspace` 换的、验过的目录：开会话时带上（核心 9-7 下）。
-    pub pending_cwd: Option<String>,
-    /// 连上以后要带 `after` 订阅主会话（启动时进最近的那个，「会话列表」第 8 条）。
-    pub replay_main: bool,
-}
-
-impl Link {
-    /// 命令对着的会话。
-    fn target(&self) -> Option<String> {
-        self.viewing.clone().or_else(|| self.main.clone())
-    }
-
-    /// 不再订阅 `session`：读到哪了都不记。
-    fn forget(&mut self, session: &str) {
-        self.seen.remove(session);
-        self.pages.remove(session);
-    }
-}
 
 /// 在一条连接上收发，直到界面关了或者连接断了。
 pub(super) async fn serve(
@@ -77,18 +35,26 @@ pub(super) async fn serve(
         Ok(id) => awaiting.insert(id, Awaiting::SessionsStream),
         Err(_) => return Served::Lost,
     };
-    // 启动时进最近的那个会话：连上以后先读最新一页，再带 `after` 订阅（「会话列表」第 5、8 条）。
-    if std::mem::take(&mut link.replay_main)
-        && let Some(main) = link.main.clone()
-    {
-        match page::latest(rpc, link, &main).await {
-            Ok(id) => awaiting.insert(id, Awaiting::Page(main)),
+    // 主会话：启动时进最近的那个、`--resume` 的，最新一页还没读到就断了的，先读最新一页，再带 `after` 订阅（「会话列表」
+    // 第 5、8 条）；重连的带 `after` 接着补，断开期间错过的补回来（「连核心」第 7 条，review B7）。
+    if let Some(main) = link.main.clone() {
+        let sent = if link.reread_main(&main) {
+            page::latest(rpc, link, &main)
+                .await
+                .map(|id| (id, Awaiting::Page(main)))
+        } else {
+            super::switch::replay(rpc, link, &main)
+                .await
+                .map(|id| (id, Awaiting::Rejoin(main)))
+        };
+        match sent {
+            Ok((id, kind)) => awaiting.insert(id, kind),
             Err(_) => return Served::Lost,
         };
     }
-    // 重连以后，另外订阅着的照旧订阅上（「连核心」第 7 条）。
+    // 重连以后，另外订阅着的照旧订阅上，从读到的那一条往后补（「连核心」第 7 条）。
     for session in link.watched.clone() {
-        match watch(rpc, &session).await {
+        match watch(rpc, &session, link.seen.get(&session).copied()).await {
             Ok(id) => awaiting.insert(id, Awaiting::Watch(session)),
             Err(_) => return Served::Lost,
         };
@@ -136,7 +102,7 @@ pub(super) async fn serve(
                     Command::Watch(session) => {
                         let fresh = Some(&session) != link.main.as_ref() && link.watched.insert(session.clone());
                         if fresh {
-                            match watch(rpc, &session).await {
+                            match watch(rpc, &session, None).await {
                                 Ok(id) => awaiting.insert(id, Awaiting::Watch(session)),
                                 Err(_) => return Served::Lost,
                             };
@@ -395,9 +361,12 @@ async fn fresh(
     Ok((id, joined))
 }
 
-/// 订阅另一个会话，不等回应（回应里的限额由 `take` 交给界面）。
-async fn watch(rpc: &mut Rpc, session: &str) -> io::Result<String> {
-    let params = json!({"session": session, "stream": "events"});
+/// 订阅另一个会话，不等回应（回应里的限额由 `take` 交给界面）。重连时带 `after`：从读到的那一条往后补。
+async fn watch(rpc: &mut Rpc, session: &str, after: Option<u64>) -> io::Result<String> {
+    let mut params = json!({"session": session, "stream": "events"});
+    if let Some(after) = after {
+        params["after"] = json!(after);
+    }
     rpc.send("subscribe", params).await
 }
 
