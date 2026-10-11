@@ -88,7 +88,10 @@ impl App {
     /// 停掉一条在跑的后台任务：交给核心（`job.stop`），结束的回报来了再出通知。
     fn stop_job(&mut self, id: u64) {
         if let Some(job) = super::sessions::job_of(&self.board, id).filter(|j| j.running()) {
-            self.core.send(Command::Stop(job.job.clone()));
+            self.core.send(Command::Stop {
+                session: None,
+                job: job.job.clone(),
+            });
         }
     }
 
@@ -171,7 +174,7 @@ impl App {
                 self.enter_agent(i - 1);
                 focus
             }
-            // 选中的子代理按 x：停掉它（主会话那一行、报完了的不管）。
+            // 选中的子代理按 x：停掉它（主会话那一行、报完了的不管）。列的是主会话的任务表，照主会话停。
             (Focus::Agent(i), KeyCode::Char('x')) if i > 0 => {
                 let listed = self.listed_agents();
                 let job = listed
@@ -179,7 +182,8 @@ impl App {
                     .filter(|j| j.running())
                     .map(|j| j.job.clone());
                 if let Some(job) = job {
-                    self.core.send(Command::Stop(job));
+                    let session = self.main_session();
+                    self.core.send(Command::Stop { session, job });
                 }
                 focus
             }

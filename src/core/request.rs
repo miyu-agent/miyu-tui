@@ -58,7 +58,13 @@ pub(super) fn request(
             "session.set_meta",
             json!({"session": session, "title": title}),
         ),
-        Command::Stop(job) => ("job.stop", json!({"session": session, "job": job})),
+        Command::Stop {
+            session: owner,
+            job,
+        } => (
+            "job.stop",
+            json!({"session": owner.as_deref().unwrap_or(session), "job": job}),
+        ),
         // 附件（换了的）在外面传好了再接上（`mod.rs` 的 `serve`）。
         Command::Redo { text, .. } => {
             let mut params = json!({"session": session});
