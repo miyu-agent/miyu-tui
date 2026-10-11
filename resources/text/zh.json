@@ -162,6 +162,7 @@
     "path_forbidden": "该目录不能用作工作区",
     "owner_only": "仅终端管理员可用",
     "session_not_found": "会话不存在",
+    "session_sealed": "会话已封存",
     "nothing_to_rename": "会话尚未创建，无法重命名",
     "nothing_to_recap": "没有可回顾的内容",
     "recap_failed": "生成回顾失败",

@@ -386,6 +386,16 @@ mod tests {
     }
 
     #[test]
+    fn a_sealed_session_says_so_in_a_hint() {
+        // 核心 C-8 下（2026-10-11）：分叉出来的会话跑满轮数以后封存，往它发话拒 `session_sealed`。
+        let text = Config::builtin().unwrap().text;
+        assert_eq!(
+            text.refusal_hints.get("session_sealed").map(String::as_str),
+            Some("会话已封存")
+        );
+    }
+
+    #[test]
     fn nothing_to_compact_is_a_short_hint_not_a_line() {
         // 2026-09-30 项目主人：没必要在正文里打一行，给个简短的通知就行。
         let text = Config::builtin().unwrap().text;
