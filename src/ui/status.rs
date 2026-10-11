@@ -22,12 +22,14 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     let now = Instant::now();
     let beat = app.transcript.beat();
     let word = app
+        .mascot
         .pulse
         .word(start, beat, now, &app.config.pulse)
         .to_string();
     let layout = &app.config.layout;
     // 换了词，亮光从头扫（`tui.md`「运行状态行和排队的消息」第 1 条）。
     let t = app
+        .mascot
         .pulse
         .shown()
         .map_or(0.0, |s| now.saturating_duration_since(s).as_secs_f64());

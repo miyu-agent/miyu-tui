@@ -70,13 +70,7 @@ impl App {
             menu: Menu::default(),
             mention,
             history: History::default(),
-            // 挑词的随机数照启动的时刻起头，每次启动不一样。
-            pulse: Pulse::new(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map_or(1, |d| d.as_nanos() as u64),
-            ),
-            gaze: Gaze::default(),
+            mascot: super::mascot::MascotState::new(),
             side_select: SideSelect::default(),
             cwd: std::env::current_dir()
                 .map(|d| crate::local::home_short(&d.display().to_string()))
@@ -109,19 +103,7 @@ impl App {
             panel_rows: Vec::new(),
             focus: Focus::Input,
             agents_hover: None,
-            perch: Perch::default(),
             takeback: None,
-            mouth: crate::mascot::Mouth::new(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map_or(1, |d| d.as_nanos() as u64 >> 5),
-            ),
-            attention: crate::mascot::Attention::default(),
-            idle: Idle::new(
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map_or(1, |d| d.as_nanos() as u64),
-            ),
             pointer: None,
             notice: None,
             areas: Areas::default(),

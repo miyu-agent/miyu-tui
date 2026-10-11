@@ -22,13 +22,13 @@ pub fn draw(frame: &mut Frame, rect: Rect, app: &mut App, far: bool) {
     );
     // 鼠标在动就看鼠标；停着、框里有字看输入光标（第 6 条）。
     let settle = Duration::from_millis(look.gaze.pointer_settle_ms);
-    let target = if app.input.editor.is_empty() || app.attention.on_pointer(now, settle) {
+    let target = if app.input.editor.is_empty() || app.mascot.attention.on_pointer(now, settle) {
         app.pointer.or_else(|| app.input.cursor_position())
     } else {
         app.input.cursor_position()
     };
     // 没人动时一阵一阵地摇头，代替看鼠标，摇得比跟光标慢（第 8 条）。
-    let idling = app.idle.pose(now, &look.idle);
+    let idling = app.mascot.idle.pose(now, &look.idle);
     let half_life = if idling.glance.is_some() {
         look.idle.glance_half_life_ms
     } else {
@@ -46,14 +46,17 @@ pub fn draw(frame: &mut Frame, rect: Rect, app: &mut App, far: bool) {
             mascot::toward(face, at, look.cell_aspect, &gaze)
         }),
     };
-    app.gaze.aim(aim);
-    app.gaze.step(now, Duration::from_millis(half_life));
-    let (yaw, pitch) = app.gaze.angles();
+    app.mascot.gaze.aim(aim);
+    app.mascot.gaze.step(now, Duration::from_millis(half_life));
+    let (yaw, pitch) = app.mascot.gaze.angles();
     // 嘴：打哈欠（闭着眼）、被顶上去张一下、走下来张着（第 9 条）。
-    let quiet = app.idle.quiet_since();
-    let mouth = app.mouth.step(now, &look.mouth, quiet, look.idle.after_ms);
+    let quiet = app.mascot.idle.quiet_since();
+    let mouth = app
+        .mascot
+        .mouth
+        .step(now, &look.mouth, quiet, look.idle.after_ms);
     let pose = mascot::Pose {
-        blink: idling.blink || app.mouth.yawning(now),
+        blink: idling.blink || app.mascot.mouth.yawning(now),
         ear: idling.ear,
         mouth,
         ..mascot::Pose::facing(yaw, pitch)
