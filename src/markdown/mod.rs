@@ -13,6 +13,7 @@ mod kit;
 mod layout;
 mod links;
 mod math;
+mod pieces;
 mod stack;
 mod table;
 
@@ -260,7 +261,7 @@ impl Renderer<'_> {
                     row: Vec::new(),
                 });
             }
-            Tag::TableCell => self.pieces.clear(),
+            Tag::TableCell => drop(self.take_pieces()),
             _ => {}
         }
     }
@@ -293,7 +294,7 @@ impl Renderer<'_> {
             TagEnd::Link => self.end_link(false),
             TagEnd::Image => self.end_link(true),
             TagEnd::TableCell => {
-                let cell = std::mem::take(&mut self.pieces);
+                let cell = self.take_pieces();
                 if let Some(t) = &mut self.table {
                     t.row.push(cell);
                 }
@@ -326,41 +327,6 @@ impl Renderer<'_> {
                 }
             }
             _ => {}
-        }
-    }
-
-    /// 链接收完：标题成链；标题和地址不一样的，后面跟 ` <地址>`。图片写成 `[图片: 说明] <地址>`。
-    fn end_link(&mut self, image: bool) {
-        self.styles.pop();
-        let Some((url, start)) = self.link_starts.pop() else {
-            return;
-        };
-        let label: String = self.pieces[start..]
-            .iter()
-            .map(|p| p.text.as_str())
-            .collect();
-        for piece in &mut self.pieces[start..] {
-            piece.link = Some(url.clone());
-        }
-        if image {
-            // 没写说明的写文件名（2026-09-30 项目主人：原来方括号里空着）。
-            if label.trim_end() == self.labels.image.trim_end() {
-                let name = links::file_name(&url);
-                self.pieces
-                    .push(Piece::linked(name, theme::md_image(), &url));
-            }
-            self.pieces
-                .push(Piece::linked("]", theme::md_image(), &url));
-            self.image(&url);
-        }
-        if image || label.trim() != url {
-            self.pieces.extend(links::address(&url));
-        } else {
-            // 只有地址的（`<地址>`）用地址色，和 `<地址>` 里那一截一个样（蓝图第 9 条）。
-            let style = self.style().patch(theme::md_url());
-            for piece in &mut self.pieces[start..] {
-                piece.style = style;
-            }
         }
     }
 
@@ -411,25 +377,11 @@ impl Renderer<'_> {
         self.styles.iter().fold(base, |s, next| s.patch(*next))
     }
 
-    /// 一段话里换行。这一行里有本机的图的，先把这一行排出来、紧接着画它的图，再接着排这一段下面的行
-    /// （蓝图「图片、公式和 mermaid 图」第 3 条：每张图画在自己那一行下面）。
-    fn line_break(&mut self) {
-        if self.images.is_empty() {
-            self.push("\n", Style::new());
-            return;
-        }
-        let pieces = std::mem::take(&mut self.pieces);
-        if !pieces.is_empty() {
-            self.emit(links::relink_title(pieces), true);
-        }
-        self.flush_images();
-    }
-
     /// 把收着的行内片段排出来。独占一行的「标题 (地址)」改写成链接（蓝图第 9 条）：
     /// 段落、列表项都走这里，所以列表里的也认。
     fn flush(&mut self) {
         self.close_open_tags();
-        let pieces = std::mem::take(&mut self.pieces);
+        let pieces = self.take_pieces();
         if !pieces.is_empty() {
             // 独占一行的链接单独排、记下地址，能换成卡片（`cards.rs`）。
             let mut first = true;
