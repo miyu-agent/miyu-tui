@@ -123,3 +123,21 @@ fn narrow_and_tiny_terminals_do_not_panic_and_clicks_select_rows() {
     );
     assert_eq!(p.nav.provider(&p.view).unwrap().id, "relay");
 }
+
+#[test]
+fn a_form_with_an_error_on_a_very_short_terminal_does_not_panic() {
+    // review A7（2026-10-11）：弹窗的报错写在按钮那一行上面一行；终端只有四五行高时按钮那一行算到 0，减 1 下溢崩溃。
+    let config = Config::builtin().unwrap();
+    let mut p = page(&config);
+    press(&mut p, &config, KeyCode::Enter);
+    press(&mut p, &config, KeyCode::Down);
+    press(&mut p, &config, KeyCode::Enter);
+    if let Some(crate::settings::popup::Popup::Form(form)) = &mut p.popup {
+        form.error = Some("存不进去".into());
+    } else {
+        panic!("开了供应商的窗");
+    }
+    for (w, h) in [(40, 3), (40, 4), (40, 5), (60, 8), (120, 34)] {
+        screen(&mut p, &config, w, h);
+    }
+}
