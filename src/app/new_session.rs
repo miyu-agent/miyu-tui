@@ -206,22 +206,20 @@ impl App {
             }
             // 照光标起初停的那一个（上一次选的、默认的）；人格都用不了的就是无人格（第一行），不卡住（2026-10-08 项目主人：
             // 人格允许为空）。
-            KeyCode::Esc => match self
-                .pick(kind)
-                .preferred(self.last_pick(kind))
-                .or((kind == Kind::Persona).then_some(0))
-            {
-                Some(i) => {
-                    self.panel = None;
-                    self.choose(kind, list[i].id.clone());
-                    self.ask_next();
+            KeyCode::Esc => {
+                match esc_choice(&list, self.pick(kind).preferred(self.last_pick(kind)), kind) {
+                    Some(id) => {
+                        self.panel = None;
+                        self.choose(kind, id);
+                        self.ask_next();
+                    }
+                    // 只有预设会到这里：开会话一定要有预设（核心 Y12）。
+                    None => {
+                        let note = self.config.text.persona_box.preset_need.clone();
+                        self.hint(note, false);
+                    }
                 }
-                // 只有预设会到这里：开会话一定要有预设（核心 Y12）。
-                None => {
-                    let note = self.config.text.persona_box.preset_need.clone();
-                    self.hint(note, false);
-                }
-            },
+            }
             _ => {}
         }
     }
@@ -324,6 +322,18 @@ impl App {
     }
 }
 
+/// 按 Esc 照哪一个（编号）：光标起初停的那一个（`preferred`：上一次选的、默认的）；人格都用不了的是第一行无人格，
+/// 列表空了（框开着时重读回来是空的）也是无人格，不去取不存在的那一行（review A6，2026-10-11：原来越界崩溃）。
+/// 预设一定要有（核心 Y12）：没有能用的交回 `None`，不关框。
+fn esc_choice(list: &[Persona], preferred: Option<usize>, kind: Kind) -> Option<String> {
+    match preferred.and_then(|i| list.get(i)) {
+        Some(p) => Some(p.id.clone()),
+        None => {
+            (kind == Kind::Persona).then(|| list.first().map_or_else(String::new, |p| p.id.clone()))
+        }
+    }
+}
+
 /// 选得了的那几行。
 fn usable(list: &[Persona]) -> impl Iterator<Item = usize> + '_ {
     (0..list.len()).filter(|&i| list[i].problem.is_none())
@@ -331,7 +341,7 @@ fn usable(list: &[Persona]) -> impl Iterator<Item = usize> + '_ {
 
 #[cfg(test)]
 mod tests {
-    use super::Pick;
+    use super::{Kind, Pick, esc_choice};
     use crate::core::Persona;
 
     fn row(id: &str, problem: Option<&str>) -> Persona {
@@ -366,5 +376,31 @@ mod tests {
         );
         assert_eq!(pick.start(Some(Some("gone"))), 1, "上一次的没了：默认的");
         assert_eq!(pick.start(None), 1, "没有会话：默认的");
+    }
+
+    #[test]
+    fn escape_on_an_emptied_list_is_no_persona_instead_of_a_crash() {
+        // review A6（2026-10-11）：框开着时重读人格回来是空的（核心回了错），原来按 Esc 去取第 0 行，越界崩溃。
+        assert_eq!(esc_choice(&[], None, Kind::Persona), Some(String::new()));
+        assert_eq!(
+            esc_choice(&[], Some(3), Kind::Persona),
+            Some(String::new()),
+            "记着的位置过时了"
+        );
+        assert_eq!(
+            esc_choice(&[], None, Kind::Preset),
+            None,
+            "预设一定要有，不关框"
+        );
+        let list = [row("", None), row("cat", None)];
+        assert_eq!(
+            esc_choice(&list, Some(1), Kind::Persona).as_deref(),
+            Some("cat")
+        );
+        assert_eq!(
+            esc_choice(&list, None, Kind::Persona).as_deref(),
+            Some(""),
+            "第一行无人格"
+        );
     }
 }
