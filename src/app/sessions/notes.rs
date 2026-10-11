@@ -4,7 +4,6 @@
 use std::time::Instant;
 
 use crate::human::Human;
-use unicode_width::UnicodeWidthChar;
 
 use crate::config::JobTexts;
 use crate::core::{Bill, Usage};
@@ -171,7 +170,7 @@ pub(super) fn from_session(id: &str, title: Option<&str>, words: &JobTexts) -> S
 /// 别的 harness 报的名字不可信（「别处来的话」第 2 条）：去掉控制字符、换行换成空格，最多 64 列，放不下的截掉、末尾写 `…`。
 pub(super) fn untrusted(name: &str) -> String {
     const MOST: usize = 64;
-    let clean: Vec<char> = name
+    let clean: String = name
         .chars()
         .map(|c| {
             if matches!(c, '\n' | '\r' | '\t') {
@@ -182,21 +181,7 @@ pub(super) fn untrusted(name: &str) -> String {
         })
         .filter(|c| !c.is_control())
         .collect();
-    let width = |c: &char| c.width().unwrap_or(0);
-    if clean.iter().map(width).sum::<usize>() <= MOST {
-        return clean.into_iter().collect();
-    }
-    let mut out = String::new();
-    let mut used = 0;
-    for c in clean {
-        if used + width(&c) > MOST - 1 {
-            break;
-        }
-        used += width(&c);
-        out.push(c);
-    }
-    out.push('…');
-    out
+    crate::cells::clip(&clean, MOST)
 }
 
 /// `own` 加上 `board` 里派出去的子代理（一层层往下）停放着的正文里用的（`App::usage_total`）。

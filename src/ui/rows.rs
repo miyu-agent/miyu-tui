@@ -183,19 +183,7 @@ pub fn shown(entry: &Entry) -> bool {
 
 /// 太长就截掉，末尾写 `…`，不折行（`13-终端界面.md` 第三节第 1 条）。
 pub fn clip(text: &str, width: u16) -> String {
-    let width = usize::from(width);
-    if text.width() <= width {
-        return text.to_string();
-    }
-    let mut out = String::new();
-    for c in text.chars() {
-        if out.width() + c.to_string().width() + 1 > width {
-            break;
-        }
-        out.push(c);
-    }
-    out.push('…');
-    out
+    crate::cells::clip(text, usize::from(width))
 }
 
 /// 缓存认的键：字、点过的 `<details>`、换过几次主题的哈希（颜色烤在排好的行里，换了主题要重排）。

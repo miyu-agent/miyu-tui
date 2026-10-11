@@ -2,7 +2,7 @@
 
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_width::UnicodeWidthStr;
 
 use super::View;
 use crate::drawer::{Decision, Drawer, Edit, Item, Texts, inline, said};
@@ -190,20 +190,7 @@ fn inline_raw(text: &str) -> String {
 
 /// 放进 `width` 列：放不下的留后面那截（看得到最新写的）。
 fn tail(text: &str, width: usize) -> String {
-    if text.width() <= width {
-        return text.to_string();
-    }
-    let mut kept = Vec::new();
-    let mut used = 0;
-    for c in text.chars().rev() {
-        let w = c.width().unwrap_or(0);
-        if used + w > width {
-            break;
-        }
-        used += w;
-        kept.push(c);
-    }
-    kept.into_iter().rev().collect()
+    crate::cells::tail(text, width)
 }
 
 fn col(n: usize) -> u16 {

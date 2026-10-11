@@ -6,7 +6,8 @@ use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 use crate::app::App;
 use crate::config::{Config, Layout, TodoMarks};
@@ -130,20 +131,7 @@ fn item(todo: &Todo, marks: &TodoMarks, width: u16, wrap: bool) -> Vec<Line<'sta
 
 /// 按显示宽度折行。
 fn wrap_text(text: &str, width: usize) -> Vec<String> {
-    let mut out = vec![String::new()];
-    let mut used = 0;
-    for c in text.chars() {
-        let w = c.width().unwrap_or(0);
-        if used + w > width && used > 0 {
-            out.push(String::new());
-            used = 0;
-        }
-        if let Some(last) = out.last_mut() {
-            last.push(c);
-        }
-        used += w;
-    }
-    out
+    crate::cells::wrap(text, width)
 }
 
 /// 会话、工作目录、上下文、用量几段（`tui.md`「后台命令、子代理和侧边栏」第 7 条）：小标题加粗、内容缩进两格、
@@ -281,13 +269,14 @@ pub(super) fn bar(
 /// 路径折行：一行尽量多放，断在这一行最后一个 `/` 后面；一行里没有 `/`（一级目录本身就放不下）的按字折。
 pub(super) fn wrap_path(path: &str, room: usize) -> Vec<String> {
     let mut lines = Vec::new();
-    let mut rest: Vec<char> = path.chars().collect();
+    // 照字素簇算（review，2026-10-11：原来逐字符算，`⚠️` 这类字算窄了）。
+    let mut rest: Vec<&str> = path.graphemes(true).collect();
     while !rest.is_empty() {
         // 放得进这一行的有几个字。
         let mut used = 0;
         let mut fit = 0;
-        for c in &rest {
-            let w = c.width().unwrap_or(0);
+        for g in &rest {
+            let w = g.width();
             if used + w > room {
                 break;
             }
@@ -295,16 +284,16 @@ pub(super) fn wrap_path(path: &str, room: usize) -> Vec<String> {
             fit += 1;
         }
         if fit == rest.len() {
-            lines.push(rest.iter().collect());
+            lines.push(rest.concat());
             break;
         }
         // 放不完：断在最后一个 `/` 后面（打头的那个不算，不然留下一个孤零零的 `/`）。
         let cut = rest[..fit]
             .iter()
-            .rposition(|c| *c == '/')
+            .rposition(|g| *g == "/")
             .filter(|at| *at > 0)
             .map_or(fit.max(1), |at| at + 1);
-        lines.push(rest[..cut].iter().collect());
+        lines.push(rest[..cut].concat());
         rest.drain(..cut);
     }
     lines
