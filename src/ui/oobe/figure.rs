@@ -48,9 +48,9 @@ pub fn draw(
     );
     let settle = Duration::from_millis(look.gaze.pointer_settle_ms);
     let target = if app.mascot.attention.on_pointer(now, settle) {
-        app.pointer.or(target)
+        app.screen.pointer.or(target)
     } else {
-        target.or(app.pointer)
+        target.or(app.screen.pointer)
     };
     let idle = idle_look(look, &app.config.oobe.idle);
     let glance_roll = app.config.oobe.idle.glance_roll;

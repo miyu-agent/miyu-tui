@@ -51,7 +51,10 @@ impl App {
 
     /// 列表里的鼠标（「斜杠命令列表」第 3 条）：悬停高亮指针下那一条、列表不动，滚轮滚，点一下收成块。
     pub(super) fn mention_mouse(&mut self, mouse: MouseEvent, found: &Found) -> Action {
-        let rows = crate::ui::menu_rows(self.config.layout.menu_rows, self.areas.menu_text.height);
+        let rows = crate::ui::menu_rows(
+            self.config.layout.menu_rows,
+            self.screen.areas.menu_text.height,
+        );
         let count = found.items.len();
         let Some(by) = super::mouse::list_step(mouse.kind, false) else {
             return Action::None;
@@ -59,7 +62,7 @@ impl App {
         let mention = &mut self.mention;
         crate::menu::pin(mention.selected, &mut mention.pinned, count, rows, by);
         let top = crate::menu::top(mention.selected, mention.pinned, count, rows);
-        let text = self.areas.menu_text;
+        let text = self.screen.areas.menu_text;
         let Some(index) = crate::ui::menu_index_at(text, count, top, rows, mouse.row) else {
             return Action::None;
         };

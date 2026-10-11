@@ -90,7 +90,7 @@ impl App {
             Event::Mouse(mouse)
                 if matches!(mouse.kind, MouseEventKind::Moved | MouseEventKind::Drag(_)) =>
             {
-                self.pointer = Some(Position::new(mouse.column, mouse.row));
+                self.screen.pointer = Some(Position::new(mouse.column, mouse.row));
                 Vec::new()
             }
             _ => Vec::new(),
@@ -166,7 +166,7 @@ impl App {
 
     /// 等 `ui.welcomed` 等到什么时候。
     fn welcome_until(&self) -> Instant {
-        self.started + Duration::from_millis(self.config.oobe.welcome_wait_ms)
+        self.screen.started + Duration::from_millis(self.config.oobe.welcome_wait_ms)
     }
 
     /// 还在等 `ui.welcomed` 的，到点醒来画首页。

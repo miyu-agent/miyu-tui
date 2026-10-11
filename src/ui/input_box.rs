@@ -24,17 +24,17 @@ pub(super) fn draw_box(frame: &mut Frame, areas: Areas, app: &mut App, home: boo
                 .border_style(theme::dim()),
             areas.frame,
         );
-        app.drawer_rows = drawer::draw(
+        app.screen.drawer_rows = drawer::draw(
             frame,
             areas.text,
             d,
             texts,
             &app.config.layout.drawer_preview,
-            &mut app.caret,
+            &mut app.screen.caret,
         );
         return;
     }
-    app.drawer_rows.clear();
+    app.screen.drawer_rows.clear();
     let child = app.viewing_title();
     // 焦点移到框下面（按钮、子代理状态行）、后台面板开着时，框里不放光标：打的字不进这里（2026-09-30 项目主人）。
     let typing = app.focus() == crate::focus::Focus::Input && app.panel.is_none();
@@ -46,7 +46,7 @@ pub(super) fn draw_box(frame: &mut Frame, areas: Areas, app: &mut App, home: boo
     draw_input(frame, areas, &mut app.input, &app.config, look);
     // 焦点不在这里也停到插入点，只是不显示（蓝图「每一帧」）。
     if let Some(pos) = app.input.cursor_position() {
-        app.caret.put(pos, typing);
+        app.screen.caret.put(pos, typing);
     }
 }
 

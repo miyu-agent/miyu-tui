@@ -271,11 +271,11 @@ impl App {
             return true;
         }
         let press = matches!(mouse.kind, MouseEventKind::Down(_));
-        let areas = self.areas;
+        let areas = self.screen.areas;
         if self.sidebar_mouse(mouse, at) {
             return true;
         }
-        self.agents_hover = areas
+        self.screen.agents_hover = areas
             .agents
             .contains(at)
             .then(|| usize::from(at.y - areas.agents.y));
@@ -301,7 +301,7 @@ impl App {
                 return true;
             }
         }
-        if let Some(row) = self.agents_hover {
+        if let Some(row) = self.screen.agents_hover {
             // 第 0 行是空行，第 1 行是主会话，子代理从第 2 行起：点了切过去（「切进子会话」第 1、4 条）。
             if press && row == 1 {
                 self.leave_child();
@@ -315,7 +315,7 @@ impl App {
         {
             // 点在框的边上不算点中哪一条（「斜杠命令列表」第 3 条）。
             let row = at.y.checked_sub(areas.menu_text.y).map(usize::from);
-            let index = row.and_then(|row| self.panel_rows.get(row).copied().flatten());
+            let index = row.and_then(|row| self.screen.panel_rows.get(row).copied().flatten());
             if let Some(index) = index.filter(|_| areas.menu_text.contains(at)) {
                 self.panel = Some(Panel::Background {
                     selected: index,
@@ -334,23 +334,23 @@ impl App {
     /// 侧边栏里按下、拖、松开：拖了是选字，只点不拖的照点的来（点编号复制完整编号、点待办展开收起）；
     /// 在别处按下，侧边栏的选区作废（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。
     fn sidebar_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
-        let areas = self.areas;
+        let areas = self.screen.areas;
         let inside = areas.sidebar.contains(at);
         match mouse.kind {
             MouseEventKind::Down(_) if inside => {
-                self.side_select.press(at.x, at.y);
+                self.screen.side_select.press(at.x, at.y);
                 true
             }
             MouseEventKind::Down(_) => {
-                self.side_select.clear();
+                self.screen.side_select.clear();
                 false
             }
-            MouseEventKind::Drag(_) if self.side_select.pressing() => {
-                self.side_select.drag(at.x, at.y);
+            MouseEventKind::Drag(_) if self.screen.side_select.pressing() => {
+                self.screen.side_select.drag(at.x, at.y);
                 true
             }
-            MouseEventKind::Up(_) if self.side_select.pressing() => {
-                if self.side_select.release() {
+            MouseEventKind::Up(_) if self.screen.side_select.pressing() => {
+                if self.screen.side_select.release() {
                     if areas.session_id.contains(at)
                         && let Some(session) = self.transcript.session.clone()
                     {
@@ -359,7 +359,7 @@ impl App {
                         self.todo_full = !self.todo_full;
                     }
                 } else {
-                    let text = self.side_select.text();
+                    let text = self.screen.side_select.text();
                     if !text.is_empty() {
                         self.copy(&text);
                     }
@@ -372,15 +372,15 @@ impl App {
 
     /// 鼠标该不该是手：悬停在链接、输入框里的附件块、框下面那一行的按钮、子代理那几行上。
     pub fn pointing(&self) -> bool {
-        let over = |r: ratatui::layout::Rect| self.pointer.is_some_and(|p| r.contains(p));
+        let over = |r: ratatui::layout::Rect| self.screen.pointer.is_some_and(|p| r.contains(p));
         // 正文里能点的（收起那一行、一步、撤销那一行、能点开的通知）也算（`tui.md`「鼠标」）。
-        self.view.hover_link.is_some()
-            || self.view.hover.is_some()
+        self.screen.view.hover_link.is_some()
+            || self.screen.view.hover.is_some()
             || self.input.hovered_attachment().is_some()
-            || over(self.areas.button)
-            || over(self.areas.session_id)
-            || over(self.areas.todo)
-            || over(self.areas.bottom)
-            || self.agents_hover.is_some_and(|r| r >= 2)
+            || over(self.screen.areas.button)
+            || over(self.screen.areas.session_id)
+            || over(self.screen.areas.todo)
+            || over(self.screen.areas.bottom)
+            || self.screen.agents_hover.is_some_and(|r| r >= 2)
     }
 }

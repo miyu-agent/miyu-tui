@@ -152,7 +152,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
             if let Some((r, col)) = built.caret {
                 let at = Position::new(places.content.x + col, row(r));
                 if places.content.contains(at) {
-                    app.caret.put(at, true);
+                    app.screen.caret.put(at, true);
                     focus = Some(at);
                 }
             }
@@ -274,7 +274,7 @@ fn popup_frame(
     }
     let caret = popup::draw(frame, area, rect, (&title, &body, &hint));
     if let Some(at) = caret {
-        app.caret.put(at, true);
+        app.screen.caret.put(at, true);
     }
     (true, caret)
 }

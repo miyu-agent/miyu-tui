@@ -57,11 +57,11 @@ impl App {
         let themes = &self.config.themes;
         let at = themes
             .iter()
-            .position(|(name, _)| *name == self.theme)
+            .position(|(name, _)| *name == self.screen.theme)
             .unwrap_or(0);
         if let Some((name, palette)) = themes.get((at + 1) % themes.len().max(1)) {
             crate::theme::set(palette.clone());
-            self.theme = name.clone();
+            self.screen.theme = name.clone();
             let text = self.config.text.theme_changed.replace("{name}", name);
             self.hint(text, true);
         }
@@ -112,25 +112,25 @@ impl App {
             .modifiers
             .contains(ratatui::crossterm::event::KeyModifiers::CONTROL);
         // 侧边栏有选区：Ctrl+C 复制它，Esc 取消它（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。
-        if self.side_select.active() {
+        if self.screen.side_select.active() {
             if ctrl && matches!(key.code, KeyCode::Char('c' | 'C')) {
-                let text = self.side_select.text();
+                let text = self.screen.side_select.text();
                 self.copy(&text);
                 return Action::None;
             }
             if key.code == KeyCode::Esc {
-                self.side_select.clear();
+                self.screen.side_select.clear();
                 return Action::None;
             }
         }
-        if self.view.select.is_some() {
+        if self.screen.view.select.is_some() {
             if ctrl && matches!(key.code, KeyCode::Char('c' | 'C')) {
-                let text = self.view.selected_text();
+                let text = self.screen.view.selected_text();
                 self.copy(&text);
                 return Action::None;
             }
             if key.code == KeyCode::Esc {
-                self.view.select = None;
+                self.screen.view.select = None;
                 return Action::None;
             }
         }
@@ -139,13 +139,13 @@ impl App {
             if self.transcript.running.is_some() {
                 self.hint(self.config.text.no_clear_running.clone(), false);
             } else {
-                self.view.clear();
+                self.screen.view.clear();
             }
             return Action::None;
         }
         // PgUp、PgDn：翻正文。
         if matches!(key.code, KeyCode::PageUp | KeyCode::PageDown) {
-            self.view.page(key.code == KeyCode::PageDown);
+            self.screen.view.page(key.code == KeyCode::PageDown);
             return Action::None;
         }
         // Ctrl+R：调出输入历史列表；恢复撤销只用 /restore（`tui.md`「按键」）。
@@ -159,7 +159,7 @@ impl App {
         }
         // Ctrl+End：回到正文最底下，跟着最新的（`tui.md`「按键」，2026-10-02 项目主人要）。
         if ctrl && key.code == KeyCode::End {
-            self.view.follow();
+            self.screen.view.follow();
             return Action::None;
         }
         // Ctrl+G：用编辑器写输入框里的话（`compose.rs`，`tui.md`「按键」）。
@@ -256,7 +256,7 @@ impl App {
             return;
         }
         self.leave_gone();
-        self.view.follow();
+        self.screen.view.follow();
         // 附了以后才换的模型：收不了的附件改成文件块写路径（第 12 条「照模型收」）。
         let mut draft = draft;
         self.demote_for_send(&mut draft);
@@ -284,7 +284,7 @@ impl App {
             None => format!("/{}", spec.name),
         };
         self.input.remember(Draft::plain(&line));
-        self.view.follow();
+        self.screen.view.follow();
         match spec.run {
             Run::Revert
             | Run::Unrevert

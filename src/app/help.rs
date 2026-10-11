@@ -14,7 +14,7 @@ impl App {
 
     /// 帮助框开着时的按键。
     pub(super) fn help_key(&mut self, scroll: usize, key: KeyEvent) {
-        let page = self.panel_rows.len().max(1);
+        let page = self.screen.panel_rows.len().max(1);
         let next = match key.code {
             KeyCode::Up => scroll.saturating_sub(1),
             KeyCode::Down => scroll + 1,
@@ -34,7 +34,7 @@ impl App {
         let Some(Panel::Help { scroll }) = self.panel else {
             return false;
         };
-        if !self.areas.menu.contains(at) {
+        if !self.screen.areas.menu.contains(at) {
             return false;
         }
         match mouse.kind {
@@ -47,8 +47,8 @@ impl App {
 
     /// 滚到第 `to` 行起，滚过头停在最后一屏。
     fn scroll_help(&mut self, to: usize) {
-        let total = crate::ui::help::count(&self.config, self.areas.menu_text.width);
-        let shown = self.panel_rows.len().max(1);
+        let total = crate::ui::help::count(&self.config, self.screen.areas.menu_text.width);
+        let shown = self.screen.panel_rows.len().max(1);
         let scroll = to.min(total.saturating_sub(shown));
         self.panel = Some(Panel::Help { scroll });
     }

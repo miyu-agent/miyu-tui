@@ -229,7 +229,7 @@ fn text_width(area_width: u16, layout: &Layout) -> u16 {
 
 /// 画一帧。顺手把各块的位置记进 `app`，鼠标事件要用。
 pub fn draw(frame: &mut Frame, app: &mut App) {
-    app.caret.begin();
+    app.screen.caret.begin();
     // 第一次打开的引导开着：整屏归它（蓝图「第一次打开的引导」第 1 条）。
     if app.oobe.is_some() {
         oobe::draw(frame, app);
@@ -237,7 +237,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     }
     // 配置页开着：整屏归它，对话不画（图片也不画），关了照原样画回来（蓝图「配置页」第 1 条）。
     if let Some(page) = app.settings.as_mut() {
-        settings::draw(frame, page, &app.config, &mut app.caret);
+        settings::draw(frame, page, &app.config, &mut app.screen.caret);
         return;
     }
     // 还在问 `ui.welcomed`：整屏空着，免得进引导前闪一下首页（「第一次打开的引导」第 1 条）。
@@ -380,8 +380,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let menu_rows = panel::height(u16::try_from(items).unwrap_or(u16::MAX), room);
     let mut areas = place(menu_rows);
     areas.sidebar = sidebar;
-    app.areas = areas;
-    app.panel_rows = panel_rows;
+    app.screen.areas = areas;
+    app.screen.panel_rows = panel_rows;
     use crate::frame_log::section;
     if home {
         // 先画输入框（吉祥物照输入光标转头），再画吉祥物；开着列表时吉祥物已经让到列表上面。
@@ -435,9 +435,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         panel_chrome,
         panel_lines,
     );
-    app.areas.button = section("footer", || footer::draw(frame, areas.footer, app));
+    app.screen.areas.button = section("footer", || footer::draw(frame, areas.footer, app));
     // 不在首页才有正文可翻。
-    app.areas.bottom = if home {
+    app.screen.areas.bottom = if home {
         Rect::default()
     } else {
         // 只用正文那一边（有侧边栏时不碰它的竖线）。
@@ -465,5 +465,5 @@ mod tests;
 /// 转圈转到第几帧：照界面起来以后过了多久，一帧 `timeline.spinner_ms`。
 fn spin_frame(app: &App) -> usize {
     let spinner_ms = app.config.timeline.spinner_ms.max(1);
-    usize::try_from(app.started.elapsed().as_millis() / u128::from(spinner_ms)).unwrap_or(0)
+    usize::try_from(app.screen.started.elapsed().as_millis() / u128::from(spinner_ms)).unwrap_or(0)
 }

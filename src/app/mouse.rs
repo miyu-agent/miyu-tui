@@ -14,24 +14,24 @@ impl App {
     pub(super) fn mouse(&mut self, mouse: MouseEvent) -> Action {
         let at = Position::new(mouse.column, mouse.row);
         // 首页的吉祥物没字可看时跟着鼠标转头（`tui.md`「空会话的首页」第 6 条）。
-        self.pointer = Some(at);
+        self.screen.pointer = Some(at);
         // 已抓住的拖选和松开始终归起点区域，经过侧栏、按钮或抽屉也不被截走。
-        let captured = self.grab.is_some()
+        let captured = self.screen.grab.is_some()
             && matches!(mouse.kind, MouseEventKind::Drag(_) | MouseEventKind::Up(_));
         if !captured && self.jobs_mouse(mouse, at) {
             return Action::None;
         }
         // 回到底部的按钮（`ui/bottom_button.rs`）。
-        if !captured && self.areas.bottom.contains(at) {
+        if !captured && self.screen.areas.bottom.contains(at) {
             if matches!(mouse.kind, MouseEventKind::Down(_)) {
-                self.view.follow();
+                self.screen.view.follow();
             }
             return Action::None;
         }
         // 抽屉开着：悬停选中那一项，点一下等于 `Enter`（`tui.md`「确认和提问的抽屉」第 4 条）。
-        if !captured && self.drawers.open() && self.areas.text.contains(at) {
-            let row = usize::from(at.y - self.areas.text.y);
-            if let Some(index) = self.drawer_rows.get(row).copied().flatten() {
+        if !captured && self.drawers.open() && self.screen.areas.text.contains(at) {
+            let row = usize::from(at.y - self.screen.areas.text.y);
+            if let Some(index) = self.screen.drawer_rows.get(row).copied().flatten() {
                 match mouse.kind {
                     MouseEventKind::Moved => {
                         if let Some(d) = self.drawers.current.as_mut() {
@@ -44,26 +44,26 @@ impl App {
             }
             return Action::None;
         }
-        let under = if self.areas.menu.contains(at) {
+        let under = if self.screen.areas.menu.contains(at) {
             Some(Grab::Menu)
-        } else if self.areas.frame.contains(at) {
+        } else if self.screen.areas.frame.contains(at) {
             Some(Grab::Input)
-        } else if self.areas.body.contains(at) {
+        } else if self.screen.areas.body.contains(at) {
             Some(Grab::Body)
         } else {
             None
         };
         let owner = match mouse.kind {
             MouseEventKind::Down(_) => {
-                self.grab = under;
+                self.screen.grab = under;
                 under
             }
-            MouseEventKind::Drag(_) => self.grab,
-            MouseEventKind::Up(_) => self.grab.take(),
+            MouseEventKind::Drag(_) => self.screen.grab,
+            MouseEventKind::Up(_) => self.screen.grab.take(),
             _ => under,
         };
         if owner != Some(Grab::Body) {
-            self.view.hover = None;
+            self.screen.view.hover = None;
         }
         if owner != Some(Grab::Input) {
             self.input.unhover();
@@ -81,7 +81,7 @@ impl App {
             }
             Some(Grab::Input) => self.input.mouse(mouse, under == Some(Grab::Input)),
             Some(Grab::Body) => {
-                match self.view.mouse(mouse) {
+                match self.screen.view.mouse(mouse) {
                     BodyAction::None => {}
                     BodyAction::Copy(text) => return Action::Copy(text),
                     BodyAction::Toggle(target) => self.toggle(target),
@@ -171,10 +171,10 @@ impl App {
     fn history_mouse(&mut self, mouse: MouseEvent) -> Action {
         use ratatui::crossterm::event::MouseButton;
         let found = self.history.matches(self.input.sent());
-        let width = self.areas.menu_text.width;
+        let width = self.screen.areas.menu_text.width;
         let now = std::time::SystemTime::now();
         // 和画出来的同一份：放进列表那块的高度（「窗口小的时候」第 1 条）。
-        let max = usize::from(self.areas.menu_text.height);
+        let max = usize::from(self.screen.areas.menu_text.height);
         // 悬停钉住、滚轮滚（最新的贴底：滚轮往上是更早的），照钉住以后画出来的行认指针下是哪一条。
         let Some(by) = list_step(mouse.kind, true) else {
             return Action::None;
@@ -190,7 +190,7 @@ impl App {
         );
         let (_, rows) =
             crate::ui::history_lines(&self.history, &found, width, &self.config, now, max);
-        let at = crate::ui::history_index_at(self.areas.menu_text, &rows, mouse.row);
+        let at = crate::ui::history_index_at(self.screen.areas.menu_text, &rows, mouse.row);
         if let Some(index) = at {
             self.history.selected = index;
             if mouse.kind == MouseEventKind::Down(MouseButton::Left) {
@@ -204,14 +204,17 @@ impl App {
     pub(super) fn menu_mouse(&mut self, mouse: MouseEvent, matches: &[Spec]) -> Action {
         use ratatui::crossterm::event::{MouseButton, MouseEventKind};
         // 露了几条照画出来的：框里放字的那一块有几行（「窗口小的时候」第 1 条）。
-        let rows = crate::ui::menu_rows(self.config.layout.menu_rows, self.areas.menu_text.height);
+        let rows = crate::ui::menu_rows(
+            self.config.layout.menu_rows,
+            self.screen.areas.menu_text.height,
+        );
         let count = matches.len();
         let Some(by) = list_step(mouse.kind, false) else {
             return Action::None;
         };
         crate::menu::pin(self.menu.selected, &mut self.menu.pinned, count, rows, by);
         let top = crate::menu::top(self.menu.selected, self.menu.pinned, count, rows);
-        let at = crate::ui::menu_index_at(self.areas.menu_text, count, top, rows, mouse.row);
+        let at = crate::ui::menu_index_at(self.screen.areas.menu_text, count, top, rows, mouse.row);
         let Some((index, spec)) = at.and_then(|i| Some((i, matches.get(i)?))) else {
             return Action::None;
         };

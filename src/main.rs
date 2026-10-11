@@ -364,8 +364,8 @@ fn frame(
         ui::draw(frame, app);
         // 光标交给 ratatui：这一帧要显示时由它挪过去、显示。别每帧先藏再显：kitty 的输入法预编辑挂在
         // 光标上，跟着藏/显，和输入框里的提示来回闪（2026-10-02 项目主人报的 fcitx5）。
-        if app.caret.shown {
-            frame.set_cursor_position(app.caret.at);
+        if app.screen.caret.shown {
+            frame.set_cursor_position(app.screen.caret.at);
         }
         ui::wide::tidy(frame.buffer_mut());
         theme::degrade(frame.buffer_mut(), depth);
@@ -375,7 +375,7 @@ fn frame(
     // 那一下 ratatui 已经挪过、显示过了。
     let drawn = drawn.map(|_| ()).and_then(|()| {
         let out = terminal.backend_mut().writer_mut();
-        caret::park(app.caret, out)?;
+        caret::park(app.screen.caret, out)?;
         pointer.set(app.pointing(), out)
     });
     // 画面、图片和光标都准备好了才送出；画失败了也带上同步结尾。

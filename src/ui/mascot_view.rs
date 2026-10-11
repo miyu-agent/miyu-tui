@@ -23,7 +23,7 @@ pub fn draw(frame: &mut Frame, rect: Rect, app: &mut App, far: bool) {
     // 鼠标在动就看鼠标；停着、框里有字看输入光标（第 6 条）。
     let settle = Duration::from_millis(look.gaze.pointer_settle_ms);
     let target = if app.input.editor.is_empty() || app.mascot.attention.on_pointer(now, settle) {
-        app.pointer.or_else(|| app.input.cursor_position())
+        app.screen.pointer.or_else(|| app.input.cursor_position())
     } else {
         app.input.cursor_position()
     };
