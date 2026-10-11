@@ -147,9 +147,9 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
         return;
     }
     let most = app.config.layout.agent_rows;
-    let nested = |session: &str| app.nested_agents(session);
+    let nested = |session: &str| app.talk.nested_agents(session);
     let tree = Tree {
-        viewing: app.viewing(),
+        viewing: app.talk.viewing(),
         nested: &nested,
         hover: app.screen.agents_hover,
         focus: match app.focus() {
@@ -157,7 +157,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
             _ => None,
         },
     };
-    let agents = app.listed_agents();
+    let agents = app.talk.listed_agents();
     let lines = lines(
         &agents,
         &app.config,

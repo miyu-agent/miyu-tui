@@ -228,7 +228,7 @@ impl App {
         let folds = self.talk.transcript.folds();
         self.talk.transcript.update(update, &self.config.text);
         // 在子会话里看：它那一行正在做什么、用了多少跟着更新。
-        if let Some(child) = self.viewing().map(str::to_string) {
+        if let Some(child) = self.talk.viewing().map(str::to_string) {
             self.refresh_agent(&child);
         }
         // 一段刚收起（她开口、一轮结束）：放开一次视口，收起留下的空白由上面的行补满（`tui.md`「正文」第 1 条）。

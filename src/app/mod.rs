@@ -231,7 +231,7 @@ impl App {
     /// 第 7 条，「空会话的首页」第 10 条）。
     fn mascot_shown(&self) -> bool {
         let layout = &self.config.layout;
-        (self.home() && layout.mascot_home && self.avatar(Place::Home) == Avatar::None)
+        (self.talk.blank() && layout.mascot_home && self.avatar(Place::Home) == Avatar::None)
             || (self.screen.areas.sidebar.width > 0
                 && layout.mascot_sidebar
                 && self.avatar(Place::Sidebar) == Avatar::None)
@@ -239,12 +239,8 @@ impl App {
 
     /// 首页吉祥物那一块在：吉祥物或者头像（被顶上去、走下来照它）。
     fn home_slot_shown(&self) -> bool {
-        self.home() && (self.config.layout.mascot_home || self.avatar(Place::Home) != Avatar::None)
-    }
-
-    /// 是首页：正文里一条都没有，也没在回答（`tui.md`「空会话的首页」第 1 条）。
-    pub fn home(&self) -> bool {
-        self.talk.transcript.entries.is_empty() && self.talk.transcript.running.is_none()
+        self.talk.blank()
+            && (self.config.layout.mascot_home || self.avatar(Place::Home) != Avatar::None)
     }
 
     /// 到点了：收掉过期的提示。

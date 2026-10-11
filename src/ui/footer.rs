@@ -35,7 +35,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
             .replace("{count}", &count.to_string())
     });
     let button_w = button.as_ref().map_or(0, |b| b.width() + GAP);
-    let total = app.usage_total();
+    let total = app.talk.usage_total();
     let mut cells = right(&app.talk.transcript, &total, &app.config);
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
     if let Some(amounts) = app.spent() {

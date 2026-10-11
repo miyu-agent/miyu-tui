@@ -76,14 +76,6 @@ impl App {
         }
     }
 
-    /// 主会话：切进了子会话的是停放着的那个。
-    pub fn main_session(&self) -> Option<String> {
-        self.talk
-            .home
-            .clone()
-            .or_else(|| self.talk.transcript.session.clone())
-    }
-
     /// 框开着时的按键。
     pub(super) fn sessions_key(&mut self, key: KeyEvent) {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
@@ -101,13 +93,13 @@ impl App {
                 }
             }
             KeyCode::Char(' ') => {
-                let main = self.main_session();
+                let main = self.talk.main_session();
                 if let Some(list) = self.boxes.session_list.as_mut() {
                     list.tick(main.as_deref());
                 }
             }
             KeyCode::Char('a') if ctrl => {
-                let main = self.main_session();
+                let main = self.talk.main_session();
                 if let Some(list) = self.boxes.session_list.as_mut() {
                     list.tick_all(main.as_deref());
                 }
@@ -207,7 +199,7 @@ impl App {
 
     /// `Ctrl+D`：删勾了的全部、没勾的删选中的那一个；整批按第一次提示再按一次，第二次才删；正在用的不能删（第 2 条）。
     fn delete_picked(&mut self) {
-        let main = self.main_session();
+        let main = self.talk.main_session();
         let texts = self.config.text.sessions.clone();
         let untitled = self.config.text.untitled.clone();
         let Some(list) = self.boxes.session_list.as_mut() else {
@@ -257,11 +249,6 @@ impl App {
         self.hint(done, true);
     }
 
-    /// 这个会话还忙着：有一轮在跑，或者还有任务没报完（第 4 条）。
-    pub(super) fn busy_here(&self) -> bool {
-        self.talk.board.busy() || self.talk.transcript.running.is_some()
-    }
-
     /// 切到 `session`（第 4、5 条）：停放着的（切走时还忙着的）直接换上来；别的先开一份停放着的空正文收补发来的，
     /// 补完了再换上来，这之间照旧显示原来那个（不闪空会话的首页）。
     pub(super) fn switch_session(&mut self, session: String) {
@@ -270,7 +257,7 @@ impl App {
         if self.talk.transcript.session.as_deref() == Some(session.as_str()) {
             return;
         }
-        let keep = self.busy_here();
+        let keep = self.talk.busy_here();
         self.link.core.send(Command::Open {
             session: session.clone(),
             keep,
@@ -298,14 +285,6 @@ impl App {
         if let Some((session, keep)) = self.talk.opening.take() {
             self.swap_in(&session, keep);
         }
-    }
-
-    /// 在补发的是不是 `session`。
-    pub(super) fn opening(&self, session: &str) -> bool {
-        self.talk
-            .opening
-            .as_ref()
-            .is_some_and(|(s, _)| s == session)
     }
 
     /// 换上停放着的 `session`，原来那个照 `keep` 停放或者不要了。

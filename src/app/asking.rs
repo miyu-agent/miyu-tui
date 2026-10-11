@@ -11,15 +11,15 @@ impl App {
     pub(super) fn asking_update(&mut self, update: &Update) -> bool {
         match update {
             Update::Push(push) => {
-                let owner = self.main_session().unwrap_or_default();
+                let owner = self.talk.main_session().unwrap_or_default();
                 self.asking_push(&owner, None, push)
             }
             // 推送一律带着会话编号来（`serve.rs`）：主会话的当主会话的，别的是子会话问的（第 8 条）。切过去还在补发的那个
             // 也是主会话的：补完就换上来（review，2026-10-11：原来当成子代理问的，答案不写进正文）。
             Update::Elsewhere { session, update } => match update.as_ref() {
                 Update::Push(push) => {
-                    let main = self.main_session().as_deref() == Some(session.as_str())
-                        || self.opening(session);
+                    let main = self.talk.main_session().as_deref() == Some(session.as_str())
+                        || self.talk.opening(session);
                     let asker = (!main).then(|| session.clone());
                     self.asking_push(session, asker.as_ref(), push)
                 }

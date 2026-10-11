@@ -82,7 +82,7 @@ impl App {
 
     /// 下一次该推、该重画的时刻：假待办的下一步；有在跑的后台任务，每秒重画一次（用时在走）。
     pub(super) fn jobs_deadline(&self) -> Option<Instant> {
-        let running = self.talk.board.busy() || self.tree().busy();
+        let running = self.talk.board.busy() || self.talk.tree().busy();
         let tick = running.then(|| Instant::now() + Duration::from_secs(1));
         self.talk.feed.next_at().into_iter().chain(tick).min()
     }
@@ -109,6 +109,7 @@ impl App {
     /// 没有列着的子代理，这一块不在，一行都没有。
     fn agent_stops(&self) -> usize {
         match self
+            .talk
             .listed_agents()
             .len()
             .min(self.config.layout.agent_rows)
@@ -178,13 +179,13 @@ impl App {
             }
             // 选中的子代理按 x：停掉它（主会话那一行、报完了的不管）。列的是主会话的任务表，照主会话停。
             (Focus::Agent(i), KeyCode::Char('x')) if i > 0 => {
-                let listed = self.listed_agents();
+                let listed = self.talk.listed_agents();
                 let job = listed
                     .get(i - 1)
                     .filter(|j| j.running())
                     .map(|j| j.job.clone());
                 if let Some(job) = job {
-                    let session = self.main_session();
+                    let session = self.talk.main_session();
                     self.link.core.send(Command::Stop { session, job });
                 }
                 focus
