@@ -10,7 +10,7 @@ use crate::jobs::clean::note_detail;
 impl App {
     /// 面板里点开的那一条：在跑的隔 `poll_ms` 读一次最后几行；结束了还没读过的读一次。上一次还没回来的不再发。
     pub(super) fn poll_output(&mut self) {
-        let Some(Panel::Background { open: Some(id), .. }) = self.panel else {
+        let Some(Panel::Background { open: Some(id), .. }) = self.boxes.panel else {
             return;
         };
         let Some(session) = self.transcript.session.clone() else {

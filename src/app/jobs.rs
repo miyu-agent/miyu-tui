@@ -128,7 +128,7 @@ impl App {
 
     /// 打开按钮的面板。
     fn open(&mut self, button: Button) {
-        self.panel = Some(match button {
+        self.boxes.panel = Some(match button {
             Button::Background => Panel::Background {
                 selected: 0,
                 open: None,
@@ -140,7 +140,7 @@ impl App {
     /// 按键先归面板、框下面那一行的按钮、子代理状态行（第 2–6 条）；归了它们返回 `true`。
     /// 输入框空着时按 `↓`，焦点往下走。
     pub(super) fn jobs_key(&mut self, key: KeyEvent, menu_open: bool) -> bool {
-        if let Some(panel) = self.panel {
+        if let Some(panel) = self.boxes.panel {
             self.panel_key(panel, key);
             return true;
         }
@@ -223,15 +223,17 @@ impl App {
             })
         };
         match key.code {
-            KeyCode::Up => self.panel = at(selected.saturating_sub(1)),
-            KeyCode::Down => self.panel = at((selected + 1).min(items.len().saturating_sub(1))),
+            KeyCode::Up => self.boxes.panel = at(selected.saturating_sub(1)),
+            KeyCode::Down => {
+                self.boxes.panel = at((selected + 1).min(items.len().saturating_sub(1)))
+            }
             KeyCode::Enter => self.pick_item(selected),
             KeyCode::Char('x') => {
                 if let Some(PanelItem::Job(id)) = items.get(selected) {
                     self.stop_job(*id);
                 }
             }
-            KeyCode::Esc => self.panel = None,
+            KeyCode::Esc => self.boxes.panel = None,
             _ => {}
         }
     }
@@ -239,7 +241,7 @@ impl App {
     /// 后台面板里选了第几行：一条命令点开、收起（一次只开一条，点开时马上读一次输出）；收起来的那一行展开，展开以后
     /// 最后那一行收起，选中的跟着它走。
     fn pick_item(&mut self, index: usize) {
-        let Some(Panel::Background { open, all, .. }) = self.panel else {
+        let Some(Panel::Background { open, all, .. }) = self.boxes.panel else {
             return;
         };
         let item = self.board.panel_items(all).get(index).copied();
@@ -252,7 +254,7 @@ impl App {
             Some(PanelItem::Job(_)) => index,
             _ => self.board.panel_items(all).len().saturating_sub(1),
         };
-        self.panel = Some(Panel::Background {
+        self.boxes.panel = Some(Panel::Background {
             selected,
             open,
             all,
@@ -310,14 +312,14 @@ impl App {
             }
             return true;
         }
-        if let Some(Panel::Background { open, all, .. }) = self.panel
+        if let Some(Panel::Background { open, all, .. }) = self.boxes.panel
             && areas.menu.contains(at)
         {
             // 点在框的边上不算点中哪一条（「斜杠命令列表」第 3 条）。
             let row = at.y.checked_sub(areas.menu_text.y).map(usize::from);
             let index = row.and_then(|row| self.screen.panel_rows.get(row).copied().flatten());
             if let Some(index) = index.filter(|_| areas.menu_text.contains(at)) {
-                self.panel = Some(Panel::Background {
+                self.boxes.panel = Some(Panel::Background {
                     selected: index,
                     open,
                     all,

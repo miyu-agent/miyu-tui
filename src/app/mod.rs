@@ -3,6 +3,7 @@
 mod asking;
 mod attachments;
 mod avatars;
+mod boxes;
 mod build;
 mod cards;
 mod compose;
@@ -125,6 +126,8 @@ pub struct App {
     pub mention: crate::mention::Mention,
     /// 输入历史列表（`Ctrl+R`）。
     pub history: History,
+    /// 开着的框和整屏页（`boxes.rs`，蓝图 `app.md`）。
+    pub boxes: boxes::Boxes,
     /// 要画的东西的账：排好的行、做好的图、链接卡片、mermaid、头像、吉祥物包（`media.rs`，蓝图 `app.md`）。
     pub media: media::Media,
     /// 上一帧画出来的：各块位置、视口、光标、行表、鼠标（`screen.rs`，蓝图 `app.md`）。
@@ -139,20 +142,10 @@ pub struct App {
     pub board: Board,
     /// 演示用的假数据源。
     feed: Feed,
-    /// 开着的面板（后台）。
-    pub panel: Option<Panel>,
-    /// `/sessions` 开着时的会话列表（`switch.rs`）。
-    pub session_list: Option<crate::session_list::SessionList>,
-    /// `/model` 开着时的框（`models.rs`）。
-    pub model_list: Option<crate::model_list::ModelList>,
-    /// 开着的配置页（`/config`、`--page config`，蓝图「配置页」）：开着时整屏归它。
-    pub settings: Option<crate::settings::Settings>,
     /// 输入法跟着打字状态切（`ime.rs`）。
     ime: crate::ime::Ime,
     /// 核心推来的确认、提问：问过的、了结过的（`asking.rs`）。
     asks: crate::drawer::Asks,
-    /// `/effort` 框里那个模型的几级；还没交回来的是 `None`（`effort.rs`）。
-    pub efforts: Option<crate::core::Efforts>,
     /// 确认和提问的抽屉：现在这一个和排着的（蓝图「确认和提问的抽屉」）。
     pub drawers: Drawers,
     /// 启动时照系统认出来的界面语言：`/language` 选回自动用它，框的第一行写它（蓝图「界面语言」）。
@@ -183,8 +176,6 @@ pub struct App {
     composing: Option<compose::Composing>,
     /// 金额排最前的币种（`usage.currency`，连上时读）。
     pub currency: String,
-    /// `/usage` 框读回来的（开着才有）。
-    pub usage: Option<usage::UsageData>,
     /// 新会话要选的人格（`new_session.rs`）。
     persona: new_session::Pick,
     /// 新会话要选的预设。
@@ -195,18 +186,8 @@ pub struct App {
     history_placed: bool,
     /// 还没开会话时 `/workspace` 换的、验过的目录：新会话开在这里（`workspace.rs`）。
     workspace_pending: Option<String>,
-    /// 配置页交给编辑器的提示词写在哪个临时文件（`settings.rs`）。
-    settings_prompt: Option<std::path::PathBuf>,
-    /// 第一次打开的引导；没开是 `None`（`oobe.rs`）。
-    pub oobe: Option<crate::oobe::Oobe>,
-    /// 读过 `ui.welcomed` 了：一次启动只读一次（「第一次打开的引导」第 1 条）。
-    welcome_checked: bool,
-    /// `ui.welcomed` 问到了（或者连不上核心）：这以前不画首页（`oobe.rs` 的 [`App::welcome_pending`]）。
-    welcome_known: bool,
     /// 这一次提前压已经弹过「已触发上下文压缩」（`updates.rs`）。
     compaction_announced: bool,
-    /// 引导交给编辑器的字写在哪个临时文件（`oobe.rs`）。
-    oobe_editing: Option<std::path::PathBuf>,
     /// 每个模型、池收哪几种附件（`attachments.rs`，照 `model.list`）。
     abilities: crate::core::Abilities,
     /// 默认的聊天模型（`uses.chat`）：还没开会话的照它认收哪几种附件。
@@ -219,7 +200,7 @@ impl App {
     fn esc_for_input(&self, menu_open: bool) -> bool {
         !menu_open
             && !self.history.open
-            && self.panel.is_none()
+            && self.boxes.panel.is_none()
             && self.focus == Focus::Input
             && !self.drawers.open()
             && self.input.editor.selection().is_none()
@@ -235,12 +216,12 @@ impl App {
     pub fn handle(&mut self, event: Event) {
         self.mascot.heard(&event, Instant::now());
         // 引导开着：按键、鼠标、粘贴都归它（`oobe.rs`）。
-        if self.oobe.is_some() {
+        if self.boxes.oobe.is_some() {
             self.oobe_event(event);
             return;
         }
         // 配置页开着：按键、鼠标、粘贴都归它（`settings.rs`）。
-        if self.settings.is_some() {
+        if self.boxes.settings.is_some() {
             self.settings_event(event);
             return;
         }
@@ -343,7 +324,7 @@ impl App {
         // 做完的待办全打勾露够了：收掉（「后台命令、子代理和侧边栏」第 4 条）。
         self.board.expire_todos(Instant::now());
         // 配置页、引导里不在打字的时候输入法关成英文，打字时开回来；对话里的输入框一直算在打字（`ime.rs`）。
-        let typing = match (&self.oobe, &self.settings) {
+        let typing = match (&self.boxes.oobe, &self.boxes.settings) {
             (Some(oobe), _) => oobe.editing(),
             (None, Some(page)) => page.typing(),
             (None, None) => true,

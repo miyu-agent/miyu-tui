@@ -15,15 +15,15 @@ impl App {
         if !self.reachable() {
             return;
         }
-        self.model_list = Some(ModelList::default());
-        self.panel = Some(Panel::Models);
+        self.boxes.model_list = Some(ModelList::default());
+        self.boxes.panel = Some(Panel::Models);
         self.core.send(Command::ListChoices);
     }
 
     /// 核心交回了一行行。
     pub(super) fn models_listed(&mut self, all: Vec<Choice>) {
         let current = self.transcript.model_ref().map(str::to_string);
-        if let Some(list) = &mut self.model_list {
+        if let Some(list) = &mut self.boxes.model_list {
             list.replace(all, current.as_deref());
         }
     }
@@ -31,8 +31,8 @@ impl App {
     /// 框开着时的按键。
     pub(super) fn models_key(&mut self, key: KeyEvent) {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-        let Some(list) = self.model_list.as_mut() else {
-            self.panel = None;
+        let Some(list) = self.boxes.model_list.as_mut() else {
+            self.boxes.panel = None;
             return;
         };
         match key.code {
@@ -59,7 +59,7 @@ impl App {
 
     /// 鼠标在框上：悬停选中，点一下换，滚轮挪露出的那一段；交回归不归它。
     pub(super) fn models_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
-        if self.panel != Some(Panel::Models) || !self.screen.areas.menu.contains(at) {
+        if self.boxes.panel != Some(Panel::Models) || !self.screen.areas.menu.contains(at) {
             return false;
         }
         let rows = self.config.layout.session_rows.max(1);
@@ -73,7 +73,7 @@ impl App {
                 .map(usize::from);
         let index = row.and_then(|row| self.screen.panel_rows.get(row).copied().flatten());
         let inside = self.screen.areas.menu_text.contains(at);
-        let Some(list) = self.model_list.as_mut() else {
+        let Some(list) = self.boxes.model_list.as_mut() else {
             return true;
         };
         let count = list.matches().len();
@@ -95,8 +95,8 @@ impl App {
     }
 
     fn close_models(&mut self) {
-        self.panel = None;
-        self.model_list = None;
+        self.boxes.panel = None;
+        self.boxes.model_list = None;
     }
 
     /// 换成选中的那个：冷却中的、没有 key 的不换，提示为什么；别的交给核心，关框。

@@ -31,7 +31,7 @@ pub use figure::idle_look;
 pub fn draw(frame: &mut Frame, app: &mut App) {
     let now = Instant::now();
     let area = frame.area();
-    let Some(step) = app.oobe.as_ref().map(|o| o.step) else {
+    let Some(step) = app.boxes.oobe.as_ref().map(|o| o.step) else {
         return;
     };
     match step {
@@ -116,7 +116,7 @@ fn joined(pairs: &[[String; 2]]) -> String {
 
 /// 中间几步。
 fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
-    let Some(oobe) = app.oobe.as_ref() else {
+    let Some(oobe) = app.boxes.oobe.as_ref() else {
         return;
     };
     let look = app.config.oobe.clone();
@@ -167,7 +167,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
         popup_frame(frame, area, app, true);
         return;
     };
-    let Some(oobe) = app.oobe.as_ref() else {
+    let Some(oobe) = app.boxes.oobe.as_ref() else {
         return;
     };
     let act = oobe.react.act(now, &look.react);
@@ -241,7 +241,7 @@ fn popup_frame(
     let hints = (joined(&more[8]), joined(&more[9]));
     let rect = popup::rect(area, &look);
     let inner = popup::body(rect);
-    let Some(oobe) = app.oobe.as_mut() else {
+    let Some(oobe) = app.boxes.oobe.as_mut() else {
         return (false, None);
     };
     let size = (inner.width, inner.height);

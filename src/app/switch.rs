@@ -26,8 +26,8 @@ impl App {
         }
         // 订着会话列表（核心 9-5）的，手上这一份一直是新的，不用再要；还没有的（老核心）照旧要一次。
         let fresh = self.sessions_seen.is_some();
-        self.session_list = Some(list);
-        self.panel = Some(Panel::Sessions);
+        self.boxes.session_list = Some(list);
+        self.boxes.panel = Some(Panel::Sessions);
         if !fresh {
             self.core.send(Command::ListSessions);
         }
@@ -39,7 +39,7 @@ impl App {
             return;
         };
         crate::core::apply_session_change(seen, change);
-        if let Some(list) = &mut self.session_list {
+        if let Some(list) = &mut self.boxes.session_list {
             list.replace(seen.clone());
         }
         self.titles_from_list();
@@ -49,7 +49,7 @@ impl App {
     /// 核心交回了列表。
     pub(super) fn sessions_listed(&mut self, all: Vec<SessionInfo>) {
         self.sessions_seen = Some(all.clone());
-        if let Some(list) = &mut self.session_list {
+        if let Some(list) = &mut self.boxes.session_list {
             list.replace(all);
         }
         self.titles_from_list();
@@ -86,8 +86,8 @@ impl App {
     /// 框开着时的按键。
     pub(super) fn sessions_key(&mut self, key: KeyEvent) {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-        let Some(list) = self.session_list.as_mut() else {
-            self.panel = None;
+        let Some(list) = self.boxes.session_list.as_mut() else {
+            self.boxes.panel = None;
             return;
         };
         match key.code {
@@ -101,13 +101,13 @@ impl App {
             }
             KeyCode::Char(' ') => {
                 let main = self.main_session();
-                if let Some(list) = self.session_list.as_mut() {
+                if let Some(list) = self.boxes.session_list.as_mut() {
                     list.tick(main.as_deref());
                 }
             }
             KeyCode::Char('a') if ctrl => {
                 let main = self.main_session();
-                if let Some(list) = self.session_list.as_mut() {
+                if let Some(list) = self.boxes.session_list.as_mut() {
                     list.tick_all(main.as_deref());
                 }
             }
@@ -128,7 +128,7 @@ impl App {
 
     /// 鼠标在框上：悬停选中，点一下切过去；交回归不归它。
     pub(super) fn sessions_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
-        if self.panel != Some(Panel::Sessions) {
+        if self.boxes.panel != Some(Panel::Sessions) {
             return false;
         }
         let areas = self.screen.areas;
@@ -143,7 +143,7 @@ impl App {
         };
         if by != 0 {
             let rows = self.config.layout.session_rows.max(1);
-            if let Some(list) = self.session_list.as_mut() {
+            if let Some(list) = self.boxes.session_list.as_mut() {
                 let count = list.matches().len();
                 crate::menu::pin(list.selected, &mut list.pinned, count, rows, by);
             }
@@ -154,7 +154,7 @@ impl App {
         let Some(index) = index.filter(|_| areas.menu_text.contains(at)) else {
             return true;
         };
-        let Some(list) = self.session_list.as_mut() else {
+        let Some(list) = self.boxes.session_list.as_mut() else {
             return true;
         };
         let rows = self.config.layout.session_rows.max(1);
@@ -171,16 +171,16 @@ impl App {
     }
 
     fn close_sessions(&mut self) {
-        self.panel = None;
+        self.boxes.panel = None;
         // 框里改过的（置顶、删了的）记下来，下次开框先照它画。
-        if let Some(list) = self.session_list.take().filter(|l| l.loaded) {
+        if let Some(list) = self.boxes.session_list.take().filter(|l| l.loaded) {
             self.sessions_seen = Some(list.all);
         }
     }
 
     /// 置顶、取消选中的那个：框里当场换，再向核心要一份新的。
     fn toggle_pin(&mut self) {
-        let Some(list) = self.session_list.as_mut() else {
+        let Some(list) = self.boxes.session_list.as_mut() else {
             return;
         };
         let Some(session) = list.picked().map(|s| s.session.clone()) else {
@@ -209,7 +209,7 @@ impl App {
         let main = self.main_session();
         let texts = self.config.text.sessions.clone();
         let untitled = self.config.text.untitled.clone();
-        let Some(list) = self.session_list.as_mut() else {
+        let Some(list) = self.boxes.session_list.as_mut() else {
             return;
         };
         let doomed = list.doomed(main.as_deref());

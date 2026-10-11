@@ -95,7 +95,7 @@ impl App {
             }
         }
         self.screen.view = Default::default();
-        self.panel = None;
+        self.boxes.panel = None;
         *self.media.row_cache.borrow_mut() = Default::default();
     }
 

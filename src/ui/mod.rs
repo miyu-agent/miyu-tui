@@ -231,12 +231,12 @@ fn text_width(area_width: u16, layout: &Layout) -> u16 {
 pub fn draw(frame: &mut Frame, app: &mut App) {
     app.screen.caret.begin();
     // 第一次打开的引导开着：整屏归它（蓝图「第一次打开的引导」第 1 条）。
-    if app.oobe.is_some() {
+    if app.boxes.oobe.is_some() {
         oobe::draw(frame, app);
         return;
     }
     // 配置页开着：整屏归它，对话不画（图片也不画），关了照原样画回来（蓝图「配置页」第 1 条）。
-    if let Some(page) = app.settings.as_mut() {
+    if let Some(page) = app.boxes.settings.as_mut() {
         settings::draw(frame, page, &app.config, &mut app.screen.caret);
         return;
     }
@@ -257,11 +257,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let drawer_open = app.drawers.open();
     // `@` 文件列表也占这个地方，开着时不开斜杠命令列表（「`@` 文件列表」第 1 条）。
     let mentions = crate::frame_log::section("mention", || app.mention_found());
-    let matches = if app.history.open || app.panel.is_some() || drawer_open || mentions.is_some() {
-        None
-    } else {
-        app.menu_matches()
-    };
+    let matches =
+        if app.history.open || app.boxes.panel.is_some() || drawer_open || mentions.is_some() {
+            None
+        } else {
+            app.menu_matches()
+        };
     let running = app.transcript.running.is_some();
     let queued: Vec<String> = app
         .transcript
@@ -368,7 +369,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         panels::content(app, width, now, usize::from(inner));
     let menu_shown = menu::rows(app.config.layout.menu_rows, inner);
     // 框里的几条，放得下框的加上上下两条边（`tui.md`「斜杠命令列表」第 3 条）。
-    let items = if app.panel.is_some() {
+    let items = if app.boxes.panel.is_some() {
         panel_lines.len()
     } else if app.history.open {
         history_rows.len()

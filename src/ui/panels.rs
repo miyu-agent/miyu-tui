@@ -19,19 +19,19 @@ pub(super) fn content(
     now: Instant,
     max: usize,
 ) -> (Chrome, Vec<Line<'static>>, Vec<Option<usize>>) {
-    match app.panel {
+    match app.boxes.panel {
         Some(crate::app::Panel::Help { scroll }) => {
             let (chrome, lines) = help::lines(&app.config, width, scroll, max);
             let map = vec![None; lines.len()];
             (chrome, lines, map)
         }
-        Some(crate::app::Panel::Models) => match &app.model_list {
+        Some(crate::app::Panel::Models) => match &app.boxes.model_list {
             Some(list) => {
                 model_list::lines(list, app.transcript.model_ref(), &app.config, width, max)
             }
             None => Default::default(),
         },
-        Some(crate::app::Panel::Sessions) => match &app.session_list {
+        Some(crate::app::Panel::Sessions) => match &app.boxes.session_list {
             Some(list) => session_list::lines(
                 list,
                 app.main_session().as_deref(),
@@ -43,9 +43,13 @@ pub(super) fn content(
             ),
             None => Default::default(),
         },
-        Some(crate::app::Panel::Effort { selected }) => {
-            effort_list::lines(app.efforts.as_ref(), selected, &app.config, width, max)
-        }
+        Some(crate::app::Panel::Effort { selected }) => effort_list::lines(
+            app.boxes.efforts.as_ref(),
+            selected,
+            &app.config,
+            width,
+            max,
+        ),
         Some(crate::app::Panel::Language { selected }) => {
             languages::lines(&app.config, &app.system_language, selected, width, max)
         }
@@ -66,6 +70,6 @@ pub(super) fn content(
                 max,
             )
         }
-        _ => background::lines(app.panel, &app.board, &app.config, width, now, max),
+        _ => background::lines(app.boxes.panel, &app.board, &app.config, width, now, max),
     }
 }

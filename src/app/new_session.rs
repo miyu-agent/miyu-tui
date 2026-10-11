@@ -123,7 +123,7 @@ impl App {
     /// 该问的时候开框：还没开会话、没开着别的框；照先后，没选的先问。测具设了的直接用；核心不认的（列表是空的）
     /// 不问；还没读到的等读到了再问。
     pub(super) fn ask_next(&mut self) {
-        if !self.not_opened() || self.panel.is_some() {
+        if !self.not_opened() || self.boxes.panel.is_some() {
             return;
         }
         for kind in ORDER {
@@ -143,7 +143,7 @@ impl App {
             }
             let selected = pick.start(self.last_pick(kind));
             self.pick_mut(kind).opened = Some(selected);
-            self.panel = Some(Panel::Pick { kind, selected });
+            self.boxes.panel = Some(Panel::Pick { kind, selected });
             return;
         }
     }
@@ -159,7 +159,7 @@ impl App {
 
     /// 会话列表到了、变了：框开着、人还没挪过光标的，照上一次选的重新停。
     pub(super) fn repoint_pick(&mut self) {
-        let Some(Panel::Pick { kind, selected }) = self.panel else {
+        let Some(Panel::Pick { kind, selected }) = self.boxes.panel else {
             return;
         };
         if self.pick(kind).opened != Some(selected) {
@@ -167,13 +167,13 @@ impl App {
         }
         let selected = self.pick(kind).start(self.last_pick(kind));
         self.pick_mut(kind).opened = Some(selected);
-        self.panel = Some(Panel::Pick { kind, selected });
+        self.boxes.panel = Some(Panel::Pick { kind, selected });
     }
 
     /// 框开着时的按键：上下挪（跳过写错的），`Enter` 选，`Esc` 照光标起初停的那一个。别的键不管：选了才能打字。
     pub(super) fn pick_key(&mut self, kind: Kind, selected: usize, key: KeyEvent) {
         let Some(list) = self.pick(kind).list.clone() else {
-            self.panel = None;
+            self.boxes.panel = None;
             return;
         };
         let step = |down: bool| {
@@ -186,20 +186,20 @@ impl App {
         };
         match key.code {
             KeyCode::Down => {
-                self.panel = Some(Panel::Pick {
+                self.boxes.panel = Some(Panel::Pick {
                     kind,
                     selected: step(true),
                 })
             }
             KeyCode::Up => {
-                self.panel = Some(Panel::Pick {
+                self.boxes.panel = Some(Panel::Pick {
                     kind,
                     selected: step(false),
                 })
             }
             KeyCode::Enter => {
                 if let Some(p) = list.get(selected).filter(|p| p.problem.is_none()) {
-                    self.panel = None;
+                    self.boxes.panel = None;
                     self.choose(kind, p.id.clone());
                     self.ask_next();
                 }
@@ -209,7 +209,7 @@ impl App {
             KeyCode::Esc => {
                 match esc_choice(&list, self.pick(kind).preferred(self.last_pick(kind)), kind) {
                     Some(id) => {
-                        self.panel = None;
+                        self.boxes.panel = None;
                         self.choose(kind, id);
                         self.ask_next();
                     }
@@ -240,8 +240,8 @@ impl App {
         if !self.not_opened() {
             return;
         }
-        if matches!(self.panel, Some(Panel::Pick { .. })) {
-            self.panel = None;
+        if matches!(self.boxes.panel, Some(Panel::Pick { .. })) {
+            self.boxes.panel = None;
         }
         for (kind, id) in [(Kind::Persona, persona), (Kind::Preset, preset)] {
             if let Some(id) = id {
@@ -272,7 +272,7 @@ impl App {
             .and_then(|id| list.iter().position(|p| p.id == id))
             .or_else(|| pick.default_index())
             .unwrap_or(0);
-        self.panel = Some(Panel::Pick { kind, selected: at });
+        self.boxes.panel = Some(Panel::Pick { kind, selected: at });
     }
 
     /// 新会话：选的都清掉，再问（`/new`）。

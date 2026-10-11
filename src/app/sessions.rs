@@ -413,7 +413,7 @@ impl App {
         self.core.send(Command::View(target));
         // 行缓存照条目编号认，两份正文的编号会撞：换了就重排。
         *self.media.row_cache.borrow_mut() = Default::default();
-        self.panel = None;
+        self.boxes.panel = None;
     }
 }
 

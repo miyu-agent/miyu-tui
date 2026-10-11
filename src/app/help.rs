@@ -9,7 +9,7 @@ use super::{App, Panel};
 impl App {
     /// 打开帮助框。
     pub(super) fn open_help(&mut self) {
-        self.panel = Some(Panel::Help { scroll: 0 });
+        self.boxes.panel = Some(Panel::Help { scroll: 0 });
     }
 
     /// 帮助框开着时的按键。
@@ -21,7 +21,7 @@ impl App {
             KeyCode::PageUp => scroll.saturating_sub(page),
             KeyCode::PageDown => scroll + page,
             KeyCode::Esc => {
-                self.panel = None;
+                self.boxes.panel = None;
                 return;
             }
             _ => return,
@@ -31,7 +31,7 @@ impl App {
 
     /// 滚轮在帮助框上：滚一行；交回归不归它。
     pub(super) fn help_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
-        let Some(Panel::Help { scroll }) = self.panel else {
+        let Some(Panel::Help { scroll }) = self.boxes.panel else {
             return false;
         };
         if !self.screen.areas.menu.contains(at) {
@@ -50,6 +50,6 @@ impl App {
         let total = crate::ui::help::count(&self.config, self.screen.areas.menu_text.width);
         let shown = self.screen.panel_rows.len().max(1);
         let scroll = to.min(total.saturating_sub(shown));
-        self.panel = Some(Panel::Help { scroll });
+        self.boxes.panel = Some(Panel::Help { scroll });
     }
 }
