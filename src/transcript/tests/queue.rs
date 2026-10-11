@@ -319,3 +319,42 @@ fn a_turn_she_has_not_started_on_hands_back_the_message_that_opened_it() {
     );
     assert!(t.untouched().is_none(), "她开口了：不撤");
 }
+
+#[test]
+fn withdrawing_a_queued_message_keeps_the_reply_after_it_in_place() {
+    // review B7（2026-10-11）：排着的话记在正文末尾，这一轮后面才开的回答排在它后面；退回时删了它，记着的下标没往前挪，
+    // 接着来的字落到了别的条目上（或者越界）。
+    let mut t = started();
+    t.user("排着的".into(), Vec::new());
+    apply(
+        &mut t,
+        vec![
+            Push::UserMessage(5),
+            Push::BlockStart {
+                index: 1,
+                block: Block::Text,
+            },
+            Push::Delta {
+                index: 1,
+                text: "先说".into(),
+            },
+            Push::Withdrawn(vec![5]),
+            Push::Delta {
+                index: 1,
+                text: "一半".into(),
+            },
+            Push::BlockEnd(1),
+        ],
+    );
+    let replies: Vec<&str> = t
+        .entries
+        .iter()
+        .filter(|e| e.kind == Kind::Reply)
+        .map(|e| e.text.as_str())
+        .collect();
+    assert_eq!(replies, ["先说一半"]);
+    assert!(
+        t.entries.iter().all(|e| e.text != "排着的"),
+        "退回的不在正文里"
+    );
+}
