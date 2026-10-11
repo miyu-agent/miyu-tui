@@ -162,6 +162,7 @@
     "path_forbidden": "That can't be a workspace",
     "owner_only": "Only the owner can change the workspace",
     "session_not_found": "That session no longer exists",
+    "session_sealed": "Session sealed",
     "nothing_to_rename": "No session yet; say something first, then rename",
     "nothing_to_recap": "Nothing to recap yet",
     "recap_failed": "The recap could not be written, try again",
