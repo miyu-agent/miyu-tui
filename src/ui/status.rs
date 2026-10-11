@@ -10,26 +10,24 @@ use ratatui::widgets::{Block, BorderType, Clear, Paragraph};
 use unicode_width::UnicodeWidthStr;
 
 use super::rows::clip;
-use crate::app::App;
+use crate::app::{MascotState, Seen};
 use crate::config::Dots;
 use crate::theme;
 
 /// 画那一行：从词库挑的词连着一到三个点，一起被流光扫（流光明暗），补到最宽的词那么宽，再写这一轮的用时、重试。
-pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
-    let Some(start) = app.talk.transcript.running else {
+pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState) {
+    let Some(start) = seen.talk.transcript.running else {
         return;
     };
     let now = Instant::now();
-    let beat = app.talk.transcript.beat();
-    let word = app
-        .mascot
+    let beat = seen.talk.transcript.beat();
+    let word = mascot
         .pulse
-        .word(start, beat, now, &app.config.pulse)
+        .word(start, beat, now, &seen.config.pulse)
         .to_string();
-    let layout = &app.config.layout;
+    let layout = &seen.config.layout;
     // 换了词，亮光从头扫（`tui.md`「运行状态行和排队的消息」第 1 条）。
-    let t = app
-        .mascot
+    let t = mascot
         .pulse
         .shown()
         .map_or(0.0, |s| now.saturating_duration_since(s).as_secs_f64());
@@ -47,14 +45,14 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
         })
         .collect();
     // 补到词库里最宽的词那么宽，用时的位置不跟着词长短跳。
-    let pad = app.config.pulse.widest().saturating_sub(word.width()) + 1;
+    let pad = seen.config.pulse.widest().saturating_sub(word.width()) + 1;
     spans.push(Span::raw(" ".repeat(pad)));
     let rest = theme::shimmer_rest(&layout.shimmer);
     spans.push(Span::styled(
         crate::meter::clock(start.elapsed().as_secs()),
         rest,
     ));
-    if let Some(retry) = &app.talk.transcript.retry {
+    if let Some(retry) = &seen.talk.transcript.retry {
         spans.push(Span::styled(" · ", theme::dim()));
         spans.push(Span::styled(retry.clone(), theme::warn()));
     }
@@ -78,8 +76,8 @@ pub(super) fn swept(word: &str, dots: &Dots, t: f64, sweep: f64) -> String {
 
 /// 提示：圆角细边框的小框，底边压在 `bottom` 那一行，框里的字从 `text_x` 起（和输入框里的字左对齐），
 /// 左右各空一格。浮着，先把底下的格子清掉再画（`tui.md`「提示」）。
-pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, app: &App) {
-    let Some(notice) = &app.typing.notice else {
+pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, seen: &Seen) {
+    let Some(notice) = &seen.typing.notice else {
         return;
     };
     let text = clip(&notice.text, max_width.saturating_sub(4));

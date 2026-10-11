@@ -9,7 +9,7 @@ use ratatui::widgets::Paragraph;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use crate::app::App;
+use crate::app::{MascotState, Screen, Seen};
 use crate::config::{Config, Layout, TodoMarks};
 use crate::core::Usage;
 use crate::jobs::{Board, Todo, TodoState};
@@ -317,7 +317,13 @@ pub fn section(lines: Vec<Line<'static>>) -> Vec<Line<'static>> {
 }
 
 /// 画侧边栏：竖线、吉祥物（开着的话）、会话那一段、待办，一段之间空一行。
-pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
+pub fn draw(
+    frame: &mut Frame,
+    area: Rect,
+    seen: &Seen,
+    screen: &mut Screen,
+    pet: &mut MascotState,
+) {
     if area.width == 0 {
         return;
     }
@@ -331,21 +337,22 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     let inner = area.width.saturating_sub(2);
     let mut top = area.y + 1;
     // 人格有头像的画头像，不受吉祥物的开关管（「空会话的首页」第 10 条）。
-    if super::avatar_view::slot_shown(app, crate::app::Place::Sidebar) {
-        let look = &app.config.mascot;
+    if super::avatar_view::slot_shown(seen, crate::app::Place::Sidebar) {
+        let look = &seen.config.mascot;
         let cols = look.cols.min(area.width);
         let mascot =
             Rect::new(area.x + (area.width - cols) / 2, top, cols, look.rows).intersection(area);
-        super::avatar_view::draw(frame, mascot, app, crate::app::Place::Sidebar, true);
+        let parts = (seen, &*screen, &mut *pet);
+        super::avatar_view::draw(frame, mascot, parts, crate::app::Place::Sidebar, true);
         top = mascot.bottom() + 1;
     }
-    let total = app.talk.usage_total();
+    let total = seen.talk.usage_total();
     // 工作目录照会话的（核心 9-7 上）；还没开会话、核心旧的照终端所在的。
-    let cwd = app.seen().current_workspace();
-    let (mut info, id_row) = info_lines(&app.talk.transcript, &total, &app.config, inner, cwd);
+    let cwd = seen.current_workspace();
+    let (mut info, id_row) = info_lines(&seen.talk.transcript, &total, seen.config, inner, cwd);
     // 会话名下面、短编号后面写人格、预设，一样一行（「新会话：人格、工作区」第 3、6 条）。
     if let Some(row) = id_row {
-        for (n, label) in app.seen().session_picks().into_iter().enumerate() {
+        for (n, label) in seen.session_picks().into_iter().enumerate() {
             info.insert(
                 row + 1 + n,
                 Line::styled(format!("  {label}"), theme::dim()),
@@ -353,7 +360,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
         }
     }
     // 「用量」那一段最后接花了多少（核心 8-15）：用量那一段在最后，接在后面就是。
-    info.extend(spent_lines(app.seen().spent(), &app.config));
+    info.extend(spent_lines(seen.spent(), seen.config));
     let tall = u16::try_from(info.len()).unwrap_or(u16::MAX);
     let at = Rect::new(area.x + 1, top, inner, tall).intersection(area);
     // 写了字的行记下来，给侧边栏的选字用（第 7 条）。
@@ -368,7 +375,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
         .collect();
     frame.render_widget(Paragraph::new(info), at);
     // 点短编号复制完整编号。
-    app.screen.areas.session_id = id_row.map_or(Rect::default(), |row| {
+    screen.areas.session_id = id_row.map_or(Rect::default(), |row| {
         let y = at.y + u16::try_from(row).unwrap_or(0);
         Rect::new(at.x, y, inner, 1).intersection(at)
     });
@@ -377,16 +384,16 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     let below = Rect::new(area.x + 1, top, inner, area.bottom().saturating_sub(top));
     let rows = usize::from(below.height.saturating_sub(1));
     let todo = section(todo_lines(
-        &app.talk.board,
-        &app.config,
+        &seen.talk.board,
+        seen.config,
         below.width.saturating_sub(2),
         rows,
-        app.talk.todo_full,
+        seen.talk.todo_full,
     ));
     let tall = u16::try_from(todo.len())
         .unwrap_or(u16::MAX)
         .min(below.height);
-    app.screen.areas.todo = Rect {
+    screen.areas.todo = Rect {
         height: tall,
         ..below
     };
@@ -398,14 +405,14 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_widget(Paragraph::new(todo), below);
     // 选中的反色。
     for row in &text_rows {
-        if let Some((from, to)) = app.screen.side_select.cols(row.y) {
+        if let Some((from, to)) = screen.side_select.cols(row.y) {
             let cells = Rect::new(from, row.y, to - from, 1).intersection(area);
             frame
                 .buffer_mut()
                 .set_style(cells, Style::new().add_modifier(Modifier::REVERSED));
         }
     }
-    app.screen.side_select.set_rows(text_rows);
+    screen.side_select.set_rows(text_rows);
 }
 
 #[cfg(test)]

@@ -7,7 +7,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 
 use super::Areas;
-use crate::app::App;
+use crate::app::{MascotState, Screen, Seen};
 use crate::config::Layout;
 
 /// 首页输入框里放字的宽度：框收窄到 `home_max_width`（「空会话的首页」第 2 条）。待办照它排，和框里的字一样宽。
@@ -86,15 +86,21 @@ pub fn areas(
 
 /// 画吉祥物；顺手定吉祥物往哪看（`tui.md`「空会话的首页」第 6、7 条）：输入框里有字看输入光标，
 /// 没字看鼠标指针，都没有看正前方。输入框、框下面那一行照平常画，要先画好输入框（光标的位置照它）。
-pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
+pub fn draw(
+    frame: &mut Frame,
+    areas: Areas,
+    seen: &Seen,
+    screen: &Screen,
+    mascot: &mut MascotState,
+) {
     // 工作目录：暗，放不下从前面截掉（第 2 条）。人格、预设不写（2026-10-08 项目主人：不用显示，侧边栏有）。
-    let cwd = super::panel::tail(app.seen().current_workspace(), usize::from(areas.cwd.width));
+    let cwd = super::panel::tail(seen.current_workspace(), usize::from(areas.cwd.width));
     let line = ratatui::text::Line::from(ratatui::text::Span::styled(cwd, crate::theme::dim()));
     frame.render_widget(ratatui::widgets::Paragraph::new(line), areas.cwd);
     if areas.mascot.height == 0 {
         return;
     }
-    let look = &app.config.mascot;
+    let look = &seen.config.mascot;
     // 开着列表：被顶到列表上面（中间空一行），关了停一会儿再走回来（第 4 条）。
     // 开着列表时待办也被顶到列表上面，吉祥物再被待办顶上去。
     let top = if areas.todo.height > 0 {
@@ -103,19 +109,16 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         areas.menu.y
     };
     // 抽屉把输入框撑高时也一样顶上去（「确认和提问的抽屉」第 2 条）。
-    let pushed = areas.menu.height > 0 || app.talk.drawers.open();
+    let pushed = areas.menu.height > 0 || seen.talk.drawers.open();
     let needed = pushed.then(|| i32::from(top) - 1 - i32::from(areas.mascot.height));
     let now = Instant::now();
-    let placed = app
-        .mascot
-        .perch
-        .place(areas.mascot.y, needed, now, &look.perch);
+    let placed = mascot.perch.place(areas.mascot.y, needed, now, &look.perch);
     // 被顶上去张一下嘴、走下来一路张着（第 9 条）。
-    if app.mascot.perch.take_hop() {
-        app.mascot.mouth.hop(now, &look.mouth);
+    if mascot.perch.take_hop() {
+        mascot.mouth.hop(now, &look.mouth);
     }
-    let walking = app.mascot.perch.walking(now, &look.perch);
-    app.mascot.mouth.hold(walking.then_some(look.mouth.walk));
+    let walking = mascot.perch.walking(now, &look.perch);
+    mascot.mouth.hold(walking.then_some(look.mouth.walk));
     let Some(y) = placed else {
         return;
     };
@@ -123,7 +126,13 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         mascot: Rect { y, ..areas.mascot },
         ..areas
     };
-    super::avatar_view::draw(frame, areas.mascot, app, crate::app::Place::Home, false);
+    super::avatar_view::draw(
+        frame,
+        areas.mascot,
+        (seen, screen, &mut *mascot),
+        crate::app::Place::Home,
+        false,
+    );
 }
 
 #[cfg(test)]
