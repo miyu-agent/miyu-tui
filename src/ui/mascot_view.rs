@@ -22,11 +22,14 @@ pub fn draw(frame: &mut Frame, rect: Rect, app: &mut App, far: bool) {
     );
     // 鼠标在动就看鼠标；停着、框里有字看输入光标（第 6 条）。
     let settle = Duration::from_millis(look.gaze.pointer_settle_ms);
-    let target = if app.input.editor.is_empty() || app.mascot.attention.on_pointer(now, settle) {
-        app.screen.pointer.or_else(|| app.input.cursor_position())
-    } else {
-        app.input.cursor_position()
-    };
+    let target =
+        if app.typing.input.editor.is_empty() || app.mascot.attention.on_pointer(now, settle) {
+            app.screen
+                .pointer
+                .or_else(|| app.typing.input.cursor_position())
+        } else {
+            app.typing.input.cursor_position()
+        };
     // 没人动时一阵一阵地摇头，代替看鼠标，摇得比跟光标慢（第 8 条）。
     let idling = app.mascot.idle.pose(now, &look.idle);
     let half_life = if idling.glance.is_some() {

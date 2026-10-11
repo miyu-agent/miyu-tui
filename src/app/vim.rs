@@ -10,7 +10,7 @@ impl App {
     /// 有列表、面板开着，或者抽屉开着、没在写字时，换掉这个按键；`menu_open`：命令列表、`@` 文件列表开着。
     pub(super) fn vim_keys(&self, event: Event, menu_open: bool) -> Event {
         let listing = menu_open
-            || self.history.open
+            || self.typing.history.open
             || self.boxes.panel.is_some()
             || (self.drawers.open() && !self.drawers.editing());
         // 开着时不能打字的框；抽屉开着时按键先归抽屉（它自己认 vim 键）。

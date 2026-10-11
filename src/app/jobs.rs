@@ -123,7 +123,7 @@ impl App {
             buttons: &buttons,
             agents: self.agent_stops(),
         };
-        self.focus.settle(stops)
+        self.typing.focus.settle(stops)
     }
 
     /// 打开按钮的面板。
@@ -149,9 +149,9 @@ impl App {
             buttons: &buttons,
             agents: self.agent_stops(),
         };
-        let focus = self.focus.settle(stops);
-        self.focus = match (focus, key.code) {
-            (Focus::Input, KeyCode::Down) if self.input.editor.is_empty() && !menu_open => {
+        let focus = self.typing.focus.settle(stops);
+        self.typing.focus = match (focus, key.code) {
+            (Focus::Input, KeyCode::Down) if self.typing.input.editor.is_empty() && !menu_open => {
                 focus.down(stops)
             }
             (Focus::Input, _) => return false,
@@ -189,11 +189,11 @@ impl App {
             }
             // 别的键：焦点回输入框，字照打进去。
             _ => {
-                self.focus = Focus::Input;
+                self.typing.focus = Focus::Input;
                 return false;
             }
         };
-        focus != Focus::Input || self.focus != Focus::Input
+        focus != Focus::Input || self.typing.focus != Focus::Input
     }
 
     /// 面板开着时的按键。
@@ -378,7 +378,7 @@ impl App {
         // 正文里能点的（收起那一行、一步、撤销那一行、能点开的通知）也算（`tui.md`「鼠标」）。
         self.screen.view.hover_link.is_some()
             || self.screen.view.hover.is_some()
-            || self.input.hovered_attachment().is_some()
+            || self.typing.input.hovered_attachment().is_some()
             || over(self.screen.areas.button)
             || over(self.screen.areas.session_id)
             || over(self.screen.areas.todo)

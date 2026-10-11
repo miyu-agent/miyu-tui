@@ -273,7 +273,7 @@ fn run(
             pointer = pointer::Pointer::default();
         }
         // 点了本机的文本文件：让出终端给编辑器，退出了再回来（蓝图「她的回答：Markdown」第 10 条）。
-        if let Some((editor, file)) = app.edit.take() {
+        if let Some((editor, file)) = app.typing.edit.take() {
             let edited = edit(terminal, keyboard, &reader, &editor, &file);
             app.edited(edited);
             pointer = pointer::Pointer::default();

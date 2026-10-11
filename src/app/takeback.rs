@@ -97,14 +97,14 @@ impl App {
         }
         let mut draft = Draft::default();
         for (text, chips) in returned {
-            let sent = self.input.sent_by_text(&text);
+            let sent = self.typing.input.sent_by_text(&text);
             let back = sent.unwrap_or_else(|| Draft::from_pasted(&text, &paste::pasted(chips)));
             draft.append(back, "\n\n");
         }
-        if !self.input.editor.is_empty() {
-            draft.append(self.input.draft(), "\n\n");
+        if !self.typing.input.editor.is_empty() {
+            draft.append(self.typing.input.draft(), "\n\n");
         }
-        self.input.editor.set_draft(draft);
+        self.typing.input.editor.set_draft(draft);
     }
 }
 

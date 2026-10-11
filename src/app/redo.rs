@@ -33,10 +33,11 @@ impl App {
             return;
         };
         let draft = self
+            .typing
             .input
             .sent_by_text(&text)
             .unwrap_or_else(|| Draft::from_pasted(&text, &paste::pasted(chips)));
-        self.input.start_edit(draft);
+        self.typing.input.start_edit(draft);
     }
 
     /// 编辑上一句回车了：照改过的重来。字照改过的发；附件和改之前的不一样才带（换成没有的带空的）。
@@ -50,8 +51,8 @@ impl App {
             text: Some(draft.expand()),
             files,
         });
-        self.input.remember(draft.clone());
-        self.input.forget_cleared();
+        self.typing.input.remember(draft.clone());
+        self.typing.input.forget_cleared();
         self.unsent = Some(Unsent {
             draft: Some(draft),
             original: Some(original),
@@ -79,13 +80,13 @@ impl App {
         if let Some(turn) = unsent.turn {
             self.transcript.show_turn(turn);
         }
-        let Some(draft) = unsent.draft.filter(|_| self.input.editor.is_empty()) else {
+        let Some(draft) = unsent.draft.filter(|_| self.typing.input.editor.is_empty()) else {
             return;
         };
         if let Some(original) = unsent.original {
-            self.input.start_edit(original);
+            self.typing.input.start_edit(original);
         }
-        self.input.editor.set_draft(draft);
+        self.typing.input.editor.set_draft(draft);
     }
 
     /// 能不能重做：在回答时、最后一轮不是你说的话开的，提示一句交回 `None`（不找核心）；能的交回那句的字和块。

@@ -40,12 +40,12 @@ pub(super) fn draw_box(frame: &mut Frame, areas: Areas, app: &mut App, home: boo
     let typing = app.focus() == crate::focus::Focus::Input && app.boxes.panel.is_none();
     let look = Look {
         level: app.transcript.level,
-        placeholder: placeholder(&app.config, home, app.tips.at()),
+        placeholder: placeholder(&app.config, home, app.typing.tips.at()),
         child,
     };
-    draw_input(frame, areas, &mut app.input, &app.config, look);
+    draw_input(frame, areas, &mut app.typing.input, &app.config, look);
     // 焦点不在这里也停到插入点，只是不显示（蓝图「每一帧」）。
-    if let Some(pos) = app.input.cursor_position() {
+    if let Some(pos) = app.typing.input.cursor_position() {
         app.screen.caret.put(pos, typing);
     }
 }

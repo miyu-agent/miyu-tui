@@ -18,13 +18,14 @@ impl App {
     /// 没有（`editor.rs`）。
     pub(super) fn compose(&mut self) {
         let Some(editor) = self
+            .typing
             .editor
             .clone()
             .or_else(|| cfg!(unix).then(|| "vi".to_string()))
         else {
             return;
         };
-        let before = self.input.draft();
+        let before = self.typing.input.draft();
         let file = match crate::scratch::write("prompt", &before.text) {
             Ok(file) => file,
             Err(e) => {
@@ -38,21 +39,24 @@ impl App {
                 return;
             }
         };
-        self.composing = Some(Composing {
+        self.typing.composing = Some(Composing {
             file: file.clone(),
             before,
         });
-        self.edit = Some((editor, file));
+        self.typing.edit = Some((editor, file));
     }
 
     /// 编辑器退出了：是 `Ctrl+G` 开的就读回来放进输入框（末尾多出来的那个换行去掉），临时文件删掉。交回是不是它。
     pub(super) fn composed(&mut self) -> bool {
-        let Some(Composing { file, before }) = self.composing.take() else {
+        let Some(Composing { file, before }) = self.typing.composing.take() else {
             return false;
         };
         if let Ok(text) = std::fs::read_to_string(&file) {
             let text = text.strip_suffix('\n').unwrap_or(&text);
-            self.input.editor.set_draft(Draft::rebind(text, &before));
+            self.typing
+                .input
+                .editor
+                .set_draft(Draft::rebind(text, &before));
         }
         drop(std::fs::remove_file(&file));
         true

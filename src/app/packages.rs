@@ -13,23 +13,23 @@ const PACKAGE: &str = "tui";
 impl App {
     /// 连上了：输入历史还没放好的，去要软件包。
     pub(super) fn ask_packages(&mut self) {
-        if !self.history_placed {
+        if !self.typing.history_placed {
             self.core.send(Command::ListPackages);
         }
     }
 
     /// 软件包回来了：照 `tui` 的状态目录放输入历史；没有的（旧核心、没装清单）照旧放老位置。
     pub(super) fn packages_arrived(&mut self, packages: &[(String, Option<PathBuf>)]) {
-        if self.history_placed {
+        if self.typing.history_placed {
             return;
         }
-        self.history_placed = true;
+        self.typing.history_placed = true;
         let state = packages
             .iter()
             .find(|(id, _)| id == PACKAGE)
             .and_then(|(_, state)| state.as_deref());
-        let path = place(state, self.old_history.take()).filter(|_| !cfg!(test));
+        let path = place(state, self.typing.old_history.take()).filter(|_| !cfg!(test));
         let keep = self.config.layout.history_keep;
-        self.input.keep_history(Saved::at(path), keep);
+        self.typing.input.keep_history(Saved::at(path), keep);
     }
 }

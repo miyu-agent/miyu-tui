@@ -114,13 +114,14 @@ impl App {
             Effect::Icons(name) => self.use_icons(&name),
             Effect::Editor(text) => {
                 let editor = self
+                    .typing
                     .editor
                     .clone()
                     .or_else(|| cfg!(unix).then(|| "vi".to_string()));
                 match editor.map(|e| (e, crate::scratch::write("oobe", &text))) {
                     Some((editor, Ok(file))) => {
                         self.boxes.oobe_editing = Some(file.clone());
-                        self.edit = Some((editor, file));
+                        self.typing.edit = Some((editor, file));
                     }
                     _ => {
                         if let Some(oobe) = self.boxes.oobe.as_mut() {

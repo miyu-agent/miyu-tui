@@ -257,12 +257,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let drawer_open = app.drawers.open();
     // `@` 文件列表也占这个地方，开着时不开斜杠命令列表（「`@` 文件列表」第 1 条）。
     let mentions = crate::frame_log::section("mention", || app.mention_found());
-    let matches =
-        if app.history.open || app.boxes.panel.is_some() || drawer_open || mentions.is_some() {
-            None
-        } else {
-            app.menu_matches()
-        };
+    let matches = if app.typing.history.open
+        || app.boxes.panel.is_some()
+        || drawer_open
+        || mentions.is_some()
+    {
+        None
+    } else {
+        app.menu_matches()
+    };
     let running = app.transcript.running.is_some();
     let queued: Vec<String> = app
         .transcript
@@ -293,8 +296,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     let todo_rows = u16::try_from(todo_lines.len()).unwrap_or(u16::MAX);
     // 输入框从有字变空时换一条提示。
-    app.tips
-        .see(app.input.editor.is_empty(), app.config.text.tips.len());
+    app.typing.tips.see(
+        app.typing.input.editor.is_empty(),
+        app.config.text.tips.len(),
+    );
     // 框里占几行：抽屉开着时是抽屉的行数，连边框最高半屏；带文字画的放得下整张为止，屏幕顶上留几行
     // （`tui.md`「确认和提问的抽屉」第 2 条）。
     let texts = &app.config.text.drawer;
@@ -309,7 +314,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     let box_rows = |w: u16| match open_drawer {
         Some(d) => drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max),
-        None => app.input.rows(w),
+        None => app.typing.input.rows(w),
     };
     // 空会话是首页：整组上下居中，吉祥物在中间（`tui.md`「空会话的首页」）。列表占几行交给 `place` 定位。
     let place = |menu_rows: u16| {
@@ -351,10 +356,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let now = std::time::Instant::now();
     let width = probe.menu_text.width;
     // 历史列表排成的行：占几行、画什么都照它（`history.rs` 的 `lines`）。
-    let (history_chrome, history_rows) = if app.history.open {
-        let found = app.history.matches(app.input.sent());
+    let (history_chrome, history_rows) = if app.typing.history.open {
+        let found = app.typing.history.matches(app.typing.input.sent());
         history::lines(
-            &app.history,
+            &app.typing.history,
             &found,
             width,
             &app.config,
@@ -371,7 +376,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     // 框里的几条，放得下框的加上上下两条边（`tui.md`「斜杠命令列表」第 3 条）。
     let items = if app.boxes.panel.is_some() {
         panel_lines.len()
-    } else if app.history.open {
+    } else if app.typing.history.open {
         history_rows.len()
     } else if let Some(found) = &mentions {
         found.items.len().clamp(1, menu_shown)
@@ -400,8 +405,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);
         let (chrome, lines) = menu::lines(
             matches,
-            app.menu.selected,
-            app.menu.pinned,
+            app.typing.menu.selected,
+            app.typing.menu.pinned,
             rows,
             areas.menu_text.width,
             &app.config.text.menu,
@@ -412,15 +417,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);
         let (chrome, lines) = mention::lines(
             found,
-            app.mention.selected,
-            app.mention.pinned,
+            app.typing.mention.selected,
+            app.typing.mention.pinned,
             rows,
             areas.menu_text.width,
             &app.config.text.mention,
         );
         menu::draw(frame, areas.menu, areas.menu_text, chrome, lines);
     }
-    if app.history.open {
+    if app.typing.history.open {
         history::draw(
             frame,
             areas.menu,

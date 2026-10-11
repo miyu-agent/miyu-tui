@@ -15,9 +15,9 @@ impl App {
     pub(super) fn esc(&mut self) {
         let window = Duration::from_millis(self.config.layout.esc_window_ms);
         let running = self.transcript.running.is_some();
-        match self.esc_at.take() {
+        match self.typing.esc_at.take() {
             Some(at) if at.elapsed() <= window => {
-                self.notice = None;
+                self.typing.notice = None;
                 if running && self.switching() {
                     return;
                 }
@@ -36,11 +36,11 @@ impl App {
                     }
                     self.core.send(Command::Interrupt { send: true });
                 } else {
-                    self.input.editor.take();
+                    self.typing.input.editor.take();
                 }
             }
             _ => {
-                self.esc_at = Some(Instant::now());
+                self.typing.esc_at = Some(Instant::now());
                 let text = &self.config.text;
                 let hint = if running {
                     &text.esc_hint
@@ -89,7 +89,7 @@ impl App {
             return Action::None;
         }
         // 输入历史列表开着时，按键先归它（`tui.md`「输入历史列表」）。
-        if self.history.open {
+        if self.typing.history.open {
             self.history_key(key);
             return Action::None;
         }
@@ -150,10 +150,10 @@ impl App {
         }
         // Ctrl+R：调出输入历史列表；恢复撤销只用 /restore（`tui.md`「按键」）。
         if ctrl && key.code == KeyCode::Char('r') {
-            if self.input.sent().is_empty() {
+            if self.typing.input.sent().is_empty() {
                 self.hint(self.config.text.history.none.clone(), false);
             } else {
-                self.history.open();
+                self.typing.history.open();
             }
             return Action::None;
         }
@@ -180,7 +180,7 @@ impl App {
                 KeyCode::Enter,
                 ratatui::crossterm::event::KeyModifiers::NONE,
             );
-            let action = self.input.key(plain);
+            let action = self.typing.input.key(plain);
             if running {
                 if let Action::Submit(text) = action {
                     self.submit(text);
@@ -200,22 +200,22 @@ impl App {
             return action;
         }
         let Some(matches) = self.menu_matches() else {
-            return self.input.key(key);
+            return self.typing.input.key(key);
         };
-        let selected = matches.get(self.menu.selected).cloned();
+        let selected = matches.get(self.typing.menu.selected).cloned();
         match (key.code, selected) {
-            (KeyCode::Up, _) => self.menu.step(false, matches.len()),
-            (KeyCode::Down, _) => self.menu.step(true, matches.len()),
+            (KeyCode::Up, _) => self.typing.menu.step(false, matches.len()),
+            (KeyCode::Down, _) => self.typing.menu.step(true, matches.len()),
             (KeyCode::Tab, Some(spec)) => {
-                self.input.editor.take();
-                self.input.paste(&format!("/{}", spec.name));
+                self.typing.input.editor.take();
+                self.typing.input.paste(&format!("/{}", spec.name));
             }
             (KeyCode::Enter, Some(spec)) => {
-                self.input.editor.take();
+                self.typing.input.editor.take();
                 self.run(&spec, None);
             }
-            (KeyCode::Esc, _) => self.menu.dismiss(self.input.editor.text()),
-            _ => return self.input.key(key),
+            (KeyCode::Esc, _) => self.typing.menu.dismiss(self.typing.input.editor.text()),
+            _ => return self.typing.input.key(key),
         }
         Action::None
     }
@@ -225,7 +225,7 @@ impl App {
     pub(super) fn submit(&mut self, draft: Draft) {
         let text = draft.text.clone();
         // 在编辑上一句：打了命令就不编辑了；打错了命令、发不出去的，接着编辑（「输入框」第 13 条）。
-        let edit = self.input.take_edit();
+        let edit = self.typing.input.take_edit();
         match self.config.commands.read(&text) {
             Line::Command(spec, words) => {
                 let (spec, words) = (spec.clone(), words.map(str::to_string));
@@ -235,9 +235,9 @@ impl App {
             Line::Unknown => {
                 let note = self.config.text.unknown_command.clone();
                 self.hint(note, false);
-                self.input.editor.set_draft(draft);
+                self.typing.input.editor.set_draft(draft);
                 if let Some(original) = edit {
-                    self.input.resume_edit(original);
+                    self.typing.input.resume_edit(original);
                 }
                 return;
             }
@@ -245,9 +245,9 @@ impl App {
         }
         // 连不上核心：发不出去，字留在输入框里（「连核心」第 8 条）。
         if !self.reachable() {
-            self.input.editor.set_draft(draft);
+            self.typing.input.editor.set_draft(draft);
             if let Some(original) = edit {
-                self.input.resume_edit(original);
+                self.typing.input.resume_edit(original);
             }
             return;
         }
@@ -270,8 +270,8 @@ impl App {
             original: None,
             turn: None,
         });
-        self.input.remember(draft);
-        self.input.forget_cleared();
+        self.typing.input.remember(draft);
+        self.typing.input.forget_cleared();
         self.transcript.user(text, chips);
         self.core.send(Command::Send { text: full, files });
     }
@@ -283,7 +283,7 @@ impl App {
             Some(words) => format!("/{} {words}", spec.name),
             None => format!("/{}", spec.name),
         };
-        self.input.remember(Draft::plain(&line));
+        self.typing.input.remember(Draft::plain(&line));
         self.screen.view.follow();
         match spec.run {
             Run::Revert
@@ -297,7 +297,7 @@ impl App {
             | Run::Rename
                 if !self.reachable() =>
             {
-                self.input.editor.set_draft(Draft::plain(&line));
+                self.typing.input.editor.set_draft(Draft::plain(&line));
             }
             Run::Revert
             | Run::Unrevert
@@ -372,22 +372,22 @@ impl App {
         use ratatui::crossterm::event::KeyModifiers;
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let plain = !ctrl && !key.modifiers.contains(KeyModifiers::ALT);
-        let count = self.history.matches(self.input.sent()).len();
+        let count = self.typing.history.matches(self.typing.input.sent()).len();
         match key.code {
-            KeyCode::Up => self.history.older(count),
-            KeyCode::Char('r') if ctrl => self.history.older(count),
-            KeyCode::Down => self.history.newer(),
+            KeyCode::Up => self.typing.history.older(count),
+            KeyCode::Char('r') if ctrl => self.typing.history.older(count),
+            KeyCode::Down => self.typing.history.newer(),
             KeyCode::Enter => self.pick_history(),
             KeyCode::Tab => {
-                let selected = self.history.selected;
-                let found = self.history.matches(self.input.sent());
+                let selected = self.typing.history.selected;
+                let found = self.typing.history.matches(self.typing.input.sent());
                 if let Some(at) = found.get(selected).map(|s| s.at) {
-                    self.history.toggle_full(at);
+                    self.typing.history.toggle_full(at);
                 }
             }
-            KeyCode::Esc => self.history.close(),
-            KeyCode::Backspace => self.history.backspace(),
-            KeyCode::Char(c) if plain => self.history.type_text(&c.to_string()),
+            KeyCode::Esc => self.typing.history.close(),
+            KeyCode::Backspace => self.typing.history.backspace(),
+            KeyCode::Char(c) if plain => self.typing.history.type_text(&c.to_string()),
             _ => {}
         }
     }
@@ -395,13 +395,14 @@ impl App {
     /// 挑中选中的那一条：放进输入框，关掉列表。
     pub(super) fn pick_history(&mut self) {
         let picked = self
+            .typing
             .history
-            .matches(self.input.sent())
-            .get(self.history.selected)
+            .matches(self.typing.input.sent())
+            .get(self.typing.history.selected)
             .map(|sent| sent.draft.text.clone());
-        self.history.close();
+        self.typing.history.close();
         if let Some(text) = picked {
-            self.input.pick(&text);
+            self.typing.input.pick(&text);
         }
     }
 }

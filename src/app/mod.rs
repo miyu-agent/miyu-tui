@@ -41,6 +41,7 @@ mod sessions;
 mod settings;
 mod switch;
 mod takeback;
+mod typing;
 mod updates;
 pub mod usage;
 mod vim;
@@ -100,8 +101,6 @@ pub struct App {
     pub config: Config,
     /// 系统通知、报给 herdr（蓝图「系统通知」）。
     pub notifier: Notifier,
-    /// 输入框。
-    pub input: InputBox,
     /// 停放着的会话：切进子会话时的主会话、子代理的会话、`/new` 以后还有任务在跑的旧会话（`sessions.rs`）。
     parked: sessions::Lot,
     /// 切进了子会话：主会话的编号（它停放着）；看着主会话是 `None`。
@@ -114,20 +113,14 @@ pub struct App {
     sessions_seen: Option<Vec<crate::core::SessionInfo>>,
     /// 最近发出去的一句：没发出去时撤回来（`redo.rs`）。
     unsent: Option<Unsent>,
-    /// `Ctrl+V` 贴的截图暂存在哪（「输入框」第 12 条）；找不到缓存目录的是 `None`，贴不了图。
-    staging: Option<crate::clipboard::Staging>,
     /// 会话：正文、在不在跑、用量。
     pub transcript: Transcript,
     /// 连着核心的一头。
     core: Core,
-    /// 斜杠命令列表。
-    pub menu: Menu,
-    /// `@` 文件列表。
-    pub mention: crate::mention::Mention,
-    /// 输入历史列表（`Ctrl+R`）。
-    pub history: History,
     /// 开着的框和整屏页（`boxes.rs`，蓝图 `app.md`）。
     pub boxes: boxes::Boxes,
+    /// 输入框和它上面的列表、焦点、编辑器、输入法、提示（`typing.rs`，蓝图 `app.md`）。
+    pub typing: typing::Typing,
     /// 要画的东西的账：排好的行、做好的图、链接卡片、mermaid、头像、吉祥物包（`media.rs`，蓝图 `app.md`）。
     pub media: media::Media,
     /// 上一帧画出来的：各块位置、视口、光标、行表、鼠标（`screen.rs`，蓝图 `app.md`）。
@@ -136,14 +129,10 @@ pub struct App {
     pub mascot: mascot::MascotState,
     /// 工作目录，家目录写成 `~`：侧边栏照它写。
     pub cwd: String,
-    /// 输入框空着时写哪条提示。
-    pub tips: Tips,
     /// 后台任务表和待办（现在由假数据源推）。
     pub board: Board,
     /// 演示用的假数据源。
     feed: Feed,
-    /// 输入法跟着打字状态切（`ime.rs`）。
-    ime: crate::ime::Ime,
     /// 核心推来的确认、提问：问过的、了结过的（`asking.rs`）。
     asks: crate::drawer::Asks,
     /// 确认和提问的抽屉：现在这一个和排着的（蓝图「确认和提问的抽屉」）。
@@ -154,36 +143,20 @@ pub struct App {
     demo_drawers: (usize, usize),
     /// 待办点开了，列出全部（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
     pub todo_full: bool,
-    /// 焦点在哪：输入框、框下面那一行的按钮、子代理状态行。
-    focus: Focus,
     /// Ctrl+C 打断时要退回排着的话，走到哪一步了（`takeback.rs`）。
     takeback: Option<takeback::Takeback>,
-    /// 框下面那一行的临时提示。
-    pub notice: Option<Notice>,
     /// 工具给人看的显示名（仓库 `resources/software/basesystem/human/`）。
     pub human: Human,
-    /// 在回答时第一下 `Esc` 的时刻：时限里再按一下才打断。
-    esc_at: Option<Instant>,
     /// 该退出了。
     pub quit: bool,
     /// 按了 Ctrl+Z，主循环该把程序挂起到后台了。
     pub suspend: bool,
-    /// 本机的文本文件用哪个编辑器开（`$VISUAL`、`$EDITOR`）；没有的交给系统（`editor.rs`）。
-    editor: Option<String>,
-    /// 点了本机的文本文件、按了 `Ctrl+G`：主循环让出终端给编辑器，编辑器和文件。
-    pub edit: Option<(String, std::path::PathBuf)>,
-    /// `Ctrl+G` 正在编辑器里写的那句（`compose.rs`）。
-    composing: Option<compose::Composing>,
     /// 金额排最前的币种（`usage.currency`，连上时读）。
     pub currency: String,
     /// 新会话要选的人格（`new_session.rs`）。
     persona: new_session::Pick,
     /// 新会话要选的预设。
     preset: new_session::Pick,
-    /// 9-1 以前输入历史的老位置：拿不到包的状态目录的照它，拿到了的搬过去（`packages.rs`）。
-    old_history: Option<std::path::PathBuf>,
-    /// 输入历史放好了（照 `package.list` 定了在哪、读进来了）。
-    history_placed: bool,
     /// 还没开会话时 `/workspace` 换的、验过的目录：新会话开在这里（`workspace.rs`）。
     workspace_pending: Option<String>,
     /// 这一次提前压已经弹过「已触发上下文压缩」（`updates.rs`）。
@@ -199,17 +172,17 @@ impl App {
     /// 有选区的，都先归它们（`13-终端界面.md` 第十节「由近及远」，`tui.md`「按键」Esc）。
     fn esc_for_input(&self, menu_open: bool) -> bool {
         !menu_open
-            && !self.history.open
+            && !self.typing.history.open
             && self.boxes.panel.is_none()
-            && self.focus == Focus::Input
+            && self.typing.focus == Focus::Input
             && !self.drawers.open()
-            && self.input.editor.selection().is_none()
+            && self.typing.input.editor.selection().is_none()
             && self.screen.view.select.is_none()
     }
 
     /// 退出程序前收尾：输入法还原成进来时的样子（`ime.rs`）。
     pub fn finish(&mut self) {
-        std::mem::take(&mut self.ime).finish();
+        std::mem::take(&mut self.typing.ime).finish();
     }
 
     /// 处理一个终端事件。
@@ -235,7 +208,7 @@ impl App {
                 if key.code == KeyCode::Esc
                     && self.home.is_some()
                     && self.esc_for_input(menu_open)
-                    && self.input.editor.is_empty() =>
+                    && self.typing.input.editor.is_empty() =>
             {
                 self.leave_child();
                 Action::None
@@ -243,11 +216,11 @@ impl App {
             // 编辑上一句时一下就取消（「输入框」第 13 条），不照下面有字时两下清空的规矩。
             Event::Key(key)
                 if key.code == KeyCode::Esc
-                    && self.input.editing()
+                    && self.typing.input.editing()
                     && self.esc_for_input(menu_open)
                     && self.transcript.running.is_none() =>
             {
-                self.input.cancel_edit();
+                self.typing.input.cancel_edit();
                 Action::None
             }
             // Esc 由近及远（`13-终端界面.md` 第十节）：列表、选区归 `key`；在回答时第一下只提示，
@@ -255,7 +228,8 @@ impl App {
             Event::Key(key)
                 if key.code == KeyCode::Esc
                     && self.esc_for_input(menu_open)
-                    && (self.transcript.running.is_some() || !self.input.editor.is_empty()) =>
+                    && (self.transcript.running.is_some()
+                        || !self.typing.input.editor.is_empty()) =>
             {
                 self.esc();
                 Action::None
@@ -288,7 +262,7 @@ impl App {
 
     /// 在输入框左上方写一条提示，新的顶掉旧的。
     fn hint(&mut self, text: String, good: bool) {
-        self.notice = Some(Notice {
+        self.typing.notice = Some(Notice {
             text,
             until: Instant::now() + Duration::from_millis(self.config.layout.notice_ms),
             good,
@@ -329,7 +303,7 @@ impl App {
             (None, Some(page)) => page.typing(),
             (None, None) => true,
         };
-        self.ime.typing(typing);
+        self.typing.ime.typing(typing);
         self.advance_jobs();
         // 老会话按页读：最上面那一行露出来了，要更早的一页（`pages.rs`）。
         self.ask_older();
@@ -347,21 +321,22 @@ impl App {
         );
         self.drawer_tick();
         if self
+            .typing
             .notice
             .as_ref()
             .is_some_and(|n| n.until <= Instant::now())
         {
-            self.notice = None;
+            self.typing.notice = None;
         }
     }
 
     /// 列表开着时筛出来的命令；没开是 `None`。每次按输入框里现在的字重新筛，顺手定开不开。
     pub fn menu_matches(&mut self) -> Option<Vec<Spec>> {
         // 翻输入历史翻出来的命令还没改过：不弹，`↑` `↓` 接着翻（蓝图「按键」`↑`、`↓`）。
-        if self.input.recalled() {
+        if self.typing.input.recalled() {
             return None;
         }
-        let text = self.input.editor.text();
+        let text = self.typing.input.editor.text();
         let typed = commands::menu_typed(text);
         let matches: Vec<Spec> = typed
             .map(|t| {
@@ -373,7 +348,8 @@ impl App {
                     .collect()
             })
             .unwrap_or_default();
-        self.menu
+        self.typing
+            .menu
             .sync(text, typed, matches.len())
             .then_some(matches)
     }
