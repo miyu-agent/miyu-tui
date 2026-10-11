@@ -11,11 +11,14 @@ mod deadline;
 mod diagrams;
 mod drawer;
 mod effort;
+mod frame;
 mod jobs;
 
 pub use avatars::{Avatar, Place};
+pub use frame::Lists;
 pub use jobs::Panel;
 pub use mascot::MascotState;
+pub use media::Media;
 pub use screen::Screen;
 pub use seen::Seen;
 pub use usage::UsageData;

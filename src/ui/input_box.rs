@@ -8,45 +8,75 @@ use ratatui::widgets::{Block, BorderType, Paragraph};
 use unicode_width::UnicodeWidthStr;
 
 use super::{Areas, drawer};
-use crate::app::App;
+use crate::app::{Screen, Seen};
 use crate::config::Config;
 use crate::core::Level;
+use crate::drawer::Drawer;
 use crate::input::{InputBox, VisualLine};
 use crate::theme;
 
-/// 输入框：抽屉开着时框里画抽屉，别的时候画输入的字。
-pub(super) fn draw_box(frame: &mut Frame, areas: Areas, app: &mut App, home: bool) {
-    let texts = &app.config.text.drawer;
-    if let Some(d) = app.talk.drawers.current.as_mut() {
+/// 画输入框以前先算好的几样（只读的那一份借不进来：画的时候输入框、抽屉要改自己滚到哪）。
+pub(super) struct Facts {
+    /// 权限级别：提示符的颜色。
+    level: Level,
+    /// 空着时写的提示。
+    placeholder: String,
+    /// 切进了哪个子代理的会话：上边框右边写它（「切进子会话」第 2 条）。
+    child: Option<String>,
+    /// 焦点在输入框上：光标显示出来。
+    typing: bool,
+}
+
+impl Facts {
+    /// 照这一帧要读的算好。`home`：是首页。
+    pub(super) fn of(seen: &Seen, home: bool) -> Self {
+        Self {
+            level: seen.talk.transcript.level,
+            placeholder: placeholder(seen.config, home, seen.typing.tips.at()).to_string(),
+            child: seen.talk.viewing_title(),
+            // 焦点移到框下面（按钮、子代理状态行）、后台面板开着时，框里不放光标：打的字不进这里（2026-09-30 项目主人）。
+            typing: seen.focus() == crate::focus::Focus::Input && seen.boxes.panel.is_none(),
+        }
+    }
+}
+
+/// 输入框：抽屉开着时框里画抽屉，别的时候画输入的字。画的时候能改的：输入框、开着的抽屉自己滚到哪，上一帧画面（抽屉
+/// 每一行是第几项、光标）（蓝图 `app.md` 第三节）。
+pub(super) fn draw_box(
+    frame: &mut Frame,
+    areas: Areas,
+    (config, facts): (&Config, Facts),
+    input: &mut InputBox,
+    drawer: Option<&mut Drawer>,
+    screen: &mut Screen,
+) {
+    if let Some(d) = drawer {
         frame.render_widget(
             Block::bordered()
                 .border_type(BorderType::Rounded)
                 .border_style(theme::dim()),
             areas.frame,
         );
-        app.screen.drawer_rows = drawer::draw(
+        screen.drawer_rows = drawer::draw(
             frame,
             areas.text,
             d,
-            texts,
-            &app.config.layout.drawer_preview,
-            &mut app.screen.caret,
+            &config.text.drawer,
+            &config.layout.drawer_preview,
+            &mut screen.caret,
         );
         return;
     }
-    app.screen.drawer_rows.clear();
-    let child = app.talk.viewing_title();
-    // 焦点移到框下面（按钮、子代理状态行）、后台面板开着时，框里不放光标：打的字不进这里（2026-09-30 项目主人）。
-    let typing = app.seen().focus() == crate::focus::Focus::Input && app.boxes.panel.is_none();
+    screen.drawer_rows.clear();
     let look = Look {
-        level: app.talk.transcript.level,
-        placeholder: placeholder(&app.config, home, app.typing.tips.at()),
-        child,
+        level: facts.level,
+        placeholder: &facts.placeholder,
+        child: facts.child,
     };
-    draw_input(frame, areas, &mut app.typing.input, &app.config, look);
+    draw_input(frame, areas, input, config, look);
     // 焦点不在这里也停到插入点，只是不显示（蓝图「每一帧」）。
-    if let Some(pos) = app.typing.input.cursor_position() {
-        app.screen.caret.put(pos, typing);
+    if let Some(pos) = input.cursor_position() {
+        screen.caret.put(pos, facts.typing);
     }
 }
 
