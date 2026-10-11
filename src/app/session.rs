@@ -37,7 +37,7 @@ impl App {
         // 底栏先照旧写原来的模型、思考强度，等核心交回默认的再换（2026-10-02 项目主人报：开新会话底栏闪一下；手动
         // 换的就是新会话的默认，多半一样）。
         let shown = self.transcript.footer_model();
-        self.core.send(Command::New { keep });
+        self.link.core.send(Command::New { keep });
         self.park_current(keep);
         self.transcript.keep_footer_model(shown);
         // 空会话的底栏照默认的聊天模型写（`effort.rs`）。
@@ -109,7 +109,7 @@ impl App {
         if self.not_opened() {
             self.transcript.level = target;
         }
-        self.core.send(Command::Level(target));
+        self.link.core.send(Command::Level(target));
     }
 
     /// 按过 `/new`、还没说话：连着核心，却还没开会话。
@@ -149,6 +149,8 @@ impl App {
             self.hint(note, false);
             return;
         }
-        self.core.send(Command::Rename(title.map(str::to_string)));
+        self.link
+            .core
+            .send(Command::Rename(title.map(str::to_string)));
     }
 }

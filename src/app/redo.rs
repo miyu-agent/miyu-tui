@@ -16,7 +16,7 @@ impl App {
             return;
         };
         let turn = self.send_redo(text, chips);
-        self.core.send(Command::Redo {
+        self.link.core.send(Command::Redo {
             text: None,
             files: None,
         });
@@ -47,7 +47,7 @@ impl App {
         let files = draft.attachments();
         let files = (files != original.attachments()).then_some(files);
         let turn = self.send_redo(draft.text.clone(), paste::chips(&draft));
-        self.core.send(Command::Redo {
+        self.link.core.send(Command::Redo {
             text: Some(draft.expand()),
             files,
         });

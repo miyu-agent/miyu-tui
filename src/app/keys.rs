@@ -34,7 +34,7 @@ impl App {
                         self.takeback =
                             Some(super::takeback::Takeback::Interrupting(session, back));
                     }
-                    self.core.send(Command::Interrupt { send: true });
+                    self.link.core.send(Command::Interrupt { send: true });
                 } else {
                     self.typing.input.editor.take();
                 }
@@ -187,7 +187,7 @@ impl App {
                 }
                 // 没有排着的（输入框也是空的）：什么都不做，不当打断用。
                 if self.transcript.entries.iter().any(|e| e.queued) && !self.switching() {
-                    self.core.send(Command::Interrupt { send: true });
+                    self.link.core.send(Command::Interrupt { send: true });
                 }
                 return Action::None;
             }
@@ -273,7 +273,7 @@ impl App {
         self.typing.input.remember(draft);
         self.typing.input.forget_cleared();
         self.transcript.user(text, chips);
-        self.core.send(Command::Send { text: full, files });
+        self.link.core.send(Command::Send { text: full, files });
     }
 
     /// 执行一条命令；`words` 是名字后面的字（能带参数的命令才有，蓝图「斜杠命令列表」第 5 条）。
@@ -314,10 +314,10 @@ impl App {
             }
             Run::Redo => self.redo(),
             Run::Edit => self.edit_last(),
-            Run::Clear => self.core.send(Command::Run("/clear".into())),
-            Run::Stop => self.core.send(Command::Run("/stop".into())),
+            Run::Clear => self.link.core.send(Command::Run("/clear".into())),
+            Run::Stop => self.link.core.send(Command::Run("/stop".into())),
             Run::Recap => {
-                self.core.send(Command::Recap);
+                self.link.core.send(Command::Recap);
                 let note = self.config.text.recap.working.clone();
                 self.hint(note, false);
             }
@@ -333,12 +333,14 @@ impl App {
             Run::Copy => self.copy_reply(),
             Run::Usage => self.open_usage(),
             Run::New => self.new_session(),
-            Run::Revert => self.core.send(Command::Revert),
-            Run::Unrevert => self.core.send(Command::Unrevert),
+            Run::Revert => self.link.core.send(Command::Revert),
+            Run::Unrevert => self.link.core.send(Command::Unrevert),
             Run::Compact => {
                 // 旧核心的压缩进度不说手动、自动：自己发的照手动画进度条（「正文」第 9 条）。
                 self.transcript.manual_compaction = true;
-                self.core.send(Command::Compact(words.map(str::to_string)));
+                self.link
+                    .core
+                    .send(Command::Compact(words.map(str::to_string)));
             }
             Run::Theme => self.next_theme(),
             Run::Icons => self.next_icons(),

@@ -157,7 +157,7 @@ impl App {
 
     /// 发一个请求，回应照编号回来。
     fn mascot_ask(&mut self, tag: u64, method: &'static str, params: Value) {
-        self.core.send(Command::Ask {
+        self.link.core.send(Command::Ask {
             tag,
             method,
             params,

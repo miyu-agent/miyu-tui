@@ -134,7 +134,7 @@ impl App {
                 }
                 // 交给问的那个会话：`/new`、切会话以后还开着的抽屉也不会交错地方。
                 let owner = Some(drawer.owner.clone()).filter(|o| !o.is_empty());
-                self.core.send(Command::Answer {
+                self.link.core.send(Command::Answer {
                     session: owner.or_else(|| drawer.session.clone()),
                     call: drawer.call_id.clone(),
                     body,
@@ -144,7 +144,7 @@ impl App {
         }
         if *outcome == Outcome::Cancelled && self.transcript.running.is_some() && !self.switching()
         {
-            self.core.send(Command::Interrupt { send: true });
+            self.link.core.send(Command::Interrupt { send: true });
         }
         // 轮到下一个抽屉的弹「在等你」，都了结了回到在做或空闲（「系统通知」第 1、6 条）。
         if self.drawers.open() {

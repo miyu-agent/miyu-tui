@@ -35,14 +35,16 @@ impl App {
         } else {
             Command::CheckDir { path, cwd }
         };
-        self.core.send(command);
+        self.link.core.send(command);
     }
 
     /// 还没开会话时验完了：成了的记着、告诉核心造会话时带上，弹「新会话开在 …」；不成的照原因弹提示。
     pub(super) fn dir_checked(&mut self, result: Result<String, Refusal>) {
         match result {
             Ok(dir) => {
-                self.core.send(Command::NewWorkspace(Some(dir.clone())));
+                self.link
+                    .core
+                    .send(Command::NewWorkspace(Some(dir.clone())));
                 let note = (self.config.text.workspace.pending)
                     .replace("{path}", &crate::local::home_short(&dir));
                 self.workspace_pending = Some(dir);

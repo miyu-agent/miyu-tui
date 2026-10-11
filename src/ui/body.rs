@@ -21,7 +21,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
     let spinner_ms = app.config.timeline.spinner_ms.max(1);
     let ctx = Ctx {
         config: &app.config,
-        human: &app.human,
+        human: &app.link.human,
         // 两格槽紧贴在输入框里的字的左边，和提示符同一列。
         indent: " ".repeat(usize::from(areas.text.x.saturating_sub(area.x + 2))),
         width: areas.text.width,

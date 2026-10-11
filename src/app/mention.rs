@@ -28,7 +28,7 @@ impl App {
         if let Some((word, ask)) = self.typing.mention.next_ask(Instant::now()) {
             let cwd = std::env::current_dir().unwrap_or_default();
             let (method, params) = ask.request(&cwd.to_string_lossy());
-            self.core.send(Command::Files {
+            self.link.core.send(Command::Files {
                 word,
                 method,
                 params,

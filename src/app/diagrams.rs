@@ -8,7 +8,7 @@ impl App {
     /// 把单子上的发出去（`tick`）。
     pub(super) fn send_diagram_asks(&mut self) {
         for source in self.media.diagrams.borrow_mut().take() {
-            self.core.send(Command::RenderMermaid(source));
+            self.link.core.send(Command::RenderMermaid(source));
         }
     }
 

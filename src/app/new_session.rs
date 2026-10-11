@@ -230,7 +230,7 @@ impl App {
             Kind::Persona => Command::Persona(id.clone()),
             Kind::Preset => Command::Preset(id.clone()),
         };
-        self.core.send(command);
+        self.link.core.send(command);
         self.pick_mut(kind).chosen = Some(id);
     }
 
@@ -280,8 +280,8 @@ impl App {
         self.persona.chosen = None;
         self.preset.chosen = None;
         self.ask_next();
-        self.core.send(Command::ListPersonas);
-        self.core.send(Command::ListPresets);
+        self.link.core.send(Command::ListPersonas);
+        self.link.core.send(Command::ListPresets);
     }
 
     /// 开着的会话用的人格、预设，各一句（侧边栏写，订阅回应里的，核心 P-1 下、P-2 上）。
@@ -317,8 +317,8 @@ impl App {
     pub(super) fn picks_configured(&mut self, persona: Option<String>, preset: Option<String>) {
         self.persona.default = persona;
         self.preset.default = preset;
-        self.core.send(Command::ListPersonas);
-        self.core.send(Command::ListPresets);
+        self.link.core.send(Command::ListPersonas);
+        self.link.core.send(Command::ListPresets);
     }
 }
 

@@ -51,7 +51,7 @@ pub(super) fn content(
             max,
         ),
         Some(crate::app::Panel::Language { selected }) => {
-            languages::lines(&app.config, &app.system_language, selected, width, max)
+            languages::lines(&app.config, &app.link.system_language, selected, width, max)
         }
         Some(crate::app::Panel::Usage { tab, scroll, money }) => {
             let (chrome, lines) = usage::lines(app, (tab, scroll, money), width, max);

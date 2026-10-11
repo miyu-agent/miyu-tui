@@ -57,7 +57,7 @@ impl App {
     /// 读几个配置项。
     fn ask_config(&mut self, tag: u64, keys: &[&str]) {
         let params: Value = json!({ "keys": keys });
-        self.core.send(Command::Ask {
+        self.link.core.send(Command::Ask {
             tag,
             method: "config.get",
             params,

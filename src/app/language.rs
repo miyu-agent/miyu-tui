@@ -73,7 +73,7 @@ impl App {
     pub(super) fn switch_language(&mut self, index: usize, announce: bool) {
         let table = &self.config.language_table;
         let (next, auto) = if index == 0 {
-            (self.system_language.clone(), true)
+            (self.link.system_language.clone(), true)
         } else {
             let Some(language) = table.nth(index - 1) else {
                 return;
@@ -85,7 +85,7 @@ impl App {
         }
         // 写进个人设置的 `ui.language`：这个人所有的头都照它（2026-10-01 项目主人定 A）。当场换，不等回应。
         let code = if auto { "auto" } else { next.code() };
-        self.core.send(Command::SetLanguage(code.to_string()));
+        self.link.core.send(Command::SetLanguage(code.to_string()));
         self.use_language(next, auto, announce);
     }
 
@@ -95,7 +95,7 @@ impl App {
         let table = &self.config.language_table;
         let (next, auto) = match table.find(code) {
             Some(language) if code != "auto" => (language, false),
-            _ => (self.system_language.clone(), true),
+            _ => (self.link.system_language.clone(), true),
         };
         if next == self.config.language && auto == self.config.auto {
             return;
@@ -112,7 +112,9 @@ impl App {
         self.config.text = fresh.text;
         self.config.commands = fresh.commands;
         self.config.pulse = fresh.pulse;
-        self.core.send(Command::FetchHuman(next.code().to_string()));
+        self.link
+            .core
+            .send(Command::FetchHuman(next.code().to_string()));
         let hint = if auto {
             let name = fresh.language_table.name(&next);
             self.config

@@ -191,7 +191,7 @@ impl App {
         let Some(child) = start.session.clone() else {
             return;
         };
-        self.core.send(Command::Watch(child.clone()));
+        self.link.core.send(Command::Watch(child.clone()));
         // 交代的活是派它的会话发来的：来处和核心推来的那一句算得一样，才认得出是同一句（`transcript/foreign.rs`）。
         let from = self.label(&child, &Sender::Session(session.to_string()), words);
         let transcript = self.transcript.child(child.clone(), from, task);
@@ -212,7 +212,7 @@ impl App {
             .flatten()
             .find(|s| s.session == id);
         if known.is_none() {
-            self.core.send(Command::ListSessions);
+            self.link.core.send(Command::ListSessions);
         }
         known.and_then(|s| s.title.clone())
     }
@@ -278,9 +278,12 @@ impl App {
         } else {
             self.parked.get(child).map(|p| &p.transcript)
         };
-        let Some((doing, tokens)) =
-            transcript.map(|t| (doing(t, &self.human, &self.config.text.jobs), tokens(t)))
-        else {
+        let Some((doing, tokens)) = transcript.map(|t| {
+            (
+                doing(t, &self.link.human, &self.config.text.jobs),
+                tokens(t),
+            )
+        }) else {
             return;
         };
         let boards =
@@ -311,7 +314,7 @@ impl App {
             if let Some(parked) = self.parked.remove(&session) {
                 self.drop_children(&parked.board);
             }
-            self.core.send(Command::Unwatch(session));
+            self.link.core.send(Command::Unwatch(session));
         }
     }
 
@@ -319,7 +322,7 @@ impl App {
     pub(super) fn drop_children(&mut self, board: &Board) {
         for child in board.jobs.iter().filter_map(|j| j.session.clone()) {
             self.parked.remove(&child);
-            self.core.send(Command::Unwatch(child));
+            self.link.core.send(Command::Unwatch(child));
         }
     }
 
@@ -363,7 +366,7 @@ impl App {
     /// 花了多少写成字（`$0.42 + ¥1.30`，一笔都算不出的是 `None`）：侧边栏、框下面那一行用。
     pub fn spent(&self) -> Option<String> {
         let bill = self.bill_total();
-        crate::money::amounts(&bill, &self.currency, &self.config.layout.currencies)
+        crate::money::amounts(&bill, &self.link.currency, &self.config.layout.currencies)
     }
 
     /// 正在看的子会话；看着主会话是 `None`。
@@ -410,7 +413,7 @@ impl App {
         let main = self.home.clone().unwrap_or(current);
         self.home = (session != main).then_some(main);
         let target = self.home.is_some().then_some(session);
-        self.core.send(Command::View(target));
+        self.link.core.send(Command::View(target));
         // 行缓存照条目编号认，两份正文的编号会撞：换了就重排。
         *self.media.row_cache.borrow_mut() = Default::default();
         self.boxes.panel = None;

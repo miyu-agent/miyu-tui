@@ -70,7 +70,7 @@ impl App {
             .transcript
             .takeback()
             .map(|back| Takeback::Interrupting(session, back));
-        self.core.send(Command::Interrupt { send: false });
+        self.link.core.send(Command::Interrupt { send: false });
     }
 
     /// 正在看的会话推来的：这一轮结束了发撤销；撤销成了把那几句放回输入框；撤销被拒了、看的换了、断开了就算了。
@@ -81,7 +81,7 @@ impl App {
         match step(taken, update, self.transcript.session.as_deref()) {
             Step::Wait(kept) => self.takeback = Some(kept),
             Step::Revert(next) => {
-                self.core.send(Command::Revert);
+                self.link.core.send(Command::Revert);
                 self.takeback = Some(next);
             }
             Step::Return(back) => self.put_returned(back),

@@ -88,7 +88,7 @@ impl App {
     /// 停掉一条在跑的后台任务：交给核心（`job.stop`），结束的回报来了再出通知。
     fn stop_job(&mut self, id: u64) {
         if let Some(job) = super::sessions::job_of(&self.board, id).filter(|j| j.running()) {
-            self.core.send(Command::Stop {
+            self.link.core.send(Command::Stop {
                 session: None,
                 job: job.job.clone(),
             });
@@ -183,7 +183,7 @@ impl App {
                     .map(|j| j.job.clone());
                 if let Some(job) = job {
                     let session = self.main_session();
-                    self.core.send(Command::Stop { session, job });
+                    self.link.core.send(Command::Stop { session, job });
                 }
                 focus
             }
