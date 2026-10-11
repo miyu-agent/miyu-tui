@@ -193,6 +193,12 @@
     "removed": "Title removed",
     "too_long": "Titles are at most {max} characters"
   },
+  "goal": {
+    "mark": "● ",
+    "round": "Goal · round {round}",
+    "some_round": "Goal",
+    "none": "No goal"
+  },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {
     "title": "Commands",

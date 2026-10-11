@@ -6,6 +6,7 @@ use super::ToolStatus;
 
 use super::{Block, CallError, Push};
 
+mod goal;
 mod jobs;
 
 #[test]

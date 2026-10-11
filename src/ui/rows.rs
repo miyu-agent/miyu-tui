@@ -285,7 +285,7 @@ pub(super) fn md_row(line: MdLine, ctx: &Ctx) -> Row {
 fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     let layout = &ctx.config.layout;
     let (slot, style) = match entry.kind {
-        Kind::Note | Kind::Done | Kind::Older => (ctx.blank_slot(), theme::dim()),
+        Kind::Note | Kind::Done | Kind::Older | Kind::Goal => (ctx.blank_slot(), theme::dim()),
         Kind::Answered => (
             Span::styled(layout.user_bar.clone(), theme::dim()),
             theme::dim(),
@@ -296,9 +296,11 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
             (ctx.blank_slot(), Style::new())
         }
     };
-    // 前面带绿色记号的（压好了的 `● `）：记号是引子，折下来的行和字对齐（「正文」第 9 条）。回顾的 `※` 一样，暗色（「回顾」第 2 条）。
+    // 前面带绿色记号的（压好了的 `● `）：记号是引子，折下来的行和字对齐（「正文」第 9 条）。回顾的 `※` 一样，暗色（「回顾」第 2 条）；
+    // 长期目标开的一轮那一行的 `● ` 也暗（「长期目标」第 4 条）。
     let (mark, mark_style) = match entry.kind {
         Kind::Recap => (layout.recap_mark.as_str(), theme::dim()),
+        Kind::Goal => (entry.mark.as_deref().unwrap_or_default(), theme::dim()),
         _ => (entry.mark.as_deref().unwrap_or_default(), theme::good()),
     };
     let mark_width = u16::try_from(mark.width()).unwrap_or(0);
