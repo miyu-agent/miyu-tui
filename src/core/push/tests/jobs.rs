@@ -11,7 +11,7 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     use crate::core::push::{JobEnd, JobReason, JobStart, Sender};
     let result = json!({"seq": 9, "kind": "tool.result", "by": {"kind": "tool", "call_id": "call_1"},
         "body": {"call_id": "call_1", "status": "ok", "blocks": [{"type": "text", "text": "j2"}],
-            "effects": [{"kind": "job.started", "job": "j2", "what": "subagent", "title": "查文档",
+            "effects": [{"kind": "job.started", "job": "j2", "what": "agent", "title": "查文档",
                 "session": "s-child"}, {"kind": "job.messaged", "job": "j1"}]}});
     let got = read_mine(&result);
     assert_eq!(
@@ -76,9 +76,9 @@ fn job_effects_reports_and_foreign_messages_are_read() {
 }
 
 #[test]
-fn only_a_subagent_effect_is_read_as_an_agent() {
-    // 2026-10-01 核心把派子代理的工具从 agent 改名 subagent，同一天项目主人定不认旧名、不留兼容。
-    for (what, agent) in [("subagent", true), ("agent", false)] {
+fn a_job_started_as_an_agent_is_read_as_an_agent() {
+    // 协议里任务的种类是 `agent`、`command`（核心 `agents.md` 的样本）：10-01 改名的是工具，不是这一格（review，2026-10-11）。
+    for (what, agent) in [("agent", true), ("command", false)] {
         let result = json!({"seq": 9, "kind": "tool.result", "by": {"kind": "tool", "call_id": "c"},
             "body": {"call_id": "c", "status": "ok", "blocks": [],
                 "effects": [{"kind": "job.started", "job": "j3", "what": what, "title": "t"}]}});
@@ -120,14 +120,13 @@ fn a_foreground_subagent_is_marked() {
     // 核心 T-1 下：预设关了「后台运行」时子代理在前台跑，`job.started` 带 `foreground: true`，不当后台任务画。
     let result = json!({"seq": 9, "kind": "tool.result", "by": {"kind": "tool", "call_id": "call_1"},
         "body": {"call_id": "call_1", "status": "ok", "blocks": [{"type": "text", "text": "好了"}],
-            "effects": [{"kind": "job.started", "job": "j3", "what": "subagent", "title": "查文档",
+            "effects": [{"kind": "job.started", "job": "j3", "what": "agent", "title": "查文档",
                 "session": "s-child", "foreground": true}]}});
     let Push::JobStarted(start) = &read_mine(&result)[0] else {
         panic!("派了一个任务");
     };
     assert!(start.foreground);
-    let listed = crate::core::push::JobStart::listed(
-        &json!({"job": "j3", "what": "subagent", "title": "x"}),
-    );
+    let listed =
+        crate::core::push::JobStart::listed(&json!({"job": "j3", "what": "agent", "title": "x"}));
     assert!(!listed.foreground, "不写的是后台的");
 }

@@ -104,7 +104,7 @@ mod tests {
             "usage": {"uncached": 650, "cache_read": 400, "cache_write": 0, "output": 110}},
             "permission": {"level": "full", "read_only": false},
             "jobs": [{"job": "j1", "what": "command", "title": "跑测试"},
-                     {"job": "j2", "what": "subagent", "title": "查资料", "session": "child"}]});
+                     {"job": "j2", "what": "agent", "title": "查资料", "session": "child"}]});
         let got = Snapshot::read(&reply).expect("有三格");
         assert_eq!(
             got.usage,
