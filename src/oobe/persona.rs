@@ -158,6 +158,14 @@ impl PersonaStep {
         );
     }
 
+    /// 断开了，读默认人格的没回来（动作已经照被拒复位过了，还忙着的就是在读）：不再忙，下次进这一步、重连时再读。
+    pub fn lost(&mut self) {
+        if self.busy {
+            self.busy = false;
+            self.entered = false;
+        }
+    }
+
     /// 光标那一格是打字的：交回它。
     fn field(&mut self, slot: Slot) -> Option<&mut Field> {
         match slot {

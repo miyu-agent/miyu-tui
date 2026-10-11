@@ -215,14 +215,19 @@ impl App {
             }
             Update::Ready(_) | Update::Reconnected => {
                 if let Some(oobe) = self.oobe.as_mut() {
-                    oobe.link(true);
+                    oobe.online();
                 }
+                self.send_oobe_asks();
                 false
             }
             Update::Disconnected | Update::Failed(_) | Update::NoCoreBin | Update::Missing(_) => {
                 self.welcome_known = true;
+                let (lost, texts) = (
+                    self.config.text.turn_cut.clone(),
+                    self.config.text.oobe.clone(),
+                );
                 if let Some(oobe) = self.oobe.as_mut() {
-                    oobe.link(false);
+                    oobe.offline(&lost, Instant::now(), &texts);
                 }
                 false
             }

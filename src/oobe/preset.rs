@@ -89,6 +89,14 @@ impl PresetStep {
         );
     }
 
+    /// 断开了，读列表、默认预设的没回来（动作已经照被拒复位过了，还忙着的就是在读）：不再忙，下次进这一步、重连时再读。
+    pub fn lost(&mut self) {
+        if self.busy {
+            self.busy = false;
+            self.entered = false;
+        }
+    }
+
     /// 按了一个键。
     pub fn key(&mut self, key: KeyEvent, asker: &mut Asker, texts: &Texts) -> Move {
         // 看的浮窗：`j` `k` 滚，空格、`Esc` 关（第 24 条）。
