@@ -24,6 +24,6 @@ pub struct Boxes {
     pub oobe_editing: Option<std::path::PathBuf>,
     /// 读过 `ui.welcomed` 了：一次启动只读一次（「第一次打开的引导」第 1 条）。
     pub welcome_checked: bool,
-    /// `ui.welcomed` 问到了（或者连不上核心）：这以前不画首页（`oobe.rs` 的 [`App::welcome_pending`]）。
+    /// `ui.welcomed` 问到了（或者连不上核心）：这以前不画首页（`oobe.rs` 的 [`super::App::welcome_pending`]）。
     pub welcome_known: bool,
 }
