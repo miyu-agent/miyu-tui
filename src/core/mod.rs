@@ -155,8 +155,14 @@ pub enum Command {
     Unwatch(String),
     /// 命令对着哪个会话：切进了的子会话；`None` 是主会话（「切进子会话」第 3 条）。
     View(Option<String>),
-    /// 停掉一个后台任务（`job.stop`，带任务编号）。
-    Stop(String),
+    /// 停掉一个后台任务（`job.stop`）：任务表是哪个会话的（`None` 是命令正对着的那个），任务编号。子代理状态行列的是主会话的
+    /// 任务表，切进了子会话也要对着主会话停（review B4，2026-10-11）。
+    Stop {
+        /// 派它的会话。
+        session: Option<String>,
+        /// 任务编号。
+        job: String,
+    },
     /// 读一条后台命令到这时为止的输出（`job.output`）：哪个会话派的、任务编号、要最后几行。
     Output {
         /// 哪个会话派的。
