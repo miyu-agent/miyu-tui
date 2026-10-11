@@ -86,7 +86,13 @@ impl App {
                 };
                 self.parked.insert(session, parked);
             }
-            _ => self.drop_children(&board),
+            // 不要了：连它的子代理、记下的提问一起。
+            _ => {
+                if let Some(session) = &old.session {
+                    self.asks.forget(session);
+                }
+                self.drop_children(&board);
+            }
         }
         self.view = Default::default();
         self.panel = None;

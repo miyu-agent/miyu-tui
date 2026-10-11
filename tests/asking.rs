@@ -218,3 +218,42 @@ fn the_same_call_id_in_a_new_session_still_asks() {
     tui.wait_for("又写好了。");
     std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
 }
+
+/// 切过去的会话里以前答过的题（review，2026-10-11）：补发时照主会话的办，答案照样接在「提问」那一步下面。原来补发期间
+/// 看着的还是原来那个会话，切过去的那个被当成子代理问的：答案不写进正文，还闪开抽屉、弹「在等你」。
+#[test]
+fn switching_to_a_session_with_an_answered_question_draws_the_answer() {
+    let args = serde_json::json!({"questions": [
+        {"header": "语言", "question": "用哪种语言写？", "options": [{"label": "Rust"}, {"label": "Python"}]}
+    ]})
+    .to_string();
+    let script = Script::new([
+        Play::Calls(vec![("ask_user".into(), args)]),
+        Play::Says("好，用 Rust。"),
+        Play::Says("另一个会话的回答。"),
+    ]);
+    let home = Home::with_tools(script, "[tui]\ntimeline_fold = false\n");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("帮我写个小工具");
+    tui.wait_for("用哪种语言写？");
+    tui.key(b"\r");
+    tui.wait_for("语言：Rust");
+    tui.key(b"\r");
+    tui.wait_for("好，用 Rust。");
+    tui.say("/new");
+    tui.pump(Duration::from_millis(200));
+    tui.say("另开一个");
+    tui.wait_for("另一个会话的回答。");
+    tui.say("/sessions");
+    tui.wait_for("2 个");
+    tui.key(DOWN);
+    tui.key(b"\r");
+    tui.wait_for("好，用 Rust。");
+    tui.wait_for("│ 语言：Rust");
+    assert!(
+        !tui.lines().iter().any(|l| l.contains("在问")),
+        "{}",
+        tui.lines().join("\n")
+    );
+}

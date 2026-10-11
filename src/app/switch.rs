@@ -275,6 +275,8 @@ impl App {
             keep,
         });
         if !self.parked.contains_key(&session) {
+            // 从头重读：以前记下的它的提问忘掉，补发来的照新的认。
+            self.asks.forget(&session);
             let mut fresh = Transcript::default();
             fresh.session = Some(session.clone());
             fresh.link = self.transcript.link.clone();
