@@ -374,3 +374,25 @@ fn a_finished_reply_counts_as_read_only_while_its_top_was_showing() {
         "不是同一段"
     );
 }
+
+#[test]
+fn a_selection_follows_its_entry_and_is_dropped_when_the_text_reflows() {
+    // review C3（2026-10-11）：选区照行号记，上面的图加载好、一段收起、窗口变宽变窄以后反色漂到别处，复制到别的字。
+    let blank = rows(1).get(0).unwrap().clone();
+    let of = |first: usize| {
+        crate::ui::row_cache::Rows::of_chunks(&[(first, Some(0)), (1, None), (5, Some(1))], &blank)
+    };
+    let area = Rect::new(0, 0, 40, 30);
+    let mut view = BodyView::default();
+    view.rows = of(2);
+    view.area = area;
+    // 第二条的第 1、2 行：第 4、5 行。
+    view.select = Some(((4, 3), (5, 8)));
+    // 上面那条长了 3 行（图加载好）：选区跟着第二条往下挪 3 行，列不变。
+    first_row(&of(5), area, &mut view, true);
+    assert_eq!(view.select, Some(((7, 3), (8, 8))));
+    view.rows = of(5);
+    // 窗口变窄：字重新折过，行列对不上了，选区不要了。
+    first_row(&of(5), Rect::new(0, 0, 30, 30), &mut view, true);
+    assert_eq!(view.select, None);
+}
