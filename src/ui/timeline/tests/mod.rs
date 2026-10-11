@@ -11,6 +11,7 @@ use crate::transcript::{Segment, Step, StepKind, ToolState};
 use crate::ui::rows::Row;
 use crate::ui::test_support::Fixture;
 
+mod empty;
 mod images;
 mod language;
 mod live_tail;
@@ -365,21 +366,6 @@ fn only_one_step_spins_at_a_time() {
         .find(|s| s.content == "· ")
         .unwrap();
     assert_eq!(mark.style, theme::dim());
-}
-
-#[test]
-fn an_empty_thought_has_only_its_title() {
-    // 还一个字都没有的思考不画空的竖线（2026-09-29 项目主人）。
-    let f = Fixture::new();
-    for text in ["", "  \n "] {
-        let mut seg = segment(Vec::new(), None);
-        seg.finished = false;
-        seg.steps
-            .push(Step::new(StepKind::Thought { text: text.into() }));
-        let got = self::text(&rows(0, &seg, &f.ctx()));
-        assert_eq!(got.len(), 1, "只有标题：{got:?}");
-        assert!(got[0].contains("思考中"));
-    }
 }
 
 #[test]
