@@ -814,7 +814,7 @@ macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 
 **技术细节（施工时定的，2026-10-07）**
 
 23. 和核心说话走一条通用的请求：界面发 `Command::Ask {tag, method, params}`，回 `Update::Answer {tag, result}`（成了是 `result`，拒了是原因码和原话），配置页自己照 `tag` 认；不为每个方法再加一对命令。用到的方法：`model.list`（供应商、模型、资料和来源、池、`uses`）、`config.get`（`all: true`，取个人层现在写着什么，存的时候做 `expect`）、`config.set`（个人层，`expect` 逐项带上；整张表的供应商、池整张写）、`secret.set`、`provider.test`。
-24. 存：先把这次要换的 key 一个个 `secret.set` 到新名字（`<供应商编号>-key`，撞了加 `-2`、`-3`），全成了再一次 `config.set` 写引用（`providers.<编号>.key = { secret = 名字 }`，环境变量的是 `{ env }`，核心 8-25）和别的改动；`config.set` 被拒的，已经存下的 key 留着、引用照旧，草稿不动，状态行写核心的原话；`config_conflict` 写「别处改过 X」，照 `data.current` 说现在是什么。明文 key 只在悬浮窗的输入框和发 `secret.set` 那一刻在内存里，不进草稿以外的地方、不写日志。
+24. 存：先把这次要换的 key 一个个 `secret.set` 到新名字（`<供应商编号>-key`，撞了加 `-2`、`-3`），全成了再一次 `config.set` 写引用（`providers.<编号>.key = { secret = 名字 }`，环境变量的是 `{ env }`，核心 8-25）和别的改动；`config.set` 被拒的，已经存下的 key 留着、引用照旧，草稿不动，状态行写核心的原话；`config_conflict` 写「别处改过 X」，照 `data.current` 说现在是什么。明文 key 只在悬浮窗的输入框和发 `secret.set` 那一刻在内存里，不进草稿以外的地方、不写日志。 有一个 key 没存成，这一次就作废：晚到的别的 key 存成了的回应不再数，不写配置（2026-10-11 review：原来照样数下去，数到 0 把那之后新改的草稿发了出去）。
 25. 开页时、`config.changed` 推来时、`provider.test` 以后重读 `model.list` 和 `config.get`；正在读又来了变更的，读完再补一次；重读不碰草稿，草稿里改过的项照草稿显示。断开时状态行写「没连上核心」，`s` 不发；连上以后重读，不重发没回应的写请求。
 26. 配置页的状态（三页的选择、草稿、悬浮窗）在 `src/settings/`，只是数据和按键；画在 `src/ui/settings/`；和 App 接的在 `src/app/settings.rs`。百分比、窄屏的列数、各栏宽度进 `layout.json`，字进 `text/<语言>.json`。
 27. 实测时定的（2026-10-07）：开始改一项文字时，原来的字整段选中，一敲就换掉，要接着改的按左右键（窗口 `128000` 后面接上 `200k` 被核心拒过）；`config.set` 被拒、核心那一句是总的（「配置有几处不对」）时接上第一处问题的原话；用不了的供应商（推不出驱动、地址）模型栏照核心的 `problem` 原话写，不写「还没有模型」；悬浮窗铺底时先把格子整个清掉（不然窗里的字带着后面那页的字色）。
