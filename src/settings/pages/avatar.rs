@@ -128,15 +128,17 @@ mod tests {
         // 2026-10-11 项目主人：头像超过 1 MiB 或 1024 像素就拒「不太合理」，终端先缩小再传。缩小挪到发出去的那一刻、在后台
         // 做（review D2：原来在界面线程里，大照片卡界面，`app/avatars.rs`），配置页交的是原来的路径；缩成什么样由
         // `avatars/shrink` 的测试守着。
+        // 绝对路径照平台拼（Windows 上 `/tmp/…` 不算绝对，会接到当前目录后面）。
+        let photo = std::env::temp_dir().join("photo.png").display().to_string();
         let mut page = opened();
         press(&mut page, KeyCode::Enter);
-        for c in "/tmp/photo.png".chars() {
+        for c in photo.chars() {
             press(&mut page, KeyCode::Char(c));
         }
         press(&mut page, KeyCode::Enter);
         let asks = page.take_asks();
         assert_eq!(asks[0].1, "blob.put");
-        assert_eq!(asks[0].2["path"], "/tmp/photo.png");
+        assert_eq!(asks[0].2["path"], photo.as_str());
     }
 
     #[test]
