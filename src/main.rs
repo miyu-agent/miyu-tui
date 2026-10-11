@@ -6,6 +6,7 @@ mod app;
 mod avatars;
 mod body_view;
 mod caret;
+mod cells;
 mod clipboard;
 mod commands;
 mod config;

@@ -3,7 +3,8 @@
 
 use std::path::{Path, PathBuf};
 
-use unicode_width::UnicodeWidthChar;
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 /// 一种附件。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,8 +76,9 @@ pub struct Attachment {
 /// 名字超过 `max` 列的中间截掉写 `…`：结尾留扩展名再往前 3 列、至少留三分之一，开头拿剩下的；一个字放不下就不放，
 /// 不超过 `max` 列（一个汉字两列）。
 pub fn short_name(name: &str, max: usize) -> String {
-    let width = |c: char| c.width().unwrap_or(0);
-    if name.chars().map(width).sum::<usize>() <= max || max < 3 {
+    // 照字素簇算（review，2026-10-11：原来逐字符算，`⚠️` 这类字算窄了）。
+    let width = |g: &str| g.width();
+    if name.width() <= max || max < 3 {
         return name.to_string();
     }
     let budget = max - 1;
@@ -84,28 +86,29 @@ pub fn short_name(name: &str, max: usize) -> String {
     let ext = name
         .rfind('.')
         .filter(|&at| at > 0)
-        .map_or(0, |at| name[at..].chars().map(width).sum::<usize>());
+        .map_or(0, |at| name[at..].width());
     let tail_cols = (ext + 3).max(budget / 3).min(budget / 2 + budget % 2);
     let mut tail = Vec::new();
     let mut used = 0;
-    for c in name.chars().rev() {
-        if used + width(c) > tail_cols {
+    for g in name.graphemes(true).rev() {
+        if used + width(g) > tail_cols {
             break;
         }
-        used += width(c);
-        tail.push(c);
+        used += width(g);
+        tail.push(g);
     }
     let head_cols = budget - used;
     let mut head = String::new();
     let mut head_used = 0;
-    for c in name.chars() {
-        if head_used + width(c) > head_cols {
+    for g in name.graphemes(true) {
+        if head_used + width(g) > head_cols {
             break;
         }
-        head_used += width(c);
-        head.push(c);
+        head_used += width(g);
+        head.push_str(g);
     }
-    let tail: String = tail.into_iter().rev().collect();
+    tail.reverse();
+    let tail = tail.concat();
     format!("{head}…{tail}")
 }
 

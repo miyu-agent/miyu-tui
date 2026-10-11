@@ -1,29 +1,31 @@
 //! 照显示宽度折行（引导里几行的格子、大编辑浮窗，「第一次打开的引导」第 21、21a 条）：画的时候折成一行行，按上下键
 //! 时照折好的行挪光标。纯字，不管画。
 
-use unicode_width::UnicodeWidthChar;
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 /// 照显示宽度折行：交回一行行和光标（字节下标 `cursor`）落在第几行第几列。换行符另起一行。
 pub fn wrap(text: &str, cursor: usize, width: usize) -> (Vec<String>, (usize, usize)) {
     let mut rows = vec![String::new()];
     let mut caret = (0, 0);
     let mut col = 0;
-    for (i, c) in text.char_indices() {
+    // 照字素簇算（review，2026-10-11：原来逐字符算，`⚠️` 这类字算窄了，光标错位、一个字拆到两行）。
+    for (i, g) in text.grapheme_indices(true) {
         if i == cursor {
             caret = (rows.len() - 1, col);
         }
-        if c == '\n' {
+        if g == "\n" {
             rows.push(String::new());
             col = 0;
             continue;
         }
-        let w = c.width().unwrap_or(0);
+        let w = g.width();
         if col + w > width && col > 0 {
             rows.push(String::new());
             col = 0;
         }
         if let Some(last) = rows.last_mut() {
-            last.push(c);
+            last.push_str(g);
         }
         col += w;
     }
@@ -38,9 +40,10 @@ pub fn offset_at(text: &str, width: usize, row: usize, goal: usize) -> Option<us
     let mut at_row = 0;
     let mut col = 0;
     let mut found = None;
-    for (i, c) in text.char_indices() {
-        let w = c.width().unwrap_or(0);
-        let breaks = c != '\n' && col + w > width && col > 0;
+    for (i, g) in text.grapheme_indices(true) {
+        let newline = g == "\n";
+        let w = g.width();
+        let breaks = !newline && col + w > width && col > 0;
         if breaks {
             if at_row == row {
                 return Some(i);
@@ -49,12 +52,12 @@ pub fn offset_at(text: &str, width: usize, row: usize, goal: usize) -> Option<us
             col = 0;
         }
         if at_row == row {
-            if col >= goal || c == '\n' {
+            if col >= goal || newline {
                 return Some(i);
             }
-            found = Some(i + c.len_utf8());
+            found = Some(i + g.len());
         }
-        if c == '\n' {
+        if newline {
             if at_row > row {
                 break;
             }

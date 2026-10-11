@@ -9,6 +9,7 @@ use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Clear, Paragraph};
+use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::theme;
@@ -141,21 +142,7 @@ pub fn item(
 
 /// 放进 `width` 列：放不下的从前面截掉、打头写 `…`（路径的末段最有用，首页那一行、工作区框用）。
 pub fn tail(text: &str, width: usize) -> String {
-    use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
-    if text.width() <= width {
-        return text.to_string();
-    }
-    let mut kept: Vec<char> = Vec::new();
-    let mut used = 1;
-    for c in text.chars().rev() {
-        let w = c.width().unwrap_or(0);
-        if used + w > width {
-            break;
-        }
-        used += w;
-        kept.push(c);
-    }
-    std::iter::once('…').chain(kept.into_iter().rev()).collect()
+    crate::cells::tail_marked(text, width)
 }
 
 /// 接着上一条往下写的一行（展开的全文）：行首空两格，和上一条的字对齐；选中的照 [`item`] 铺底。
@@ -195,12 +182,12 @@ pub fn clip_spans(spans: Vec<Span<'static>>, room: usize) -> Vec<Span<'static>> 
     let mut used = 0;
     for span in spans {
         let mut kept = String::new();
-        for c in span.content.chars() {
-            let w = c.to_string().width();
+        for g in span.content.graphemes(true) {
+            let w = g.width();
             if used + w + 1 > room {
                 break;
             }
-            kept.push(c);
+            kept.push_str(g);
             used += w;
         }
         let cut = kept.len() < span.content.len();
