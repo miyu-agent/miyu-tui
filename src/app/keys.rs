@@ -296,6 +296,7 @@ impl App {
             | Run::Edit
             | Run::Recap
             | Run::Rename
+            | Run::Goal
                 if !self.reachable() =>
             {
                 self.typing.input.editor.set_draft(Draft::plain(&line));
@@ -323,6 +324,7 @@ impl App {
                 self.hint(note, false);
             }
             Run::Rename => self.rename(words),
+            Run::Goal => self.goal_command(words),
             Run::Workspace => self.workspace_command(words.unwrap_or_default()),
             Run::Sessions => self.open_sessions(),
             Run::Model => self.open_models(),

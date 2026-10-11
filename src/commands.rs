@@ -9,6 +9,9 @@ use serde::Deserialize;
 pub struct Commands {
     /// 一条条。
     pub commands: Vec<Spec>,
+    /// 命令被拒时，这几种原因码弹核心的原话（带 `data.why` 的照它），不写进正文（蓝图「长期目标」第 2 条）。
+    #[serde(default)]
+    pub hinted_refusals: Vec<String>,
 }
 
 /// 一条命令。
@@ -57,6 +60,8 @@ pub enum Run {
     Recap,
     /// 改名、去掉标题（`session.set_meta`，蓝图「改名」）。
     Rename,
+    /// 长期目标：交给核心（`command.run`，蓝图「长期目标」）。
+    Goal,
     /// 会话列表，切过去（蓝图「会话列表 `/sessions`」）。
     Sessions,
     /// 新会话用哪个人格：开会话以前开人格框（蓝图「新会话：人格、工作区」第 2 条）。

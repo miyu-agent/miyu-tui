@@ -12,6 +12,7 @@ mod diagrams;
 mod drawer;
 mod effort;
 mod frame;
+mod goal;
 mod jobs;
 
 pub use avatars::{Avatar, Place};

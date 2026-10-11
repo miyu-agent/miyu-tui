@@ -23,7 +23,12 @@ pub(super) async fn take(
     let kind = message["id"].as_str().and_then(|id| awaiting.remove(id));
     if let Some(error) = message.get("error") {
         let reason = error["data"]["reason"].as_str().map(str::to_string);
-        let message = error["message"].as_str().unwrap_or_default().to_string();
+        // 用不了的斜杠命令照连接的语言说为什么（`data.why`，核心 O-6 再补），比原话具体（蓝图「长期目标」第 2 条）。
+        let message = error["data"]["why"]
+            .as_str()
+            .or(error["message"].as_str())
+            .unwrap_or_default()
+            .to_string();
         return match kind {
             Some(Awaiting::Answer(session, call)) => notify(Update::AnswerRefused {
                 session,

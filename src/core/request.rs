@@ -49,6 +49,13 @@ pub(super) fn request(
             ("session.set_permission_level", params)
         }
         Command::Run(text) => ("command.run", json!({"session": session, "text": text})),
+        Command::Goal(words) => {
+            let text = match words.as_str() {
+                "" => "/goal".to_string(),
+                words => format!("/goal {words}"),
+            };
+            ("command.run", json!({"session": session, "text": text}))
+        }
         Command::Recap => ("session.recap", json!({"session": session})),
         Command::Configure(reference) => (
             "session.configure",

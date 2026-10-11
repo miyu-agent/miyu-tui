@@ -1,4 +1,5 @@
 {
+  "hinted_refusals": ["goal_exists", "no_goal", "goal_paused", "goal_running", "goal_unavailable"],
   "commands": [
     {
       "name": "undo",
@@ -78,6 +79,16 @@
         "ja": "振り返り：今やっていること、終わったこと、残っていること"
       },
       "run": "recap"
+    },
+    {
+      "name": "goal",
+      "summary": {
+        "zh": "长期目标：/goal <目标> 设定，只打 /goal 看进度",
+        "en": "Long-running goal: /goal <goal> sets one, /goal alone shows progress",
+        "ja": "長期目標：/goal <目標> で設定、/goal だけで進み具合を表示"
+      },
+      "run": "goal",
+      "args": true
     },
     {
       "name": "rename",

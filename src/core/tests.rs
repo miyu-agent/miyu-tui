@@ -30,3 +30,18 @@ fn clear_goes_to_command_run_and_new_asks_for_nothing() {
     );
     assert!(request(Command::New { keep: false }, "s1").is_none());
 }
+
+#[test]
+fn a_goal_goes_to_command_run_with_what_follows() {
+    // 蓝图「长期目标」第 1 条：照核心认，`/goal` 后面的字原样带上。
+    let (method, params) = request(Command::Goal("写完测试".into()), "s1").unwrap();
+    assert_eq!(
+        (method, params),
+        (
+            "command.run",
+            json!({"session": "s1", "text": "/goal 写完测试"})
+        )
+    );
+    let (_, params) = request(Command::Goal(String::new()), "s1").unwrap();
+    assert_eq!(params["text"], "/goal", "只打 /goal 是看进度");
+}

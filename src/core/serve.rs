@@ -200,7 +200,8 @@ pub(super) async fn serve(
                         link.pending = Some(level);
                         continue;
                     }
-                    Command::Send { .. } if link.target().is_none() => {
+                    // 说第一句话、设长期目标（「长期目标」第 3 条）：先开会话。
+                    Command::Send { .. } | Command::Goal(_) if link.target().is_none() => {
                         let chosen = super::connect::Chosen {
                             model: link.pending_model.take(),
                             persona: link.pending_persona.clone(),
@@ -303,7 +304,9 @@ async fn send(
             asker.clone().unwrap_or_else(|| session.to_string()),
             call.clone(),
         )),
-        Command::Run(_) | Command::Workspace { .. } => Some(Awaiting::CommandRun),
+        Command::Run(_) | Command::Goal(_) | Command::Workspace { .. } => {
+            Some(Awaiting::CommandRun)
+        }
         _ => None,
     };
     let files = match &command {

@@ -164,14 +164,15 @@ impl App {
         if matches!(update, Update::Refused { .. }) {
             self.opened();
         }
-        // 这几种拒绝只弹提示框，不写进正文（`tui.md`「正文」第 9 条）。
+        // 这几种拒绝只弹提示框，不写进正文（`tui.md`「正文」第 9 条）：认得的写自己的短话，命令清单里列着的弹核心的原话
+        // （「长期目标」第 2 条）。
         if let Update::Refused {
             reason: Some(reason),
-            ..
+            message,
         } = &update
-            && let Some(hint) = self.config.text.refusal_hints.get(reason)
+            && let Some(hint) = self.refusal_hint(reason, message)
         {
-            self.hint(hint.clone(), false);
+            self.hint(hint, false);
             return;
         }
         // 命令的回执弹提示，去掉句末的句号，和别的提示一样；`/clear` 不弹，正文里已有「上下文已清空」那一行（蓝图
@@ -276,5 +277,21 @@ impl App {
             let text = self.config.text.compaction.triggered.clone();
             self.hint(text, true);
         }
+    }
+
+    /// 被拒时弹的提示（原因码 `reason`、核心的原话 `message`）：认得的原因码写自己的短话；命令清单里列着的照核心的原话，
+    /// 去掉句末的句号，和别的提示一样；别的是 `None`，写进正文。
+    fn refusal_hint(&self, reason: &str, message: &str) -> Option<String> {
+        if let Some(hint) = self.config.text.refusal_hints.get(reason) {
+            return Some(hint.clone());
+        }
+        let listed = self
+            .config
+            .commands
+            .hinted_refusals
+            .iter()
+            .any(|r| r == reason);
+        let said = message.trim_end().trim_end_matches(['。', '.']);
+        (listed && !said.is_empty()).then(|| said.to_string())
     }
 }
