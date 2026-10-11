@@ -252,6 +252,7 @@ impl App {
             self.submit_edit(original, draft);
             return;
         }
+        self.leave_gone();
         self.view.follow();
         // 附了以后才换的模型：收不了的附件改成文件块写路径（第 12 条「照模型收」）。
         let mut draft = draft;

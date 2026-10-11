@@ -4,8 +4,8 @@ use serde_json::{Value, json};
 
 use super::{latest_arrived, older_arrived};
 use crate::core::Push;
+use crate::core::link::Link;
 use crate::core::replay::Replay;
-use crate::core::serve::Link;
 
 /// 你说的一句。
 fn said(seq: u64, text: &str) -> Value {

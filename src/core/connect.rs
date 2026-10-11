@@ -100,13 +100,11 @@ pub(super) struct Joined {
     pub current: Option<super::Current>,
     pub persona: Option<String>,
     pub preset: Option<String>,
-    /// 累计用量、权限、还在跑的（核心 9-6 上）：重连以后照它换，断开那一段漏掉的补回来。
-    pub snapshot: Option<super::Snapshot>,
     /// 会话的工作区（核心 9-7 上）：侧边栏照它写。
     pub workspace: Option<String>,
 }
 
-/// 订阅一个会话的事件流，交回订阅的回应里头要的几样。核心重启以后，订阅时才载入这个会话。
+/// 订阅刚开的会话的事件流，交回订阅的回应里头要的几样（已有的会话照 `serve.rs` 读页、带 `after` 订阅）。
 pub(super) async fn subscribe(rpc: &mut Rpc, session: &str) -> Result<Joined, Update> {
     let subscribed = rpc
         .call("subscribe", json!({"session": session, "stream": "events"}))
@@ -118,7 +116,6 @@ pub(super) async fn subscribe(rpc: &mut Rpc, session: &str) -> Result<Joined, Up
         current: super::models::current(&subscribed),
         persona: text("persona"),
         preset: text("preset"),
-        snapshot: super::Snapshot::read(&subscribed),
         workspace: workspace(&subscribed),
     })
 }

@@ -36,6 +36,29 @@ impl App {
         self.forget_workspace();
     }
 
+    /// 主会话不存在了（在别处删了、`--resume` 的编号不对；review B3，2026-10-11 项目主人定）：切过去的就是它的先换上来，
+    /// 看着子会话的回主会话；正文末尾红字写「会话不存在」，上面的留着看，下一句话像按过 `/new` 一样开新会话。
+    pub(super) fn session_gone(&mut self, session: &str) {
+        if self.opening(session) {
+            self.opened();
+        }
+        self.leave_child();
+        let hints = &self.config.text.refusal_hints;
+        let text = hints.get("session_not_found").cloned().unwrap_or_default();
+        self.transcript.gone(text);
+    }
+
+    /// 会话不存在以后的第一句话：先换一份空的正文（像按过 `/new`，底栏照旧写原来的模型），再发；核心那头已经不对着它，
+    /// 这一句开新会话。别的时候什么都不做。
+    pub(super) fn leave_gone(&mut self) {
+        if !self.transcript.gone {
+            return;
+        }
+        let shown = self.transcript.footer_model();
+        self.park_current(false);
+        self.transcript.keep_footer_model(shown);
+    }
+
     /// 正在看的会话换下来：还忙着的（`keep`）停放着，等它空下来再退订；不然连它的子代理一起不要了。换上一份空的正文。
     pub(super) fn park_current(&mut self, keep: bool) {
         let old = self.transcript.split_off();

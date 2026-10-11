@@ -8,10 +8,10 @@ use serde_json::{Value, json};
 
 use super::Update;
 use super::awaiting::Awaiting;
+use super::link::Link;
 use super::push::{JobStart, Push};
 use super::replay::Replay;
 use super::rpc::Rpc;
-use super::serve::Link;
 use super::switch;
 
 /// 一个会话读到哪了：已经读进来的最早一页从第几条起，它前面已经画过的几条（每页最前面带的触发消息）。
@@ -125,6 +125,10 @@ pub(super) async fn take_latest(
     awaiting: &mut HashMap<String, Awaiting>,
     notify: &impl Fn(Update) -> bool,
 ) -> bool {
+    // 等着的时候切走、`/new` 了：不再要它，不画、不替它订阅（review B7：原来照样带 `after` 订阅，订阅一直不退）。
+    if !link.follows(&session) {
+        return true;
+    }
     let (pushes, more) = latest_arrived(link, &session, result);
     let wrap = |update: Update| Update::Elsewhere {
         session: session.clone(),
@@ -158,7 +162,9 @@ pub(super) async fn take_refused(
         return true;
     }
     link.replays.remove(&session);
-    notify(Update::Refused { reason, message })
+    // 主会话不存在了（在别处删了、`--resume` 的编号不对）：照「会话不存在」办（review B3）。
+    let gone = link.gone(&session, reason.as_deref());
+    notify(gone.unwrap_or(Update::Refused { reason, message }))
 }
 
 /// 更早的一页的回应（读不成的交 `failed`）：交给界面，照会话包着。

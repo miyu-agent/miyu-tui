@@ -127,6 +127,11 @@ impl App {
             self.session_changed(change);
             return;
         }
+        // 主会话不存在了：写一句，下一句话开新会话（`session.rs`，review B3）。
+        if let Update::SessionGone(session) = update {
+            self.session_gone(&session);
+            return;
+        }
         // 还没开会话时 `/workspace` 验完了（`workspace.rs`）。
         if let Update::DirChecked(result) = update {
             self.dir_checked(result);

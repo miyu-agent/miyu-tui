@@ -6,8 +6,8 @@ use serde_json::Value;
 
 use super::awaiting::Awaiting;
 use super::limits::Limits;
+use super::link::Link;
 use super::rpc::Rpc;
-use super::serve::Link;
 use super::sessions;
 use super::switch;
 use super::{JobOutput, Push, Report, Snapshot, Update, config};
@@ -73,10 +73,12 @@ pub(super) async fn take(
             Some(Awaiting::Older(session)) => {
                 super::page::take_older(link, session, Err(message), notify)
             }
-            // 切过去订阅不上（会话删了、日志坏了）：不再当它在补发，照一般的拒绝说。
-            Some(Awaiting::Replay(session)) => {
+            // 切过去、重连以后订阅不上：主会话不存在了的照「会话不存在」办（review B3），别的（日志坏了）不再当它在补发，
+            // 照一般的拒绝说。
+            Some(Awaiting::Replay(session) | Awaiting::Rejoin(session)) => {
                 link.replays.remove(&session);
-                notify(Update::Refused { reason, message })
+                let gone = link.gone(&session, reason.as_deref());
+                notify(gone.unwrap_or(Update::Refused { reason, message }))
             }
             // 读不了输出（任务没了、是子代理）：不用说，界面不再等它。
             Some(Awaiting::Output(session, job)) => notify(Update::Output {
@@ -205,51 +207,12 @@ pub(super) async fn take(
         Some(Awaiting::Older(session)) => {
             return super::page::take_older(link, session, Ok(&message["result"]), notify);
         }
-        // 补完了：还记着的读出来、钟回到现在，再交限额（「会话列表」第 5 条）。
+        // 补完了：还记着的读出来、钟回到现在，再交限额（「会话列表」第 5 条）；重连以后重订的一样（`switch.rs`）。
         Some(Awaiting::Replay(session)) => {
-            let wrap = |update: Update| Update::Elsewhere {
-                session: session.clone(),
-                update: Box::new(update),
-            };
-            let pushes = switch::finish(link, &session);
-            // 切过去的会话现在用的模型（核心 8-10）。
-            if let Some(current) = super::models::current(&message["result"])
-                && !notify(wrap(Update::CurrentModel(current)))
-            {
-                return false;
-            }
-            // 会话用哪个人格、哪个预设（核心 P-1 下、P-2 上）。
-            if let Some(persona) = message["result"]["persona"].as_str()
-                && !notify(wrap(Update::SessionPersona(persona.to_string())))
-            {
-                return false;
-            }
-            if let Some(preset) = message["result"]["preset"].as_str()
-                && !notify(wrap(Update::SessionPreset(preset.to_string())))
-            {
-                return false;
-            }
-            // 现在的待办（核心 D-3）：订阅回应里带着，补发的事件里没有（`todos.changed` 是瞬时的）。
-            if let Some(todos) = super::todos::read(&message["result"])
-                && !notify(wrap(Update::Push(Push::Todos {
-                    todos,
-                    done: Vec::new(),
-                })))
-            {
-                return false;
-            }
-            // 累计用量、权限、还在跑的（核心 9-6 上）：整个换掉页里的事件算出来的，换上来以前就对。
-            if let Some(snapshot) = Snapshot::read(&message["result"])
-                && !notify(wrap(Update::Snapshot(snapshot)))
-            {
-                return false;
-            }
-            // 会话的工作区（核心 9-7 上）：补完、换上来以后再交，终端在别的目录时正文末尾写一句。
-            let workspace = super::connect::workspace(&message["result"])
-                .map(|cwd| Update::Workspace { cwd, joined: true });
-            return pushes.into_iter().all(|p| notify(wrap(Update::Push(p))))
-                && Limits::of(message).is_none_or(|limits| notify(wrap(Update::Limits(limits))))
-                && workspace.is_none_or(|w| notify(wrap(w)));
+            return switch::replayed(link, session, message, true, notify);
+        }
+        Some(Awaiting::Rejoin(session)) => {
+            return switch::replayed(link, session, message, false, notify);
         }
         Some(Awaiting::Watch(session)) => {
             let reply = &message["result"];

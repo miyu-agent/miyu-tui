@@ -21,6 +21,8 @@ pub(super) enum Awaiting {
     Rename(Option<String>),
     /// 带 `after` 订阅：回应到了算补完（「会话列表」第 5 条）。
     Replay(String),
+    /// 重连以后带 `after` 重订主会话（review B7，2026-10-11）：回应照补完办，只是不算接上一个老会话（工作区不另写一句）。
+    Rejoin(String),
     /// 要最新一页（核心 9-6 下）：到了画进去，再带 `after` 订阅；核心旧的照旧补整份。
     Page(String),
     /// 要更早的一页：到了交给界面拼在前面。

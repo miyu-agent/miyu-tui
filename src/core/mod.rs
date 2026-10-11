@@ -16,6 +16,7 @@ mod cost;
 mod efforts;
 mod kinds;
 mod limits;
+mod link;
 mod links;
 mod mermaid;
 mod models;
@@ -42,7 +43,7 @@ use std::thread;
 use tokio::sync::mpsc;
 
 use backoff::Backoff;
-use connect::{connect, subscribe};
+use connect::connect;
 
 pub use abilities::Abilities;
 pub use config::HeadConfig;
@@ -250,6 +251,9 @@ pub enum Update {
     Missing(String),
     /// 断开以后又连上了，接着订阅着原来那个会话（第 7 条）。
     Reconnected,
+    /// 主会话不存在了（在别处删了；`--resume` 的编号不对）：读页、补发、重连订阅时核心说的。不再对着它，下一句话开新会话
+    /// （review B3，2026-10-11 项目主人定）。
+    SessionGone(String),
     /// 连不上、握手或开会话被拒：原因。
     Failed(String),
     /// 一条请求被拒绝：原因码（`data.reason`，没有的是 `None`），和核心照握手时的语言说的原话。
