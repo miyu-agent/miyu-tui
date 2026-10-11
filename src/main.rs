@@ -227,7 +227,7 @@ fn run(
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
     let mut log = frame_log::FrameLog::open(log_path.as_deref(), slow);
     while !app.quit {
-        app.notifier.session(app.main_session().as_deref());
+        app.notifier.session(app.talk.main_session().as_deref());
         frame(terminal, &mut app, &mut pointer, depth, &mut log)?;
         let drawn_at = Instant::now();
         let wait = app.deadline().map_or(Duration::from_secs(3600), |d| {

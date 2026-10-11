@@ -45,14 +45,14 @@ impl App {
             },
             // 开会话、重连时订阅主会话的回应（`core/serve.rs`、`core/spawn.rs`）：工作区。
             Update::Workspace { cwd, joined } => {
-                if let Some(main) = self.main_session() {
+                if let Some(main) = self.talk.main_session() {
                     self.workspace(&main, cwd, joined);
                 }
                 None
             }
             // 重连时重新订阅主会话的回应（`core/spawn.rs`）：断开那一段漏掉的用量补回来。
             Update::Snapshot(snapshot) => {
-                if let Some(main) = self.main_session() {
+                if let Some(main) = self.talk.main_session() {
                     self.snapshot(&main, snapshot);
                 }
                 None

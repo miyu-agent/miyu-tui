@@ -8,11 +8,11 @@ use std::time::Instant;
 use super::App;
 use crate::body_view::BodyView;
 use crate::config::JobTexts;
-use crate::core::{Bill, Command, JobStart, Push, Sender, Update, Usage};
+use crate::core::{Command, JobStart, Push, Sender, Update};
 use crate::jobs::{Board, Job, JobKind};
 use crate::transcript::Transcript;
 
-mod notes;
+pub(super) mod notes;
 use notes::{Relation, announce, doing, tokens, untrusted};
 
 /// 停放着的一个会话。
@@ -74,7 +74,7 @@ impl App {
                 // 切走时还忙着的：这一轮做完了、空下来就退订（「会话列表」第 4 条）。
                 self.prune();
                 // 切过去的补完了：换上来（第 5 条）。
-                if replayed && self.opening(session) {
+                if replayed && self.talk.opening(session) {
                     self.opened();
                 }
             }
@@ -239,7 +239,7 @@ impl App {
 
     /// 子会话 `child` 的子代理的任务编号（在哪个会话的任务表里都找）。
     fn agent_job(&self, child: &str) -> Option<String> {
-        self.boards().find_map(|b| {
+        self.talk.boards().find_map(|b| {
             b.jobs
                 .iter()
                 .find(|j| j.session.as_deref() == Some(child))
@@ -256,21 +256,6 @@ impl App {
             .parked
             .get_mut(session)
             .map(|p| (&mut p.transcript, &mut p.board))
-    }
-
-    /// 子会话 `child` 的子代理叫什么（在哪个会话的任务表里都找）。
-    fn agent_title(&self, child: &str) -> Option<String> {
-        self.boards().find_map(|b| {
-            b.jobs
-                .iter()
-                .find(|j| j.session.as_deref() == Some(child))
-                .map(|j| j.title.clone())
-        })
-    }
-
-    /// 每一份任务表：正在看的、停放着的。
-    fn boards(&self) -> impl Iterator<Item = &Board> {
-        std::iter::once(&self.talk.board).chain(self.talk.parked.values().map(|p| &p.board))
     }
 
     /// 子会话 `child` 推来了东西：照它的正文更新它那一行正在做什么、用了多少（「后台命令、子代理和侧边栏」）。
@@ -330,75 +315,16 @@ impl App {
         }
     }
 
-    /// 子代理状态行照的那份任务表：主会话的（切进了子会话的是停放着的主会话的）。
-    pub fn tree(&self) -> &Board {
-        match &self.talk.home {
-            Some(main) => self
-                .talk
-                .parked
-                .get(main)
-                .map_or(&self.talk.board, |p| &p.board),
-            None => &self.talk.board,
-        }
-    }
-
-    /// 子代理状态行列的子代理：主会话任务表里在跑的，加上正在看的那个（报完了也留着，「切进子会话」第 5 条）。
-    pub fn listed_agents(&self) -> Vec<&Job> {
-        self.tree().listed(self.viewing())
-    }
-
-    /// 正在看的子会话的子代理叫什么（输入框右上角写，「切进子会话」第 2 条）；看着主会话是 `None`。
-    pub fn viewing_title(&self) -> Option<String> {
-        self.viewing().and_then(|child| self.agent_title(child))
-    }
-
-    /// 子会话 `child` 自己又派了几个在跑的子代理（状态行里写「（+N）」）。
-    pub fn nested_agents(&self, child: &str) -> usize {
-        if self.talk.transcript.session.as_deref() == Some(child) {
-            return self.talk.board.agents().len();
-        }
-        self.talk
-            .parked
-            .get(child)
-            .map_or(0, |p| p.board.agents().len())
-    }
-
-    /// 正在看的会话连同它派出去的子代理（一层层往下）一共用了多少：框下面那一行、侧边栏写（2026-09-30 项目主人：
-    /// 子代理用的也算进主会话）。子代理的照它停放着的正文，订阅上以前用的看不到。
-    pub fn usage_total(&self) -> Usage {
-        notes::tree_usage(
-            self.talk.transcript.total,
-            &self.talk.board,
-            &self.talk.parked,
-        )
-    }
-
-    /// 花了多少：连同子代理的，和 [`App::usage_total`] 一个算法（蓝图「配置与模型」第 5 条）。
-    pub fn bill_total(&self) -> Bill {
-        notes::tree_bill(
-            &self.talk.transcript.bill,
-            &self.talk.board,
-            &self.talk.parked,
-        )
-    }
-
     /// 花了多少写成字（`$0.42 + ¥1.30`，一笔都算不出的是 `None`）：侧边栏、框下面那一行用。
     pub fn spent(&self) -> Option<String> {
-        let bill = self.bill_total();
+        let bill = self.talk.bill_total();
         crate::money::amounts(&bill, &self.link.currency, &self.config.layout.currencies)
-    }
-
-    /// 正在看的子会话；看着主会话是 `None`。
-    pub fn viewing(&self) -> Option<&str> {
-        self.talk
-            .home
-            .as_ref()
-            .and(self.talk.transcript.session.as_deref())
     }
 
     /// 切进子代理状态行里第 `index` 个子代理的会话（「切进子会话」第 1 条）。
     pub(super) fn enter_agent(&mut self, index: usize) {
         let child = self
+            .talk
             .listed_agents()
             .get(index)
             .and_then(|j| j.session.clone());

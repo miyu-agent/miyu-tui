@@ -38,7 +38,7 @@ pub(super) fn content(
         Some(crate::app::Panel::Sessions) => match &app.boxes.session_list {
             Some(list) => session_list::lines(
                 list,
-                app.main_session().as_deref(),
+                app.talk.main_session().as_deref(),
                 &app.cwd,
                 &app.config,
                 width,

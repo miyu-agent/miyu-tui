@@ -339,7 +339,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
         super::avatar_view::draw(frame, mascot, app, crate::app::Place::Sidebar, true);
         top = mascot.bottom() + 1;
     }
-    let total = app.usage_total();
+    let total = app.talk.usage_total();
     // 工作目录照会话的（核心 9-7 上）；还没开会话、核心旧的照终端所在的。
     let cwd = app.current_workspace();
     let (mut info, id_row) = info_lines(&app.talk.transcript, &total, &app.config, inner, cwd);

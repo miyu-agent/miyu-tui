@@ -185,7 +185,7 @@ pub(super) fn untrusted(name: &str) -> String {
 }
 
 /// `own` 加上 `board` 里派出去的子代理（一层层往下）停放着的正文里用的（`App::usage_total`）。
-pub(super) fn tree_usage(own: Usage, board: &Board, parked: &super::Lot) -> Usage {
+pub(in crate::app) fn tree_usage(own: Usage, board: &Board, parked: &super::Lot) -> Usage {
     let mut total = own;
     for child in tree(board, parked) {
         let usage = child.total;
@@ -199,7 +199,7 @@ pub(super) fn tree_usage(own: Usage, board: &Board, parked: &super::Lot) -> Usag
 }
 
 /// `own` 加上子代理们花的（`App::bill_total`，和用量一个算法，核心 8-15）。
-pub(super) fn tree_bill(own: &Bill, board: &Board, parked: &super::Lot) -> Bill {
+pub(in crate::app) fn tree_bill(own: &Bill, board: &Board, parked: &super::Lot) -> Bill {
     let mut total = own.clone();
     for child in tree(board, parked) {
         total.merge(&child.bill);

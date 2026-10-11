@@ -245,7 +245,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         return;
     }
     // 不在首页、够宽时右边分出侧边栏，别的都画在主列里（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。
-    let home = app.home();
+    let home = app.talk.blank();
     let (main, sidebar) = if home {
         let area = frame.area();
         (area, Rect::new(area.right(), area.y, 0, area.height))
@@ -276,7 +276,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .map(|e| e.text.split_whitespace().collect::<Vec<_>>().join(" "))
         .collect();
     let count = u16::try_from(queued.len()).unwrap_or(u16::MAX);
-    let agent_rows = agents::height(app.listed_agents().len(), app.config.layout.agent_rows);
+    let agent_rows = agents::height(app.talk.listed_agents().len(), app.config.layout.agent_rows);
     // 没有侧边栏（窄屏、首页）时，待办常驻在输入框上面（第 4 条）；有侧边栏时在侧边栏里。
     let todo_lines = if sidebar.width == 0 {
         // 首页的框收窄了：照首页框里的字宽排，不然长的一项被裁掉、没有「…」。

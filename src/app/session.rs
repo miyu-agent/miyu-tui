@@ -33,7 +33,7 @@ impl App {
     /// 任务都报完了再退订（「后台命令、子代理和侧边栏」）；没有的马上退订，连它的子代理一起。
     pub(super) fn new_session(&mut self) {
         self.leave_child();
-        let keep = self.busy_here();
+        let keep = self.talk.busy_here();
         // 底栏先照旧写原来的模型、思考强度，等核心交回默认的再换（2026-10-02 项目主人报：开新会话底栏闪一下；手动
         // 换的就是新会话的默认，多半一样）。
         let shown = self.talk.transcript.footer_model();
@@ -51,7 +51,7 @@ impl App {
     /// 主会话不存在了（在别处删了、`--resume` 的编号不对；review B3，2026-10-11 项目主人定）：切过去的就是它的先换上来，
     /// 看着子会话的回主会话；正文末尾红字写「会话不存在」，上面的留着看，下一句话像按过 `/new` 一样开新会话。
     pub(super) fn session_gone(&mut self, session: &str) {
-        if self.opening(session) {
+        if self.talk.opening(session) {
             self.opened();
         }
         self.leave_child();
