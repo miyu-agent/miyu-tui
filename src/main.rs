@@ -50,6 +50,7 @@ mod session_list;
 mod settings;
 mod side_select;
 mod startup;
+mod tabs;
 mod theme;
 mod tips;
 mod transcript;

@@ -10,6 +10,7 @@ fn draw(text: &str, width: u16, flipped: &[usize]) -> Vec<MdLine> {
         languages: &config.languages,
         math: &config.math,
         labels: &config.text.markdown,
+        tab: config.layout.output.tab,
     };
     render(text, width, &kit, flipped)
 }
@@ -245,6 +246,7 @@ fn html_ruler() {
         languages: &config.languages,
         math: &config.math,
         labels: &config.text.markdown,
+        tab: config.layout.output.tab,
     };
     let time = |text: &str| {
         let start = std::time::Instant::now();

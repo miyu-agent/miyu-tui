@@ -217,6 +217,7 @@ fn reply_rows(index: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
             languages: &ctx.config.languages,
             math: &ctx.config.math,
             labels: &ctx.config.text.markdown,
+            tab: ctx.config.layout.output.tab,
         };
         markdown::render(text, ctx.width, &kit, &entry.details)
     });

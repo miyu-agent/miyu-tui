@@ -8,8 +8,9 @@ use super::rows::clip;
 use crate::diff::{Diff, Mark};
 use crate::theme;
 
-/// 一份差异排成的每一行：行号那一格、标记加内容。`width` 是一行能占几列，太长的截掉，不折行。
-pub fn lines(diff: &Diff, width: u16) -> Vec<(Span<'static>, Span<'static>)> {
+/// 一份差异排成的每一行：行号那一格、标记加内容。`width` 是一行能占几列，太长的截掉，不折行。制表符照 `tab` 列一个
+/// 制表位展开（review C1：画面库画不出制表符，缩进全没了）。
+pub fn lines(diff: &Diff, width: u16, tab: usize) -> Vec<(Span<'static>, Span<'static>)> {
     let digits = diff
         .lines
         .iter()
@@ -29,7 +30,10 @@ pub fn lines(diff: &Diff, width: u16) -> Vec<(Span<'static>, Span<'static>)> {
                 Mark::Gap => return (gutter, Span::styled("⋯", theme::dim())),
             };
             let room = u16::try_from(room).unwrap_or(u16::MAX);
-            let text = clip(&format!("{mark} {}", line.text), room);
+            let text = clip(
+                &format!("{mark} {}", crate::tabs::expand(&line.text, tab)),
+                room,
+            );
             (gutter, Span::styled(text, style))
         })
         .collect()
@@ -41,7 +45,7 @@ mod tests {
     use crate::diff::compare;
 
     fn shown(before: &str, after: &str) -> Vec<String> {
-        lines(&compare(before, after), 40)
+        lines(&compare(before, after), 40, 4)
             .into_iter()
             .map(|(gutter, content)| format!("{}{}", gutter.content, content.content))
             .collect()

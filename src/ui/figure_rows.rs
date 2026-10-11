@@ -179,6 +179,7 @@ mod tests {
             languages: &config.languages,
             math: &config.math,
             labels: &config.text.markdown,
+            tab: config.layout.output.tab,
         };
         markdown::render(text, 60, &kit, &[])
             .into_iter()

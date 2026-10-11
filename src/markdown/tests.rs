@@ -10,6 +10,7 @@ fn draw(text: &str, width: u16) -> Vec<MdLine> {
         languages: &config.languages,
         math: &config.math,
         labels: &config.text.markdown,
+        tab: config.layout.output.tab,
     };
     render(text, width, &kit, &[])
 }
@@ -376,4 +377,12 @@ fn a_link_across_a_line_break_after_a_local_picture_does_not_crash() {
     // 链接记着的起点不能还指着排掉以前的位置（原来越界崩溃，重开会话照样崩）。
     let got = lines("看图 ![](a.png) 详见 [说明\n文档](https://x.y)", 60);
     assert!(got.iter().any(|l| l.contains("文档")), "{got:?}");
+}
+
+#[test]
+fn a_tab_indented_code_block_keeps_its_indent() {
+    // review C1（2026-10-11）：画面库把制表符丢掉，Go、Makefile 的缩进全没了。照制表位展开成空格。
+    let shown = lines("```go\nfunc f() {\n\tg()\n}\n```", 40);
+    assert!(shown.iter().all(|l| !l.contains('\t')), "{shown:?}");
+    assert!(shown.iter().any(|l| l.contains("    g()")), "{shown:?}");
 }
