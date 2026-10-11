@@ -10,20 +10,21 @@ impl App {
     /// 不弹。
     pub(super) fn notify_core(&mut self, update: &Update) {
         // 补发来的是以前的事：不弹、不响、不报；补完了照这时在不在跑报一次 herdr（「会话列表」第 6 条）。
-        if self.transcript.replaying() {
+        if self.talk.transcript.replaying() {
             if let Update::Push(Push::Clock(None)) = update {
-                let running = self.transcript.running.is_some();
+                let running = self.talk.transcript.running.is_some();
                 self.notifier
-                    .state(herdr_state(self.drawers.open(), running));
+                    .state(herdr_state(self.talk.drawers.open(), running));
             }
             return;
         }
-        let seen = self.transcript.running.is_some();
-        let manual = self.transcript.manual_turn();
+        let seen = self.talk.transcript.running.is_some();
+        let manual = self.talk.transcript.manual_turn();
         match update {
             // 一轮开始：有抽屉开着的照旧在等（别处来的话可以在抽屉开着时开一轮）。
             Update::Push(Push::TurnStarted(..)) => {
-                self.notifier.state(herdr_state(self.drawers.open(), true));
+                self.notifier
+                    .state(herdr_state(self.talk.drawers.open(), true));
             }
             Update::Push(Push::TurnEnded(reason)) => {
                 if seen && !manual {
@@ -34,7 +35,8 @@ impl App {
                     }
                 }
                 // 一轮结束：还有开着的抽屉的在等，不然空闲。
-                self.notifier.state(herdr_state(self.drawers.open(), false));
+                self.notifier
+                    .state(herdr_state(self.talk.drawers.open(), false));
             }
             Update::Disconnected => self.notifier.state(State::Idle),
             _ => {}
@@ -43,7 +45,7 @@ impl App {
 
     /// 抽屉开了一个（新开的、了结一个轮到下一个的）：弹「在等你确认」「在等你回答」，报在等。
     pub(super) fn notify_drawer(&mut self) {
-        let Some(drawer) = self.drawers.current.as_ref() else {
+        let Some(drawer) = self.talk.drawers.current.as_ref() else {
             return;
         };
         let event = if drawer.is_question() {
@@ -57,7 +59,10 @@ impl App {
 
     /// 没有在等你的了：一轮还在跑的在做，不然空闲；还有开着的抽屉的在等。
     pub(super) fn settle_state(&mut self) {
-        let state = herdr_state(self.drawers.open(), self.transcript.running.is_some());
+        let state = herdr_state(
+            self.talk.drawers.open(),
+            self.talk.transcript.running.is_some(),
+        );
         self.notifier.state(state);
     }
 }

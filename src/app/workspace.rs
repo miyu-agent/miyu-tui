@@ -18,9 +18,14 @@ impl App {
 
     /// 现在用的工作区：开着的会话照会话的，还没开的照换过的，没换的照终端所在的。
     pub fn current_workspace(&self) -> &str {
-        match &self.transcript.session {
-            Some(_) => self.transcript.workspace.as_deref().unwrap_or(&self.cwd),
-            None => self.workspace_pending.as_deref().unwrap_or(&self.cwd),
+        match &self.talk.transcript.session {
+            Some(_) => self
+                .talk
+                .transcript
+                .workspace
+                .as_deref()
+                .unwrap_or(&self.cwd),
+            None => self.talk.workspace_pending.as_deref().unwrap_or(&self.cwd),
         }
     }
 
@@ -30,7 +35,7 @@ impl App {
             return;
         }
         let cwd = self.cwd.clone();
-        let command = if self.transcript.session.is_some() {
+        let command = if self.talk.transcript.session.is_some() {
             Command::Workspace { path, cwd }
         } else {
             Command::CheckDir { path, cwd }
@@ -47,7 +52,7 @@ impl App {
                     .send(Command::NewWorkspace(Some(dir.clone())));
                 let note = (self.config.text.workspace.pending)
                     .replace("{path}", &crate::local::home_short(&dir));
-                self.workspace_pending = Some(dir);
+                self.talk.workspace_pending = Some(dir);
                 self.hint(note, true);
             }
             Err(refusal) => {
@@ -60,6 +65,6 @@ impl App {
 
     /// `/new` 以后回到终端所在的目录。
     pub(super) fn forget_workspace(&mut self) {
-        self.workspace_pending = None;
+        self.talk.workspace_pending = None;
     }
 }

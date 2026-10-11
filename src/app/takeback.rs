@@ -65,8 +65,9 @@ impl App {
         if self.switching() {
             return;
         }
-        let session = self.transcript.session.clone();
-        self.takeback = self
+        let session = self.talk.transcript.session.clone();
+        self.talk.takeback = self
+            .talk
             .transcript
             .takeback()
             .map(|back| Takeback::Interrupting(session, back));
@@ -75,14 +76,14 @@ impl App {
 
     /// 正在看的会话推来的：这一轮结束了发撤销；撤销成了把那几句放回输入框；撤销被拒了、看的换了、断开了就算了。
     pub(super) fn takeback_on(&mut self, update: &Update) {
-        let Some(taken) = self.takeback.take() else {
+        let Some(taken) = self.talk.takeback.take() else {
             return;
         };
-        match step(taken, update, self.transcript.session.as_deref()) {
-            Step::Wait(kept) => self.takeback = Some(kept),
+        match step(taken, update, self.talk.transcript.session.as_deref()) {
+            Step::Wait(kept) => self.talk.takeback = Some(kept),
             Step::Revert(next) => {
                 self.link.core.send(Command::Revert);
-                self.takeback = Some(next);
+                self.talk.takeback = Some(next);
             }
             Step::Return(back) => self.put_returned(back),
             Step::Drop => {}

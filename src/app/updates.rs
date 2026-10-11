@@ -104,7 +104,7 @@ impl App {
         };
         // 换了模型：底栏照新的模型写思考强度，不等下一轮（2026-10-02 项目主人报）。
         if let Update::Configured(_) = &update {
-            self.transcript.update(update, &self.config.text);
+            self.talk.transcript.update(update, &self.config.text);
             self.refresh_effort();
             return;
         }
@@ -225,21 +225,22 @@ impl App {
         if matches!(update, Update::Push(Push::Compacted { clear: true })) {
             self.screen.view.clear();
         }
-        let folds = self.transcript.folds();
-        self.transcript.update(update, &self.config.text);
+        let folds = self.talk.transcript.folds();
+        self.talk.transcript.update(update, &self.config.text);
         // 在子会话里看：它那一行正在做什么、用了多少跟着更新。
         if let Some(child) = self.viewing().map(str::to_string) {
             self.refresh_agent(&child);
         }
         // 一段刚收起（她开口、一轮结束）：放开一次视口，收起留下的空白由上面的行补满（`tui.md`「正文」第 1 条）。
-        if release && self.transcript.folds() > folds {
+        if release && self.talk.transcript.folds() > folds {
             self.screen.view.settle();
         }
         // 被退回的排队消息连同粘贴块放回输入框（`takeback.rs`）。
-        let returned = self.transcript.take_returned();
+        let returned = self.talk.transcript.take_returned();
         self.put_returned(returned);
         if undone {
             let said = self
+                .talk
                 .transcript
                 .entries
                 .iter()
@@ -259,14 +260,14 @@ impl App {
         };
         let say = match push {
             Compaction::Started => {
-                self.compaction_announced = true;
+                self.talk.compaction_announced = true;
                 true
             }
-            Compaction::Done { prepared: true, .. } if !self.transcript.compacting_shown() => {
-                !std::mem::take(&mut self.compaction_announced)
+            Compaction::Done { prepared: true, .. } if !self.talk.transcript.compacting_shown() => {
+                !std::mem::take(&mut self.talk.compaction_announced)
             }
             Compaction::Done { .. } | Compaction::Failed(_) => {
-                self.compaction_announced = false;
+                self.talk.compaction_announced = false;
                 false
             }
             _ => false,

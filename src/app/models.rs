@@ -22,7 +22,7 @@ impl App {
 
     /// 核心交回了一行行。
     pub(super) fn models_listed(&mut self, all: Vec<Choice>) {
-        let current = self.transcript.model_ref().map(str::to_string);
+        let current = self.talk.transcript.model_ref().map(str::to_string);
         if let Some(list) = &mut self.boxes.model_list {
             list.replace(all, current.as_deref());
         }
@@ -116,7 +116,7 @@ impl App {
             ChoiceState::NoKey => self.hint(texts.refuse_no_key, false),
             ChoiceState::Ok => {
                 self.close_models();
-                if self.transcript.model_ref() == Some(choice.reference.as_str()) {
+                if self.talk.transcript.model_ref() == Some(choice.reference.as_str()) {
                     return;
                 }
                 // 不弹提示：底栏当场就写成选的那个（2026-10-01 项目主人：改模型、思考强度不要通知）。核心答应了再照新的

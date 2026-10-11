@@ -8,11 +8,13 @@ impl App {
     pub(super) fn lost_requests(&mut self) {
         // 任务的输出：在跑的照常隔一会儿再读；结束了的重读全部的（正文里那一行点开看）。
         let mut finals = Vec::new();
-        let boards = std::iter::once((self.transcript.session.clone(), &mut self.board)).chain(
-            self.parked
-                .iter_mut()
-                .map(|(session, p)| (Some(session.clone()), &mut p.board)),
-        );
+        let boards = std::iter::once((self.talk.transcript.session.clone(), &mut self.talk.board))
+            .chain(
+                self.talk
+                    .parked
+                    .iter_mut()
+                    .map(|(session, p)| (Some(session.clone()), &mut p.board)),
+            );
         for (session, board) in boards {
             for job in board.jobs.iter_mut().filter(|j| j.waiting) {
                 job.waiting = false;
@@ -29,8 +31,8 @@ impl App {
             self.fetch_final(&session, &job);
         }
         // 更早的一页：那一行露着时再要。
-        self.transcript.lost();
-        for parked in self.parked.values_mut() {
+        self.talk.transcript.lost();
+        for parked in self.talk.parked.values_mut() {
             parked.transcript.lost();
         }
         // 卡片、图：没回来的忘掉，排好的行扔掉，重排时再要（排好的行里记着占位，不重排就不会再问）。

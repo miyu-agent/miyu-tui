@@ -66,28 +66,30 @@ impl App {
     pub(super) fn demo(&mut self, run: Run) {
         if run == Run::DemoTodo {
             let now = Instant::now();
-            self.feed
-                .start_todo(&self.config.fake, &mut self.board, now);
+            self.talk
+                .feed
+                .start_todo(&self.config.fake, &mut self.talk.board, now);
         }
     }
 
     /// 到点的推一步（假的待办）。
     pub(super) fn advance_jobs(&mut self) {
-        self.feed
-            .advance(&self.config.fake, &mut self.board, Instant::now());
+        self.talk
+            .feed
+            .advance(&self.config.fake, &mut self.talk.board, Instant::now());
         self.poll_output();
     }
 
     /// 下一次该推、该重画的时刻：假待办的下一步；有在跑的后台任务，每秒重画一次（用时在走）。
     pub(super) fn jobs_deadline(&self) -> Option<Instant> {
-        let running = self.board.busy() || self.tree().busy();
+        let running = self.talk.board.busy() || self.tree().busy();
         let tick = running.then(|| Instant::now() + Duration::from_secs(1));
-        self.feed.next_at().into_iter().chain(tick).min()
+        self.talk.feed.next_at().into_iter().chain(tick).min()
     }
 
     /// 停掉一条在跑的后台任务：交给核心（`job.stop`），结束的回报来了再出通知。
     fn stop_job(&mut self, id: u64) {
-        if let Some(job) = super::sessions::job_of(&self.board, id).filter(|j| j.running()) {
+        if let Some(job) = super::sessions::job_of(&self.talk.board, id).filter(|j| j.running()) {
             self.link.core.send(Command::Stop {
                 session: None,
                 job: job.job.clone(),
@@ -97,7 +99,7 @@ impl App {
 
     /// 框下面那一行现在有哪些按钮（从左到右）：有在跑的命令时的后台按钮。
     pub fn footer_buttons(&self) -> Vec<Button> {
-        (self.board.shells_running() > 0)
+        (self.talk.board.shells_running() > 0)
             .then_some(Button::Background)
             .into_iter()
             .collect()
@@ -214,7 +216,7 @@ impl App {
             }
             Panel::Pick { kind, selected } => return self.pick_key(kind, selected, key),
         };
-        let items = self.board.panel_items(all);
+        let items = self.talk.board.panel_items(all);
         let at = |selected| {
             Some(Panel::Background {
                 selected,
@@ -244,7 +246,7 @@ impl App {
         let Some(Panel::Background { open, all, .. }) = self.boxes.panel else {
             return;
         };
-        let item = self.board.panel_items(all).get(index).copied();
+        let item = self.talk.board.panel_items(all).get(index).copied();
         let (open, all) = match item {
             Some(PanelItem::Job(id)) => ((open != Some(id)).then_some(id), all),
             Some(PanelItem::More(_) | PanelItem::Less) => (open, !all),
@@ -252,7 +254,7 @@ impl App {
         };
         let selected = match item {
             Some(PanelItem::Job(_)) => index,
-            _ => self.board.panel_items(all).len().saturating_sub(1),
+            _ => self.talk.board.panel_items(all).len().saturating_sub(1),
         };
         self.boxes.panel = Some(Panel::Background {
             selected,
@@ -283,7 +285,7 @@ impl App {
             .then(|| usize::from(at.y - areas.agents.y));
         // 侧边栏的短编号：点了复制完整的会话编号（第 7 条）。
         if areas.session_id.contains(at) {
-            if press && let Some(session) = self.transcript.session.clone() {
+            if press && let Some(session) = self.talk.transcript.session.clone() {
                 self.copy(&session);
             }
             return true;
@@ -291,7 +293,7 @@ impl App {
         // 待办那一块：点了展开全部，再点收起（第 4 条）。
         if areas.todo.contains(at) {
             if press {
-                self.todo_full = !self.todo_full;
+                self.talk.todo_full = !self.talk.todo_full;
             }
             return true;
         }
@@ -354,11 +356,11 @@ impl App {
             MouseEventKind::Up(_) if self.screen.side_select.pressing() => {
                 if self.screen.side_select.release() {
                     if areas.session_id.contains(at)
-                        && let Some(session) = self.transcript.session.clone()
+                        && let Some(session) = self.talk.transcript.session.clone()
                     {
                         self.copy(&session);
                     } else if areas.todo.contains(at) {
-                        self.todo_full = !self.todo_full;
+                        self.talk.todo_full = !self.talk.todo_full;
                     }
                 } else {
                     let text = self.screen.side_select.text();

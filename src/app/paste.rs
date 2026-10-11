@@ -57,7 +57,7 @@ impl App {
             self.typing
                 .history
                 .type_text(&text.replace(['\r', '\n'], " "));
-        } else if self.drawers.open() {
+        } else if self.talk.drawers.open() {
             self.drawer_paste(text);
         } else {
             self.typing.input.paste(text);
@@ -68,7 +68,7 @@ impl App {
     /// 全是本机现成的文件的也收成块；别的照字粘贴（`tui.md`「输入框」第 12 条，2026-10-10 项目主人：「ctrl+shift+V
     /// 粘贴文字，ctrl+V 粘贴占位符」）。读不到、是空的，提示一句（「按键」）。
     pub(super) fn paste_clipboard(&mut self) {
-        let into_input = !self.typing.history.open && !self.drawers.open();
+        let into_input = !self.typing.history.open && !self.talk.drawers.open();
         if into_input {
             if clipboard::read_files().is_some_and(|files| self.typing.input.paste_files(&files)) {
                 return;
@@ -93,7 +93,7 @@ impl App {
     pub(super) fn renumber_attachments(&mut self) {
         self.typing
             .input
-            .renumber(self.transcript.attachment_counts());
+            .renumber(self.talk.transcript.attachment_counts());
     }
 
     pub(super) fn copy(&mut self, text: &str) {

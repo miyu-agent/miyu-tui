@@ -14,7 +14,7 @@ impl App {
     /// 上一下还在时限里就做，不然只提示再按一次。
     pub(super) fn esc(&mut self) {
         let window = Duration::from_millis(self.config.layout.esc_window_ms);
-        let running = self.transcript.running.is_some();
+        let running = self.talk.transcript.running.is_some();
         match self.typing.esc_at.take() {
             Some(at) if at.elapsed() <= window => {
                 self.typing.notice = None;
@@ -25,13 +25,14 @@ impl App {
                     // 她还没开始做事、又没有排着的：打断以后撤掉这一轮，那一句放回输入框（「按键」`Esc`，2026-10-07
                     // 项目主人定；和 Ctrl+C 退回排着的走同一条路，`takeback.rs`）。
                     let queued = self
+                        .talk
                         .transcript
                         .entries
                         .iter()
                         .any(|e| e.queued && !e.hidden);
-                    if !queued && let Some(back) = self.transcript.untouched() {
-                        let session = self.transcript.session.clone();
-                        self.takeback =
+                    if !queued && let Some(back) = self.talk.transcript.untouched() {
+                        let session = self.talk.transcript.session.clone();
+                        self.talk.takeback =
                             Some(super::takeback::Takeback::Interrupting(session, back));
                     }
                     self.link.core.send(Command::Interrupt { send: true });
@@ -136,7 +137,7 @@ impl App {
         }
         // Ctrl+L：清屏，把视口顶空，往回滚内容还在；回答进行中不清（新的字马上又冒出来）。
         if ctrl && key.code == KeyCode::Char('l') {
-            if self.transcript.running.is_some() {
+            if self.talk.transcript.running.is_some() {
                 self.hint(self.config.text.no_clear_running.clone(), false);
             } else {
                 self.screen.view.clear();
@@ -175,7 +176,7 @@ impl App {
         // Ctrl+Enter：输入框有字先发（在回答时排进队），在回答的当场打断、排着的马上发（`tui.md`「按键」，
         // 2026-10-02 项目主人要；不提示）。没在回答时同 Enter。
         if ctrl && key.code == KeyCode::Enter && self.menu_matches().is_none() {
-            let running = self.transcript.running.is_some();
+            let running = self.talk.transcript.running.is_some();
             let plain = KeyEvent::new(
                 KeyCode::Enter,
                 ratatui::crossterm::event::KeyModifiers::NONE,
@@ -186,7 +187,7 @@ impl App {
                     self.submit(text);
                 }
                 // 没有排着的（输入框也是空的）：什么都不做，不当打断用。
-                if self.transcript.entries.iter().any(|e| e.queued) && !self.switching() {
+                if self.talk.transcript.entries.iter().any(|e| e.queued) && !self.switching() {
                     self.link.core.send(Command::Interrupt { send: true });
                 }
                 return Action::None;
@@ -265,14 +266,14 @@ impl App {
         let full = draft.expand();
         let chips = super::paste::chips(&draft);
         let files = draft.attachments();
-        self.unsent = Some(super::Unsent {
+        self.talk.unsent = Some(super::Unsent {
             draft: Some(draft.clone()),
             original: None,
             turn: None,
         });
         self.typing.input.remember(draft);
         self.typing.input.forget_cleared();
-        self.transcript.user(text, chips);
+        self.talk.transcript.user(text, chips);
         self.link.core.send(Command::Send { text: full, files });
     }
 
@@ -337,7 +338,7 @@ impl App {
             Run::Unrevert => self.link.core.send(Command::Unrevert),
             Run::Compact => {
                 // 旧核心的压缩进度不说手动、自动：自己发的照手动画进度条（「正文」第 9 条）。
-                self.transcript.manual_compaction = true;
+                self.talk.transcript.manual_compaction = true;
                 self.link
                     .core
                     .send(Command::Compact(words.map(str::to_string)));
@@ -359,7 +360,7 @@ impl App {
 
     /// `/copy`：复制她上一轮的回答，照拖选以后 Ctrl+C 那一套；还没有回答的弹一句（蓝图「斜杠命令」`/copy`）。
     fn copy_reply(&mut self) {
-        match self.transcript.last_reply() {
+        match self.talk.transcript.last_reply() {
             Some(text) => self.copy(&text),
             None => {
                 let note = self.config.text.nothing_to_copy.clone();

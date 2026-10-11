@@ -26,9 +26,13 @@ pub(super) fn content(
             (chrome, lines, map)
         }
         Some(crate::app::Panel::Models) => match &app.boxes.model_list {
-            Some(list) => {
-                model_list::lines(list, app.transcript.model_ref(), &app.config, width, max)
-            }
+            Some(list) => model_list::lines(
+                list,
+                app.talk.transcript.model_ref(),
+                &app.config,
+                width,
+                max,
+            ),
             None => Default::default(),
         },
         Some(crate::app::Panel::Sessions) => match &app.boxes.session_list {
@@ -70,6 +74,13 @@ pub(super) fn content(
                 max,
             )
         }
-        _ => background::lines(app.boxes.panel, &app.board, &app.config, width, now, max),
+        _ => background::lines(
+            app.boxes.panel,
+            &app.talk.board,
+            &app.config,
+            width,
+            now,
+            max,
+        ),
     }
 }

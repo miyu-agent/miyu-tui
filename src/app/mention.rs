@@ -16,7 +16,7 @@ impl App {
         // 翻输入历史翻出来的那句还没改过：不弹，`↑` `↓` 接着翻（蓝图「按键」`↑`、`↓`）。
         if self.typing.history.open
             || self.boxes.panel.is_some()
-            || self.drawers.open()
+            || self.talk.drawers.open()
             || self.typing.input.recalled()
         {
             return None;

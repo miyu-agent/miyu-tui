@@ -17,21 +17,21 @@ impl App {
         let fake = &self.config.fake;
         let drawer = match run {
             Run::DemoAsk if !fake.asks.is_empty() => {
-                let f = &fake.asks[self.demo_drawers.0 % fake.asks.len()];
-                self.demo_drawers.0 += 1;
+                let f = &fake.asks[self.talk.demo_drawers.0 % fake.asks.len()];
+                self.talk.demo_drawers.0 += 1;
                 Drawer::question(f.who.clone(), f.body.clone())
             }
             Run::DemoApprove if !fake.approvals.is_empty() => {
-                let f = &fake.approvals[self.demo_drawers.1 % fake.approvals.len()];
-                self.demo_drawers.1 += 1;
+                let f = &fake.approvals[self.talk.demo_drawers.1 % fake.approvals.len()];
+                self.talk.demo_drawers.1 += 1;
                 Drawer::approval(f.who.clone(), f.body.clone())
             }
             _ => return,
         };
         let mut drawer = drawer;
         drawer.demo = true;
-        let was_open = self.drawers.open();
-        self.drawers.push(drawer);
+        let was_open = self.talk.drawers.open();
+        self.talk.drawers.push(drawer);
         // 新开的抽屉：弹「在等你」（「系统通知」第 1 条）；前一个还没了结的排着，轮到它时再弹。
         if !was_open {
             self.notify_drawer();
@@ -41,15 +41,16 @@ impl App {
     /// 抽屉开着时按键先归它，带 `Ctrl` 的照旧归外面（复制、退出），编辑时的 `Ctrl+J` 换行除外（第 4 条）。
     /// 拿了交回 `true`。
     pub(super) fn drawer_key(&mut self, key: KeyEvent) -> bool {
-        if !self.drawers.open() {
+        if !self.talk.drawers.open() {
             return false;
         }
-        let newline = self.drawers.editing() && key.code == KeyCode::Char('j');
+        let newline = self.talk.drawers.editing() && key.code == KeyCode::Char('j');
         if key.modifiers.contains(KeyModifiers::CONTROL) && !newline {
             return false;
         }
         let window = self.esc_window();
         let step = self
+            .talk
             .drawers
             .current
             .as_mut()
@@ -63,7 +64,7 @@ impl App {
 
     /// 抽屉开着时粘贴：正在写的（「其他」、补充、理由）接进去；没在编辑不收。
     pub(super) fn drawer_paste(&mut self, text: &str) {
-        let Some(d) = self.drawers.current.as_mut() else {
+        let Some(d) = self.talk.drawers.current.as_mut() else {
             return;
         };
         let tab = d.tab;
@@ -77,6 +78,7 @@ impl App {
     /// 点中抽屉的第几项。
     pub(super) fn drawer_click(&mut self, index: usize) {
         let step = self
+            .talk
             .drawers
             .current
             .as_mut()
@@ -86,14 +88,14 @@ impl App {
 
     /// 按过一下 `Esc` 的提示什么时候到点消失（主循环照它醒来重画）。
     pub(super) fn drawer_deadline(&self) -> Option<Instant> {
-        let at = self.drawers.current.as_ref()?.armed?;
+        let at = self.talk.drawers.current.as_ref()?.armed?;
         Some(at + self.esc_window())
     }
 
     /// 到点了：按过一下 `Esc` 过了时限，提示换回按键提示。
     pub(super) fn drawer_tick(&mut self) {
         let window = self.esc_window();
-        if let Some(d) = self.drawers.current.as_mut()
+        if let Some(d) = self.talk.drawers.current.as_mut()
             && !d.armed(Instant::now(), window)
         {
             d.armed = None;
@@ -115,7 +117,7 @@ impl App {
     /// 了结：交了的经 `session.answer` 交给问的那个会话，正文的结果等核心推来回答再写（`asking.rs`）；演示的、取消的
     /// 当场写：提问答了是引用块，不允许、取消是一行，允许了什么都不留（第 6 条）；取消的在回答时顺带打断这一轮（第 5 条）。
     fn settle_drawer(&mut self, outcome: &Outcome) {
-        let Some(drawer) = self.drawers.finish() else {
+        let Some(drawer) = self.talk.drawers.finish() else {
             return;
         };
         let answered = match outcome {
@@ -142,12 +144,14 @@ impl App {
             }
             None => self.write_report(&drawer, outcome),
         }
-        if *outcome == Outcome::Cancelled && self.transcript.running.is_some() && !self.switching()
+        if *outcome == Outcome::Cancelled
+            && self.talk.transcript.running.is_some()
+            && !self.switching()
         {
             self.link.core.send(Command::Interrupt { send: true });
         }
         // 轮到下一个抽屉的弹「在等你」，都了结了回到在做或空闲（「系统通知」第 1、6 条）。
-        if self.drawers.open() {
+        if self.talk.drawers.open() {
             self.notify_drawer();
         } else {
             self.settle_state();
@@ -159,7 +163,7 @@ impl App {
     /// 正文末尾写一问的结果（第 6 条）。
     pub(super) fn write_report(&mut self, drawer: &crate::drawer::Drawer, outcome: &Outcome) {
         report_into(
-            &mut self.transcript,
+            &mut self.talk.transcript,
             drawer,
             outcome,
             &self.config.text.drawer,

@@ -8,6 +8,7 @@ impl App {
     /// 现在的模型收不了的那几种附件。
     pub(super) fn refused_kinds(&self) -> Vec<String> {
         let Some(reference) = self
+            .talk
             .transcript
             .model_ref()
             .or(self.link.default_chat.as_deref())

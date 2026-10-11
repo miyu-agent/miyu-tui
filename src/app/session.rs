@@ -9,7 +9,7 @@ use crate::transcript::Link;
 impl App {
     /// 发给核心的发不发得出去：连不上时（左下角是红字）不发，弹提示；正在连、正在重连的排着，连上再发。
     pub(super) fn reachable(&mut self) -> bool {
-        if matches!(self.transcript.link, Link::Down(_)) {
+        if matches!(self.talk.transcript.link, Link::Down(_)) {
             let note = self.config.text.not_connected.clone();
             self.hint(note, false);
             return false;
@@ -21,7 +21,7 @@ impl App {
     /// 这一下不做，字留在输入框，弹「正在切换会话」（review B1，2026-10-11：原来回车的话画进原来那个、发给了新的）。
     /// 交回是不是在切。
     pub(super) fn switching(&mut self) -> bool {
-        if self.opening.is_none() {
+        if self.talk.opening.is_none() {
             return false;
         }
         let note = self.config.text.switching.clone();
@@ -36,10 +36,10 @@ impl App {
         let keep = self.busy_here();
         // 底栏先照旧写原来的模型、思考强度，等核心交回默认的再换（2026-10-02 项目主人报：开新会话底栏闪一下；手动
         // 换的就是新会话的默认，多半一样）。
-        let shown = self.transcript.footer_model();
+        let shown = self.talk.transcript.footer_model();
         self.link.core.send(Command::New { keep });
         self.park_current(keep);
-        self.transcript.keep_footer_model(shown);
+        self.talk.transcript.keep_footer_model(shown);
         // 空会话的底栏照默认的聊天模型写（`effort.rs`）。
         self.refresh_effort();
         // 每个新会话都先选人格、预设（「新会话：人格、工作区」第 1、3 条）：选的清掉，再读一次，读到了开框。
@@ -57,39 +57,39 @@ impl App {
         self.leave_child();
         let hints = &self.config.text.refusal_hints;
         let text = hints.get("session_not_found").cloned().unwrap_or_default();
-        self.transcript.gone(text);
+        self.talk.transcript.gone(text);
     }
 
     /// 会话不存在以后的第一句话：先换一份空的正文（像按过 `/new`，底栏照旧写原来的模型），再发；核心那头已经不对着它，
     /// 这一句开新会话。别的时候什么都不做。
     pub(super) fn leave_gone(&mut self) {
-        if !self.transcript.gone {
+        if !self.talk.transcript.gone {
             return;
         }
-        let shown = self.transcript.footer_model();
+        let shown = self.talk.transcript.footer_model();
         self.park_current(false);
-        self.transcript.keep_footer_model(shown);
+        self.talk.transcript.keep_footer_model(shown);
     }
 
     /// 正在看的会话换下来：还忙着的（`keep`）停放着，等它空下来再退订；不然连它的子代理一起不要了。换上一份空的正文。
     pub(super) fn park_current(&mut self, keep: bool) {
-        let old = self.transcript.split_off();
-        let board = std::mem::take(&mut self.board);
+        let old = self.talk.transcript.split_off();
+        let board = std::mem::take(&mut self.talk.board);
         match old.session.clone() {
             Some(session) if keep => {
-                self.left.push(session.clone());
+                self.talk.left.push(session.clone());
                 let view = std::mem::take(&mut self.screen.view);
                 let parked = super::sessions::Parked {
                     transcript: old,
                     board,
                     view,
                 };
-                self.parked.insert(session, parked);
+                self.talk.parked.insert(session, parked);
             }
             // 不要了：连它的子代理、记下的提问一起。
             _ => {
                 if let Some(session) = &old.session {
-                    self.asks.forget(session);
+                    self.talk.asks.forget(session);
                 }
                 self.drop_children(&board);
             }
@@ -105,16 +105,19 @@ impl App {
         if !self.reachable() {
             return;
         }
-        let target = self.transcript.next_level(&self.config.layout.level_cycle);
+        let target = self
+            .talk
+            .transcript
+            .next_level(&self.config.layout.level_cycle);
         if self.not_opened() {
-            self.transcript.level = target;
+            self.talk.transcript.level = target;
         }
         self.link.core.send(Command::Level(target));
     }
 
     /// 按过 `/new`、还没说话：连着核心，却还没开会话。
     pub(super) fn not_opened(&self) -> bool {
-        self.transcript.session.is_none() && self.transcript.link == Link::Ready
+        self.talk.transcript.session.is_none() && self.talk.transcript.link == Link::Ready
     }
 
     /// 还没开的会话没有能撤销、恢复、压缩的：照核心会说的当场答，不去开一个会话。

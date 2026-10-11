@@ -342,7 +342,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     let total = app.usage_total();
     // 工作目录照会话的（核心 9-7 上）；还没开会话、核心旧的照终端所在的。
     let cwd = app.current_workspace();
-    let (mut info, id_row) = info_lines(&app.transcript, &total, &app.config, inner, cwd);
+    let (mut info, id_row) = info_lines(&app.talk.transcript, &total, &app.config, inner, cwd);
     // 会话名下面、短编号后面写人格、预设，一样一行（「新会话：人格、工作区」第 3、6 条）。
     if let Some(row) = id_row {
         for (n, label) in app.session_picks().into_iter().enumerate() {
@@ -377,11 +377,11 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     let below = Rect::new(area.x + 1, top, inner, area.bottom().saturating_sub(top));
     let rows = usize::from(below.height.saturating_sub(1));
     let todo = section(todo_lines(
-        &app.board,
+        &app.talk.board,
         &app.config,
         below.width.saturating_sub(2),
         rows,
-        app.todo_full,
+        app.talk.todo_full,
     ));
     let tall = u16::try_from(todo.len())
         .unwrap_or(u16::MAX)

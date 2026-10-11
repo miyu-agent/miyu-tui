@@ -63,12 +63,12 @@ impl App {
 
     /// 每一帧：正在看的会话最上面那一行露进了视口（上一帧画过、第一行就是它），要更早的一页。
     pub(super) fn ask_older(&mut self) {
-        let Some(session) = self.transcript.session.clone() else {
+        let Some(session) = self.talk.transcript.session.clone() else {
             return;
         };
         let shown = !self.screen.view.rows.is_empty() && self.screen.view.first == 0;
-        if shown && self.transcript.wants_older() {
-            self.transcript.asked_older();
+        if shown && self.talk.transcript.wants_older() {
+            self.talk.transcript.asked_older();
             self.link.core.send(Command::Older(session));
         }
     }
@@ -79,10 +79,10 @@ impl App {
         let listed = self.session_title(session);
         let texts = &self.config.text;
         let found = place(
-            &mut self.transcript,
-            &mut self.board,
+            &mut self.talk.transcript,
+            &mut self.talk.board,
             &mut self.screen.view,
-            &mut self.parked,
+            &mut self.talk.parked,
             session,
         );
         if let Some((transcript, ..)) = found {
@@ -98,10 +98,10 @@ impl App {
         let texts = &self.config.text;
         let here = &self.cwd;
         let found = place(
-            &mut self.transcript,
-            &mut self.board,
+            &mut self.talk.transcript,
+            &mut self.talk.board,
             &mut self.screen.view,
-            &mut self.parked,
+            &mut self.talk.parked,
             session,
         );
         if let Some((transcript, ..)) = found {
@@ -164,10 +164,10 @@ impl App {
         }
         let texts = &self.config.text;
         if let Some((transcript, ..)) = place(
-            &mut self.transcript,
-            &mut self.board,
+            &mut self.talk.transcript,
+            &mut self.talk.board,
             &mut self.screen.view,
-            &mut self.parked,
+            &mut self.talk.parked,
             session,
         ) {
             transcript.update(Update::Push(push), texts);
@@ -211,10 +211,10 @@ impl App {
         };
         let texts = &self.config.text.drawer;
         if let Some((transcript, ..)) = place(
-            &mut self.transcript,
-            &mut self.board,
+            &mut self.talk.transcript,
+            &mut self.talk.board,
             &mut self.screen.view,
-            &mut self.parked,
+            &mut self.talk.parked,
             session,
         ) {
             report_into(transcript, &drawer, &outcome, texts);
@@ -224,10 +224,10 @@ impl App {
     /// 会话 `session`（正在看的、停放着的）的正文、任务表和视口。
     fn place(&mut self, session: &str) -> Option<(&mut Transcript, &mut Board, &mut BodyView)> {
         place(
-            &mut self.transcript,
-            &mut self.board,
+            &mut self.talk.transcript,
+            &mut self.talk.board,
             &mut self.screen.view,
-            &mut self.parked,
+            &mut self.talk.parked,
             session,
         )
     }

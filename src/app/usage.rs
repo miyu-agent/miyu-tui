@@ -84,6 +84,7 @@ impl App {
     /// 一个会话在用量表里写什么：标题，没标题的照预览，会话列表里没有的（子代理、删掉的）写短编号（最后 8 位）。
     pub fn usage_name(&self, session: &str) -> String {
         let known = self
+            .talk
             .sessions_seen
             .iter()
             .flatten()

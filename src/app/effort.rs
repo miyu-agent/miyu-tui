@@ -51,29 +51,32 @@ impl App {
         let Some(target) = self.effort_target(list).cloned() else {
             return;
         };
-        if self.transcript.model_ref().is_none() {
-            self.transcript
+        if self.talk.transcript.model_ref().is_none() {
+            self.talk
+                .transcript
                 .show_default(&target.reference, target.current.clone());
             return;
         }
         let in_use = self
+            .talk
             .transcript
             .model
             .as_ref()
             .map(|(m, e)| format!("{e}/{m}"));
         if in_use.as_deref() == Some(target.reference.as_str()) {
-            self.transcript.set_effort(target.current);
+            self.talk.transcript.set_effort(target.current);
         }
     }
 
     /// 改哪个模型：正在请求的那个，没有的照会话的引用，还没开会话的照默认的聊天模型。
     fn effort_target<'a>(&self, list: &'a EffortList) -> Option<&'a Efforts> {
         let in_use = self
+            .talk
             .transcript
             .model
             .as_ref()
             .map(|(m, e)| format!("{e}/{m}"));
-        list.target(in_use.as_deref(), self.transcript.model_ref())
+        list.target(in_use.as_deref(), self.talk.transcript.model_ref())
     }
 
     /// 框开着时的按键。

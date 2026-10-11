@@ -254,7 +254,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     // 输入历史列表开着时不看斜杠命令：两个不同时开，占同一个地方（`tui.md`「输入历史列表」）。
     // 后台面板也占那个地方，开着时两个列表都不开。
-    let drawer_open = app.drawers.open();
+    let drawer_open = app.talk.drawers.open();
     // `@` 文件列表也占这个地方，开着时不开斜杠命令列表（「`@` 文件列表」第 1 条）。
     let mentions = crate::frame_log::section("mention", || app.mention_found());
     let matches = if app.typing.history.open
@@ -266,8 +266,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     } else {
         app.menu_matches()
     };
-    let running = app.transcript.running.is_some();
+    let running = app.talk.transcript.running.is_some();
     let queued: Vec<String> = app
+        .talk
         .transcript
         .entries
         .iter()
@@ -285,11 +286,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             text_width(main.width, &app.config.layout)
         };
         sidebar::todo_lines(
-            &app.board,
+            &app.talk.board,
             &app.config,
             width,
             app.config.layout.todo_rows,
-            app.todo_full,
+            app.talk.todo_full,
         )
     } else {
         Vec::new()
@@ -303,7 +304,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     // 框里占几行：抽屉开着时是抽屉的行数，连边框最高半屏；带文字画的放得下整张为止，屏幕顶上留几行
     // （`tui.md`「确认和提问的抽屉」第 2 条）。
     let texts = &app.config.text.drawer;
-    let open_drawer = app.drawers.current.as_ref();
+    let open_drawer = app.talk.drawers.current.as_ref();
     let half = (main.height / 2).saturating_sub(2).max(3);
     let drawer_max = match open_drawer {
         Some(d) if d.has_preview() => main
