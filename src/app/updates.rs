@@ -50,11 +50,11 @@ impl App {
         if let Update::Push(Push::CallFailed(error)) = &update
             && error.class == "cooling"
         {
-            self.core.send(Command::ListModels);
+            self.link.core.send(Command::ListModels);
         }
         // 给人看的字到了：换上，排好的行里有旧的工具名，扔掉重排（`human.rs`）。
         if let Update::Human(human) = update {
-            self.human = human;
+            self.link.human = human;
             *self.media.row_cache.borrow_mut() = Default::default();
             return;
         }
@@ -84,7 +84,7 @@ impl App {
             // 连上、配置变了都会来：默认人格、默认预设照它，两样的列表顺手再要一次（新会话的框用）。
             self.picks_configured(head.persona.clone(), head.preset.clone());
             self.ask_packages();
-            self.currency = head.currency;
+            self.link.currency = head.currency;
             self.language_from_config(&head.language);
             return;
         }

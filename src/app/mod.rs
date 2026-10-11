@@ -20,6 +20,7 @@ mod head_settings;
 mod help;
 mod keys;
 mod language;
+mod link;
 mod lost;
 mod mascot;
 mod mascot_pick;
@@ -115,12 +116,12 @@ pub struct App {
     unsent: Option<Unsent>,
     /// 会话：正文、在不在跑、用量。
     pub transcript: Transcript,
-    /// 连着核心的一头。
-    core: Core,
     /// 开着的框和整屏页（`boxes.rs`，蓝图 `app.md`）。
     pub boxes: boxes::Boxes,
     /// 输入框和它上面的列表、焦点、编辑器、输入法、提示（`typing.rs`，蓝图 `app.md`）。
     pub typing: typing::Typing,
+    /// 连着核心的一头和核心给的资料（`link.rs`，蓝图 `app.md`）。
+    pub link: link::Link,
     /// 要画的东西的账：排好的行、做好的图、链接卡片、mermaid、头像、吉祥物包（`media.rs`，蓝图 `app.md`）。
     pub media: media::Media,
     /// 上一帧画出来的：各块位置、视口、光标、行表、鼠标（`screen.rs`，蓝图 `app.md`）。
@@ -137,22 +138,16 @@ pub struct App {
     asks: crate::drawer::Asks,
     /// 确认和提问的抽屉：现在这一个和排着的（蓝图「确认和提问的抽屉」）。
     pub drawers: Drawers,
-    /// 启动时照系统认出来的界面语言：`/language` 选回自动用它，框的第一行写它（蓝图「界面语言」）。
-    pub system_language: crate::language::Language,
     /// `/demo-ask`、`/demo-approve` 各出到第几个。
     demo_drawers: (usize, usize),
     /// 待办点开了，列出全部（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
     pub todo_full: bool,
     /// Ctrl+C 打断时要退回排着的话，走到哪一步了（`takeback.rs`）。
     takeback: Option<takeback::Takeback>,
-    /// 工具给人看的显示名（仓库 `resources/software/basesystem/human/`）。
-    pub human: Human,
     /// 该退出了。
     pub quit: bool,
     /// 按了 Ctrl+Z，主循环该把程序挂起到后台了。
     pub suspend: bool,
-    /// 金额排最前的币种（`usage.currency`，连上时读）。
-    pub currency: String,
     /// 新会话要选的人格（`new_session.rs`）。
     persona: new_session::Pick,
     /// 新会话要选的预设。
@@ -161,10 +156,6 @@ pub struct App {
     workspace_pending: Option<String>,
     /// 这一次提前压已经弹过「已触发上下文压缩」（`updates.rs`）。
     compaction_announced: bool,
-    /// 每个模型、池收哪几种附件（`attachments.rs`，照 `model.list`）。
-    abilities: crate::core::Abilities,
-    /// 默认的聊天模型（`uses.chat`）：还没开会话的照它认收哪几种附件。
-    default_chat: Option<String>,
 }
 
 impl App {

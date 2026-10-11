@@ -69,7 +69,7 @@ impl App {
         let shown = !self.screen.view.rows.is_empty() && self.screen.view.first == 0;
         if shown && self.transcript.wants_older() {
             self.transcript.asked_older();
-            self.core.send(Command::Older(session));
+            self.link.core.send(Command::Older(session));
         }
     }
 

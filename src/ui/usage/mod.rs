@@ -194,7 +194,7 @@ fn tabs(texts: &Texts, tab: usize, total: Option<String>, width: u16) -> Line<'s
 
 /// 一份账的金额（`$0.42 + ¥1.30`）；一笔都没有的是 `None`。
 pub(super) fn amounts(app: &App, bill: &Bill) -> Option<String> {
-    money::amounts(bill, &app.currency, &app.config.layout.currencies)
+    money::amounts(bill, &app.link.currency, &app.config.layout.currencies)
 }
 
 /// 一行行里一共多少 token。

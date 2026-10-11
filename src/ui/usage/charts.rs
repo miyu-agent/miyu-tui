@@ -21,7 +21,7 @@ pub(super) fn recent(
     width: u16,
 ) -> Vec<Line<'static>> {
     let look = &app.config.layout.usage;
-    let days = crate::usage::days(rows, &app.currency);
+    let days = crate::usage::days(rows, &app.link.currency);
     // 放得下几天画几天，一天占两格（柱子和一格空）。
     let count = usize::from(look.recent_days)
         .min(usize::from(width) / 2)

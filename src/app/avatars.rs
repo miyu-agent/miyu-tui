@@ -61,7 +61,7 @@ impl App {
         if method == "blob.put"
             && let Some(path) = params["path"].as_str()
         {
-            let core = self.core.clone();
+            let core = self.link.core.clone();
             crate::avatars::shrink::in_background(PathBuf::from(path), move |ready| {
                 let params = json!({"path": ready.display().to_string()});
                 core.send(Command::Ask {
@@ -72,7 +72,7 @@ impl App {
             });
             return;
         }
-        self.core.send(Command::Ask {
+        self.link.core.send(Command::Ask {
             tag,
             method,
             params,
@@ -138,7 +138,7 @@ impl App {
             .map(|(p, v)| (p.as_str(), v.as_str()))
             .collect();
         if let Some(persona) = self.media.avatars.next(&refs) {
-            self.core.send(Command::Ask {
+            self.link.core.send(Command::Ask {
                 tag: AVATAR_TAG,
                 method: "persona.avatar",
                 params: json!({ "persona": persona }),

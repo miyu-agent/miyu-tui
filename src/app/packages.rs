@@ -14,7 +14,7 @@ impl App {
     /// 连上了：输入历史还没放好的，去要软件包。
     pub(super) fn ask_packages(&mut self) {
         if !self.typing.history_placed {
-            self.core.send(Command::ListPackages);
+            self.link.core.send(Command::ListPackages);
         }
     }
 

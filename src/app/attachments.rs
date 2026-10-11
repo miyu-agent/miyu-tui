@@ -7,7 +7,11 @@ use super::App;
 impl App {
     /// 现在的模型收不了的那几种附件。
     pub(super) fn refused_kinds(&self) -> Vec<String> {
-        let Some(reference) = self.transcript.model_ref().or(self.default_chat.as_deref()) else {
+        let Some(reference) = self
+            .transcript
+            .model_ref()
+            .or(self.link.default_chat.as_deref())
+        else {
             return Vec::new();
         };
         self.config
@@ -15,7 +19,7 @@ impl App {
             .kinds
             .iter()
             .map(|k| k.name.clone())
-            .filter(|kind| !self.abilities.takes(reference, kind))
+            .filter(|kind| !self.link.abilities.takes(reference, kind))
             .collect()
     }
 

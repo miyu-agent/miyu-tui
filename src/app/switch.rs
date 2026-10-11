@@ -29,7 +29,7 @@ impl App {
         self.boxes.session_list = Some(list);
         self.boxes.panel = Some(Panel::Sessions);
         if !fresh {
-            self.core.send(Command::ListSessions);
+            self.link.core.send(Command::ListSessions);
         }
     }
 
@@ -194,7 +194,7 @@ impl App {
         }
         list.replace(all);
         // 框里当场改，不向核心重读整份列表（慢，读回来还会跳，第 2 条）。
-        self.core.send(Command::Pin { session, pinned });
+        self.link.core.send(Command::Pin { session, pinned });
         let texts = &self.config.text.sessions;
         let note = if pinned {
             &texts.pinned
@@ -244,9 +244,9 @@ impl App {
             if let Some(parked) = self.parked.remove(&session) {
                 self.left.retain(|s| *s != session);
                 self.drop_children(&parked.board);
-                self.core.send(Command::Unwatch(session.clone()));
+                self.link.core.send(Command::Unwatch(session.clone()));
             }
-            self.core.send(Command::Delete(session));
+            self.link.core.send(Command::Delete(session));
         }
         let done = if one {
             texts.deleted.replace("{title}", &note)
@@ -270,7 +270,7 @@ impl App {
             return;
         }
         let keep = self.busy_here();
-        self.core.send(Command::Open {
+        self.link.core.send(Command::Open {
             session: session.clone(),
             keep,
         });

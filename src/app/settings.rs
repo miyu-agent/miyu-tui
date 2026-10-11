@@ -121,7 +121,7 @@ impl App {
             Outcome::Back => {
                 self.boxes.settings = None;
                 // 配置页里可能换了人格的头像：重读人格列表，照新的版本换（「空会话的首页」第 10 条）。
-                self.core.send(Command::ListPersonas);
+                self.link.core.send(Command::ListPersonas);
             }
             Outcome::Quit => self.quit = true,
         }

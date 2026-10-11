@@ -17,20 +17,20 @@ impl App {
         }
         self.boxes.efforts = None;
         self.boxes.panel = Some(Panel::Effort { selected: 0 });
-        self.core.send(Command::ListEfforts);
+        self.link.core.send(Command::ListEfforts);
     }
 
     /// 向核心要一次 `model.list`，底栏照它写模型和这一档：连上核心、`/new` 以后、换了强度以后（2026-10-02 项目主人
     /// 报：空会话的底栏没有模型、强度，换了强度要等下一轮才变）。
     pub(super) fn refresh_effort(&mut self) {
-        self.core.send(Command::ListEfforts);
+        self.link.core.send(Command::ListEfforts);
     }
 
     /// 核心交回了：底栏照它写；框开着的，找出改哪个模型、选着配置的默认那一级，用的是模型池的关框、提示一句。
     pub(super) fn efforts_listed(&mut self, list: EffortList) {
         // 收哪几种附件照同一份 `model.list`（`attachments.rs`）。
-        self.abilities = list.abilities.clone();
-        self.default_chat = list.chat.clone();
+        self.link.abilities = list.abilities.clone();
+        self.link.default_chat = list.chat.clone();
         self.footer_effort(&list);
         if !matches!(self.boxes.panel, Some(Panel::Effort { .. })) {
             return;
@@ -122,7 +122,7 @@ impl App {
         if index > 0 && level.is_none() || level == target.current {
             return;
         }
-        self.core.send(Command::SetEffort {
+        self.link.core.send(Command::SetEffort {
             key: target.key,
             level,
         });

@@ -53,7 +53,7 @@ impl App {
         for kind in kinds {
             // 分天照本机此刻的时区；全部时间，不写起点。
             let offset = (kind == UsageKind::Days).then(|| offset.clone());
-            self.core.send(Command::Usage(UsageAsk {
+            self.link.core.send(Command::Usage(UsageAsk {
                 kind,
                 from: None,
                 offset,

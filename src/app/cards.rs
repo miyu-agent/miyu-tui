@@ -9,10 +9,10 @@ impl App {
     pub(super) fn send_card_asks(&mut self) {
         let (cards, blobs) = self.media.cards.borrow_mut().take();
         for url in cards {
-            self.core.send(Command::LinkPreview(url));
+            self.link.core.send(Command::LinkPreview(url));
         }
         for blob in blobs {
-            self.core.send(Command::FetchBlob(blob));
+            self.link.core.send(Command::FetchBlob(blob));
         }
     }
 

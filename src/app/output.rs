@@ -35,7 +35,7 @@ impl App {
         job.waiting = true;
         job.asked = Some(now);
         let job = job.job.clone();
-        self.core.send(Command::Output { session, job, tail });
+        self.link.core.send(Command::Output { session, job, tail });
     }
 
     /// 会话 `session` 里的命令 `job` 结束了：读它全部的输出，正文里它那一行点开看（第 5 条）。
@@ -47,7 +47,7 @@ impl App {
             entry.waiting = true;
             entry.asked = Some(Instant::now());
             let (session, job) = (session.to_string(), job.to_string());
-            self.core.send(Command::Output { session, job, tail });
+            self.link.core.send(Command::Output { session, job, tail });
         }
     }
 

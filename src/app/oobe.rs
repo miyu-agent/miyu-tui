@@ -43,7 +43,7 @@ impl App {
             .oobe
             .language
             .auto
-            .replace("{name}", table.name(&self.system_language));
+            .replace("{name}", table.name(&self.link.system_language));
         let rows = std::iter::once(auto)
             .chain(table.languages.iter().map(|l| l.name.clone()))
             .collect();
@@ -202,7 +202,7 @@ impl App {
             Update::HeadConfig(_) => {
                 if !std::mem::replace(&mut self.boxes.welcome_checked, true) {
                     let params = json!({"keys": ["ui.welcomed"]});
-                    self.core.send(Command::Ask {
+                    self.link.core.send(Command::Ask {
                         tag: WELCOMED_TAG,
                         method: "config.get",
                         params,
@@ -246,7 +246,7 @@ impl App {
         // 紧接着的新会话照引导里刚选的开，不再弹两个框（第 11 条，2026-10-09 项目主人定）。
         self.adopt_picks(persona, preset);
         // 引导里建的人格可能带头像：重读人格列表（「空会话的首页」第 10 条）。
-        self.core.send(Command::ListPersonas);
+        self.link.core.send(Command::ListPersonas);
         if let Some(message) = marked {
             let text = self
                 .config

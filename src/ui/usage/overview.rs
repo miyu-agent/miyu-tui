@@ -22,7 +22,7 @@ pub(super) fn page(
     by_money: bool,
     width: u16,
 ) -> Vec<Line<'static>> {
-    let days = usage::days(rows, &app.currency);
+    let days = usage::days(rows, &app.link.currency);
     let mut out = stats(app, data, &days, width);
     out.push(Line::default());
     out.extend(heat(app, data, &days, by_money, width));
@@ -153,9 +153,9 @@ fn legend(app: &App, by_money: bool, right: usize) -> Line<'static> {
             .config
             .layout
             .currencies
-            .get(&app.currency)
+            .get(&app.link.currency)
             .cloned()
-            .unwrap_or_else(|| app.currency.clone());
+            .unwrap_or_else(|| app.link.currency.clone());
         format!("{}（{symbol}）", texts.by_money)
     } else {
         texts.by_tokens.clone()
