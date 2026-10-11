@@ -4,7 +4,15 @@
 
 ### 怎么跑
 
-先在核心仓库的检出里编一次核心（`cargo build -p miyu`），下面的 `<核心检出>` 换成它的路径：
+先在核心仓库的检出里编一次核心（`cargo build -p miyu`），下面的 `<核心检出>` 换成它的路径。
+
+第一次用这个 `MIYU_HOME` 时，在这个仓库的根目录装上终端自己的软件包清单 `package/`（核心 S-5 起不再自带它：`tui.*` 配置项、放输入历史的状态目录都照它认）：
+
+```sh
+MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources <核心检出>/target/debug/miyu pkg install ./package --yes
+```
+
+然后跑：
 
 ```sh
 DEEPSEEK_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources MIYU_CORE_BIN=<核心检出>/target/debug/miyu cargo run
