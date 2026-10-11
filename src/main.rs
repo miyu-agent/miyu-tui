@@ -45,6 +45,7 @@ mod pointer;
 mod pulse;
 mod reader;
 mod rng;
+mod scratch;
 mod session_list;
 mod settings;
 mod side_select;

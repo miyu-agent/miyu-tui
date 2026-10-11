@@ -25,17 +25,19 @@ impl App {
             return;
         };
         let before = self.input.draft();
-        let file = std::env::temp_dir().join(format!("miyu-prompt-{}.md", std::process::id()));
-        if let Err(e) = std::fs::write(&file, &before.text) {
-            let note = self
-                .config
-                .text
-                .open
-                .failed
-                .replace("{reason}", &e.to_string());
-            self.hint(note, false);
-            return;
-        }
+        let file = match crate::scratch::write("prompt", &before.text) {
+            Ok(file) => file,
+            Err(e) => {
+                let note = self
+                    .config
+                    .text
+                    .open
+                    .failed
+                    .replace("{reason}", &e.to_string());
+                self.hint(note, false);
+                return;
+            }
+        };
         self.composing = Some(Composing {
             file: file.clone(),
             before,
