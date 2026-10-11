@@ -146,6 +146,16 @@ impl LinkCards {
     pub fn saved(&mut self, blob: String, path: Option<PathBuf>) {
         self.blobs.insert(blob, path);
     }
+
+    /// 核心断开了（review B5，2026-10-11）：要了还没回来的不会回来了，忘掉，下次排到时再要；还没发的单子扔掉，重排时
+    /// 照样记上。没存成文件的 blob 分不清是在等还是读不成，一起再要一次。
+    pub fn lost(&mut self) {
+        self.cards
+            .retain(|_, asked| !matches!(asked, Asked::Waiting));
+        self.blobs.retain(|_, path| path.is_some());
+        self.ask_cards.clear();
+        self.ask_blobs.clear();
+    }
 }
 
 #[cfg(test)]
@@ -273,5 +283,22 @@ mod cache_compat_tests {
         assert_eq!(reopened.card("https://video.test"), Some(&video));
         assert_eq!(reopened.card("https://old.test").unwrap().title, "旧卡片");
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn what_was_asked_when_the_core_went_away_is_asked_again() {
+        // review B5：断线时在途的卡片、blob 不会回来了，原来一直记着「要了」，那个链接再也不出卡片。
+        let mut book = LinkCards::default();
+        book.card("https://a.dev");
+        book.file("b1");
+        book.got_card("https://done.dev".into(), None);
+        let _ = book.take();
+        book.lost();
+        book.card("https://a.dev");
+        book.card("https://done.dev");
+        book.file("b1");
+        let (cards, blobs) = book.take();
+        assert_eq!(cards, ["https://a.dev"], "回来了的（要不到的也算）不再要");
+        assert_eq!(blobs, ["b1"]);
     }
 }

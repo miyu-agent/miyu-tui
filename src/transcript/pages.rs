@@ -45,6 +45,11 @@ impl Transcript {
         self.older.loading = true;
     }
 
+    /// 核心断开了：要了的那一页不会回来了，那一行露着时再要（review B5，2026-10-11）。
+    pub fn lost(&mut self) {
+        self.older.loading = false;
+    }
+
     /// 撤掉、恢复了这几轮：记下最后是哪样。
     pub(super) fn decided(&mut self, turns: &[u64], hidden: bool) {
         for &turn in turns {
