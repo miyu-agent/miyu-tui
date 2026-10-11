@@ -13,7 +13,7 @@ use ratatui::widgets::Paragraph;
 use unicode_width::UnicodeWidthStr;
 
 use super::rows::clip;
-use crate::app::App;
+use crate::app::{Screen, Seen};
 use crate::config::Config;
 use crate::jobs::{Job, JobState};
 use crate::{meter, theme};
@@ -142,25 +142,25 @@ fn ended(job: &Job, config: &Config, now: Instant) -> String {
 }
 
 /// 画这一块：照主会话的任务表（`App::listed_agents`）。
-pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
+pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) {
     if area.height == 0 {
         return;
     }
-    let most = app.config.layout.agent_rows;
-    let nested = |session: &str| app.talk.nested_agents(session);
+    let most = seen.config.layout.agent_rows;
+    let nested = |session: &str| seen.talk.nested_agents(session);
     let tree = Tree {
-        viewing: app.talk.viewing(),
+        viewing: seen.talk.viewing(),
         nested: &nested,
-        hover: app.screen.agents_hover,
-        focus: match app.seen().focus() {
+        hover: screen.agents_hover,
+        focus: match seen.focus() {
             crate::focus::Focus::Agent(i) => Some(i),
             _ => None,
         },
     };
-    let agents = app.talk.listed_agents();
+    let agents = seen.talk.listed_agents();
     let lines = lines(
         &agents,
-        &app.config,
+        seen.config,
         area.width,
         most,
         &tree,

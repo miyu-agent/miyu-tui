@@ -6,7 +6,7 @@ use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
 use super::tables;
-use crate::app::{App, UsageData};
+use crate::app::{Seen, UsageData};
 use crate::core::UsageRow;
 use crate::{meter, theme};
 
@@ -15,13 +15,13 @@ const EIGHTHS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '�
 
 /// 柱状图加按天的表。
 pub(super) fn recent(
-    app: &App,
+    seen: &Seen,
     data: &UsageData,
     rows: &[UsageRow],
     width: u16,
 ) -> Vec<Line<'static>> {
-    let look = &app.config.layout.usage;
-    let days = crate::usage::days(rows, &app.link.currency);
+    let look = &seen.config.layout.usage;
+    let days = crate::usage::days(rows, &seen.link.currency);
     // 放得下几天画几天，一天占两格（柱子和一格空）。
     let count = usize::from(look.recent_days)
         .min(usize::from(width) / 2)
@@ -35,7 +35,7 @@ pub(super) fn recent(
         .collect();
     let mut out = bars(&values, usize::from(look.bar_rows).max(1));
     // 下面一行：头一天、今天的日期，最高那天的数接在今天后面。
-    let texts = &app.config.text.usage;
+    let texts = &seen.config.text.usage;
     let left = first.strftime("%m-%d").to_string();
     let right = data.today.strftime("%m-%d").to_string();
     let top = values.iter().copied().max().unwrap_or(0);
@@ -47,7 +47,7 @@ pub(super) fn recent(
         Span::styled(format!("   {peak}"), theme::dim()),
     ]));
     out.push(Line::default());
-    out.extend(tables::days(app, data, rows, width));
+    out.extend(tables::days(seen, data, rows, width));
     out
 }
 

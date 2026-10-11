@@ -101,7 +101,7 @@ impl App {
         };
         // 滚过头停在最后一屏：标签那两行不滚。
         let width = self.screen.areas.menu_text.width;
-        let rows = crate::ui::usage::body_rows(self, (tab, money), width);
+        let rows = crate::ui::usage::body_rows(&self.seen(), (tab, money), width);
         let shown = page.saturating_sub(2).max(1);
         let scroll = scroll.min(rows.saturating_sub(shown));
         self.boxes.panel = Some(Panel::Usage { tab, scroll, money });

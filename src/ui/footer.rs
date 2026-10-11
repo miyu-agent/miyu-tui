@@ -7,7 +7,7 @@ use ratatui::widgets::Paragraph;
 
 use unicode_width::UnicodeWidthStr;
 
-use crate::app::App;
+use crate::app::{Screen, Seen};
 use crate::config::Config;
 use crate::core::Usage;
 use crate::focus::{Button, Focus};
@@ -24,29 +24,29 @@ const GAP: usize = 2;
 ///
 /// 一行放不下时，右边的格子照顺序往下丢，上下文留到最后（`13-终端界面.md` 第八节）：左右两段不许叠在一起，
 /// 叠上以后宽字被盖掉一半，下一帧会留下残字。按钮留到最后。
-pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
-    let focus = app.seen().focus();
-    let count = app.talk.board.shells_running();
+pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> Rect {
+    let focus = seen.focus();
+    let count = seen.talk.board.shells_running();
     let button = (count > 0).then(|| {
-        app.config
+        seen.config
             .text
             .jobs
             .button
             .replace("{count}", &count.to_string())
     });
     let button_w = button.as_ref().map_or(0, |b| b.width() + GAP);
-    let total = app.talk.usage_total();
-    let mut cells = right(&app.talk.transcript, &total, &app.config);
+    let total = seen.talk.usage_total();
+    let mut cells = right(&seen.talk.transcript, &total, seen.config);
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
-    if let Some(amounts) = app.seen().spent() {
+    if let Some(amounts) = seen.spent() {
         cells.push(Part {
             keep: 2,
             spans: vec![Span::styled(amounts, theme::dim())],
         });
     }
     let (left, right) = split(
-        left(app, false),
-        left(app, true),
+        left(seen, false),
+        left(seen, true),
         cells,
         button_w,
         area.width,
@@ -72,17 +72,17 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
         u16::try_from(button.width()).unwrap_or(0),
         1,
     );
-    let style = button_style(app, at, focus == Focus::Footer(Button::Background));
+    let style = button_style(screen, at, focus == Focus::Footer(Button::Background));
     frame.render_widget(Paragraph::new(Line::styled(button, style)), at);
     at
 }
 
 /// 按钮的样子：强调色；悬停加粗；焦点在上面反色（第 1、2 条）。
-fn button_style(app: &App, at: Rect, focused: bool) -> ratatui::style::Style {
+fn button_style(screen: &Screen, at: Rect, focused: bool) -> ratatui::style::Style {
     if focused {
         return theme::selected();
     }
-    let hovered = app.screen.pointer.is_some_and(|p| at.contains(p));
+    let hovered = screen.pointer.is_some_and(|p| at.contains(p));
     let style = theme::accent();
     if hovered {
         style.add_modifier(ratatui::style::Modifier::BOLD)
@@ -174,9 +174,9 @@ fn left_line(spans: Vec<Span<'_>>, width: u16) -> Line<'static> {
 
 /// 左边那一段：权限级别、模型和端点、思考强度。`short`：模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash`
 /// 写 `deepseek-v4.1-flash`），一行放不下时用（[`split`]）。
-fn left(app: &App, short: bool) -> Vec<Span<'_>> {
-    let text = &app.config.text;
-    let t = &app.talk.transcript;
+fn left<'a>(seen: &Seen<'a>, short: bool) -> Vec<Span<'a>> {
+    let text = &seen.config.text;
+    let t = &seen.talk.transcript;
     match &t.link {
         Link::Connecting => vec![Span::styled(text.connecting.as_str(), theme::dim())],
         Link::Reconnecting => vec![Span::styled(text.reconnecting.as_str(), theme::warn())],
@@ -184,7 +184,7 @@ fn left(app: &App, short: bool) -> Vec<Span<'_>> {
         Link::Ready => {
             let level = t.level;
             let name = text.levels.get(&level).map_or("", String::as_str);
-            let icon = app.config.layout.level_icons.get(&level);
+            let icon = seen.config.layout.level_icons.get(&level);
             let label = format!("{}{name}", icon.map_or("", String::as_str));
             let mut spans = vec![Span::styled(label, theme::level(level))];
             // 都在冷却：模型那一格变黄写原因，到点了变回原样（「配置与模型」第 7 条）。

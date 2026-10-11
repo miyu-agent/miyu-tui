@@ -15,6 +15,8 @@ mod jobs;
 
 pub use avatars::{Avatar, Place};
 pub use jobs::Panel;
+pub use screen::Screen;
+pub use seen::Seen;
 pub use usage::UsageData;
 mod head_settings;
 mod help;
