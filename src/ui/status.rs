@@ -79,7 +79,7 @@ pub(super) fn swept(word: &str, dots: &Dots, t: f64, sweep: f64) -> String {
 /// 提示：圆角细边框的小框，底边压在 `bottom` 那一行，框里的字从 `text_x` 起（和输入框里的字左对齐），
 /// 左右各空一格。浮着，先把底下的格子清掉再画（`tui.md`「提示」）。
 pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, app: &App) {
-    let Some(notice) = &app.notice else {
+    let Some(notice) = &app.typing.notice else {
         return;
     };
     let text = clip(&notice.text, max_width.saturating_sub(4));

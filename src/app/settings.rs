@@ -87,13 +87,14 @@ impl App {
             return;
         };
         let editor = self
+            .typing
             .editor
             .clone()
             .or_else(|| cfg!(unix).then(|| "vi".to_string()));
         match editor.map(|e| (e, crate::scratch::write("persona", &text))) {
             Some((editor, Ok(file))) => {
                 self.boxes.settings_prompt = Some(file.clone());
-                self.edit = Some((editor, file));
+                self.typing.edit = Some((editor, file));
             }
             _ => page.prompt_edited(None),
         }

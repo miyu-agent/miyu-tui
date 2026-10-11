@@ -14,18 +14,18 @@ impl App {
     /// 这一帧开着的 `@` 列表：历史列表、后台面板、抽屉开着时不开。
     pub fn mention_found(&mut self) -> Option<Found> {
         // 翻输入历史翻出来的那句还没改过：不弹，`↑` `↓` 接着翻（蓝图「按键」`↑`、`↓`）。
-        if self.history.open
+        if self.typing.history.open
             || self.boxes.panel.is_some()
             || self.drawers.open()
-            || self.input.recalled()
+            || self.typing.input.recalled()
         {
             return None;
         }
-        let editor = &self.input.editor;
+        let editor = &self.typing.input.editor;
         let (text, cursor) = (editor.text().to_string(), editor.cursor());
-        let found = self.mention.find(&text, cursor)?;
+        let found = self.typing.mention.find(&text, cursor)?;
         // 词变了、清单在建到点了：问核心（`cwd` 是界面所在的工作目录）。
-        if let Some((word, ask)) = self.mention.next_ask(Instant::now()) {
+        if let Some((word, ask)) = self.typing.mention.next_ask(Instant::now()) {
             let cwd = std::env::current_dir().unwrap_or_default();
             let (method, params) = ask.request(&cwd.to_string_lossy());
             self.core.send(Command::Files {
@@ -41,12 +41,13 @@ impl App {
     pub(super) fn mention_key(&mut self, key: KeyEvent, found: &Found) -> Option<Action> {
         match key.code {
             KeyCode::Up | KeyCode::Down => {
-                self.mention
+                self.typing
+                    .mention
                     .step(key.code == KeyCode::Down, found.items.len());
             }
             KeyCode::Tab => self.mention_tab(found),
             KeyCode::Enter => self.mention_take(found),
-            KeyCode::Esc => self.mention.dismiss(found),
+            KeyCode::Esc => self.typing.mention.dismiss(found),
             _ => return None,
         }
         Some(Action::None)
@@ -62,14 +63,14 @@ impl App {
         let Some(by) = super::mouse::list_step(mouse.kind, false) else {
             return Action::None;
         };
-        let mention = &mut self.mention;
+        let mention = &mut self.typing.mention;
         crate::menu::pin(mention.selected, &mut mention.pinned, count, rows, by);
         let top = crate::menu::top(mention.selected, mention.pinned, count, rows);
         let text = self.screen.areas.menu_text;
         let Some(index) = crate::ui::menu_index_at(text, count, top, rows, mouse.row) else {
             return Action::None;
         };
-        self.mention.selected = index;
+        self.typing.mention.selected = index;
         if mouse.kind == MouseEventKind::Down(MouseButton::Left) {
             self.mention_take(found);
         }
@@ -78,12 +79,12 @@ impl App {
 
     /// `Tab`：选中的是目录，词换成这个目录接着列；是文件，收成块。
     fn mention_tab(&mut self, found: &Found) {
-        let Some(item) = found.items.get(self.mention.selected) else {
+        let Some(item) = found.items.get(self.typing.mention.selected) else {
             return;
         };
         if item.dir {
             let text = format!("@{}", escape(&item.shown));
-            self.input.retype_mention(found.start, &text);
+            self.typing.input.retype_mention(found.start, &text);
         } else {
             self.mention_take(found);
         }
@@ -91,8 +92,10 @@ impl App {
 
     /// `Enter`、点一下：选中的那一条收成块。
     fn mention_take(&mut self, found: &Found) {
-        if let Some(item) = found.items.get(self.mention.selected) {
-            self.input.take_mention(found.start, item.path.clone());
+        if let Some(item) = found.items.get(self.typing.mention.selected) {
+            self.typing
+                .input
+                .take_mention(found.start, item.path.clone());
         }
     }
 }

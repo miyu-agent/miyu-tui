@@ -22,8 +22,8 @@ impl App {
     /// 每一帧：把收不了的那几种交给输入框；刚改成文件块的提示一句。
     pub(super) fn sync_refused(&mut self) {
         let refused = self.refused_kinds();
-        self.input.set_refused(refused);
-        let demoted = self.input.take_demoted();
+        self.typing.input.set_refused(refused);
+        let demoted = self.typing.input.take_demoted();
         self.tell_demoted(&demoted);
     }
 

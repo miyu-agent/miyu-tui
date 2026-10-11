@@ -53,12 +53,14 @@ impl App {
     /// 粘贴进来的字（终端送来的、`Ctrl+V` 读剪贴板的）：历史列表开着的进「历史：」，抽屉开着的进抽屉里写的字，
     /// 别的进输入框（大段的收成一块，`tui.md`「输入框」第 11 条）。
     pub(super) fn paste(&mut self, text: &str) {
-        if self.history.open {
-            self.history.type_text(&text.replace(['\r', '\n'], " "));
+        if self.typing.history.open {
+            self.typing
+                .history
+                .type_text(&text.replace(['\r', '\n'], " "));
         } else if self.drawers.open() {
             self.drawer_paste(text);
         } else {
-            self.input.paste(text);
+            self.typing.input.paste(text);
         }
     }
 
@@ -66,14 +68,14 @@ impl App {
     /// 全是本机现成的文件的也收成块；别的照字粘贴（`tui.md`「输入框」第 12 条，2026-10-10 项目主人：「ctrl+shift+V
     /// 粘贴文字，ctrl+V 粘贴占位符」）。读不到、是空的，提示一句（「按键」）。
     pub(super) fn paste_clipboard(&mut self) {
-        let into_input = !self.history.open && !self.drawers.open();
+        let into_input = !self.typing.history.open && !self.drawers.open();
         if into_input {
-            if clipboard::read_files().is_some_and(|files| self.input.paste_files(&files)) {
+            if clipboard::read_files().is_some_and(|files| self.typing.input.paste_files(&files)) {
                 return;
             }
-            let dir = self.staging.as_ref().map(clipboard::Staging::dir);
+            let dir = self.typing.staging.as_ref().map(clipboard::Staging::dir);
             if let Some(file) = dir.and_then(clipboard::read_image) {
-                self.input.attach(file, IMAGE);
+                self.typing.input.attach(file, IMAGE);
                 return;
             }
         }
@@ -81,7 +83,7 @@ impl App {
             Ok(text) if text.is_empty() => {
                 self.hint(self.config.text.clipboard_empty.clone(), false);
             }
-            Ok(text) if into_input && self.input.paste_files(&text) => {}
+            Ok(text) if into_input && self.typing.input.paste_files(&text) => {}
             Ok(text) => self.paste(&text),
             Err(_) => self.hint(self.config.text.clipboard_unreadable.clone(), false),
         }
@@ -89,7 +91,9 @@ impl App {
 
     /// 输入框里的附件照正文里这一种已有几个接着编号（每一帧画之前，「输入框」第 12 条）。
     pub(super) fn renumber_attachments(&mut self) {
-        self.input.renumber(self.transcript.attachment_counts());
+        self.typing
+            .input
+            .renumber(self.transcript.attachment_counts());
     }
 
     pub(super) fn copy(&mut self, text: &str) {

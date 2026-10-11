@@ -66,10 +66,10 @@ impl App {
             self.screen.view.hover = None;
         }
         if owner != Some(Grab::Input) {
-            self.input.unhover();
+            self.typing.input.unhover();
         }
         match owner {
-            Some(Grab::Menu) if self.history.open => self.history_mouse(mouse),
+            Some(Grab::Menu) if self.typing.history.open => self.history_mouse(mouse),
             Some(Grab::Menu) => {
                 if let Some(found) = self.mention_found() {
                     self.mention_mouse(mouse, &found)
@@ -79,7 +79,7 @@ impl App {
                     Action::None
                 }
             }
-            Some(Grab::Input) => self.input.mouse(mouse, under == Some(Grab::Input)),
+            Some(Grab::Input) => self.typing.input.mouse(mouse, under == Some(Grab::Input)),
             Some(Grab::Body) => {
                 match self.screen.view.mouse(mouse) {
                     BodyAction::None => {}
@@ -98,10 +98,10 @@ impl App {
     pub(super) fn open_link(&mut self, url: &str) {
         use crate::open::OpenError;
         // 本机的文本文件：在这个终端里用编辑器开，主循环让出终端（第 10 条）。
-        if let Some(editor) = self.editor.clone()
+        if let Some(editor) = self.typing.editor.clone()
             && let Some(file) = crate::local::resolve(url).filter(|f| crate::editor::is_text(f))
         {
-            self.edit = Some((editor, file));
+            self.typing.edit = Some((editor, file));
             return;
         }
         let words = &self.config.text.open;
@@ -170,7 +170,7 @@ impl App {
     /// 输入历史列表上的鼠标：悬停选中那一条，点一下等于 `Enter`（`tui.md`「输入历史列表」第 5 条）。
     fn history_mouse(&mut self, mouse: MouseEvent) -> Action {
         use ratatui::crossterm::event::MouseButton;
-        let found = self.history.matches(self.input.sent());
+        let found = self.typing.history.matches(self.typing.input.sent());
         let width = self.screen.areas.menu_text.width;
         let now = std::time::SystemTime::now();
         // 和画出来的同一份：放进列表那块的高度（「窗口小的时候」第 1 条）。
@@ -180,7 +180,7 @@ impl App {
             return Action::None;
         };
         let shown = self.config.layout.history_rows.max(1);
-        let history = &mut self.history;
+        let history = &mut self.typing.history;
         crate::menu::pin(
             history.selected,
             &mut history.pinned,
@@ -189,10 +189,10 @@ impl App {
             by,
         );
         let (_, rows) =
-            crate::ui::history_lines(&self.history, &found, width, &self.config, now, max);
+            crate::ui::history_lines(&self.typing.history, &found, width, &self.config, now, max);
         let at = crate::ui::history_index_at(self.screen.areas.menu_text, &rows, mouse.row);
         if let Some(index) = at {
-            self.history.selected = index;
+            self.typing.history.selected = index;
             if mouse.kind == MouseEventKind::Down(MouseButton::Left) {
                 self.pick_history();
             }
@@ -212,16 +212,27 @@ impl App {
         let Some(by) = list_step(mouse.kind, false) else {
             return Action::None;
         };
-        crate::menu::pin(self.menu.selected, &mut self.menu.pinned, count, rows, by);
-        let top = crate::menu::top(self.menu.selected, self.menu.pinned, count, rows);
+        crate::menu::pin(
+            self.typing.menu.selected,
+            &mut self.typing.menu.pinned,
+            count,
+            rows,
+            by,
+        );
+        let top = crate::menu::top(
+            self.typing.menu.selected,
+            self.typing.menu.pinned,
+            count,
+            rows,
+        );
         let at = crate::ui::menu_index_at(self.screen.areas.menu_text, count, top, rows, mouse.row);
         let Some((index, spec)) = at.and_then(|i| Some((i, matches.get(i)?))) else {
             return Action::None;
         };
-        self.menu.selected = index;
+        self.typing.menu.selected = index;
         if mouse.kind == MouseEventKind::Down(MouseButton::Left) {
             let spec = spec.clone();
-            self.input.editor.take();
+            self.typing.input.editor.take();
             self.run(&spec, None);
         }
         Action::None

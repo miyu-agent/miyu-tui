@@ -91,7 +91,7 @@ impl App {
         // `/model` 的一行行：交给开着的框（`models.rs`）。
         // `@` 文件列表的回应：交给列表，照哪个词问的认（`mention/`）。
         if let Update::Files { word, result } = update {
-            self.mention.replied(&word, result.as_ref());
+            self.typing.mention.replied(&word, result.as_ref());
             return;
         }
         // 链接卡片、它的图回来了（`cards.rs`）。
@@ -194,7 +194,7 @@ impl App {
         }
         let undone = matches!(update, Update::Undone { restore: false, .. });
         if matches!(update, Update::Undone { restore: true, .. }) {
-            self.input.take_back();
+            self.typing.input.take_back();
         }
         // 限制了进行中那一段的高度就不放开视口（`tui.md`「正文」第 1 条、「时间线」第 20 条）。
         // 限制着的，一轮结束运行状态行收起时也按住不往下落。
@@ -246,7 +246,7 @@ impl App {
                 .rev()
                 .find(|e| e.kind == Kind::Undo);
             if let Some(said) = said.map(|e| e.text.clone()) {
-                self.input.put_back(&said);
+                self.typing.input.put_back(&said);
             }
         }
     }

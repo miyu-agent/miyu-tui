@@ -78,7 +78,7 @@ impl App {
             .then(|| now + Duration::from_millis(look.gaze.frame_ms));
         // 框里有字、鼠标停够了：到点画一帧，转回来看输入光标（第 6 条）。
         let settle = Duration::from_millis(look.gaze.pointer_settle_ms);
-        let settling = (!self.input.editor.is_empty())
+        let settling = (!self.typing.input.editor.is_empty())
             .then(|| self.mascot.attention.settles_at(settle))
             .flatten()
             .filter(|at| *at > now);
