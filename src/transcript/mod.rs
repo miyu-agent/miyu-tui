@@ -305,16 +305,7 @@ impl Transcript {
                     entry.seq = Some(seq);
                 }
             }
-            Push::Withdrawn(seqs) => {
-                let back = |e: &Entry| e.seq.is_some_and(|s| seqs.contains(&s));
-                self.returned.extend(
-                    self.entries
-                        .iter()
-                        .filter(|e| back(e))
-                        .map(|e| (e.text.clone(), e.pasted.clone())),
-                );
-                self.entries.retain(|e| !back(e));
-            }
+            Push::Withdrawn(seqs) => self.withdraw(&seqs),
             // 去掉标题推来的是空的：读成没有标题。
             Push::Title(title) => self.title = (!title.is_empty()).then_some(title),
             Push::Workspace(cwd) => self.workspace_changed(cwd, texts),

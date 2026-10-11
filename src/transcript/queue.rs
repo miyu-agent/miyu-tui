@@ -62,6 +62,24 @@ impl Transcript {
         }
     }
 
+    /// 排着的这几句被退回了（序号 `seqs`）：拿出正文，字和粘贴块记着放回输入框。一条条删、记着的下标跟着往前挪：这一轮
+    /// 后面才开的回答、步排在它们后面（review B7，2026-10-11：原来整个 `retain`，接着来的字落到了别的条目上）。
+    pub(super) fn withdraw(&mut self, seqs: &[u64]) {
+        let back = |e: &Entry| e.seq.is_some_and(|s| seqs.contains(&s));
+        self.returned.extend(
+            self.entries
+                .iter()
+                .filter(|e| back(e))
+                .map(|e| (e.text.clone(), e.pasted.clone())),
+        );
+        for j in (0..self.entries.len()).rev() {
+            if back(&self.entries[j]) {
+                self.entries.remove(j);
+                self.removed(j);
+            }
+        }
+    }
+
     /// 留着的排队话（`/stop`，核心 O-6 的 `keep`）不再接着发：用了命令（`command.ran`）、没在回答的时候挪到正文末尾，
     /// 一条条照你说的画。`command.ran` 在日志里、排在那一轮结束后面，补发时也照这样
     /// （蓝图「斜杠命令」`/stop`）。
