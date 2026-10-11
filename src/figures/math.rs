@@ -141,4 +141,15 @@ mod tests {
         assert!(fit.cols <= 20 && fit.scale < 1.0);
         assert_eq!(image.width(), u32::from(fit.cols) * 10);
     }
+
+    #[test]
+    fn a_formula_nested_too_deep_is_refused_instead_of_blowing_the_stack() {
+        // review A8（2026-10-11）查过：成块公式交给 RaTeX，几万层嵌套它自己会拒、不撑爆出图线程的栈；钉住，换了版本也得这样。
+        for tex in [
+            format!("{}x", r"\sqrt".repeat(20_000)),
+            format!("{}x{}", "{".repeat(20_000), "}".repeat(20_000)),
+        ] {
+            assert!(draw(&tex, (192, 202, 245), 1.0, CELL, 80, 200).is_err());
+        }
+    }
 }
