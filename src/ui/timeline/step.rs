@@ -162,15 +162,19 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
             }
             // 首尾的空行不画：流到一半停在换行上时，不冒出一根空竖线。
             // 只折最后那几行：整段重折的时间跟着思考长度涨，做完的思考也每帧都画。
-            tail_pieces(text.trim(), width, tl.thought_rows)
-                .into_iter()
-                .map(|(l, joined)| Piece {
-                    lead: bar(theme::dim()),
-                    // 字用主题的 thought（青），和命令的预览分开；悬停时和别的步一起亮一档（第 5 条）。
-                    content: vec![Span::styled(l, thought_text(style))],
-                    joined,
-                })
-                .collect()
+            tail_pieces(
+                &crate::tabs::expand(text.trim(), ctx.config.layout.output.tab),
+                width,
+                tl.thought_rows,
+            )
+            .into_iter()
+            .map(|(l, joined)| Piece {
+                lead: bar(theme::dim()),
+                // 字用主题的 thought（青），和命令的预览分开；悬停时和别的步一起亮一档（第 5 条）。
+                content: vec![Span::styled(l, thought_text(style))],
+                joined,
+            })
+            .collect()
         }
         StepKind::Tool { .. } if kind(step, ctx) == Some(ToolKind::Command) => {
             // 参数还在流、命令还没有字的，不画预览：不然是一根空的竖线。
@@ -222,8 +226,10 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
 
 /// 点开以后的全部内容：思考是全部的字；命令是命令、空行、输出；编辑、写入是差异，不写结果那一句；别的是输出。
 pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
-    let each = |text: &str, style: Style| {
-        pieces(text, width)
+    // 制表符画不出来：先照制表位展开成空格（review C1）。
+    let tab = ctx.config.layout.output.tab;
+    let each = move |text: &str, style: Style| {
+        pieces(&crate::tabs::expand(text, tab), width)
             .into_iter()
             .map(move |(l, joined)| Piece {
                 lead: None,
@@ -242,7 +248,7 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                 .then(|| diff::from_args(parsed))
                 .flatten();
             if let Some(diff) = diff {
-                return diff_rows::lines(&diff, width)
+                return diff_rows::lines(&diff, width, tab)
                     .into_iter()
                     .map(|(gutter, content)| Piece {
                         lead: Some(gutter),

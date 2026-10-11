@@ -26,4 +26,6 @@ pub struct Kit<'a> {
     pub math: &'a Math,
     /// 要写的几个字。
     pub labels: &'a Labels,
+    /// 制表位几列（`layout.json` 的 `output.tab`）：进排版以前展开（`tabs.rs`）。
+    pub tab: usize,
 }

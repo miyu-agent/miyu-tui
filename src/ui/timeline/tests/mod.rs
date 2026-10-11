@@ -13,6 +13,7 @@ use crate::ui::test_support::Fixture;
 
 mod images;
 mod language;
+mod tabs;
 
 /// 一步：从 `start` 秒开始，用了 `took` 秒。
 fn step(kind: StepKind, t0: Instant, start: u64, took: u64) -> Step {

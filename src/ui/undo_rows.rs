@@ -143,7 +143,7 @@ fn file_lines(file: &UndoFile, cwd: Option<&str>, opened: bool, ctx: &Ctx) -> Ve
     let mut out = vec![ctx.led_row(ctx.blank_slot(), vec![Span::raw("  ")], content)];
     if let Some(diff) = diff.filter(|_| opened) {
         let width = ctx.width.saturating_sub(6).max(1);
-        for (gutter, line) in diff_rows::lines(&diff, width) {
+        for (gutter, line) in diff_rows::lines(&diff, width, ctx.config.layout.output.tab) {
             out.push(ctx.led_row(
                 ctx.blank_slot(),
                 vec![Span::raw("    "), gutter],
