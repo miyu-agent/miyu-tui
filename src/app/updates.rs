@@ -8,6 +8,10 @@ use crate::transcript::Kind;
 impl App {
     /// 收一条核心那边的消息。撤销成了、排队的消息被退回了，字放回输入框（`tui.md`「输入框」第 7、8 条）。
     pub fn core(&mut self, update: Update) {
+        // 断开了：在途的请求不会回来了，等着的几处先复位（`lost.rs`）；下面各处照样收到这一条。
+        if matches!(update, Update::Disconnected) {
+            self.lost_requests();
+        }
         // 引导的回应归它；连上、断开也告诉它；头的配置读到了去看引导走过没有（`oobe.rs`）。
         if self.oobe_update(&update) {
             return;

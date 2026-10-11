@@ -19,6 +19,7 @@ mod head_settings;
 mod help;
 mod keys;
 mod language;
+mod lost;
 mod mascot;
 mod mascot_pick;
 mod mention;

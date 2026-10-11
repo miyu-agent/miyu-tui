@@ -110,3 +110,43 @@ fn the_sidebar_title_total_and_level_come_from_the_whole_session_not_the_latest_
     // 标题照会话列表：最新一页里没有改名的事件。
     assert!(tui.shows("很长的会话"), "{}", tui.lines().join("\n"));
 }
+
+/// 要更早的一页时断了线（review B5，2026-10-11）：重连以后照样读得到。原来「要了还没回来」一直记着，那一行一直挂着、
+/// 再也不要。
+#[test]
+fn the_earlier_page_asked_for_when_the_core_went_away_is_asked_again_after_reconnecting() {
+    let home = home();
+    let mut first = home.tui("zh_CN.UTF-8");
+    talk(&mut first, |_| {});
+    drop(first);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("第 22 号的回答。");
+    tui.pump(Duration::from_millis(300));
+    // 冻住核心再往上滚：要更早的一页的请求停在路上，接着断线。
+    home.freeze_core();
+    for _ in 0..40 {
+        tui.key(PG_UP);
+        if tui.shows("正在加载更早的内容") {
+            break;
+        }
+    }
+    // 那一行露出来的那一帧还没要：再翻一下，要的请求才真的发出去。
+    tui.key(PG_UP);
+    tui.pump(Duration::from_millis(300));
+    home.stop_core();
+    // 断了以后一直重连，连不上时写核心没在跑。
+    tui.wait_for("核心未运行");
+    home.restart_core();
+    tui.wait_for("工作区");
+    // 拼上来时视口不跳：接着往上滚找第 1 轮。
+    let end = std::time::Instant::now() + Duration::from_secs(20);
+    while !tui.shows("┃ 第 1 句") {
+        assert!(
+            std::time::Instant::now() < end,
+            "重连以后读不到更早的一页：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.key(PG_UP);
+        tui.pump(Duration::from_millis(200));
+    }
+}

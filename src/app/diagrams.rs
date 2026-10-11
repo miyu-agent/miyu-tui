@@ -17,7 +17,7 @@ impl App {
         self.diagrams.borrow().pending()
     }
 
-    /// 图回来了：记进账，排好的行扔掉重排，交回 `true`。核心断开了：没回来的忘掉，重连以后再问（不拿走这一条）。
+    /// 图回来了：记进账，排好的行扔掉重排，交回 `true`。核心断开了没回来的在 `lost.rs` 一起办。
     pub(super) fn diagram_update(&mut self, update: &mut Option<Update>) -> bool {
         match update.take() {
             Some(Update::Mermaid { source, svg }) => {
@@ -26,9 +26,6 @@ impl App {
                 true
             }
             other => {
-                if matches!(other, Some(Update::Disconnected)) {
-                    self.diagrams.borrow_mut().lost();
-                }
                 *update = other;
                 false
             }

@@ -55,6 +55,12 @@ fn the_top_line_comes_and_goes_with_more() {
     assert!(t.wants_older());
     t.asked_older();
     assert!(!t.wants_older(), "要了还没回来，不再要");
+    t.lost();
+    assert!(
+        t.wants_older(),
+        "断线了，要的那一页不会回来，再要（review B5）"
+    );
+    t.asked_older();
     t.paged(true, &texts());
     assert_eq!(
         t.entries.iter().filter(|e| e.kind == Kind::Older).count(),
