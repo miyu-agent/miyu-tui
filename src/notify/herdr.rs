@@ -61,16 +61,15 @@ impl Herdr {
         // 单个工作线程按顺序发：resume 需要先取得窗格，release 不能被新状态越过。
         let (reports, receiver) = mpsc::channel::<Vec<String>>();
         let worker = thread::spawn(move || {
+            // 报不上去的不管：herdr 是可有可无的，下一次照报。不往 stderr 写：那是全屏界面所在的终端（review B7）。
             for args in receiver {
-                let result = Command::new(&binary)
+                let reported = Command::new(&binary)
                     .args(&args)
                     .stdin(Stdio::null())
                     .stdout(Stdio::null())
                     .stderr(Stdio::null())
                     .status();
-                if !result.is_ok_and(|status| status.success()) {
-                    eprintln!("herdr report failed");
-                }
+                if reported.is_err() {}
             }
         });
         Some(Self {
@@ -109,14 +108,11 @@ impl Herdr {
         self.send(args);
     }
 
+    /// 交给工作线程；它没了（报的程序把它弄崩了）的丢掉，同上不写 stderr。
     fn send(&self, args: Vec<String>) {
-        if self
-            .reports
-            .as_ref()
-            .is_some_and(|tx| tx.send(args).is_err())
-        {
-            eprintln!("herdr reporter disconnected");
-        }
+        if let Some(tx) = &self.reports
+            && tx.send(args).is_err()
+        {}
     }
 
     fn report_args(&mut self, state: State) -> Vec<String> {

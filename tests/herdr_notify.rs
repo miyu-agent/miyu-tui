@@ -66,3 +66,28 @@ fn a_reply_reports_to_herdr_and_sends_one_desktop_notification() {
         assert!(Instant::now() < until, "{reported}");
     }
 }
+
+/// herdr 报不上去时不往终端写字（review B7，2026-10-11）：上报在后台线程里，原来失败了 `eprintln!`，写进的是全屏界面
+/// 所在的终端，界面只重画变了的格子，那行字一直留着。
+#[test]
+fn a_failing_herdr_report_writes_nothing_on_the_screen() {
+    let home = Home::new(Script::new([Play::Says("回答完了。")]));
+    let missing = home.root().join("no-such-herdr").display().to_string();
+    let mut tui = home.tui_with(
+        "zh_CN.UTF-8",
+        &[
+            ("HERDR_ENV", "1"),
+            ("HERDR_PANE_ID", "p-test"),
+            ("HERDR_BIN_PATH", &missing),
+        ],
+    );
+    tui.wait_for("工作区");
+    tui.say("你好");
+    tui.wait_for("回答完了。");
+    tui.pump(Duration::from_millis(500));
+    assert!(
+        !tui.lines().iter().any(|l| l.contains("herdr")),
+        "{}",
+        tui.lines().join("\n")
+    );
+}
