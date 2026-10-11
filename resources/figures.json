@@ -19,6 +19,7 @@
     "Noto Sans CJK SC",
     "PingFang SC"
   ],
+  "max_file_bytes": 67108864,
   "math_scale": 1.0,
   "keep": 32,
   "zoom_keep": 64
