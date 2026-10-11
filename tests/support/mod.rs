@@ -25,6 +25,7 @@ fn resources() -> PathBuf {
     Path::new(miyu_client::WORKSPACE_ROOT).join("resources")
 }
 
+mod core;
 mod home;
 
 pub use home::Home;
