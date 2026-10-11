@@ -59,9 +59,9 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
             ..
         } => {
             let face = ctx.human.tool(name);
-            let shown = face.map_or(name.as_str(), |f| f.name.as_str());
+            let shown = ctx.human.tool_name(name);
             if *state == ToolState::Preparing {
-                (text.prepare.replace("{name}", shown), Vec::new())
+                (text.prepare.replace("{name}", &shown), Vec::new())
             } else {
                 let kind = kind(step, ctx);
                 let subject = match kind {
@@ -70,7 +70,7 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                         .and_then(|f| f.subject.as_deref())
                         .and_then(|k| step.arg(k)),
                 };
-                let mut label = shown.to_string();
+                let mut label = shown;
                 // 派子代理：名字后面先写任务编号（`派子代理 · j10 · 描述`）。
                 let job = said
                     .as_ref()

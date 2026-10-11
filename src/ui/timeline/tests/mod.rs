@@ -13,6 +13,7 @@ use crate::ui::test_support::Fixture;
 
 mod images;
 mod language;
+mod mcp;
 mod tabs;
 
 /// 一步：从 `start` 秒开始，用了 `took` 秒。
