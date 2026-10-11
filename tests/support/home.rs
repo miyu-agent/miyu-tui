@@ -2,29 +2,22 @@
 //! [`Tui`]。从 `mod.rs` 拆出来（2026-10-11：过了 500 行）。
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc::channel;
 
-use miyu_endpoint::config::Config;
-use miyu_endpoint::{Core, run};
-use miyu_ipc::{Dirs, open};
-use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::env::{Env, Platform};
-use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
-use miyu_tool::Catalog;
 
-use super::{Tui, WAIT, resources};
+use super::Tui;
+use super::core::Running;
 
 /// 一个用完就删的临时数据根和工作目录，上面跑着一份照剧本回话的核心。
 pub struct Home {
     dir: PathBuf,
     /// 界面的工作目录：在数据根外面。
     pub work: PathBuf,
-    /// 核心跑在这个线程的运行时里；丢掉 `Home` 时整个进程的测试线程都还在，核心跟着测试进程走。
-    _core: std::thread::JoinHandle<()>,
+    /// 跑着的核心：测断线、重连时停掉再起来。
+    core: Running,
 }
 
 /// 个人设置里记上「第一次引导走过了」：已经有 `[ui]` 的接在它下面（TOML 一张表只能写一次），没有的另起一张。
@@ -83,62 +76,23 @@ impl Home {
             std::fs::create_dir_all(file.parent().expect("有上一层")).expect("建得了");
             std::fs::write(&file, settings).expect("写得进去");
         }
-        let (ready, started) = channel();
-        let core = std::thread::spawn(move || {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .expect("起得来运行时");
-            runtime.block_on(async move {
-                let dirs = Dirs {
-                    runtime_dir: None,
-                    ..Dirs::current()
-                };
-                let opened = open(&root, &dirs).expect("起得来");
-                let admin = AccountId::parse("alice").expect("账号合写法");
-                // 配置照核心起来时那样读：登记的全部配置项（`miyu_core::settings`）接上出厂软件包清单声明的
-                // （终端的 `tui.*` 这些，照发行包的样子：程序都算在），环境变量一个都不认。
-                let mut shipped =
-                    miyu_store::packages::Packages::shipped(&ResourceRoot::at(resources())).read();
-                let config = Config::load(
-                    &root,
-                    &admin,
-                    None,
-                    miyu_core::settings::Packaged::as_released(&mut shipped).all(),
-                    miyu_endpoint::config::Environment::of(&[]),
-                );
-                let core = Arc::new(
-                    Core::new(
-                        root,
-                        ResourceRoot::at(resources()),
-                        Arc::new(script),
-                        if tools {
-                            {
-                                // 照出厂的那一层清单登记（核心 F-2 起：装了的内置包才登记工具）。
-                                let shipped = ResourceRoot::at(resources());
-                                let found =
-                                    miyu_store::packages::Packages::shipped(&shipped).read();
-                                miyu_core::tools(&shipped, &found).expect("工具登记得上")
-                            }
-                        } else {
-                            Catalog::default()
-                        },
-                        None,
-                        admin,
-                        opened.token,
-                    )
-                    .with_config(config),
-                );
-                ready.send(()).expect("测试还在等");
-                run(opened.listener, core).await;
-            });
-        });
-        started.recv_timeout(WAIT).expect("核心起来了");
-        Home {
-            dir,
-            work,
-            _core: core,
-        }
+        let core = Running::start(root, script, tools);
+        Home { dir, work, core }
+    }
+
+    /// 停掉核心：连着的界面断线（review B 批）。
+    pub fn stop_core(&self) {
+        self.core.stop();
+    }
+
+    /// 冻住核心：什么都不收发，界面这时发的请求停在路上；接着 [`Home::stop_core`] 就是请求在途时断了线。
+    pub fn freeze_core(&self) {
+        self.core.freeze();
+    }
+
+    /// 停掉的核心再起来：界面重连上来。
+    pub fn restart_core(&self) {
+        self.core.restart();
     }
 
     /// 核心的数据根。
