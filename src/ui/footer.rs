@@ -26,7 +26,6 @@ const GAP: usize = 2;
 /// 叠上以后宽字被盖掉一半，下一帧会留下残字。按钮留到最后。
 pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
     let focus = app.focus();
-    let left = left_line(left(app), area.width);
     let count = app.board.shells_running();
     let button = (count > 0).then(|| {
         app.config
@@ -36,8 +35,6 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
             .replace("{count}", &count.to_string())
     });
     let button_w = button.as_ref().map_or(0, |b| b.width() + GAP);
-    let room = usize::from(area.width).saturating_sub(left.width() + GAP + button_w);
-    frame.render_widget(Paragraph::new(left.clone()), area);
     let total = app.usage_total();
     let mut cells = right(&app.transcript, &total, &app.config);
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
@@ -47,7 +44,14 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
             spans: vec![Span::styled(amounts, theme::dim())],
         });
     }
-    let right = Line::from(fit(cells, room));
+    let (left, right) = split(
+        left(app, false),
+        left(app, true),
+        cells,
+        button_w,
+        area.width,
+    );
+    frame.render_widget(Paragraph::new(left.clone()), area);
     let right_w = right.width();
     frame.render_widget(Paragraph::new(right.right_aligned()), area);
     let none = Rect::new(area.x, area.y, 0, 0);
@@ -87,6 +91,34 @@ fn button_style(app: &App, at: Rect, focused: bool) -> ratatui::style::Style {
     }
 }
 
+/// 一行怎么分：右边的格子全放得下就照左边全的（`full`）写，不然左边换短的（`short`：模型编号只写最后一段），空出的
+/// 地方给右边；还不够再照 [`fit`] 挑格子（2026-10-11 项目主人定：原来模型编号一长，速度、累计先丢了，中间空着一大截）。
+/// `button` 是后台按钮连两边的空占几列。交回左边、右边。
+fn split(
+    full: Vec<Span<'_>>,
+    short: Vec<Span<'_>>,
+    cells: Vec<Part>,
+    button: usize,
+    width: u16,
+) -> (Line<'static>, Line<'static>) {
+    let need = joined_width(&cells);
+    let full_w: usize = full.iter().map(Span::width).sum();
+    let roomy = full_w + GAP + button + need <= usize::from(width);
+    let left = left_line(if roomy { full } else { short }, width);
+    let room = usize::from(width).saturating_sub(left.width() + GAP + button);
+    (left, Line::from(fit(cells, room)))
+}
+
+/// 这几格照 ` · ` 连起来有几列。
+fn joined_width(parts: &[Part]) -> usize {
+    let dots = parts.len().saturating_sub(1) * 3;
+    dots + parts
+        .iter()
+        .flat_map(|p| &p.spans)
+        .map(Span::width)
+        .sum::<usize>()
+}
+
 /// 按钮从第几列起：左右两段之间的空当（两边各留 `GAP`）正中；放不下是 `None`。
 fn middle(left: usize, right: usize, button: usize, width: usize) -> Option<usize> {
     let start = left + GAP;
@@ -101,23 +133,28 @@ struct Part {
     spans: Vec<Span<'static>>,
 }
 
-/// 从 `keep` 最小的丢起，直到放得进 `room` 列；剩下的照原来的先后，用 ` · ` 隔开。
-fn fit(mut parts: Vec<Part>, room: usize) -> Vec<Span<'static>> {
-    let width = |parts: &[Part]| {
-        let dots = parts.len().saturating_sub(1) * 3;
-        dots + parts
-            .iter()
-            .flat_map(|p| &p.spans)
-            .map(Span::width)
-            .sum::<usize>()
-    };
-    while !parts.is_empty() && width(&parts) > room {
-        if let Some(i) = (0..parts.len()).min_by_key(|&i| parts[i].keep) {
-            parts.remove(i);
+/// 照 `keep` 从大到小挑，放得进 `room` 列的留下、放不下的跳过（后面短的照样能进：2026-10-11 项目主人报，长的那一格
+/// 放不下时，放得下的累计跟着丢了）；留下的照原来的先后，用 ` · ` 隔开。
+fn fit(parts: Vec<Part>, room: usize) -> Vec<Span<'static>> {
+    let mut order: Vec<usize> = (0..parts.len()).collect();
+    order.sort_by_key(|&i| std::cmp::Reverse(parts[i].keep));
+    let mut kept = vec![false; parts.len()];
+    let mut used = 0;
+    for i in order {
+        let w: usize = parts[i].spans.iter().map(Span::width).sum();
+        let dot = if used > 0 { 3 } else { 0 };
+        if used + dot + w <= room {
+            used += dot + w;
+            kept[i] = true;
         }
     }
+    let parts = parts
+        .into_iter()
+        .zip(kept)
+        .filter(|(_, k)| *k)
+        .map(|(p, _)| p);
     let mut spans = Vec::new();
-    for (i, part) in parts.into_iter().enumerate() {
+    for (i, part) in parts.enumerate() {
         if i > 0 {
             spans.push(Span::styled(" · ", theme::dim()));
         }
@@ -135,7 +172,9 @@ fn left_line(spans: Vec<Span<'_>>, width: u16) -> Line<'static> {
     Line::from(super::panel::clip_spans(owned, usize::from(width)))
 }
 
-fn left(app: &App) -> Vec<Span<'_>> {
+/// 左边那一段：权限级别、模型和端点、思考强度。`short`：模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash`
+/// 写 `deepseek-v4.1-flash`），一行放不下时用（[`split`]）。
+fn left(app: &App, short: bool) -> Vec<Span<'_>> {
     let text = &app.config.text;
     let t = &app.transcript;
     match &t.link {
@@ -158,6 +197,11 @@ fn left(app: &App) -> Vec<Span<'_>> {
                 spans.push(Span::styled(word, theme::warn()));
             } else if let Some((model, endpoint)) = t.shown_model() {
                 spans.push(Span::styled(" · ", theme::dim()));
+                let model = if short {
+                    model.rsplit('/').next().unwrap_or(&model).to_string()
+                } else {
+                    model
+                };
                 spans.push(Span::styled(model, theme::model()));
                 spans.push(Span::styled(format!(" {endpoint}"), theme::dim()));
                 // 思考强度（`/effort`）：什么都不发的不写。
@@ -253,7 +297,7 @@ pub fn context_text(t: &Transcript, config: &Config) -> Option<String> {
 mod tests {
     use ratatui::text::Span;
 
-    use super::{Part, fit, left_line, middle, right};
+    use super::{Part, fit, left_line, middle, right, split};
 
     #[test]
     fn a_narrow_left_side_is_clipped_with_an_ellipsis() {
@@ -326,7 +370,52 @@ mod tests {
         assert_eq!(shown(fit(parts(), 25)), "回复中 3s · 1.7k/1M · Σ3k");
         assert_eq!(shown(fit(parts(), 20)), "回复中 3s · 1.7k/1M");
         assert_eq!(shown(fit(parts(), 8)), "1.7k/1M");
-        assert_eq!(shown(fit(parts(), 3)), "");
+        // 上下文都放不下了：放得下的照放（2026-10-11 项目主人：明明还有空，看不到别的）。
+        assert_eq!(shown(fit(parts(), 3)), "Σ3k");
+        assert_eq!(shown(fit(parts(), 2)), "");
+    }
+
+    #[test]
+    fn a_long_part_that_does_not_fit_lets_a_shorter_one_in() {
+        // 2026-10-11 项目主人报：明明还有空，累计却看不到。花费那一格比累计晚丢，它太长放不下时累计跟着丢了。
+        let parts = vec![
+            part(3, "342.6k/1M(32.7%)"),
+            part(1, "Σ27.5M(C97%)"),
+            part(2, "¥12.34 · $0.56 · €0.78"),
+        ];
+        assert_eq!(shown(fit(parts, 32)), "342.6k/1M(32.7%) · Σ27.5M(C97%)");
+    }
+
+    #[test]
+    fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
+        // 2026-10-11 项目主人定：放不下时模型编号先只写最后一段，空出的地方给速度、上下文、累计；宽的照旧写全。
+        let full = || {
+            vec![
+                Span::raw("▣ 工作区 · "),
+                Span::raw("clinepass/cline-pass/deepseek-v4.1-flash dev · max"),
+            ]
+        };
+        let short = || {
+            vec![
+                Span::raw("▣ 工作区 · "),
+                Span::raw("deepseek-v4.1-flash dev · max"),
+            ]
+        };
+        let cells = || {
+            vec![
+                part(0, "41 tok/s"),
+                part(3, "342.6k/1M(32.7%)"),
+                part(1, "Σ27.5M(C97.3%)"),
+            ]
+        };
+        let (left, right) = split(full(), short(), cells(), 0, 95);
+        assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
+        assert_eq!(
+            right.to_string(),
+            "41 tok/s · 342.6k/1M(32.7%) · Σ27.5M(C97.3%)"
+        );
+        let (left, _) = split(full(), short(), cells(), 0, 140);
+        assert!(left.to_string().contains("clinepass/"), "宽的照旧写全");
     }
 
     #[test]
