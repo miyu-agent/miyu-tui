@@ -426,3 +426,27 @@ fn an_item_only_the_system_config_holds_is_written_there() {
         &json!({"layer": "system", "changes": [{"key": "log.level", "value": "debug", "expect": {"value": "info"}}]})
     );
 }
+
+#[test]
+fn a_key_that_failed_to_store_stops_late_successes_from_sending_a_newer_draft() {
+    // review（2026-10-11）：一次存两个新 key，一个没存成，这一次作废；另一个晚到的成功回应原来照样数下去，数到 0 就把
+    // 那之后新改的草稿发了出去（没带它要的 key）。
+    let mut page = opened(false);
+    page.secrets_left = 2;
+    let refusal = Refusal {
+        reason: None,
+        message: "存不进去".into(),
+        data: json!(null),
+    };
+    page.secret_saved("a".into(), "a-key".into(), Err(refusal));
+    let data = page.data.clone().unwrap();
+    page.draft.set("ui.language", json!("en"), &data);
+    page.secret_saved("b".into(), "b-key".into(), Ok(json!({"replaced": false})));
+    assert!(
+        page.take_asks()
+            .iter()
+            .all(|(_, method, _)| *method != "config.set"),
+        "作废了的这一次不再写配置"
+    );
+    assert!(!page.draft.is_empty(), "新改的留着");
+}

@@ -73,9 +73,12 @@ impl Settings {
         result: Result<Value, Refusal>,
     ) {
         match result {
+            // 这一次已经作废了（前面有一个没存成）：晚到的成功不再数，不然数到 0 会把那之后新改的草稿发出去（review，
+            // 2026-10-11）。存进去的 key 留在密钥库里，下次存照样用得上。
+            Ok(_) if self.secrets_left == 0 => {}
             Ok(_) => {
                 self.named.push((provider, name));
-                self.secrets_left = self.secrets_left.saturating_sub(1);
+                self.secrets_left -= 1;
                 if self.secrets_left == 0 && !self.draft.is_empty() {
                     self.send_config();
                 }
