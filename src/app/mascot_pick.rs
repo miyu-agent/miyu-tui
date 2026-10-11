@@ -40,7 +40,7 @@ impl App {
         let Some(path) = std::env::var_os(PREVIEW_ENV).filter(|p| !p.is_empty()) else {
             return;
         };
-        self.mascot_pick.preview = true;
+        self.media.mascot_pick.preview = true;
         let read = std::fs::read(&path)
             .map_err(|e| e.to_string())
             .and_then(|bytes| package::read(&bytes));
@@ -53,7 +53,7 @@ impl App {
     /// 连上、配置变了去读 `tui.mascot`；几个请求的回应归这里（交回 `true`）。
     pub(super) fn mascot_pick_update(&mut self, update: &Update) -> bool {
         match update {
-            Update::HeadConfig(_) if !self.mascot_pick.preview => {
+            Update::HeadConfig(_) if !self.media.mascot_pick.preview => {
                 self.mascot_ask(SETTING_TAG, "config.get", json!({"keys": ["tui.mascot"]}));
                 false
             }
@@ -68,7 +68,7 @@ impl App {
             }
             Update::Answer { tag, result } if *tag == LIST_TAG => {
                 let model = result.as_ref().ok().and_then(|got| self.model_of(got));
-                match (self.mascot_pick.loading.clone(), model) {
+                match (self.media.mascot_pick.loading.clone(), model) {
                     (Some(id), Some(path)) => {
                         self.mascot_ask(
                             FILE_TAG,
@@ -82,7 +82,7 @@ impl App {
                 true
             }
             Update::Answer { tag, result } if *tag == FILE_TAG => {
-                let Some(id) = self.mascot_pick.loading.take() else {
+                let Some(id) = self.media.mascot_pick.loading.take() else {
                     return true;
                 };
                 let look = result
@@ -102,16 +102,16 @@ impl App {
 
     /// 配置里选的：没写的换回内置的；和画着的一样的不动；别的去找它的模型。
     fn mascot_chosen(&mut self, id: Option<String>) {
-        if id == self.mascot_pick.shown && self.mascot_pick.loading.is_none() {
+        if id == self.media.mascot_pick.shown && self.media.mascot_pick.loading.is_none() {
             return;
         }
         match id {
             None => {
-                self.mascot_pick.loading = None;
+                self.media.mascot_pick.loading = None;
                 self.restore_mascot();
             }
             Some(id) => {
-                self.mascot_pick.loading = Some(id);
+                self.media.mascot_pick.loading = Some(id);
                 self.mascot_ask(LIST_TAG, "package.list", json!({}));
             }
         }
@@ -119,7 +119,7 @@ impl App {
 
     /// `package.list` 里在读的那个包的模型路径：得是读成了的吉祥物包。
     fn model_of(&self, got: &Value) -> Option<String> {
-        let id = self.mascot_pick.loading.as_deref()?;
+        let id = self.media.mascot_pick.loading.as_deref()?;
         got["packages"]
             .as_array()?
             .iter()
@@ -131,21 +131,21 @@ impl App {
     /// 换上一只：内置的那只先留一份。
     fn put_mascot(&mut self, look: Look, id: Option<String>) {
         let old = std::mem::replace(&mut self.config.mascot, look);
-        self.mascot_pick.builtin.get_or_insert(old);
-        self.mascot_pick.shown = id;
+        self.media.mascot_pick.builtin.get_or_insert(old);
+        self.media.mascot_pick.shown = id;
     }
 
     /// 换回内置的。
     fn restore_mascot(&mut self) {
-        if let Some(builtin) = self.mascot_pick.builtin.take() {
+        if let Some(builtin) = self.media.mascot_pick.builtin.take() {
             self.config.mascot = builtin;
         }
-        self.mascot_pick.shown = None;
+        self.media.mascot_pick.shown = None;
     }
 
     /// 读不成、查不过：照内置画，弹一句；本机试画的带上原因。
     fn mascot_failed(&mut self, why: Option<&str>) {
-        self.mascot_pick.loading = None;
+        self.media.mascot_pick.loading = None;
         self.restore_mascot();
         let text = self.config.text.mascot_failed.clone();
         let text = match why {

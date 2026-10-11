@@ -40,7 +40,7 @@ impl App {
             // 链接卡片、mermaid 图的单子上有没发的：马上醒来发（`cards.rs`、`diagrams.rs`）。
             .chain((self.card_asks_pending() || self.diagram_asks_pending()).then(Instant::now))
             // 整份重排没排完的：下一帧接着排（蓝图「正文」第 8 条）。
-            .chain((self.row_cache.borrow().stale > 0).then(Instant::now))
+            .chain((self.media.row_cache.borrow().stale > 0).then(Instant::now))
             .min()
     }
 }

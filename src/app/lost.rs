@@ -34,8 +34,8 @@ impl App {
             parked.transcript.lost();
         }
         // 卡片、图：没回来的忘掉，排好的行扔掉，重排时再要（排好的行里记着占位，不重排就不会再问）。
-        self.cards.borrow_mut().lost();
-        self.diagrams.borrow_mut().lost();
-        *self.row_cache.borrow_mut() = Default::default();
+        self.media.cards.borrow_mut().lost();
+        self.media.diagrams.borrow_mut().lost();
+        *self.media.row_cache.borrow_mut() = Default::default();
     }
 }

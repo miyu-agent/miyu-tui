@@ -7,7 +7,7 @@ use crate::core::{Command, Update};
 impl App {
     /// 把单子上的发出去（`tick`）。
     pub(super) fn send_card_asks(&mut self) {
-        let (cards, blobs) = self.cards.borrow_mut().take();
+        let (cards, blobs) = self.media.cards.borrow_mut().take();
         for url in cards {
             self.core.send(Command::LinkPreview(url));
         }
@@ -18,24 +18,24 @@ impl App {
 
     /// 单子上有没发的：主循环马上醒来发（`deadline.rs`）。
     pub(super) fn card_asks_pending(&self) -> bool {
-        self.cards.borrow().pending()
+        self.media.cards.borrow().pending()
     }
 
     /// 卡片、图回来了：记进账，排好的行扔掉重排。是这两种的交回 `true`。
     pub(super) fn card_update(&mut self, update: &mut Option<Update>) -> bool {
         match update.take() {
             Some(Update::LinkCard { url, card }) => {
-                self.cards.borrow_mut().got_card(url, card);
+                self.media.cards.borrow_mut().got_card(url, card);
             }
             Some(Update::BlobSaved { blob, path }) => {
-                self.cards.borrow_mut().saved(blob, path);
+                self.media.cards.borrow_mut().saved(blob, path);
             }
             other => {
                 *update = other;
                 return false;
             }
         }
-        *self.row_cache.borrow_mut() = Default::default();
+        *self.media.row_cache.borrow_mut() = Default::default();
         true
     }
 }
