@@ -110,22 +110,22 @@ impl App {
 
     /// 这一处画什么。终端显示不了图的、要不到的当没有头像。
     pub fn avatar(&self, place: Place) -> Avatar {
-        if !self.figures.borrow().shows() {
+        if !self.media.figures.borrow().shows() {
             return Avatar::None;
         }
         let Some((_, version)) = self.wanted(place) else {
             return Avatar::None;
         };
-        match self.avatars.file(version) {
+        match self.media.avatars.file(version) {
             Some(path) => Avatar::File(path),
-            None if self.avatars.refused(version) => Avatar::None,
+            None if self.media.avatars.refused(version) => Avatar::None,
             None => Avatar::Waiting,
         }
     }
 
     /// 挑一张还没存的头像去要（`tick`）。
     pub(super) fn ask_avatars(&mut self) {
-        if !self.figures.borrow().shows() {
+        if !self.media.figures.borrow().shows() {
             return;
         }
         let wanted: Vec<(String, String)> = [Place::Home, Place::Sidebar]
@@ -137,7 +137,7 @@ impl App {
             .iter()
             .map(|(p, v)| (p.as_str(), v.as_str()))
             .collect();
-        if let Some(persona) = self.avatars.next(&refs) {
+        if let Some(persona) = self.media.avatars.next(&refs) {
             self.core.send(Command::Ask {
                 tag: AVATAR_TAG,
                 method: "persona.avatar",
@@ -150,11 +150,11 @@ impl App {
     pub(super) fn avatar_update(&mut self, update: &Update) -> bool {
         match update {
             Update::Answer { tag, result } if *tag == AVATAR_TAG => {
-                self.avatars.answered(result.as_ref().ok());
+                self.media.avatars.answered(result.as_ref().ok());
                 true
             }
             Update::Disconnected => {
-                self.avatars.dropped();
+                self.media.avatars.dropped();
                 false
             }
             _ => false,

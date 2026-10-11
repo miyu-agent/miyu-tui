@@ -39,7 +39,7 @@ fn mascot_on(app: &App, place: Place) -> bool {
 /// 在 `rect`（吉祥物那么大的一块）里画：头像，或者吉祥物。`far` 照吉祥物的（在侧边栏）。
 pub fn draw(frame: &mut Frame, rect: Rect, app: &mut App, place: Place, far: bool) {
     let shown = match app.avatar(place) {
-        Avatar::File(path) => picture(frame, &app.figures, rect, &path),
+        Avatar::File(path) => picture(frame, &app.media.figures, rect, &path),
         Avatar::Waiting => Shown::Waiting,
         Avatar::None => Shown::Unable,
     };

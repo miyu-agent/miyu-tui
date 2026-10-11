@@ -269,7 +269,7 @@ fn run(
         app.tick();
         if std::mem::take(&mut app.suspend) {
             suspend(terminal, keyboard)?;
-            app.figures.borrow_mut().forget();
+            app.media.figures.borrow_mut().forget();
             pointer = pointer::Pointer::default();
         }
         // 点了本机的文本文件：让出终端给编辑器，退出了再回来（蓝图「她的回答：Markdown」第 10 条）。
@@ -288,7 +288,7 @@ fn dispatch(app: &mut App, message: Incoming) {
     match message {
         Incoming::Terminal(event) => app.handle(event),
         Incoming::Core(update) => app.core(update),
-        Incoming::Figure(done) => app.figures.borrow_mut().done(done),
+        Incoming::Figure(done) => app.media.figures.borrow_mut().done(done),
     }
 }
 

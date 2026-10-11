@@ -96,7 +96,7 @@ impl App {
         }
         self.screen.view = Default::default();
         self.panel = None;
-        *self.row_cache.borrow_mut() = Default::default();
+        *self.media.row_cache.borrow_mut() = Default::default();
     }
 
     /// Tab、Shift+Tab：切到下一档，告诉核心，等 `session.policy_changed` 来了再画（「权限级别」第 2 条）。会话还没开的

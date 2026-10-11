@@ -55,7 +55,7 @@ impl App {
         // 给人看的字到了：换上，排好的行里有旧的工具名，扔掉重排（`human.rs`）。
         if let Update::Human(human) = update {
             self.human = human;
-            *self.row_cache.borrow_mut() = Default::default();
+            *self.media.row_cache.borrow_mut() = Default::default();
             return;
         }
         // 配置里的界面语言：照它换（`language.rs`）。

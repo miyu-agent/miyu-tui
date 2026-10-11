@@ -146,7 +146,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
             let shift = place(frame, places.content, &built, 0);
             // 头像的小图（第 21 条）：滑动时不画。
             if let Some(picture) = &built.picture {
-                picture::draw(frame, &app.figures, places.content, shift, picture);
+                picture::draw(frame, &app.media.figures, places.content, shift, picture);
             }
             let row = |r: u16| places.content.y + r.saturating_sub(shift);
             if let Some((r, col)) = built.caret {

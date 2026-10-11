@@ -29,10 +29,10 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         level: app.transcript.level,
         // 图最多占窗口高度的几分之几：照窗口的高，不照正文区（开关列表时正文区变矮，照它算每次都要重做）。
         screen_rows: frame.area().height,
-        md: &app.md_cache,
-        figures: &app.figures,
-        cards: &app.cards,
-        diagrams: &app.diagrams,
+        md: &app.media.md_cache,
+        figures: &app.media.figures,
+        cards: &app.media.cards,
+        diagrams: &app.media.diagrams,
         writing: app.transcript.writing().map(|e| e.id),
         frame: usize::try_from(app.screen.started.elapsed().as_millis() / u128::from(spinner_ms))
             .unwrap_or(0),
@@ -55,7 +55,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         }),
     };
     let mut rows = crate::frame_log::section("rows", || {
-        row_cache::build(&app.transcript.entries, &ctx, &app.row_cache, plan)
+        row_cache::build(&app.transcript.entries, &ctx, &app.media.row_cache, plan)
     });
     // 等她的第一个字：正文末尾先转着（`tui.md`「时间线」第 19 条）。
     if app.transcript.waiting() {
@@ -75,7 +75,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
     }
     app.screen.view.reading = still_reading(&app.screen.view, latest);
     app.screen.view.latest = latest.map(|(id, start, _)| (id, start));
-    let settled = app.row_cache.borrow().stale == 0;
+    let settled = app.media.row_cache.borrow().stale == 0;
     let first = first_row(&rows, area, &mut app.screen.view, settled);
     let height = usize::from(area.height);
     let indent = u16::try_from(ctx.indent.width()).unwrap_or(0);
@@ -98,7 +98,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
             area,
             &rows,
             first,
-            &mut app.figures.borrow_mut(),
+            &mut app.media.figures.borrow_mut(),
         );
     });
     // 鼠标、复制照这一帧的行；共享记着的那一份，不复制。

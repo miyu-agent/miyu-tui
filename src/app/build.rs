@@ -72,6 +72,7 @@ impl App {
             history: History::default(),
             mascot: super::mascot::MascotState::new(),
             screen: super::screen::Screen::new(theme),
+            media: super::media::Media::new(md_keep, figures),
             cwd: std::env::current_dir()
                 .map(|d| crate::local::home_short(&d.display().to_string()))
                 .unwrap_or_default(),
@@ -90,10 +91,6 @@ impl App {
             ime,
             asks: Default::default(),
             efforts: None,
-            cards: std::cell::RefCell::new(crate::link_cards::LinkCards::cached()),
-            avatars: crate::avatars::Avatars::cached(),
-            mascot_pick: Default::default(),
-            diagrams: std::cell::RefCell::default(),
             drawers: Drawers::default(),
             system_language,
             demo_drawers: (0, 0),
@@ -102,9 +99,6 @@ impl App {
             takeback: None,
             notice: None,
             human,
-            md_cache: RefCell::new(MdCache::new(md_keep)),
-            row_cache: RefCell::new(RowCache::default()),
-            figures: RefCell::new(figures),
             esc_at: None,
             quit: false,
             suspend: false,

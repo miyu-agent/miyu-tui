@@ -22,6 +22,7 @@ mod language;
 mod lost;
 mod mascot;
 mod mascot_pick;
+mod media;
 mod mention;
 mod models;
 mod mouse;
@@ -44,7 +45,6 @@ pub mod usage;
 mod vim;
 mod workspace;
 
-use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use crate::human::Human;
@@ -63,8 +63,6 @@ use crate::menu::Menu;
 use crate::notify::Notifier;
 use crate::tips::Tips;
 use crate::transcript::Transcript;
-use crate::ui::row_cache::RowCache;
-use crate::ui::rows::MdCache;
 
 /// 按下鼠标时落在哪一块：拖动、松开都归它，拖出了那一块也一样。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -127,6 +125,8 @@ pub struct App {
     pub mention: crate::mention::Mention,
     /// 输入历史列表（`Ctrl+R`）。
     pub history: History,
+    /// 要画的东西的账：排好的行、做好的图、链接卡片、mermaid、头像、吉祥物包（`media.rs`，蓝图 `app.md`）。
+    pub media: media::Media,
     /// 上一帧画出来的：各块位置、视口、光标、行表、鼠标（`screen.rs`，蓝图 `app.md`）。
     pub screen: screen::Screen,
     /// 吉祥物和运行状态行会动的那几样（`mascot.rs`，蓝图 `app.md`）。
@@ -151,14 +151,6 @@ pub struct App {
     ime: crate::ime::Ime,
     /// 核心推来的确认、提问：问过的、了结过的（`asking.rs`）。
     asks: crate::drawer::Asks,
-    /// 链接卡片的账：排正文时记下要的卡片、图，主循环每一帧以后发（`cards.rs`）。
-    pub cards: std::cell::RefCell<crate::link_cards::LinkCards>,
-    /// 换吉祥物：配置选的吉祥物包、本机试画的（`mascot_pick.rs`）。
-    mascot_pick: mascot_pick::MascotPick,
-    /// 人格头像的账：首页、侧边栏要画的，主循环每一帧以后挑一张去要（`avatars.rs`）。
-    avatars: crate::avatars::Avatars,
-    /// mermaid 图的账：排正文时记下要画的，主循环每一帧以后交给核心（`diagrams.rs`）。
-    pub diagrams: std::cell::RefCell<crate::diagrams::Diagrams>,
     /// `/effort` 框里那个模型的几级；还没交回来的是 `None`（`effort.rs`）。
     pub efforts: Option<crate::core::Efforts>,
     /// 确认和提问的抽屉：现在这一个和排着的（蓝图「确认和提问的抽屉」）。
@@ -177,12 +169,6 @@ pub struct App {
     pub notice: Option<Notice>,
     /// 工具给人看的显示名（仓库 `resources/software/basesystem/human/`）。
     pub human: Human,
-    /// 回答排好的行的缓存（`ui/rows.rs`）。
-    pub md_cache: RefCell<MdCache>,
-    /// 正文按条缓存排好的行（`ui/row_cache`）。
-    pub row_cache: RefCell<RowCache>,
-    /// 正文里做好的图（蓝图「图片、公式和 mermaid 图」）。
-    pub figures: RefCell<Figures>,
     /// 在回答时第一下 `Esc` 的时刻：时限里再按一下才打断。
     esc_at: Option<Instant>,
     /// 该退出了。
