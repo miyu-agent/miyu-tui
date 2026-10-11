@@ -3,6 +3,8 @@
 //!
 //! 对照表（命令到符号、上下标、附标）写在 `resources/math.json`。
 
+use std::cell::Cell;
+
 use std::collections::HashMap;
 
 use serde::Deserialize;
@@ -37,11 +39,16 @@ pub fn unicode(tex: &str, math: &Math) -> String {
         return tex.to_string();
     }
     let mut at = 0;
-    let out = Converter {
+    let converter = Converter {
         chars: &chars,
         math,
+        depth: Cell::new(0),
+        too_deep: Cell::new(false),
+    };
+    let out = converter.sequence(&mut at, None);
+    if converter.too_deep.get() {
+        return tex.to_string();
     }
-    .sequence(&mut at, None);
     out.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
@@ -69,6 +76,10 @@ fn depth(chars: &[char]) -> usize {
 struct Converter<'a> {
     chars: &'a [char],
     math: &'a Math,
+    /// 参数套了几层：`\sqrt\sqrt…x` 这种不带括号的嵌套 `depth()` 数不到，在这里数（review A8）。
+    depth: Cell<usize>,
+    /// 套得超过上限了：整段照原样写，不再往下转。
+    too_deep: Cell<bool>,
 }
 
 impl Converter<'_> {
@@ -99,8 +110,21 @@ impl Converter<'_> {
         out
     }
 
-    /// 一个参数：`{…}`，或者一个命令、一个字。
+    /// 一个参数：`{…}`，或者一个命令、一个字。套得超过上限的不再往下转（review A8：原来几万层把栈撑爆）。
     fn group(&self, at: &mut usize) -> String {
+        let depth = self.depth.get() + 1;
+        if depth > MAX_NESTING || self.too_deep.get() {
+            self.too_deep.set(true);
+            return String::new();
+        }
+        self.depth.set(depth);
+        let out = self.argument(at);
+        self.depth.set(depth - 1);
+        out
+    }
+
+    /// 参数本身：`{…}`，或者一个命令、一个字。
+    fn argument(&self, at: &mut usize) -> String {
         match self.chars.get(*at) {
             Some('{') => {
                 *at += 1;
@@ -244,5 +268,15 @@ mod tests {
         assert_eq!(unicode(r"\foo{x}", &m), r"\foox");
         let deep = format!("{}x{}", "{".repeat(100), "}".repeat(100));
         assert_eq!(unicode(&deep, &m), deep);
+    }
+
+    #[test]
+    fn deep_nesting_without_braces_falls_back_to_the_source() {
+        // review A8（2026-10-11）：`\sqrt\sqrt…x` 这种不带括号的嵌套原来不数层（只数 `{`），几万层把界面线程的栈撑爆，
+        // 进程直接退出、终端不复原。超过上限的照原样写。
+        let m = math();
+        let tex = format!("{}x", r"\sqrt".repeat(100_000));
+        assert_eq!(unicode(&tex, &m), tex);
+        assert_eq!(unicode(r"\sqrt\sqrt x", &m), "√(√x)", "浅的照常转");
     }
 }
