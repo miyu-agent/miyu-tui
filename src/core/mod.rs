@@ -207,6 +207,8 @@ pub enum Command {
     NewWorkspace(Option<String>),
     /// 一条斜杠命令交给核心办（`command.run`，核心 O-6）：`/stop`、`/clear`，原文照规范的名字。
     Run(String),
+    /// `/goal` 交给核心办（`command.run`，核心 X-8），带着后面的字；会话还没开时先开会话（蓝图「长期目标」第 3 条）。
+    Goal(String),
     /// 要一段回顾（`session.recap`，`/recap`）。
     Recap,
     /// 改名（`session.set_meta`，`/rename`）：`None` 是去掉标题。
