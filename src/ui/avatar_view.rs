@@ -9,7 +9,7 @@ use ratatui::layout::Rect;
 use ratatui::widgets::Widget;
 use ratatui_image::sliced::{SignedPosition, SlicedImage};
 
-use crate::app::{App, Avatar, Place};
+use crate::app::{Avatar, MascotState, Place, Screen, Seen};
 use crate::figures::{Figures, Look};
 use crate::markdown::FigureKind;
 
@@ -24,27 +24,33 @@ enum Shown {
 }
 
 /// 这一处有没有那一块：吉祥物的开关开着，或者有头像。
-pub fn slot_shown(app: &App, place: Place) -> bool {
-    mascot_on(app, place) || app.seen().avatar(place) != Avatar::None
+pub fn slot_shown(seen: &Seen, place: Place) -> bool {
+    mascot_on(seen, place) || seen.avatar(place) != Avatar::None
 }
 
 /// 吉祥物在这一处画不画（首页、侧边栏各一个开关）。
-fn mascot_on(app: &App, place: Place) -> bool {
+fn mascot_on(seen: &Seen, place: Place) -> bool {
     match place {
-        Place::Home => app.config.layout.mascot_home,
-        Place::Sidebar => app.config.layout.mascot_sidebar,
+        Place::Home => seen.config.layout.mascot_home,
+        Place::Sidebar => seen.config.layout.mascot_sidebar,
     }
 }
 
 /// 在 `rect`（吉祥物那么大的一块）里画：头像，或者吉祥物。`far` 照吉祥物的（在侧边栏）。
-pub fn draw(frame: &mut Frame, rect: Rect, app: &mut App, place: Place, far: bool) {
-    let shown = match app.seen().avatar(place) {
-        Avatar::File(path) => picture(frame, &app.media.figures, rect, &path),
+pub fn draw(
+    frame: &mut Frame,
+    rect: Rect,
+    (seen, screen, mascot): (&Seen, &Screen, &mut MascotState),
+    place: Place,
+    far: bool,
+) {
+    let shown = match seen.avatar(place) {
+        Avatar::File(path) => picture(frame, &seen.media.figures, rect, &path),
         Avatar::Waiting => Shown::Waiting,
         Avatar::None => Shown::Unable,
     };
-    if matches!(shown, Shown::Unable) && mascot_on(app, place) {
-        super::mascot_view::draw(frame, rect, app, far);
+    if matches!(shown, Shown::Unable) && mascot_on(seen, place) {
+        super::mascot_view::draw(frame, rect, (seen, screen, mascot), far);
     }
 }
 

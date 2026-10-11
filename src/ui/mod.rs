@@ -322,7 +322,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         if home {
             let look = &app.config.mascot;
             // 首页的吉祥物能关（「后台命令、子代理和侧边栏」第 7 条）；人格有头像的照样留这一块（「空会话的首页」第 10 条）。
-            let mascot = if avatar_view::slot_shown(app, crate::app::Place::Home) {
+            let mascot = if avatar_view::slot_shown(&app.seen(), crate::app::Place::Home) {
                 (look.cols, look.rows)
             } else {
                 (0, 0)
@@ -393,14 +393,23 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     if home {
         // 先画输入框（吉祥物照输入光标转头），再画吉祥物；开着列表时吉祥物已经让到列表上面。
         section("input", || input_box::draw_box(frame, areas, app, home));
-        section("home", || home::draw(frame, areas, app));
+        section("home", || {
+            let (seen, screen, mascot) = app.parts();
+            home::draw(frame, areas, &seen, screen, mascot);
+        });
     } else {
-        section("body", || body::draw(frame, areas, app));
+        section("body", || {
+            let (seen, screen, _) = app.parts();
+            body::draw(frame, areas, &seen, screen);
+        });
         section("input", || input_box::draw_box(frame, areas, app, home));
     }
     // 待办、运行状态行、排队的消息先画：输入框上面的框是覆盖层，开着时盖在它们上面（「斜杠命令列表」第 1 条）。
     frame.render_widget(ratatui::widgets::Paragraph::new(todo_lines), areas.todo);
-    section("status", || status::draw(frame, areas.pulse, app));
+    section("status", || {
+        let (seen, _, mascot) = app.parts();
+        status::draw(frame, areas.pulse, &seen, mascot);
+    });
     status::queued(frame, areas.queued, &queued, &app.config.layout.queued_mark);
     if let Some(matches) = &matches {
         let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);
@@ -455,7 +464,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     section("agents", || {
         agents::draw(frame, areas.agents, &app.seen(), &app.screen)
     });
-    section("sidebar", || sidebar::draw(frame, sidebar, app));
+    section("sidebar", || {
+        let (seen, screen, mascot) = app.parts();
+        sidebar::draw(frame, sidebar, &seen, screen, mascot);
+    });
     // 提示最后画，浮在正文上面；底边紧贴输入框，在回答时紧贴运行状态行（`tui.md`「提示」）；开着框时贴着框的上边。
     let toast_bottom = if running {
         areas.pulse.y.saturating_sub(1)
@@ -467,7 +479,13 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     } else {
         toast_bottom
     };
-    status::toast(frame, areas.text.x, toast_bottom, areas.text.width, app);
+    status::toast(
+        frame,
+        areas.text.x,
+        toast_bottom,
+        areas.text.width,
+        &app.seen(),
+    );
 }
 
 #[cfg(test)]

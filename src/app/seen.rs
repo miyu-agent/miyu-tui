@@ -6,8 +6,10 @@ use std::time::{Duration, Instant};
 use super::avatars::{Avatar, Place, home_persona, sidebar_persona};
 use super::boxes::Boxes;
 use super::link::Link;
+use super::mascot::MascotState;
 use super::media::Media;
 use super::new_session::Kind;
+use super::screen::Screen;
 use super::talk::Talk;
 use super::typing::Typing;
 use super::{App, Panel};
@@ -30,6 +32,21 @@ pub struct Seen<'a> {
 }
 
 impl App {
+    /// 画一帧要的三样：读的那一份，和画的时候能改的上一帧画面、吉祥物（蓝图 `app.md` 第三节）。
+    pub fn parts(&mut self) -> (Seen<'_>, &mut Screen, &mut MascotState) {
+        let seen = Seen {
+            config: &self.config,
+            talk: &self.talk,
+            typing: &self.typing,
+            boxes: &self.boxes,
+            link: &self.link,
+            media: &self.media,
+            cwd: &self.cwd,
+            started: self.screen.started,
+        };
+        (seen, &mut self.screen, &mut self.mascot)
+    }
+
     /// 画的时候读的那一份。
     pub fn seen(&self) -> Seen<'_> {
         Seen {
