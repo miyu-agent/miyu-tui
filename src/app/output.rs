@@ -13,14 +13,14 @@ impl App {
         let Some(Panel::Background { open: Some(id), .. }) = self.boxes.panel else {
             return;
         };
-        let Some(session) = self.transcript.session.clone() else {
+        let Some(session) = self.talk.transcript.session.clone() else {
             return;
         };
         let look = &self.config.layout.output;
         let (rows, lines) = (look.panel_rows, look.note_lines);
         let every = Duration::from_millis(look.poll_ms);
         let now = Instant::now();
-        let Some(job) = self.board.jobs.iter_mut().find(|j| j.id == id) else {
+        let Some(job) = self.talk.board.jobs.iter_mut().find(|j| j.id == id) else {
             return;
         };
         let due = if job.running() {

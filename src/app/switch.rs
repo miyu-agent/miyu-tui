@@ -21,11 +21,11 @@ impl App {
         }
         // 这次启动里开过的：先照上次交回的画，交回新的再换（第 2 条：核心每列一次都把日志整份读一遍，会话多了慢）。
         let mut list = SessionList::default();
-        if let Some(seen) = self.sessions_seen.clone() {
+        if let Some(seen) = self.talk.sessions_seen.clone() {
             list.replace(seen);
         }
         // 订着会话列表（核心 9-5）的，手上这一份一直是新的，不用再要；还没有的（老核心）照旧要一次。
-        let fresh = self.sessions_seen.is_some();
+        let fresh = self.talk.sessions_seen.is_some();
         self.boxes.session_list = Some(list);
         self.boxes.panel = Some(Panel::Sessions);
         if !fresh {
@@ -35,7 +35,7 @@ impl App {
 
     /// 会话列表推来一条变化（核心 9-5）。
     pub(super) fn session_changed(&mut self, change: crate::core::SessionChange) {
-        let Some(seen) = self.sessions_seen.as_mut() else {
+        let Some(seen) = self.talk.sessions_seen.as_mut() else {
             return;
         };
         crate::core::apply_session_change(seen, change);
@@ -48,7 +48,7 @@ impl App {
 
     /// 核心交回了列表。
     pub(super) fn sessions_listed(&mut self, all: Vec<SessionInfo>) {
-        self.sessions_seen = Some(all.clone());
+        self.talk.sessions_seen = Some(all.clone());
         if let Some(list) = &mut self.boxes.session_list {
             list.replace(all);
         }
@@ -59,11 +59,11 @@ impl App {
     /// 按页读的会话，起标题、改名的事件可能在更早的页里：正文里还没有标题的照会话列表补上（「会话列表」第 5 条「按页
     /// 读」）。读最新一页那一刻会话列表可能还没到，到了再补。
     fn titles_from_list(&mut self) {
-        let Some(seen) = &self.sessions_seen else {
+        let Some(seen) = &self.talk.sessions_seen else {
             return;
         };
-        let transcripts = std::iter::once(&mut self.transcript)
-            .chain(self.parked.values_mut().map(|p| &mut p.transcript));
+        let transcripts = std::iter::once(&mut self.talk.transcript)
+            .chain(self.talk.parked.values_mut().map(|p| &mut p.transcript));
         for transcript in transcripts.filter(|t| t.title.is_none()) {
             let listed = transcript
                 .session
@@ -78,9 +78,10 @@ impl App {
 
     /// 主会话：切进了子会话的是停放着的那个。
     pub fn main_session(&self) -> Option<String> {
-        self.home
+        self.talk
+            .home
             .clone()
-            .or_else(|| self.transcript.session.clone())
+            .or_else(|| self.talk.transcript.session.clone())
     }
 
     /// 框开着时的按键。
@@ -174,7 +175,7 @@ impl App {
         self.boxes.panel = None;
         // 框里改过的（置顶、删了的）记下来，下次开框先照它画。
         if let Some(list) = self.boxes.session_list.take().filter(|l| l.loaded) {
-            self.sessions_seen = Some(list.all);
+            self.talk.sessions_seen = Some(list.all);
         }
     }
 
@@ -241,8 +242,8 @@ impl App {
         list.remove(&doomed);
         for session in doomed {
             // 切走时还忙着、停放着的：不再订阅。
-            if let Some(parked) = self.parked.remove(&session) {
-                self.left.retain(|s| *s != session);
+            if let Some(parked) = self.talk.parked.remove(&session) {
+                self.talk.left.retain(|s| *s != session);
                 self.drop_children(&parked.board);
                 self.link.core.send(Command::Unwatch(session.clone()));
             }
@@ -258,7 +259,7 @@ impl App {
 
     /// 这个会话还忙着：有一轮在跑，或者还有任务没报完（第 4 条）。
     pub(super) fn busy_here(&self) -> bool {
-        self.board.busy() || self.transcript.running.is_some()
+        self.talk.board.busy() || self.talk.transcript.running.is_some()
     }
 
     /// 切到 `session`（第 4、5 条）：停放着的（切走时还忙着的）直接换上来；别的先开一份停放着的空正文收补发来的，
@@ -266,7 +267,7 @@ impl App {
     pub(super) fn switch_session(&mut self, session: String) {
         self.close_sessions();
         self.leave_child();
-        if self.transcript.session.as_deref() == Some(session.as_str()) {
+        if self.talk.transcript.session.as_deref() == Some(session.as_str()) {
             return;
         }
         let keep = self.busy_here();
@@ -274,19 +275,19 @@ impl App {
             session: session.clone(),
             keep,
         });
-        if !self.parked.contains_key(&session) {
+        if !self.talk.parked.contains_key(&session) {
             // 从头重读：以前记下的它的提问忘掉，补发来的照新的认。
-            self.asks.forget(&session);
+            self.talk.asks.forget(&session);
             let mut fresh = Transcript::default();
             fresh.session = Some(session.clone());
-            fresh.link = self.transcript.link.clone();
-            fresh.level = self.transcript.level;
+            fresh.link = self.talk.transcript.link.clone();
+            fresh.level = self.talk.transcript.level;
             let parked = Parked {
                 transcript: fresh,
                 ..Parked::default()
             };
-            self.parked.insert(session.clone(), parked);
-            self.opening = Some((session, keep));
+            self.talk.parked.insert(session.clone(), parked);
+            self.talk.opening = Some((session, keep));
             return;
         }
         self.swap_in(&session, keep);
@@ -294,25 +295,28 @@ impl App {
 
     /// 补发完了（或者补不成）：把在补发的那个换上来。
     pub(super) fn opened(&mut self) {
-        if let Some((session, keep)) = self.opening.take() {
+        if let Some((session, keep)) = self.talk.opening.take() {
             self.swap_in(&session, keep);
         }
     }
 
     /// 在补发的是不是 `session`。
     pub(super) fn opening(&self, session: &str) -> bool {
-        self.opening.as_ref().is_some_and(|(s, _)| s == session)
+        self.talk
+            .opening
+            .as_ref()
+            .is_some_and(|(s, _)| s == session)
     }
 
     /// 换上停放着的 `session`，原来那个照 `keep` 停放或者不要了。
     fn swap_in(&mut self, session: &str, keep: bool) {
         self.park_current(keep);
-        if let Some(back) = self.parked.remove(session) {
-            self.left.retain(|s| s != session);
-            let link = self.transcript.link.clone();
-            self.transcript = back.transcript;
-            self.transcript.link = link;
-            self.board = back.board;
+        if let Some(back) = self.talk.parked.remove(session) {
+            self.talk.left.retain(|s| s != session);
+            let link = self.talk.transcript.link.clone();
+            self.talk.transcript = back.transcript;
+            self.talk.transcript.link = link;
+            self.talk.board = back.board;
             self.screen.view = back.view;
         }
         self.prune();

@@ -14,14 +14,14 @@ use crate::transcript::Link;
 impl App {
     /// 打开配置页；`standalone` 是照 `--page config` 起来的（主菜单 `Esc` 退出程序）。
     pub fn open_settings(&mut self, standalone: bool) {
-        let online = matches!(self.transcript.link, Link::Ready);
+        let online = matches!(self.talk.transcript.link, Link::Ready);
         self.boxes.settings = Some(Settings::open(standalone, online));
         self.send_settings_asks();
     }
 
     /// `/connect`：直接进「供应商和模型」。
     pub(super) fn open_connect(&mut self) {
-        let online = matches!(self.transcript.link, Link::Ready);
+        let online = matches!(self.talk.transcript.link, Link::Ready);
         self.boxes.settings = Some(Settings::connect(online));
         self.send_settings_asks();
     }

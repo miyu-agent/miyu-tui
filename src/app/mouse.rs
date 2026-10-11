@@ -29,12 +29,12 @@ impl App {
             return Action::None;
         }
         // 抽屉开着：悬停选中那一项，点一下等于 `Enter`（`tui.md`「确认和提问的抽屉」第 4 条）。
-        if !captured && self.drawers.open() && self.screen.areas.text.contains(at) {
+        if !captured && self.talk.drawers.open() && self.screen.areas.text.contains(at) {
             let row = usize::from(at.y - self.screen.areas.text.y);
             if let Some(index) = self.screen.drawer_rows.get(row).copied().flatten() {
                 match mouse.kind {
                     MouseEventKind::Moved => {
-                        if let Some(d) = self.drawers.current.as_mut() {
+                        if let Some(d) = self.talk.drawers.current.as_mut() {
                             d.cursor[d.tab] = index;
                         }
                     }
@@ -135,7 +135,7 @@ impl App {
 
     /// 点开、收起时间线的一段或一步。
     pub(super) fn toggle(&mut self, target: Target) {
-        let entries = &mut self.transcript.entries;
+        let entries = &mut self.talk.transcript.entries;
         match target {
             Target::Segment(i) => {
                 if let Some(segment) = entries.get_mut(i).and_then(|e| e.segment.as_mut()) {

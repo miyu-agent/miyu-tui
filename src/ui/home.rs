@@ -103,7 +103,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         areas.menu.y
     };
     // 抽屉把输入框撑高时也一样顶上去（「确认和提问的抽屉」第 2 条）。
-    let pushed = areas.menu.height > 0 || app.drawers.open();
+    let pushed = areas.menu.height > 0 || app.talk.drawers.open();
     let needed = pushed.then(|| i32::from(top) - 1 - i32::from(areas.mascot.height));
     let now = Instant::now();
     let placed = app

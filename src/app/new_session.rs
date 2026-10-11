@@ -88,15 +88,15 @@ impl Pick {
 impl App {
     fn pick(&self, kind: Kind) -> &Pick {
         match kind {
-            Kind::Persona => &self.persona,
-            Kind::Preset => &self.preset,
+            Kind::Persona => &self.talk.persona,
+            Kind::Preset => &self.talk.preset,
         }
     }
 
     fn pick_mut(&mut self, kind: Kind) -> &mut Pick {
         match kind {
-            Kind::Persona => &mut self.persona,
-            Kind::Preset => &mut self.preset,
+            Kind::Persona => &mut self.talk.persona,
+            Kind::Preset => &mut self.talk.preset,
         }
     }
 
@@ -150,7 +150,7 @@ impl App {
 
     /// 上一次选的：最近那个会话用的（`Some(None)` 是它没带）；会话列表还没到、一个会话都没有的是 `None`。
     fn last_pick(&self, kind: Kind) -> Option<Option<&str>> {
-        let latest = crate::core::latest_session(self.sessions_seen.as_deref()?)?;
+        let latest = crate::core::latest_session(self.talk.sessions_seen.as_deref()?)?;
         Some(match kind {
             Kind::Persona => latest.persona.as_deref(),
             Kind::Preset => latest.preset.as_deref(),
@@ -277,8 +277,8 @@ impl App {
 
     /// 新会话：选的都清掉，再问（`/new`）。
     pub(super) fn forget_picks(&mut self) {
-        self.persona.chosen = None;
-        self.preset.chosen = None;
+        self.talk.persona.chosen = None;
+        self.talk.preset.chosen = None;
         self.ask_next();
         self.link.core.send(Command::ListPersonas);
         self.link.core.send(Command::ListPresets);
@@ -287,8 +287,8 @@ impl App {
     /// 开着的会话用的人格、预设，各一句（侧边栏写，订阅回应里的，核心 P-1 下、P-2 上）。
     pub fn session_picks(&self) -> Vec<String> {
         self.words(
-            self.transcript.persona.as_deref(),
-            self.transcript.preset.as_deref(),
+            self.talk.transcript.persona.as_deref(),
+            self.talk.transcript.preset.as_deref(),
         )
     }
 
@@ -296,10 +296,14 @@ impl App {
         let texts = &self.config.text.persona_box;
         let mut out = Vec::new();
         if let Some(id) = persona {
-            out.push(texts.chosen.replace("{name}", self.persona.name(id)));
+            out.push(texts.chosen.replace("{name}", self.talk.persona.name(id)));
         }
         if let Some(id) = preset {
-            out.push(texts.preset_chosen.replace("{name}", self.preset.name(id)));
+            out.push(
+                texts
+                    .preset_chosen
+                    .replace("{name}", self.talk.preset.name(id)),
+            );
         }
         out
     }
@@ -315,8 +319,8 @@ impl App {
 
     /// 连上、配置变了：默认的照配置，两样都再读一次。
     pub(super) fn picks_configured(&mut self, persona: Option<String>, preset: Option<String>) {
-        self.persona.default = persona;
-        self.preset.default = preset;
+        self.talk.persona.default = persona;
+        self.talk.preset.default = preset;
         self.link.core.send(Command::ListPersonas);
         self.link.core.send(Command::ListPresets);
     }

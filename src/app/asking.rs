@@ -33,9 +33,9 @@ impl App {
             } => {
                 // 已经答过、了结了：不说，抽屉照推送收（第 7 条）。别的重新打开、弹核心的原话。
                 if reason.as_deref() != Some("not_asking")
-                    && let Some(drawer) = self.asks.again(session, call)
+                    && let Some(drawer) = self.talk.asks.again(session, call)
                 {
-                    self.drawers.reopen(drawer);
+                    self.talk.drawers.reopen(drawer);
                     self.hint(message.clone(), false);
                 }
                 true
@@ -52,7 +52,7 @@ impl App {
                 true
             }
             Push::ToolResult { call_id, .. } => {
-                self.asks.settle(owner, call_id);
+                self.talk.asks.settle(owner, call_id);
                 self.close_drawer(owner, call_id);
                 false
             }
@@ -62,7 +62,7 @@ impl App {
 
     fn asking(&mut self, owner: &str, session: Option<&String>, asking: &Asking) {
         let who = session.map(|s| {
-            let name = self.board.agent_title(s).unwrap_or(s);
+            let name = self.talk.board.agent_title(s).unwrap_or(s);
             self.config.text.drawer.agent.replace("{name}", name)
         });
         let drawer = match asking {
@@ -102,13 +102,13 @@ impl App {
                 .map(str::to_string);
             drawer.command = Some((title.filter(|t| !t.trim().is_empty()), command.to_string()));
         }
-        if !self.asks.asked(&drawer) {
+        if !self.talk.asks.asked(&drawer) {
             return;
         }
-        let was_open = self.drawers.open();
+        let was_open = self.talk.drawers.open();
         // 补发来的是以前问的：抽屉照开（补完还没了结的就是在等），不弹、不报在等（「系统通知」第 1 条）。
         let replayed = self.owned(owner).is_some_and(Transcript::replaying);
-        self.drawers.push(drawer);
+        self.talk.drawers.push(drawer);
         // 新开的抽屉：弹「在等你」（「系统通知」第 1 条）；前一个还没了结的排着，轮到它时再弹。
         if !was_open && !replayed {
             self.notify_drawer();
@@ -123,17 +123,17 @@ impl App {
         call_id: &str,
         outcome: &Outcome,
     ) {
-        let asked = self.asks.settle(owner, call_id);
+        let asked = self.talk.asks.settle(owner, call_id);
         self.close_drawer(owner, call_id);
         let Some(drawer) = asked.filter(|_| session.is_none()) else {
             return;
         };
         // 写进问的那个会话的正文：切过去还在补发的写进停放着的那一份，不写进看着的。
         let texts = &self.config.text.drawer;
-        let transcript = if self.transcript.session.as_deref() == Some(owner) {
-            Some(&mut self.transcript)
+        let transcript = if self.talk.transcript.session.as_deref() == Some(owner) {
+            Some(&mut self.talk.transcript)
         } else {
-            self.parked.get_mut(owner).map(|p| &mut p.transcript)
+            self.talk.parked.get_mut(owner).map(|p| &mut p.transcript)
         };
         if let Some(transcript) = transcript {
             super::drawer::report_into(transcript, &drawer, outcome, texts);
@@ -142,17 +142,17 @@ impl App {
 
     /// 会话 `owner` 的正文：正在看的、停放着的。
     fn owned(&self, owner: &str) -> Option<&Transcript> {
-        if self.transcript.session.as_deref() == Some(owner) {
-            return Some(&self.transcript);
+        if self.talk.transcript.session.as_deref() == Some(owner) {
+            return Some(&self.talk.transcript);
         }
-        self.parked.get(owner).map(|p| &p.transcript)
+        self.talk.parked.get(owner).map(|p| &p.transcript)
     }
 
     /// 这一次调用的抽屉开着的收起、排着的拿掉；都了结了回到在做或空闲（「系统通知」第 1、6 条）。
     fn close_drawer(&mut self, owner: &str, call_id: &str) {
-        let was_open = self.drawers.open();
-        if self.drawers.settle(owner, call_id) {
-            if self.drawers.open() {
+        let was_open = self.talk.drawers.open();
+        if self.talk.drawers.settle(owner, call_id) {
+            if self.talk.drawers.open() {
                 self.notify_drawer();
             } else if was_open {
                 self.settle_state();

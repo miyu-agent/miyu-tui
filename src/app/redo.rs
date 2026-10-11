@@ -20,7 +20,7 @@ impl App {
             text: None,
             files: None,
         });
-        self.unsent = Some(Unsent {
+        self.talk.unsent = Some(Unsent {
             draft: None,
             original: None,
             turn,
@@ -53,7 +53,7 @@ impl App {
         });
         self.typing.input.remember(draft.clone());
         self.typing.input.forget_cleared();
-        self.unsent = Some(Unsent {
+        self.talk.unsent = Some(Unsent {
             draft: Some(draft),
             original: Some(original),
             turn,
@@ -63,8 +63,8 @@ impl App {
     /// 重做发出去的那一下：重来的那一轮先藏掉，重发的那句画在它的位置，不先在底下闪一下；视口跟到最新，不守撤掉
     /// 之前的底边（长回答撤掉以后视口会停在空处，那句在屏幕外）。交回藏掉的是第几轮。
     fn send_redo(&mut self, text: String, chips: Vec<Chip>) -> Option<u64> {
-        let turn = self.transcript.hide_last_turn();
-        self.transcript.user(text, chips);
+        let turn = self.talk.transcript.hide_last_turn();
+        self.talk.transcript.user(text, chips);
         self.screen.view.settle();
         self.screen.view.follow();
         turn
@@ -73,12 +73,12 @@ impl App {
     /// 没发出去（核心拒了、附件传不上）：先画进正文的那句撤掉，重做先藏掉的那一轮显示回来；字放回输入框，编辑上一句的
     /// 接着编辑（框里已经有字的不动）。
     pub(super) fn take_back_unsent(&mut self) {
-        self.transcript.drop_unsent();
-        let Some(unsent) = self.unsent.take() else {
+        self.talk.transcript.drop_unsent();
+        let Some(unsent) = self.talk.unsent.take() else {
             return;
         };
         if let Some(turn) = unsent.turn {
-            self.transcript.show_turn(turn);
+            self.talk.transcript.show_turn(turn);
         }
         let Some(draft) = unsent.draft.filter(|_| self.typing.input.editor.is_empty()) else {
             return;
@@ -92,7 +92,7 @@ impl App {
     /// 能不能重做：在回答时、最后一轮不是你说的话开的，提示一句交回 `None`（不找核心）；能的交回那句的字和块。
     fn redoable(&mut self) -> Option<(String, Vec<Chip>)> {
         let texts = &self.config.text;
-        if self.transcript.running.is_some() {
+        if self.talk.transcript.running.is_some() {
             let note = texts
                 .refusal_hints
                 .get("turn_running")
@@ -101,7 +101,7 @@ impl App {
             self.hint(note, false);
             return None;
         }
-        let Some(said) = self.transcript.last_said() else {
+        let Some(said) = self.talk.transcript.last_said() else {
             let note = texts
                 .refusal_hints
                 .get("not_redoable")

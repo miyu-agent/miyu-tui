@@ -34,15 +34,15 @@ impl App {
     pub(super) fn route(&mut self, update: Update) -> Option<Update> {
         match update {
             Update::Elsewhere { session, update } => {
-                if self.transcript.session.as_deref() == Some(session.as_str()) {
+                if self.talk.transcript.session.as_deref() == Some(session.as_str()) {
                     return Some(*update);
                 }
                 self.park_update(&session, *update);
                 None
             }
             // 切进了子会话：主会话推来的交给停放着的主会话。
-            Update::Push(_) | Update::Limits(_) if self.home.is_some() => {
-                let main = self.home.clone().unwrap_or_default();
+            Update::Push(_) | Update::Limits(_) if self.talk.home.is_some() => {
+                let main = self.talk.home.clone().unwrap_or_default();
                 self.park_update(&main, update);
                 None
             }
@@ -52,7 +52,7 @@ impl App {
 
     /// 正在看的会话推来的任务、别处来的话：照任务表、正文先办，交回 `true`（不再交给正文）。
     pub(super) fn visible_push(&mut self, push: &Push) -> bool {
-        let Some(session) = self.transcript.session.clone() else {
+        let Some(session) = self.talk.transcript.session.clone() else {
             return false;
         };
         self.special(&session, push, true)
@@ -64,7 +64,7 @@ impl App {
             Update::Push(push) => {
                 let replayed = matches!(push, Push::Clock(None));
                 if !self.special(session, &push, true)
-                    && let Some(parked) = self.parked.get_mut(session)
+                    && let Some(parked) = self.talk.parked.get_mut(session)
                 {
                     parked
                         .transcript
@@ -79,7 +79,7 @@ impl App {
                 }
             }
             update => {
-                if let Some(parked) = self.parked.get_mut(session) {
+                if let Some(parked) = self.talk.parked.get_mut(session) {
                     parked.transcript.update(update, &self.config.text);
                 }
             }
@@ -194,8 +194,8 @@ impl App {
         self.link.core.send(Command::Watch(child.clone()));
         // 交代的活是派它的会话发来的：来处和核心推来的那一句算得一样，才认得出是同一句（`transcript/foreign.rs`）。
         let from = self.label(&child, &Sender::Session(session.to_string()), words);
-        let transcript = self.transcript.child(child.clone(), from, task);
-        self.parked.insert(
+        let transcript = self.talk.transcript.child(child.clone(), from, task);
+        self.talk.parked.insert(
             child,
             Parked {
                 transcript,
@@ -207,6 +207,7 @@ impl App {
     /// 最近一次会话列表里这个会话的标题；没见过的顺手要一次列表（「别处来的话」第 2 条）。
     pub(super) fn session_title(&self, id: &str) -> Option<String> {
         let known = self
+            .talk
             .sessions_seen
             .iter()
             .flatten()
@@ -248,10 +249,11 @@ impl App {
 
     /// 会话 `session`（正在看的、停放着的）的正文和任务表。
     pub(super) fn slot(&mut self, session: &str) -> Option<(&mut Transcript, &mut Board)> {
-        if self.transcript.session.as_deref() == Some(session) {
-            return Some((&mut self.transcript, &mut self.board));
+        if self.talk.transcript.session.as_deref() == Some(session) {
+            return Some((&mut self.talk.transcript, &mut self.talk.board));
         }
-        self.parked
+        self.talk
+            .parked
             .get_mut(session)
             .map(|p| (&mut p.transcript, &mut p.board))
     }
@@ -268,15 +270,15 @@ impl App {
 
     /// 每一份任务表：正在看的、停放着的。
     fn boards(&self) -> impl Iterator<Item = &Board> {
-        std::iter::once(&self.board).chain(self.parked.values().map(|p| &p.board))
+        std::iter::once(&self.talk.board).chain(self.talk.parked.values().map(|p| &p.board))
     }
 
     /// 子会话 `child` 推来了东西：照它的正文更新它那一行正在做什么、用了多少（「后台命令、子代理和侧边栏」）。
     pub(super) fn refresh_agent(&mut self, child: &str) {
-        let transcript = if self.transcript.session.as_deref() == Some(child) {
-            Some(&self.transcript)
+        let transcript = if self.talk.transcript.session.as_deref() == Some(child) {
+            Some(&self.talk.transcript)
         } else {
-            self.parked.get(child).map(|p| &p.transcript)
+            self.talk.parked.get(child).map(|p| &p.transcript)
         };
         let Some((doing, tokens)) = transcript.map(|t| {
             (
@@ -286,8 +288,8 @@ impl App {
         }) else {
             return;
         };
-        let boards =
-            std::iter::once(&mut self.board).chain(self.parked.values_mut().map(|p| &mut p.board));
+        let boards = std::iter::once(&mut self.talk.board)
+            .chain(self.talk.parked.values_mut().map(|p| &mut p.board));
         for board in boards {
             if let Some(job) = board.agent_mut(child) {
                 job.doing = doing;
@@ -300,18 +302,20 @@ impl App {
     /// `/new` 以后停放着的旧会话，任务都报完了：退订它和它的子代理，不再停放。
     pub(super) fn prune(&mut self) {
         let done: Vec<String> = self
+            .talk
             .left
             .iter()
             .filter(|s| {
-                self.parked
+                self.talk
+                    .parked
                     .get(*s)
                     .is_none_or(|p| !p.board.busy() && p.transcript.running.is_none())
             })
             .cloned()
             .collect();
         for session in done {
-            self.left.retain(|s| *s != session);
-            if let Some(parked) = self.parked.remove(&session) {
+            self.talk.left.retain(|s| *s != session);
+            if let Some(parked) = self.talk.parked.remove(&session) {
                 self.drop_children(&parked.board);
             }
             self.link.core.send(Command::Unwatch(session));
@@ -321,16 +325,20 @@ impl App {
     /// 退订这份任务表里的子代理，不再停放它们的会话。
     pub(super) fn drop_children(&mut self, board: &Board) {
         for child in board.jobs.iter().filter_map(|j| j.session.clone()) {
-            self.parked.remove(&child);
+            self.talk.parked.remove(&child);
             self.link.core.send(Command::Unwatch(child));
         }
     }
 
     /// 子代理状态行照的那份任务表：主会话的（切进了子会话的是停放着的主会话的）。
     pub fn tree(&self) -> &Board {
-        match &self.home {
-            Some(main) => self.parked.get(main).map_or(&self.board, |p| &p.board),
-            None => &self.board,
+        match &self.talk.home {
+            Some(main) => self
+                .talk
+                .parked
+                .get(main)
+                .map_or(&self.talk.board, |p| &p.board),
+            None => &self.talk.board,
         }
     }
 
@@ -346,21 +354,32 @@ impl App {
 
     /// 子会话 `child` 自己又派了几个在跑的子代理（状态行里写「（+N）」）。
     pub fn nested_agents(&self, child: &str) -> usize {
-        if self.transcript.session.as_deref() == Some(child) {
-            return self.board.agents().len();
+        if self.talk.transcript.session.as_deref() == Some(child) {
+            return self.talk.board.agents().len();
         }
-        self.parked.get(child).map_or(0, |p| p.board.agents().len())
+        self.talk
+            .parked
+            .get(child)
+            .map_or(0, |p| p.board.agents().len())
     }
 
     /// 正在看的会话连同它派出去的子代理（一层层往下）一共用了多少：框下面那一行、侧边栏写（2026-09-30 项目主人：
     /// 子代理用的也算进主会话）。子代理的照它停放着的正文，订阅上以前用的看不到。
     pub fn usage_total(&self) -> Usage {
-        notes::tree_usage(self.transcript.total, &self.board, &self.parked)
+        notes::tree_usage(
+            self.talk.transcript.total,
+            &self.talk.board,
+            &self.talk.parked,
+        )
     }
 
     /// 花了多少：连同子代理的，和 [`App::usage_total`] 一个算法（蓝图「配置与模型」第 5 条）。
     pub fn bill_total(&self) -> Bill {
-        notes::tree_bill(&self.transcript.bill, &self.board, &self.parked)
+        notes::tree_bill(
+            &self.talk.transcript.bill,
+            &self.talk.board,
+            &self.talk.parked,
+        )
     }
 
     /// 花了多少写成字（`$0.42 + ¥1.30`，一笔都算不出的是 `None`）：侧边栏、框下面那一行用。
@@ -371,7 +390,10 @@ impl App {
 
     /// 正在看的子会话；看着主会话是 `None`。
     pub fn viewing(&self) -> Option<&str> {
-        self.home.as_ref().and(self.transcript.session.as_deref())
+        self.talk
+            .home
+            .as_ref()
+            .and(self.talk.transcript.session.as_deref())
     }
 
     /// 切进子代理状态行里第 `index` 个子代理的会话（「切进子会话」第 1 条）。
@@ -387,32 +409,32 @@ impl App {
 
     /// 回主会话（「切进子会话」第 4 条）。
     pub(super) fn leave_child(&mut self) {
-        if let Some(main) = self.home.clone() {
+        if let Some(main) = self.talk.home.clone() {
             self.switch(main);
         }
     }
 
     /// 换成看 `session`：正在看的停放起来，它从停放的里拿出来；命令跟着对着它。
     fn switch(&mut self, session: String) {
-        let Some(current) = self.transcript.session.clone() else {
+        let Some(current) = self.talk.transcript.session.clone() else {
             return;
         };
         if current == session {
             return;
         }
-        let Some(mut next) = self.parked.remove(&session) else {
+        let Some(mut next) = self.talk.parked.remove(&session) else {
             return;
         };
-        next.transcript.link = self.transcript.link.clone();
+        next.transcript.link = self.talk.transcript.link.clone();
         let old = Parked {
-            transcript: std::mem::replace(&mut self.transcript, next.transcript),
-            board: std::mem::replace(&mut self.board, next.board),
+            transcript: std::mem::replace(&mut self.talk.transcript, next.transcript),
+            board: std::mem::replace(&mut self.talk.board, next.board),
             view: std::mem::replace(&mut self.screen.view, next.view),
         };
-        self.parked.insert(current.clone(), old);
-        let main = self.home.clone().unwrap_or(current);
-        self.home = (session != main).then_some(main);
-        let target = self.home.is_some().then_some(session);
+        self.talk.parked.insert(current.clone(), old);
+        let main = self.talk.home.clone().unwrap_or(current);
+        self.talk.home = (session != main).then_some(main);
+        let target = self.talk.home.is_some().then_some(session);
         self.link.core.send(Command::View(target));
         // 行缓存照条目编号认，两份正文的编号会撞：换了就重排。
         *self.media.row_cache.borrow_mut() = Default::default();

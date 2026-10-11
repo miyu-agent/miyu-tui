@@ -26,7 +26,7 @@ const GAP: usize = 2;
 /// 叠上以后宽字被盖掉一半，下一帧会留下残字。按钮留到最后。
 pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
     let focus = app.focus();
-    let count = app.board.shells_running();
+    let count = app.talk.board.shells_running();
     let button = (count > 0).then(|| {
         app.config
             .text
@@ -36,7 +36,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
     });
     let button_w = button.as_ref().map_or(0, |b| b.width() + GAP);
     let total = app.usage_total();
-    let mut cells = right(&app.transcript, &total, &app.config);
+    let mut cells = right(&app.talk.transcript, &total, &app.config);
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
     if let Some(amounts) = app.spent() {
         cells.push(Part {
@@ -176,7 +176,7 @@ fn left_line(spans: Vec<Span<'_>>, width: u16) -> Line<'static> {
 /// 写 `deepseek-v4.1-flash`），一行放不下时用（[`split`]）。
 fn left(app: &App, short: bool) -> Vec<Span<'_>> {
     let text = &app.config.text;
-    let t = &app.transcript;
+    let t = &app.talk.transcript;
     match &t.link {
         Link::Connecting => vec![Span::styled(text.connecting.as_str(), theme::dim())],
         Link::Reconnecting => vec![Span::styled(text.reconnecting.as_str(), theme::warn())],

@@ -81,7 +81,7 @@ impl App {
 
     /// 这一处的人格和它的头像的版本；没有头像的是 `None`。
     fn wanted(&self, place: Place) -> Option<(&str, &str)> {
-        let session = self.transcript.persona.as_deref();
+        let session = self.talk.transcript.persona.as_deref();
         let persona = match place {
             Place::Home => {
                 let under = match self.boxes.panel {
@@ -96,7 +96,7 @@ impl App {
                     ),
                     _ => None,
                 };
-                home_persona(under, &self.persona, session)
+                home_persona(under, &self.talk.persona, session)
             }
             Place::Sidebar => sidebar_persona(session),
         }?;

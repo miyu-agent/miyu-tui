@@ -8,7 +8,7 @@ impl App {
     /// 下一次要自己醒来的时刻：提示到点消失；在跑时每秒走一下用时。没有就是 `None`，一直等事件。
     pub fn deadline(&self) -> Option<Instant> {
         let notice = self.typing.notice.as_ref().map(|n| n.until);
-        let clock = self.transcript.running.map(|start| {
+        let clock = self.talk.transcript.running.map(|start| {
             let next = start.elapsed().as_secs() + 1;
             start + Duration::from_secs(next)
         });
@@ -20,7 +20,8 @@ impl App {
                 .session_list
                 .as_ref()
                 .is_some_and(|l| l.all.iter().any(|s| s.busy));
-        let moving = self.transcript.busy() || self.transcript.running.is_some() || listing_busy;
+        let moving =
+            self.talk.transcript.busy() || self.talk.transcript.running.is_some() || listing_busy;
         let spin =
             moving.then(|| Instant::now() + Duration::from_millis(self.config.timeline.spinner_ms));
         notice
@@ -35,7 +36,7 @@ impl App {
             .chain(self.jobs_deadline())
             .chain(self.drawer_deadline())
             // 做完的待办全打勾露着：到点醒来收（「后台命令、子代理和侧边栏」第 4 条）。
-            .chain(self.board.todos_until())
+            .chain(self.talk.board.todos_until())
             // 核心的清单在建：到点再问（「`@` 文件列表」第 2 条）。
             .chain(self.typing.mention.deadline())
             // 链接卡片、mermaid 图的单子上有没发的：马上醒来发（`cards.rs`、`diagrams.rs`）。

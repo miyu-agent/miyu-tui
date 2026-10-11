@@ -21,7 +21,7 @@ const WELCOMED_TAG: u64 = TAG_BASE - 1;
 impl App {
     /// 开引导，从欢迎页起（没走过的、`--page oobe` 起来的）。
     pub fn open_oobe(&mut self) {
-        let online = matches!(self.transcript.link, Link::Ready);
+        let online = matches!(self.talk.transcript.link, Link::Ready);
         let look = self.config.oobe.clone();
         let icons = self.config.icons.name.clone();
         self.boxes.oobe = Some(Oobe::new(

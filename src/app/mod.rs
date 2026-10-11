@@ -42,6 +42,7 @@ mod sessions;
 mod settings;
 mod switch;
 mod takeback;
+mod talk;
 mod typing;
 mod updates;
 pub mod usage;
@@ -102,26 +103,14 @@ pub struct App {
     pub config: Config,
     /// 系统通知、报给 herdr（蓝图「系统通知」）。
     pub notifier: Notifier,
-    /// 停放着的会话：切进子会话时的主会话、子代理的会话、`/new` 以后还有任务在跑的旧会话（`sessions.rs`）。
-    parked: sessions::Lot,
-    /// 切进了子会话：主会话的编号（它停放着）；看着主会话是 `None`。
-    home: Option<String>,
-    /// `/new` 以后还有任务在跑、照样订阅着的旧会话：任务都报完了退订。
-    left: Vec<String>,
-    /// 切过去、还在补发的会话，和原来那个要不要接着订阅：补完了再换上来（`switch.rs`）。
-    opening: Option<(String, bool)>,
-    /// 上次交回的会话列表：再开框先照它画（`switch.rs`）。
-    sessions_seen: Option<Vec<crate::core::SessionInfo>>,
-    /// 最近发出去的一句：没发出去时撤回来（`redo.rs`）。
-    unsent: Option<Unsent>,
-    /// 会话：正文、在不在跑、用量。
-    pub transcript: Transcript,
     /// 开着的框和整屏页（`boxes.rs`，蓝图 `app.md`）。
     pub boxes: boxes::Boxes,
     /// 输入框和它上面的列表、焦点、编辑器、输入法、提示（`typing.rs`，蓝图 `app.md`）。
     pub typing: typing::Typing,
     /// 连着核心的一头和核心给的资料（`link.rs`，蓝图 `app.md`）。
     pub link: link::Link,
+    /// 会话：正在看的和停放着的、切换、确认和提问（`talk.rs`，蓝图 `app.md`）。
+    pub talk: talk::Talk,
     /// 要画的东西的账：排好的行、做好的图、链接卡片、mermaid、头像、吉祥物包（`media.rs`，蓝图 `app.md`）。
     pub media: media::Media,
     /// 上一帧画出来的：各块位置、视口、光标、行表、鼠标（`screen.rs`，蓝图 `app.md`）。
@@ -130,32 +119,10 @@ pub struct App {
     pub mascot: mascot::MascotState,
     /// 工作目录，家目录写成 `~`：侧边栏照它写。
     pub cwd: String,
-    /// 后台任务表和待办（现在由假数据源推）。
-    pub board: Board,
-    /// 演示用的假数据源。
-    feed: Feed,
-    /// 核心推来的确认、提问：问过的、了结过的（`asking.rs`）。
-    asks: crate::drawer::Asks,
-    /// 确认和提问的抽屉：现在这一个和排着的（蓝图「确认和提问的抽屉」）。
-    pub drawers: Drawers,
-    /// `/demo-ask`、`/demo-approve` 各出到第几个。
-    demo_drawers: (usize, usize),
-    /// 待办点开了，列出全部（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
-    pub todo_full: bool,
-    /// Ctrl+C 打断时要退回排着的话，走到哪一步了（`takeback.rs`）。
-    takeback: Option<takeback::Takeback>,
     /// 该退出了。
     pub quit: bool,
     /// 按了 Ctrl+Z，主循环该把程序挂起到后台了。
     pub suspend: bool,
-    /// 新会话要选的人格（`new_session.rs`）。
-    persona: new_session::Pick,
-    /// 新会话要选的预设。
-    preset: new_session::Pick,
-    /// 还没开会话时 `/workspace` 换的、验过的目录：新会话开在这里（`workspace.rs`）。
-    workspace_pending: Option<String>,
-    /// 这一次提前压已经弹过「已触发上下文压缩」（`updates.rs`）。
-    compaction_announced: bool,
 }
 
 impl App {
@@ -166,7 +133,7 @@ impl App {
             && !self.typing.history.open
             && self.boxes.panel.is_none()
             && self.typing.focus == Focus::Input
-            && !self.drawers.open()
+            && !self.talk.drawers.open()
             && self.typing.input.editor.selection().is_none()
             && self.screen.view.select.is_none()
     }
@@ -197,7 +164,7 @@ impl App {
             // 在子会话里看：输入框空着时 Esc 回主会话（「切进子会话」第 4 条）；打断它按 Ctrl+C。
             Event::Key(key)
                 if key.code == KeyCode::Esc
-                    && self.home.is_some()
+                    && self.talk.home.is_some()
                     && self.esc_for_input(menu_open)
                     && self.typing.input.editor.is_empty() =>
             {
@@ -209,7 +176,7 @@ impl App {
                 if key.code == KeyCode::Esc
                     && self.typing.input.editing()
                     && self.esc_for_input(menu_open)
-                    && self.transcript.running.is_none() =>
+                    && self.talk.transcript.running.is_none() =>
             {
                 self.typing.input.cancel_edit();
                 Action::None
@@ -219,7 +186,7 @@ impl App {
             Event::Key(key)
                 if key.code == KeyCode::Esc
                     && self.esc_for_input(menu_open)
-                    && (self.transcript.running.is_some()
+                    && (self.talk.transcript.running.is_some()
                         || !self.typing.input.editor.is_empty()) =>
             {
                 self.esc();
@@ -244,7 +211,7 @@ impl App {
             Action::Copy(text) => self.copy(&text),
             Action::Quit => self.quit = true,
             // Ctrl+C 分级：输入框空着时，在回答就打断（排着队的退回输入框），不在回答才提示用 Ctrl+D 退出。
-            Action::ExitHint if self.transcript.running.is_some() => self.interrupt(),
+            Action::ExitHint if self.talk.transcript.running.is_some() => self.interrupt(),
             Action::ExitHint => self.hint(self.config.text.exit_hint.clone(), false),
             Action::Cleared => self.hint(self.config.text.input_cleared.clone(), false),
             Action::Open(path) => self.open_link(&path),
@@ -277,7 +244,7 @@ impl App {
 
     /// 是首页：正文里一条都没有，也没在回答（`tui.md`「空会话的首页」第 1 条）。
     pub fn home(&self) -> bool {
-        self.transcript.entries.is_empty() && self.transcript.running.is_none()
+        self.talk.transcript.entries.is_empty() && self.talk.transcript.running.is_none()
     }
 
     /// 到点了：收掉过期的提示。
@@ -287,7 +254,7 @@ impl App {
         // 附件照模型收：收不了的那几种交给输入框，刚改成文件块的提示一句（`attachments.rs`）。
         self.sync_refused();
         // 做完的待办全打勾露够了：收掉（「后台命令、子代理和侧边栏」第 4 条）。
-        self.board.expire_todos(Instant::now());
+        self.talk.board.expire_todos(Instant::now());
         // 配置页、引导里不在打字的时候输入法关成英文，打字时开回来；对话里的输入框一直算在打字（`ime.rs`）。
         let typing = match (&self.boxes.oobe, &self.boxes.settings) {
             (Some(oobe), _) => oobe.editing(),
@@ -304,7 +271,7 @@ impl App {
         self.renumber_attachments();
         // 压缩那一行的进度条追一下（`tui.md`「正文」第 9 条）。
         let layout = &self.config.layout;
-        self.transcript.climb(
+        self.talk.transcript.climb(
             Instant::now(),
             layout.bar.width,
             &layout.compaction,

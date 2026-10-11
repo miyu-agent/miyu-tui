@@ -17,7 +17,7 @@ use crate::theme;
 /// 输入框：抽屉开着时框里画抽屉，别的时候画输入的字。
 pub(super) fn draw_box(frame: &mut Frame, areas: Areas, app: &mut App, home: bool) {
     let texts = &app.config.text.drawer;
-    if let Some(d) = app.drawers.current.as_mut() {
+    if let Some(d) = app.talk.drawers.current.as_mut() {
         frame.render_widget(
             Block::bordered()
                 .border_type(BorderType::Rounded)
@@ -39,7 +39,7 @@ pub(super) fn draw_box(frame: &mut Frame, areas: Areas, app: &mut App, home: boo
     // 焦点移到框下面（按钮、子代理状态行）、后台面板开着时，框里不放光标：打的字不进这里（2026-09-30 项目主人）。
     let typing = app.focus() == crate::focus::Focus::Input && app.boxes.panel.is_none();
     let look = Look {
-        level: app.transcript.level,
+        level: app.talk.transcript.level,
         placeholder: placeholder(&app.config, home, app.typing.tips.at()),
         child,
     };

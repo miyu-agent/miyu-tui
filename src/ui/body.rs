@@ -26,14 +26,14 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         indent: " ".repeat(usize::from(areas.text.x.saturating_sub(area.x + 2))),
         width: areas.text.width,
         hover: app.screen.view.hover,
-        level: app.transcript.level,
+        level: app.talk.transcript.level,
         // 图最多占窗口高度的几分之几：照窗口的高，不照正文区（开关列表时正文区变矮，照它算每次都要重做）。
         screen_rows: frame.area().height,
         md: &app.media.md_cache,
         figures: &app.media.figures,
         cards: &app.media.cards,
         diagrams: &app.media.diagrams,
-        writing: app.transcript.writing().map(|e| e.id),
+        writing: app.talk.transcript.writing().map(|e| e.id),
         frame: usize::try_from(app.screen.started.elapsed().as_millis() / u128::from(spinner_ms))
             .unwrap_or(0),
     };
@@ -42,7 +42,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
     let pinned = app.screen.view.pinned.take();
     let pinned_at = pinned
         .and_then(|p| p.top)
-        .and_then(|(id, _)| app.transcript.entries.iter().position(|e| e.id == id));
+        .and_then(|(id, _)| app.talk.transcript.entries.iter().position(|e| e.id == id));
     let plan = row_cache::Plan {
         budget: Some(std::time::Duration::from_millis(
             app.config.layout.relayout_budget_ms,
@@ -55,23 +55,28 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         }),
     };
     let mut rows = crate::frame_log::section("rows", || {
-        row_cache::build(&app.transcript.entries, &ctx, &app.media.row_cache, plan)
+        row_cache::build(
+            &app.talk.transcript.entries,
+            &ctx,
+            &app.media.row_cache,
+            plan,
+        )
     });
     // 等她的第一个字：正文末尾先转着（`tui.md`「时间线」第 19 条）。
-    if app.transcript.waiting() {
+    if app.talk.transcript.waiting() {
         rows.push(timeline::tail_rows(&ctx).into());
     }
     // 还算在看的那段回答：长过视口时停在它的开头（`tui.md`「正文」第 1 条）。在写的那段一律算；写完了的（后面只有收尾
     // 那一行），上一帧开头还露着才算：后到的图、卡片把它撑高时停住，一口气整段到的、补发来的照旧跟着最新的。
-    let latest = app.transcript.reading().and_then(|(i, writing)| {
-        let entry = &app.transcript.entries[i];
+    let latest = app.talk.transcript.reading().and_then(|(i, writing)| {
+        let entry = &app.talk.transcript.entries[i];
         let start = rows.start_of(i).filter(|_| super::rows::shown(entry))?;
         Some((entry.id, start, writing))
     });
     if let Some(pinned) = pinned {
         app.screen
             .view
-            .unpin(pinned, &app.transcript.entries, |i| rows.start_of(i));
+            .unpin(pinned, &app.talk.transcript.entries, |i| rows.start_of(i));
     }
     app.screen.view.reading = still_reading(&app.screen.view, latest);
     app.screen.view.latest = latest.map(|(id, start, _)| (id, start));

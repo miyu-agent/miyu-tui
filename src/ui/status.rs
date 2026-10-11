@@ -16,11 +16,11 @@ use crate::theme;
 
 /// 画那一行：从词库挑的词连着一到三个点，一起被流光扫（流光明暗），补到最宽的词那么宽，再写这一轮的用时、重试。
 pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
-    let Some(start) = app.transcript.running else {
+    let Some(start) = app.talk.transcript.running else {
         return;
     };
     let now = Instant::now();
-    let beat = app.transcript.beat();
+    let beat = app.talk.transcript.beat();
     let word = app
         .mascot
         .pulse
@@ -54,7 +54,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
         crate::meter::clock(start.elapsed().as_secs()),
         rest,
     ));
-    if let Some(retry) = &app.transcript.retry {
+    if let Some(retry) = &app.talk.transcript.retry {
         spans.push(Span::styled(" · ", theme::dim()));
         spans.push(Span::styled(retry.clone(), theme::warn()));
     }
