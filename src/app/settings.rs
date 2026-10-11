@@ -32,11 +32,7 @@ impl App {
             return;
         };
         for (tag, method, params) in page.take_asks() {
-            self.core.send(Command::Ask {
-                tag,
-                method,
-                params,
-            });
+            self.send_ask(tag, method, params);
         }
     }
 

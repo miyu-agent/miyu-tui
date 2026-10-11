@@ -61,11 +61,7 @@ impl App {
             return;
         };
         for ask in oobe.take_asks() {
-            self.core.send(Command::Ask {
-                tag: ask.tag,
-                method: ask.method,
-                params: ask.params,
-            });
+            self.send_ask(ask.tag, ask.method, ask.params);
         }
     }
 

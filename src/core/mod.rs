@@ -429,7 +429,8 @@ pub struct Refusal {
     pub data: serde_json::Value,
 }
 
-/// 连着核心的这一头，界面拿着它发命令。
+/// 连着核心的这一头，界面拿着它发命令。克隆一份交给后台线程，做完了照样发（缩头像，`app/avatars.rs`）。
+#[derive(Clone)]
 pub struct Core {
     commands: mpsc::UnboundedSender<Command>,
 }
