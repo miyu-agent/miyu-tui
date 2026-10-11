@@ -59,7 +59,7 @@ impl App {
 
     /// 鼠标在框上：悬停选中，点一下换，滚轮挪露出的那一段；交回归不归它。
     pub(super) fn models_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
-        if self.panel != Some(Panel::Models) || !self.areas.menu.contains(at) {
+        if self.panel != Some(Panel::Models) || !self.screen.areas.menu.contains(at) {
             return false;
         }
         let rows = self.config.layout.session_rows.max(1);
@@ -68,9 +68,11 @@ impl App {
             MouseEventKind::ScrollDown => 1,
             _ => 0,
         };
-        let row = at.y.checked_sub(self.areas.menu_text.y).map(usize::from);
-        let index = row.and_then(|row| self.panel_rows.get(row).copied().flatten());
-        let inside = self.areas.menu_text.contains(at);
+        let row =
+            at.y.checked_sub(self.screen.areas.menu_text.y)
+                .map(usize::from);
+        let index = row.and_then(|row| self.screen.panel_rows.get(row).copied().flatten());
+        let inside = self.screen.areas.menu_text.contains(at);
         let Some(list) = self.model_list.as_mut() else {
             return true;
         };

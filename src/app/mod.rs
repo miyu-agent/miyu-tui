@@ -33,6 +33,7 @@ mod packages;
 mod pages;
 mod paste;
 mod redo;
+mod screen;
 mod session;
 mod sessions;
 mod settings;
@@ -48,9 +49,7 @@ use std::time::{Duration, Instant};
 
 use crate::human::Human;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind};
-use ratatui::layout::Position;
 
-use crate::body_view::BodyView;
 use crate::commands::{self, Spec};
 use crate::config::Config;
 use crate::core::Core;
@@ -62,16 +61,14 @@ use crate::input::{Action, Draft, InputBox, PasteRule};
 use crate::jobs::{Board, Feed};
 use crate::menu::Menu;
 use crate::notify::Notifier;
-use crate::side_select::SideSelect;
 use crate::tips::Tips;
 use crate::transcript::Transcript;
-use crate::ui::Areas;
 use crate::ui::row_cache::RowCache;
 use crate::ui::rows::MdCache;
 
 /// 按下鼠标时落在哪一块：拖动、松开都归它，拖出了那一块也一样。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Grab {
+pub(super) enum Grab {
     Menu,
     Input,
     Body,
@@ -130,14 +127,14 @@ pub struct App {
     pub mention: crate::mention::Mention,
     /// 输入历史列表（`Ctrl+R`）。
     pub history: History,
+    /// 上一帧画出来的：各块位置、视口、光标、行表、鼠标（`screen.rs`，蓝图 `app.md`）。
+    pub screen: screen::Screen,
     /// 吉祥物和运行状态行会动的那几样（`mascot.rs`，蓝图 `app.md`）。
     pub mascot: mascot::MascotState,
     /// 工作目录，家目录写成 `~`：侧边栏照它写。
     pub cwd: String,
     /// 输入框空着时写哪条提示。
     pub tips: Tips,
-    /// 侧边栏的选字（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。
-    pub side_select: SideSelect,
     /// 后台任务表和待办（现在由假数据源推）。
     pub board: Board,
     /// 演示用的假数据源。
@@ -166,32 +163,18 @@ pub struct App {
     pub efforts: Option<crate::core::Efforts>,
     /// 确认和提问的抽屉：现在这一个和排着的（蓝图「确认和提问的抽屉」）。
     pub drawers: Drawers,
-    /// 抽屉每一行是第几项（点哪一行点中哪一项）；上一帧排出来的。
-    pub drawer_rows: Vec<Option<usize>>,
-    /// 这一帧的光标停在哪、显不显示；画的时候填，画完 `main` 写出去（蓝图「每一帧」）。
-    pub caret: crate::caret::Caret,
     /// 启动时照系统认出来的界面语言：`/language` 选回自动用它，框的第一行写它（蓝图「界面语言」）。
     pub system_language: crate::language::Language,
     /// `/demo-ask`、`/demo-approve` 各出到第几个。
     demo_drawers: (usize, usize),
     /// 待办点开了，列出全部（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
     pub todo_full: bool,
-    /// 后台面板每一行是第几条命令（点哪一行点中哪一条）；上一帧排出来的。
-    pub panel_rows: Vec<Option<usize>>,
     /// 焦点在哪：输入框、框下面那一行的按钮、子代理状态行。
     focus: Focus,
-    /// 鼠标悬停在子代理状态行的第几行（第 0 行是上面的空行）。
-    pub agents_hover: Option<usize>,
     /// Ctrl+C 打断时要退回排着的话，走到哪一步了（`takeback.rs`）。
     takeback: Option<takeback::Takeback>,
-    /// 鼠标最后在哪一格；还没动过是 `None`。
-    pub pointer: Option<Position>,
     /// 框下面那一行的临时提示。
     pub notice: Option<Notice>,
-    /// 上一帧各块的位置。
-    pub areas: Areas,
-    /// 正文区：滚到哪、悬在哪、选了哪。
-    pub view: BodyView,
     /// 工具给人看的显示名（仓库 `resources/software/basesystem/human/`）。
     pub human: Human,
     /// 回答排好的行的缓存（`ui/rows.rs`）。
@@ -200,16 +183,8 @@ pub struct App {
     pub row_cache: RefCell<RowCache>,
     /// 正文里做好的图（蓝图「图片、公式和 mermaid 图」）。
     pub figures: RefCell<Figures>,
-    /// 程序启动的时刻：转圈照它算第几帧。
-    pub started: Instant,
-    /// 按着鼠标时是哪一块的。
-    grab: Option<Grab>,
-    /// 当前主题的名字。
-    theme: String,
     /// 在回答时第一下 `Esc` 的时刻：时限里再按一下才打断。
     esc_at: Option<Instant>,
-    /// 压缩那一行的进度条一顿一顿地追，停多久、追几格要的随机数。
-    rng: crate::rng::Rng,
     /// 该退出了。
     pub quit: bool,
     /// 按了 Ctrl+Z，主循环该把程序挂起到后台了。
@@ -262,7 +237,7 @@ impl App {
             && self.focus == Focus::Input
             && !self.drawers.open()
             && self.input.editor.selection().is_none()
-            && self.view.select.is_none()
+            && self.screen.view.select.is_none()
     }
 
     /// 退出程序前收尾：输入法还原成进来时的样子（`ime.rs`）。
@@ -358,7 +333,7 @@ impl App {
     fn mascot_shown(&self) -> bool {
         let layout = &self.config.layout;
         (self.home() && layout.mascot_home && self.avatar(Place::Home) == Avatar::None)
-            || (self.areas.sidebar.width > 0
+            || (self.screen.areas.sidebar.width > 0
                 && layout.mascot_sidebar
                 && self.avatar(Place::Sidebar) == Avatar::None)
     }
@@ -401,7 +376,7 @@ impl App {
             Instant::now(),
             layout.bar.width,
             &layout.compaction,
-            &mut self.rng,
+            &mut self.screen.rng,
         );
         self.drawer_tick();
         if self

@@ -201,21 +201,21 @@ impl App {
         let release = crate::ui::release_on_fold(&self.config.timeline);
         if matches!(update, Update::Push(crate::core::Push::TurnEnded(_))) {
             if release {
-                self.view.settle();
+                self.screen.view.settle();
             } else {
-                self.view.hold();
+                self.screen.view.hold();
             }
         }
         // 撤销藏起了几轮：放开一次「只往下走」，上面的内容落下来补满，撤销那一行贴着底部（2026-10-02 项目主人定：
         // 原来停在上面、底下空着，点开以后又掉到下面）。
         if matches!(update, Update::Push(Push::Reverted(_))) {
-            self.view.settle();
+            self.screen.view.settle();
         }
         // 她开始下一步：长正文替人停着的，回到最底下接着跟（`tui.md`「正文」第 1 条）。
         if let Update::Push(Push::BlockStart { block, .. }) = &update
             && *block != Block::Text
         {
-            self.view.resume();
+            self.screen.view.resume();
         }
         // 系统通知、报给 herdr：在正文收它之前量这一轮用了多久（「系统通知」）。
         self.notify_core(&update);
@@ -223,7 +223,7 @@ impl App {
         self.background_compaction(&update);
         // 清空了：像 Ctrl+L 一样清屏，「上下文已清空」在新的一屏顶上（「正文」第 9 条）。
         if matches!(update, Update::Push(Push::Compacted { clear: true })) {
-            self.view.clear();
+            self.screen.view.clear();
         }
         let folds = self.transcript.folds();
         self.transcript.update(update, &self.config.text);
@@ -233,7 +233,7 @@ impl App {
         }
         // 一段刚收起（她开口、一轮结束）：放开一次视口，收起留下的空白由上面的行补满（`tui.md`「正文」第 1 条）。
         if release && self.transcript.folds() > folds {
-            self.view.settle();
+            self.screen.view.settle();
         }
         // 被退回的排队消息连同粘贴块放回输入框（`takeback.rs`）。
         let returned = self.transcript.take_returned();

@@ -131,7 +131,7 @@ impl App {
         if self.panel != Some(Panel::Sessions) {
             return false;
         }
-        let areas = self.areas;
+        let areas = self.screen.areas;
         if !areas.menu.contains(at) {
             return false;
         }
@@ -150,7 +150,7 @@ impl App {
             return true;
         }
         let row = at.y.checked_sub(areas.menu_text.y).map(usize::from);
-        let index = row.and_then(|row| self.panel_rows.get(row).copied().flatten());
+        let index = row.and_then(|row| self.screen.panel_rows.get(row).copied().flatten());
         let Some(index) = index.filter(|_| areas.menu_text.contains(at)) else {
             return true;
         };
@@ -313,7 +313,7 @@ impl App {
             self.transcript = back.transcript;
             self.transcript.link = link;
             self.board = back.board;
-            self.view = back.view;
+            self.screen.view = back.view;
         }
         self.prune();
     }

@@ -82,7 +82,7 @@ fn button_style(app: &App, at: Rect, focused: bool) -> ratatui::style::Style {
     if focused {
         return theme::selected();
     }
-    let hovered = app.pointer.is_some_and(|p| at.contains(p));
+    let hovered = app.screen.pointer.is_some_and(|p| at.contains(p));
     let style = theme::accent();
     if hovered {
         style.add_modifier(ratatui::style::Modifier::BOLD)

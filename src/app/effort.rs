@@ -94,12 +94,12 @@ impl App {
         let Some(Panel::Effort { .. }) = self.panel else {
             return false;
         };
-        let areas = self.areas;
+        let areas = self.screen.areas;
         if !areas.menu.contains(at) {
             return false;
         }
         let row = at.y.checked_sub(areas.menu_text.y).map(usize::from);
-        let index = row.and_then(|row| self.panel_rows.get(row).copied().flatten());
+        let index = row.and_then(|row| self.screen.panel_rows.get(row).copied().flatten());
         if let Some(index) = index.filter(|_| areas.menu_text.contains(at)) {
             self.panel = Some(Panel::Effort { selected: index });
             if matches!(mouse.kind, MouseEventKind::Down(_)) {

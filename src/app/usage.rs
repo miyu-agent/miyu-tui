@@ -105,7 +105,7 @@ impl App {
 
     /// 框开着时的按键。
     pub(super) fn usage_key(&mut self, (tab, scroll, money): (usize, usize, bool), key: KeyEvent) {
-        let page = self.panel_rows.len().max(1);
+        let page = self.screen.panel_rows.len().max(1);
         let (tab, scroll, money) = match key.code {
             KeyCode::Tab | KeyCode::Right => ((tab + 1) % PAGES, 0, money),
             KeyCode::BackTab | KeyCode::Left => ((tab + PAGES - 1) % PAGES, 0, money),
@@ -122,7 +122,7 @@ impl App {
             _ => return,
         };
         // 滚过头停在最后一屏：标签那两行不滚。
-        let width = self.areas.menu_text.width;
+        let width = self.screen.areas.menu_text.width;
         let rows = crate::ui::usage::body_rows(self, (tab, money), width);
         let shown = page.saturating_sub(2).max(1);
         let scroll = scroll.min(rows.saturating_sub(shown));

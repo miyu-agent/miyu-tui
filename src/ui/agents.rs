@@ -151,7 +151,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
     let tree = Tree {
         viewing: app.viewing(),
         nested: &nested,
-        hover: app.agents_hover,
+        hover: app.screen.agents_hover,
         focus: match app.focus() {
             crate::focus::Focus::Agent(i) => Some(i),
             _ => None,

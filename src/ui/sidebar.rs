@@ -368,7 +368,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
         .collect();
     frame.render_widget(Paragraph::new(info), at);
     // 点短编号复制完整编号。
-    app.areas.session_id = id_row.map_or(Rect::default(), |row| {
+    app.screen.areas.session_id = id_row.map_or(Rect::default(), |row| {
         let y = at.y + u16::try_from(row).unwrap_or(0);
         Rect::new(at.x, y, inner, 1).intersection(at)
     });
@@ -386,7 +386,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     let tall = u16::try_from(todo.len())
         .unwrap_or(u16::MAX)
         .min(below.height);
-    app.areas.todo = Rect {
+    app.screen.areas.todo = Rect {
         height: tall,
         ..below
     };
@@ -398,14 +398,14 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_widget(Paragraph::new(todo), below);
     // 选中的反色。
     for row in &text_rows {
-        if let Some((from, to)) = app.side_select.cols(row.y) {
+        if let Some((from, to)) = app.screen.side_select.cols(row.y) {
             let cells = Rect::new(from, row.y, to - from, 1).intersection(area);
             frame
                 .buffer_mut()
                 .set_style(cells, Style::new().add_modifier(Modifier::REVERSED));
         }
     }
-    app.side_select.set_rows(text_rows);
+    app.screen.side_select.set_rows(text_rows);
 }
 
 #[cfg(test)]

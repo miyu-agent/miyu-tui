@@ -17,14 +17,15 @@ pub fn place(frame: Rect, text: Rect, screen: Rect) -> Option<Rect> {
 
 /// 不在底部时画，交回按钮在哪（不画的是空的）。
 pub fn draw(frame: &mut Frame, app: &App, screen: Rect) -> Rect {
-    let areas = &app.areas;
-    let Some(at) = place(areas.frame, areas.text, screen).filter(|_| app.view.top.is_some()) else {
+    let areas = &app.screen.areas;
+    let Some(at) = place(areas.frame, areas.text, screen).filter(|_| app.screen.view.top.is_some())
+    else {
         return Rect::default();
     };
-    let hovered = app.pointer.is_some_and(|p| at.contains(p));
+    let hovered = app.screen.pointer.is_some_and(|p| at.contains(p));
     let style = if hovered {
         theme::hover()
-    } else if app.view.rows.len() > app.view.seen_end {
+    } else if app.screen.view.rows.len() > app.screen.view.seen_end {
         theme::accent()
     } else {
         theme::dim()

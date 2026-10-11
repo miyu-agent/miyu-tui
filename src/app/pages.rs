@@ -66,7 +66,7 @@ impl App {
         let Some(session) = self.transcript.session.clone() else {
             return;
         };
-        let shown = !self.view.rows.is_empty() && self.view.first == 0;
+        let shown = !self.screen.view.rows.is_empty() && self.screen.view.first == 0;
         if shown && self.transcript.wants_older() {
             self.transcript.asked_older();
             self.core.send(Command::Older(session));
@@ -81,7 +81,7 @@ impl App {
         let found = place(
             &mut self.transcript,
             &mut self.board,
-            &mut self.view,
+            &mut self.screen.view,
             &mut self.parked,
             session,
         );
@@ -100,7 +100,7 @@ impl App {
         let found = place(
             &mut self.transcript,
             &mut self.board,
-            &mut self.view,
+            &mut self.screen.view,
             &mut self.parked,
             session,
         );
@@ -166,7 +166,7 @@ impl App {
         if let Some((transcript, ..)) = place(
             &mut self.transcript,
             &mut self.board,
-            &mut self.view,
+            &mut self.screen.view,
             &mut self.parked,
             session,
         ) {
@@ -213,7 +213,7 @@ impl App {
         if let Some((transcript, ..)) = place(
             &mut self.transcript,
             &mut self.board,
-            &mut self.view,
+            &mut self.screen.view,
             &mut self.parked,
             session,
         ) {
@@ -226,7 +226,7 @@ impl App {
         place(
             &mut self.transcript,
             &mut self.board,
-            &mut self.view,
+            &mut self.screen.view,
             &mut self.parked,
             session,
         )

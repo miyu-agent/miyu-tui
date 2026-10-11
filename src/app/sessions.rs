@@ -404,7 +404,7 @@ impl App {
         let old = Parked {
             transcript: std::mem::replace(&mut self.transcript, next.transcript),
             board: std::mem::replace(&mut self.board, next.board),
-            view: std::mem::replace(&mut self.view, next.view),
+            view: std::mem::replace(&mut self.screen.view, next.view),
         };
         self.parked.insert(current.clone(), old);
         let main = self.home.clone().unwrap_or(current);

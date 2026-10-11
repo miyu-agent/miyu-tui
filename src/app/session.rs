@@ -78,7 +78,7 @@ impl App {
         match old.session.clone() {
             Some(session) if keep => {
                 self.left.push(session.clone());
-                let view = std::mem::take(&mut self.view);
+                let view = std::mem::take(&mut self.screen.view);
                 let parked = super::sessions::Parked {
                     transcript: old,
                     board,
@@ -94,7 +94,7 @@ impl App {
                 self.drop_children(&board);
             }
         }
-        self.view = Default::default();
+        self.screen.view = Default::default();
         self.panel = None;
         *self.row_cache.borrow_mut() = Default::default();
     }

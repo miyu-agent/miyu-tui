@@ -15,7 +15,7 @@ use super::timeline;
 use crate::app::App;
 use crate::theme;
 
-/// 画正文，顺手把这一帧的行记进 `app.view`，鼠标要用。
+/// 画正文，顺手把这一帧的行记进 `app.screen.view`，鼠标要用。
 pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
     let area = areas.body;
     let spinner_ms = app.config.timeline.spinner_ms.max(1);
@@ -25,7 +25,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         // 两格槽紧贴在输入框里的字的左边，和提示符同一列。
         indent: " ".repeat(usize::from(areas.text.x.saturating_sub(area.x + 2))),
         width: areas.text.width,
-        hover: app.view.hover,
+        hover: app.screen.view.hover,
         level: app.transcript.level,
         // 图最多占窗口高度的几分之几：照窗口的高，不照正文区（开关列表时正文区变矮，照它算每次都要重做）。
         screen_rows: frame.area().height,
@@ -34,12 +34,12 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         cards: &app.cards,
         diagrams: &app.diagrams,
         writing: app.transcript.writing().map(|e| e.id),
-        frame: usize::try_from(app.started.elapsed().as_millis() / u128::from(spinner_ms))
+        frame: usize::try_from(app.screen.started.elapsed().as_millis() / u128::from(spinner_ms))
             .unwrap_or(0),
     };
     // 整份重排时一帧只排预算这么多，视口附近先排（蓝图「正文」第 8 条）：翻上去看着的照上一帧视口顶上那一条；前面刚拼进
     // 更早的一页的，照钉住的那一条。
-    let pinned = app.view.pinned.take();
+    let pinned = app.screen.view.pinned.take();
     let pinned_at = pinned
         .and_then(|p| p.top)
         .and_then(|(id, _)| app.transcript.entries.iter().position(|e| e.id == id));
@@ -48,9 +48,10 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
             app.config.layout.relayout_budget_ms,
         )),
         anchor: pinned_at.or_else(|| {
-            app.view
+            app.screen
+                .view
                 .top
-                .and_then(|_| app.view.rows.entry_at(app.view.first))
+                .and_then(|_| app.screen.view.rows.entry_at(app.screen.view.first))
         }),
     };
     let mut rows = crate::frame_log::section("rows", || {
@@ -68,13 +69,14 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         Some((entry.id, start, writing))
     });
     if let Some(pinned) = pinned {
-        app.view
+        app.screen
+            .view
             .unpin(pinned, &app.transcript.entries, |i| rows.start_of(i));
     }
-    app.view.reading = still_reading(&app.view, latest);
-    app.view.latest = latest.map(|(id, start, _)| (id, start));
+    app.screen.view.reading = still_reading(&app.screen.view, latest);
+    app.screen.view.latest = latest.map(|(id, start, _)| (id, start));
     let settled = app.row_cache.borrow().stale == 0;
-    let first = first_row(&rows, area, &mut app.view, settled);
+    let first = first_row(&rows, area, &mut app.screen.view, settled);
     let height = usize::from(area.height);
     let indent = u16::try_from(ctx.indent.width()).unwrap_or(0);
     let shade = shade_span(area, indent, ctx.width);
@@ -89,7 +91,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
             .buffer_mut()
             .set_line(area.x, y, &row.line, area.width);
     }
-    app.view.first = first;
+    app.screen.view.first = first;
     crate::frame_log::section("figures", || {
         super::figure_rows::draw(
             frame.buffer_mut(),
@@ -100,9 +102,9 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         );
     });
     // 鼠标、复制照这一帧的行；共享记着的那一份，不复制。
-    app.view.rows = rows.clone();
+    app.screen.view.rows = rows.clone();
     // 悬停在链接上：这个链接露出来的每一截都加下划线。
-    if let Some(url) = &app.view.hover_link {
+    if let Some(url) = &app.screen.view.hover_link {
         for (i, row) in rows.window(first, height) {
             let y = area.y + u16::try_from(i - first).unwrap_or(0);
             for (from, to, _) in row.links.iter().filter(|(_, _, u)| u == url) {
@@ -125,7 +127,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, app: &mut App) {
         if row.figure.is_some() {
             continue;
         }
-        if let Some((from, to)) = app.view.selected_cols(i) {
+        if let Some((from, to)) = app.screen.view.selected_cols(i) {
             let y = area.y + u16::try_from(i - first).unwrap_or(0);
             let cols = Rect::new(area.x + from, y, to - from, 1).intersection(area);
             let reversed = Style::new().add_modifier(Modifier::REVERSED);
