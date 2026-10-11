@@ -8,7 +8,8 @@ use std::collections::HashSet;
 
 use ratatui::crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
-use unicode_width::UnicodeWidthChar;
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 use crate::transcript::{Entry, Kind};
 use crate::ui::row_cache::Rows;
@@ -342,15 +343,16 @@ impl BodyView {
     }
 }
 
-/// 一行字里第 `[from, to)` 列的那一段，按显示宽度；宽字只要起点落在里面就算。
+/// 一行字里第 `[from, to)` 列的那一段，按显示宽度；宽字只要起点落在里面就算。照字素簇算列，和排版、画面一样
+/// （review C2，2026-10-11：原来逐字符算，`⚠️`、带 ZWJ 的 emoji 算窄了，后面复制出来的字错位）。
 pub(crate) fn slice(text: &str, from: u16, to: u16) -> String {
     let mut col = 0u16;
     let mut out = String::new();
-    for c in text.chars() {
+    for g in text.graphemes(true) {
         if col >= from && col < to {
-            out.push(c);
+            out.push_str(g);
         }
-        col = col.saturating_add(u16::try_from(c.width().unwrap_or(0)).unwrap_or(0));
+        col = col.saturating_add(u16::try_from(g.width()).unwrap_or(0));
     }
     out
 }
@@ -395,6 +397,9 @@ mod tests {
     fn slicing_counts_display_columns() {
         assert_eq!(slice("你好世界", 2, 6), "好世");
         assert_eq!(slice("abc", 1, 99), "bc");
+        // review C2（2026-10-11）：排版、画面照字素簇算宽，`⚠️`（U+26A0 加 FE0F）两列；原来逐字符算成一列，后面的全错位。
+        assert_eq!(slice("⚠️ Note: foo", 9, 12), "foo");
+        assert_eq!(slice("👩‍💻 ok", 3, 5), "ok", "带 ZWJ 的一个字两列");
     }
 
     #[test]
