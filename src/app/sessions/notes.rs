@@ -76,7 +76,7 @@ pub(super) fn doing(transcript: &Transcript, human: &Human, words: &JobTexts) ->
         Some((StepKind::Thought { .. }, _)) => words.doing_thinking.clone(),
         Some((StepKind::Tool { name, .. }, step)) => {
             let face = human.tool(name);
-            let mut out = face.map_or(name.clone(), |f| f.name.clone());
+            let mut out = human.tool_name(name);
             let subject = face
                 .and_then(|f| f.subject.as_deref())
                 .or((name == "shell").then_some("description"))

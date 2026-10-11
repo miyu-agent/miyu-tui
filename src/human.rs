@@ -8,6 +8,9 @@ use miyu_client::protocol::Template;
 use miyu_client::texts::{Face, clean};
 use serde_json::Value;
 
+/// MCP 服务的工具名的开头（核心 `miyu_tool::catalog::MCP_PREFIX`）。
+const MCP: &str = "mcp__";
+
 /// 一种语言的字。
 #[derive(Debug, Clone, Default)]
 pub struct Human {
@@ -40,6 +43,21 @@ impl Human {
     /// 叫 `name` 的工具给人看的样子；没有的是空的。
     pub fn tool(&self, name: &str) -> Option<&Face> {
         self.tools.get(name)
+    }
+
+    /// 叫 `name` 的工具给人看的名字：核心给了的照它；没给的照原名，MCP 服务的工具（`mcp__<服务>__<工具>`，核心 X-3）写
+    /// 「服务 · 工具」（2026-10-11 项目主人定；核心的图纸写「头怎么显示归头」）。
+    pub fn tool_name(&self, name: &str) -> String {
+        if let Some(face) = self.tool(name) {
+            return face.name.clone();
+        }
+        name.strip_prefix(MCP)
+            .and_then(|rest| rest.split_once("__"))
+            .filter(|(service, tool)| !service.is_empty() && !tool.is_empty())
+            .map_or_else(
+                || name.to_string(),
+                |(service, tool)| format!("{service} · {tool}"),
+            )
     }
 
     /// 照说法换成一句话，字段先过一遍核心那份 `clean`。没有这一句、或者少了字段的，是空的。

@@ -37,3 +37,21 @@ fn the_reply_gives_tool_faces_and_fills_phrases() {
     assert_eq!(human.say(&said("core/bad", &[])), None, "坏模板那一句不要");
     assert_eq!(Human::default().tool("read"), None, "没要到的是空的");
 }
+
+#[test]
+fn an_mcp_tool_without_a_face_is_named_by_its_service_and_tool() {
+    let human = Human::default();
+    assert_eq!(
+        human.tool_name("mcp__github__create_issue"),
+        "github · create_issue"
+    );
+    assert_eq!(
+        human.tool_name("mcp__fs__read__file"),
+        "fs · read__file",
+        "工具名里带 __ 的照原样"
+    );
+    assert_eq!(human.tool_name("mcp____x"), "mcp____x", "服务名空着的不认");
+    assert_eq!(human.tool_name("read"), "read");
+    let named = Human::from_reply(&serde_json::json!({"tools": {"read": {"name": "读取"}}}));
+    assert_eq!(named.tool_name("read"), "读取");
+}
