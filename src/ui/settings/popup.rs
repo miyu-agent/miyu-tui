@@ -340,16 +340,25 @@ fn paint(frame: &mut Frame, rect: Rect, lines: &mut Lines, page: &mut Settings, 
         }
     }
     let mut y = inner.bottom().saturating_sub(3);
-    if let Some(error) = &lines.error {
+    // 报错、按钮、按键提示：落在窗里的才画。终端只有四五行高时它们算到窗外，原来 `y - 1` 下溢崩溃（review A7）。
+    let inside = |y: u16| y >= inner.y && y < inner.bottom();
+    if let Some(error) = &lines.error
+        && let Some(above) = y.checked_sub(1).filter(|&r| inside(r))
+    {
         frame.buffer_mut().set_string(
             inner.x,
-            y - 1,
+            above,
             fit(error, inner.width as usize),
             theme::error(),
         );
     }
     let mut x = inner.x;
-    for (i, (label, danger)) in lines.buttons.iter().enumerate() {
+    let buttons = if inside(y) {
+        lines.buttons.as_slice()
+    } else {
+        &[]
+    };
+    for (i, (label, danger)) in buttons.iter().enumerate() {
         let text = format!("[ {label} ]");
         let on = lines.button == Some(i);
         let style = match (on, danger) {
@@ -364,7 +373,9 @@ fn paint(frame: &mut Frame, rect: Rect, lines: &mut Lines, page: &mut Settings, 
     }
     // 按钮和按键提示之间空一行（2026-10-07 项目主人）。
     y += 2;
-    frame
-        .buffer_mut()
-        .set_line(inner.x, y, &hint_line(&lines.hints), inner.width);
+    if inside(y) {
+        frame
+            .buffer_mut()
+            .set_line(inner.x, y, &hint_line(&lines.hints), inner.width);
+    }
 }
