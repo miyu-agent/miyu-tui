@@ -94,9 +94,8 @@ impl App {
             .editor
             .clone()
             .or_else(|| cfg!(unix).then(|| "vi".to_string()));
-        let file = std::env::temp_dir().join(format!("miyu-persona-{}.md", std::process::id()));
-        match editor.map(|e| (e, std::fs::write(&file, &text))) {
-            Some((editor, Ok(()))) => {
+        match editor.map(|e| (e, crate::scratch::write("persona", &text))) {
+            Some((editor, Ok(file))) => {
                 self.settings_prompt = Some(file.clone());
                 self.edit = Some((editor, file));
             }

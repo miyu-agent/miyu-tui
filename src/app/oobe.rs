@@ -121,10 +121,8 @@ impl App {
                     .editor
                     .clone()
                     .or_else(|| cfg!(unix).then(|| "vi".to_string()));
-                let file =
-                    std::env::temp_dir().join(format!("miyu-oobe-{}.md", std::process::id()));
-                match editor.map(|e| (e, std::fs::write(&file, &text))) {
-                    Some((editor, Ok(()))) => {
+                match editor.map(|e| (e, crate::scratch::write("oobe", &text))) {
+                    Some((editor, Ok(file))) => {
                         self.oobe_editing = Some(file.clone());
                         self.edit = Some((editor, file));
                     }
