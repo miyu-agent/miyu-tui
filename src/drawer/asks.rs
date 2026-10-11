@@ -38,6 +38,13 @@ impl Asks {
         self.known.remove(&key)
     }
 
+    /// 会话 `owner` 的都忘掉：从头重读它（切过去、补发）以前、不再要它的时候（review，2026-10-11：原来同一个进程里切回
+    /// 一个会话，以前了结过的提问补发来时不开、也不记，后面推来的回答找不到题目，答案不写进正文；记下的也一直只增不减）。
+    pub fn forget(&mut self, owner: &str) {
+        self.known.retain(|(o, _), _| o != owner);
+        self.settled.retain(|(o, _)| o != owner);
+    }
+
     /// 交了被拒、要重新打开的那一个。
     pub fn again(&self, owner: &str, call_id: &str) -> Option<Drawer> {
         self.known.get(&key(owner, call_id)).cloned()
@@ -68,5 +75,8 @@ mod tests {
         assert!(!asks.asked(&drawer("s1", "c1")), "补发里先了结、后问的不开");
         assert!(asks.settle("s1", "c2").is_none());
         assert!(asks.asked(&drawer("s2", "c1")), "别的会话同一个编号照开");
+        asks.forget("s1");
+        assert!(asks.asked(&drawer("s1", "c1")), "从头重读的照新的认");
+        assert!(asks.again("s2", "c1").is_some(), "别的会话的不动");
     }
 }
