@@ -152,7 +152,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) {
         viewing: app.talk.viewing(),
         nested: &nested,
         hover: app.screen.agents_hover,
-        focus: match app.focus() {
+        focus: match app.seen().focus() {
             crate::focus::Focus::Agent(i) => Some(i),
             _ => None,
         },

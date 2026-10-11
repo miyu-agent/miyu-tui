@@ -25,7 +25,7 @@ const GAP: usize = 2;
 /// 一行放不下时，右边的格子照顺序往下丢，上下文留到最后（`13-终端界面.md` 第八节）：左右两段不许叠在一起，
 /// 叠上以后宽字被盖掉一半，下一帧会留下残字。按钮留到最后。
 pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
-    let focus = app.focus();
+    let focus = app.seen().focus();
     let count = app.talk.board.shells_running();
     let button = (count > 0).then(|| {
         app.config
@@ -38,7 +38,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &App) -> Rect {
     let total = app.talk.usage_total();
     let mut cells = right(&app.talk.transcript, &total, &app.config);
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
-    if let Some(amounts) = app.spent() {
+    if let Some(amounts) = app.seen().spent() {
         cells.push(Part {
             keep: 2,
             spans: vec![Span::styled(amounts, theme::dim())],

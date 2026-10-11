@@ -211,7 +211,7 @@ pub(super) fn sessions(app: &App, rows: &[UsageRow], width: u16) -> Vec<Line<'st
         .iter()
         .map(|r| {
             let id = r.session.clone().unwrap_or_default();
-            let mut row = vec![Cell::left(app.usage_name(&id))];
+            let mut row = vec![Cell::left(app.seen().usage_name(&id))];
             row.extend(tail(app, r));
             row
         })

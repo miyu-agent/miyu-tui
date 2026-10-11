@@ -62,7 +62,7 @@ fn stats(app: &App, data: &UsageData, days: &[Day], width: u16) -> Vec<Line<'sta
         || (missing(), String::new()),
         |r| {
             let id = r.session.clone().unwrap_or_default();
-            (meter::short(r.tokens), app.usage_name(&id))
+            (meter::short(r.tokens), app.seen().usage_name(&id))
         },
     );
     let cells = [

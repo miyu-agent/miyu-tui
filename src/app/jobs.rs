@@ -97,38 +97,6 @@ impl App {
         }
     }
 
-    /// 框下面那一行现在有哪些按钮（从左到右）：有在跑的命令时的后台按钮。
-    pub fn footer_buttons(&self) -> Vec<Button> {
-        (self.talk.board.shells_running() > 0)
-            .then_some(Button::Background)
-            .into_iter()
-            .collect()
-    }
-
-    /// 子代理状态行里焦点能停的几行：主会话那一行加上列着的子代理（`sessions.rs` 的 `listed_agents`）；
-    /// 没有列着的子代理，这一块不在，一行都没有。
-    fn agent_stops(&self) -> usize {
-        match self
-            .talk
-            .listed_agents()
-            .len()
-            .min(self.config.layout.agent_rows)
-        {
-            0 => 0,
-            n => n + 1,
-        }
-    }
-
-    /// 焦点现在在哪：按钮、行没了就退回（第 2 条）。
-    pub fn focus(&self) -> Focus {
-        let buttons = self.footer_buttons();
-        let stops = Stops {
-            buttons: &buttons,
-            agents: self.agent_stops(),
-        };
-        self.typing.focus.settle(stops)
-    }
-
     /// 打开按钮的面板。
     fn open(&mut self, button: Button) {
         self.boxes.panel = Some(match button {
@@ -147,10 +115,10 @@ impl App {
             self.panel_key(panel, key);
             return true;
         }
-        let buttons = self.footer_buttons();
+        let buttons = self.seen().footer_buttons();
         let stops = Stops {
             buttons: &buttons,
-            agents: self.agent_stops(),
+            agents: self.seen().agent_stops(),
         };
         let focus = self.typing.focus.settle(stops);
         self.typing.focus = match (focus, key.code) {

@@ -76,7 +76,7 @@ impl Pick {
     }
 
     /// 编号写成名字（照列表，没有的写编号）。
-    fn name<'a>(&'a self, id: &'a str) -> &'a str {
+    pub(super) fn name<'a>(&'a self, id: &'a str) -> &'a str {
         self.list
             .iter()
             .flatten()
@@ -282,39 +282,6 @@ impl App {
         self.ask_next();
         self.link.core.send(Command::ListPersonas);
         self.link.core.send(Command::ListPresets);
-    }
-
-    /// 开着的会话用的人格、预设，各一句（侧边栏写，订阅回应里的，核心 P-1 下、P-2 上）。
-    pub fn session_picks(&self) -> Vec<String> {
-        self.words(
-            self.talk.transcript.persona.as_deref(),
-            self.talk.transcript.preset.as_deref(),
-        )
-    }
-
-    fn words(&self, persona: Option<&str>, preset: Option<&str>) -> Vec<String> {
-        let texts = &self.config.text.persona_box;
-        let mut out = Vec::new();
-        if let Some(id) = persona {
-            out.push(texts.chosen.replace("{name}", self.talk.persona.name(id)));
-        }
-        if let Some(id) = preset {
-            out.push(
-                texts
-                    .preset_chosen
-                    .replace("{name}", self.talk.preset.name(id)),
-            );
-        }
-        out
-    }
-
-    /// 框里画的：哪一样的一行行、默认的编号。
-    pub fn pick_list(&self, kind: Kind) -> (&[Persona], Option<&str>) {
-        let pick = self.pick(kind);
-        (
-            pick.list.as_deref().unwrap_or_default(),
-            pick.default.as_deref(),
-        )
     }
 
     /// 连上、配置变了：默认的照配置，两样都再读一次。

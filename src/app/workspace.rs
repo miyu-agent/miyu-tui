@@ -16,19 +16,6 @@ impl App {
         }
     }
 
-    /// 现在用的工作区：开着的会话照会话的，还没开的照换过的，没换的照终端所在的。
-    pub fn current_workspace(&self) -> &str {
-        match &self.talk.transcript.session {
-            Some(_) => self
-                .talk
-                .transcript
-                .workspace
-                .as_deref()
-                .unwrap_or(&self.cwd),
-            None => self.talk.workspace_pending.as_deref().unwrap_or(&self.cwd),
-        }
-    }
-
     /// 换到 `path`（相对的照终端所在的目录接）：开着的会话交给核心，还没开的先验。
     fn change_workspace(&mut self, path: String) {
         if !self.reachable() {

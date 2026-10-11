@@ -63,7 +63,7 @@ pub(super) fn content(
             (chrome, lines, map)
         }
         Some(crate::app::Panel::Pick { kind, selected }) => {
-            let (list, default) = app.pick_list(kind);
+            let (list, default) = app.seen().pick_list(kind);
             persona_list::lines(
                 list,
                 default,

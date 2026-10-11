@@ -159,20 +159,11 @@ impl App {
         }
     }
 
-    /// 还在等 `ui.welcomed`：问到以前、最多 `oobe.json` 的 `welcome_wait_ms`，不画首页（「第一次打开的引导」第 1 条，
-    /// 2026-10-10 项目主人报：进引导前闪一下空会话）。
-    pub fn welcome_pending(&self, now: Instant) -> bool {
-        !self.boxes.welcome_known && now < self.welcome_until()
-    }
-
-    /// 等 `ui.welcomed` 等到什么时候。
-    fn welcome_until(&self) -> Instant {
-        self.screen.started + Duration::from_millis(self.config.oobe.welcome_wait_ms)
-    }
-
     /// 还在等 `ui.welcomed` 的，到点醒来画首页。
     pub(super) fn welcome_deadline(&self, now: Instant) -> Option<Instant> {
-        self.welcome_pending(now).then(|| self.welcome_until())
+        self.seen()
+            .welcome_pending(now)
+            .then(|| self.seen().welcome_until())
     }
 
     /// 核心那边的消息先给引导看：引导、这里自己发的请求的回应归这里（交回 `true`）；连上、断开告诉引导；头的配置读到了
