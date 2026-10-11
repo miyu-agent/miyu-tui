@@ -54,6 +54,8 @@ pub mod wide;
 #[cfg(test)]
 mod rulers;
 #[cfg(test)]
+mod rulers_live;
+#[cfg(test)]
 mod test_support;
 
 use ratatui::Frame;
