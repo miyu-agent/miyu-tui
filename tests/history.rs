@@ -17,6 +17,26 @@ fn input(tui: &support::Tui) -> String {
         .unwrap_or_default()
 }
 
+/// 按 ↑ 直到输入框里是 `text`。输入历史等核心交回软件包列表（状态目录在哪）才读进来，连上那一刻按的 ↑ 可能赶在它前面：
+/// 没翻出来的收掉再按，最多等几秒（2026-10-11：本地十次红一次）。
+fn up_until(tui: &mut support::Tui, text: &str) {
+    let end = std::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        tui.key(UP);
+        tui.pump(Duration::from_millis(300));
+        if input(tui).contains(text) {
+            return;
+        }
+        assert!(
+            std::time::Instant::now() < end,
+            "↑ 翻不到「{text}」：{}",
+            tui.lines().join("\n")
+        );
+        tui.key(b"\x1b");
+        tui.pump(Duration::from_millis(200));
+    }
+}
+
 #[test]
 fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
     let home = Home::new(Script::new([Play::Says("好。"), Play::Says("嗯。")]));
@@ -28,13 +48,7 @@ fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
     // 重启：新的界面、新的会话（ui.startup 照默认开新的）。
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
-    tui.key(UP);
-    tui.pump(Duration::from_millis(300));
-    assert!(
-        input(&tui).contains("重启以前说的一句"),
-        "↑ 翻得到上次的：{}",
-        tui.lines().join("\n")
-    );
+    up_until(&mut tui, "重启以前说的一句");
     // 记在终端这个软件包的状态目录里（核心 9-1 上，`package.list` 的 `state`）。
     let saved =
         std::fs::read_to_string(home.root().join("state/packages/tui/history.jsonl")).unwrap();
@@ -50,14 +64,7 @@ fn history_from_the_old_place_moves_into_the_package_state_dir() {
     std::fs::write(&old, "{\"at\":1,\"text\":\"老地方记的一句\"}\n").unwrap();
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
-    tui.pump(Duration::from_millis(500));
-    tui.key(UP);
-    tui.pump(Duration::from_millis(300));
-    assert!(
-        input(&tui).contains("老地方记的一句"),
-        "{}",
-        tui.lines().join("\n")
-    );
+    up_until(&mut tui, "老地方记的一句");
     assert!(!old.exists(), "老位置的搬走了");
     let moved =
         std::fs::read_to_string(home.root().join("state/packages/tui/history.jsonl")).unwrap();
