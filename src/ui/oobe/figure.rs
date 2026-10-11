@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
 
-use crate::app::App;
+use super::Parts;
 use crate::mascot::{self, Look, Pose};
 use crate::ui::mascot_view;
 
@@ -37,7 +37,7 @@ pub fn draw(
     frame: &mut Frame,
     rect: Rect,
     look: &Look,
-    app: &mut App,
+    p: &mut Parts<'_>,
     (target, reach): (Option<Position>, f64),
     extra: Extra,
 ) {
@@ -47,14 +47,14 @@ pub fn draw(
         f64::from(rect.y) + look.center_row,
     );
     let settle = Duration::from_millis(look.gaze.pointer_settle_ms);
-    let target = if app.mascot.attention.on_pointer(now, settle) {
-        app.screen.pointer.or(target)
+    let target = if p.mascot.attention.on_pointer(now, settle) {
+        p.screen.pointer.or(target)
     } else {
-        target.or(app.screen.pointer)
+        target.or(p.screen.pointer)
     };
-    let idle = idle_look(look, &app.config.oobe.idle);
-    let glance_roll = app.config.oobe.idle.glance_roll;
-    let idling = app.mascot.idle.pose(now, &idle);
+    let idle = idle_look(look, &p.config.oobe.idle);
+    let glance_roll = p.config.oobe.idle.glance_roll;
+    let idling = p.mascot.idle.pose(now, &idle);
     let half_life = if idling.glance.is_some() {
         look.idle.glance_half_life_ms
     } else {
@@ -72,9 +72,9 @@ pub fn draw(
             )
         }),
     };
-    app.mascot.gaze.aim(aim);
-    app.mascot.gaze.step(now, Duration::from_millis(half_life));
-    let (yaw, pitch) = app.mascot.gaze.angles();
+    p.mascot.gaze.aim(aim);
+    p.mascot.gaze.step(now, Duration::from_millis(half_life));
+    let (yaw, pitch) = p.mascot.gaze.angles();
     // 闲着四处看时顺带歪一点头。
     let wander = if idling.glance.is_some() {
         yaw * glance_roll

@@ -9,10 +9,10 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
+use super::Parts;
 use super::figure::{self, Extra};
 use super::stage;
 use super::stars;
-use crate::app::App;
 use crate::oobe::motion::{ease_out, fraction};
 use crate::theme;
 
@@ -38,9 +38,9 @@ fn centered(frame: &mut Frame, area: Rect, y: u16, line: Line<'static>) {
 }
 
 /// 带流光的一行（照运行状态行）。
-fn shimmer(text: &str, t: f64, app: &App) -> Line<'static> {
+fn shimmer(text: &str, t: f64, p: &Parts<'_>) -> Line<'static> {
     let chars: Vec<char> = text.chars().collect();
-    let look = &app.config.layout.shimmer;
+    let look = &p.config.layout.shimmer;
     Line::from(
         chars
             .iter()
@@ -65,15 +65,15 @@ fn faded(text: &str, sub: f64) -> Option<Line<'static>> {
 }
 
 /// 欢迎页。
-pub fn welcome(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
-    let Some(oobe) = app.boxes.oobe.as_ref() else {
+pub fn welcome(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
+    let Some(oobe) = Some(&*p.oobe) else {
         return;
     };
-    let look = &app.config.oobe;
-    let words = app.config.text.oobe.welcome.clone();
+    let look = &p.config.oobe;
+    let words = p.config.text.oobe.welcome.clone();
     let chars = words.title.chars().count();
     let scene = oobe.intro.scene(now, &look.intro, chars);
-    let base = &app.config.mascot;
+    let base = &p.config.mascot;
     let k = (f64::from(area.height) * look.welcome.height / f64::from(base.rows))
         .min(look.welcome.scale)
         .max(1.0);
@@ -92,7 +92,7 @@ pub fn welcome(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
             blink: scene.blink,
             ..Extra::default()
         };
-        figure::draw(frame, rect, &big, app, (None, 0.0), extra);
+        figure::draw(frame, rect, &big, p, (None, 0.0), extra);
     }
     let title: String = words.title.chars().take(scene.typed).collect();
     let bold = Style::new().add_modifier(Modifier::BOLD);
@@ -101,19 +101,19 @@ pub fn welcome(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
         centered(frame, area, text_y + 2, line);
     }
     if scene.ready {
-        centered(frame, area, text_y + 4, shimmer(&words.start, t, app));
+        centered(frame, area, text_y + 4, shimmer(&words.start, t, p));
     }
 }
 
 /// 好了那一屏：吉祥物从左边走回中间、转一圈；回车以后星点散开、它走到首页的位置。
-pub fn done(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
-    let Some(oobe) = app.boxes.oobe.as_ref() else {
+pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
+    let Some(oobe) = Some(&*p.oobe) else {
         return;
     };
-    let look = &app.config.oobe;
-    let texts = app.config.text.oobe.clone();
+    let look = &p.config.oobe;
+    let texts = p.config.text.oobe.clone();
     let fin = oobe.finale(now, &texts);
-    let base = app.config.mascot.clone();
+    let base = p.config.mascot.clone();
     let (middle, text_y) = arrange(area, base.cols, base.rows, look.welcome.gap, 5);
     let from = stage::places(area, look, &base).mascot.or(middle);
     let leave = oobe
@@ -122,7 +122,7 @@ pub fn done(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
     let home = crate::ui::home::areas(
         area,
         &|_| 1,
-        &app.config.layout,
+        &p.config.layout,
         (base.cols, base.rows),
         0,
         0,
@@ -150,7 +150,7 @@ pub fn done(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
             mouth: fin.mouth,
             ..Extra::default()
         };
-        figure::draw(frame, rect, &base, app, (None, 0.0), extra);
+        figure::draw(frame, rect, &base, p, (None, 0.0), extra);
     }
     if leave.is_some_and(|p| p > 0.3) {
         return;
@@ -172,7 +172,7 @@ pub fn done(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
         centered(frame, area, text_y + 2, line);
     }
     if fin.ready {
-        centered(frame, area, text_y + 4, shimmer(&words.start, t, app));
+        centered(frame, area, text_y + 4, shimmer(&words.start, t, p));
     }
 }
 

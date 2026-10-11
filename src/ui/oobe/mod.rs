@@ -21,54 +21,65 @@ use ratatui::layout::{Position, Rect};
 use ratatui::text::Line;
 use ratatui::widgets::Paragraph;
 
-use crate::app::App;
+use crate::app::{MascotState, Screen};
+use crate::config::Config;
 use crate::oobe::{Oobe, Step};
 use content::Content;
 use figure::Extra;
 pub use figure::idle_look;
 
+/// 引导画的时候要的（蓝图 `app.md` 第三节）：配置、图的账只读；引导自己（弹窗滚到哪）、上一帧画面（光标）、吉祥物
+/// 能改。
+pub struct Parts<'a> {
+    pub config: &'a Config,
+    pub media: &'a crate::app::Media,
+    pub oobe: &'a mut Oobe,
+    pub screen: &'a mut Screen,
+    pub mascot: &'a mut MascotState,
+}
+
 /// 引导开着时整屏归它。
-pub fn draw(frame: &mut Frame, app: &mut App) {
+pub fn draw(frame: &mut Frame, p: &mut Parts<'_>) {
     let now = Instant::now();
     let area = frame.area();
-    let Some(step) = app.boxes.oobe.as_ref().map(|o| o.step) else {
+    let Some(step) = Some(&*p.oobe).map(|o| o.step) else {
         return;
     };
     match step {
-        Step::Welcome => screens::welcome(frame, area, app, now),
-        Step::Done => screens::done(frame, area, app, now),
-        _ => stage_frame(frame, area, app, now),
+        Step::Welcome => screens::welcome(frame, area, p, now),
+        Step::Done => screens::done(frame, area, p, now),
+        _ => stage_frame(frame, area, p, now),
     }
 }
 
 /// 一步的内容，`rect` 是内容那一块的大小。
-fn content(step: Step, oobe: &Oobe, app: &App, rect: Rect, now: Instant) -> Content {
+fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> Content {
     let width = rect.width;
-    let texts = &app.config.text.oobe;
+    let texts = &p.config.text.oobe;
     match step {
         Step::Language => pick::language(oobe, texts, width),
         Step::Icons => {
-            let nerd = app.config.icon_sets.iter().find(|s| s.name == "nerd");
+            let nerd = p.config.icon_sets.iter().find(|s| s.name == "nerd");
             pick::icons(oobe, texts, nerd, width)
         }
         Step::Model => {
-            let frames = &app.config.timeline.spinner;
+            let frames = &p.config.timeline.spinner;
             let beat = now.saturating_duration_since(oobe.born).as_millis()
-                / u128::from(app.config.timeline.spinner_ms.max(1));
+                / u128::from(p.config.timeline.spinner_ms.max(1));
             let spinner = frames
                 .get(beat as usize % frames.len().max(1))
                 .map_or("", String::as_str);
             model::content(&oobe.model, texts, (width, rect.height), spinner)
         }
-        Step::Persona => persona::content(&oobe.persona, texts, width, app.config.oobe.avatar_rows),
+        Step::Persona => persona::content(&oobe.persona, texts, width, p.config.oobe.avatar_rows),
         Step::Preset => preset::content(&oobe.preset, texts, width),
         Step::Welcome | Step::Done => Content::new(width),
     }
 }
 
 /// 这一屏最下面写什么按键。
-fn hint(oobe: &Oobe, app: &App) -> String {
-    let keys = &app.config.text.oobe.keys;
+fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
+    let keys = &p.config.text.oobe.keys;
     use crate::oobe::model::{Phase, Slot};
     use crate::oobe::persona::Slot as Field;
     match oobe.step {
@@ -115,20 +126,20 @@ fn joined(pairs: &[[String; 2]]) -> String {
 }
 
 /// 中间几步。
-fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
-    let Some(oobe) = app.boxes.oobe.as_ref() else {
+fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
+    let Some(oobe) = Some(&*p.oobe) else {
         return;
     };
-    let look = app.config.oobe.clone();
-    let places = stage::places(area, &look, &app.config.mascot);
-    stage::bar(frame, places.bar, oobe.step, &app.config.text.oobe.steps);
+    let look = p.config.oobe.clone();
+    let places = stage::places(area, &look, &p.config.mascot);
+    stage::bar(frame, places.bar, oobe.step, &p.config.text.oobe.steps);
     // 没连上核心：按键提示那一行换成黄字（第 4 条）。
     if oobe.online {
-        stage::hints(frame, places.hints, &hint(oobe, app));
+        stage::hints(frame, places.hints, &hint(oobe, p));
     } else {
-        stage::warn(frame, places.hints, &app.config.text.oobe.offline);
+        stage::warn(frame, places.hints, &p.config.text.oobe.offline);
     }
-    let built = content(oobe.step, oobe, app, places.content, now);
+    let built = content(oobe.step, oobe, p, places.content, now);
     let total = Duration::from_millis(look.slide_ms);
     let sliding = oobe.sliding.and_then(|(from, slide)| {
         slide
@@ -138,7 +149,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
     let mut focus = None;
     match sliding {
         Some((from, (old, new))) => {
-            let before = content(from, oobe, app, places.content, now);
+            let before = content(from, oobe, p, places.content, now);
             place(frame, places.content, &before, old);
             place(frame, places.content, &built, new);
         }
@@ -146,13 +157,13 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
             let shift = place(frame, places.content, &built, 0);
             // 头像的小图（第 21 条）：滑动时不画。
             if let Some(picture) = &built.picture {
-                picture::draw(frame, &app.media.figures, places.content, shift, picture);
+                picture::draw(frame, &p.media.figures, places.content, shift, picture);
             }
             let row = |r: u16| places.content.y + r.saturating_sub(shift);
             if let Some((r, col)) = built.caret {
                 let at = Position::new(places.content.x + col, row(r));
                 if places.content.contains(at) {
-                    app.screen.caret.put(at, true);
+                    p.screen.caret.put(at, true);
                     focus = Some(at);
                 }
             }
@@ -164,10 +175,10 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
         }
     }
     let Some(rect) = places.mascot else {
-        popup_frame(frame, area, app, true);
+        popup_frame(frame, area, p, true);
         return;
     };
-    let Some(oobe) = app.boxes.oobe.as_ref() else {
+    let Some(oobe) = Some(&*p.oobe) else {
         return;
     };
     let act = oobe.react.act(now, &look.react);
@@ -187,7 +198,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
         roll: act.roll,
         ..Extra::default()
     };
-    let mascot = app.config.mascot.clone();
+    let mascot = p.config.mascot.clone();
     let reach = f64::from(
         places
             .content
@@ -195,12 +206,12 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
             .saturating_sub(rect.x + rect.width / 2),
     );
     // 浮窗开着时吉祥物看浮窗里的光标。
-    let popup_caret = popup_caret(frame, area, app);
+    let popup_caret = popup_caret(frame, area, p);
     figure::draw(
         frame,
         rect,
         &mascot,
-        app,
+        p,
         (popup_caret.or(focus), reach),
         extra,
     );
@@ -218,12 +229,12 @@ fn stage_frame(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
             );
         }
     }
-    popup_frame(frame, area, app, true);
+    popup_frame(frame, area, p, true);
 }
 
 /// 开着浮窗（大编辑浮窗、示范对话、更多供应商）：先算出浮窗里的光标给吉祥物看（浮窗盖在它上面，画在后面）。
-fn popup_caret(frame: &mut Frame, area: Rect, app: &mut App) -> Option<Position> {
-    let (shown, caret) = popup_frame(frame, area, app, false);
+fn popup_caret(frame: &mut Frame, area: Rect, p: &mut Parts<'_>) -> Option<Position> {
+    let (shown, caret) = popup_frame(frame, area, p, false);
     shown.then_some(caret).flatten()
 }
 
@@ -231,17 +242,17 @@ fn popup_caret(frame: &mut Frame, area: Rect, app: &mut App) -> Option<Position>
 fn popup_frame(
     frame: &mut Frame,
     area: Rect,
-    app: &mut App,
+    p: &mut Parts<'_>,
     paint: bool,
 ) -> (bool, Option<Position>) {
-    let look = app.config.oobe.popup.clone();
-    let texts = app.config.text.oobe.clone();
-    let dialogs = app.config.text.settings.more.dialogs.clone();
-    let more = &app.config.text.settings.more.hints;
+    let look = p.config.oobe.popup.clone();
+    let texts = p.config.text.oobe.clone();
+    let dialogs = p.config.text.settings.more.dialogs.clone();
+    let more = &p.config.text.settings.more.hints;
     let hints = (joined(&more[8]), joined(&more[9]));
     let rect = popup::rect(area, &look);
     let inner = popup::body(rect);
-    let Some(oobe) = app.boxes.oobe.as_mut() else {
+    let Some(oobe) = Some(&mut *p.oobe) else {
         return (false, None);
     };
     let size = (inner.width, inner.height);
@@ -274,7 +285,7 @@ fn popup_frame(
     }
     let caret = popup::draw(frame, area, rect, (&title, &body, &hint));
     if let Some(at) = caret {
-        app.screen.caret.put(at, true);
+        p.screen.caret.put(at, true);
     }
     (true, caret)
 }
