@@ -1,5 +1,6 @@
 {
   "max_side": 1024,
   "max_bytes": 1048576,
-  "jpeg_quality": 85
+  "jpeg_quality": 85,
+  "max_read_bytes": 67108864
 }

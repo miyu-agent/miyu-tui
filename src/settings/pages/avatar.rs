@@ -34,8 +34,7 @@ impl Settings {
         } else {
             let cwd = std::env::current_dir().unwrap_or_default();
             let path = crate::local::path(text, std::env::home_dir().as_deref(), &cwd);
-            // 超了核心的上限、核心不认的格式，先缩小（「配置页」第 36 条，2026-10-11 项目主人）。
-            let path = crate::avatars::shrink::ready(&path);
+            // 超了核心的上限、核心不认的格式，发出去以前在后台先缩小（「配置页」第 36 条，`app/avatars.rs`）。
             let params = json!({"path": path.display().to_string()});
             self.ask(
                 "blob.put",
@@ -125,29 +124,19 @@ mod tests {
     }
 
     #[test]
-    fn a_big_picture_is_shrunk_before_it_is_uploaded() {
-        // 2026-10-11 项目主人：头像超过 1 MiB 或 1024 像素就拒「不太合理」，照推荐终端先缩小再传。
-        let dir = std::env::temp_dir().join(format!("miyu-avatar-big-{}", std::process::id()));
-        drop(std::fs::create_dir_all(&dir));
-        let big = dir.join("photo.png");
-        image::RgbaImage::from_pixel(2048, 1536, image::Rgba([200, 120, 40, 255]))
-            .save(&big)
-            .expect("写图");
+    fn a_picture_path_is_handed_over_as_is_and_shrunk_when_sent() {
+        // 2026-10-11 项目主人：头像超过 1 MiB 或 1024 像素就拒「不太合理」，终端先缩小再传。缩小挪到发出去的那一刻、在后台
+        // 做（review D2：原来在界面线程里，大照片卡界面，`app/avatars.rs`），配置页交的是原来的路径；缩成什么样由
+        // `avatars/shrink` 的测试守着。
         let mut page = opened();
         press(&mut page, KeyCode::Enter);
-        for c in big.display().to_string().chars() {
+        for c in "/tmp/photo.png".chars() {
             press(&mut page, KeyCode::Char(c));
         }
         press(&mut page, KeyCode::Enter);
         let asks = page.take_asks();
-        let sent = asks[0].2["path"].as_str().unwrap_or_default().to_string();
-        assert_ne!(sent, big.display().to_string(), "交的是缩小的那份");
-        let small = image::open(&sent).expect("缩小的是图");
-        assert_eq!((small.width(), small.height()), (1024, 768));
-        let texts = Config::builtin().unwrap().text.settings;
-        page.answer(asks[0].0, Ok(json!({"blob": "sha256:cd"})), &texts);
-        assert!(!std::path::Path::new(&sent).exists(), "传完删掉");
-        drop(std::fs::remove_dir_all(&dir));
+        assert_eq!(asks[0].1, "blob.put");
+        assert_eq!(asks[0].2["path"], "/tmp/photo.png");
     }
 
     #[test]

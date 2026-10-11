@@ -27,8 +27,7 @@ impl PersonaStep {
             && let Some(path) = self.avatar_path()
         {
             self.busy = true;
-            // 超了核心的上限、核心不认的格式，先缩小（第 21 条，2026-10-11 项目主人）。
-            let path = crate::avatars::shrink::ready(&path);
+            // 超了核心的上限、核心不认的格式，发出去以前在后台先缩小（第 21 条，`app/avatars.rs`）。
             let params = json!({"path": path.display().to_string()});
             asker.ask("blob.put", params, Waiting::AvatarPut);
             return;

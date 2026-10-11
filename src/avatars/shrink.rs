@@ -23,6 +23,8 @@ pub struct Look {
     pub max_bytes: usize,
     /// 存成 JPEG 时的质量。
     pub jpeg_quality: u8,
+    /// 原图最多读几个字节：再大的不读、原样交，由核心照原话拒（review D2）。
+    pub max_read_bytes: u64,
     /// 缩小的那份写在哪个目录；`None` 是系统的临时目录（测试里换成自己的）。
     #[serde(skip)]
     pub out: Option<PathBuf>,
@@ -53,14 +55,26 @@ pub fn done() {
     }
 }
 
-/// 缩小的那份写在哪：`<目录>/miyu-avatar-<进程号>.<扩展名>`，一次只传一张，同一个名字覆盖。
+/// 缩小的那份写在哪：`<目录>/miyu-avatar-<进程号>.<扩展名>`，一次只传一张，同一个名字覆盖。目录是自己缓存目录里只有自己
+/// 进得去的那个（`scratch.rs`；review D2：原来在共享的临时目录、名字可预测）。
 fn out_path(dir: Option<&Path>, ext: &str) -> PathBuf {
-    let dir = dir.map_or_else(std::env::temp_dir, Path::to_path_buf);
+    let dir = dir.map_or_else(crate::scratch::private_dir, Path::to_path_buf);
     dir.join(format!("miyu-avatar-{}.{ext}", std::process::id()))
 }
 
-/// 用得着缩的缩好、写成文件，交回它；用不着、缩不成的是 `None`。
+/// 在后台缩（review D2，2026-10-11：原来在界面线程里解码、重编码，大照片卡界面零点几秒到一秒多），缩好了把要交的那份
+/// 交给 `then`。
+pub fn in_background(path: PathBuf, then: impl FnOnce(PathBuf) + Send + 'static) {
+    std::thread::spawn(move || then(ready(&path)));
+}
+
+/// 用得着缩的缩好、写成文件，交回它；用不着、缩不成的是 `None`。不是普通文件（FIFO、设备文件）、大过 `max_read_bytes`
+/// 的不读（review D2：原来直接读，指向 FIFO 的读个没完）。
 fn shrink(path: &Path, look: &Look) -> Option<PathBuf> {
+    let meta = std::fs::metadata(path).ok()?;
+    if !meta.is_file() || meta.len() > look.max_read_bytes {
+        return None;
+    }
     let bytes = std::fs::read(path).ok()?;
     let reader = ImageReader::new(Cursor::new(&bytes))
         .with_guessed_format()

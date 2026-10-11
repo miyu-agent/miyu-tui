@@ -16,6 +16,7 @@ fn look(out: &std::path::Path) -> Look {
         max_side: 1024,
         max_bytes: 1024 * 1024,
         jpeg_quality: 85,
+        max_read_bytes: 64 << 20,
         out: Some(out.to_path_buf()),
     }
 }
@@ -80,4 +81,26 @@ fn a_small_picture_goes_as_it_is_and_others_are_converted() {
 #[test]
 fn the_shipped_numbers_parse() {
     assert!(super::shipped().is_some(), "resources/avatar.json 读得出来");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_path_that_is_not_a_plain_file_is_not_read() {
+    // review D2（2026-10-11）：原来直接 `fs::read`，路径指向 FIFO、设备文件的读个没完。不是普通文件的原样交，由核心照原话拒。
+    let dir = dir("fifo");
+    let fifo = dir.join("pipe.png");
+    let made = std::process::Command::new("mkfifo")
+        .arg(&fifo)
+        .status()
+        .is_ok_and(|s| s.success());
+    if !made {
+        return;
+    }
+    let (tx, rx) = std::sync::mpsc::channel();
+    let look = look(&dir);
+    let path = fifo.clone();
+    std::thread::spawn(move || if tx.send(ready_with(&path, &look)).is_err() {});
+    let got = rx.recv_timeout(std::time::Duration::from_secs(3));
+    assert_eq!(got.ok(), Some(fifo), "没卡住，原样交");
+    drop(std::fs::remove_dir_all(&dir));
 }

@@ -55,6 +55,30 @@ fn sidebar_persona(session: Option<&str>) -> Option<&str> {
 }
 
 impl App {
+    /// 配置页、引导的一条请求交给核心。传头像（`blob.put`，只有它带本机路径）先在后台缩到核心收的大小，缩好了由后台线程
+    /// 发（review D2，2026-10-11：原来在界面线程里解码、重编码，大照片卡界面）；别的当场发。
+    pub(super) fn send_ask(&self, tag: u64, method: &'static str, params: serde_json::Value) {
+        if method == "blob.put"
+            && let Some(path) = params["path"].as_str()
+        {
+            let core = self.core.clone();
+            crate::avatars::shrink::in_background(PathBuf::from(path), move |ready| {
+                let params = json!({"path": ready.display().to_string()});
+                core.send(Command::Ask {
+                    tag,
+                    method,
+                    params,
+                });
+            });
+            return;
+        }
+        self.core.send(Command::Ask {
+            tag,
+            method,
+            params,
+        });
+    }
+
     /// 这一处的人格和它的头像的版本；没有头像的是 `None`。
     fn wanted(&self, place: Place) -> Option<(&str, &str)> {
         let session = self.transcript.persona.as_deref();
