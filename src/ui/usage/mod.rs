@@ -104,7 +104,7 @@ pub fn lines(
 ) -> (Chrome, Vec<Line<'static>>) {
     let texts = &app.config.text.usage;
     let chrome = Chrome::new(&texts.title, Vec::new()).hint(&texts.hint);
-    let Some(data) = app.usage.as_ref() else {
+    let Some(data) = app.boxes.usage.as_ref() else {
         return (chrome, Vec::new());
     };
     let total = match &data.total {
@@ -128,7 +128,8 @@ pub fn lines(
 
 /// 那一页标签以下有几行：按键滚到头照它停。
 pub fn body_rows(app: &App, (tab, by_money): (usize, bool), width: u16) -> usize {
-    app.usage
+    app.boxes
+        .usage
         .as_ref()
         .map_or(0, |data| body(app, data, (tab, by_money), width).len())
 }

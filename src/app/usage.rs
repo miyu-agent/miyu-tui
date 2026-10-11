@@ -35,7 +35,7 @@ impl App {
     pub(super) fn open_usage(&mut self) {
         let now = jiff::Zoned::now();
         let offset = offset_text(now.offset().seconds());
-        self.usage = Some(UsageData {
+        self.boxes.usage = Some(UsageData {
             total: None,
             days: None,
             models: None,
@@ -59,7 +59,7 @@ impl App {
                 offset,
             }));
         }
-        self.panel = Some(Panel::Usage {
+        self.boxes.panel = Some(Panel::Usage {
             tab: 0,
             scroll: 0,
             money: false,
@@ -68,7 +68,7 @@ impl App {
 
     /// 核心交回了一样：记下，框照它画；框关了的不要。
     pub(super) fn usage_rows(&mut self, kind: UsageKind, rows: Result<Vec<UsageRow>, String>) {
-        let Some(data) = self.usage.as_mut() else {
+        let Some(data) = self.boxes.usage.as_mut() else {
             return;
         };
         let slot = match kind {
@@ -115,8 +115,8 @@ impl App {
             KeyCode::PageUp => (tab, scroll.saturating_sub(page), money),
             KeyCode::PageDown => (tab, scroll + page, money),
             KeyCode::Esc => {
-                self.panel = None;
-                self.usage = None;
+                self.boxes.panel = None;
+                self.boxes.usage = None;
                 return;
             }
             _ => return,
@@ -126,7 +126,7 @@ impl App {
         let rows = crate::ui::usage::body_rows(self, (tab, money), width);
         let shown = page.saturating_sub(2).max(1);
         let scroll = scroll.min(rows.saturating_sub(shown));
-        self.panel = Some(Panel::Usage { tab, scroll, money });
+        self.boxes.panel = Some(Panel::Usage { tab, scroll, money });
     }
 }
 

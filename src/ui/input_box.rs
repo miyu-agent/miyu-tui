@@ -37,7 +37,7 @@ pub(super) fn draw_box(frame: &mut Frame, areas: Areas, app: &mut App, home: boo
     app.screen.drawer_rows.clear();
     let child = app.viewing_title();
     // 焦点移到框下面（按钮、子代理状态行）、后台面板开着时，框里不放光标：打的字不进这里（2026-09-30 项目主人）。
-    let typing = app.focus() == crate::focus::Focus::Input && app.panel.is_none();
+    let typing = app.focus() == crate::focus::Focus::Input && app.boxes.panel.is_none();
     let look = Look {
         level: app.transcript.level,
         placeholder: placeholder(&app.config, home, app.tips.at()),

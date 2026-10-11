@@ -19,7 +19,7 @@ impl App {
         } else {
             table.position(&self.config.language).map_or(0, |i| i + 1)
         };
-        self.panel = Some(Panel::Language { selected });
+        self.boxes.panel = Some(Panel::Language { selected });
     }
 
     /// 框开着时的按键。
@@ -28,24 +28,24 @@ impl App {
         let last = self.config.language_table.languages.len();
         match key.code {
             KeyCode::Up => {
-                self.panel = Some(Panel::Language {
+                self.boxes.panel = Some(Panel::Language {
                     selected: selected.saturating_sub(1),
                 });
             }
             KeyCode::Down => {
-                self.panel = Some(Panel::Language {
+                self.boxes.panel = Some(Panel::Language {
                     selected: (selected + 1).min(last),
                 });
             }
             KeyCode::Enter => self.choose_language(selected),
-            KeyCode::Esc => self.panel = None,
+            KeyCode::Esc => self.boxes.panel = None,
             _ => {}
         }
     }
 
     /// 鼠标在框上：悬停选中，点一下换；交回归不归它。点在框的边上不算点中哪一种。
     pub(super) fn language_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
-        let Some(Panel::Language { .. }) = self.panel else {
+        let Some(Panel::Language { .. }) = self.boxes.panel else {
             return false;
         };
         let areas = self.screen.areas;
@@ -55,7 +55,7 @@ impl App {
         let row = at.y.checked_sub(areas.menu_text.y).map(usize::from);
         let index = row.and_then(|row| self.screen.panel_rows.get(row).copied().flatten());
         if let Some(index) = index.filter(|_| areas.menu_text.contains(at)) {
-            self.panel = Some(Panel::Language { selected: index });
+            self.boxes.panel = Some(Panel::Language { selected: index });
             if matches!(mouse.kind, MouseEventKind::Down(_)) {
                 self.choose_language(index);
             }
@@ -65,7 +65,7 @@ impl App {
 
     /// 换成第 `index` 行那一档（第 0 行自动，跟启动时认出来的系统语言），关框，提示一句；选的就是现在的只关框。
     fn choose_language(&mut self, index: usize) {
-        self.panel = None;
+        self.boxes.panel = None;
         self.switch_language(index, true);
     }
 

@@ -24,7 +24,7 @@ impl App {
         let online = matches!(self.transcript.link, Link::Ready);
         let look = self.config.oobe.clone();
         let icons = self.config.icons.name.clone();
-        self.oobe = Some(Oobe::new(
+        self.boxes.oobe = Some(Oobe::new(
             Instant::now(),
             look,
             self.language_pick(),
@@ -57,7 +57,7 @@ impl App {
 
     /// 引导攒着的请求发出去。
     fn send_oobe_asks(&mut self) {
-        let Some(oobe) = self.oobe.as_mut() else {
+        let Some(oobe) = self.boxes.oobe.as_mut() else {
             return;
         };
         for ask in oobe.take_asks() {
@@ -69,7 +69,7 @@ impl App {
     pub(super) fn oobe_event(&mut self, event: Event) {
         let now = Instant::now();
         let texts = self.config.text.oobe.clone();
-        let Some(oobe) = self.oobe.as_mut() else {
+        let Some(oobe) = self.boxes.oobe.as_mut() else {
             return;
         };
         let effects = match event {
@@ -107,7 +107,7 @@ impl App {
             Effect::Language(index) => {
                 self.switch_language(index, false);
                 let pick = self.language_pick();
-                if let Some(oobe) = self.oobe.as_mut() {
+                if let Some(oobe) = self.boxes.oobe.as_mut() {
                     oobe.language = pick;
                 }
             }
@@ -119,11 +119,11 @@ impl App {
                     .or_else(|| cfg!(unix).then(|| "vi".to_string()));
                 match editor.map(|e| (e, crate::scratch::write("oobe", &text))) {
                     Some((editor, Ok(file))) => {
-                        self.oobe_editing = Some(file.clone());
+                        self.boxes.oobe_editing = Some(file.clone());
                         self.edit = Some((editor, file));
                     }
                     _ => {
-                        if let Some(oobe) = self.oobe.as_mut() {
+                        if let Some(oobe) = self.boxes.oobe.as_mut() {
                             oobe.edited(None);
                         }
                     }
@@ -134,12 +134,12 @@ impl App {
 
     /// 编辑器退出了：是引导开的就读回去、删掉临时文件。交回是不是它。
     pub(super) fn oobe_edited(&mut self) -> bool {
-        let Some(file) = self.oobe_editing.take() else {
+        let Some(file) = self.boxes.oobe_editing.take() else {
             return false;
         };
         let text = std::fs::read_to_string(&file).ok();
         drop(std::fs::remove_file(&file));
-        if let Some(oobe) = self.oobe.as_mut() {
+        if let Some(oobe) = self.boxes.oobe.as_mut() {
             oobe.edited(text);
         }
         true
@@ -161,7 +161,7 @@ impl App {
     /// 还在等 `ui.welcomed`：问到以前、最多 `oobe.json` 的 `welcome_wait_ms`，不画首页（「第一次打开的引导」第 1 条，
     /// 2026-10-10 项目主人报：进引导前闪一下空会话）。
     pub fn welcome_pending(&self, now: Instant) -> bool {
-        !self.welcome_known && now < self.welcome_until()
+        !self.boxes.welcome_known && now < self.welcome_until()
     }
 
     /// 等 `ui.welcomed` 等到什么时候。
@@ -179,27 +179,27 @@ impl App {
     pub(super) fn oobe_update(&mut self, update: &Update) -> bool {
         match update {
             Update::Answer { tag, result } if *tag == WELCOMED_TAG => {
-                self.welcome_known = true;
+                self.boxes.welcome_known = true;
                 let welcomed = result
                     .as_ref()
                     .map(|got| got["items"]["ui.welcomed"]["value"] == true);
                 // 核心不认这个键（旧核心）、读不成的当走过了（第 1 条）。
-                let standalone = self.settings.as_ref().is_some_and(|s| s.standalone);
-                if welcomed == Ok(false) && self.oobe.is_none() && !standalone {
+                let standalone = self.boxes.settings.as_ref().is_some_and(|s| s.standalone);
+                if welcomed == Ok(false) && self.boxes.oobe.is_none() && !standalone {
                     self.open_oobe();
                 }
                 true
             }
             Update::Answer { tag, result } if *tag >= TAG_BASE => {
                 let texts = self.config.text.oobe.clone();
-                if let Some(oobe) = self.oobe.as_mut() {
+                if let Some(oobe) = self.boxes.oobe.as_mut() {
                     oobe.answer(*tag, result.clone(), Instant::now(), &texts);
                 }
                 self.send_oobe_asks();
                 true
             }
             Update::HeadConfig(_) => {
-                if !std::mem::replace(&mut self.welcome_checked, true) {
+                if !std::mem::replace(&mut self.boxes.welcome_checked, true) {
                     let params = json!({"keys": ["ui.welcomed"]});
                     self.core.send(Command::Ask {
                         tag: WELCOMED_TAG,
@@ -210,19 +210,19 @@ impl App {
                 false
             }
             Update::Ready(_) | Update::Reconnected => {
-                if let Some(oobe) = self.oobe.as_mut() {
+                if let Some(oobe) = self.boxes.oobe.as_mut() {
                     oobe.online();
                 }
                 self.send_oobe_asks();
                 false
             }
             Update::Disconnected | Update::Failed(_) | Update::NoCoreBin | Update::Missing(_) => {
-                self.welcome_known = true;
+                self.boxes.welcome_known = true;
                 let (lost, texts) = (
                     self.config.text.turn_cut.clone(),
                     self.config.text.oobe.clone(),
                 );
-                if let Some(oobe) = self.oobe.as_mut() {
+                if let Some(oobe) = self.boxes.oobe.as_mut() {
                     oobe.offline(&lost, Instant::now(), &texts);
                 }
                 false
@@ -233,7 +233,7 @@ impl App {
 
     /// 走完了：散开的动画播完、写标记的回来了就关掉；没写成的弹一句（下次打开还会进引导）。
     pub(super) fn oobe_tick(&mut self) {
-        let Some(oobe) = self.oobe.as_ref() else {
+        let Some(oobe) = self.boxes.oobe.as_ref() else {
             return;
         };
         let leave = Duration::from_millis(self.config.oobe.done.leave_ms);
@@ -241,7 +241,7 @@ impl App {
             return;
         };
         let (persona, preset) = oobe.picks();
-        self.oobe = None;
+        self.boxes.oobe = None;
         // 紧接着的新会话照引导里刚选的开，不再弹两个框（第 11 条，2026-10-09 项目主人定）。
         self.adopt_picks(persona, preset);
         // 引导里建的人格可能带头像：重读人格列表（「空会话的首页」第 10 条）。
@@ -261,7 +261,7 @@ impl App {
 
     /// 引导开着时下一次要自己醒来的时刻：有东西在动照 `frame_ms`，只剩星点闪照星点的节拍。
     pub(super) fn oobe_deadline(&self, now: Instant) -> Option<Instant> {
-        let oobe = self.oobe.as_ref()?;
+        let oobe = self.boxes.oobe.as_ref()?;
         let look = &self.config.oobe;
         let texts = &self.config.text.oobe;
         let ms = Duration::from_millis;

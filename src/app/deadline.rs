@@ -14,8 +14,9 @@ impl App {
         });
         // 有步骤在转圈、运行状态行的流光在走，照转圈的节拍重画。
         // 会话列表开着、里面有在跑的：它标题前面的转圈也要转（`ui/session_list.rs`）。
-        let listing_busy = self.panel == Some(super::Panel::Sessions)
+        let listing_busy = self.boxes.panel == Some(super::Panel::Sessions)
             && self
+                .boxes
                 .session_list
                 .as_ref()
                 .is_some_and(|l| l.all.iter().any(|s| s.busy));

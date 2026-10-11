@@ -15,8 +15,8 @@ impl App {
         if !self.reachable() {
             return;
         }
-        self.efforts = None;
-        self.panel = Some(Panel::Effort { selected: 0 });
+        self.boxes.efforts = None;
+        self.boxes.panel = Some(Panel::Effort { selected: 0 });
         self.core.send(Command::ListEfforts);
     }
 
@@ -32,18 +32,18 @@ impl App {
         self.abilities = list.abilities.clone();
         self.default_chat = list.chat.clone();
         self.footer_effort(&list);
-        if !matches!(self.panel, Some(Panel::Effort { .. })) {
+        if !matches!(self.boxes.panel, Some(Panel::Effort { .. })) {
             return;
         }
         let Some(target) = self.effort_target(&list).cloned() else {
-            self.panel = None;
+            self.boxes.panel = None;
             let note = self.config.text.effort.need_model.clone();
             self.hint(note, false);
             return;
         };
         let selected = crate::ui::effort_list::initial(&target);
-        self.panel = Some(Panel::Effort { selected });
-        self.efforts = Some(target);
+        self.boxes.panel = Some(Panel::Effort { selected });
+        self.boxes.efforts = Some(target);
     }
 
     /// 底栏：还没开会话的照默认的聊天模型写模型和这一档；开了的、改的就是正在用的那个，照新的最终值写这一档。
@@ -78,20 +78,20 @@ impl App {
 
     /// 框开着时的按键。
     pub(super) fn effort_key(&mut self, selected: usize, key: KeyEvent) {
-        let last = self.efforts.as_ref().map_or(0, |t| t.levels.len());
+        let last = self.boxes.efforts.as_ref().map_or(0, |t| t.levels.len());
         let at = |selected| Some(Panel::Effort { selected });
         match key.code {
-            KeyCode::Up => self.panel = at(selected.saturating_sub(1)),
-            KeyCode::Down => self.panel = at((selected + 1).min(last)),
+            KeyCode::Up => self.boxes.panel = at(selected.saturating_sub(1)),
+            KeyCode::Down => self.boxes.panel = at((selected + 1).min(last)),
             KeyCode::Enter => self.choose_effort(selected),
-            KeyCode::Esc => self.panel = None,
+            KeyCode::Esc => self.boxes.panel = None,
             _ => {}
         }
     }
 
     /// 鼠标在框上：悬停选中，点一下换；交回归不归它。
     pub(super) fn effort_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
-        let Some(Panel::Effort { .. }) = self.panel else {
+        let Some(Panel::Effort { .. }) = self.boxes.panel else {
             return false;
         };
         let areas = self.screen.areas;
@@ -101,7 +101,7 @@ impl App {
         let row = at.y.checked_sub(areas.menu_text.y).map(usize::from);
         let index = row.and_then(|row| self.screen.panel_rows.get(row).copied().flatten());
         if let Some(index) = index.filter(|_| areas.menu_text.contains(at)) {
-            self.panel = Some(Panel::Effort { selected: index });
+            self.boxes.panel = Some(Panel::Effort { selected: index });
             if matches!(mouse.kind, MouseEventKind::Down(_)) {
                 self.choose_effort(index);
             }
@@ -112,8 +112,8 @@ impl App {
     /// 换成第 `index` 行（第 0 行默认）：写个人设置，关框，不弹提示（2026-10-01 项目主人：改模型、思考强度不要通知）。
     /// 和配置的默认一样的只关框。
     fn choose_effort(&mut self, index: usize) {
-        self.panel = None;
-        let Some(target) = self.efforts.take() else {
+        self.boxes.panel = None;
+        let Some(target) = self.boxes.efforts.take() else {
             return;
         };
         let level = index

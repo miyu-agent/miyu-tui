@@ -66,7 +66,7 @@ fn faded(text: &str, sub: f64) -> Option<Line<'static>> {
 
 /// 欢迎页。
 pub fn welcome(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
-    let Some(oobe) = app.oobe.as_ref() else {
+    let Some(oobe) = app.boxes.oobe.as_ref() else {
         return;
     };
     let look = &app.config.oobe;
@@ -107,7 +107,7 @@ pub fn welcome(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
 
 /// 好了那一屏：吉祥物从左边走回中间、转一圈；回车以后星点散开、它走到首页的位置。
 pub fn done(frame: &mut Frame, area: Rect, app: &mut App, now: Instant) {
-    let Some(oobe) = app.oobe.as_ref() else {
+    let Some(oobe) = app.boxes.oobe.as_ref() else {
         return;
     };
     let look = &app.config.oobe;

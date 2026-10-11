@@ -15,20 +15,20 @@ impl App {
     /// 打开配置页；`standalone` 是照 `--page config` 起来的（主菜单 `Esc` 退出程序）。
     pub fn open_settings(&mut self, standalone: bool) {
         let online = matches!(self.transcript.link, Link::Ready);
-        self.settings = Some(Settings::open(standalone, online));
+        self.boxes.settings = Some(Settings::open(standalone, online));
         self.send_settings_asks();
     }
 
     /// `/connect`：直接进「供应商和模型」。
     pub(super) fn open_connect(&mut self) {
         let online = matches!(self.transcript.link, Link::Ready);
-        self.settings = Some(Settings::connect(online));
+        self.boxes.settings = Some(Settings::connect(online));
         self.send_settings_asks();
     }
 
     /// 配置页攒着的请求发出去。
     fn send_settings_asks(&mut self) {
-        let Some(page) = self.settings.as_mut() else {
+        let Some(page) = self.boxes.settings.as_mut() else {
             return;
         };
         for (tag, method, params) in page.take_asks() {
@@ -38,7 +38,7 @@ impl App {
 
     /// 配置页开着时的一个终端事件。
     pub(super) fn settings_event(&mut self, event: Event) {
-        let Some(page) = self.settings.as_mut() else {
+        let Some(page) = self.boxes.settings.as_mut() else {
             return;
         };
         let texts = &self.config.text.settings;
@@ -80,7 +80,7 @@ impl App {
     /// 配置页读到了要交给编辑器的提示词（「配置页」第 40 条）：写临时文件、让出终端，同 Ctrl+G（`compose.rs`）。编辑器
     /// 照 `$VISUAL`、`$EDITOR`，都没有的用 `vi`；Windows 上没有的不开。
     fn open_prompt_editor(&mut self) {
-        let Some(page) = self.settings.as_mut() else {
+        let Some(page) = self.boxes.settings.as_mut() else {
             return;
         };
         let Some(text) = page.take_prompt() else {
@@ -92,7 +92,7 @@ impl App {
             .or_else(|| cfg!(unix).then(|| "vi".to_string()));
         match editor.map(|e| (e, crate::scratch::write("persona", &text))) {
             Some((editor, Ok(file))) => {
-                self.settings_prompt = Some(file.clone());
+                self.boxes.settings_prompt = Some(file.clone());
                 self.edit = Some((editor, file));
             }
             _ => page.prompt_edited(None),
@@ -101,12 +101,12 @@ impl App {
 
     /// 编辑器退出了：是配置页的提示词就读回来交还配置页、删掉临时文件。交回是不是它。
     pub(super) fn settings_prompt_edited(&mut self) -> bool {
-        let Some(file) = self.settings_prompt.take() else {
+        let Some(file) = self.boxes.settings_prompt.take() else {
             return false;
         };
         let text = std::fs::read_to_string(&file).ok();
         drop(std::fs::remove_file(&file));
-        if let Some(page) = self.settings.as_mut() {
+        if let Some(page) = self.boxes.settings.as_mut() {
             page.prompt_edited(text);
         }
         self.send_settings_asks();
@@ -118,7 +118,7 @@ impl App {
         match outcome {
             Outcome::Stay => {}
             Outcome::Back => {
-                self.settings = None;
+                self.boxes.settings = None;
                 // 配置页里可能换了人格的头像：重读人格列表，照新的版本换（「空会话的首页」第 10 条）。
                 self.core.send(Command::ListPersonas);
             }
@@ -128,7 +128,7 @@ impl App {
 
     /// 核心那边的消息先给配置页看：它的回应归它（交回 `true`），配置变了、断开、连上告诉它，别的照旧往下走。
     pub(super) fn settings_update(&mut self, update: &Update) -> bool {
-        let Some(page) = self.settings.as_mut() else {
+        let Some(page) = self.boxes.settings.as_mut() else {
             return matches!(update, Update::Answer { .. });
         };
         let texts = &self.config.text.settings;

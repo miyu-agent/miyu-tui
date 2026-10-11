@@ -11,12 +11,12 @@ impl App {
     pub(super) fn vim_keys(&self, event: Event, menu_open: bool) -> Event {
         let listing = menu_open
             || self.history.open
-            || self.panel.is_some()
+            || self.boxes.panel.is_some()
             || (self.drawers.open() && !self.drawers.editing());
         // 开着时不能打字的框；抽屉开着时按键先归抽屉（它自己认 vim 键）。
         let no_typing = !self.drawers.open()
             && matches!(
-                self.panel,
+                self.boxes.panel,
                 Some(
                     Panel::Pick { .. }
                         | Panel::Language { .. }

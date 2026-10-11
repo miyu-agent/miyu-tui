@@ -84,7 +84,7 @@ impl App {
         let session = self.transcript.persona.as_deref();
         let persona = match place {
             Place::Home => {
-                let under = match self.panel {
+                let under = match self.boxes.panel {
                     Some(Panel::Pick {
                         kind: Kind::Persona,
                         selected,
