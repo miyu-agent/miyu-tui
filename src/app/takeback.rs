@@ -62,6 +62,9 @@ fn step(taken: Takeback, update: &Update, viewing: Option<&str>) -> Step {
 impl App {
     /// Ctrl+C 打断（排着的退回）：这一轮是排着的话开的、她还没开口的，记下那几句，等结束了撤掉这一轮。
     pub(super) fn interrupt(&mut self) {
+        if self.switching() {
+            return;
+        }
         let session = self.transcript.session.clone();
         self.takeback = self
             .transcript

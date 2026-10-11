@@ -18,6 +18,9 @@ impl App {
         match self.esc_at.take() {
             Some(at) if at.elapsed() <= window => {
                 self.notice = None;
+                if running && self.switching() {
+                    return;
+                }
                 if running {
                     // 她还没开始做事、又没有排着的：打断以后撤掉这一轮，那一句放回输入框（「按键」`Esc`，2026-10-07
                     // 项目主人定；和 Ctrl+C 退回排着的走同一条路，`takeback.rs`）。
@@ -183,7 +186,7 @@ impl App {
                     self.submit(text);
                 }
                 // 没有排着的（输入框也是空的）：什么都不做，不当打断用。
-                if self.transcript.entries.iter().any(|e| e.queued) {
+                if self.transcript.entries.iter().any(|e| e.queued) && !self.switching() {
                     self.core.send(Command::Interrupt { send: true });
                 }
                 return Action::None;

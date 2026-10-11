@@ -35,6 +35,7 @@
   "turn_cut": "Core disconnected",
   "missing_core": "Core program not found: {path}",
   "not_connected": "Core not connected",
+  "switching": "Switching sessions",
   "crash_saved": "Stack trace saved to {path}",
   "notify": {
     "title": "Miyu",

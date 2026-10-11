@@ -123,6 +123,8 @@ pub struct Texts {
     pub missing_core: String,
     /// 连不上核心时按 `Enter`：发不出去，字留在输入框里。
     pub not_connected: String,
+    /// 切会话还没换上来时按 `Enter`、打断、对着会话的命令：这一下不做（review B1）。
+    pub switching: String,
     /// 崩了以后终端里说调用栈记在哪，`{path}` 是文件（蓝图「崩了」）。
     pub crash_saved: String,
     /// 系统通知上的字（蓝图「系统通知」第 3 条）。

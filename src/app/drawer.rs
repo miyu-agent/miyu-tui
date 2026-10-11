@@ -142,7 +142,8 @@ impl App {
             }
             None => self.write_report(&drawer, outcome),
         }
-        if *outcome == Outcome::Cancelled && self.transcript.running.is_some() {
+        if *outcome == Outcome::Cancelled && self.transcript.running.is_some() && !self.switching()
+        {
             self.core.send(Command::Interrupt { send: true });
         }
         // 轮到下一个抽屉的弹「在等你」，都了结了回到在做或空闲（「系统通知」第 1、6 条）。
