@@ -229,6 +229,8 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
         // 语言连同是不是自动：自动的中文和手动的中文代码一样，收起那一行却一个英文一个中文。
         (ctx.config.language.code(), ctx.config.auto),
         figures,
+        // 图占几行照屏高算（三分之一屏）：只改窗口高度时带图的也要重排（review C4，2026-10-11）。
+        figures.map(|_| ctx.screen_rows),
     )
         .hash(&mut h);
     ctx.hover.filter(|t| owner(*t) == i).hash(&mut h);
@@ -239,13 +241,23 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
     (entry.hidden, entry.queued, entry.open, entry.level).hash(&mut h);
     // 写完了才换链接卡片（蓝图「链接卡片」第 1 条）：写完那一刻字没变，也要重排。
     (ctx.writing == Some(entry.id)).hash(&mut h);
-    (
-        entry.undo.is_some(),
-        entry.pasted.len(),
-        &entry.details,
-        &entry.from,
-    )
-        .hash(&mut h);
+    (entry.pasted.len(), &entry.details, &entry.from).hash(&mut h);
+    // 撤销那一行：回应和改回的文件是两个事件，文件后到（review C5，2026-10-11：原来只看有没有，「改回 N 个文件」
+    // 一直不出现）。
+    if let Some(undo) = &entry.undo {
+        (
+            undo.turns,
+            &undo.said,
+            undo.compactions,
+            undo.clears,
+            undo.jobs,
+        )
+            .hash(&mut h);
+        for file in &undo.files {
+            (&file.path, &file.outcome, file.diff.len()).hash(&mut h);
+        }
+    }
+    entry.undo.is_some().hash(&mut h);
     if let Some(job) = &entry.job {
         (discriminant(&job.mark), job.detail.len()).hash(&mut h);
     }

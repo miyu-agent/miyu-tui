@@ -12,6 +12,8 @@ use crate::transcript::{Chip, JobMark, Kind, Segment, Step, StepKind, ToolState,
 use crate::ui::rows::Target;
 use crate::ui::test_support::{Fixture, fresh_rows};
 
+mod fingerprint;
+
 /// 你说的话里的一块：块上的字、原文、附件的种类（附件的文件另给）。
 fn chip(label: &str, full: &str, kind: Option<&str>) -> Chip {
     Chip {
