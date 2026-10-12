@@ -18,7 +18,11 @@
     "packages": "\uf1b2",
     "goal": "\uf140",
     "kb_search": "\uf002",
-    "kb_read": "\uf02d"
+    "kb_read": "\uf02d",
+    "kb_save": "\uf0c7",
+    "kb_edit": "\uf040",
+    "kb_delete": "\uf1f8",
+    "package": "\uf187"
   },
   "tool": "",
   "think": "󰝨",
