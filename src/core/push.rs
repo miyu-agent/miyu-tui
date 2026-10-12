@@ -15,6 +15,8 @@ mod goal;
 mod jobs;
 
 pub use asking::Asking;
+pub(crate) use goal::read as read_goal;
+pub use goal::{Goal, GoalState};
 
 pub use jobs::{JobEnd, JobReason, JobStart, Said as Foreign, Sender};
 
@@ -135,6 +137,8 @@ pub enum Push {
         /// 第几轮。
         round: Option<u32>,
     },
+    /// 长期目标现在的样子（订阅回应里的 `goal`、推来的 `goal.changed`，核心 X-8 补）：`None` 是没有目标、清掉了。
+    Goal(Option<Goal>),
     /// 派出去一个后台任务（工具结果 `effects` 里的 `job.started`）。
     JobStarted(JobStart),
     /// 按页读时页里带的、派出去在切点前的任务（核心 9-6 再补）：只记进任务表，不另订阅子代理的会话。
@@ -427,6 +431,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
                 .collect();
             out.push(Push::Calls(calls));
         }
+        "goal.changed" => out.push(Push::Goal(goal::read(&body["goal"]))),
         "todos.changed" => out.extend(super::todos::read(body).map(|todos| Push::Todos {
             todos,
             done: super::todos::done(body),

@@ -109,6 +109,11 @@ pub(super) fn replayed(
     {
         return false;
     }
+    // 长期目标现在的样子（核心 X-8 补）：订阅回应里带着，没有目标的不写，照没有办；`goal.changed` 是瞬时的，补发里没有。
+    let goal = super::push::read_goal(&message["result"]["goal"]);
+    if !notify(wrap(Update::Push(Push::Goal(goal)))) {
+        return false;
+    }
     // 累计用量、权限、还在跑的（核心 9-6 上）：整个换掉页里的事件算出来的，换上来以前就对。
     if let Some(snapshot) = Snapshot::read(&message["result"])
         && !notify(wrap(Update::Snapshot(snapshot)))

@@ -248,6 +248,15 @@ pub(super) async fn take(
                     return false;
                 }
             }
+            // 长期目标（核心 X-8 补）：重订的回应里是这一刻的，没有目标的不写，照清掉了办。
+            let goal = super::push::read_goal(&reply["goal"]);
+            let update = Box::new(Update::Push(Push::Goal(goal)));
+            if !notify(Update::Elsewhere {
+                session: session.clone(),
+                update,
+            }) {
+                return false;
+            }
             if let Some(cwd) = super::connect::workspace(reply) {
                 let update = Box::new(Update::Workspace { cwd, joined: false });
                 let session = session.clone();

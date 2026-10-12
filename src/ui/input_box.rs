@@ -1,4 +1,4 @@
-//! 输入框这一格：圆角框里画输入的字、提示符、暂存标记，编辑上一句时上边框写一句，切进子会话时上边框右边写它是谁；抽屉开着时框里画抽屉（蓝图 `tui.md`「输入框」、
+//! 输入框这一格：圆角框里画输入的字、提示符、暂存标记，编辑上一句时上边框写一句，上边框右边写子代理是谁、长期目标到哪了；抽屉开着时框里画抽屉（蓝图 `tui.md`「输入框」、
 //! 「确认和提问的抽屉」第 2 条）。
 
 use ratatui::Frame;
@@ -21,8 +21,8 @@ pub(super) struct Facts {
     level: Level,
     /// 空着时写的提示。
     placeholder: String,
-    /// 切进了哪个子代理的会话：上边框右边写它（「切进子会话」第 2 条）。
-    child: Option<String>,
+    /// 上边框右边写的：子代理是谁、长期目标到哪了（`goal_tag.rs`）。
+    tag: Option<String>,
     /// 焦点在输入框上：光标显示出来。
     typing: bool,
 }
@@ -33,7 +33,11 @@ impl Facts {
         Self {
             level: seen.talk.transcript.level,
             placeholder: placeholder(seen.config, home, seen.typing.tips.at()).to_string(),
-            child: seen.talk.viewing_title(),
+            tag: super::goal_tag::tag(
+                seen.talk.viewing_title(),
+                seen.talk.transcript.goal.as_ref(),
+                seen.config,
+            ),
             // 焦点移到框下面（按钮、子代理状态行）、后台面板开着时，框里不放光标：打的字不进这里（2026-09-30 项目主人）。
             typing: seen.focus() == crate::focus::Focus::Input && seen.boxes.panel.is_none(),
         }
@@ -71,7 +75,7 @@ pub(super) fn draw_box(
     let look = Look {
         level: facts.level,
         placeholder: &facts.placeholder,
-        child: facts.child,
+        tag: facts.tag,
     };
     draw_input(frame, areas, input, config, look);
     // 焦点不在这里也停到插入点，只是不显示（蓝图「每一帧」）。
@@ -86,15 +90,15 @@ struct Look<'a> {
     level: Level,
     /// 空着时写的提示。
     placeholder: &'a str,
-    /// 切进了哪个子代理的会话：上边框右边写它（「切进子会话」第 2 条）。
-    child: Option<String>,
+    /// 上边框右边写的：子代理是谁（「切进子会话」第 2 条）、长期目标到哪了（「长期目标」第 5 条）。
+    tag: Option<String>,
 }
 
 fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Config, look: Look) {
     let Look {
         level,
         placeholder,
-        child,
+        tag,
     } = look;
     let mut border = Block::bordered()
         .border_type(BorderType::Rounded)
@@ -103,9 +107,9 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
     if input.editing() {
         border = border.title(Line::styled(config.text.editing.as_str(), theme::dim()));
     }
-    // 切进了子会话：上边框右边写它是谁（「切进子会话」第 2 条，2026-09-30 项目主人照 Claude Code 定）。
-    if let Some(title) = child {
-        let tag = config.text.jobs.child_tag.replace("{title}", &title);
+    // 上边框右边：切进了子会话写它是谁（「切进子会话」第 2 条，2026-09-30 项目主人照 Claude Code 定），不然写长期目标到哪了
+    // （「长期目标」第 5 条，2026-10-12 项目主人定照旧版的位置）。
+    if let Some(tag) = tag {
         border = border.title_top(Line::styled(tag, theme::dim()).right_aligned());
     }
     frame.render_widget(border, areas.frame);

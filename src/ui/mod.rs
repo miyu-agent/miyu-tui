@@ -17,6 +17,7 @@ pub mod effort_list;
 mod figure_rows;
 mod footer;
 mod foreign_rows;
+mod goal_tag;
 pub mod help;
 mod history;
 mod home;

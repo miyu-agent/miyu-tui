@@ -2,7 +2,7 @@
 
 mod support;
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use miyu_session::testkit::{Play, Script};
 use support::Home;
@@ -11,6 +11,22 @@ use support::Home;
 fn completes() -> Play {
     let args = serde_json::json!({"action": "complete"}).to_string();
     Play::Calls(vec![("goal".into(), args)])
+}
+
+/// 输入框上边框右边那一截的开头（前面是边框线）：正文里「● 长期目标 · 第 1 轮」那一行不算。
+const TAG: &str = "─ 目标 · ";
+
+/// 等到屏幕上没有这串字，最多 [`support::WAIT`]。
+fn wait_gone(tui: &mut support::Tui, text: &str) {
+    let end = Instant::now() + support::WAIT;
+    while tui.shows(text) {
+        assert!(
+            Instant::now() < end,
+            "「{text}」一直在：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(50));
+    }
 }
 
 /// 首页打 `/goal <目标>` 先开会话（第 3 条）；核心开的续轮画成暗色一行，续轮消息的原文不露（第 4 条）。
@@ -28,6 +44,35 @@ fn a_goal_set_on_the_home_page_opens_a_session_and_its_round_is_one_line() {
         !screen.contains("goal_round") && !screen.contains("收到消息"),
         "不当别处来的话画：\n{screen}"
     );
+    // 第 5 条：做完了，输入框上边框不再写目标。
+    wait_gone(&mut tui, TAG);
+}
+
+/// 第 5 条：跑着的，输入框上边框右边写「目标 · 进行中 · 第 1/5 轮」（核心推来的 `goal.changed`）。
+#[test]
+fn a_running_goal_shows_on_the_input_box() {
+    let home = Home::with_tools(Script::new([Play::Holds]), "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("/goal --rounds 5 把测试写完");
+    tui.wait_for("目标 · 进行中 · 第 1/5 轮");
+}
+
+/// 第 5 条：续轮里她没调工具、等人开口的写「等待回复」；切到新会话不写，切回来照订阅回应里的 `goal` 写回来。
+#[test]
+fn a_goal_waiting_for_a_reply_comes_back_with_its_session() {
+    let home = Home::with_tools(Script::new([Play::Says("要你定一下用哪个库。")]), "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("/goal 把测试写完");
+    tui.wait_for("要你定一下用哪个库。");
+    tui.wait_for("目标 · 等待回复 · 第 1 轮");
+    tui.say("/new");
+    wait_gone(&mut tui, TAG);
+    tui.say("/sessions");
+    tui.wait_for("1 个");
+    tui.key(b"\r");
+    tui.wait_for("目标 · 等待回复 · 第 1 轮");
 }
 
 /// 首页只打 `/goal`、`/goal pause` 不开会话，当场弹「无长期目标」（第 3 条）。
