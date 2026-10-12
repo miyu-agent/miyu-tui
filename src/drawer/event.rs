@@ -76,6 +76,18 @@ pub struct Detail {
     /// 跑命令的：这一次在不在沙盒里跑；`false` 的抽屉写出来（核心 D-4）。
     #[serde(default)]
     pub sandbox: Option<bool>,
+    /// 装包的：包目录的路径（核心 F-10 下，`package` 工具）。
+    #[serde(default)]
+    pub install: Option<String>,
+    /// 卸包的：编号。
+    #[serde(default)]
+    pub remove: Option<String>,
+    /// 打开扩展的：编号。
+    #[serde(default)]
+    pub enable: Option<String>,
+    /// 装、卸、打开扩展的：核心看一眼的回应（`package.install`、`package.remove` 带 `preview: true` 的）。
+    #[serde(default)]
+    pub preview: Option<serde_json::Value>,
 }
 
 /// 碰到的一个路径。

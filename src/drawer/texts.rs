@@ -40,6 +40,8 @@ pub struct Texts {
     pub access: HashMap<String, String>,
     /// `access` 里没有的。
     pub access_other: String,
+    /// 装、卸软件包，打开扩展的确认（核心 F-10 下）。
+    pub package: super::PackageTexts,
     /// 工作区外的路径后面标的。
     pub outside: String,
     /// 「确认」页、留下的引用块里没答的那道。

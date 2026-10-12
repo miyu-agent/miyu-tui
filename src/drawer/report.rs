@@ -58,11 +58,23 @@ impl Drawer {
         if let Some((Some(title), _)) = &self.command {
             return title.clone();
         }
+        // 装、卸软件包，打开扩展的：「安装 weather 1.2.0」这类（`package.rs`）。
+        if let Some(plan) = self.package_plan(texts) {
+            return plan.title;
+        }
         let detail = a.detail.clone().unwrap_or_default();
         let template = texts.access.get(&a.access).unwrap_or(&texts.access_other);
         template
             .replace("{count}", &detail.paths.len().to_string())
             .replace("{tool}", detail.tool.as_deref().unwrap_or(&a.access))
+    }
+
+    /// 装、卸软件包，打开扩展的确认写成的样子（核心 F-10 下，`package.rs`）；别的确认、提问没有。
+    pub fn package_plan(&self, texts: &Texts) -> Option<super::Plan> {
+        let Ask::Approval(a) = &self.ask else {
+            return None;
+        };
+        super::package::plan(a.detail.as_ref()?, &texts.package)
     }
 
     /// 确认碰到的路径：家目录写 `~`，工作区外的带上标记。

@@ -3,6 +3,7 @@
 
 mod event;
 mod keys;
+mod package;
 mod report;
 mod texts;
 
@@ -16,6 +17,7 @@ mod asks;
 
 pub use asks::Asks;
 pub use event::{Answer, Answered, Approval, Asked, Decided, Decision, Fake, Question};
+pub use package::{PackageTexts, Plan};
 pub use report::{Report, inline, said};
 pub use texts::Texts;
 
@@ -24,8 +26,8 @@ pub use texts::Texts;
 pub enum Ask {
     /// 她的提问：一道道题。
     Questions(Vec<Question>),
-    /// 权限确认。
-    Approval(Approval),
+    /// 权限确认（装包的带着核心看一眼的那一份，比提问大得多：装箱）。
+    Approval(Box<Approval>),
 }
 
 /// 一页上的一项。
@@ -133,7 +135,7 @@ impl Drawer {
         let mut drawer = Self::new(
             who,
             approval.call_id.clone(),
-            Ask::Approval(approval),
+            Ask::Approval(Box::new(approval)),
             vec![Vec::new()],
         );
         drawer.command = command;
