@@ -197,7 +197,14 @@
     "mark": "● ",
     "round": "Goal · round {round}",
     "some_round": "Goal",
-    "none": "No goal"
+    "none": "No goal",
+    "label": "Goal",
+    "running": "Running",
+    "waiting": "Waiting for reply",
+    "paused": "Paused",
+    "blocked": "Blocked",
+    "rounds": "Round {round}",
+    "rounds_limited": "Round {round}/{limit}"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {

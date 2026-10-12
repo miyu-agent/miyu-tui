@@ -29,6 +29,7 @@ impl Default for Transcript {
             context: 0,
             cache: CacheWatch::default(),
             limits: Limits::default(),
+            goal: None,
             compacting: None,
             manual_compaction: false,
             spoke: false,

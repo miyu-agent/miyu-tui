@@ -197,7 +197,14 @@
     "mark": "● ",
     "round": "长期目标 · 第 {round} 轮",
     "some_round": "长期目标",
-    "none": "无长期目标"
+    "none": "无长期目标",
+    "label": "目标",
+    "running": "进行中",
+    "waiting": "等待回复",
+    "paused": "已暂停",
+    "blocked": "受阻",
+    "rounds": "第 {round} 轮",
+    "rounds_limited": "第 {round}/{limit} 轮"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {

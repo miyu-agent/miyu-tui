@@ -47,3 +47,38 @@ fn another_module_is_still_from_elsewhere() {
         read_mine(&event)
     );
 }
+
+/// 推来的 `goal.changed`（核心 X-8 补，瞬时事件）。
+fn changed(goal: serde_json::Value) -> serde_json::Value {
+    json!({"at": "2026-10-12T08:00:00Z", "kind": "goal.changed", "by": {"kind": "module", "id": "goal"},
+        "body": {"goal": goal}})
+}
+
+#[test]
+fn a_changed_goal_is_read_as_its_state_round_and_limit() {
+    use crate::core::push::{Goal, GoalState};
+    let goal = json!({"text": "把测试修绿", "state": "running", "round": 2, "limit": 5,
+        "since": "2026-10-12T07:00:00Z", "usage": {}});
+    assert_eq!(
+        read_mine(&changed(goal)),
+        [Push::Goal(Some(Goal {
+            state: GoalState::Running,
+            round: 2,
+            limit: Some(5),
+        }))]
+    );
+    let waiting = json!({"text": "t", "state": "waiting", "round": 1, "since": "x", "usage": {}});
+    assert_eq!(
+        read_mine(&changed(waiting)),
+        [Push::Goal(Some(Goal {
+            state: GoalState::Waiting,
+            round: 1,
+            limit: None,
+        }))]
+    );
+    assert_eq!(
+        read_mine(&changed(json!(null))),
+        [Push::Goal(None)],
+        "清掉了"
+    );
+}

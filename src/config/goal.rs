@@ -14,4 +14,18 @@ pub struct GoalTexts {
     pub some_round: String,
     /// 还没开的会话里看、停、改目标：当场答（第 3 条）。
     pub none: String,
+    /// 输入框上边框右边那一截打头的词（第 5 条）：「目标 · 进行中 · 第 2/5 轮」的「目标」。
+    pub label: String,
+    /// 在跑。
+    pub running: String,
+    /// 在等人开口。
+    pub waiting: String,
+    /// 停着。
+    pub paused: String,
+    /// 卡住了。
+    pub blocked: String,
+    /// 第几轮，`{round}`。
+    pub rounds: String,
+    /// 有上限的第几轮，`{round}`、`{limit}`。
+    pub rounds_limited: String,
 }

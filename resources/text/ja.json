@@ -197,7 +197,14 @@
     "mark": "● ",
     "round": "長期目標 · {round} ラウンド目",
     "some_round": "長期目標",
-    "none": "長期目標はありません"
+    "none": "長期目標はありません",
+    "label": "目標",
+    "running": "進行中",
+    "waiting": "返信待ち",
+    "paused": "一時停止中",
+    "blocked": "行き詰まり",
+    "rounds": "{round} ラウンド目",
+    "rounds_limited": "{round}/{limit} ラウンド目"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {

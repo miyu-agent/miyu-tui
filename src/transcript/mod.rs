@@ -111,6 +111,8 @@ pub struct Transcript {
     pub cache: CacheWatch,
     /// 会话的限额：核心在订阅的回应里给的窗口、压缩线（`core/limits.rs`）。
     pub limits: Limits,
+    /// 长期目标现在的样子（订阅回应里的、推来的 `goal.changed`，核心 X-8 补）：输入框上边框右边照它写（「长期目标」第 5 条）。
+    pub goal: Option<crate::core::Goal>,
     /// 正在压缩的那一行是第几条（`compaction.rs`）。
     compacting: Option<usize>,
     /// 这个头发了 `/compact`、还没压完：旧核心的进度不带 `trigger` 时照它认手动（`compaction.rs`）。
@@ -353,6 +355,7 @@ impl Transcript {
             }
             // 别处来的话、后台任务：界面照会话、任务表先办了（`app/sessions.rs`），正文不直接收。
             Push::GoalRound { seq, round } => self.goal_round(seq, round, &texts.goal),
+            Push::Goal(goal) => self.goal = goal,
             Push::Foreign(_)
             | Push::JobStarted(_)
             | Push::JobEarlier(_)

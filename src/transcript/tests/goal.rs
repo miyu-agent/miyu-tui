@@ -49,3 +49,19 @@ fn undoing_the_round_takes_its_line_along() {
     let line = t.entries.iter().find(|e| e.kind == Kind::Goal).unwrap();
     assert!(line.hidden);
 }
+
+#[test]
+fn the_goal_is_kept_as_it_was_last_pushed() {
+    // 核心 X-8 补：订阅回应里的、推来的 `goal.changed` 照最后一条换；`null` 是清掉了。
+    use crate::core::{Goal, GoalState};
+    let mut t = Transcript::default();
+    let running = Goal {
+        state: GoalState::Running,
+        round: 1,
+        limit: None,
+    };
+    apply(&mut t, vec![Push::Goal(Some(running.clone()))]);
+    assert_eq!(t.goal, Some(running));
+    apply(&mut t, vec![Push::Goal(None)]);
+    assert_eq!(t.goal, None);
+}
