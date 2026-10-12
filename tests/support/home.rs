@@ -31,10 +31,10 @@ fn welcomed(settings: &str) -> String {
     }
 }
 
-/// 照用户装软件包那样把终端自己的清单（`package/package.toml`）装进 alice 的家：核心 S-5 起出厂不再带它，`tui.*` 配置
+/// 照用户装软件包那样把终端自己的清单（`tui/package.toml`）装进 alice 的家：核心 S-5 起出厂不再带它，`tui.*` 配置
 /// 项、终端的状态目录都照它认（README「装上终端」那一步）。程序不放进去：界面的程序不在，配置项照旧在。
 fn install_the_terminal(dir: &Path) {
-    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("package/package.toml");
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tui/package.toml");
     let to = dir.join("home/alice/packages/tui");
     std::fs::create_dir_all(&to).expect("建得了包的目录");
     std::fs::copy(manifest, to.join("package.toml")).expect("装得上终端的清单");
