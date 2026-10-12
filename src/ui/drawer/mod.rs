@@ -124,7 +124,7 @@ fn tabs(d: &Drawer, texts: &Texts) -> Line<'static> {
     Line::from(spans)
 }
 
-/// 问题：提问的加粗、放不下折行；确认的问题行加粗，下面每个路径一行暗色，工作区外的标出来。
+/// 问题：提问的加粗、放不下折行；确认的问题行加粗，下面装包的几行、每个路径一行暗色，工作区外的标出来。
 fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     let bold = Style::new().add_modifier(Modifier::BOLD);
     let title = match d.question_at(d.tab) {
@@ -145,6 +145,16 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     // 这一次不在沙盒里跑（核心 D-4 的 `detail.sandbox` 是 `false`）：黄字写一行。
     if d.unsandboxed() {
         v.push(Line::styled(texts.unsandboxed.clone(), theme::warn()), None);
+    }
+    // 装、卸软件包，打开扩展的：包含、读不成、需要、一并删除、大小，一样一行（第 3 条，2026-10-12 项目主人定）。
+    for row in d
+        .package_plan(texts)
+        .map(|plan| plan.rows)
+        .unwrap_or_default()
+    {
+        for (piece, _) in pieces(&row, width) {
+            v.push(Line::styled(piece, theme::dim()), None);
+        }
     }
     for (path, mark) in d.paths(texts) {
         let mut spans = vec![Span::styled(clip(&path, width), theme::dim())];

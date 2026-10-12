@@ -236,3 +236,23 @@ fn the_first_esc_turns_the_keys_line_into_a_warning() {
     assert_eq!(text(last), "再按一次 Esc 取消");
     assert_eq!(last.style.fg, crate::theme::warn().fg);
 }
+
+#[test]
+fn installing_a_package_shows_what_it_is_under_the_question() {
+    // 2026-10-12 项目主人定：她用 `package` 工具装包时，照 `miyu pkg install` 列清楚（核心 F-10 下，`access` 是 `install`）。
+    let approval = serde_json::from_value(serde_json::json!({
+        "call_id": "c1", "access": "install",
+        "detail": {"tool": "package", "install": "/home/alice/weather", "preview": {
+            "package": "weather", "version": "1.2.0", "program": "process",
+            "capabilities": [{"name": "联网"}], "files": 3, "size": 4096}}
+    }))
+    .unwrap();
+    let d = Drawer::approval(None, approval);
+    let shown = lines(&d, 60);
+    let at = |text: &str| shown.iter().position(|l| l.trim() == text);
+    assert_eq!(at("安装 weather 1.2.0"), Some(0), "{shown:#?}");
+    assert_eq!(at("包含：扩展程序"), Some(1), "{shown:#?}");
+    assert_eq!(at("需要：联网"), Some(2), "{shown:#?}");
+    assert_eq!(at("大小：4.0 KiB，3 个文件"), Some(3), "{shown:#?}");
+    assert_eq!(d.items(0).len(), 2, "没有 rule：只有允许本次、不允许");
+}
