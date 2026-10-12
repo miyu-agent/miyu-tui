@@ -6,11 +6,11 @@ use std::future::Future;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, channel};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use miyu_endpoint::config::Config;
 use miyu_endpoint::{Core, run};
-use miyu_ipc::{Dirs, open};
+use miyu_ipc::{Dirs, OpenError, Opened, open};
 use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
@@ -53,7 +53,7 @@ impl Running {
                     ..Dirs::current()
                 };
                 loop {
-                    let opened = open(&root, &dirs).expect("起得来");
+                    let opened = open_when_free(&root, &dirs).await;
                     let core = Arc::new(build(&root, Arc::clone(&script), tools, opened.token));
                     if report.send(()).is_err() {
                         return;
@@ -100,6 +100,21 @@ impl Running {
             panic!("核心的线程没了");
         }
         self.done.recv_timeout(WAIT).expect(what);
+    }
+}
+
+/// 打开数据根。重启时上一份刚丢掉，它起的任务在负载下可能还没收完尾、锁还没放开（2026-10-12 整组跑 10 次红 1 次：
+/// 「已经有一个核心在跑」）：让出去等一会再试，旧的任务好收尾，最多 [`WAIT`]。
+async fn open_when_free(root: &DataRoot, dirs: &Dirs) -> Opened {
+    let end = Instant::now() + WAIT;
+    loop {
+        match open(root, dirs) {
+            Ok(opened) => return opened,
+            Err(OpenError::Running) if Instant::now() < end => {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+            Err(error) => panic!("起不来：{error}"),
+        }
     }
 }
 
