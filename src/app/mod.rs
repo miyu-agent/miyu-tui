@@ -89,6 +89,8 @@ pub(super) enum Grab {
 pub struct Notice {
     /// 显示的字。
     pub text: String,
+    /// 接在后面、放不下时也整个留着的一截（`/goal` 看进度的「 · 进行中 · 第 1 轮」）：截前面的字；没有的是空的。
+    pub tail: String,
     /// 什么时候消失。
     pub until: Instant,
     /// 是好消息（复制成了）：绿；别的提示暗。
@@ -228,8 +230,14 @@ impl App {
 
     /// 在输入框左上方写一条提示，新的顶掉旧的。
     fn hint(&mut self, text: String, good: bool) {
+        self.hint_keeping(text, String::new(), good);
+    }
+
+    /// 同 [`App::hint`]，后面接着 `tail`：放不下时截前面的字，它整个留着。
+    fn hint_keeping(&mut self, text: String, tail: String, good: bool) {
         self.typing.notice = Some(Notice {
             text,
+            tail,
             until: Instant::now() + Duration::from_millis(self.config.layout.notice_ms),
             good,
         });
