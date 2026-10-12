@@ -6,11 +6,14 @@
 
 先在核心仓库的检出里编一次核心（`cargo build -p miyu`），下面的 `<核心检出>` 换成它的路径。
 
-第一次用这个 `MIYU_HOME` 时，在这个仓库的根目录装上终端自己的软件包清单 `package/`（核心 S-5 起不再自带它：`tui.*` 配置项、放输入历史的状态目录都照它认）：
+第一次用这个 `MIYU_HOME` 时，装上终端自己的软件包清单 `package/`（核心 S-5 起不再自带它：`tui.*` 配置项、放输入历史的状态目录都照它认）。装上的编号照目录的名字取，得叫 `tui`（发版时核心照 `heads.toml` 放进 `packages/tui/`），所以先拷成一个叫 `tui` 的目录再装。在这个仓库的根目录跑：
 
 ```sh
-MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources <核心检出>/target/debug/miyu pkg install ./package --yes
+mkdir -p $HOME/.cache/miyu-tui-package/tui && cp -r package/. $HOME/.cache/miyu-tui-package/tui/
+DEEPSEEK_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources <核心检出>/target/debug/miyu pkg install $HOME/.cache/miyu-tui-package/tui --yes
 ```
+
+`miyu pkg install` 会把核心拉起来、留着跑，下面的 `cargo run` 连的就是它：key 这一步也要给上。改了 `package/` 的，照样拷过去再装一次。
 
 然后跑：
 
