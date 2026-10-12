@@ -179,8 +179,13 @@ impl App {
         // 「斜杠命令」`/stop`，2026-10-07 项目主人：提示框里不要句号）。
         if let Update::CommandRan { command, said } = &update {
             let said = said.trim_end().trim_end_matches(['。', '.']);
+            // `/goal` 看进度的：原文长了截原文，在哪一步、第几轮留着（「长期目标」第 1 条）。
+            let (text, tail) = match command.as_str() {
+                "goal" => super::goal::split_progress(said),
+                _ => (said, ""),
+            };
             if command != "clear" && !said.is_empty() {
-                self.hint(said.to_string(), false);
+                self.hint_keeping(text.to_string(), tail.to_string(), false);
             }
             return;
         }

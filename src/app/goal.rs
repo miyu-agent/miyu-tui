@@ -26,9 +26,29 @@ fn sets_goal(words: &str) -> bool {
     !(words.is_empty() || verb == "edit" || alone && matches!(verb, "pause" | "resume" | "clear"))
 }
 
+/// `/goal` 看进度的回执「原文 · 在哪一步 · 第几轮」（核心 `commands/goal-is`）拆成原文和后面那一截（连着前面的 ` · `）：
+/// 提示框放不下时截原文，后面整个留着（「长期目标」第 1 条，2026-10-12 项目主人定）。没有两个 ` · ` 的整句是原文。
+pub(super) fn split_progress(said: &str) -> (&str, &str) {
+    let mut cuts = said.rmatch_indices(" · ").map(|(at, _)| at);
+    match (cuts.next(), cuts.next()) {
+        (Some(_), Some(at)) => said.split_at(at),
+        _ => (said, ""),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::sets_goal;
+    use super::{sets_goal, split_progress};
+
+    #[test]
+    fn the_progress_receipt_splits_off_its_state_and_rounds() {
+        // 核心 `commands/goal-is`：「原文 · 在哪一步 · 第几轮」，原文里也可以有 ` · `。
+        assert_eq!(
+            split_progress("写完 · 测试 · 进行中 · 第 2/5 轮"),
+            ("写完 · 测试", " · 进行中 · 第 2/5 轮")
+        );
+        assert_eq!(split_progress("已暂停长期目标"), ("已暂停长期目标", ""));
+    }
 
     #[test]
     fn only_a_goal_to_set_opens_a_session() {

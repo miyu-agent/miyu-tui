@@ -80,7 +80,7 @@ pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, seen: 
     let Some(notice) = &seen.typing.notice else {
         return;
     };
-    let text = clip(&notice.text, max_width.saturating_sub(4));
+    let text = fitted(&notice.text, &notice.tail, max_width.saturating_sub(4));
     let width = u16::try_from(text.width()).unwrap_or(0) + 4;
     let Some(area) = toast_area(text_x, bottom, width, frame.area()) else {
         return;
@@ -93,6 +93,18 @@ pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, seen: 
         Rect::new(area.x + 2, area.y + 1, area.width.saturating_sub(4), 1).intersection(area);
     frame.render_widget(block, area);
     frame.render_widget(Paragraph::new(text), inner);
+}
+
+/// 提示框里写的：放得进 `width` 列的照原样；放不下的截 `text` 加 `…`，后面的 `tail` 整个留着（`/goal` 看进度的
+/// 「 · 进行中 · 第 1 轮」，「长期目标」第 1 条）；`tail` 自己都放不下的整句截。
+fn fitted(text: &str, tail: &str, width: u16) -> String {
+    let room = usize::from(width);
+    let tail_width = tail.width();
+    if tail_width >= room {
+        return clip(&format!("{text}{tail}"), width);
+    }
+    let rest = u16::try_from(room - tail_width).unwrap_or(width);
+    format!("{}{tail}", clip(text, rest))
 }
 
 /// 提示的框放在哪：三行高，底边在 `bottom` 那一行。上面放不下三行就不画，不往下盖到输入框上（`tui.md`
@@ -116,8 +128,21 @@ pub fn queued(frame: &mut Frame, area: Rect, texts: &[String], mark: &str) {
 mod tests {
     use ratatui::layout::Rect;
 
-    use super::{swept, toast_area};
+    use super::{fitted, swept, toast_area};
     use crate::config::Config;
+
+    #[test]
+    fn a_long_toast_keeps_its_tail_and_clips_the_words_before_it() {
+        // 2026-10-12 项目主人：`/goal` 看进度，原文长了截原文，后面的「 · 进行中 · 第 1 轮」整个留着。
+        let text = "用 write 工具在当前目录写 count.txt，内容是 3";
+        let tail = " · 进行中 · 第 1 轮";
+        let shown = fitted(text, tail, 30);
+        assert!(shown.ends_with("… · 进行中 · 第 1 轮"), "{shown}");
+        assert!(unicode_width::UnicodeWidthStr::width(shown.as_str()) <= 30);
+        assert_eq!(fitted("短的", tail, 30), "短的 · 进行中 · 第 1 轮");
+        assert_eq!(fitted("没有结尾的长长长长长长", "", 8), "没有结…");
+        assert_eq!(fitted("结尾自己就放不下", tail, 6), "结尾…", "整句截");
+    }
 
     #[test]
     fn a_toast_without_three_rows_above_the_box_is_not_drawn() {
