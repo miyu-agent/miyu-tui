@@ -43,8 +43,10 @@ fn the_sidebar_and_the_footer_show_what_was_spent_and_slash_usage_lists_it() {
     tui.wait_for("1 天");
     tui.wait_for("最长的会话");
     tui.wait_for("共 $0.0001");
-    assert!(tui.shows("少") && tui.shows("多"), "热度图的图例");
-    assert!(tui.shows("■"), "热度图的格子");
+    // 热度图的图例、格子：照等的写，不当场看（2026-10-12 macOS 的 CI 上框刚打开那一帧只画了上半截，当场看偶发红）。
+    tui.wait_for("少");
+    tui.wait_for("多");
+    tui.wait_for("■");
     // 换页不改框的高度（2026-10-07 项目主人）。
     let height = |tui: &support::Tui| {
         let lines = tui.lines();
@@ -57,7 +59,7 @@ fn the_sidebar_and_the_footer_show_what_was_spent_and_slash_usage_lists_it() {
     tui.key(b"\t");
     tui.wait_for("今天");
     tui.wait_for("1 次");
-    assert!(tui.shows("█"), "柱状图");
+    tui.wait_for("█");
     // 按模型：占比条、用途。
     tui.key(b"\t");
     tui.wait_for("100%");
