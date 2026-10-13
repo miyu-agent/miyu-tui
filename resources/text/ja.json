@@ -78,7 +78,6 @@
     "more": "⋯ あと {count} 行"
   },
   "unknown_command": "そのコマンドはありません",
-  "fake_command": "/{name} はこのデモ用の仮コマンドで、まだ何もしません",
   "thinking": "考え中",
   "thought": "思考済み",
   "prepare": "{name}を準備中",

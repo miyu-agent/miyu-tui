@@ -78,7 +78,6 @@
     "more": "⋯ {count} more lines"
   },
   "unknown_command": "No such command",
-  "fake_command": "/{name} is a placeholder in this demo and does nothing yet",
   "thinking": "Thinking",
   "thought": "Thought",
   "prepare": "Preparing {name}",

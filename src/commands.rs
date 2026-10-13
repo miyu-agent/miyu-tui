@@ -98,8 +98,6 @@ pub enum Run {
     Help,
     /// 在中英文之间切换界面语言（蓝图「界面语言」）。
     Language,
-    /// 演示用的假命令：还不做事，只说一句。
-    Fake,
     /// 演示：推一份假的待办。
     DemoTodo,
     /// 演示：她问一个假的问题（蓝图「确认和提问的抽屉」）。
@@ -236,7 +234,7 @@ mod tests {
             ["edit", "effort", "exit"],
             "开头对得上的在前，照登记的先后"
         );
-        assert!(names.contains(&"level"), "含着 e 的也在：{names:?}");
+        assert!(names.contains(&"redo"), "含着 e 的也在：{names:?}");
     }
 
     #[test]

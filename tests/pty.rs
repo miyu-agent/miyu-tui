@@ -230,12 +230,10 @@ fn commands_that_change_nothing_only_flash_a_notice() {
     tui.say("/undo");
     tui.wait_for("已撤销");
     tui.pump(Duration::from_millis(500));
-    for (command, words) in [("/undo", "没有可撤销的回合"), ("/readonly", "尚未实现")] {
-        tui.say(command);
-        tui.wait_for(words);
-        tui.pump(Duration::from_millis(2600));
-        assert!(!tui.shows(words), "{command}：{}", tui.lines().join("\n"));
-    }
+    tui.say("/undo");
+    tui.wait_for("没有可撤销的回合");
+    tui.pump(Duration::from_millis(2600));
+    assert!(!tui.shows("没有可撤销的回合"), "{}", tui.lines().join("\n"));
     tui.say("/restore");
     tui.wait_for("好。");
     tui.pump(Duration::from_millis(500));
