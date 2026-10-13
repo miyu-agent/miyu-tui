@@ -73,6 +73,7 @@ fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> 
         }
         Step::Persona => persona::content(&oobe.persona, texts, width, p.config.oobe.avatar_rows),
         Step::Preset => preset::content(&oobe.preset, texts, width),
+        Step::Sandbox => pick::sandbox(oobe, texts, width),
         Step::Welcome | Step::Done => Content::new(width),
     }
 }

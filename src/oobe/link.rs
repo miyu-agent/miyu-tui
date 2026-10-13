@@ -36,5 +36,6 @@ impl Oobe {
         }
         self.persona.lost();
         self.preset.lost();
+        self.sandbox.lost();
     }
 }

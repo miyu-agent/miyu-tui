@@ -126,6 +126,39 @@ fn esc_goes_back_a_step_and_the_welcome_page_does_not_replay() {
     assert_eq!(oobe.step.bar(), None);
     assert_eq!(Step::Language.bar(), Some(0));
     assert_eq!(Step::Preset.bar(), Some(4));
+    assert_eq!(Step::Sandbox.bar(), Some(5));
+}
+
+#[test]
+fn the_sandbox_step_reads_the_current_level_and_writes_the_chosen_one() {
+    // 2026-10-13 项目主人定：引导加「沙盒」一步，默认「开」；开写 workspace、关写 full（核心 8-32 `permission.level`）。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    oobe.step = Step::Preset;
+    oobe.moved(super::Move::Next, t0);
+    assert_eq!(oobe.step, Step::Sandbox);
+    let (tag, params) = find(&asks(&mut oobe), "config.get");
+    assert_eq!(params, json!({"keys": ["permission.level"]}));
+    assert_eq!(oobe.sandbox.pick.selected, 0, "默认停在「开」");
+    // 重走引导时照现在写的停。
+    oobe.answer(
+        tag,
+        Ok(json!({"items": {"permission.level": {"value": "full"}}})),
+        t0,
+        &texts,
+    );
+    assert_eq!(oobe.sandbox.pick.selected, 1);
+    oobe.key(key(KeyCode::Up), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, params) = find(&asks(&mut oobe), "config.set");
+    assert_eq!(
+        params,
+        json!({"layer": "personal", "changes": [{"key": "permission.level", "value": "workspace"}]})
+    );
+    assert_eq!(oobe.step, Step::Sandbox, "写成了才往下走");
+    oobe.answer(tag, Ok(json!({})), t0, &texts);
+    assert_eq!(oobe.step, Step::Done);
 }
 
 #[test]
@@ -133,7 +166,7 @@ fn the_last_screen_marks_welcomed_and_closes_after_the_stars_leave() {
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
-    oobe.step = Step::Preset;
+    oobe.step = Step::Sandbox;
     oobe.moved(super::Move::Next, t0);
     assert_eq!(oobe.step, Step::Done);
     // 播着时回车只是跳过。
@@ -160,7 +193,7 @@ fn offline_the_last_enter_still_leaves_and_says_it_was_not_recorded() {
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
-    oobe.step = Step::Preset;
+    oobe.step = Step::Sandbox;
     oobe.moved(super::Move::Next, t0);
     oobe.done_at = t0.checked_sub(Duration::from_secs(60));
     oobe.offline("核心断开连接", t0, &texts);

@@ -1,4 +1,4 @@
-//! 第一次打开的引导（蓝图 `tui.md`「第一次打开的引导」）：欢迎 → 语言 → 图标 → 接模型 → 建人格 → 选预设 → 好了。
+//! 第一次打开的引导（蓝图 `tui.md`「第一次打开的引导」）：欢迎 → 语言 → 图标 → 接模型 → 建人格 → 选预设 → 沙盒 → 好了。
 //! 这里是走到哪、按键、等的回应交给哪一步；数值在 `look.rs`，动的东西在 `motion/`，画在 `ui/oobe/`，和 App 接在
 //! `app/oobe.rs`。
 
@@ -13,6 +13,7 @@ pub mod nav;
 pub mod persona;
 pub mod pick;
 pub mod preset;
+pub mod sandbox;
 pub mod sheet;
 mod texts;
 pub mod wrap;
@@ -44,17 +45,20 @@ pub enum Step {
     Persona,
     /// 选预设。
     Preset,
+    /// 沙盒：新会话怎么开局（2026-10-13 项目主人定）。
+    Sandbox,
     /// 好了。
     Done,
 }
 
-const ORDER: [Step; 7] = [
+const ORDER: [Step; 8] = [
     Step::Welcome,
     Step::Language,
     Step::Icons,
     Step::Model,
     Step::Persona,
     Step::Preset,
+    Step::Sandbox,
     Step::Done,
 ];
 
@@ -77,7 +81,12 @@ impl Step {
     pub fn bar(self) -> Option<usize> {
         matches!(
             self,
-            Step::Language | Step::Icons | Step::Model | Step::Persona | Step::Preset
+            Step::Language
+                | Step::Icons
+                | Step::Model
+                | Step::Persona
+                | Step::Preset
+                | Step::Sandbox
         )
         .then(|| self.at() - 1)
     }
@@ -160,6 +169,8 @@ pub struct Oobe {
     pub persona: persona::PersonaStep,
     /// 选预设。
     pub preset: preset::PresetStep,
+    /// 沙盒。
+    pub sandbox: sandbox::SandboxStep,
     /// 连着核心。
     pub online: bool,
     /// 数值（`oobe.json`）。
@@ -197,6 +208,7 @@ impl Oobe {
             model: model::ModelStep::new(look.catalog_limit),
             persona: persona::PersonaStep::default(),
             preset: preset::PresetStep::default(),
+            sandbox: sandbox::SandboxStep::default(),
             online,
             look,
             born: now,
@@ -237,6 +249,7 @@ impl Oobe {
                 .persona
                 .key(key, &mut self.asker, &texts.persona, &mut effects),
             Step::Preset => self.preset.key(key, &mut self.asker, &texts.preset),
+            Step::Sandbox => self.sandbox.key(key, &mut self.asker),
             Step::Done => {
                 if !self.finale(now, texts).ready {
                     self.done_at = now.checked_sub(Duration::from_secs(3600));
@@ -321,6 +334,9 @@ impl Oobe {
                 self.persona
                     .answer(&waiting, result, &mut self.asker, &texts.persona)
             }
+            Waiting::SandboxRead | Waiting::SandboxSave => {
+                self.sandbox.answer(&waiting, result, texts)
+            }
             Waiting::Presets
             | Waiting::PresetDefault
             | Waiting::PresetGet(_)
@@ -401,6 +417,7 @@ impl Oobe {
             Step::Model => self.model.enter(&mut self.asker),
             Step::Persona => self.persona.enter(&mut self.asker),
             Step::Preset => self.preset.enter(&mut self.asker),
+            Step::Sandbox => self.sandbox.enter(&mut self.asker),
             Step::Done => {
                 self.done_at = Some(now);
                 self.stars = Stars::gather(now, self.seed.wrapping_add(1));

@@ -67,7 +67,7 @@ fn the_last_enter_cut_off_still_closes_and_says_it_was_not_recorded() {
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
-    oobe.step = Step::Preset;
+    oobe.step = Step::Sandbox;
     oobe.moved(Move::Next, t0);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);

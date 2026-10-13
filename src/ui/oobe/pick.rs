@@ -1,4 +1,4 @@
-//! 语言、图标两步的那一块（「第一次打开的引导」第 13、14 条）。
+//! 语言、图标、沙盒几步的那一块（「第一次打开的引导」第 13、14、26a 条）。
 
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
@@ -57,6 +57,29 @@ pub fn icons(oobe: &Oobe, texts: &Texts, nerd: Option<&Icons>, width: u16) -> Co
             vec![Span::raw(label.clone())],
             None,
         );
+    }
+    c
+}
+
+/// 沙盒：两行，「开」「关」，后面暗色一句是什么意思；写不成的红字。
+pub fn sandbox(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
+    let words = &texts.sandbox;
+    let mut c = Content::new(width);
+    c.heading(&words.head.title, &words.head.sub);
+    for (i, [label, note]) in [&words.on, &words.off].into_iter().enumerate() {
+        c.row(
+            i == oobe.sandbox.pick.selected,
+            vec![
+                Span::raw(label.clone()),
+                Span::raw("  "),
+                Span::styled(note.clone(), theme::dim()),
+            ],
+            None,
+        );
+    }
+    if let Some(error) = &oobe.sandbox.error {
+        c.blank();
+        c.note(error, theme::error());
     }
     c
 }
