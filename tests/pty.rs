@@ -154,6 +154,34 @@ fn rename_sets_removes_and_refuses_a_too_long_title() {
 }
 
 #[test]
+fn a_title_a_person_gave_is_still_on_the_border_after_reopening() {
+    // 接着老会话说话，人起的标题照样写在边框上（2026-10-13 项目主人定）：回放里有那次改名；改名落在没读的老页里的，
+    // 照 `session.list` 的 `named`（核心 3-8 八补）。
+    let home = Home::with_settings(
+        Script::new([Play::Says("好。")]),
+        "[ui]\nstartup = \"recent\"\n",
+    );
+    let mut first = home.tui("zh_CN.UTF-8");
+    first.wait_for("工作区");
+    first.say("在吗");
+    first.wait_for("▣  ");
+    first.say("/rename 回文函数");
+    first.wait_for("已改名：回文函数");
+    drop(first);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("好。");
+    let end = std::time::Instant::now() + support::WAIT;
+    while !input_border(&tui).contains("回文函数") && std::time::Instant::now() < end {
+        tui.pump(Duration::from_millis(100));
+    }
+    assert!(
+        input_border(&tui).contains("回文函数"),
+        "{}",
+        tui.lines().join("\n")
+    );
+}
+
+#[test]
 fn the_language_in_personal_settings_wins_over_the_system_one() {
     // 2026-10-01 项目主人定 A：界面语言写进个人设置的 `ui.language`，手动选了就是这个人所有的头都用这种。
     let home = Home::with_settings(Script::new([]), "[ui]\nlanguage = \"en\"\n");
