@@ -16,6 +16,16 @@ fn input(tui: &support::Tui) -> String {
         .unwrap_or_default()
 }
 
+/// 运行状态行在：有一行最后是读秒（`容我想想.   3s`）。
+fn running(tui: &support::Tui) -> bool {
+    tui.lines().iter().any(|l| {
+        let last = l.split_whitespace().last().unwrap_or_default();
+        last.len() > 1
+            && last.ends_with('s')
+            && last[..last.len() - 1].chars().all(|c| c.is_ascii_digit())
+    })
+}
+
 #[test]
 fn an_interrupt_after_she_has_spoken_keeps_the_turn() {
     // 剧本的 `Holds` 先吐一个「…」再停住：她开口了，打断以后这一轮留着，那一句不放回输入框。
@@ -44,7 +54,17 @@ fn an_interrupt_before_she_starts_puts_the_message_back_in_the_box() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("等一下再问");
-    tui.pump(Duration::from_millis(800));
+    // 等运行状态行的读秒出来（这一轮开始跑了）再按：只等固定的 800 毫秒，CI 忙的时候两下 Esc 都落在开轮以前，什么也
+    // 打断不了（2026-10-14 Ubuntu CI 截到过）。
+    let end = Instant::now() + support::WAIT;
+    while !running(&tui) {
+        assert!(
+            Instant::now() < end,
+            "这一轮没开始：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(100));
+    }
     tui.key(b"\x1b");
     tui.pump(Duration::from_millis(100));
     tui.key(b"\x1b");
