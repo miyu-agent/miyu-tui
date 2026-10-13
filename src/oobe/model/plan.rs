@@ -13,12 +13,14 @@ pub const DRIVERS: [&str; 3] = ["openai-chat", "anthropic", "openai-responses"];
 pub enum Target {
     /// 列出来的一家。
     Listed(Provider),
-    /// 自定义：接口是 [`DRIVERS`] 里第几种、地址。
+    /// 自定义：接口是 [`DRIVERS`] 里第几种、地址、人起的编号。
     Custom {
         /// 接口。
         driver: usize,
         /// 地址，去掉末尾的 `/`。
         base_url: String,
+        /// 人起的编号；没起的照地址的主机名自动起（2026-10-13 项目主人定：默认是自动起的那个，可以改）。
+        id: Option<String>,
     },
 }
 
@@ -40,7 +42,9 @@ pub fn test_params(target: &Target, key: Option<&str>, model: Option<&str>) -> V
                 json!({"candidate": candidate})
             }
         },
-        Target::Custom { driver, base_url } => {
+        Target::Custom {
+            driver, base_url, ..
+        } => {
             let mut candidate = json!({"driver": DRIVERS[*driver], "base_url": base_url});
             if let Some(key) = key.filter(|k| !k.is_empty()) {
                 candidate["key"] = json!({"value": key});
@@ -72,6 +76,7 @@ pub fn config_id(target: &Target, existing: &[String]) -> (String, Option<String
                 (id, catalog)
             }
         },
+        Target::Custom { id: Some(id), .. } => return (id.clone(), None),
         Target::Custom { base_url, .. } => (path_name(&host_name(base_url)), None),
     };
     if !existing.contains(&base) {
@@ -159,7 +164,10 @@ pub fn save_params(
             KeyRef::Local => set(format!("providers.{id}.local"), json!(true)),
             KeyRef::None => {}
         }
-        if let Target::Custom { driver, base_url } = target {
+        if let Target::Custom {
+            driver, base_url, ..
+        } = target
+        {
             set(format!("providers.{id}.driver"), json!(DRIVERS[*driver]));
             set(format!("providers.{id}.base_url"), json!(base_url));
         }
@@ -219,6 +227,7 @@ mod tests {
         let custom = Target::Custom {
             driver: 1,
             base_url: "https://api.example.invalid/v1".into(),
+            id: None,
         };
         assert_eq!(
             test_params(&custom, Some(""), None),
@@ -237,6 +246,7 @@ mod tests {
         let custom = |u: &str| Target::Custom {
             driver: 0,
             base_url: u.into(),
+            id: None,
         };
         assert_eq!(
             config_id(&custom("https://api.example.invalid/v1"), &[]).0,
@@ -305,6 +315,7 @@ mod tests {
         let custom = Target::Custom {
             driver: 0,
             base_url: "https://api.example.invalid/v1".into(),
+            id: None,
         };
         let got = save_params(&custom, ("example", None), &KeyRef::None, "m", true);
         assert!(

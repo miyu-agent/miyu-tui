@@ -3,7 +3,7 @@
 
 mod apply;
 
-pub use apply::apply;
+pub use apply::{apply, name_ok};
 use serde_json::Value;
 
 use super::data::{Data, Model};

@@ -185,9 +185,10 @@ fn a_custom_endpoint_needs_a_good_address_and_asks_for_a_model_name_when_it_cann
     typed(&mut oobe, "https://api.example.invalid/v1/", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert_eq!(oobe.model.error, None, "地址对了红字去掉");
-    // 接口那一格 `l` 换下一个；再往下两格到「测试连接」。
+    // 接口那一格 `l` 换下一个；再往下三格（编号、密钥）到「测试连接」。
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Char('l')), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -363,4 +364,71 @@ fn a_failed_test_can_still_be_saved_and_asks_for_a_model_name_first() {
     assert!(changes.contains(&json!({"key": "models.chat", "value": "openai/gpt-x"})));
     oobe.answer(tag, Ok(json!({})), t0, &texts);
     assert_eq!(oobe.step, Step::Persona, "存好往下走");
+}
+
+#[test]
+fn a_custom_provider_takes_the_id_someone_types_and_checks_it() {
+    // 2026-10-13 项目主人定（核心待定第 6 条，照推荐）：自定义一家让人起编号，默认是照地址自动起的那个，可以改。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = at_model(t0, &texts, None);
+    for _ in 0..5 {
+        oobe.key(key(KeyCode::Down), t0, &texts);
+    }
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    typed(&mut oobe, "https://api.example.invalid/v1", t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let Phase::Form(form) = &oobe.model.phase else {
+        panic!()
+    };
+    assert_eq!(
+        oobe.model.auto_id(form).as_deref(),
+        Some("example"),
+        "空着时照地址起"
+    );
+    // 编号那一格：写法不对的不试，红字照配置页那一句。
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    typed(&mut oobe, "Bad_ID", t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    for _ in 0..2 {
+        oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    }
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(asks(&mut oobe).is_empty(), "编号不对不试");
+    assert!(
+        oobe.model
+            .error
+            .as_deref()
+            .is_some_and(|e| e.contains("Bad_ID"))
+    );
+    // 光标跳回编号那一格；改成对的：试通了存的时候用它。
+    let Phase::Form(form) = &oobe.model.phase else {
+        panic!()
+    };
+    assert_eq!(form.slot(), Some(Slot::Id));
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    for _ in 0.."Bad_ID".len() {
+        oobe.key(key(KeyCode::Backspace), t0, &texts);
+    }
+    typed(&mut oobe, "my-relay", t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    for _ in 0..2 {
+        oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    }
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, _) = find(&asks(&mut oobe), "provider.test");
+    oobe.answer(
+        tag,
+        Ok(json!({"ok": true, "checked": "list", "models": ["m1"], "listed": "provider", "model": "m1"})),
+        t0,
+        &texts,
+    );
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (_, params) = find(&asks(&mut oobe), "config.set");
+    let text = params.to_string();
+    assert!(text.contains("providers.my-relay."), "{text}");
+    assert!(text.contains("\"my-relay/m1\""), "{text}");
 }

@@ -292,6 +292,16 @@ impl ModelStep {
         if form.provider.is_none() && plan::url(form.url.text()).is_none() {
             return Some((texts.url_bad.clone(), at(Slot::Url)));
         }
+        // 人起的编号：写法照核心的；撞了已有的一家不行（存的时候会盖掉它）。
+        let id = form.id.trimmed();
+        if form.provider.is_none() && !id.is_empty() {
+            if !crate::settings::forms::name_ok(&id) {
+                return Some((texts.id_bad.replace("{name}", &id), at(Slot::Id)));
+            }
+            if self.configured.contains(&id) {
+                return Some((texts.id_taken.replace("{name}", &id), at(Slot::Id)));
+            }
+        }
         if form.provider.is_some() && slots.contains(&Slot::Key) && form.key.trimmed().is_empty() {
             return Some((texts.key_needed.clone(), at(Slot::Key)));
         }
@@ -328,6 +338,17 @@ impl ModelStep {
         };
         self.save(models, &model, asker);
         Move::Stay
+    }
+
+    /// 自定义的一家照地址自动起的编号（「编号」那一格空着时暗色写它）；地址还不对的是 `None`。
+    pub fn auto_id(&self, form: &Form) -> Option<String> {
+        let base_url = plan::url(form.url.text())?;
+        let target = Target::Custom {
+            driver: form.driver,
+            base_url,
+            id: None,
+        };
+        Some(plan::config_id(&target, &self.configured).0)
     }
 
     /// 发 `provider.test`，吉祥物抬头等着。

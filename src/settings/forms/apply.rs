@@ -265,7 +265,8 @@ fn name_new(form: &Form) -> bool {
 }
 
 /// 名字的写法（`config.md`）：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。
-fn name_ok(name: &str) -> bool {
+/// 编号的写法（和核心的一样）：小写字母打头，只有小写字母、数字、`-`、`_`，最长 64 个字符。引导里起编号也照它。
+pub fn name_ok(name: &str) -> bool {
     name.len() <= 64
         && name.starts_with(|c: char| c.is_ascii_lowercase())
         && name
