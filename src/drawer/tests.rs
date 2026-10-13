@@ -373,3 +373,24 @@ fn vim_keys_move_and_turn_pages_while_not_typing() {
     typed(&mut d, "jk");
     assert_eq!(d.notes[0], "jk", "写字时照常打字");
 }
+
+#[test]
+fn a_path_outside_the_workspace_or_in_a_private_directory_is_marked() {
+    // 核心 5-13：别的程序的私密目录（钥匙、登录这类）`zone` 是 `private`，2026-10-12 项目主人定标「私密目录」；工作区外的照旧。
+    let texts = Config::builtin().unwrap().text.drawer;
+    let approval: Approval = serde_json::from_value(serde_json::json!({
+        "call_id": "c1", "access": "read",
+        "detail": {"tool": "read", "paths": [
+            {"path": "/srv/keys/id_ed25519", "write": false, "zone": "private"},
+            {"path": "/srv/other/notes.md", "write": false, "zone": "outside"},
+            {"path": "/srv/work/a.md", "write": false}
+        ]}
+    }))
+    .unwrap();
+    let d = Drawer::approval(None, approval);
+    let marks: Vec<Option<String>> = d.paths(&texts).into_iter().map(|(_, m)| m).collect();
+    assert_eq!(
+        marks,
+        [Some("私密目录".into()), Some("工作区外".into()), None]
+    );
+}

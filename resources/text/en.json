@@ -521,6 +521,7 @@
       "separator": ", "
     },
     "outside": "outside the workspace",
+    "private": "private directory",
     "unanswered": "Unanswered",
     "keys": "↑/↓ select · Enter submit · n notes · Esc ×2 cancel",
     "keys_multi": "↑/↓ select · Space check · Enter submit · n notes · Esc ×2 cancel",
