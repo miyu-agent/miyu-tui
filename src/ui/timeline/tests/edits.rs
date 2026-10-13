@@ -3,6 +3,7 @@
 
 use std::time::Instant;
 
+use super::super::step;
 use super::{edit, rows, segment, text, thought};
 use crate::core::ToolStatus;
 use crate::theme;
@@ -55,4 +56,33 @@ fn a_folded_edit_carries_its_added_and_removed_lines() {
             .iter()
             .any(|s| s.content == "-1" && s.style == theme::removed())
     );
+}
+
+#[test]
+fn a_refused_edit_is_red_end_to_end_and_opens_on_why() {
+    // 2026-10-13 验收 T-101：只读时被拒的写入，标题后面照参数写绿的 `+1`、红的 `-0`，点开是绿的 `+` 行，看着像写成了。
+    let f = Fixture::new();
+    let mut refused = edit(Instant::now(), 0);
+    if let StepKind::Tool { state, output, .. } = &mut refused.kind {
+        *state = ToolState::Done(ToolStatus::Denied);
+        *output = "只读：不能写文件".into();
+    }
+    let style = step::style(&refused, false);
+    assert_eq!(style, theme::error());
+    let title = step::title(&refused, style, 80, &f.ctx());
+    assert!(
+        title.iter().all(|s| s.style == theme::error()),
+        "整行红，不夹绿字：{title:?}"
+    );
+    assert!(
+        !title.iter().any(|s| s.content.starts_with('+')),
+        "没改成，不写加减的行数"
+    );
+    let body = step::body(&refused, style, 80, &f.ctx());
+    let words: Vec<String> = body
+        .iter()
+        .map(|p| p.content.iter().map(|s| s.content.as_ref()).collect())
+        .collect();
+    assert_eq!(words, ["只读：不能写文件"], "点开写为什么，不画差异");
+    assert!(body.iter().all(|p| p.content.iter().all(|s| s.style == theme::error())));
 }
