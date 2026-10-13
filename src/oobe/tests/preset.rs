@@ -11,7 +11,7 @@ use crate::oobe::{Move, Oobe, Step, Texts};
 /// 走到选预设：出厂两个，默认 `full`。
 fn at_preset(t0: Instant, texts: &Texts) -> Oobe {
     let mut oobe = fresh(t0);
-    oobe.step = Step::Persona;
+    oobe.step = Step::Profile;
     oobe.moved(Move::Next, t0);
     assert_eq!(oobe.step, Step::Preset);
     let sent = asks(&mut oobe);

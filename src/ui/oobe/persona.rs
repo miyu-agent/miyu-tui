@@ -100,7 +100,7 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
 }
 
 /// 长文在格子里只写第一行，多行的末尾 `…`。
-fn first_line(text: &str) -> String {
+pub(super) fn first_line(text: &str) -> String {
     let mut lines = text.trim_end().lines();
     let first = lines.next().unwrap_or_default().to_string();
     if lines.next().is_some() {
@@ -186,7 +186,7 @@ pub fn popup(
 }
 
 /// 大编辑浮窗里的一块：照宽折行，只露 `size.1` 行，照光标滚；空着的暗色写这一格的说明。
-fn sheet_body(sheet: &mut Sheet, hint: &str, (width, height): (u16, u16)) -> Content {
+pub(super) fn sheet_body(sheet: &mut Sheet, hint: &str, (width, height): (u16, u16)) -> Content {
     let width = usize::from(width.max(4)) - 1;
     let height = usize::from(height.max(1));
     sheet.width = width;

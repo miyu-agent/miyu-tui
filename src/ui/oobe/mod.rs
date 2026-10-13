@@ -10,6 +10,7 @@ mod pick;
 mod picture;
 mod popup;
 mod preset;
+mod profile;
 mod screens;
 mod stage;
 mod stars;
@@ -72,6 +73,7 @@ fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> 
             model::content(&oobe.model, texts, (width, rect.height), spinner)
         }
         Step::Persona => persona::content(&oobe.persona, texts, width, p.config.oobe.avatar_rows),
+        Step::Profile => profile::content(&oobe.profile, texts, width),
         Step::Preset => preset::content(&oobe.preset, texts, width),
         Step::Sandbox => pick::sandbox(oobe, texts, width),
         Step::Welcome | Step::Done => Content::new(width),
@@ -99,6 +101,11 @@ fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
         Step::Persona if oobe.persona.focus == Field::Next => keys.pick.clone(),
         Step::Persona if oobe.persona.focus == Field::Name => keys.persona.clone(),
         Step::Persona => keys.edit.clone(),
+        Step::Profile if oobe.profile.name.editing() => keys.editing.clone(),
+        Step::Profile if oobe.profile.focus == crate::oobe::profile::Slot::Next => {
+            keys.pick.clone()
+        }
+        Step::Profile => keys.edit.clone(),
         // 浮窗开着：照浮窗里那一行（`preset.rs` 的 `popup`）。
         Step::Preset if oobe.preset.viewing => keys.view.clone(),
         Step::Preset if oobe.preset.custom_open => {
@@ -274,6 +281,8 @@ fn popup_frame(
             .map(|m| more::popup(m, &texts, size)),
         // 看预设、自定义（第 24、26 条）。
         Step::Preset => preset::popup(&mut oobe.preset, &texts, size),
+        // 更多描述的大编辑浮窗（第 23a 条）。
+        Step::Profile => profile::popup(&mut oobe.profile, &texts, size),
         _ => None,
     };
     let Some((title, body, hint)) = built else {

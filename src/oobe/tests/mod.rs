@@ -3,6 +3,7 @@
 mod link;
 mod persona;
 mod preset;
+mod profile;
 
 use std::time::{Duration, Instant};
 
@@ -125,8 +126,8 @@ fn esc_goes_back_a_step_and_the_welcome_page_does_not_replay() {
     );
     assert_eq!(oobe.step.bar(), None);
     assert_eq!(Step::Language.bar(), Some(0));
-    assert_eq!(Step::Preset.bar(), Some(4));
-    assert_eq!(Step::Sandbox.bar(), Some(5));
+    assert_eq!(Step::Preset.bar(), Some(5));
+    assert_eq!(Step::Sandbox.bar(), Some(6));
 }
 
 #[test]

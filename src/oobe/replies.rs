@@ -47,6 +47,7 @@ impl Oobe {
                 self.persona
                     .answer(&waiting, result, &mut self.asker, &texts.persona)
             }
+            Waiting::ProfileRead | Waiting::ProfileSave => self.profile.answer(&waiting, result),
             Waiting::SandboxRead | Waiting::SandboxSave => {
                 self.sandbox.answer(&waiting, result, texts)
             }
