@@ -30,7 +30,9 @@ pub(super) fn menu(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         .map(|(name, note)| name.width().max(note.width()) + 4)
         .max()
         .unwrap_or(0);
-    let room = stage.width.min(u16::try_from(widest.max(46)).unwrap_or(u16::MAX));
+    let room = stage
+        .width
+        .min(u16::try_from(widest.max(46)).unwrap_or(u16::MAX));
     for (i, (name, note)) in words.into_iter().enumerate() {
         let step = usize::from(2 + gap);
         let y = stage.y + 2 + u16::try_from(i * step).unwrap_or(u16::MAX);
@@ -44,7 +46,12 @@ pub(super) fn menu(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         }
         let width = row.width.saturating_sub(2);
         let buf = frame.buffer_mut();
-        buf.set_line(row.x + 2, row.y, &Line::raw(fit(&name, usize::from(width))), width);
+        buf.set_line(
+            row.x + 2,
+            row.y,
+            &Line::raw(fit(&name, usize::from(width))),
+            width,
+        );
         buf.set_line(
             row.x + 2,
             row.y + 1,

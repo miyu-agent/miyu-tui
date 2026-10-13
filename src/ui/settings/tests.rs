@@ -147,7 +147,16 @@ fn a_long_menu_note_widens_the_entry_and_is_cut_with_an_ellipsis_only_when_the_w
     // 2026-10-13 验收 T-176：通用底下的组名多，原来 46 列处硬切成「…终端界面、时间」，不加「…」。
     let config = Config::builtin().unwrap();
     let mut page = page(&config);
-    let groups = ["显示", "人格", "预设", "会话", "压缩", "终端界面", "时间线", "吉祥物"];
+    let groups = [
+        "显示",
+        "人格",
+        "预设",
+        "会话",
+        "压缩",
+        "终端界面",
+        "时间线",
+        "吉祥物",
+    ];
     let group_json: Vec<_> = groups
         .iter()
         .enumerate()

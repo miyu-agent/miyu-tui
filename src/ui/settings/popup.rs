@@ -74,10 +74,9 @@ pub fn draw(
         Popup::Dialogs(view) => super::dialog_popups::dialogs(&mut lines, view, texts, width),
         Popup::Pair(edit) => super::dialog_popups::pair(&mut lines, edit, texts),
     }
-    let errors = lines
-        .error
-        .as_deref()
-        .map_or(0, |e| error_rows(e, usize::from(width.saturating_sub(4))).len());
+    let errors = lines.error.as_deref().map_or(0, |e| {
+        error_rows(e, usize::from(width.saturating_sub(4))).len()
+    });
     let height = (lines.body.len() as u16 + 8 + errors as u16).min(max_height);
     let rect = Rect::new(
         area.x + (area.width.saturating_sub(width)) / 2,
