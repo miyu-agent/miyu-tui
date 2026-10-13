@@ -84,5 +84,8 @@ fn a_refused_edit_is_red_end_to_end_and_opens_on_why() {
         .map(|p| p.content.iter().map(|s| s.content.as_ref()).collect())
         .collect();
     assert_eq!(words, ["只读：不能写文件"], "点开写为什么，不画差异");
-    assert!(body.iter().all(|p| p.content.iter().all(|s| s.style == theme::error())));
+    assert!(
+        body.iter()
+            .all(|p| p.content.iter().all(|s| s.style == theme::error()))
+    );
 }

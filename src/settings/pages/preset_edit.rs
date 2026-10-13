@@ -319,10 +319,21 @@ mod tests {
         let mut page = Settings::default();
         page.preset_key(view(2), key(KeyCode::Char(' '), KeyModifiers::NONE), &texts);
         let asks = page.take_asks();
-        assert_eq!(asks[0].2["changes"], json!([{"key": "tools.glob", "unset": true}]));
-        page.preset_key(view(0), key(KeyCode::Char('a'), KeyModifiers::CONTROL), &texts);
+        assert_eq!(
+            asks[0].2["changes"],
+            json!([{"key": "tools.glob", "unset": true}])
+        );
+        page.preset_key(
+            view(0),
+            key(KeyCode::Char('a'), KeyModifiers::CONTROL),
+            &texts,
+        );
         let asks = page.take_asks();
-        assert_eq!(asks[0].2["changes"], json!([{"key": "tools.glob", "unset": true}]), "Ctrl+A 全开也一样");
+        assert_eq!(
+            asks[0].2["changes"],
+            json!([{"key": "tools.glob", "unset": true}]),
+            "Ctrl+A 全开也一样"
+        );
         let mut page = Settings::default();
         page.preset_key(view(3), key(KeyCode::Char(' '), KeyModifiers::NONE), &texts);
         assert_eq!(
@@ -354,7 +365,11 @@ mod tests {
         let Some(crate::settings::popup::Popup::Preset(view)) = &page.popup else {
             panic!("窗还开着");
         };
-        assert!(view.error.as_deref().is_some_and(|e| e.contains("只能写 false")));
+        assert!(
+            view.error
+                .as_deref()
+                .is_some_and(|e| e.contains("只能写 false"))
+        );
     }
 
     #[test]
