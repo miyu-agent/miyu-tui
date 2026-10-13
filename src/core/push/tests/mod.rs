@@ -82,6 +82,15 @@ fn a_failed_call_carries_class_and_message() {
 }
 
 #[test]
+fn a_call_superseded_by_a_new_message_is_not_an_error() {
+    // 核心 4-15（2026-10-14 项目主人定）：请求还没回字时来了新的一句，撤掉重发，那一次记 `result: "superseded"`，没有
+    // 用量；不当出错画。
+    let event = json!({"kind": "model.called", "by": {"kind": "kernel"},
+        "body": {"seen": 7, "result": "superseded"}});
+    assert_eq!(read_mine(&event), Vec::<Push>::new());
+}
+
+#[test]
 fn a_sent_call_says_whether_its_prefix_changed() {
     let changed = json!({"kind": "model.called", "by": {"kind": "kernel"},
         "body": {"seen": 13, "request": "sha256:96e5", "messages": 1,
