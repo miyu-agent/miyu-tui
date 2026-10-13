@@ -11,6 +11,8 @@ pub enum Slot {
     Url,
     /// 接口（自定义）：一格里写选着的那一个，左右换。
     Driver,
+    /// 编号（自定义）：空着的照地址自动起（2026-10-13 项目主人定：默认是自动起的那个，可以改）。
+    Id,
     /// 密钥。
     Key,
     /// 模型名（列不出模型时）。
@@ -30,6 +32,8 @@ pub struct Form {
     pub url: Field,
     /// 接口：[`plan::DRIVERS`] 里第几种。
     pub driver: usize,
+    /// 编号（自定义）：空着的照地址自动起。
+    pub id: Field,
     /// 密钥。
     pub key: Field,
     /// 模型名。
@@ -48,6 +52,7 @@ impl Default for Form {
             provider: None,
             url: Field::url(),
             driver: 0,
+            id: Field::line(),
             key: Field::secret(),
             model: Field::line(),
             needs_model: false,
@@ -61,7 +66,7 @@ impl Form {
     /// 有哪几格，照画的先后；有格子的最后一行是「测试连接」。
     pub fn slots(&self) -> Vec<Slot> {
         let mut out = match &self.provider {
-            None => vec![Slot::Url, Slot::Driver, Slot::Key],
+            None => vec![Slot::Url, Slot::Driver, Slot::Id, Slot::Key],
             Some(p) if p.ready() => Vec::new(),
             Some(_) => vec![Slot::Key],
         };
@@ -80,7 +85,7 @@ impl Form {
     /// 光标那一格正在编辑。
     pub fn editing(&self) -> bool {
         self.slot().is_some_and(|s| {
-            matches!(s, Slot::Url | Slot::Key | Slot::Model)
+            matches!(s, Slot::Url | Slot::Id | Slot::Key | Slot::Model)
                 && self.field_ref(s).is_some_and(Field::editing)
         })
     }
@@ -88,6 +93,7 @@ impl Form {
     fn field_ref(&self, slot: Slot) -> Option<&Field> {
         match slot {
             Slot::Url => Some(&self.url),
+            Slot::Id => Some(&self.id),
             Slot::Key => Some(&self.key),
             Slot::Model => Some(&self.model),
             Slot::Driver | Slot::Test | Slot::Anyway => None,
@@ -102,6 +108,7 @@ impl Form {
     pub(super) fn field(&mut self, slot: Slot) -> Option<&mut Field> {
         match slot {
             Slot::Url => Some(&mut self.url),
+            Slot::Id => Some(&mut self.id),
             Slot::Key => Some(&mut self.key),
             Slot::Model => Some(&mut self.model),
             Slot::Driver | Slot::Test | Slot::Anyway => None,
@@ -115,6 +122,7 @@ impl Form {
             None => plan::url(self.url.text()).map(|base_url| Target::Custom {
                 driver: self.driver,
                 base_url,
+                id: Some(self.id.trimmed()).filter(|id| !id.is_empty()),
             }),
         }
     }

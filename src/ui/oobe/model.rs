@@ -33,8 +33,10 @@ pub fn content(
             c.row(!*keep, vec![Span::raw(words.change.clone())], None);
         }
         Phase::List => list(&mut c, step, texts),
-        Phase::Form(form) => form_lines(&mut c, form, texts, None),
-        Phase::Testing(form) => form_lines(&mut c, form, texts, Some(spinner)),
+        Phase::Form(form) => form_lines(&mut c, (form, step.auto_id(form)), texts, None),
+        Phase::Testing(form) => {
+            form_lines(&mut c, (form, step.auto_id(form)), texts, Some(spinner))
+        }
         Phase::Models(models) | Phase::Saving(models) => {
             c.heading(&title(&models.form, texts), &words.pick_sub);
             // 列出了几个说几个；列不出、拿填的模型名发了一句通了的说那个模型能用（核心 8-11 五补）。
@@ -133,7 +135,12 @@ fn title(form: &Form, texts: &Texts) -> String {
 }
 
 /// 填密钥、自定义；在试的时候下面一行转轮「正在连接…」。
-fn form_lines(c: &mut Content, form: &Form, texts: &Texts, testing: Option<&str>) {
+fn form_lines(
+    c: &mut Content,
+    (form, auto_id): (&Form, Option<String>),
+    texts: &Texts,
+    testing: Option<&str>,
+) {
     let words = &texts.model;
     // 选了一家的写「填写密钥后测试连接」：列得出模型就算通，不再真发一句、不花额度（核心 8-11 五补）；要填模型名再试的那一下
     // 才在模型名下面写「会真发一句话」。
@@ -144,7 +151,13 @@ fn form_lines(c: &mut Content, form: &Form, texts: &Texts, testing: Option<&str>
     };
     c.heading(&title(form, texts), sub);
     let slots = form.slots();
-    let labels = [&words.url, &words.driver, &words.key, &words.model_name];
+    let labels = [
+        &words.url,
+        &words.driver,
+        &words.id,
+        &words.key,
+        &words.model_name,
+    ];
     let label_w = labels.iter().map(|l| l.width()).max().unwrap_or(0);
     // 不用填的那几种：写 key 从哪来。
     if let Some(p) = form.provider.as_ref().filter(|p| p.ready()) {
@@ -164,6 +177,14 @@ fn form_lines(c: &mut Content, form: &Form, texts: &Texts, testing: Option<&str>
         let focused = focus == Some(slot);
         match slot {
             Slot::Url => c.field(&words.url, label_w, &form.url, &words.url_example, focused),
+            // 空着的暗色写照地址自动起的编号：不改就用它（2026-10-13 项目主人定）。
+            Slot::Id => c.field(
+                &words.id,
+                label_w,
+                &form.id,
+                auto_id.as_deref().unwrap_or_default(),
+                focused,
+            ),
             Slot::Driver => {
                 let at = form.driver.min(plan::DRIVERS.len() - 1);
                 let name = words.drivers.get(at).map_or("", String::as_str);

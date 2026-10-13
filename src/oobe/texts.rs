@@ -170,6 +170,12 @@ pub struct Model {
     pub key_none: String,
     /// 空着按回车。
     pub key_needed: String,
+    /// 自定义的「编号」那一格的名字。
+    pub id: String,
+    /// 编号写法不对，`{name}`。
+    pub id_bad: String,
+    /// 编号撞了已有的一家，`{name}`。
+    pub id_taken: String,
     /// 测不通以后的「仍然保存」。
     pub save_anyway: String,
     /// 仍然保存、又没有模型名的：「填上模型名再保存」。
