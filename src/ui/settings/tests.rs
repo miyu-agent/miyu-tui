@@ -141,3 +141,30 @@ fn a_form_with_an_error_on_a_very_short_terminal_does_not_panic() {
         screen(&mut p, &config, w, h);
     }
 }
+
+#[test]
+fn a_long_menu_note_widens_the_entry_and_is_cut_with_an_ellipsis_only_when_the_window_is_narrow() {
+    // 2026-10-13 验收 T-176：通用底下的组名多，原来 46 列处硬切成「…终端界面、时间」，不加「…」。
+    let config = Config::builtin().unwrap();
+    let mut page = page(&config);
+    let groups = ["显示", "人格", "预设", "会话", "压缩", "终端界面", "时间线", "吉祥物"];
+    let group_json: Vec<_> = groups
+        .iter()
+        .enumerate()
+        .map(|(i, name)| json!({"id": format!("g{i}"), "name": name, "page": "general"}))
+        .collect();
+    let items: Vec<_> = (0..groups.len())
+        .map(|i| json!({"key": format!("ui.k{i}"), "control": "toggle", "layers": ["personal"], "name": "项", "page": "general", "group": format!("g{i}")}))
+        .collect();
+    page.more.schema = Some(crate::settings::pages::schema::Schema::read(&json!({
+        "pages": [{"id": "general", "name": "通用"}],
+        "groups": group_json,
+        "items": items,
+    })));
+    let whole = groups.join("、");
+    let (wide, _) = screen(&mut page, &config, 140, 30);
+    assert!(wide.contains(&whole), "宽窗口整行写得下：\n{wide}");
+    let (narrow, _) = screen(&mut page, &config, 44, 30);
+    assert!(!narrow.contains(&whole));
+    assert!(narrow.contains("…"), "放不下的截掉加「…」：\n{narrow}");
+}
