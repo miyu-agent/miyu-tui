@@ -64,6 +64,10 @@ pub enum Waiting {
     PresetPick(String),
     /// 写「引导走过了」（`config.set ui.welcomed`）。
     Welcomed,
+    /// AI 怎么称呼你、更多描述（`config.get profile.name profile.about`）。
+    ProfileRead,
+    /// 写这两项（`config.set`）。
+    ProfileSave,
     /// 新会话从哪一档开局（`config.get permission.level`）。
     SandboxRead,
     /// 写开局的那一档（`config.set permission.level`）。
@@ -87,6 +91,7 @@ impl Waiting {
                 | Self::PresetDefault
                 | Self::PresetGet(_)
                 | Self::SandboxRead
+                | Self::ProfileRead
         )
     }
 }

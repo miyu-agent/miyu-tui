@@ -25,6 +25,7 @@ impl Oobe {
                 let p = &self.persona;
                 p.writing.is_some() || p.editing.is_some() || p.name.editing()
             }
+            Step::Profile => self.profile.writing.is_some() || self.profile.name.editing(),
             Step::Preset => self.preset.custom_open && self.preset.name.editing(),
             _ => false,
         }

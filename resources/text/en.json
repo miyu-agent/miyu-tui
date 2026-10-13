@@ -1253,6 +1253,7 @@
       "Icons",
       "Model",
       "Persona",
+      "About you",
       "Preset",
       "Sandbox"
     ],
@@ -1380,6 +1381,14 @@
       "name_needed": "A name is needed",
       "loading": "Loading…",
       "create": "Create"
+    },
+    "profile": {
+      "title": "How the AI knows you",
+      "sub": "Applies to new sessions. You can change this in settings later. Both are optional",
+      "fields": ["What should the AI call you", "More about you (optional)"],
+      "hints": ["e.g. Alex", "What you do and how you'd like the AI to treat you"],
+      "next": "Next",
+      "saving": "Saving…"
     },
     "sandbox": {
       "title": "Sandbox",

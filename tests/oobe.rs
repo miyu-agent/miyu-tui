@@ -49,6 +49,14 @@ fn read(path: &PathBuf) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
 }
 
+/// 「AI 怎么认识你」那一步（2026-10-13 项目主人定，都可以不填）：挪到「下一步」回车。
+fn through_profile(tui: &mut support::Tui) {
+    tui.wait_for("AI 怎么称呼你");
+    tui.key(b"j");
+    tui.key(b"j");
+    tui.key(b"\r");
+}
+
 /// 沙盒那一步（2026-10-13 项目主人定，默认「开」）：回车照默认的往下走。
 fn through_sandbox(tui: &mut support::Tui) {
     tui.wait_for("命令在沙盒里运行");
@@ -116,6 +124,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.key(b"\x1b[B");
     tui.key(b"\r");
     // 建好、写成默认人格，名字写到吉祥物脚下；到了选预设。
+    through_profile(&mut tui);
     tui.wait_for("选择预设");
     assert!(read(&persona_file(&home, "persona.toml")).contains("小助手"));
     assert!(read(&persona_file(&home, "prompts/persona.md")).contains("你是小助手。"));
@@ -199,6 +208,7 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
+    through_profile(&mut tui);
     tui.wait_for("选择预设");
     tui.wait_for("全部功能");
     // 自定义在最后：回车开浮窗（光标在名字），回车填名字，关掉第一项功能，到最后一行「创建」回车建好。
@@ -255,6 +265,7 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
+    through_profile(&mut tui);
     tui.wait_for("全部功能");
     // 选基础功能（不是出厂的默认）。
     tui.key(b"\x1b[A");

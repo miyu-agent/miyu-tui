@@ -1,4 +1,5 @@
-//! 第一次打开的引导（蓝图 `tui.md`「第一次打开的引导」）：欢迎 → 语言 → 图标 → 接模型 → 建人格 → 选预设 → 沙盒 → 好了。
+//! 第一次打开的引导（蓝图 `tui.md`「第一次打开的引导」）：欢迎 → 语言 → 图标 → 接模型 → 建人格 → AI 怎么认识你 → 选预设
+//! → 沙盒 → 好了。
 //! 这里是走到哪、按键、等的回应交给哪一步；数值在 `look.rs`，动的东西在 `motion/`，画在 `ui/oobe/`，和 App 接在
 //! `app/oobe.rs`。
 
@@ -13,6 +14,7 @@ pub mod nav;
 pub mod persona;
 pub mod pick;
 pub mod preset;
+pub mod profile;
 mod replies;
 pub mod sandbox;
 pub mod sheet;
@@ -44,6 +46,8 @@ pub enum Step {
     Model,
     /// 建人格。
     Persona,
+    /// AI 怎么认识你（2026-10-13 项目主人定）。
+    Profile,
     /// 选预设。
     Preset,
     /// 沙盒：新会话怎么开局（2026-10-13 项目主人定）。
@@ -52,12 +56,13 @@ pub enum Step {
     Done,
 }
 
-const ORDER: [Step; 8] = [
+const ORDER: [Step; 9] = [
     Step::Welcome,
     Step::Language,
     Step::Icons,
     Step::Model,
     Step::Persona,
+    Step::Profile,
     Step::Preset,
     Step::Sandbox,
     Step::Done,
@@ -86,6 +91,7 @@ impl Step {
                 | Step::Icons
                 | Step::Model
                 | Step::Persona
+                | Step::Profile
                 | Step::Preset
                 | Step::Sandbox
         )
@@ -168,6 +174,8 @@ pub struct Oobe {
     pub model: model::ModelStep,
     /// 建人格。
     pub persona: persona::PersonaStep,
+    /// AI 怎么认识你。
+    pub profile: profile::ProfileStep,
     /// 选预设。
     pub preset: preset::PresetStep,
     /// 沙盒。
@@ -208,6 +216,7 @@ impl Oobe {
             ),
             model: model::ModelStep::new(look.catalog_limit),
             persona: persona::PersonaStep::default(),
+            profile: profile::ProfileStep::default(),
             preset: preset::PresetStep::default(),
             sandbox: sandbox::SandboxStep::default(),
             online,
@@ -249,6 +258,7 @@ impl Oobe {
             Step::Persona => self
                 .persona
                 .key(key, &mut self.asker, &texts.persona, &mut effects),
+            Step::Profile => self.profile.key(key, &mut self.asker, &mut effects),
             Step::Preset => self.preset.key(key, &mut self.asker, &texts.preset),
             Step::Sandbox => self.sandbox.key(key, &mut self.asker),
             Step::Done => {
@@ -272,6 +282,7 @@ impl Oobe {
         match self.step {
             Step::Model => self.model.paste(text),
             Step::Persona => self.persona.paste(text),
+            Step::Profile => self.profile.paste(text),
             Step::Preset => self.preset.paste(text),
             _ => {}
         }
@@ -279,7 +290,10 @@ impl Oobe {
 
     /// 编辑器退出了：写回建人格那一格。
     pub fn edited(&mut self, text: Option<String>) {
-        self.persona.edited(text);
+        match self.step {
+            Step::Profile => self.profile.edited(text),
+            _ => self.persona.edited(text),
+        }
     }
 
     /// 等的回应回来了：是引导的交回 `true`。
@@ -360,6 +374,7 @@ impl Oobe {
             }
             Step::Model => self.model.enter(&mut self.asker),
             Step::Persona => self.persona.enter(&mut self.asker),
+            Step::Profile => self.profile.enter(&mut self.asker),
             Step::Preset => self.preset.enter(&mut self.asker),
             Step::Sandbox => self.sandbox.enter(&mut self.asker),
             Step::Done => {

@@ -93,6 +93,23 @@ pub struct Icons {
     pub no: String,
 }
 
+/// AI 怎么认识你那一步。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Profile {
+    /// 标题、说明。
+    #[serde(flatten)]
+    pub head: Heading,
+    /// 两格的名字：AI 怎么称呼你、更多描述（可选）。
+    pub fields: [String; 2],
+    /// 两格空着时暗色写的。
+    pub hints: [String; 2],
+    /// 「下一步」。
+    pub next: String,
+    /// 「正在保存…」。
+    pub saving: String,
+}
+
 /// 沙盒那一步。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -285,6 +302,8 @@ pub struct Texts {
     pub model: Model,
     /// 建人格。
     pub persona: Persona,
+    /// AI 怎么认识你。
+    pub profile: Profile,
     /// 选预设。
     pub preset: Preset,
     /// 沙盒。
