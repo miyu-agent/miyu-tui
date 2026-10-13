@@ -2,6 +2,7 @@
 //! [`Tui`]。从 `mod.rs` 拆出来（2026-10-11：过了 500 行）。
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use miyu_session::testkit::Script;
@@ -9,7 +10,7 @@ use miyu_store::env::{Env, Platform};
 use miyu_store::root::DataRoot;
 
 use super::Tui;
-use super::core::Running;
+use super::core::{Running, Tools};
 
 /// 一个用完就删的临时数据根和工作目录，上面跑着一份照剧本回话的核心。
 pub struct Home {
@@ -49,20 +50,25 @@ impl Home {
     /// 同 [`Home::new`]，核心起来以前先写好 alice 的个人设置（`home/alice/settings.toml`，TOML）。都记着第一次引导走过了
     /// （`ui.welcomed`，核心 8-11 四补），不然一起来就进引导；要引导的用 [`Home::unwelcomed`]。
     pub fn with_settings(script: Script, settings: &str) -> Home {
-        Home::build(script, &welcomed(settings), false)
+        Home::build(script, &welcomed(settings), Tools::None)
     }
 
     /// 同 [`Home::with_settings`]，但没走过第一次引导：一起来就进引导（蓝图「第一次打开的引导」第 1 条）。
     pub fn unwelcomed(script: Script, settings: &str) -> Home {
-        Home::build(script, settings, false)
+        Home::build(script, settings, Tools::None)
     }
 
     /// 同 [`Home::with_settings`]，另外装上基础系统的工具（读写文件、跑命令这些）：她调了要确认的，核心来问。
     pub fn with_tools(script: Script, settings: &str) -> Home {
-        Home::build(script, &welcomed(settings), true)
+        Home::build(script, &welcomed(settings), Tools::Shipped)
     }
 
-    fn build(script: Script, settings: &str, tools: bool) -> Home {
+    /// 同 [`Home::with_settings`]，核心只登记这一件工具（带显示名的假工具这类，`miyu_tool::testkit::Fake`）。
+    pub fn with_tool(script: Script, settings: &str, tool: Arc<dyn miyu_tool::Tool>) -> Home {
+        Home::build(script, &welcomed(settings), Tools::Only(vec![tool]))
+    }
+
+    fn build(script: Script, settings: &str, tools: Tools) -> Home {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("miyu-tui-{}-{n}", std::process::id()));
@@ -103,6 +109,11 @@ impl Home {
     /// 停掉的核心再起来：界面重连上来。
     pub fn restart_core(&self) {
         self.core.restart();
+    }
+
+    /// 停掉核心，换成没有工具，再起来（装了的工具卸掉以后的样子）。
+    pub fn restart_core_without_tools(&self) {
+        self.core.restart_with(Tools::None);
     }
 
     /// 核心的数据根。
