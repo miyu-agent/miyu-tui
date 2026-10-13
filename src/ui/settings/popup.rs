@@ -74,7 +74,11 @@ pub fn draw(
         Popup::Dialogs(view) => super::dialog_popups::dialogs(&mut lines, view, texts, width),
         Popup::Pair(edit) => super::dialog_popups::pair(&mut lines, edit, texts),
     }
-    let height = (lines.body.len() as u16 + 8 + u16::from(lines.error.is_some())).min(max_height);
+    let errors = lines
+        .error
+        .as_deref()
+        .map_or(0, |e| error_rows(e, usize::from(width.saturating_sub(4))).len());
+    let height = (lines.body.len() as u16 + 8 + errors as u16).min(max_height);
     let rect = Rect::new(
         area.x + (area.width.saturating_sub(width)) / 2,
         area.y + (area.height.saturating_sub(height)) / 2,
@@ -307,9 +311,12 @@ fn paint(frame: &mut Frame, rect: Rect, lines: &mut Lines, page: &mut Settings, 
             buf.set_string(inner.right() - w, inner.y, sub, theme::dim());
         }
     }
-    let room = inner
-        .height
-        .saturating_sub(6 + u16::from(lines.error.is_some())) as usize;
+    let errors = lines
+        .error
+        .as_deref()
+        .map(|e| error_rows(e, usize::from(inner.width)))
+        .unwrap_or_default();
+    let room = inner.height.saturating_sub(6 + errors.len() as u16) as usize;
     let focus = lines.body.iter().position(|b| b.focused).unwrap_or(0);
     let top = focus
         .saturating_sub(room.saturating_sub(1))
@@ -342,15 +349,13 @@ fn paint(frame: &mut Frame, rect: Rect, lines: &mut Lines, page: &mut Settings, 
     let mut y = inner.bottom().saturating_sub(3);
     // 报错、按钮、按键提示：落在窗里的才画。终端只有四五行高时它们算到窗外，原来 `y - 1` 下溢崩溃（review A7）。
     let inside = |y: u16| y >= inner.y && y < inner.bottom();
-    if let Some(error) = &lines.error
-        && let Some(above) = y.checked_sub(1).filter(|&r| inside(r))
-    {
-        frame.buffer_mut().set_string(
-            inner.x,
-            above,
-            fit(error, inner.width as usize),
-            theme::error(),
-        );
+    // 报错折行写全（最多三行），写在按钮上面（2026-10-13 验收 T-181：原来一行截掉，「最长 64 个字符」看不到）。
+    for (i, text) in errors.iter().rev().enumerate() {
+        if let Some(above) = y.checked_sub(1 + i as u16).filter(|&r| inside(r)) {
+            frame
+                .buffer_mut()
+                .set_string(inner.x, above, text, theme::error());
+        }
     }
     let mut x = inner.x;
     let buttons = if inside(y) {
@@ -378,4 +383,14 @@ fn paint(frame: &mut Frame, rect: Rect, lines: &mut Lines, page: &mut Settings, 
             .buffer_mut()
             .set_line(inner.x, y, &hint_line(&lines.hints), inner.width);
     }
+}
+
+/// 报错折成几行：最多三行，还放不下的第三行截掉加「…」。
+fn error_rows(error: &str, width: usize) -> Vec<String> {
+    let mut rows = crate::cells::wrap(error, width.max(1));
+    if rows.len() > 3 {
+        let rest: String = rows.split_off(2).concat();
+        rows.push(fit(&rest, width));
+    }
+    rows
 }

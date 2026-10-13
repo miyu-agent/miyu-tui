@@ -168,3 +168,23 @@ fn a_long_menu_note_widens_the_entry_and_is_cut_with_an_ellipsis_only_when_the_w
     assert!(!narrow.contains(&whole));
     assert!(narrow.contains("…"), "放不下的截掉加「…」：\n{narrow}");
 }
+
+#[test]
+fn a_long_form_error_wraps_instead_of_being_cut() {
+    // 2026-10-13 验收 T-181：「「Bad_ID」无效：…最长 64 个字符」在浮窗里一行截掉，最后那半句看不到。
+    let config = Config::builtin().unwrap();
+    let mut p = page(&config);
+    press(&mut p, &config, KeyCode::Enter);
+    press(&mut p, &config, KeyCode::Down);
+    press(&mut p, &config, KeyCode::Enter);
+    let error = "「Bad_ID」无效：须以小写字母开头，仅含小写字母、数字、-、_，最长 64 个字符";
+    if let Some(crate::settings::popup::Popup::Form(form)) = &mut p.popup {
+        form.error = Some(error.into());
+    } else {
+        panic!("开了供应商的窗");
+    }
+    let (text, _) = screen(&mut p, &config, 140, 40);
+    let flat: String = text.lines().map(str::trim).collect();
+    assert!(flat.contains("最长 64 个字符"), "报错折行写全：\n{text}");
+    assert!(!text.contains('…'), "写得下就不截：\n{text}");
+}
