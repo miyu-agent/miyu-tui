@@ -35,6 +35,11 @@ pub(super) async fn serve(
         Ok(id) => awaiting.insert(id, Awaiting::SessionsStream),
         Err(_) => return Served::Lost,
     };
+    // 订阅软件包列表，只为听工具目录变了：变了重取给人看的字（`packages.rs`，核心 9-8 七补）。
+    match super::packages::follow(rpc).await {
+        Ok(id) => awaiting.insert(id, Awaiting::PackagesStream),
+        Err(_) => return Served::Lost,
+    };
     // 主会话：启动时进最近的那个、`--resume` 的，最新一页还没读到就断了的，先读最新一页，再带 `after` 订阅（「会话列表」
     // 第 5、8 条）；重连的带 `after` 接着补，断开期间错过的补回来（「连核心」第 7 条，review B7）。
     if let Some(main) = link.main.clone() {

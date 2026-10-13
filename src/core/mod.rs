@@ -21,6 +21,7 @@ mod links;
 mod mermaid;
 mod models;
 mod output;
+mod packages;
 mod page;
 mod personas;
 mod push;
@@ -312,6 +313,8 @@ pub enum Update {
     CoolingUntil(Option<jiff::Timestamp>),
     /// 给人看的字（[`Command::FetchHuman`] 的回应）。
     Human(crate::human::Human),
+    /// 工具目录变了（`package.changed`、`mcp.changed`）：界面照这种语言重取给人看的字。
+    ToolsChanged,
     /// 配置里头要的几项（界面语言、金额排最前的币种）：连上时读一次，别处改了再读（「界面语言」）。
     HeadConfig(HeadConfig),
     /// 会话列表（[`Command::ListSessions`] 的回应）：只有主会话，照核心交回的先后。

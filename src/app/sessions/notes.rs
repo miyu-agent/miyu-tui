@@ -58,8 +58,13 @@ pub(super) fn announce(
     transcript.job_from(mark, text, detail, Some(job.job.clone()));
 }
 
-/// 子会话正在做什么：在想、在说，或者最新那一步「显示名 · 对象」；没在跑的空着。
-pub(super) fn doing(transcript: &Transcript, human: &Human, words: &JobTexts) -> String {
+/// 子会话正在做什么：在想、在说，或者最新那一步「显示名 · 对象」（显示名照 `lang` 挑，`Human::step_name`）；没在跑的空着。
+pub(super) fn doing(
+    transcript: &Transcript,
+    human: &Human,
+    words: &JobTexts,
+    lang: &str,
+) -> String {
     if transcript.running.is_none() {
         return String::new();
     }
@@ -76,7 +81,7 @@ pub(super) fn doing(transcript: &Transcript, human: &Human, words: &JobTexts) ->
         Some((StepKind::Thought { .. }, _)) => words.doing_thinking.clone(),
         Some((StepKind::Tool { name, .. }, step)) => {
             let face = human.tool(name);
-            let mut out = human.tool_name(name);
+            let mut out = human.step_name(name, &step.display, lang);
             let subject = face
                 .and_then(|f| f.subject.as_deref())
                 .or((name == "shell").then_some("description"))
@@ -268,7 +273,7 @@ mod tests {
         }
         let human = crate::human::Human::default();
         assert_eq!(
-            super::doing(&child, &human, &config.text.jobs),
+            super::doing(&child, &human, &config.text.jobs, "zh"),
             "shell · 等十五秒"
         );
         assert!(!child.entries[0].queued, "交代的活是开这一轮的，不是排着的");
@@ -276,7 +281,7 @@ mod tests {
         child.user("a.md 有几行".into(), Vec::new());
         assert!(child.entries.last().unwrap().queued);
         assert_eq!(
-            super::doing(&child, &human, &config.text.jobs),
+            super::doing(&child, &human, &config.text.jobs, "zh"),
             "shell · 等十五秒"
         );
     }

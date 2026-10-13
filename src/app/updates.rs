@@ -52,6 +52,12 @@ impl App {
         {
             self.link.core.send(Command::ListModels);
         }
+        // 工具目录变了：照现在的语言重取给人看的字，新装的脚本、MCP、扩展工具的显示名跟着换（核心 9-8 七补）。
+        if matches!(update, Update::ToolsChanged) {
+            let code = self.config.language.code().to_string();
+            self.link.core.send(Command::FetchHuman(code));
+            return;
+        }
         // 给人看的字到了：换上，排好的行里有旧的工具名，扔掉重排（`human.rs`）。
         if let Update::Human(human) = update {
             self.link.human = human;

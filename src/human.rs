@@ -60,6 +60,16 @@ impl Human {
             )
     }
 
+    /// 一步给人看的名字：调用那一刻记下的显示名（`display`，语言到名字）照 `lang` 挑，挑不到照 en、zh、ja 的先后（核心
+    /// 9-8 六补）；都没有的照这一刻的工具表（[`Human::tool_name`]）。
+    pub fn step_name(&self, name: &str, display: &BTreeMap<String, String>, lang: &str) -> String {
+        [lang, "en", "zh", "ja"]
+            .iter()
+            .find_map(|l| display.get(*l))
+            .cloned()
+            .unwrap_or_else(|| self.tool_name(name))
+    }
+
     /// 照说法换成一句话，字段先过一遍核心那份 `clean`。没有这一句、或者少了字段的，是空的。
     pub fn say(&self, said: &Said) -> Option<String> {
         let template = self.said.get(&said.key)?;

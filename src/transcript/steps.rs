@@ -2,6 +2,7 @@
 //!
 //! 一段在进行时展开，说话了、这一轮结束了就收成一行（「说话就收起」）；人点过的照人的意思。
 
+use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 
 use serde_json::Value;
@@ -78,6 +79,9 @@ pub struct Step {
     pub images: Vec<String>,
     /// 提问的回答（`ask_user` 答了以后）：一道一行「问题：回答」，时间线接在这一步下面（「确认和提问的抽屉」第 6 条）。
     pub answers: Vec<String>,
+    /// 调工具的那一步，调用那一刻的显示名（结果里的 `display_name`，核心 9-8 六补）：语言到名字，有的照它写，卸了包、关了
+    /// 服务也不变（「时间线」第 3 条）；没有的是空的，照这一刻的工具表（`human.get`）。
+    pub display: BTreeMap<String, String>,
 }
 
 /// 一步的种类。
@@ -142,6 +146,7 @@ impl Step {
             call_id: None,
             images: Vec::new(),
             answers: Vec::new(),
+            display: BTreeMap::new(),
         }
     }
 

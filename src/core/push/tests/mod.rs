@@ -240,6 +240,24 @@ fn turns_carry_their_numbers() {
 }
 
 #[test]
+fn a_result_carries_the_display_name_recorded_at_call_time() {
+    // 核心 9-8 六补：`display_name` 是语言到名字，空的不要；没有这一格的是空的。
+    let result = json!({"kind": "tool.result", "by": {"kind": "tool"},
+        "body": {"call_id": "c1", "status": "ok", "display_name": {"en": "Dice", "zh": "掷骰子", "ja": " "}}});
+    let got = read_mine(&result);
+    let Push::ToolResult { display, .. } = &got[0] else {
+        panic!("{got:?}");
+    };
+    assert_eq!(
+        display
+            .iter()
+            .map(|(l, n)| (l.as_str(), n.as_str()))
+            .collect::<Vec<_>>(),
+        vec![("en", "Dice"), ("zh", "掷骰子")]
+    );
+}
+
+#[test]
 fn tool_calls_and_results_carry_their_ids() {
     let assistant = json!({"kind": "message.assistant", "by": {"kind": "model", "endpoint": "e", "model": "m"},
         "body": {"blocks": [{"type": "text", "text": "看看"}, {"type": "tool_call", "call_id": "c1", "name": "read", "args": "{}"}]}});
@@ -253,6 +271,7 @@ fn tool_calls_and_results_carry_their_ids() {
             status: ToolStatus::Ok,
             text: "a\nb".into(),
             said: None,
+            display: Default::default(),
         }]
     );
     let end =

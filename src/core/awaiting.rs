@@ -31,6 +31,8 @@ pub(super) enum Awaiting {
     List,
     /// 订阅会话列表（核心 9-5）：回应的整张列表交给界面；老核心不认的不说。
     SessionsStream,
+    /// 订阅软件包列表（只听工具目录变了，`packages.rs`）：回应不用；老核心不认的不说。
+    PackagesStream,
     /// 读界面语言：回应交给界面。
     UiLanguage,
     /// 要给人看的字：回应交给界面。

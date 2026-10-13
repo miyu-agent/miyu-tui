@@ -276,7 +276,12 @@ impl App {
         };
         let Some((doing, tokens)) = transcript.map(|t| {
             (
-                doing(t, &self.link.human, &self.config.text.jobs),
+                doing(
+                    t,
+                    &self.link.human,
+                    &self.config.text.jobs,
+                    self.config.language.code(),
+                ),
                 tokens(t),
             )
         }) else {

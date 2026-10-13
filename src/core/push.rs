@@ -13,6 +13,7 @@ mod asking;
 mod called;
 mod goal;
 mod jobs;
+mod result;
 
 pub use asking::Asking;
 pub(crate) use goal::read as read_goal;
@@ -210,6 +211,8 @@ pub enum Push {
         text: String,
         /// 给人看的结果那一句（`human`）：哪一句、换进去的字段；头照资源里的字换。
         said: Option<Said>,
+        /// 调用那一刻的显示名，语言到名字（核心 9-8 六补：脚本、MCP、扩展工具的）；没有的是空的。
+        display: std::collections::BTreeMap<String, String>,
     },
     /// 结果里的图（读了图片文件的 `read`）：这一次调用、每张图的内容哈希（蓝图「时间线」第 8 条）。
     ToolImages {
@@ -445,29 +448,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         | "tool.approval_requested"
         | "question.answered"
         | "tool.approval_decided") => out.extend(Asking::read(kind, body).map(Push::Asking)),
-        "tool.result" => {
-            jobs::effects(body, &mut out);
-            out.push(Push::ToolResult {
-                call_id: text(&body["call_id"]),
-                status: ToolStatus::parse(&text(&body["status"])),
-                text: blocks(body)
-                    .filter_map(|b| b["text"].as_str())
-                    .collect::<Vec<_>>()
-                    .join("\n"),
-                said: serde_json::from_value(body["human"].clone()).ok(),
-            });
-            // 结果里的图（读了图片文件的 `read`）另交一条：时间线把图接在这一步下面（蓝图「时间线」第 8 条）。
-            let blobs: Vec<String> = blocks(body)
-                .filter(|b| b["type"] == "image")
-                .filter_map(|b| b["blob"].as_str().map(str::to_string))
-                .collect();
-            if !blobs.is_empty() {
-                out.push(Push::ToolImages {
-                    call_id: text(&body["call_id"]),
-                    blobs,
-                });
-            }
-        }
+        "tool.result" => result::read(body, &mut out),
         "model.called" => called::read(body, &mut out),
         "status" if body["retry"].is_object() => {
             let retry = &body["retry"];

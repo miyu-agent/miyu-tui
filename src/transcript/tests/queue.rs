@@ -149,6 +149,7 @@ fn what_she_said_before_hearing_it_stays_above_it() {
             status: crate::core::ToolStatus::Ok,
             text: "a.txt".into(),
             said: None,
+            display: Default::default(),
         }],
     );
     let kinds: Vec<(Kind, String)> = shown(&t)
