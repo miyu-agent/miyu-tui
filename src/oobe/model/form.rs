@@ -119,6 +119,8 @@ pub struct Models {
     pub form: Form,
     /// 列出来的模型，试的那一个排第一。
     pub names: Vec<String>,
+    /// 核心列出了几个；0 的是列不出、拿填的模型名发了一句通了的（`checked: request`）。
+    pub listed: usize,
     /// 搜索。
     pub filter: Field,
     /// 选着对得上的第几个。

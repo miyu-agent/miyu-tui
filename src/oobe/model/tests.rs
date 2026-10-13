@@ -197,9 +197,10 @@ fn a_custom_endpoint_needs_a_good_address_and_asks_for_a_model_name_when_it_cann
         json!({"candidate": {"driver": "anthropic", "base_url": "https://api.example.invalid/v1"}}),
         "空着的 key 不带"
     );
+    // 核心 8-11 五补：列不出、给模型名能再试的带 `need_model`。
     oobe.answer(
         tag,
-        Ok(json!({"ok": false, "stage": "list", "error": {"message": "404"}})),
+        Ok(json!({"ok": false, "stage": "list", "need_model": true, "error": {"message": "404"}})),
         t0,
         &texts,
     );
@@ -213,8 +214,46 @@ fn a_custom_endpoint_needs_a_good_address_and_asks_for_a_model_name_when_it_cann
     oobe.key(key(KeyCode::Enter), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    let (_, params) = find(&asks(&mut oobe), "provider.test");
+    let (tag, params) = find(&asks(&mut oobe), "provider.test");
     assert_eq!(params["model"], "glm-5");
+    // 拿填的模型名发了一句、通了：列出的是 0 个，写「glm-5 可以用」。
+    oobe.answer(
+        tag,
+        Ok(json!({"ok": true, "checked": "request", "models": [], "listed": "catalog", "model": "glm-5", "first_token_ms": 812})),
+        t0,
+        &texts,
+    );
+    let Phase::Models(models) = &oobe.model.phase else {
+        panic!("到了选模型");
+    };
+    assert_eq!(
+        (models.listed, models.names.as_slice()),
+        (0, &["glm-5".to_string()][..])
+    );
+}
+
+#[test]
+fn a_list_stage_failure_without_need_model_is_a_plain_failure() {
+    // 核心 8-11 五补：列模型那一步认证错的（没带 `need_model`）照没通办，不问模型名。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = at_model(t0, &texts, None);
+    // 找到 key 的那一家排第一：回车就试。
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, _) = find(&asks(&mut oobe), "provider.test");
+    oobe.answer(
+        tag,
+        Ok(json!({"ok": false, "stage": "list", "error": {"class": "auth", "status": 401, "message": "bad key"}})),
+        t0,
+        &texts,
+    );
+    assert_eq!(oobe.model.warn, None, "不问模型名");
+    assert!(
+        oobe.model
+            .error
+            .as_deref()
+            .is_some_and(|e| e.contains("bad key"))
+    );
 }
 
 #[test]
