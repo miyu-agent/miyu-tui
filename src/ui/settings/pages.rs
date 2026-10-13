@@ -19,25 +19,36 @@ pub(super) fn menu(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
     crumb(frame, stage, texts, None);
     let entries = page.more.entries();
     let at = page.more.menu_at.min(entries.len().saturating_sub(1));
-    for (i, entry) in entries.iter().enumerate() {
+    let words: Vec<(String, String)> = entries
+        .iter()
+        .map(|e| entry_words(page, e, texts))
+        .collect();
+    // 一项的宽：至少 46 列，说明长的放宽到放得下（缩进两格、右边空两格），窗口窄的照窗口；还放不下的截掉加「…」
+    // （2026-10-13 验收 T-176：通用的组名多，原来 46 列处硬切成「…终端界面、时间」）。
+    let widest = words
+        .iter()
+        .map(|(name, note)| name.width().max(note.width()) + 4)
+        .max()
+        .unwrap_or(0);
+    let room = stage.width.min(u16::try_from(widest.max(46)).unwrap_or(u16::MAX));
+    for (i, (name, note)) in words.into_iter().enumerate() {
         let step = usize::from(2 + gap);
         let y = stage.y + 2 + u16::try_from(i * step).unwrap_or(u16::MAX);
         if y + 1 >= stage.bottom().saturating_sub(4) {
             break;
         }
-        let row = Rect::new(stage.x, y, stage.width.min(46), 2);
+        let row = Rect::new(stage.x, y, room, 2);
         if i == at {
             frame.buffer_mut().set_style(row, theme::row_focus());
             bar(frame, row);
         }
-        let (name, note) = entry_words(page, entry, texts);
         let width = row.width.saturating_sub(2);
         let buf = frame.buffer_mut();
-        buf.set_line(row.x + 2, row.y, &Line::raw(name), width);
+        buf.set_line(row.x + 2, row.y, &Line::raw(fit(&name, usize::from(width))), width);
         buf.set_line(
             row.x + 2,
             row.y + 1,
-            &Line::styled(note, theme::dim()),
+            &Line::styled(fit(&note, usize::from(width)), theme::dim()),
             width,
         );
         page.hits.push((row, Hit::Menu(i)));
