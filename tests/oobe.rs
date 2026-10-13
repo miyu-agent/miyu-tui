@@ -49,6 +49,12 @@ fn read(path: &PathBuf) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
 }
 
+/// 主题那一步（2026-10-13 项目主人定）：回车照停着的写。
+fn through_theme(tui: &mut support::Tui) {
+    tui.wait_for("选择明暗和配色");
+    tui.key(b"\r");
+}
+
 /// 「AI 怎么认识你」那一步（2026-10-13 项目主人定，都可以不填）：挪到「下一步」回车。
 fn through_profile(tui: &mut support::Tui) {
     tui.wait_for("AI 怎么称呼你");
@@ -123,7 +129,20 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.wait_for("说话简短。");
     tui.key(b"\x1b[B");
     tui.key(b"\r");
-    // 建好、写成默认人格，名字写到吉祥物脚下；到了选预设。
+    // 建好、写成默认人格，到了主题（第 22a 条）：没头像的停在现在的配置；明暗往右一格是深色，当场铺上 tokyonight
+    // 深色的底；回车写下。
+    tui.wait_for("选择明暗和配色");
+    assert!(tui.shows("Tokyo Night"), "{}", tui.lines().join("\n"));
+    assert_eq!(tui.background(0, 0), vt100::Color::Default, "跟随终端不铺");
+    tui.key(b"l");
+    tui.wait_for("深色");
+    tui.pump(Duration::from_millis(300));
+    assert_eq!(
+        tui.background(0, 0),
+        vt100::Color::Rgb(0x1a, 0x1b, 0x26),
+        "选的时候当场换"
+    );
+    tui.key(b"\r");
     through_profile(&mut tui);
     tui.wait_for("选择预设");
     assert!(read(&persona_file(&home, "persona.toml")).contains("小助手"));
@@ -145,6 +164,9 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     );
     until(&mut tui, "默认预设", || {
         home.settings().contains("[preset]")
+    });
+    until(&mut tui, "主题写下深色", || {
+        home.settings().contains("theme_mode = \"dark\"")
     });
     until(&mut tui, "沙盒照默认的开写工作区", || {
         home.settings().contains("level = \"workspace\"")
@@ -208,6 +230,7 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
+    through_theme(&mut tui);
     through_profile(&mut tui);
     tui.wait_for("选择预设");
     tui.wait_for("全部功能");
@@ -265,6 +288,7 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
+    through_theme(&mut tui);
     through_profile(&mut tui);
     tui.wait_for("全部功能");
     // 选基础功能（不是出厂的默认）。

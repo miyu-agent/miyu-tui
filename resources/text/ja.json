@@ -1254,6 +1254,7 @@
       "アイコン",
       "モデル",
       "人格",
+      "テーマ",
       "あなたについて",
       "プリセット",
       "サンドボックス"
@@ -1276,7 +1277,8 @@
       "view": "j/k スクロール · Space 閉じる",
       "enter_edit": "Enter で編集",
       "presets": "↑↓ 選ぶ · Space 詳細 · Enter 次へ · Esc 戻る",
-      "more": "入力して検索 · ↑↓ 選ぶ · Enter 確定 · Esc 閉じる"
+      "more": "入力して検索 · ↑↓ 選ぶ · Enter 確定 · Esc 閉じる",
+      "theme": "←→ 切替 · j/k 移動 · Enter 次へ · Esc 戻る"
     },
     "language": {
       "title": "表示言語",
@@ -1385,6 +1387,18 @@
       "name_needed": "名前を入れてください",
       "loading": "読み込んでいます…",
       "create": "作成"
+    },
+    "theme": {
+      "title": "テーマ",
+      "sub": "明暗と配色を選択します。すぐに反映され、あとで設定で変更できます",
+      "rows": ["明暗", "配色"],
+      "modes": ["ターミナルに合わせる", "ダーク", "ライト"],
+      "colors": ["アバターに合わせる", "Tokyo Night", "ターミナルの配色"],
+      "from_avatar": "「{name}」のアバターから取得",
+      "from_seed": "「{name}」のテーマカラーを使用",
+      "no_avatar": "「{name}」はアバター未設定のため Tokyo Night を使用",
+      "next": "次へ",
+      "saving": "保存中…"
     },
     "profile": {
       "title": "AI にあなたのことを伝える",

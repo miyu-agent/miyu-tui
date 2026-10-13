@@ -280,8 +280,8 @@ impl App {
         self.ask_older();
         self.send_card_asks();
         self.ask_avatars();
-        // 跟随头像的配色：正在看的人格换了、头像要到了，换一套（`theme.rs`）。
-        self.follow_persona();
+        // 引导「主题」那一步选着的、跟随头像的主色变了，换一套（`theme.rs`）。
+        self.follow_theme();
         self.send_diagram_asks();
         self.renumber_attachments();
         // 压缩那一行的进度条追一下（`tui.md`「正文」第 9 条）。

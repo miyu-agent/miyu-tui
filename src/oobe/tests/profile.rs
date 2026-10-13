@@ -1,4 +1,4 @@
-//! 「AI 怎么认识你」那一步（「第一次打开的引导」第 23a 条，2026-10-13 项目主人定，核心 P-9）。
+//! 「AI 怎么认识你」那一步（「第一次打开的引导」第 23b 条，2026-10-13 项目主人定，核心 P-9）。
 
 use std::time::Instant;
 
@@ -12,9 +12,9 @@ use crate::oobe::{Move, Oobe, Step, Texts};
 /// 走到这一步，读到的两项是 `items`。
 fn at_profile(t0: Instant, texts: &Texts, items: serde_json::Value) -> Oobe {
     let mut oobe = fresh(t0);
-    oobe.step = Step::Persona;
+    oobe.step = Step::Theme;
     oobe.moved(Move::Next, t0);
-    assert_eq!(oobe.step, Step::Profile);
+    assert_eq!(oobe.step, Step::Profile, "主题后面是 AI 怎么认识你");
     let (tag, params) = find(&asks(&mut oobe), "config.get");
     assert_eq!(params, json!({"keys": ["profile.name", "profile.about"]}));
     oobe.answer(tag, Ok(json!({"items": items})), t0, texts);

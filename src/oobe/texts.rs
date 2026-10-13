@@ -57,6 +57,8 @@ pub struct Keys {
     pub presets: String,
     /// 「更多供应商」浮窗。
     pub more: String,
+    /// 主题那一步：左右切换。
+    pub theme: String,
 }
 
 /// 选一行的一步：标题、说明。
@@ -104,6 +106,31 @@ pub struct Profile {
     pub fields: [String; 2],
     /// 两格空着时暗色写的。
     pub hints: [String; 2],
+    /// 「下一步」。
+    pub next: String,
+    /// 「正在保存…」。
+    pub saving: String,
+}
+
+/// 主题那一步。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Theme {
+    /// 标题、说明。
+    #[serde(flatten)]
+    pub head: Heading,
+    /// 两行的名字：明暗、配色。
+    pub rows: [String; 2],
+    /// 明暗三档：跟随终端、深色、浅色。
+    pub modes: [String; 3],
+    /// 配色三种：跟随头像、Tokyo Night、终端配色。
+    pub colors: [String; 3],
+    /// 跟随头像时配色下面暗色的一句：照头像取色，`{name}` 是人格的名字。
+    pub from_avatar: String,
+    /// 同上：人格写了主题色。
+    pub from_seed: String,
+    /// 同上：人格没有头像。
+    pub no_avatar: String,
     /// 「下一步」。
     pub next: String,
     /// 「正在保存…」。
@@ -308,6 +335,8 @@ pub struct Texts {
     pub model: Model,
     /// 建人格。
     pub persona: Persona,
+    /// 主题。
+    pub theme: Theme,
     /// AI 怎么认识你。
     pub profile: Profile,
     /// 选预设。

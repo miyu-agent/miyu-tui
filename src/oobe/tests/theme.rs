@@ -1,0 +1,142 @@
+//! 主题那一步（「第一次打开的引导」第 23a 条，2026-10-13 项目主人定；版面、默认停在哪 2026-10-14 定）。
+
+use std::time::Instant;
+
+use ratatui::crossterm::event::KeyCode;
+use serde_json::json;
+
+use super::{asks, find, fresh, key, texts};
+use crate::oobe::field::Field;
+use crate::oobe::theme::Slot;
+use crate::oobe::{Move, Oobe, Step, Texts};
+use crate::theme::choice::Mode;
+
+/// 从人格那一步走进来，读到的两项是 `items`。
+fn at_theme(oobe: &mut Oobe, t0: Instant, texts: &Texts, items: serde_json::Value) {
+    oobe.step = Step::Persona;
+    oobe.moved(Move::Next, t0);
+    assert_eq!(oobe.step, Step::Theme);
+    let (tag, params) = find(&asks(oobe), "config.get");
+    assert_eq!(params, json!({"keys": ["tui.theme", "tui.theme_mode"]}));
+    assert_eq!(oobe.theme_preview(), None, "读到以前照原来的样子");
+    oobe.answer(tag, Ok(json!({"items": items})), t0, texts);
+}
+
+/// 出厂的两项：都是默认值。
+fn defaults() -> serde_json::Value {
+    json!({
+        "tui.theme": {"value": "tokyonight", "origin": {"layer": "default"}},
+        "tui.theme_mode": {"value": "auto", "origin": {"layer": "default"}}
+    })
+}
+
+#[test]
+fn turning_a_row_previews_it_and_enter_writes_both() {
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    at_theme(&mut oobe, t0, &texts, defaults());
+    assert_eq!(
+        oobe.theme_preview(),
+        Some(("tokyonight".into(), Mode::Auto)),
+        "没有头像：停在现在的配置"
+    );
+    // 明暗往右一格：深色，当场换。
+    oobe.key(key(KeyCode::Right), t0, &texts);
+    assert_eq!(
+        oobe.theme_preview(),
+        Some(("tokyonight".into(), Mode::Dark))
+    );
+    // 配色往左一格：绕到「跟随头像」；再左是终端配色。
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Char('h')), t0, &texts);
+    assert_eq!(oobe.theme_preview(), Some(("persona".into(), Mode::Dark)));
+    oobe.key(key(KeyCode::Left), t0, &texts);
+    assert_eq!(oobe.theme_preview(), Some(("terminal".into(), Mode::Dark)));
+    assert!(asks(&mut oobe).is_empty(), "换的时候不写");
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, params) = find(&asks(&mut oobe), "config.set");
+    assert_eq!(
+        params,
+        json!({"layer": "personal", "changes": [
+            {"key": "tui.theme_mode", "value": "dark"},
+            {"key": "tui.theme", "value": "terminal"}
+        ]})
+    );
+    assert_eq!(oobe.step, Step::Theme, "写成了才往下走");
+    oobe.answer(tag, Ok(json!({})), t0, &texts);
+    assert_eq!(oobe.step, Step::Profile);
+    assert_eq!(
+        oobe.theme_preview(),
+        Some(("terminal".into(), Mode::Dark)),
+        "写成了：引导关上以前一直照选的，不闪回原来的"
+    );
+}
+
+#[test]
+fn going_back_puts_the_old_look_back() {
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    at_theme(&mut oobe, t0, &texts, defaults());
+    oobe.key(key(KeyCode::Right), t0, &texts);
+    assert!(oobe.theme_preview().is_some());
+    oobe.key(key(KeyCode::Esc), t0, &texts);
+    assert_eq!(oobe.step, Step::Persona);
+    assert_eq!(
+        oobe.theme_preview(),
+        None,
+        "退回去：照配置项，换回原来的样子"
+    );
+}
+
+#[test]
+fn with_an_avatar_the_colors_start_on_follow_the_avatar_unless_already_chosen() {
+    // 2026-10-14 项目主人定：人格那一步有头像（或写了主题色）的、配色没写过的，进来停在「跟随头像」。
+    let texts = texts();
+    let t0 = Instant::now();
+    let dir = std::env::temp_dir().join(format!("miyu-theme-step-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("avatar.png");
+    std::fs::write(&file, b"\x89PNG\r\n\x1a\n").unwrap();
+    let mut oobe = fresh(t0);
+    oobe.persona.avatar = Field::line().with(&file.display().to_string());
+    at_theme(&mut oobe, t0, &texts, defaults());
+    assert_eq!(oobe.theme.colors, 0, "停在跟随头像");
+    assert_eq!(oobe.theme_preview().map(|p| p.0), Some("persona".into()));
+    // 写过配色的照写的。
+    let mut chosen = fresh(t0);
+    chosen.persona.avatar = Field::line().with(&file.display().to_string());
+    let items = json!({
+        "tui.theme": {"value": "terminal", "origin": {"layer": "personal"}},
+        "tui.theme_mode": {"value": "light", "origin": {"layer": "personal"}}
+    });
+    at_theme(&mut chosen, t0, &texts, items);
+    assert_eq!(
+        chosen.theme_preview(),
+        Some(("terminal".into(), Mode::Light)),
+        "重走引导：照写过的停"
+    );
+    std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn a_refused_write_stays_and_says_why() {
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    at_theme(&mut oobe, t0, &texts, defaults());
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    assert_eq!(oobe.theme.slot, Slot::Next);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, _) = find(&asks(&mut oobe), "config.set");
+    let refusal = crate::core::Refusal {
+        reason: None,
+        message: "写不进去".into(),
+        data: serde_json::Value::Null,
+    };
+    oobe.answer(tag, Err(refusal), t0, &texts);
+    assert_eq!(oobe.step, Step::Theme);
+    assert_eq!(oobe.theme.error.as_deref(), Some("写不进去"));
+}

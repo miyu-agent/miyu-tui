@@ -1,5 +1,5 @@
-//! 第一次打开的引导（蓝图 `tui.md`「第一次打开的引导」）：欢迎 → 语言 → 图标 → 接模型 → 建人格 → AI 怎么认识你 → 选预设
-//! → 沙盒 → 好了。
+//! 第一次打开的引导（蓝图 `tui.md`「第一次打开的引导」）：欢迎 → 语言 → 图标 → 接模型 → 建人格 → 主题 → AI 怎么认识你
+//! → 选预设 → 沙盒 → 好了。
 //! 这里是走到哪、按键、等的回应交给哪一步；数值在 `look.rs`，动的东西在 `motion/`，画在 `ui/oobe/`，和 App 接在
 //! `app/oobe.rs`。
 
@@ -19,6 +19,7 @@ mod replies;
 pub mod sandbox;
 pub mod sheet;
 mod texts;
+pub mod theme;
 pub mod wrap;
 
 use std::time::{Duration, Instant};
@@ -46,6 +47,8 @@ pub enum Step {
     Model,
     /// 建人格。
     Persona,
+    /// 主题：明暗、配色（2026-10-13 项目主人定，放在人格后面：配色跟着头像）。
+    Theme,
     /// AI 怎么认识你（2026-10-13 项目主人定）。
     Profile,
     /// 选预设。
@@ -56,12 +59,13 @@ pub enum Step {
     Done,
 }
 
-const ORDER: [Step; 9] = [
+const ORDER: [Step; 10] = [
     Step::Welcome,
     Step::Language,
     Step::Icons,
     Step::Model,
     Step::Persona,
+    Step::Theme,
     Step::Profile,
     Step::Preset,
     Step::Sandbox,
@@ -91,6 +95,7 @@ impl Step {
                 | Step::Icons
                 | Step::Model
                 | Step::Persona
+                | Step::Theme
                 | Step::Profile
                 | Step::Preset
                 | Step::Sandbox
@@ -174,6 +179,8 @@ pub struct Oobe {
     pub model: model::ModelStep,
     /// 建人格。
     pub persona: persona::PersonaStep,
+    /// 主题。
+    pub theme: theme::ThemeStep,
     /// AI 怎么认识你。
     pub profile: profile::ProfileStep,
     /// 选预设。
@@ -216,6 +223,7 @@ impl Oobe {
             ),
             model: model::ModelStep::new(look.catalog_limit),
             persona: persona::PersonaStep::default(),
+            theme: theme::ThemeStep::default(),
             profile: profile::ProfileStep::default(),
             preset: preset::PresetStep::default(),
             sandbox: sandbox::SandboxStep::default(),
@@ -258,6 +266,7 @@ impl Oobe {
             Step::Persona => self
                 .persona
                 .key(key, &mut self.asker, &texts.persona, &mut effects),
+            Step::Theme => self.theme.key(key, &mut self.asker),
             Step::Profile => self.profile.key(key, &mut self.asker, &mut effects),
             Step::Preset => self.preset.key(key, &mut self.asker, &texts.preset),
             Step::Sandbox => self.sandbox.key(key, &mut self.asker),
@@ -374,6 +383,10 @@ impl Oobe {
             }
             Step::Model => self.model.enter(&mut self.asker),
             Step::Persona => self.persona.enter(&mut self.asker),
+            Step::Theme => {
+                let follow = self.persona.colors().is_some();
+                self.theme.enter(&mut self.asker, follow);
+            }
             Step::Profile => self.profile.enter(&mut self.asker),
             Step::Preset => self.preset.enter(&mut self.asker),
             Step::Sandbox => self.sandbox.enter(&mut self.asker),
@@ -418,6 +431,14 @@ impl Oobe {
             self.persona.chosen_id.clone(),
             self.preset.chosen_id.clone(),
         )
+    }
+
+    /// 主题那一步选着的样子（第 23a 条）：在这一步、读到了配置的，或者写成了的（引导关上以前一直照它）交回配色、明暗；
+    /// 别的时候是 `None`，照配置项。
+    pub fn theme_preview(&self) -> Option<(String, crate::theme::choice::Mode)> {
+        (self.step == Step::Theme || self.theme.saved)
+            .then(|| self.theme.preview())
+            .flatten()
     }
 
     /// 好了那一屏三样。

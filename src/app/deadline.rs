@@ -43,6 +43,13 @@ impl App {
             .chain((self.card_asks_pending() || self.diagram_asks_pending()).then(Instant::now))
             // 整份重排没排完的：下一帧接着排（蓝图「正文」第 8 条）。
             .chain((self.media.row_cache.borrow().stale > 0).then(Instant::now))
+            // 头像的主色在后台取：每一拍醒来看取好没有（`theme/seeds.rs`）。
+            .chain(
+                self.screen
+                    .seeds
+                    .busy()
+                    .then(|| Instant::now() + Duration::from_millis(self.config.layout.frame_ms)),
+            )
             .min()
     }
 }

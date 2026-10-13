@@ -136,6 +136,7 @@ impl PersonaStep {
                         id: id.clone(),
                         name: got["name"].as_str().unwrap_or_default().to_string(),
                         avatar: got["avatar"].as_str().map(str::to_string),
+                        seed: got["seed"].as_str().map(str::to_string),
                         ..Existing::default()
                     });
                     for prompt in PROMPTS {

@@ -9,6 +9,7 @@ mod ground;
 mod motion;
 mod palette;
 pub mod persona;
+pub mod seeds;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};

@@ -1254,6 +1254,7 @@
       "Icons",
       "Model",
       "Persona",
+      "Theme",
       "About you",
       "Preset",
       "Sandbox"
@@ -1276,7 +1277,8 @@
       "view": "j/k scroll · Space close",
       "enter_edit": "Enter to edit",
       "presets": "↑↓ choose · Space details · Enter next · Esc back",
-      "more": "Type to search · ↑↓ choose · Enter confirm · Esc close"
+      "more": "Type to search · ↑↓ choose · Enter confirm · Esc close",
+      "theme": "←→ change · j/k move · Enter next · Esc back"
     },
     "language": {
       "title": "Language",
@@ -1385,6 +1387,18 @@
       "name_needed": "A name is needed",
       "loading": "Loading…",
       "create": "Create"
+    },
+    "theme": {
+      "title": "Theme",
+      "sub": "Choose mode and colors. Applies immediately. You can change this in settings later",
+      "rows": ["Mode", "Colors"],
+      "modes": ["Follow the terminal", "Dark", "Light"],
+      "colors": ["Follow the avatar", "Tokyo Night", "Terminal colors"],
+      "from_avatar": "From {name}'s avatar",
+      "from_seed": "Uses {name}'s theme color",
+      "no_avatar": "{name} has no avatar. Using Tokyo Night",
+      "next": "Next",
+      "saving": "Saving…"
     },
     "profile": {
       "title": "How the AI knows you",

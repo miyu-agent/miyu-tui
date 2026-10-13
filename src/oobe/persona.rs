@@ -68,6 +68,8 @@ struct Existing {
     versions: [Option<String>; 3],
     /// 头像的版本（`persona.get` 的 `avatar`）；没有头像的是 `None`。
     avatar: Option<String>,
+    /// 写了的主题色 `#rrggbb`（`persona.get` 的 `seed`，核心 P-6）；没写的是 `None`。
+    seed: Option<String>,
     read: usize,
 }
 
@@ -350,4 +352,7 @@ impl PersonaStep {
     }
 }
 
+mod colors;
 mod save;
+
+pub use colors::Colors;
