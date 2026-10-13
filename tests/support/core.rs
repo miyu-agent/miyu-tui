@@ -4,8 +4,8 @@
 
 use std::future::Future;
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, channel};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use miyu_endpoint::config::Config;
@@ -15,7 +15,7 @@ use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
-use miyu_tool::Catalog;
+use miyu_tool::{Catalog, Tool};
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 
@@ -31,17 +31,32 @@ enum Switch {
 /// 跑在自己线程的运行时里的核心；丢掉它时线程照旧跑着，跟着测试进程走。
 pub struct Running {
     switch: UnboundedSender<Switch>,
+    /// 登记哪些工具：每次（重新）起来照这时的读，停着时能换（[`Running::restart_with`]）。
+    tools: Arc<Mutex<Tools>>,
     /// 停好了、起好了各报一声。
     done: Receiver<()>,
     _thread: std::thread::JoinHandle<()>,
 }
 
+/// 核心登记哪些工具。
+#[derive(Clone)]
+pub enum Tools {
+    /// 没有工具。
+    None,
+    /// 照出厂清单登记（读写文件、跑命令这些）。
+    Shipped,
+    /// 只有这几件（带显示名的假工具这类，`miyu_tool::testkit`）。
+    Only(Vec<Arc<dyn Tool>>),
+}
+
 impl Running {
-    /// 在 `root` 上起核心，等它在听了才交回。`tools`：照出厂清单登记工具，不然没有工具。
-    pub fn start(root: DataRoot, script: Script, tools: bool) -> Running {
+    /// 在 `root` 上起核心，等它在听了才交回，工具照 `tools` 登记。
+    pub fn start(root: DataRoot, script: Script, tools: Tools) -> Running {
         let (switch, mut orders) = unbounded_channel();
         let (report, done) = channel();
         let script = Arc::new(script);
+        let tools = Arc::new(Mutex::new(tools));
+        let shared = Arc::clone(&tools);
         let thread = std::thread::spawn(move || {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -54,7 +69,11 @@ impl Running {
                 };
                 loop {
                     let opened = open_when_free(&root, &dirs).await;
-                    let core = Arc::new(build(&root, Arc::clone(&script), tools, opened.token));
+                    let now = shared
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .clone();
+                    let core = Arc::new(build(&root, Arc::clone(&script), now, opened.token));
                     if report.send(()).is_err() {
                         return;
                     }
@@ -75,9 +94,17 @@ impl Running {
         done.recv_timeout(WAIT).expect("核心起来了");
         Running {
             switch,
+            tools,
             done,
             _thread: thread,
         }
+    }
+
+    /// 停掉，换成登记这些工具，再起来（工具出了目录以后的样子）。
+    pub fn restart_with(&self, tools: Tools) {
+        self.stop();
+        *self.tools.lock().unwrap_or_else(PoisonError::into_inner) = tools;
+        self.restart();
     }
 
     /// 停掉核心：连着的界面断线。
@@ -148,7 +175,7 @@ fn frozen(orders: &mut UnboundedReceiver<Switch>) -> bool {
 
 /// 照核心起来时那样造一份：配置读登记的全部配置项接上软件包清单声明的（出厂的，加上装进家里的终端的 `tui.*` 这些，照
 /// 发行包的样子：程序都算在），环境变量一个都不认。
-fn build(root: &DataRoot, script: Arc<Script>, tools: bool, token: String) -> Core {
+fn build(root: &DataRoot, script: Arc<Script>, tools: Tools, token: String) -> Core {
     let admin = AccountId::parse("alice").expect("账号合写法");
     let shipped_root = ResourceRoot::at(resources());
     let found = || miyu_store::packages::Packages::new(&shipped_root, root, &admin).read();
@@ -159,11 +186,11 @@ fn build(root: &DataRoot, script: Arc<Script>, tools: bool, token: String) -> Co
         miyu_core::settings::Packaged::as_released(&mut found()).all(),
         miyu_endpoint::config::Environment::of(&[]),
     );
-    let catalog = if tools {
+    let catalog = match tools {
         // 照出厂的、装了的清单登记（核心 F-2 起：装了的内置包才登记工具）。
-        miyu_core::tools(&shipped_root, &found()).expect("工具登记得上")
-    } else {
-        Catalog::default()
+        Tools::Shipped => miyu_core::tools(&shipped_root, &found()).expect("工具登记得上"),
+        Tools::Only(tools) => Catalog::new(tools).expect("登记得上"),
+        Tools::None => Catalog::default(),
     };
     Core::new(
         root.clone(),

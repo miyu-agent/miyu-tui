@@ -739,6 +739,7 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 | `src/core/replay.rs`、`core/sessions.rs`、`core/switch.rs`、`session_list.rs` | 补发来的你说的话照你说的画、带时刻；回答等它的 `model.called`、每块照起止时刻开收，等不到的照落盘的时刻，补完了钟回到现在；列表只留主会话、缺的格读成没有；最近的那个照最近动静、没有的照先后；置顶在前、再照最近动静、再照先后；打字筛标题和短编号、重读以后选中的跟着它；勾上、取消、正在用的勾不上，删勾了的、没勾的删选中的，删完停在原位；短编号是最后 8 个字符 |
 | `tests/pty.rs`（`tests/support/`） | 伪终端里起真界面、连一份照剧本回话的核心（和 `miyu-endpoint` 测试同一套 `Script`，不走网络）：回答和收尾行画出来；`/recap` 没内容时提示、有了画「回顾：」；↑ ↓ 翻历史跨过记着的命令、翻回没发的那句；手动选了语言收起那一行跟着换（自动的中文换成手动的中文也要重排，这条是它查出来的）；打字时不每帧藏/显光标（输入法的预编辑跟着闪） |
 | `tests/rename.rs` | `/rename` 改名、去掉、太长、没开会话；人起的标题写在输入框上边框右边，重开会话以后还在 |
+| `tests/tool_names.rs`、`ui/timeline/tests/mcp.rs`、`human/tests.rs`、`core/push/tests/mod.rs` 的 `display_name`、`core/packages.rs` | 工具的显示名：还在跑的那一步照核心给的工具表（七补起有脚本、MCP、扩展工具）；跑完的照结果里记下的，照界面语言挑、挑不到往后退；工具卸了、重开会话照日志补发还是记下的那个；`package.changed`、`mcp.changed` 算工具目录变了 |
 | `tests/interrupt.rs`、`app/takeback.rs` 的 `two_escapes_before_the_turn_starts_stop_it_when_it_starts`、`core/push/tests/mod.rs` 的 `a_call_superseded_by_a_new_message_is_not_an_error` | 两下 `Esc` 打断：她开口了的留着这一轮；还没开始做事的撤掉、那一句放回输入框、放回来的照常能再发；发出去马上按两下的（开轮以前）也撤回；还没回一个字时又发的一句被核心带上重发，进正文、不排着（`core/push/tests` 的 `superseded` 不当出错） |
 | `tests/sessions.rs` | `/sessions` 正在用的不能删、切过去画出补发来的以前的对话、中间不闪空会话的首页（录下每个字节查吉祥物）、切回来；十二个会话只露十行、选到底露最后十个；置顶排第一；空格勾两个、`Ctrl+D` 按两次一起删、光标停在原位；没勾的删选中的那个；个人设置 `ui.startup = "recent"` 启动时画出最近那个会话以前的对话；`/resume` 当别名还认 |
 
