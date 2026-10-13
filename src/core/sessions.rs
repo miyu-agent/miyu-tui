@@ -10,6 +10,8 @@ pub struct SessionInfo {
     pub session: String,
     /// 标题；没起名的是 `None`。
     pub title: Option<String>,
+    /// 标题是人起的（核心的 `named`，最后一次写标题的是人才有）。
+    pub named: bool,
     /// 置顶了。
     pub pinned: bool,
     /// 在哪个目录里干活（C-3）。
@@ -45,6 +47,7 @@ fn entry(s: &Value) -> Option<SessionInfo> {
     Some(SessionInfo {
         session: s["session"].as_str()?.to_string(),
         title: text(&s["title"]),
+        named: s["named"] == true,
         pinned: s["pinned"] == true,
         cwd: s["cwd"].as_str().map(str::to_string),
         busy: s["busy"] == true,

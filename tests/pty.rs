@@ -113,6 +113,15 @@ fn a_manually_chosen_language_writes_the_folded_line_in_it() {
     assert!(!tui.shows("Thought for"), "{}", tui.lines().join("\n"));
 }
 
+/// 输入框的上边框那一行（最后一行带 `╭` 的）。
+fn input_border(tui: &support::Tui) -> String {
+    tui.lines()
+        .into_iter()
+        .rev()
+        .find(|l| l.contains('╭'))
+        .unwrap_or_default()
+}
+
 #[test]
 fn rename_sets_removes_and_refuses_a_too_long_title() {
     // 2026-10-01 项目主人定先做 `/rename`（蓝图「改名」）。
@@ -123,12 +132,19 @@ fn rename_sets_removes_and_refuses_a_too_long_title() {
     tui.wait_for("▣  ");
     tui.say("/rename   回文函数  ");
     tui.wait_for("已改名：回文函数");
-    tui.pump(Duration::from_millis(500));
+    // 人改的标题写在输入框上边框右边（2026-10-13 项目主人定）；提示 2 秒后消失，再看边框。
+    tui.pump(Duration::from_millis(2600));
+    assert!(
+        input_border(&tui).contains("回文函数"),
+        "{}",
+        tui.lines().join("\n")
+    );
     tui.say(&format!("/rename {}", "长".repeat(201)));
     tui.wait_for("标题最多 200 个字");
     tui.pump(Duration::from_millis(500));
     tui.say("/rename");
     tui.wait_for("已清除标题");
+    assert!(!input_border(&tui).contains("回文函数"), "去掉了就不写");
     // `/new` 以后、说第一句以前还没开会话。
     tui.pump(Duration::from_millis(500));
     tui.say("/new");

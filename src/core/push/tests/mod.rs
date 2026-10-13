@@ -14,7 +14,23 @@ fn a_new_title_comes_from_meta_changed() {
     // 照 docs/designs/samples/events/session.meta_changed.jsonl。
     let event = json!({"seq": 51, "kind": "session.meta_changed", "by": {"kind": "person", "account": "alice"},
         "body": {"title": "整理 src 目录"}});
-    assert_eq!(read_mine(&event), vec![Push::Title("整理 src 目录".into())]);
+    assert_eq!(
+        read_mine(&event),
+        vec![Push::Title {
+            title: "整理 src 目录".into(),
+            named: true
+        }]
+    );
+    // 内核自动起的（照 docs/designs/samples/probe/title/log.jsonl）：不算人起的。
+    let auto = json!({"seq": 14, "kind": "session.meta_changed", "by": {"kind": "kernel"},
+        "body": {"title": "macOS 上 CI 变红的原因"}});
+    assert_eq!(
+        read_mine(&auto),
+        vec![Push::Title {
+            title: "macOS 上 CI 变红的原因".into(),
+            named: false
+        }]
+    );
     let pinned =
         json!({"kind": "session.meta_changed", "by": {"kind": "person"}, "body": {"pinned": true}});
     assert!(read_mine(&pinned).is_empty(), "没带标题的不算");

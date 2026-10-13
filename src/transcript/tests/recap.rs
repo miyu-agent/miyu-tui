@@ -68,8 +68,16 @@ fn a_recap_goes_away_with_the_turn_it_covers_and_comes_back_with_it() {
 fn a_removed_title_reads_as_untitled() {
     // 2026-10-01 核心 3-8 三补：去掉标题推的是 `"title":""`，读成没有标题（侧边栏写「未命名」），不是空名字。
     let mut t = Transcript::default();
-    apply(&mut t, vec![Push::Title("回文函数".into())]);
+    let title = |title: &str, named| Push::Title {
+        title: title.into(),
+        named,
+    };
+    apply(&mut t, vec![title("回文函数", true)]);
     assert_eq!(t.title.as_deref(), Some("回文函数"));
-    apply(&mut t, vec![Push::Title(String::new())]);
+    assert!(t.named, "人起的");
+    apply(&mut t, vec![title("", true)]);
     assert_eq!(t.title, None);
+    assert!(!t.named, "去掉了标题就不算人起的了");
+    apply(&mut t, vec![title("自动起的", false)]);
+    assert!(!t.named);
 }

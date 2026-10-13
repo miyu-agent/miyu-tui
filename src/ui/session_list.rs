@@ -281,6 +281,7 @@ mod tests {
         SessionInfo {
             session: session.into(),
             title: title.map(str::to_string),
+            named: false,
             pinned: false,
             cwd: Some(cwd.into()),
             busy: false,

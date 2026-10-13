@@ -91,6 +91,8 @@ pub struct Transcript {
     pub gone: bool,
     /// 会话名称：核心起了名字（`session.meta_changed`）才有。
     pub title: Option<String>,
+    /// 标题是人起的（`/rename` 这类，不是内核自动起的）：输入框上边框右边写它（「输入框」第 14 条）。
+    pub named: bool,
     /// 实际的权限级别。新会话从工作区、不只读开始（`protocol.md` `session.create` 第 2 条）。
     pub level: Level,
     /// 这个会话从开到现在，每次请求的用量加起来。
@@ -271,7 +273,10 @@ impl Transcript {
             }
             Push::Withdrawn(seqs) => self.withdraw(&seqs),
             // 去掉标题推来的是空的：读成没有标题。
-            Push::Title(title) => self.title = (!title.is_empty()).then_some(title),
+            Push::Title { title, named } => {
+                self.named = named && !title.is_empty();
+                self.title = (!title.is_empty()).then_some(title);
+            }
             Push::Workspace(cwd) => self.workspace_changed(cwd, texts),
             Push::Policy { level, read_only } => {
                 self.level = if read_only { Level::ReadOnly } else { level };

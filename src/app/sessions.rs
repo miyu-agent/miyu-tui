@@ -218,6 +218,15 @@ impl App {
         known.and_then(|s| s.title.clone())
     }
 
+    /// 最近一次会话列表里这个会话的标题是不是人起的（核心的 `named`）。
+    pub(super) fn session_named(&self, id: &str) -> bool {
+        self.talk
+            .sessions_seen
+            .iter()
+            .flatten()
+            .any(|s| s.session == id && s.named)
+    }
+
     /// 别处来的话写的来处（「别处来的话」第 2 条）：自己派的子代理、派这个子代理的会话，别的都是别的主会话发来的
     /// （核心 C-5），照最近一次会话列表写标题，没见过的先只写短编号、顺手要一次列表。
     fn label(&self, session: &str, from: &Sender, words: &JobTexts) -> String {

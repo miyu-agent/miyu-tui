@@ -69,9 +69,10 @@ impl App {
                 .session
                 .as_deref()
                 .and_then(|id| seen.iter().find(|s| s.session == id))
-                .and_then(|s| s.title.clone());
-            if listed.is_some() {
-                transcript.title = listed;
+                .and_then(|s| Some((s.title.clone()?, s.named)));
+            if let Some((title, named)) = listed {
+                transcript.title = Some(title);
+                transcript.named = named;
             }
         }
     }
