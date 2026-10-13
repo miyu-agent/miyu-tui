@@ -145,12 +145,21 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     let summary = oobe.summary();
     stars::draw(frame, area, &list, &look.stars.marks);
     if let Some(rect) = rect {
-        let extra = Extra {
-            spin: fin.spin,
-            mouth: fin.mouth,
-            ..Extra::default()
-        };
-        figure::draw(frame, rect, &base, p, (None, 0.0), extra);
+        // 设了头像的画头像，跟着走回中间、落到首页的位置；画不了的照旧画吉祥物（第 11 条，2026-10-13 项目主人定）。
+        let avatar = oobe
+            .persona
+            .finale_avatar(|version| p.media.avatars.file(version));
+        let drawn = avatar.is_some_and(|path| {
+            crate::ui::avatar_view::draw_file(frame, &p.media.figures, rect, &path)
+        });
+        if !drawn {
+            let extra = Extra {
+                spin: fin.spin,
+                mouth: fin.mouth,
+                ..Extra::default()
+            };
+            figure::draw(frame, rect, &base, p, (None, 0.0), extra);
+        }
     }
     if leave.is_some_and(|p| p > 0.3) {
         return;

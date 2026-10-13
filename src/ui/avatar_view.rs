@@ -54,6 +54,12 @@ pub fn draw(
     }
 }
 
+/// 引导「好了」那一屏（「第一次打开的引导」第 11 条）：把头像照比例放进 `rect`、居中画。画了、还在做的交回 `true`（那一块
+/// 不再画吉祥物），读不出来、终端显示不了的交回 `false`。
+pub fn draw_file(frame: &mut Frame, figures: &RefCell<Figures>, rect: Rect, path: &Path) -> bool {
+    !matches!(picture(frame, figures, rect, path), Shown::Unable)
+}
+
 /// 把图照比例放进 `rect`、居中画。
 fn picture(frame: &mut Frame, figures: &RefCell<Figures>, rect: Rect, path: &Path) -> Shown {
     let mut figures = figures.borrow_mut();

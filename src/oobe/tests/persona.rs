@@ -302,3 +302,21 @@ fn an_avatar_that_cannot_be_uploaded_says_why_and_goes_back_to_it() {
             .contains("读不了")
     );
 }
+
+#[test]
+fn the_last_screen_shows_the_avatar_that_was_set_and_otherwise_the_mascot() {
+    // 2026-10-13 项目主人定：引导结尾的动画，人格设了头像的画头像，没设的照旧吉祥物。
+    let none = |_: &str| None;
+    let mut step = crate::oobe::persona::PersonaStep::default();
+    assert_eq!(step.finale_avatar(none), None, "没设头像：吉祥物");
+    let dir = std::env::temp_dir().join(format!("miyu-finale-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("头像.png");
+    std::fs::write(&file, b"\x89PNG\r\n\x1a\n").unwrap();
+    step.avatar = crate::oobe::field::Field::line().with(&file.display().to_string());
+    assert_eq!(step.finale_avatar(none), Some(file.clone()));
+    step.avatar =
+        crate::oobe::field::Field::line().with(&dir.join("没有这张.png").display().to_string());
+    assert_eq!(step.finale_avatar(none), None, "填的文件不在：吉祥物");
+    std::fs::remove_dir_all(&dir).unwrap();
+}

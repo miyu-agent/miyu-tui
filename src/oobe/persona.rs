@@ -325,6 +325,19 @@ impl PersonaStep {
         self.existing.as_ref().is_some_and(|e| e.avatar.is_some())
     }
 
+    /// 「好了」那一屏画谁（第 11 条，2026-10-13 项目主人定：设了头像的画头像）：这一次填了的头像文件；没填、已有的人格有
+    /// 头像的，照它的版本找存下来的那一份（`cached`）；都没有的是 `None`，照旧画吉祥物。
+    pub fn finale_avatar(
+        &self,
+        cached: impl Fn(&str) -> Option<std::path::PathBuf>,
+    ) -> Option<std::path::PathBuf> {
+        if let Some(path) = self.avatar_path() {
+            return path.is_file().then_some(path);
+        }
+        let version = self.existing.as_ref()?.avatar.as_deref()?;
+        cached(version)
+    }
+
     /// 外部编辑器退出了：写回大编辑浮窗（接着在浮窗里，没改、读不回来的不动）。
     pub fn edited(&mut self, text: Option<String>) {
         let slot = self.in_editor.take();
