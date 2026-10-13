@@ -1,12 +1,9 @@
 //! 后台任务表和待办（蓝图 `tui.md`「后台命令、子代理和侧边栏」）：每个会话一份。后台任务照核心推来的事件记
-//! （`job.started`、`job.messaged`、`job.reported`、`child.reported`）；待办核心还没有，现在由 `fake.rs` 的假数据源推。
+//! （`job.started`、`job.messaged`、`job.reported`、`child.reported`）；待办照核心推来的 `todos.changed` 记。
 
 pub mod clean;
-mod fake;
 
 use std::time::{Duration, Instant};
-
-pub use fake::{Feed, Script};
 
 use crate::core::{JobEnd, JobReason, JobStart};
 

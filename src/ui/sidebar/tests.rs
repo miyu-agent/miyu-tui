@@ -1,13 +1,11 @@
 //! 侧边栏（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 4、7 条）：分栏、待办的收法、会话那几段的写法。
 
-use std::time::{Duration, Instant};
-
 use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 
 use super::{spent_lines, split, todo_lines};
 use crate::config::Config;
-use crate::jobs::{Board, Feed, Todo, TodoState};
+use crate::jobs::{Board, Todo, TodoState};
 
 #[test]
 fn only_wide_windows_get_a_sidebar() {
@@ -20,21 +18,39 @@ fn only_wide_windows_get_a_sidebar() {
     assert_eq!(side.right(), 160);
 }
 
+/// 一份待办：前 `done` 项做完、下一项在做、别的没做。
+fn todos(items: &[&str], done: usize) -> Board {
+    let mut board = Board::default();
+    board.todos = items
+        .iter()
+        .enumerate()
+        .map(|(i, text)| Todo {
+            text: (*text).to_string(),
+            state: match i.cmp(&done) {
+                std::cmp::Ordering::Less => TodoState::Done,
+                std::cmp::Ordering::Equal => TodoState::Active,
+                std::cmp::Ordering::Greater => TodoState::Pending,
+            },
+        })
+        .collect();
+    board
+}
+
+const ITEMS: [&str; 4] = [
+    "读蓝图",
+    "照蓝图改侧边栏的待办，长的一项折到下一行",
+    "跑测试",
+    "提交",
+];
+
 #[test]
 fn the_full_list_marks_each_state_and_wraps_under_the_text() {
     let config = Config::builtin().unwrap();
-    let (mut feed, mut board) = (Feed::default(), Board::default());
-    assert!(todo_lines(&board, &config, 30, 5, false).is_empty());
-    let t0 = Instant::now();
-    feed.start_todo(&config.fake, &mut board, t0);
-    feed.advance(
-        &config.fake,
-        &mut board,
-        t0 + Duration::from_millis(config.fake.todos.every_ms),
-    );
+    assert!(todo_lines(&Board::default(), &config, 30, 5, false).is_empty());
+    let board = todos(&ITEMS, 1);
     let lines = todo_lines(&board, &config, 12, 5, true);
     let text: Vec<String> = lines.iter().map(|l| l.to_string()).collect();
-    assert_eq!(text[0], format!("待办 1/{}", config.fake.todos.items.len()));
+    assert_eq!(text[0], format!("待办 1/{}", ITEMS.len()));
     assert!(text[1].starts_with("☑ 读蓝图"));
     assert!(
         lines[1].spans[1]
@@ -51,28 +67,13 @@ fn the_full_list_marks_each_state_and_wraps_under_the_text() {
 #[test]
 fn a_finished_list_goes_away() {
     let config = Config::builtin().unwrap();
-    let (mut feed, mut board) = (Feed::default(), Board::default());
-    let t0 = Instant::now();
-    feed.start_todo(&config.fake, &mut board, t0);
-    let every = config.fake.todos.every_ms;
-    let n = config.fake.todos.items.len() as u64;
-    for k in 1..n {
-        feed.advance(
-            &config.fake,
-            &mut board,
-            t0 + Duration::from_millis(every * k),
-        );
-    }
+    let n = ITEMS.len();
     assert!(
-        !todo_lines(&board, &config, 30, 5, false).is_empty(),
+        !todo_lines(&todos(&ITEMS, n - 1), &config, 30, 5, false).is_empty(),
         "还剩一项：还在"
     );
-    feed.advance(
-        &config.fake,
-        &mut board,
-        t0 + Duration::from_millis(every * n),
-    );
-    assert_eq!(board.todo_progress(), Some((n as usize, n as usize)));
+    let board = todos(&ITEMS, n);
+    assert_eq!(board.todo_progress(), Some((n, n)));
     assert!(
         todo_lines(&board, &config, 30, 5, false).is_empty(),
         "全做完了：收掉"

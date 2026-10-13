@@ -7,7 +7,6 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
 
 use super::App;
-use crate::commands::Run;
 use crate::core::Command;
 use crate::focus::{Button, Focus, Stops};
 use crate::jobs::PanelItem;
@@ -62,29 +61,15 @@ pub enum Panel {
 }
 
 impl App {
-    /// 演示命令：推一份假的待办（后台命令、子代理已经接核心）。
-    pub(super) fn demo(&mut self, run: Run) {
-        if run == Run::DemoTodo {
-            let now = Instant::now();
-            self.talk
-                .feed
-                .start_todo(&self.config.fake, &mut self.talk.board, now);
-        }
-    }
-
-    /// 到点的推一步（假的待办）。
+    /// 到点了：读一次后台命令的输出。
     pub(super) fn advance_jobs(&mut self) {
-        self.talk
-            .feed
-            .advance(&self.config.fake, &mut self.talk.board, Instant::now());
         self.poll_output();
     }
 
-    /// 下一次该推、该重画的时刻：假待办的下一步；有在跑的后台任务，每秒重画一次（用时在走）。
+    /// 下一次该重画的时刻：有在跑的后台任务，每秒重画一次（用时在走）。
     pub(super) fn jobs_deadline(&self) -> Option<Instant> {
         let running = self.talk.board.busy() || self.talk.tree().busy();
-        let tick = running.then(|| Instant::now() + Duration::from_secs(1));
-        self.talk.feed.next_at().into_iter().chain(tick).min()
+        running.then(|| Instant::now() + Duration::from_secs(1))
     }
 
     /// 停掉一条在跑的后台任务：交给核心（`job.stop`），结束的回报来了再出通知。

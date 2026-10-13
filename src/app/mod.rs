@@ -70,7 +70,7 @@ use crate::figures::Figures;
 use crate::focus::Focus;
 use crate::history::History;
 use crate::input::{Action, Draft, InputBox, PasteRule};
-use crate::jobs::{Board, Feed};
+use crate::jobs::Board;
 use crate::menu::Menu;
 use crate::notify::Notifier;
 use crate::tips::Tips;

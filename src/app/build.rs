@@ -62,7 +62,6 @@ impl App {
             talk: super::talk::Talk {
                 transcript: Transcript::default(),
                 board: Board::default(),
-                feed: Feed::default(),
                 parked: Default::default(),
                 home: None,
                 left: Vec::new(),
@@ -77,7 +76,6 @@ impl App {
                 workspace_pending: None,
                 persona: super::new_session::Pick::from_env("MIYU_TUI_PERSONA"),
                 preset: super::new_session::Pick::from_env("MIYU_TUI_PRESET"),
-                demo_drawers: (0, 0),
             },
             link: super::link::Link {
                 core,

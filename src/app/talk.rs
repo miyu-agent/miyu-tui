@@ -5,17 +5,15 @@
 use super::{Unsent, new_session, sessions, takeback};
 use crate::core::{Bill, Usage};
 use crate::drawer::Drawers;
-use crate::jobs::{Board, Feed, Job};
+use crate::jobs::{Board, Job};
 use crate::transcript::Transcript;
 
 /// 会话。
 pub struct Talk {
     /// 会话：正文、在不在跑、用量。
     pub transcript: Transcript,
-    /// 后台任务表和待办（现在由假数据源推）。
+    /// 后台任务表和待办。
     pub board: Board,
-    /// 演示用的假数据源。
-    pub feed: Feed,
     /// 停放着的会话：切进子会话时的主会话、子代理的会话、`/new` 以后还有任务在跑的旧会话（`sessions.rs`）。
     pub parked: sessions::Lot,
     /// 切进了子会话：主会话的编号（它停放着）；看着主会话是 `None`。
@@ -44,8 +42,6 @@ pub struct Talk {
     pub persona: new_session::Pick,
     /// 新会话要选的预设。
     pub preset: new_session::Pick,
-    /// `/demo-ask`、`/demo-approve` 各出到第几个。
-    pub demo_drawers: (usize, usize),
 }
 
 impl Talk {
