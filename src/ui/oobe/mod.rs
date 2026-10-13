@@ -88,6 +88,7 @@ fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
             Phase::Form(form) if form.editing() => keys.editing.clone(),
             Phase::Form(form) if form.slot() == Some(Slot::Driver) => keys.driver.clone(),
             Phase::Form(form) if form.slot() == Some(Slot::Test) => keys.test.clone(),
+            Phase::Form(form) if form.slot() == Some(Slot::Anyway) => keys.anyway.clone(),
             Phase::Form(_) | Phase::Testing(_) => keys.form.clone(),
             Phase::Models(models) if models.filter.editing() => keys.searching.clone(),
             Phase::Models(_) | Phase::Saving(_) => keys.models.clone(),

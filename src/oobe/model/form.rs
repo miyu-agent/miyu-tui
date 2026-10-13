@@ -17,6 +17,8 @@ pub enum Slot {
     Model,
     /// 最后一行「测试连接 →」：`Enter` 试。
     Test,
+    /// 测不通以后多一行「仍然保存」：照填的写进配置、往下走（2026-10-13 项目主人定，核心 8-11 五补）。
+    Anyway,
 }
 
 /// 填的那一屏。
@@ -34,6 +36,8 @@ pub struct Form {
     pub model: Field,
     /// 列不出模型：多一格模型名。
     pub needs_model: bool,
+    /// 试过、没通：多一行「仍然保存」。
+    pub failed: bool,
     /// 光标在第几格。
     pub focus: usize,
 }
@@ -47,6 +51,7 @@ impl Default for Form {
             key: Field::secret(),
             model: Field::line(),
             needs_model: false,
+            failed: false,
             focus: 0,
         }
     }
@@ -63,8 +68,11 @@ impl Form {
         if self.needs_model {
             out.push(Slot::Model);
         }
-        if !out.is_empty() {
+        if !out.is_empty() || self.failed {
             out.push(Slot::Test);
+        }
+        if self.failed {
+            out.push(Slot::Anyway);
         }
         out
     }
@@ -82,7 +90,7 @@ impl Form {
             Slot::Url => Some(&self.url),
             Slot::Key => Some(&self.key),
             Slot::Model => Some(&self.model),
-            Slot::Driver | Slot::Test => None,
+            Slot::Driver | Slot::Test | Slot::Anyway => None,
         }
     }
 
@@ -96,7 +104,7 @@ impl Form {
             Slot::Url => Some(&mut self.url),
             Slot::Key => Some(&mut self.key),
             Slot::Model => Some(&mut self.model),
-            Slot::Driver | Slot::Test => None,
+            Slot::Driver | Slot::Test | Slot::Anyway => None,
         }
     }
 

@@ -173,6 +173,7 @@ fn form_lines(c: &mut Content, form: &Form, texts: &Texts, testing: Option<&str>
             Slot::Key => c.field(&words.key, label_w, &form.key, "", focused),
             // 最后一行「测试连接 →」（格子改成回车才进编辑以后，试不再挂在最后一格的回车上）。
             Slot::Test => c.action(focused, &format!("{} →", words.test)),
+            Slot::Anyway => c.action(focused, &words.save_anyway),
             Slot::Model => {
                 c.field(
                     &words.model_name,
