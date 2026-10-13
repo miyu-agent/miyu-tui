@@ -13,8 +13,8 @@ fn completes() -> Play {
     Play::Calls(vec![("goal".into(), args)])
 }
 
-/// 输入框上边框右边那一截的开头（前面是边框线）：正文里「● 长期目标 · 第 1 轮」那一行不算。
-const TAG: &str = "─ 目标 · ";
+/// 框上面那一行目标进度的开头（2026-10-14 项目主人定：打头一个 `◎`）：正文里「● 长期目标 · 第 1 轮」那一行不算。
+const TAG: &str = "◎ 目标 · ";
 
 /// 等到屏幕上没有这串字，最多 [`support::WAIT`]。
 fn wait_gone(tui: &mut support::Tui, text: &str) {
@@ -44,18 +44,38 @@ fn a_goal_set_on_the_home_page_opens_a_session_and_its_round_is_one_line() {
         !screen.contains("goal_round") && !screen.contains("收到消息"),
         "不当别处来的话画：\n{screen}"
     );
-    // 第 5 条：做完了，输入框上边框不再写目标。
+    // 第 5 条：做完了，框上面不再写目标。
     wait_gone(&mut tui, TAG);
 }
 
-/// 第 5 条：跑着的，输入框上边框右边写「目标 · 进行中 · 第 1/5 轮」（核心推来的 `goal.changed`）。
+/// 第 5 条：跑着的，框上面紧挨着的那一行右对齐写「◎ 目标 · 进行中 · 第 1/5 轮」（核心推来的 `goal.changed`）；上边框右边
+/// 是标题的位置，不写目标（2026-10-14 项目主人定）。
 #[test]
-fn a_running_goal_shows_on_the_input_box() {
+fn a_running_goal_shows_right_above_the_input_box() {
     let home = Home::with_tools(Script::new([Play::Holds]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("/goal --rounds 5 把测试写完");
-    tui.wait_for("目标 · 进行中 · 第 1/5 轮");
+    tui.wait_for("◎ 目标 · 进行中 · 第 1/5 轮");
+    let lines = tui.lines();
+    let at = lines
+        .iter()
+        .position(|l| l.contains("◎ 目标 · 进行中 · 第 1/5 轮"))
+        .expect("有那一行");
+    let border = &lines[at + 1];
+    assert!(
+        border.contains('╭') && !border.contains("目标"),
+        "紧挨着下面是上边框，边框上不写目标：\n{}",
+        lines.join("\n")
+    );
+    // 右对齐：右端落在框里放字那一块的右边，也就是右边框往里让出右内边距（框下面那一行的用量也对齐到这里）。
+    let end = |l: &str| unicode_width::UnicodeWidthStr::width(l.trim_end());
+    let gap = end(border) - end(&lines[at]);
+    assert!(
+        (1..=4).contains(&gap),
+        "右端离右边框 {gap} 列：\n{}",
+        lines.join("\n")
+    );
 }
 
 /// 第 5 条：续轮里她没调工具、等人开口的写「等待回复」；切到新会话不写，切回来照订阅回应里的 `goal` 写回来。

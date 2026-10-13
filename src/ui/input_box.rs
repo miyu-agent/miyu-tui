@@ -1,4 +1,4 @@
-//! 输入框这一格：圆角框里画输入的字、提示符、暂存标记，编辑上一句时上边框写一句，上边框右边写子代理是谁、长期目标到哪了；抽屉开着时框里画抽屉（蓝图 `tui.md`「输入框」、
+//! 输入框这一格：圆角框里画输入的字、提示符、暂存标记，编辑上一句时上边框写一句，上边框右边写子代理是谁、人起的标题；抽屉开着时框里画抽屉（蓝图 `tui.md`「输入框」、
 //! 「确认和提问的抽屉」第 2 条）。
 
 use ratatui::Frame;
@@ -21,7 +21,7 @@ pub(super) struct Facts {
     level: Level,
     /// 空着时写的提示。
     placeholder: String,
-    /// 上边框右边写的：子代理是谁、长期目标到哪了、人起的标题（`goal_tag.rs`）。
+    /// 上边框右边写的：子代理是谁、人起的标题（`goal_tag.rs`）。
     tag: Option<String>,
     /// 焦点在输入框上：光标显示出来。
     typing: bool,
@@ -33,9 +33,8 @@ impl Facts {
         Self {
             level: seen.talk.transcript.level,
             placeholder: placeholder(seen.config, home, seen.typing.tips.at()).to_string(),
-            tag: super::goal_tag::tag(
+            tag: super::goal_tag::border(
                 seen.talk.viewing_title(),
-                seen.talk.transcript.goal.as_ref(),
                 seen.talk
                     .transcript
                     .title
@@ -95,7 +94,7 @@ struct Look<'a> {
     level: Level,
     /// 空着时写的提示。
     placeholder: &'a str,
-    /// 上边框右边写的：子代理是谁（「切进子会话」第 2 条）、长期目标到哪了（「长期目标」第 5 条）。
+    /// 上边框右边写的：子代理是谁（「切进子会话」第 2 条）、人起的标题（「输入框」第 14 条）。
     tag: Option<String>,
 }
 
@@ -112,8 +111,8 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
     if input.editing() {
         border = border.title(Line::styled(config.text.editing.as_str(), theme::dim()));
     }
-    // 上边框右边：切进了子会话写它是谁（「切进子会话」第 2 条，2026-09-30 项目主人照 Claude Code 定），不然写长期目标到哪了
-    // （「长期目标」第 5 条，2026-10-12 项目主人定照旧版的位置）。
+    // 上边框右边：切进了子会话写它是谁（「切进子会话」第 2 条，2026-09-30 项目主人照 Claude Code 定），不然写人起的标题
+    // （「输入框」第 14 条）；长期目标写在框上面那一行（`goal_tag.rs`，2026-10-14 项目主人定）。
     if let Some(tag) = tag {
         border = border.title_top(Line::styled(tag, theme::dim()).right_aligned());
     }
