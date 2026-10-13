@@ -64,6 +64,8 @@ impl App {
         };
         if owner != Some(Grab::Body) {
             self.screen.view.hover = None;
+            // 链接的悬停也放掉：挪到正文左边的空白、输入框这些地方时，下划线和手形指针不留着（2026-10-13 验收 T-225）。
+            self.screen.view.hover_link = None;
         }
         if owner != Some(Grab::Input) {
             self.typing.input.unhover();

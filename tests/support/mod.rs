@@ -264,6 +264,14 @@ impl Tui {
             .unwrap_or_default()
     }
 
+    /// 一格的字带不带下划线。
+    pub fn underlined(&self, row: u16, col: u16) -> bool {
+        self.screen
+            .screen()
+            .cell(row, col)
+            .is_some_and(vt100::Cell::underline)
+    }
+
     /// 输入框里那一行的字（提示符后面的）。
     pub fn input(&self) -> String {
         self.lines()
