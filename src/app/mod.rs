@@ -192,12 +192,13 @@ impl App {
                 self.typing.input.cancel_edit();
                 Action::None
             }
-            // Esc 由近及远（`13-终端界面.md` 第十节）：列表、选区归 `key`；在回答时第一下只提示，
-            // 一小会儿以内再按一下才打断；没在回答、有字时，两下清空。
+            // Esc 由近及远（`13-终端界面.md` 第十节）：列表、选区归 `key`；在回答时（发出去了、还没开轮的也算）第一下
+            // 只提示，一小会儿以内再按一下才打断；没在回答、有字时，两下清空。
             Event::Key(key)
                 if key.code == KeyCode::Esc
                     && self.esc_for_input(menu_open)
                     && (self.talk.transcript.running.is_some()
+                        || self.talk.transcript.starting != crate::transcript::Starting::No
                         || !self.typing.input.editor.is_empty()) =>
             {
                 self.esc();

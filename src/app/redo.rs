@@ -65,6 +65,7 @@ impl App {
     fn send_redo(&mut self, text: String, chips: Vec<Chip>) -> Option<u64> {
         let turn = self.talk.transcript.hide_last_turn();
         self.talk.transcript.user(text, chips);
+        self.awaiting_turn();
         self.screen.view.settle();
         self.screen.view.follow();
         turn

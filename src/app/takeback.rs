@@ -5,7 +5,7 @@
 use super::{App, paste};
 use crate::core::{Command, Push, Update};
 use crate::input::Draft;
-use crate::transcript::Chip;
+use crate::transcript::{Chip, Starting};
 
 /// 退回的那几句：话和它的粘贴块。
 type Back = Vec<(String, Vec<Chip>)>;
@@ -59,6 +59,11 @@ fn step(taken: Takeback, update: &Update, viewing: Option<&str>) -> Step {
     }
 }
 
+/// 收这一条以前记着「开轮就打断」、这一条是开轮：要打断（「按键」`Esc`，2026-10-14 项目主人定）。
+pub(super) fn stops_on_start(starting: Starting, update: &Update) -> bool {
+    starting == Starting::Stop && matches!(update, Update::Push(Push::TurnStarted(..)))
+}
+
 impl App {
     /// Ctrl+C 打断（排着的退回）：这一轮是排着的话开的、她还没开口的，记下那几句，等结束了撤掉这一轮。
     pub(super) fn interrupt(&mut self) {
@@ -72,6 +77,24 @@ impl App {
             .takeback()
             .map(|back| Takeback::Interrupting(session, back));
         self.link.core.send(Command::Interrupt { send: false });
+    }
+
+    /// 刚发出去一句：没在回答的，记下在等开轮（「按键」`Esc`，2026-10-14 项目主人定）；在回答的这一句是排着的，不算。
+    pub(super) fn awaiting_turn(&mut self) {
+        let transcript = &mut self.talk.transcript;
+        if transcript.running.is_none() {
+            transcript.starting = Starting::Waiting;
+        }
+    }
+
+    /// 开轮以前按过两下 `Esc` 的，这一轮一开就打断：她还没开始做事，照「还没开口就打断」撤掉这一轮、那一句放回输入框
+    /// （同 `keys.rs` 的 `esc`）。正文收了 `turn.started` 以后、[`stops_on_start`] 说要打断时调。
+    pub(super) fn stop_started_turn(&mut self) {
+        if let Some(back) = self.talk.transcript.untouched() {
+            let session = self.talk.transcript.session.clone();
+            self.talk.takeback = Some(Takeback::Interrupting(session, back));
+        }
+        self.link.core.send(Command::Interrupt { send: true });
     }
 
     /// 正在看的会话推来的：这一轮结束了发撤销；撤销成了把那几句放回输入框；撤销被拒了、看的换了、断开了就算了。
@@ -111,8 +134,22 @@ impl App {
 
 #[cfg(test)]
 mod tests {
-    use super::{Step, Takeback, step};
+    use super::{Step, Takeback, step, stops_on_start};
     use crate::core::{EndReason, Push, Update};
+    use crate::transcript::Starting;
+
+    #[test]
+    fn two_escapes_before_the_turn_starts_stop_it_when_it_starts() {
+        // 2026-10-14 项目主人定：开轮以前按过两下 `Esc` 的，开轮那一条一到就打断；只是在等开轮的、别的推送都不打断。
+        let started = Update::Push(Push::TurnStarted(3, None));
+        assert!(stops_on_start(Starting::Stop, &started));
+        assert!(!stops_on_start(Starting::Waiting, &started), "没按两下");
+        assert!(!stops_on_start(Starting::No, &started));
+        assert!(
+            !stops_on_start(Starting::Stop, &Update::Disconnected),
+            "不是开轮"
+        );
+    }
 
     fn waiting(session: &str) -> Takeback {
         Takeback::Interrupting(
