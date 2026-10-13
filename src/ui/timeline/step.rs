@@ -105,7 +105,9 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                     label.push_str(" · ");
                     label.push_str(&text);
                 }
-                let extra = if kind == Some(ToolKind::Edit) {
+                // 出错、被拒的编辑没改成：不写加减的行数，和收起那一行一个算法（第 12、17 条；2026-10-13 验收 T-101：
+                // 原来照参数写绿的 `+1`、红的 `-0`，整行红里夹着绿字，看着像写成了）。
+                let extra = if kind == Some(ToolKind::Edit) && !step.failed() {
                     counts(parsed)
                 } else {
                     Vec::new()
@@ -244,7 +246,10 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
             step.answers.iter().flat_map(|a| each(a, style)).collect()
         }
         StepKind::Tool { output, parsed, .. } => {
-            let diff = (kind(step, ctx) == Some(ToolKind::Edit))
+            // 出错、被拒的编辑没改成：点开写为什么（结果的字，红），不画差异——绿的 `+` 行看着像写进去了（第 12 条，
+            // 2026-10-13 验收 T-101）。没给字的照旧画差异。
+            let refused = step.failed() && !output.trim().is_empty();
+            let diff = (kind(step, ctx) == Some(ToolKind::Edit) && !refused)
                 .then(|| diff::from_args(parsed))
                 .flatten();
             if let Some(diff) = diff {
