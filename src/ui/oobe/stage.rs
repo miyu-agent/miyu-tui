@@ -59,24 +59,44 @@ pub fn places(area: Rect, look: &Look, mascot: &MascotLook) -> Places {
     }
 }
 
-/// 进度：`● 语言 ── ● 图标 ── ◉ 模型 ── ○ 人格 ── ○ 预设`，走过的暗、这一步强调色加粗、没到的最暗。
+/// 进度：`● 语言 ── ● 图标 ── ◉ 模型 ── ○ 人格 ── ○ 预设`，走过的暗、这一步强调色加粗、没到的最暗。放不下的逐级收窄
+/// （第 6 条，2026-10-14 项目主人定）：先把间隔缩成 ` ─ `，还放不下的只有这一步写名字。
 pub fn bar(frame: &mut Frame, rect: Rect, step: Step, names: &[String]) {
     let Some(now) = step.bar() else {
         return;
     };
-    let mut spans = Vec::new();
-    for (i, name) in names.iter().enumerate() {
-        if i > 0 {
-            spans.push(Span::styled(" ── ", theme::faint()));
+    let line = bar_line(now, names, usize::from(rect.width));
+    frame.render_widget(Paragraph::new(line).centered(), rect);
+}
+
+/// 进度那一行，照 `width` 列挑放得下的最宽的一档；最窄的一档也放不下的照最窄的画（两头截掉）。
+fn bar_line(now: usize, names: &[String], width: usize) -> Line<'static> {
+    let levels = [(" ── ", true), (" ─ ", true), (" ─ ", false)];
+    let lines = levels.map(|(gap, all_names)| {
+        let mut spans = Vec::new();
+        for (i, name) in names.iter().enumerate() {
+            if i > 0 {
+                spans.push(Span::styled(gap, theme::faint()));
+            }
+            let (mark, style) = match i.cmp(&now) {
+                std::cmp::Ordering::Less => ("●", theme::dim()),
+                std::cmp::Ordering::Equal => ("◉", theme::accent().add_modifier(Modifier::BOLD)),
+                std::cmp::Ordering::Greater => ("○", theme::faint()),
+            };
+            let text = if all_names || i == now {
+                format!("{mark} {name}")
+            } else {
+                mark.to_string()
+            };
+            spans.push(Span::styled(text, style));
         }
-        let (mark, style) = match i.cmp(&now) {
-            std::cmp::Ordering::Less => ("● ", theme::dim()),
-            std::cmp::Ordering::Equal => ("◉ ", theme::accent().add_modifier(Modifier::BOLD)),
-            std::cmp::Ordering::Greater => ("○ ", theme::faint()),
-        };
-        spans.push(Span::styled(format!("{mark}{name}"), style));
-    }
-    frame.render_widget(Paragraph::new(Line::from(spans)).centered(), rect);
+        Line::from(spans)
+    });
+    let [wide, narrow, marks] = lines;
+    [wide, narrow]
+        .into_iter()
+        .find(|l| l.width() <= width)
+        .unwrap_or(marks)
 }
 
 /// 最下面一行暗色的按键提示，居中。
@@ -93,4 +113,34 @@ pub fn warn(frame: &mut Frame, rect: Rect, text: &str) {
         Paragraph::new(Line::styled(text.to_string(), theme::warn())).centered(),
         rect,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bar_line;
+
+    fn shown(now: usize, names: &[&str], width: usize) -> String {
+        let names: Vec<String> = names.iter().map(|n| (*n).to_string()).collect();
+        bar_line(now, &names, width).to_string()
+    }
+
+    #[test]
+    fn a_progress_line_that_does_not_fit_narrows_step_by_step() {
+        // 2026-10-14 项目主人定：先缩间隔，还放不下的只有这一步写名字。
+        let names = [
+            "Language",
+            "Icons",
+            "Model",
+            "Persona",
+            "Theme",
+            "About you",
+        ];
+        let wide = shown(4, &names, 200);
+        assert!(wide.contains("● Language ── ● Icons"), "{wide}");
+        let w = wide.chars().count();
+        let narrow = shown(4, &names, w - 1);
+        assert!(narrow.contains("● Language ─ ● Icons"), "{narrow}");
+        let marks = shown(4, &names, 30);
+        assert_eq!(marks, "● ─ ● ─ ● ─ ● ─ ◉ Theme ─ ○");
+    }
 }
