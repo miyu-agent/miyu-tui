@@ -30,8 +30,12 @@ pub struct Screen {
     pub grab: Option<Grab>,
     /// 侧边栏的选字（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。
     pub side_select: SideSelect,
-    /// 当前主题的名字。
+    /// 当前主题的名字（出厂那一份的）。
     pub theme: String,
+    /// 主题的几个配置项（`tui.theme*`，「主题」第 6 条）。
+    pub theme_choice: crate::theme::choice::Choice,
+    /// 起来时问到的终端底色是不是深色；问不到的是 `None`（「主题」第 3 条）。
+    pub terminal_dark: Option<bool>,
     /// 程序启动的时刻：转圈照它算第几帧。
     pub started: Instant,
     /// 压缩那一行的进度条一顿一顿地追，停多久、追几格要的随机数。
@@ -52,6 +56,8 @@ impl Screen {
             grab: None,
             side_select: SideSelect::default(),
             theme,
+            theme_choice: crate::theme::choice::Choice::default(),
+            terminal_dark: None,
             started: Instant::now(),
             rng: crate::rng::Rng::from_clock(),
         }

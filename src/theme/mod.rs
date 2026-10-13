@@ -3,7 +3,9 @@
 //! 当前主题放在一个全局的读写锁里：各处画的时候直接取，不用把主题一层层传下去；启动时照配置设一次，
 //! `/theme` 换的也是它。
 
+pub mod choice;
 mod depth;
+mod ground;
 mod motion;
 mod palette;
 
@@ -13,6 +15,7 @@ use std::sync::{LazyLock, RwLock};
 use ratatui::style::{Color, Modifier, Style};
 
 pub use depth::{Depth, degrade};
+pub use ground::{paint, set_ground};
 pub use motion::{frontier, lifted};
 pub use palette::{Palette, Tone, builtin};
 

@@ -1,0 +1,216 @@
+//! 用哪套主题（蓝图 `tui.md`「主题」第 2 到 4、6 条，2026-10-13 项目主人定）：配色（跟随头像、tokyonight、terminal）、明暗
+//! （跟随终端、深色、浅色），手动选了深浅铺不铺底色。照这几样和终端的底色挑出一套出厂的颜色、要不要铺。终端自己的配置项
+//! `tui.theme`、`tui.theme_mode`、`tui.theme_background`（终端软件包清单）。
+
+use ratatui::style::Color;
+use serde_json::Value;
+
+use super::Palette;
+
+/// 明暗。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Mode {
+    /// 跟随终端：照终端的底色挑，问不到的当深色。
+    #[default]
+    Auto,
+    /// 深色。
+    Dark,
+    /// 浅色。
+    Light,
+}
+
+impl Mode {
+    /// 读配置里的写法；认不得的是 `None`。
+    pub fn read(text: &str) -> Option<Self> {
+        match text {
+            "auto" => Some(Self::Auto),
+            "dark" => Some(Self::Dark),
+            "light" => Some(Self::Light),
+            _ => None,
+        }
+    }
+}
+
+/// 配色：配置里的写法。
+pub const COLORS: [&str; 3] = ["persona", "tokyonight", "terminal"];
+
+/// 主题的几个配置项。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Choice {
+    /// 配色：[`COLORS`] 里的一种。
+    pub colors: String,
+    /// 明暗。
+    pub mode: Mode,
+    /// 手动选了深浅时铺底色（第 4 条：能关）。
+    pub ground: bool,
+}
+
+impl Default for Choice {
+    fn default() -> Self {
+        Self {
+            colors: "tokyonight".into(),
+            mode: Mode::Auto,
+            ground: true,
+        }
+    }
+}
+
+impl Choice {
+    /// 这几项的键。
+    pub const KEYS: [&str; 3] = ["tui.theme", "tui.theme_mode", "tui.theme_background"];
+
+    /// 读 `config.get` 的回应：读到的、认得的盖上，别的照旧。
+    pub fn apply(&mut self, got: &Value) {
+        let value = |key: &str| &got["items"][key]["value"];
+        if let Some(colors) = value("tui.theme").as_str().filter(|c| COLORS.contains(c)) {
+            self.colors = colors.to_string();
+        }
+        if let Some(mode) = value("tui.theme_mode").as_str().and_then(Mode::read) {
+            self.mode = mode;
+        }
+        if let Some(ground) = value("tui.theme_background").as_bool() {
+            self.ground = ground;
+        }
+    }
+
+    /// 用深色那一份：手动选的照选的，跟随终端的照终端的底色（`terminal_dark`），问不到的当深色。
+    pub fn dark(&self, terminal_dark: Option<bool>) -> bool {
+        match self.mode {
+            Mode::Dark => true,
+            Mode::Light => false,
+            Mode::Auto => terminal_dark.unwrap_or(true),
+        }
+    }
+
+    /// 出厂的哪一份：跟随头像的底子是 tokyonight（头像生成的那几格盖在它上面）。
+    pub fn base(&self, dark: bool) -> &'static str {
+        match (self.colors.as_str(), dark) {
+            ("terminal", true) => "terminal",
+            ("terminal", false) => "terminal-light",
+            (_, true) => "tokyonight-night",
+            (_, false) => "tokyonight-day",
+        }
+    }
+
+    /// 铺不铺底色：手动选了深浅、开着；terminal 那一套跟着终端的配色走，不铺（第 4 条）。
+    pub fn grounded(&self) -> bool {
+        self.mode != Mode::Auto && self.ground && self.colors != "terminal"
+    }
+}
+
+/// 挑好了的一套：出厂的名字（`/theme` 的提示写它）、颜色、要铺的底色和字色（不铺的是 `None`）。
+#[derive(Debug, Clone)]
+pub struct Picked {
+    /// 出厂那一份的名字。
+    pub name: String,
+    /// 颜色。
+    pub palette: Palette,
+    /// 铺的底色、字色。
+    pub ground: Option<(Color, Color)>,
+}
+
+/// 问终端的底色是深是浅（OSC 11，`terminal-colorsaurus`）：要在开始读按键之前问；不认的终端、问不到的是 `None`。测试里不问。
+pub fn probe() -> Option<bool> {
+    if cfg!(test) {
+        return None;
+    }
+    let options = terminal_colorsaurus::QueryOptions::default();
+    terminal_colorsaurus::theme_mode(options)
+        .ok()
+        .map(|mode| mode == terminal_colorsaurus::ThemeMode::Dark)
+}
+
+/// 照配置项、终端的底色挑：出厂的那一份找不到的是 `None`。
+pub fn pick(
+    choice: &Choice,
+    terminal_dark: Option<bool>,
+    themes: &[(String, Palette)],
+) -> Option<Picked> {
+    let name = choice.base(choice.dark(terminal_dark));
+    let (_, palette) = themes.iter().find(|(n, _)| n == name)?;
+    let ground = choice
+        .grounded()
+        .then_some((palette.background.0, palette.text.0))
+        .filter(|(bg, _)| *bg != Color::Reset);
+    Some(Picked {
+        name: name.to_string(),
+        palette: palette.clone(),
+        ground,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui::style::Color;
+    use serde_json::json;
+
+    use super::{Choice, Mode, pick};
+    use crate::theme::builtin;
+
+    #[test]
+    fn the_settings_are_read_and_unknown_values_are_ignored() {
+        let mut c = Choice::default();
+        c.apply(&json!({"items": {
+            "tui.theme": {"value": "terminal"},
+            "tui.theme_mode": {"value": "light"},
+            "tui.theme_background": {"value": false}
+        }}));
+        assert_eq!(
+            (c.colors.as_str(), c.mode, c.ground),
+            ("terminal", Mode::Light, false)
+        );
+        c.apply(
+            &json!({"items": {"tui.theme": {"value": "pink"}, "tui.theme_mode": {"value": "dim"}}}),
+        );
+        assert_eq!(
+            (c.colors.as_str(), c.mode),
+            ("terminal", Mode::Light),
+            "认不得的不动"
+        );
+    }
+
+    #[test]
+    fn auto_follows_the_terminal_and_only_a_chosen_mode_paints_the_ground() {
+        // 2026-10-13 项目主人定：跟随终端照终端的底色挑深浅、不铺；手动选的铺这一套的底色，能关。
+        let themes = builtin().unwrap();
+        let auto = Choice::default();
+        assert_eq!(
+            pick(&auto, Some(false), &themes).unwrap().name,
+            "tokyonight-day"
+        );
+        assert_eq!(
+            pick(&auto, None, &themes).unwrap().name,
+            "tokyonight-night",
+            "问不到的当深色"
+        );
+        assert!(
+            pick(&auto, Some(false), &themes).unwrap().ground.is_none(),
+            "跟随终端不铺"
+        );
+        let light = Choice {
+            mode: Mode::Light,
+            ..Choice::default()
+        };
+        let picked = pick(&light, Some(true), &themes).unwrap();
+        assert_eq!(picked.name, "tokyonight-day", "手动选的不看终端");
+        assert_eq!(
+            picked.ground,
+            Some((Color::Rgb(0xe1, 0xe2, 0xe7), Color::Rgb(0x37, 0x60, 0xbf)))
+        );
+        let off = Choice {
+            ground: false,
+            ..light.clone()
+        };
+        assert!(
+            pick(&off, None, &themes).unwrap().ground.is_none(),
+            "关了不铺"
+        );
+        let terminal = Choice {
+            colors: "terminal".into(),
+            ..light
+        };
+        let picked = pick(&terminal, None, &themes).unwrap();
+        assert_eq!(picked.name, "terminal-light");
+        assert!(picked.ground.is_none(), "terminal 跟着终端的配色走，不铺");
+    }
+}

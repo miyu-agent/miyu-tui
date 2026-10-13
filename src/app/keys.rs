@@ -53,21 +53,6 @@ impl App {
         }
     }
 
-    /// 换下一套主题，只管这一次启动（`tui.md`「主题」第 3 条）。
-    pub(super) fn next_theme(&mut self) {
-        let themes = &self.config.themes;
-        let at = themes
-            .iter()
-            .position(|(name, _)| *name == self.screen.theme)
-            .unwrap_or(0);
-        if let Some((name, palette)) = themes.get((at + 1) % themes.len().max(1)) {
-            crate::theme::set(palette.clone());
-            self.screen.theme = name.clone();
-            let text = self.config.text.theme_changed.replace("{name}", name);
-            self.hint(text, true);
-        }
-    }
-
     /// 换下一套图标，只管这一次启动（`tui.md`「图标」第 4 条）。排好的时间线照图标那一套的名字重排。
     pub(super) fn next_icons(&mut self) {
         let sets = &self.config.icon_sets;

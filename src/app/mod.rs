@@ -51,6 +51,7 @@ mod settings;
 mod switch;
 mod takeback;
 mod talk;
+mod theme;
 mod typing;
 mod updates;
 pub mod usage;

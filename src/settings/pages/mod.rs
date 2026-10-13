@@ -167,6 +167,8 @@ pub struct Texts {
     pub mascot_missing: String,
     /// 终端自己的配置项另分的几组的名字（「配置页」第 33 条）。
     pub own_groups: schema::OwnGroups,
+    /// 终端自己的选项写成什么（清单里只有值，照界面语言写名字）：键、值、名字。
+    pub choice_names: HashMap<String, HashMap<String, String>>,
     /// 选项用不了（核心给了 `available: false`，现在只有没装内置语义模型时的「内置模型」）。
     pub unavailable: String,
     /// 人格的窗：名字、人格提示词、示范对话、人设提醒短语、`{n} 轮`、已写。没有的空着（2026-10-09 项目主人：「没有的东西
@@ -212,6 +214,9 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
         && let Some(id) = value.as_str()
     {
         return texts.mascot_missing.replace("{id}", id);
+    }
+    if let Some(name) = own_choice(item, value, texts) {
+        return name;
     }
     if let Some(name) = item
         .options
@@ -268,12 +273,21 @@ pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Cho
         .iter()
         .map(|o| Choice {
             value: o.value.clone(),
-            label: o.name.clone(),
+            label: own_choice(item, &o.value, texts).unwrap_or_else(|| o.name.clone()),
             note: o.note.clone(),
             // 用不了的列着、灰的、选不了，为什么照头自己的一句（核心 R-5 三补）。
             off: (!o.available).then(|| texts.unavailable.clone()),
         })
         .collect()
+}
+
+/// 终端自己的选项（`tui.theme` 这类）照界面语言的名字；没登记的是 `None`，照清单写。
+fn own_choice(item: &Item, value: &Value, texts: &Texts) -> Option<String> {
+    texts
+        .choice_names
+        .get(&item.key)
+        .and_then(|names| names.get(value.as_str()?))
+        .cloned()
 }
 
 #[cfg(test)]

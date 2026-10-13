@@ -118,7 +118,9 @@ fn main() -> io::Result<()> {
     }));
     // 问终端能不能显示图：进了全屏、还没开始读按键的时候问（蓝图「图片、公式和 mermaid 图」第 1 条）。
     let graphics = figures::terminal::probe();
-    let result = run(&mut terminal, config, graphics, keyboard, launch);
+    // 问终端的底色是深是浅：主题「跟随终端」照它挑（蓝图「主题」第 3 条），同样在开始读按键之前问。
+    let dark = theme::choice::probe();
+    let result = run(&mut terminal, config, (graphics, dark), keyboard, launch);
     leave(keyboard)?;
     ratatui::restore();
     result
@@ -183,7 +185,7 @@ enum Incoming {
 fn run(
     terminal: &mut Screen,
     config: Config,
-    graphics: Option<figures::Graphics>,
+    (graphics, dark): (Option<figures::Graphics>, Option<bool>),
     keyboard: bool,
     launch: startup::Launch,
 ) -> io::Result<()> {
@@ -209,6 +211,7 @@ fn run(
     ));
     let human = human::Human::default();
     let mut app = App::new(config, core, human, figures);
+    app.set_terminal_dark(dark);
     // `MIYU_TUI_MASCOT`：照本机的模型文件画吉祥物（蓝图「吉祥物包」第 5 条）。
     app.mascot_preview();
     // `--page config`：一起来就停在配置页（蓝图「配置页」第 1 条）。
@@ -368,6 +371,7 @@ fn frame(
             frame.set_cursor_position(app.screen.caret.at);
         }
         ui::wide::tidy(frame.buffer_mut());
+        theme::paint(frame.buffer_mut());
         theme::degrade(frame.buffer_mut(), depth);
         prep = at.map_or(Duration::ZERO, |t| t.elapsed());
     });

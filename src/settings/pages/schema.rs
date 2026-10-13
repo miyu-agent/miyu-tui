@@ -96,7 +96,8 @@ const OWN: &str = "tui.";
 
 /// 终端自己的配置项里另分一组的：键的开头、组的编号（「配置页」第 33 条，2026-10-11 项目主人：时间线单独一个标题，
 /// 吉祥物也分出去）。
-const OWN_GROUPS: [(&str, &str); 2] = [
+const OWN_GROUPS: [(&str, &str); 3] = [
+    ("tui.theme", "tui.theme"),
     ("tui.timeline_", "tui.timeline"),
     ("tui.mascot", "tui.mascot"),
 ];
@@ -105,6 +106,8 @@ const OWN_GROUPS: [(&str, &str); 2] = [
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct OwnGroups {
+    /// 主题（2026-10-13：配色、明暗、铺底色）。
+    pub theme: String,
     /// 时间线。
     pub timeline: String,
     /// 吉祥物。
@@ -114,10 +117,10 @@ pub struct OwnGroups {
 impl OwnGroups {
     /// 照组的编号取名字。
     fn name(&self, id: &str) -> &str {
-        if id == "tui.timeline" {
-            &self.timeline
-        } else {
-            &self.mascot
+        match id {
+            "tui.theme" => &self.theme,
+            "tui.timeline" => &self.timeline,
+            _ => &self.mascot,
         }
     }
 }
@@ -352,18 +355,21 @@ mod tests {
             "items": [
                 {"key": "ui.language", "control": "select", "layers": ["personal"], "name": "界面语言", "page": "general", "group": "display"},
                 item("tui.icons", "图标"),
+                item("tui.theme", "配色"),
+                item("tui.theme_mode", "明暗"),
                 item("tui.timeline_fold", "回复完成后折叠时间线"),
                 item("tui.mascot_home", "首页显示吉祥物"),
                 item("tui.mascot", "吉祥物")
             ]
         }));
         s.split_own(&super::OwnGroups {
+            theme: "主题".into(),
             timeline: "时间线".into(),
             mascot: "吉祥物".into(),
         });
         assert_eq!(
             s.group_names("general"),
-            ["显示", "终端界面", "时间线", "吉祥物"]
+            ["显示", "终端界面", "主题", "时间线", "吉祥物"]
         );
         let group = |key: &str| {
             s.items
@@ -374,5 +380,10 @@ mod tests {
         assert_eq!(group("tui.icons").as_deref(), Some("tui"));
         assert_eq!(group("tui.timeline_fold").as_deref(), Some("tui.timeline"));
         assert_eq!(group("tui.mascot").as_deref(), Some("tui.mascot"));
+        assert_eq!(
+            group("tui.theme_mode").as_deref(),
+            Some("tui.theme"),
+            "主题单独一组（2026-10-13）"
+        );
     }
 }

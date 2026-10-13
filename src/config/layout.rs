@@ -91,8 +91,6 @@ pub struct Layout {
     pub dots: Dots,
     /// 运行状态行的流光。
     pub shimmer: Shimmer,
-    /// 用哪套主题（`resources/themes/` 里的名字）。
-    pub theme: String,
     /// 用哪套图标（`resources/icons/` 里的名字，蓝图「图标」）；没有这一套的用出厂的第一套。
     pub icons: String,
     /// `Shift+Tab` 轮换权限级别的顺序。

@@ -82,3 +82,28 @@ type = "name"
 applies = "now"
 name = { en = "Mascot", zh = "吉祥物", ja = "マスコット" }
 description = { en = "Which mascot to show. Leave unset for the built-in one.", zh = "显示哪一只吉祥物；不设置就是内置的。", ja = "表示するマスコット。未設定なら内蔵のもの。" }
+
+# 主题（终端蓝图 `docs/blueprint/tui.md`「主题」第 2 到 6 条，2026-10-13 项目主人定）：配色、明暗、手动选了深浅铺不铺底色。
+# 第一次打开的引导里「主题」那一步写前两项；配置页「通用」里一组「主题」，名字照终端的字写。
+[settings.theme]
+type = "option"
+choices = ["persona", "tokyonight", "terminal"]
+default = "tokyonight"
+applies = "now"
+name = { en = "Colors", zh = "配色", ja = "配色" }
+description = { en = "Follow the persona's avatar, Tokyo Night, or the terminal's own colors.", zh = "跟随人格的头像生成、tokyonight，或者跟着终端自己的配色。", ja = "ペルソナのアバターから作る配色、Tokyo Night、またはターミナル自身の配色。" }
+
+[settings.theme_mode]
+type = "option"
+choices = ["auto", "dark", "light"]
+default = "auto"
+applies = "now"
+name = { en = "Light or dark", zh = "明暗", ja = "明暗" }
+description = { en = "Follow the terminal's background, or always dark or light.", zh = "跟随终端的底色，或者一直用深色、浅色。", ja = "ターミナルの背景に合わせるか、常にダーク／ライト。" }
+
+[settings.theme_background]
+type = "bool"
+default = true
+applies = "now"
+name = { en = "Paint the background", zh = "铺底色", ja = "背景を塗る" }
+description = { en = "When dark or light is chosen by hand, paint the whole screen in that theme's background.", zh = "手动选了深色、浅色时，整个界面铺这一套的底色。", ja = "ダーク／ライトを手動で選んだとき、画面全体をそのテーマの背景色で塗る。" }
