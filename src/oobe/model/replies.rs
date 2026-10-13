@@ -141,16 +141,17 @@ impl ModelStep {
         Move::Stay
     }
 
-    /// 没试通：红字；有格子填的回到那一屏（光标回到密钥或者地址），没有的回到选一家。
+    /// 没试通：红字，多一行「仍然保存」（2026-10-13 项目主人定）；回到填的那一屏，光标回到密钥，没有要填的停在「测试连接」。
     fn failed(&mut self, mut form: Form, line: String) {
         self.error = Some(line);
         self.mood = Some(Mood::Sad);
+        form.failed = true;
         let slots = form.slots();
-        if slots.is_empty() {
-            self.phase = Phase::List;
-            return;
-        }
-        form.focus = slots.iter().position(|s| *s == Slot::Key).unwrap_or(0);
+        form.focus = slots
+            .iter()
+            .position(|s| *s == Slot::Key)
+            .or_else(|| slots.iter().position(|s| *s == Slot::Test))
+            .unwrap_or(0);
         self.phase = Phase::Form(form);
     }
 

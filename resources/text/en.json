@@ -1259,6 +1259,7 @@
       "searching": "Type to search · Ctrl+J/K select · Enter done · Esc cancel",
       "editing": "Enter done · Esc cancel",
       "test": "Enter test connection · j/k move · Esc another provider",
+      "anyway": "Enter save anyway · j/k move · Esc another provider",
       "pick": "↑↓ choose · Enter next · Esc back",
       "form": "Enter edit · j/k move · Esc another provider",
       "driver": "←→ change interface · j/k move · Esc another provider",
@@ -1309,6 +1310,8 @@
       "key_env": "from environment variable {env}",
       "key_none": "no key needed",
       "key_needed": "Enter a key",
+      "save_anyway": "Save anyway",
+      "model_for_save": "Enter a model name to save",
       "cost": "Sends one real message and costs a little",
       "key_sub": "Enter the key, then test the connection",
       "custom_head": {

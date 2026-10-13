@@ -29,6 +29,8 @@ pub struct Keys {
     pub driver: String,
     /// 光标在「测试连接」那一行。
     pub test: String,
+    /// 光标在「仍然保存」那一行。
+    pub anyway: String,
     /// 正在编辑一格。
     pub editing: String,
     /// 正在搜模型。
@@ -138,6 +140,10 @@ pub struct Model {
     pub key_none: String,
     /// 空着按回车。
     pub key_needed: String,
+    /// 测不通以后的「仍然保存」。
+    pub save_anyway: String,
+    /// 仍然保存、又没有模型名的：「填上模型名再保存」。
+    pub model_for_save: String,
     /// 「会真发一句话，花一点额度」：要填模型名再试的那一下才写（核心 8-11 五补：列得出模型就算通，不发请求）。
     pub cost: String,
     /// 选了一家、填密钥那一屏的说明：「填写密钥后测试连接」。

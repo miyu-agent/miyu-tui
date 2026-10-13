@@ -1259,6 +1259,7 @@
       "searching": "输入以搜索 · Ctrl+J/K 选择 · Enter 完成 · Esc 取消",
       "editing": "Enter 完成 · Esc 取消",
       "test": "Enter 测试连接 · j/k 移动 · Esc 更换供应商",
+      "anyway": "Enter 仍然保存 · j/k 移动 · Esc 更换供应商",
       "pick": "↑↓ 选择 · Enter 下一步 · Esc 上一步",
       "form": "Enter 编辑 · j/k 移动 · Esc 更换供应商",
       "driver": "←→ 切换接口 · j/k 移动 · Esc 更换供应商",
@@ -1309,6 +1310,8 @@
       "key_env": "来自环境变量 {env}",
       "key_none": "无需密钥",
       "key_needed": "请填写密钥",
+      "save_anyway": "仍然保存",
+      "model_for_save": "填上模型名再保存",
       "cost": "将发送一条测试请求，消耗少量额度",
       "key_sub": "填写密钥后测试连接",
       "custom_head": {

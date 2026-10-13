@@ -5,7 +5,7 @@ use std::time::Instant;
 use ratatui::crossterm::event::KeyCode;
 use serde_json::{Value, json};
 
-use super::Phase;
+use super::{Phase, Slot};
 use crate::oobe::tests::{asks, find, fresh, key, texts, to_model, typed};
 use crate::oobe::{Oobe, Step, Texts};
 
@@ -309,4 +309,58 @@ fn more_providers_opens_a_searchable_window_and_enter_fills_in_that_one() {
     oobe.key(key(KeyCode::Esc), t0, &texts);
     assert!(oobe.model.more.is_none() && matches!(oobe.model.phase, Phase::List));
     assert_eq!(oobe.step, Step::Model);
+}
+
+#[test]
+fn a_failed_test_can_still_be_saved_and_asks_for_a_model_name_first() {
+    // 2026-10-13 项目主人定：测不通时报错照样显示，多一个「仍然保存」，选了就照填的写进配置、进下一步。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = at_model(t0, &texts, None);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.paste("sk-test\n");
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, _) = find(&asks(&mut oobe), "provider.test");
+    let failed = json!({"ok": false, "stage": "request", "error": {"class": "auth", "status": 401, "message": "bad key"}});
+    oobe.answer(tag, Ok(failed), t0, &texts);
+    let go_to = |oobe: &mut Oobe, slot: Slot| {
+        for _ in 0..6 {
+            let Phase::Form(form) = &oobe.model.phase else {
+                panic!("{:?}", oobe.model.phase)
+            };
+            if form.slot() == Some(slot) {
+                return;
+            }
+            oobe.key(key(KeyCode::Char('j')), t0, &texts);
+        }
+        panic!("走不到 {slot:?}");
+    };
+    assert!(oobe.model.error.is_some(), "报错照样写");
+    go_to(&mut oobe, Slot::Anyway);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(asks(&mut oobe).is_empty(), "没有模型名先不存");
+    assert_eq!(
+        oobe.model.warn.as_deref(),
+        Some(texts.model.model_for_save.as_str())
+    );
+    let Phase::Form(form) = &oobe.model.phase else {
+        panic!()
+    };
+    assert_eq!(form.slot(), Some(Slot::Model), "光标停到模型名");
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    typed(&mut oobe, "gpt-x", t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    go_to(&mut oobe, Slot::Anyway);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, params) = find(&asks(&mut oobe), "secret.set");
+    assert_eq!(params, json!({"name": "openai", "value": "sk-test"}));
+    oobe.answer(tag, Ok(json!({"replaced": false})), t0, &texts);
+    let (tag, params) = find(&asks(&mut oobe), "config.set");
+    let changes = params["changes"].as_array().unwrap();
+    assert!(changes.contains(&json!({"key": "models.chat", "value": "openai/gpt-x"})));
+    oobe.answer(tag, Ok(json!({})), t0, &texts);
+    assert_eq!(oobe.step, Step::Persona, "存好往下走");
 }

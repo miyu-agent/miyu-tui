@@ -262,6 +262,7 @@ impl ModelStep {
                         return Move::Stay;
                     }
                 }
+                Some(Slot::Anyway) => return self.save_anyway(form, asker, texts),
                 Some(s) => {
                     if let Some(field) = form.field(s) {
                         field.begin();
@@ -295,6 +296,38 @@ impl ModelStep {
             return Some((texts.key_needed.clone(), at(Slot::Key)));
         }
         None
+    }
+
+    /// 「仍然保存」：照填的写进配置、往下走，和试通了选好模型一样存（核心的 `miyu setup` 同样问「仍然保存？」，8-11 五补）。
+    /// 还没有模型名的先要一个：多一格模型名，黄字请人填。
+    fn save_anyway(&mut self, mut form: Form, asker: &mut Asker, texts: &Texts) -> Move {
+        if let Some(missing) = self.missing(&form, texts) {
+            self.error = Some(missing.0);
+            form.focus = missing.1;
+            self.phase = Phase::Form(form);
+            return Move::Stay;
+        }
+        let model = form.model.trimmed();
+        if model.is_empty() {
+            form.needs_model = true;
+            form.focus = form
+                .slots()
+                .iter()
+                .position(|s| *s == Slot::Model)
+                .unwrap_or(0);
+            self.error = None;
+            self.warn = Some(texts.model_for_save.clone());
+            self.phase = Phase::Form(form);
+            return Move::Stay;
+        }
+        self.warn = None;
+        let models = Models {
+            form,
+            names: vec![model.clone()],
+            ..Models::default()
+        };
+        self.save(models, &model, asker);
+        Move::Stay
     }
 
     /// 发 `provider.test`，吉祥物抬头等着。

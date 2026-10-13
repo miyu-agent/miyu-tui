@@ -1259,6 +1259,7 @@
       "searching": "入力して検索 · Ctrl+J/K 選択 · Enter 完了 · Esc 取消",
       "editing": "Enter 完了 · Esc 取消",
       "test": "Enter 接続テスト · j/k 移動 · Esc 別のプロバイダ",
+      "anyway": "Enter このまま保存 · j/k 移動 · Esc 別のプロバイダ",
       "pick": "↑↓ 選ぶ · Enter 次へ · Esc 戻る",
       "form": "Enter 編集 · j/k 移動 · Esc 別のプロバイダ",
       "driver": "←→ インターフェース切替 · j/k 移動 · Esc 別のプロバイダ",
@@ -1309,6 +1310,8 @@
       "key_env": "環境変数 {env} から",
       "key_none": "キー不要",
       "key_needed": "キーを入力してください",
+      "save_anyway": "このまま保存",
+      "model_for_save": "モデル名を入れてから保存してください",
       "cost": "実際に一文送るので少し料金がかかります",
       "key_sub": "キーを入れて接続をテストします",
       "custom_head": {
