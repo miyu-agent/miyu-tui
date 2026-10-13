@@ -138,6 +138,8 @@ pub(super) fn preset(lines: &mut Lines, view: &PresetView, page: &Settings, text
         lines.plain(Line::styled(format!("  {text}"), theme::dim()));
         return;
     };
+    // 存不进去的原话写在窗里（读成了详情以后 `error` 只管这个）。
+    lines.error = view.error.clone();
     let at = fields(detail).get(view.cursor).copied();
     let none = String::new;
     lines.body.push(Body {

@@ -46,11 +46,19 @@ pub fn fields(detail: &Detail) -> Vec<Field> {
     std::iter::once(Field::Name).chain(rows).collect()
 }
 
-/// 几个开关写成要交的值。
+/// 几个开关写成要交的值。单件工具打开回来是删掉那个键（`unset`）：预设里只能关单件工具，写 `true` 核心拒
+/// （「tools.glob 只能写 false」；2026-10-13 验收 T-193：原来关了的工具开不回来，`Ctrl+A` 也跟着失败）。
 fn bools(changes: Vec<(String, bool)>) -> Vec<(String, Value)> {
     changes
         .into_iter()
-        .map(|(key, on)| (key, Value::Bool(on)))
+        .map(|(key, on)| {
+            let value = if on && key.starts_with("tools.") {
+                Value::Null
+            } else {
+                Value::Bool(on)
+            };
+            (key, value)
+        })
         .collect()
 }
 
@@ -170,15 +178,27 @@ impl Settings {
         self.ask("preset.set", params, Waiting::PresetSaved(open));
     }
 
-    /// `preset.set` 回来了：成了的换上详情（新建的开它的窗）、重读列表；被拒的状态行写原话，详情不变。
+    /// `preset.set` 回来了：成了的换上详情（新建的开它的窗）、重读列表；被拒的写原话，详情不变：窗开着的写在窗里
+    /// （状态行被窗挡着，2026-10-13 验收 T-193 只露出半句），不然写在状态行。
     pub(in crate::settings) fn preset_saved(&mut self, open: bool, result: Result<Value, Refusal>) {
         let got = match result {
             Ok(got) => got,
-            Err(refusal) => return self.say(said(&refusal), Tone::Bad),
+            Err(refusal) => {
+                if let Some(Popup::Preset(view)) = &mut self.popup
+                    && view.detail.is_some()
+                {
+                    view.error = Some(said(&refusal));
+                    return;
+                }
+                return self.say(said(&refusal), Tone::Bad);
+            }
         };
         let detail = presets::detail(&got);
         match &mut self.popup {
-            Some(Popup::Preset(view)) if view.id == detail.id => view.detail = Some(detail),
+            Some(Popup::Preset(view)) if view.id == detail.id => {
+                view.detail = Some(detail);
+                view.error = None;
+            }
             _ if open => {
                 self.popup = Some(Popup::Preset(PresetView {
                     id: detail.id.clone(),
@@ -273,9 +293,69 @@ impl Settings {
 mod tests {
     use serde_json::json;
 
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
     use super::{Field, fields};
     use crate::features::Row;
+    use crate::settings::Settings;
+    use crate::settings::pages::choose::PresetView;
     use crate::settings::pages::presets::detail;
+
+    #[test]
+    fn a_tool_switched_back_on_drops_its_key_instead_of_writing_true() {
+        // 2026-10-13 验收 T-193：关掉的工具再打开写了 `tools.glob = true`，核心拒「只能写 false」，开不回来。
+        let texts = crate::config::Config::builtin().unwrap().text.settings;
+        let got = detail(&json!({"preset": "mine", "features": [
+            {"id": "files", "name": "文件读写", "on": true, "installed": true, "tools": [
+                {"name": "glob", "label": "找文件", "on": false},
+                {"name": "grep", "label": "搜内容", "on": true}]}]}));
+        let view = |cursor| PresetView {
+            id: "mine".into(),
+            detail: Some(got.clone()),
+            error: None,
+            cursor,
+        };
+        let key = |code, modifiers| KeyEvent::new(code, modifiers);
+        let mut page = Settings::default();
+        page.preset_key(view(2), key(KeyCode::Char(' '), KeyModifiers::NONE), &texts);
+        let asks = page.take_asks();
+        assert_eq!(asks[0].2["changes"], json!([{"key": "tools.glob", "unset": true}]));
+        page.preset_key(view(0), key(KeyCode::Char('a'), KeyModifiers::CONTROL), &texts);
+        let asks = page.take_asks();
+        assert_eq!(asks[0].2["changes"], json!([{"key": "tools.glob", "unset": true}]), "Ctrl+A 全开也一样");
+        let mut page = Settings::default();
+        page.preset_key(view(3), key(KeyCode::Char(' '), KeyModifiers::NONE), &texts);
+        assert_eq!(
+            page.take_asks()[0].2["changes"],
+            json!([{"key": "tools.grep", "value": false}]),
+            "关照旧写 false"
+        );
+    }
+
+    #[test]
+    fn a_refused_save_is_written_in_the_open_window() {
+        // 2026-10-13 验收 T-193：被拒的原话写在状态行，被预设的窗挡着只露半句。
+        let got = detail(&json!({"preset": "mine", "features": []}));
+        let mut page = Settings {
+            popup: Some(crate::settings::popup::Popup::Preset(PresetView {
+                id: "mine".into(),
+                detail: Some(got),
+                error: None,
+                cursor: 0,
+            })),
+            ..Settings::default()
+        };
+        let refusal = crate::core::Refusal {
+            reason: None,
+            message: "tools.glob 只能写 false：预设里只能关掉单件工具".into(),
+            data: serde_json::Value::Null,
+        };
+        page.preset_saved(false, Err(refusal));
+        let Some(crate::settings::popup::Popup::Preset(view)) = &page.popup else {
+            panic!("窗还开着");
+        };
+        assert!(view.error.as_deref().is_some_and(|e| e.contains("只能写 false")));
+    }
 
     #[test]
     fn the_window_lists_the_name_then_features_and_their_tools() {
