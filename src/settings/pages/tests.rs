@@ -62,6 +62,7 @@ fn a_removed_mascot_package_is_named_as_not_installed() {
         summary: None,
         problem: None,
         avatar: None,
+        seed: None,
     }];
     assert_eq!(
         super::shown(item, &json!("bun"), Some(&installed), &texts),

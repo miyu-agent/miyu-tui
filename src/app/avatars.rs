@@ -79,15 +79,22 @@ impl App {
         });
     }
 
-    /// 挑一张还没存的头像去要（`tick`）。
+    /// 挑一张还没存的头像去要（`tick`）：画得了图的要首页、侧边栏的；跟随头像的配色另要正在看的人格的（画不了图也要，
+    /// 取色用，「主题」第 5 条）。
     pub(super) fn ask_avatars(&mut self) {
-        if !self.media.figures.borrow().shows() {
-            return;
-        }
+        let shows = self.media.figures.borrow().shows();
+        let theme = self.screen.theme_choice.colors == "persona";
+        let seen = self.seen();
+        let colors = seen
+            .theme_persona()
+            .filter(|p| theme && p.seed.is_none())
+            .and_then(|p| Some((p.id.to_string(), p.avatar.clone()?)));
         let wanted: Vec<(String, String)> = [Place::Home, Place::Sidebar]
             .into_iter()
-            .filter_map(|place| self.seen().wanted(place))
+            .filter(|_| shows)
+            .filter_map(|place| seen.wanted(place))
             .map(|(p, v)| (p.to_string(), v.to_string()))
+            .chain(colors)
             .collect();
         let refs: Vec<(&str, &str)> = wanted
             .iter()

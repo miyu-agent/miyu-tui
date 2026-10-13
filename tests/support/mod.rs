@@ -264,6 +264,14 @@ impl Tui {
             .unwrap_or_default()
     }
 
+    /// 一格的底色。
+    pub fn background(&self, row: u16, col: u16) -> vt100::Color {
+        self.screen
+            .screen()
+            .cell(row, col)
+            .map_or(vt100::Color::Default, vt100::Cell::bgcolor)
+    }
+
     /// 一格的字带不带下划线。
     pub fn underlined(&self, row: u16, col: u16) -> bool {
         self.screen

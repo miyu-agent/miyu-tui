@@ -223,7 +223,7 @@ fn run(
         app.open_oobe();
     }
     let mut pointer = pointer::Pointer::default();
-    // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 5 条）。
+    // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）。
     let depth = theme::Depth::detect(|name| std::env::var(name).ok());
     // 量性能用：给了路径才记每一帧的耗时（蓝图「环境变量」）。
     let log_path = std::env::var_os("MIYU_TUI_FRAME_LOG").map(std::path::PathBuf::from);
@@ -350,7 +350,7 @@ fn suspend(_screen: &mut Screen, _keyboard: bool) -> io::Result<()> {
 /// 画一帧，用同步输出包起来（蓝图 `tui.md`「每一帧」）：终端收齐了再画，传图的那一帧不会闪、光标不乱跳。
 /// 不认的终端当没有。画失败了也要把结尾发出去，不然认得的终端会一直等。
 /// 顺手照这一帧悬停的是不是链接，换鼠标指针的样子。画完、交给终端之前把宽字后面那格清空，再照色深统一换色
-/// （蓝图「每一帧」、「主题」第 6 条）。
+/// （蓝图「每一帧」、「主题」第 4、9 条）。
 fn frame(
     terminal: &mut Screen,
     app: &mut App,

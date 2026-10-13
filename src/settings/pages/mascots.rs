@@ -19,6 +19,7 @@ pub fn read(got: &Value) -> Vec<Persona> {
             summary: text(&p["summary"]),
             problem: text(&p["problem"]),
             avatar: None,
+            seed: None,
         })
         .collect()
 }

@@ -120,21 +120,32 @@ pub fn probe() -> Option<bool> {
         .map(|mode| mode == terminal_colorsaurus::ThemeMode::Dark)
 }
 
-/// 照配置项、终端的底色挑：出厂的那一份找不到的是 `None`。
+/// 照配置项、终端的底色挑：出厂的那一份找不到的是 `None`。跟随头像的、有主色（`seed`）的照它生成一套盖在 tokyonight
+/// 上（第 5 条）；还没有主色的（没头像、头像还没要到）照 tokyonight。
 pub fn pick(
     choice: &Choice,
     terminal_dark: Option<bool>,
     themes: &[(String, Palette)],
+    seed: Option<u32>,
 ) -> Option<Picked> {
-    let name = choice.base(choice.dark(terminal_dark));
-    let (_, palette) = themes.iter().find(|(n, _)| n == name)?;
+    let dark = choice.dark(terminal_dark);
+    let name = choice.base(dark);
+    let (_, base) = themes.iter().find(|(n, _)| n == name)?;
+    let (name, palette) = match seed.filter(|_| choice.colors == "persona") {
+        Some(seed) => {
+            let shade = if dark { "night" } else { "day" };
+            let palette = super::persona::overlay(base, seed, dark);
+            (format!("persona-{shade}"), palette)
+        }
+        None => (name.to_string(), base.clone()),
+    };
     let ground = choice
         .grounded()
         .then_some((palette.background.0, palette.text.0))
         .filter(|(bg, _)| *bg != Color::Reset);
     Some(Picked {
-        name: name.to_string(),
-        palette: palette.clone(),
+        name,
+        palette,
         ground,
     })
 }
@@ -175,23 +186,26 @@ mod tests {
         let themes = builtin().unwrap();
         let auto = Choice::default();
         assert_eq!(
-            pick(&auto, Some(false), &themes).unwrap().name,
+            pick(&auto, Some(false), &themes, None).unwrap().name,
             "tokyonight-day"
         );
         assert_eq!(
-            pick(&auto, None, &themes).unwrap().name,
+            pick(&auto, None, &themes, None).unwrap().name,
             "tokyonight-night",
             "问不到的当深色"
         );
         assert!(
-            pick(&auto, Some(false), &themes).unwrap().ground.is_none(),
+            pick(&auto, Some(false), &themes, None)
+                .unwrap()
+                .ground
+                .is_none(),
             "跟随终端不铺"
         );
         let light = Choice {
             mode: Mode::Light,
             ..Choice::default()
         };
-        let picked = pick(&light, Some(true), &themes).unwrap();
+        let picked = pick(&light, Some(true), &themes, None).unwrap();
         assert_eq!(picked.name, "tokyonight-day", "手动选的不看终端");
         assert_eq!(
             picked.ground,
@@ -202,15 +216,46 @@ mod tests {
             ..light.clone()
         };
         assert!(
-            pick(&off, None, &themes).unwrap().ground.is_none(),
+            pick(&off, None, &themes, None).unwrap().ground.is_none(),
             "关了不铺"
         );
         let terminal = Choice {
             colors: "terminal".into(),
             ..light
         };
-        let picked = pick(&terminal, None, &themes).unwrap();
+        let picked = pick(&terminal, None, &themes, None).unwrap();
         assert_eq!(picked.name, "terminal-light");
         assert!(picked.ground.is_none(), "terminal 跟着终端的配色走，不铺");
+    }
+
+    #[test]
+    fn following_the_avatar_overlays_tokyonight_once_there_is_a_seed() {
+        let themes = builtin().unwrap();
+        let persona = Choice {
+            colors: "persona".into(),
+            mode: Mode::Dark,
+            ..Choice::default()
+        };
+        let none = pick(&persona, None, &themes, None).unwrap();
+        assert_eq!(none.name, "tokyonight-night", "还没有主色：照 tokyonight");
+        let green = pick(&persona, None, &themes, Some(0x2fab34)).unwrap();
+        assert_eq!(green.name, "persona-night");
+        assert_ne!(green.palette.accent, none.palette.accent);
+        assert_eq!(
+            green.ground.map(|g| g.0),
+            Some(green.palette.background.0),
+            "铺的是生成的那一套的底色"
+        );
+        let tokyonight = Choice {
+            colors: "tokyonight".into(),
+            ..persona
+        };
+        assert_eq!(
+            pick(&tokyonight, None, &themes, Some(0x2fab34))
+                .unwrap()
+                .name,
+            "tokyonight-night",
+            "不是跟随头像的不看主色"
+        );
     }
 }

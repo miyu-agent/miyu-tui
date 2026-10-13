@@ -14,6 +14,7 @@ impl App {
             &crate::theme::choice::Choice::default(),
             None,
             &config.themes,
+            None,
         );
         let theme = picked.map_or_else(String::new, |p| {
             crate::theme::set(p.palette);
