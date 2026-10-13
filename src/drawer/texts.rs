@@ -44,6 +44,8 @@ pub struct Texts {
     pub package: super::PackageTexts,
     /// 工作区外的路径后面标的。
     pub outside: String,
+    /// 别的程序的私密目录（`zone` 是 `private`，核心 5-13）后面标的。
+    pub private: String,
     /// 「确认」页、留下的引用块里没答的那道。
     pub unanswered: String,
     /// 按键提示：提问单选、提问多选、确认、「确认」页、编辑时；几道题时提问的后面再接 `keys_tabs`。
