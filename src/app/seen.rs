@@ -152,8 +152,29 @@ impl<'a> Seen<'a> {
 
     /// 这一处的人格和它的头像的版本；没有头像的是 `None`。
     pub(super) fn wanted(&self, place: Place) -> Option<(&'a str, &'a str)> {
+        let persona = self.persona_at(place)?;
+        let row = self
+            .pick_list(Kind::Persona)
+            .0
+            .iter()
+            .find(|p| p.id == persona)?;
+        Some((persona, row.avatar.as_deref()?))
+    }
+
+    /// 跟随头像的配色看谁（「主题」第 5 条）：开着会话的照会话的人格，没开的照首页画的那一位。
+    pub(super) fn theme_persona(&self) -> Option<&'a Persona> {
+        let place = match self.talk.transcript.session {
+            Some(_) => Place::Sidebar,
+            None => Place::Home,
+        };
+        let id = self.persona_at(place)?;
+        self.pick_list(Kind::Persona).0.iter().find(|p| p.id == id)
+    }
+
+    /// 这一处是哪位人格：首页照人格框停的那一行、选的、会话的、默认的，侧边栏照开着的会话的。
+    fn persona_at(&self, place: Place) -> Option<&'a str> {
         let session = self.talk.transcript.persona.as_deref();
-        let persona = match place {
+        match place {
             Place::Home => {
                 let under = match self.boxes.panel {
                     Some(Panel::Pick {
@@ -170,13 +191,7 @@ impl<'a> Seen<'a> {
                 home_persona(under, &self.talk.persona, session)
             }
             Place::Sidebar => sidebar_persona(session),
-        }?;
-        let row = self
-            .pick_list(Kind::Persona)
-            .0
-            .iter()
-            .find(|p| p.id == persona)?;
-        Some((persona, row.avatar.as_deref()?))
+        }
     }
 
     /// 这一处画什么。终端显示不了图的、要不到的当没有头像。

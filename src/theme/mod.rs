@@ -8,6 +8,7 @@ mod depth;
 mod ground;
 mod motion;
 mod palette;
+pub mod persona;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};

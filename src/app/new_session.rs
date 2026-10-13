@@ -113,6 +113,7 @@ impl App {
                     summary: Some(texts.none_note.clone()),
                     problem: None,
                     avatar: None,
+                    seed: None,
                 },
             );
         }
@@ -322,6 +323,7 @@ mod tests {
             summary: None,
             problem: problem.map(str::to_string),
             avatar: None,
+            seed: None,
         }
     }
 
