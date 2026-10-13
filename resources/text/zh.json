@@ -78,7 +78,6 @@
     "more": "⋯ 还有 {count} 行"
   },
   "unknown_command": "命令不存在",
-  "fake_command": "/{name} 尚未实现",
   "thinking": "思考中",
   "thought": "已思考",
   "prepare": "准备{name}",

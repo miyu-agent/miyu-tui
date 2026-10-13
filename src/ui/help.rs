@@ -8,7 +8,6 @@ use unicode_width::UnicodeWidthStr;
 
 use super::panel::Chrome;
 use super::rows::clip;
-use crate::commands::Run;
 use crate::config::Config;
 use crate::theme;
 
@@ -54,7 +53,6 @@ fn rows(config: &Config, width: u16) -> Vec<Line<'static>> {
         .commands
         .commands
         .iter()
-        .filter(|c| c.run != Run::Fake)
         .map(|c| {
             let names: Vec<String> = std::iter::once(&c.name)
                 .chain(&c.aliases)

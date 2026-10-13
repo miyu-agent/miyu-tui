@@ -350,11 +350,6 @@ impl App {
             Run::Quit => self.quit = true,
             Run::Help => self.open_help(),
             Run::Language => self.open_languages(),
-            Run::Fake => {
-                // 只弹提示框，不写进正文（2026-10-01 项目主人）。
-                let note = self.config.text.fake_command.replace("{name}", &spec.name);
-                self.hint(note, false);
-            }
             Run::DemoTodo => self.demo(spec.run),
             Run::DemoAsk | Run::DemoApprove => self.demo_drawer(spec.run),
         }

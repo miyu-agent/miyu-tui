@@ -226,8 +226,6 @@ pub struct Texts {
     pub effort: crate::ui::effort_list::Texts,
     /// 没有这个斜杠命令，`{name}`。
     pub unknown_command: String,
-    /// 演示用的假命令，`{name}`。
-    pub fake_command: String,
     /// 思考进行中那一行的字。
     pub thinking: String,
     /// 想完以后那一行的字。

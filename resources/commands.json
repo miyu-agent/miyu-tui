@@ -186,33 +186,6 @@
       "run": "effort"
     },
     {
-      "name": "readonly",
-      "summary": {
-        "zh": "开关只读，和 Shift+Tab 一样",
-        "en": "Toggle read-only, same as Shift+Tab",
-        "ja": "読み取り専用を切り替える（Shift+Tab と同じ）"
-      },
-      "run": "fake"
-    },
-    {
-      "name": "level",
-      "summary": {
-        "zh": "改常用的权限级别：工作区或完全放开",
-        "en": "Change the usual permission level: workspace or full access",
-        "ja": "普段使う権限レベルを変更する：ワークスペースまたはフルアクセス"
-      },
-      "run": "fake"
-    },
-    {
-      "name": "tools",
-      "summary": {
-        "zh": "工具设置：哪些常驻、哪些按需加载",
-        "en": "Tool settings: which are always loaded, which on demand",
-        "ja": "ツール設定：常に読み込むものとオンデマンドで読み込むもの"
-      },
-      "run": "fake"
-    },
-    {
       "name": "config",
       "aliases": [
         "settings"
