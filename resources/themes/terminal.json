@@ -55,5 +55,7 @@
   "code_property": "idx:115",
   "code_operator": "idx:117",
   "code_macro": "lightcyan",
-  "code_parameter": "yellow"
+  "code_parameter": "yellow",
+  "background": "default",
+  "text": "default"
 }

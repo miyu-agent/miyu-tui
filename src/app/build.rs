@@ -9,16 +9,16 @@ impl App {
         let system_language = config.language.clone();
         let md_keep = config.layout.markdown_cache;
         let ime = crate::ime::Ime::start(&config.layout.ime, |name| std::env::var(name).ok());
-        // 照配置设主题；没有这一套的用出厂的第一套。
-        let chosen = config
-            .themes
-            .iter()
-            .find(|(name, _)| *name == config.layout.theme)
-            .or(config.themes.first())
-            .cloned();
-        let theme = chosen.map_or_else(String::new, |(name, palette)| {
-            crate::theme::set(palette);
-            name
+        // 主题先照出厂的设置挑（跟随终端，终端底色还没问的当深色）；连上读到 `tui.theme*`、问到终端的底色再换（`theme.rs`）。
+        let picked = crate::theme::choice::pick(
+            &crate::theme::choice::Choice::default(),
+            None,
+            &config.themes,
+        );
+        let theme = picked.map_or_else(String::new, |p| {
+            crate::theme::set(p.palette);
+            crate::theme::set_ground(p.ground);
+            p.name
         });
         let config_tips = config.text.tips.len();
         let layout = &config.layout;

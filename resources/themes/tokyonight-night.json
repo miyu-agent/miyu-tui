@@ -55,5 +55,7 @@
   "code_property": "#73daca",
   "code_operator": "#89ddff",
   "code_macro": "#7dcfff",
-  "code_parameter": "#e0af68"
+  "code_parameter": "#e0af68",
+  "background": "#1a1b26",
+  "text": "#c0caf5"
 }

@@ -179,17 +179,29 @@ pub struct Palette {
     pub code_macro: Tone,
     /// shell 命令的参数（`-v`、`--force`）。
     pub code_parameter: Tone,
+    /// 铺底色时整个界面的底色（「主题」第 4 条）；`default` 的不铺。
+    pub background: Tone,
+    /// 铺底色时没上色的字的颜色。
+    pub text: Tone,
 }
 
-/// 出厂的几套：名字和文件。加一套：放一个文件，在这里登记一行。
-pub const BUILTIN: [(&str, &str); 2] = [
+/// 出厂的几套：名字和文件，一种配色一份深色、一份浅色（「主题」第 2 条）。加一套：放一个文件，在这里登记一行。
+pub const BUILTIN: [(&str, &str); 4] = [
     (
         "tokyonight-night",
         include_str!("../../resources/themes/tokyonight-night.json"),
     ),
     (
+        "tokyonight-day",
+        include_str!("../../resources/themes/tokyonight-day.json"),
+    ),
+    (
         "terminal",
         include_str!("../../resources/themes/terminal.json"),
+    ),
+    (
+        "terminal-light",
+        include_str!("../../resources/themes/terminal-light.json"),
     ),
 ];
 

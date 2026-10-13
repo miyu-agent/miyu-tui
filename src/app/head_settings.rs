@@ -16,6 +16,8 @@ const ICONS_TAG: u64 = TAG_BASE - 2;
 const TIMELINE_TAG: u64 = TAG_BASE - 3;
 /// 读吉祥物那两个开关的请求编号（头像要的是 `TAG_BASE - 5`，`avatars.rs`）。
 const MASCOT_TAG: u64 = TAG_BASE - 4;
+/// 读主题那几项的请求编号（`TAG_BASE - 6` 到 `- 8` 是换吉祥物的，`mascot_pick.rs`）。
+const THEME_TAG: u64 = TAG_BASE - 9;
 
 impl App {
     /// 头的配置读到了（连上、配置变了）就去读；回应归这里（交回 `true`）。
@@ -25,6 +27,7 @@ impl App {
                 self.ask_config(ICONS_TAG, &["tui.icons"]);
                 self.ask_config(TIMELINE_TAG, &Timeline::KEYS);
                 self.ask_config(MASCOT_TAG, &Layout::MASCOT_KEYS);
+                self.ask_config(THEME_TAG, &crate::theme::choice::Choice::KEYS);
                 false
             }
             Update::Answer { tag, result } if *tag == ICONS_TAG => {
@@ -47,6 +50,14 @@ impl App {
             Update::Answer { tag, result } if *tag == MASCOT_TAG => {
                 if let Ok(got) = result {
                     self.config.layout.apply_mascot(got);
+                }
+                true
+            }
+            // 主题那几项（「主题」第 6 条）：读到的盖上，照新的挑一套。
+            Update::Answer { tag, result } if *tag == THEME_TAG => {
+                if let Ok(got) = result {
+                    self.screen.theme_choice.apply(got);
+                    self.apply_theme();
                 }
                 true
             }
