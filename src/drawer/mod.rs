@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 mod asks;
 
 pub use asks::Asks;
-pub use event::{Answer, Answered, Approval, Asked, Decided, Decision, Fake, Question};
+pub use event::{Answer, Answered, Approval, Asked, Decided, Decision, Question};
 pub use package::{PackageTexts, Plan};
 pub use report::{Report, inline, said};
 pub use texts::Texts;
@@ -84,8 +84,6 @@ pub struct Drawer {
     /// 问的那个会话的整个编号，主会话的也写：作答交给它，调用编号只在一个会话里唯一，认抽屉要连它一起认
     /// （2026-10-07 项目主人报：`/new` 以后新会话的 `call_31_1` 被当成旧会话了结过的，没开抽屉）。演示的是空的。
     pub owner: String,
-    /// 演示的假事件（`/demo-ask`、`/demo-approve`）：作答不发给核心，结果当场写。
-    pub demo: bool,
     /// 确认要跑的那条命令：短标题（她调 shell 时写的几个字，当问题行）、原文（下面暗色一行行写），没有的是 `None`。
     pub command: Option<(Option<String>, String)>,
     /// 调用编号：作答照它交回去。
@@ -153,7 +151,6 @@ impl Drawer {
             who,
             session: None,
             owner: String::new(),
-            demo: false,
             command: None,
             call_id,
             ask,

@@ -350,8 +350,6 @@ impl App {
             Run::Quit => self.quit = true,
             Run::Help => self.open_help(),
             Run::Language => self.open_languages(),
-            Run::DemoTodo => self.demo(spec.run),
-            Run::DemoAsk | Run::DemoApprove => self.demo_drawer(spec.run),
         }
     }
 

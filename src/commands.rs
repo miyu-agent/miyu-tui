@@ -98,12 +98,6 @@ pub enum Run {
     Help,
     /// 在中英文之间切换界面语言（蓝图「界面语言」）。
     Language,
-    /// 演示：推一份假的待办。
-    DemoTodo,
-    /// 演示：她问一个假的问题（蓝图「确认和提问的抽屉」）。
-    DemoAsk,
-    /// 演示：要一次假的权限确认。
-    DemoApprove,
 }
 
 impl Commands {

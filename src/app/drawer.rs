@@ -1,43 +1,16 @@
-//! 确认和提问的抽屉接到程序上（蓝图 `tui.md`「确认和提问的抽屉」）：假事件打开、按键先归它、两下 `Esc` 取消、
-//! 了结以后正文里留下结果。
+//! 确认和提问的抽屉接到程序上（蓝图 `tui.md`「确认和提问的抽屉」）：按键先归它、两下 `Esc` 取消、了结以后正文里
+//! 留下结果。
 
 use std::time::{Duration, Instant};
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use super::App;
-use crate::commands::Run;
 use crate::core::Command;
 use crate::drawer::{Drawer, Edit, Outcome, Report, Step};
 use crate::transcript::{JobMark, Kind};
 
 impl App {
-    /// `/demo-ask`、`/demo-approve`：照 `fake.json` 轮着出一个（第 1 条）。
-    pub(super) fn demo_drawer(&mut self, run: Run) {
-        let fake = &self.config.fake;
-        let drawer = match run {
-            Run::DemoAsk if !fake.asks.is_empty() => {
-                let f = &fake.asks[self.talk.demo_drawers.0 % fake.asks.len()];
-                self.talk.demo_drawers.0 += 1;
-                Drawer::question(f.who.clone(), f.body.clone())
-            }
-            Run::DemoApprove if !fake.approvals.is_empty() => {
-                let f = &fake.approvals[self.talk.demo_drawers.1 % fake.approvals.len()];
-                self.talk.demo_drawers.1 += 1;
-                Drawer::approval(f.who.clone(), f.body.clone())
-            }
-            _ => return,
-        };
-        let mut drawer = drawer;
-        drawer.demo = true;
-        let was_open = self.talk.drawers.open();
-        self.talk.drawers.push(drawer);
-        // 新开的抽屉：弹「在等你」（「系统通知」第 1 条）；前一个还没了结的排着，轮到它时再弹。
-        if !was_open {
-            self.notify_drawer();
-        }
-    }
-
     /// 抽屉开着时按键先归它，带 `Ctrl` 的照旧归外面（复制、退出），编辑时的 `Ctrl+J` 换行除外（第 4 条）。
     /// 拿了交回 `true`。
     pub(super) fn drawer_key(&mut self, key: KeyEvent) -> bool {
@@ -127,7 +100,7 @@ impl App {
             }
             Outcome::Cancelled => None,
         };
-        match answered.filter(|_| !drawer.demo) {
+        match answered {
             Some(mut body) => {
                 if body["reason"].is_null()
                     && let Some(fields) = body.as_object_mut()

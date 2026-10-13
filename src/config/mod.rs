@@ -9,7 +9,6 @@ use serde::Deserialize;
 
 use crate::commands::Commands;
 use crate::core::Level;
-use crate::jobs::Script;
 use crate::language::{Language, LanguageTable};
 use crate::markdown::{Languages, Math};
 use crate::mascot::Look;
@@ -273,8 +272,6 @@ pub struct Config {
     pub mascot: Look,
     /// 第一次打开的引导的数值（`resources/oobe.json`）。
     pub oobe: crate::oobe::look::Look,
-    /// 演示用的假数据源的脚本（后台命令、子代理、待办）。
-    pub fake: Script,
     /// 出厂的主题：名字和颜色，照登记的先后。
     pub themes: Vec<(String, Palette)>,
     /// 当前这一套图标（`/icons` 换的是它）。
@@ -347,7 +344,6 @@ impl Config {
             )?,
             mascot: parse("mascot.json", include_str!("../../resources/mascot.json"))?,
             oobe: parse("oobe.json", include_str!("../../resources/oobe.json"))?,
-            fake: parse("fake.json", include_str!("../../resources/fake.json"))?,
             themes: crate::theme::builtin()?,
             icons,
             icon_sets,

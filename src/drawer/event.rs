@@ -151,14 +151,3 @@ impl Decision {
     /// 抽屉里的先后。
     pub const ALL: [Self; 3] = [Self::Once, Self::Session, Self::Deny];
 }
-
-/// 演示用的一条假事件：谁在问（子代理、后台命令问的才有），和核心推的 `body` 一个形状。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Fake<T> {
-    /// 谁在问：`子代理 查资料` 这样；她自己问的不写。
-    #[serde(default)]
-    pub who: Option<String>,
-    /// 事件的 `body`。
-    pub body: T,
-}

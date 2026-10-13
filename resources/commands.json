@@ -250,33 +250,6 @@
         "ja": "終了する"
       },
       "run": "quit"
-    },
-    {
-      "name": "demo-todo",
-      "summary": {
-        "zh": "演示：推一份假的待办",
-        "en": "Demo: push a fake to-do list",
-        "ja": "デモ：ダミーの ToDo リストを表示する"
-      },
-      "run": "demo_todo"
-    },
-    {
-      "name": "demo-ask",
-      "summary": {
-        "zh": "演示：提问的抽屉",
-        "en": "Demo: the question drawer",
-        "ja": "デモ：ダミーの質問をして、質問ドロワーを表示する"
-      },
-      "run": "demo_ask"
-    },
-    {
-      "name": "demo-approve",
-      "summary": {
-        "zh": "演示：要一次假的权限确认，看确认的抽屉",
-        "en": "Demo: a fake permission request, to see the approval drawer",
-        "ja": "デモ：ダミーの権限確認を発生させて、確認ドロワーを表示する"
-      },
-      "run": "demo_approve"
     }
   ]
 }

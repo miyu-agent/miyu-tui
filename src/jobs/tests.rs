@@ -2,8 +2,7 @@
 
 use std::time::{Duration, Instant};
 
-use super::{Board, Feed, JobKind, JobState, TodoState};
-use crate::config::Config;
+use super::{Board, JobKind, JobState};
 use crate::core::{JobEnd, JobReason, JobStart};
 
 fn at(t0: Instant, ms: u64) -> Instant {
@@ -101,25 +100,6 @@ fn an_agent_reports_back_and_runs_again_after_a_message() {
     board.messaged("j2.1");
     assert_eq!(board.agents().len(), 1, "留了言又在跑");
     assert!(board.busy());
-}
-
-#[test]
-fn a_fake_todo_list_advances_one_item_at_a_time() {
-    let script = Config::builtin().unwrap().fake;
-    let (mut feed, mut board) = (Feed::default(), Board::default());
-    let t0 = Instant::now();
-    feed.start_todo(&script, &mut board, t0);
-    let n = script.todos.items.len();
-    assert_eq!(board.todo_progress(), Some((0, n)));
-    assert_eq!(board.todos[0].state, TodoState::Active);
-    feed.advance(&script, &mut board, at(t0, script.todos.every_ms));
-    assert_eq!(board.todos[0].state, TodoState::Done);
-    assert_eq!(board.todos[1].state, TodoState::Active);
-    assert_eq!(board.todo_progress(), Some((1, n)));
-    for k in 2..=n as u64 {
-        feed.advance(&script, &mut board, at(t0, script.todos.every_ms * k));
-    }
-    assert_eq!(board.todo_progress(), Some((n, n)));
 }
 
 #[test]
