@@ -32,6 +32,11 @@ fn resuming_from_another_directory_says_where_she_works() {
     let mut tui = home.tui_wide_in("zh_CN.UTF-8", 140, &elsewhere);
     tui.wait_for("在这。");
     tui.wait_for("切换到当前目录");
+    // 等到侧边栏也画出来再看：读屏可能正赶上半帧（macOS CI 上截到过只画了上半截的一帧，2026-10-13）。
+    let end = std::time::Instant::now() + support::WAIT;
+    while tui.lines().join("\n").matches(&work).count() < 2 && std::time::Instant::now() < end {
+        tui.pump(Duration::from_millis(100));
+    }
     let screen = tui.lines().join("\n");
     // 那句通知从「工作区：」写到「切换到当前目录」，路径长了会折成几行（macOS 的临时目录很长）：取左边正文那一截拼起来再找。
     let lines = tui.lines();
