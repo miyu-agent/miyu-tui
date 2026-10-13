@@ -232,7 +232,12 @@ impl App {
             self.screen.view.clear();
         }
         let folds = self.talk.transcript.folds();
+        // 开轮以前按过两下 `Esc`：正文收了这一轮的开头再打断（`takeback.rs`）。
+        let stop = super::takeback::stops_on_start(self.talk.transcript.starting, &update);
         self.talk.transcript.update(update, &self.config.text);
+        if stop {
+            self.stop_started_turn();
+        }
         // 在子会话里看：它那一行正在做什么、用了多少跟着更新。
         if let Some(child) = self.talk.viewing().map(str::to_string) {
             self.refresh_agent(&child);

@@ -8,20 +8,25 @@ use super::App;
 use crate::commands::{Line, Run, Spec};
 use crate::core::Command;
 use crate::input::{Action, Draft};
+use crate::transcript::Starting;
 
 impl App {
     /// 按了要按两下的 `Esc`：在回答时打断（排着队的接着发），没在回答时清空输入框。
     /// 上一下还在时限里就做，不然只提示再按一次。
     pub(super) fn esc(&mut self) {
         let window = Duration::from_millis(self.config.layout.esc_window_ms);
-        let running = self.talk.transcript.running.is_some();
+        // 发出去了、核心还没开轮的也算在回答：记下，轮一开就打断（`takeback.rs`）。
+        let starting = self.talk.transcript.starting != Starting::No;
+        let running = self.talk.transcript.running.is_some() || starting;
         match self.typing.esc_at.take() {
             Some(at) if at.elapsed() <= window => {
                 self.typing.notice = None;
                 if running && self.switching() {
                     return;
                 }
-                if running {
+                if starting {
+                    self.talk.transcript.starting = Starting::Stop;
+                } else if running {
                     // 她还没开始做事、又没有排着的：打断以后撤掉这一轮，那一句放回输入框（「按键」`Esc`，2026-10-07
                     // 项目主人定；和 Ctrl+C 退回排着的走同一条路，`takeback.rs`）。
                     let queued = self
@@ -259,6 +264,7 @@ impl App {
         self.typing.input.remember(draft);
         self.typing.input.forget_cleared();
         self.talk.transcript.user(text, chips);
+        self.awaiting_turn();
         self.link.core.send(Command::Send { text: full, files });
     }
 

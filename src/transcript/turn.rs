@@ -35,6 +35,7 @@ impl Transcript {
     /// 一轮开始了（`turn.started`）：开表、清这一轮的用量，把开这一轮的排队消息挪进正文。
     pub(super) fn start(&mut self, turn: u64, trigger: Option<u64>) {
         self.running = Some(self.clock.now());
+        self.starting = Starting::No;
         self.spoke = false;
         self.opened_by.clear();
         self.failure = None;

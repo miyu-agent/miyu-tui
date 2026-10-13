@@ -115,3 +115,31 @@ fn slash_stop_interrupts_and_keeps_the_queued_message_without_starting_a_turn() 
         "排着的话接在打断那一行后面：\n{screen}"
     );
 }
+
+#[test]
+fn two_escapes_right_after_sending_stop_the_turn_once_it_starts() {
+    // 2026-10-14 项目主人定：发出去以后、核心开轮以前按两下 `Esc` 也算打断，记下，轮一开就打断、那一句放回输入框
+    // （原来这两下没交给打断那一处，这一轮照跑）。
+    let home = Home::new(Script::new([Play::Stalls, Play::Says("收到。")]));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("发错了");
+    // 两下挨着按（隔 40 毫秒，读成两下、不读成 Alt+Esc），都落在开轮以前：先记下，轮一开再打断。
+    tui.send(b"\x1b");
+    tui.pump(Duration::from_millis(40));
+    tui.send(b"\x1b");
+    let end = Instant::now() + support::WAIT;
+    while !input(&tui).contains("发错了") {
+        assert!(
+            Instant::now() < end,
+            "没放回输入框：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(100));
+    }
+    assert!(
+        !tui.shows("┃ 发错了"),
+        "这一轮撤掉了：\n{}",
+        tui.lines().join("\n")
+    );
+}

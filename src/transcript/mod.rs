@@ -43,6 +43,7 @@ pub use cache::CacheWatch;
 pub use chips::Chip;
 pub use climb::Progress;
 pub use entry::{Entry, JobMark, JobNote, Kind};
+
 pub use steps::{Segment, Step, StepKind, Tally, ToolState};
 pub use words::undo_counts;
 
@@ -57,6 +58,19 @@ pub enum Link {
     Reconnecting,
     /// 连不上：给人看的一句（第 8 条）。
     Down(String),
+}
+
+/// 发出去了、核心还没开轮（`turn.started` 没来）的那一小段（蓝图 `tui.md`「按键」`Esc`，2026-10-14 项目主人定）：两下
+/// `Esc` 记下要打断，轮一开就打断。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Starting {
+    /// 没在等开轮。
+    #[default]
+    No,
+    /// 发出去了，在等开轮。
+    Waiting,
+    /// 在等开轮，开了就打断（按过两下 `Esc`）。
+    Stop,
 }
 
 /// 一块字接到哪里去：回答那一条，或者时间线某一段的某一步。
@@ -79,6 +93,8 @@ pub struct Transcript {
     calls: HashMap<String, (usize, usize)>,
     /// 这一轮从什么时候开始跑；没在跑是 `None`。
     pub running: Option<Instant>,
+    /// 发出去了、还没开轮（[`Starting`]）。
+    pub starting: Starting,
     /// 正文的钟：补发来的照事件的时刻（`clock.rs`）。
     clock: clock::Clock,
     /// 最近一次说话的模型：端点和模型名。
@@ -238,6 +254,7 @@ impl Transcript {
             }
             // 核心断开了：在进行的那一轮当场收尾，马上重连（「连核心」第 7 条）。
             Update::Disconnected => {
+                self.starting = Starting::No;
                 self.cut_off(texts);
                 self.link = Link::Reconnecting;
             }

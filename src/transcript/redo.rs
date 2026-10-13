@@ -1,7 +1,7 @@
 //! 重做、编辑上一句要的（蓝图 `tui.md`「斜杠命令」`/redo`、「输入框」第 13 条）：开最后一轮的那一句是哪条；说的话、
 //! 重做没发出去时，撤掉先画进正文、还没落盘的那句（「输入框」第 12 条）。
 
-use super::{Entry, Kind, Transcript};
+use super::{Entry, Kind, Starting, Transcript};
 
 impl Transcript {
     /// 开最后一轮的那一句：没被撤掉的条目里最后一轮，是你说的话开的才有。回报叫醒的、手动压缩、清空的那一轮，
@@ -28,6 +28,7 @@ impl Transcript {
 
     /// 没发出去：撤掉最后一条还没落盘（没有序号、没归到哪一轮）的你说的话。
     pub fn drop_unsent(&mut self) {
+        self.starting = Starting::No;
         let unsent = self.entries.iter().rposition(|e| {
             e.kind == Kind::User && e.seq.is_none() && e.turn.is_none() && e.from.is_none()
         });

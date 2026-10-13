@@ -13,6 +13,7 @@ impl Default for Transcript {
             unnamed: Vec::new(),
             calls: HashMap::new(),
             running: None,
+            starting: super::Starting::No,
             clock: clock::Clock::default(),
             model: None,
             link: Link::Connecting,
