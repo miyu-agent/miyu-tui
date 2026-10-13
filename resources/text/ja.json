@@ -836,8 +836,10 @@
       "fetched": "{n} 個のモデル",
       "no_models": "No models yet · save, then press r",
       "pools": "{n} pools",
-      "testing": "{name} をテスト中…（少し料金がかかります）",
+      "testing": "{name} をテスト中…",
       "tested": "{name}：{n} 個のモデル",
+      "tested_request": "{name} につながりました：{model}",
+      "need_model": "{name}：モデル一覧を取得できません。モデル欄でモデルを選んで r を押してください",
       "test_failed": "{name} に接続できません：{why}",
       "save_first": "Save the new provider with s before testing",
       "saved": "保存しました",
@@ -1308,6 +1310,7 @@
       "key_none": "キー不要",
       "key_needed": "キーを入力してください",
       "cost": "実際に一文送るので少し料金がかかります",
+      "key_sub": "キーを入れて接続をテストします",
       "custom_head": {
         "title": "カスタム",
         "sub": "互換 API ならつなげます"
@@ -1323,6 +1326,7 @@
       ],
       "testing": "接続しています…",
       "connected": "つながりました。モデルが {count} 個あります",
+      "connected_request": "つながりました：{model} が使えます",
       "pick_sub": "テスト成功。モデルを選んでください",
       "no_list": "モデル一覧を取得できませんでした。モデル名を入れてもう一度テストしてください",
       "model_name": "モデル名",

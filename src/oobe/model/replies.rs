@@ -92,15 +92,18 @@ impl ModelStep {
         };
         if got["ok"] == true {
             let tested = got["model"].as_str().unwrap_or_default().to_string();
+            let listed: Vec<&str> = got["models"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_str)
+                .collect();
             let mut names: Vec<String> = vec![tested.clone()];
             names.extend(
-                got["models"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .filter_map(Value::as_str)
-                    .filter(|n| *n != tested)
-                    .map(str::to_string),
+                listed
+                    .iter()
+                    .filter(|n| **n != tested)
+                    .map(|n| (*n).to_string()),
             );
             names.retain(|n| !n.is_empty());
             self.warn = None;
@@ -108,12 +111,14 @@ impl ModelStep {
             self.phase = Phase::Models(Models {
                 form,
                 names,
+                listed: listed.len(),
                 ..Models::default()
             });
             return Move::Stay;
         }
         let stage = got["stage"].as_str().unwrap_or_default();
-        if stage == "list" && form.model.trimmed().is_empty() {
+        // 核心说给一个模型名就能再试的（`need_model`，8-11 五补）：多一格模型名。已经填了还不通的照没通办。
+        if got["need_model"] == true && form.model.trimmed().is_empty() {
             form.needs_model = true;
             // 光标停到「模型名」那一格（最后一行是「测试连接」）。
             form.focus = form

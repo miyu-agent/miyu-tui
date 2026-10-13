@@ -138,8 +138,10 @@ pub struct Model {
     pub key_none: String,
     /// 空着按回车。
     pub key_needed: String,
-    /// 「会真发一句话，花一点额度」。
+    /// 「会真发一句话，花一点额度」：要填模型名再试的那一下才写（核心 8-11 五补：列得出模型就算通，不发请求）。
     pub cost: String,
+    /// 选了一家、填密钥那一屏的说明：「填写密钥后测试连接」。
+    pub key_sub: String,
     /// 自定义：标题、说明。
     pub custom_head: Heading,
     /// 「地址」。
@@ -156,6 +158,8 @@ pub struct Model {
     pub testing: String,
     /// 「连上了，找到 {count} 个模型」。
     pub connected: String,
+    /// 列不出模型、拿填的模型名发了一句通了的：「连接成功：{model} 可以用」。
+    pub connected_request: String,
     /// 选模型那一屏的说明。
     pub pick_sub: String,
     /// 「未获取到模型列表，填上模型名再测一次」。

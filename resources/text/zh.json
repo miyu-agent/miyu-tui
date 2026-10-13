@@ -836,8 +836,10 @@
       "fetched": "已获取 {n} 个模型",
       "no_models": "暂无模型 · 保存后按 r 获取",
       "pools": "{n} 个池",
-      "testing": "正在测试 {name}…（会消耗少量额度）",
+      "testing": "正在测试 {name}…",
       "tested": "{name} 已获取 {n} 个模型",
+      "tested_request": "{name} 连接成功：{model}",
+      "need_model": "{name} 未获取到模型列表：在模型栏选一个模型后按 r",
       "test_failed": "{name} 连接失败：{why}",
       "save_first": "请先按 s 保存新供应商再测试",
       "saved": "已保存",
@@ -1308,6 +1310,7 @@
       "key_none": "无需密钥",
       "key_needed": "请填写密钥",
       "cost": "将发送一条测试请求，消耗少量额度",
+      "key_sub": "填写密钥后测试连接",
       "custom_head": {
         "title": "自定义",
         "sub": "支持兼容接口"
@@ -1323,6 +1326,7 @@
       ],
       "testing": "正在连接…",
       "connected": "连接成功，找到 {count} 个模型",
+      "connected_request": "连接成功：{model} 可以用",
       "pick_sub": "选择模型",
       "no_list": "未获取到模型列表，请填写模型名后重试",
       "model_name": "模型名",

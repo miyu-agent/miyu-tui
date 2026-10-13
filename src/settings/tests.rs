@@ -228,6 +228,37 @@ fn a_new_provider_must_be_saved_before_testing_and_a_failed_test_says_why() {
 }
 
 #[test]
+fn a_test_that_listed_models_says_how_many_and_one_needing_a_model_says_so() {
+    // 核心 8-11 五补：列得出模型就算通（`checked: list`），不再发一句；列不出、给模型名能再试的带 `need_model`。
+    let mut page = opened(false);
+    let ask = |page: &mut Settings| {
+        page.take_asks();
+        press(page, KeyCode::Char('r'));
+        let (tag, method, _) = page.take_asks().remove(0);
+        assert_eq!(method, "provider.test");
+        tag
+    };
+    let tag = ask(&mut page);
+    let (text, tone) = page.status.clone().unwrap();
+    assert!(!text.contains("额度"), "列模型不花额度，不再提：{text}");
+    assert_eq!(tone, Tone::Busy);
+    let listed = json!({"ok": true, "checked": "list", "models": ["a", "b", "c"], "listed": "provider", "model": "a"});
+    page.answer(tag, Ok(listed), &texts());
+    let (text, tone) = page.status.clone().unwrap();
+    assert!(text.contains('3') && tone == Tone::Good, "{text}");
+    let tag = ask(&mut page);
+    let need = json!({"ok": false, "stage": "list", "need_model": true, "error": {"class": "other", "status": 404, "message": "not found"}});
+    page.answer(tag, Ok(need), &texts());
+    let (text, tone) = page.status.clone().unwrap();
+    assert!(text.contains("模型栏") && tone == Tone::Note, "{text}");
+    let tag = ask(&mut page);
+    let request = json!({"ok": true, "checked": "request", "models": [], "listed": "catalog", "model": "m1", "first_token_ms": 812});
+    page.answer(tag, Ok(request), &texts());
+    let (text, tone) = page.status.clone().unwrap();
+    assert!(text.contains("m1") && tone == Tone::Good, "{text}");
+}
+
+#[test]
 fn deleting_asks_who_uses_it_and_built_in_models_cannot_be_deleted() {
     let mut page = opened(false);
     page.nav.page_step(true);

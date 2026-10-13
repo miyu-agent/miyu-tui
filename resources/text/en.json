@@ -836,8 +836,10 @@
       "fetched": "{n} models",
       "no_models": "No models yet · save, then press r",
       "pools": "{n} pools",
-      "testing": "Testing {name}… (uses a little quota)",
+      "testing": "Testing {name}…",
       "tested": "{name}: {n} models",
+      "tested_request": "{name} works: {model}",
+      "need_model": "{name}: couldn't list models. Pick one in the model column and press r",
       "test_failed": "{name} failed: {why}",
       "save_first": "Save the new provider with s before testing",
       "saved": "Saved",
@@ -1308,6 +1310,7 @@
       "key_none": "no key needed",
       "key_needed": "Enter a key",
       "cost": "Sends one real message and costs a little",
+      "key_sub": "Enter the key, then test the connection",
       "custom_head": {
         "title": "Custom",
         "sub": "Any compatible API works"
@@ -1323,6 +1326,7 @@
       ],
       "testing": "Connecting…",
       "connected": "Connected, found {count} models",
+      "connected_request": "Connected: {model} works",
       "pick_sub": "It works. Pick a model",
       "no_list": "Couldn't get the model list. Enter a model name and test again",
       "model_name": "Model name",

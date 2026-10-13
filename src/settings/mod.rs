@@ -349,12 +349,20 @@ impl Settings {
         match result {
             Ok(got) if got["ok"] == true => {
                 let n = got["models"].as_array().map_or(0, Vec::len);
-                let text = texts
-                    .status("tested")
-                    .replace("{name}", name)
-                    .replace("{n}", &n.to_string());
-                self.say(text, Tone::Good);
+                // 列出了模型的说列出几个；列不出、拿选着的模型发了一句通了的说那个模型（核心 8-11 五补）。
+                let text = if n > 0 {
+                    texts.status("tested").replace("{n}", &n.to_string())
+                } else {
+                    let model = got["model"].as_str().unwrap_or_default();
+                    texts.status("tested_request").replace("{model}", model)
+                };
+                self.say(text.replace("{name}", name), Tone::Good);
                 self.reload();
+            }
+            // 列不出模型、给一个模型名就能再试的：请人在模型栏选一个再按 `r`。
+            Ok(got) if got["need_model"] == true => {
+                let text = texts.status("need_model").replace("{name}", name);
+                self.say(text, Tone::Note);
             }
             Ok(got) => {
                 let why = got["error"]["message"].as_str().unwrap_or_default();

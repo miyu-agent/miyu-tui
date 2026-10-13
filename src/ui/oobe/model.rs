@@ -37,11 +37,16 @@ pub fn content(
         Phase::Testing(form) => form_lines(&mut c, form, texts, Some(spinner)),
         Phase::Models(models) | Phase::Saving(models) => {
             c.heading(&title(&models.form, texts), &words.pick_sub);
-            let count = models.names.len().to_string();
-            c.note(
-                &format!("✓ {}", words.connected.replace("{count}", &count)),
-                theme::good(),
-            );
+            // 列出了几个说几个；列不出、拿填的模型名发了一句通了的说那个模型能用（核心 8-11 五补）。
+            let line = if models.listed > 0 {
+                words
+                    .connected
+                    .replace("{count}", &models.listed.to_string())
+            } else {
+                let model = models.names.first().map_or("", String::as_str);
+                words.connected_request.replace("{model}", model)
+            };
+            c.note(&format!("✓ {line}"), theme::good());
             c.blank();
             c.search(
                 &words.search,
@@ -130,10 +135,12 @@ fn title(form: &Form, texts: &Texts) -> String {
 /// 填密钥、自定义；在试的时候下面一行转轮「正在连接…」。
 fn form_lines(c: &mut Content, form: &Form, texts: &Texts, testing: Option<&str>) {
     let words = &texts.model;
+    // 选了一家的写「填写密钥后测试连接」：列得出模型就算通，不再真发一句、不花额度（核心 8-11 五补）；要填模型名再试的那一下
+    // 才在模型名下面写「会真发一句话」。
     let sub = if form.provider.is_none() {
         &words.custom_head.sub
     } else {
-        &words.cost
+        &words.key_sub
     };
     c.heading(&title(form, texts), sub);
     let slots = form.slots();
@@ -166,13 +173,16 @@ fn form_lines(c: &mut Content, form: &Form, texts: &Texts, testing: Option<&str>
             Slot::Key => c.field(&words.key, label_w, &form.key, "", focused),
             // 最后一行「测试连接 →」（格子改成回车才进编辑以后，试不再挂在最后一格的回车上）。
             Slot::Test => c.action(focused, &format!("{} →", words.test)),
-            Slot::Model => c.field(
-                &words.model_name,
-                label_w,
-                &form.model,
-                &words.model_example,
-                focused,
-            ),
+            Slot::Model => {
+                c.field(
+                    &words.model_name,
+                    label_w,
+                    &form.model,
+                    &words.model_example,
+                    focused,
+                );
+                c.note(&format!("  {}", words.cost), theme::dim());
+            }
         }
     }
     if let Some(spinner) = testing {
