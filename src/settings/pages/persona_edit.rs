@@ -250,6 +250,8 @@ impl Settings {
             }
             Err(refusal) => return self.say(said(&refusal), Tone::Bad),
         };
+        // 存成了说一句（2026-10-13 验收 T-189：编辑器里改完回来，状态行还写着别处的「已获取 N 个模型」，看不出存没存）。
+        self.say(texts.status("saved"), Tone::Good);
         let detail = personas::detail(&got);
         match &mut self.popup {
             Some(Popup::Persona(view)) if view.id == detail.id => view.detail = Some(detail),
@@ -398,6 +400,19 @@ mod tests {
             asks[0].2,
             json!({"persona": "mine", "prompts": {"persona": {"text": "你是另一个她。\n", "expect": "v1"}}})
         );
+    }
+
+    #[test]
+    fn a_saved_prompt_says_so() {
+        // 2026-10-13 验收 T-189：存成了状态行没有一句话，还写着别处的「已获取 5 个模型」。
+        let texts = crate::config::Config::builtin().unwrap().text.settings;
+        let mut page = editing();
+        page.prompt_edited(Some("你是另一个她。".into()));
+        let (tag, _, _) = page.take_asks().remove(0);
+        page.answer(tag, Ok(json!({"persona": {"id": "mine"}})), &texts);
+        let (said, tone) = page.status.clone().unwrap();
+        assert_eq!(said, "已保存");
+        assert_eq!(tone, crate::settings::Tone::Good);
     }
 
     #[test]
