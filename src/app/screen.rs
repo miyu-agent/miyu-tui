@@ -1,7 +1,6 @@
 //! 上一帧画出来的（蓝图 `app.md` 的 `screen` 块）：各块位置、正文的视口、光标、抽屉和面板每一行是第几项、侧边栏能选的行、
 //! 鼠标在哪、按着的是哪一块，和画的时候要的主题名、启动时刻、随机数。画的时候填，鼠标、点击照它认。
 
-use std::collections::HashMap;
 use std::time::Instant;
 
 use ratatui::layout::Position;
@@ -39,8 +38,10 @@ pub struct Screen {
     pub terminal_dark: Option<bool>,
     /// 跟随头像的配色正在用的主色（「主题」第 5 条）；没有的是 `None`。
     pub theme_seed: Option<u32>,
-    /// 从头像取出来的主色，照头像的版本记着，一张只取一次；取不出来的记 `None`。
-    pub seeds: HashMap<String, Option<u32>>,
+    /// 从头像取出来的主色（后台取，一张只取一次）。
+    pub seeds: crate::theme::seeds::Seeds,
+    /// 引导「主题」那一步选着的配色、明暗，盖在配置项上（「第一次打开的引导」第 23a 条）；不在选的是 `None`。
+    pub theme_preview: Option<(String, crate::theme::choice::Mode)>,
     /// 程序启动的时刻：转圈照它算第几帧。
     pub started: Instant,
     /// 压缩那一行的进度条一顿一顿地追，停多久、追几格要的随机数。
@@ -64,7 +65,8 @@ impl Screen {
             theme_choice: crate::theme::choice::Choice::default(),
             terminal_dark: None,
             theme_seed: None,
-            seeds: HashMap::new(),
+            seeds: crate::theme::seeds::Seeds::default(),
+            theme_preview: None,
             started: Instant::now(),
             rng: crate::rng::Rng::from_clock(),
         }

@@ -1238,7 +1238,7 @@
       "builtin_mascot": "内置",
       "mascot_missing": "{id}（未安装）",
       "own_groups": {"theme": "主题", "timeline": "时间线", "mascot": "吉祥物"},
-      "choice_names": {"tui.theme": {"persona": "跟随头像", "tokyonight": "tokyonight", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "跟随终端", "dark": "深色", "light": "浅色"}},
+      "choice_names": {"tui.theme": {"persona": "跟随头像", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "跟随终端", "dark": "深色", "light": "浅色"}},
       "unavailable": "未安装",
       "custom_model": "输入模型…"
     }
@@ -1254,6 +1254,7 @@
       "图标",
       "模型",
       "人格",
+      "主题",
       "关于你",
       "预设",
       "沙盒"
@@ -1276,7 +1277,8 @@
       "view": "j/k 滚动 · 空格 关闭",
       "enter_edit": "Enter 编辑",
       "presets": "↑↓ 选择 · 空格 详情 · Enter 下一步 · Esc 上一步",
-      "more": "输入以搜索 · ↑↓ 选择 · Enter 确定 · Esc 关闭"
+      "more": "输入以搜索 · ↑↓ 选择 · Enter 确定 · Esc 关闭",
+      "theme": "←→ 切换 · j/k 移动 · Enter 下一步 · Esc 上一步"
     },
     "language": {
       "title": "界面语言",
@@ -1385,6 +1387,18 @@
       "name_needed": "请填写名称",
       "loading": "正在加载…",
       "create": "创建"
+    },
+    "theme": {
+      "title": "主题",
+      "sub": "选择明暗和配色，立即生效，以后可以在设置里改",
+      "rows": ["明暗", "配色"],
+      "modes": ["跟随终端", "深色", "浅色"],
+      "colors": ["跟随头像", "Tokyo Night", "终端配色"],
+      "from_avatar": "取自「{name}」的头像",
+      "from_seed": "使用「{name}」的主题色",
+      "no_avatar": "「{name}」未设置头像，使用 Tokyo Night",
+      "next": "下一步",
+      "saving": "正在保存…"
     },
     "profile": {
       "title": "AI 怎么认识你",

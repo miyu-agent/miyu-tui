@@ -88,7 +88,7 @@ fn a_new_persona_is_created_in_one_go_and_becomes_the_default() {
         json!({"layer": "personal", "changes": [{"key": "persona.default", "value": "persona-1"}]})
     );
     oobe.answer(tag, Ok(json!({})), t0, &texts);
-    assert_eq!(oobe.step, Step::Profile, "人格后面是 AI 怎么认识你");
+    assert_eq!(oobe.step, Step::Theme, "人格后面是主题（配色跟着头像）");
     assert_eq!(
         oobe.badge.as_ref().map(|b| b.0.as_str()),
         Some("小助手"),

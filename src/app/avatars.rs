@@ -10,6 +10,7 @@ use super::App;
 use super::new_session::Pick;
 use crate::core::{Command, Update};
 use crate::oobe::asker::TAG_BASE;
+use crate::oobe::persona::Colors;
 
 /// 要头像的请求编号。
 const AVATAR_TAG: u64 = TAG_BASE - 5;
@@ -83,12 +84,15 @@ impl App {
     /// 取色用，「主题」第 5 条）。
     pub(super) fn ask_avatars(&mut self) {
         let shows = self.media.figures.borrow().shows();
-        let theme = self.screen.theme_choice.colors == "persona";
+        let colors = self
+            .following()
+            .then(|| self.colors_source())
+            .flatten()
+            .and_then(|c| match c {
+                Colors::Avatar { persona, version } => Some((persona, version)),
+                _ => None,
+            });
         let seen = self.seen();
-        let colors = seen
-            .theme_persona()
-            .filter(|p| theme && p.seed.is_none())
-            .and_then(|p| Some((p.id.to_string(), p.avatar.clone()?)));
         let wanted: Vec<(String, String)> = [Place::Home, Place::Sidebar]
             .into_iter()
             .filter(|_| shows)
