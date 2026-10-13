@@ -21,7 +21,7 @@ pub(super) struct Facts {
     level: Level,
     /// 空着时写的提示。
     placeholder: String,
-    /// 上边框右边写的：子代理是谁、长期目标到哪了（`goal_tag.rs`）。
+    /// 上边框右边写的：子代理是谁、长期目标到哪了、人起的标题（`goal_tag.rs`）。
     tag: Option<String>,
     /// 焦点在输入框上：光标显示出来。
     typing: bool,
@@ -36,6 +36,11 @@ impl Facts {
             tag: super::goal_tag::tag(
                 seen.talk.viewing_title(),
                 seen.talk.transcript.goal.as_ref(),
+                seen.talk
+                    .transcript
+                    .title
+                    .as_deref()
+                    .filter(|_| seen.talk.transcript.named),
                 seen.config,
             ),
             // 焦点移到框下面（按钮、子代理状态行）、后台面板开着时，框里不放光标：打的字不进这里（2026-09-30 项目主人）。

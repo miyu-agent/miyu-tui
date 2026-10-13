@@ -1,23 +1,37 @@
-//! 输入框上边框右边写的那一截（蓝图 `tui.md`「长期目标」第 5 条、「切进子会话」第 2 条）：看着子会话的写子代理是谁，别的
-//! 有长期目标的写「目标 · 进行中 · 第 2/5 轮」。
+//! 输入框上边框右边写的那一截（蓝图 `tui.md`「长期目标」第 5 条、「切进子会话」第 2 条、「输入框」第 14 条）：看着子会话的
+//! 写子代理是谁，别的有长期目标的写「目标 · 进行中 · 第 2/5 轮」，再不然人起过名字（`/rename`）的写会话标题。
 
 use crate::config::Config;
 use crate::core::{Goal, GoalState};
 
 /// 上边框右边写的（前后各空一格）：看着子代理的会话（`child` 是它的名字）写它是谁，目标不写；不然长期目标在跑、在等人开口、
-/// 停着、卡住的写「目标 · 在哪一步 · 第几轮」，还没开过轮的不写第几轮；完成了、没有目标的不写。
-pub(super) fn tag(child: Option<String>, goal: Option<&Goal>, config: &Config) -> Option<String> {
+/// 停着、卡住的写「目标 · 在哪一步 · 第几轮」，还没开过轮的不写第几轮；都没有的，人起过名字的（`named`：`/rename` 改的，不是
+/// 内核自动起的）写标题，长了截掉加 `…`（2026-10-13 项目主人定：照 Claude Code，标题不一直写）。
+pub(super) fn tag(
+    child: Option<String>,
+    goal: Option<&Goal>,
+    named: Option<&str>,
+    config: &Config,
+) -> Option<String> {
     if let Some(title) = child {
         return Some(config.text.jobs.child_tag.replace("{title}", &title));
     }
-    let goal = goal?;
+    let named = named.map(|t| {
+        format!(
+            " {} ",
+            crate::cells::clip(t, config.layout.session_title_width)
+        )
+    });
+    let Some(goal) = goal else {
+        return named;
+    };
     let texts = &config.text.goal;
     let state = match goal.state {
         GoalState::Running => &texts.running,
         GoalState::Waiting => &texts.waiting,
         GoalState::Paused => &texts.paused,
         GoalState::Blocked => &texts.blocked,
-        GoalState::Completed | GoalState::Other => return None,
+        GoalState::Completed | GoalState::Other => return named,
     };
     let mut words = vec![texts.label.clone(), state.clone()];
     if goal.round > 0 {
@@ -48,7 +62,7 @@ mod tests {
     fn a_goal_shows_where_it_is_and_which_round() {
         // 2026-10-12 项目主人定：「目标 · 进行中 · 第 2/5 轮」，没上限的「第 2 轮」。
         let config = Config::builtin().unwrap();
-        let shown = |g: Goal| tag(None, Some(&g), &config);
+        let shown = |g: Goal| tag(None, Some(&g), None, &config);
         assert_eq!(
             shown(goal(GoalState::Running, 2, Some(5))).as_deref(),
             Some(" 目标 · 进行中 · 第 2/5 轮 ")
@@ -72,8 +86,8 @@ mod tests {
     fn a_finished_or_missing_goal_shows_nothing() {
         let config = Config::builtin().unwrap();
         let done = goal(GoalState::Completed, 3, None);
-        assert_eq!(tag(None, Some(&done), &config), None);
-        assert_eq!(tag(None, None, &config), None);
+        assert_eq!(tag(None, Some(&done), None, &config), None);
+        assert_eq!(tag(None, None, None, &config), None);
     }
 
     #[test]
@@ -82,8 +96,39 @@ mod tests {
         let config = Config::builtin().unwrap();
         let running = goal(GoalState::Running, 1, None);
         assert_eq!(
-            tag(Some("查资料".into()), Some(&running), &config).as_deref(),
+            tag(
+                Some("查资料".into()),
+                Some(&running),
+                Some("改过的名字"),
+                &config
+            )
+            .as_deref(),
             Some(" 子代理 · 查资料 ")
         );
+    }
+
+    #[test]
+    fn a_title_someone_set_shows_when_there_is_no_child_or_goal() {
+        // 2026-10-13 项目主人定：只有 /rename 改过的标题写在上边框右边；目标、子代理在的时候让位；长的截掉加「…」。
+        let config = Config::builtin().unwrap();
+        assert_eq!(
+            tag(None, None, Some("验收会话"), &config).as_deref(),
+            Some(" 验收会话 ")
+        );
+        let done = goal(GoalState::Completed, 3, Some(3));
+        assert_eq!(
+            tag(None, Some(&done), Some("验收会话"), &config).as_deref(),
+            Some(" 验收会话 "),
+            "目标做完了：写回标题"
+        );
+        let running = goal(GoalState::Running, 1, None);
+        assert_eq!(
+            tag(None, Some(&running), Some("验收会话"), &config).as_deref(),
+            Some(" 目标 · 进行中 · 第 1 轮 "),
+            "有目标在跑：标题让位"
+        );
+        let long = "很长".repeat(30);
+        let shown = tag(None, None, Some(&long), &config).unwrap();
+        assert!(shown.ends_with("… "), "{shown}");
     }
 }

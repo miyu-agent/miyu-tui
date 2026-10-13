@@ -19,6 +19,7 @@ impl Default for Transcript {
             session: None,
             gone: false,
             title: None,
+            named: false,
             level: Level::Workspace,
             total: Usage::default(),
             bill: Bill::default(),

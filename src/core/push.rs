@@ -121,8 +121,8 @@ pub enum Push {
         /// 只读开着：实际的级别就是只读。
         read_only: bool,
     },
-    /// 会话起了名字（`session.meta_changed` 的 `title`）。
-    Title(String),
+    /// 会话起了名字（`session.meta_changed` 的 `title`）；`named`：是人起的（`by` 是人），不是内核自动起的。
+    Title { title: String, named: bool },
     /// 一轮开始了，带着回合编号（那一条 `turn.started` 的序号）和开这一轮的那条消息的序号（`trigger`）。
     TurnStarted(u64, Option<u64>),
     /// 你说的一句落了盘（`message.user`，这个界面发的），带着它的序号。
@@ -363,7 +363,12 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         }
         "session.meta_changed" => {
             if let Some(title) = body["title"].as_str() {
-                out.push(Push::Title(title.to_string()));
+                // 人起的：`by` 是人（本机的人、外部身份），不是内核自动起的（核心 3-8 五补：「头分得出是谁起的：看 `by`」）。
+                let named = matches!(event["by"]["kind"].as_str(), Some("person" | "external"));
+                out.push(Push::Title {
+                    title: title.to_string(),
+                    named,
+                });
             }
         }
         "model.changed" => out.push(Push::ModelChanged {

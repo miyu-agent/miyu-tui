@@ -76,7 +76,9 @@ impl App {
     /// 最新一页读进来了：更早的还有的，最上面那一行在。起标题、改名的事件可能在更早的页里：页里没给标题的，照会话列表里
     /// 它的标题（核心 9-5 推着，一直是新的）。
     fn paged(&mut self, session: &str, more: bool) {
-        let listed = self.session_title(session);
+        let listed = self
+            .session_title(session)
+            .map(|title| (title, self.session_named(session)));
         let texts = &self.config.text;
         let found = place(
             &mut self.talk.transcript,
@@ -87,8 +89,11 @@ impl App {
         );
         if let Some((transcript, ..)) = found {
             transcript.paged(more, texts);
-            if transcript.title.is_none() {
-                transcript.title = listed;
+            if transcript.title.is_none()
+                && let Some((title, named)) = listed
+            {
+                transcript.title = Some(title);
+                transcript.named = named;
             }
         }
     }
