@@ -124,6 +124,7 @@ fn a_tool_goes_from_preparing_to_its_result() {
             status: crate::core::ToolStatus::Error,
             text: "boom".into(),
             said: None,
+            display: Default::default(),
         }],
     );
     assert!(tool(&t).failed() && !tool(&t).busy());

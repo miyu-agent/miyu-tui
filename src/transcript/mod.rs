@@ -223,6 +223,7 @@ impl Transcript {
             | Update::Sessions(_)
             | Update::HeadConfig(_)
             | Update::Human(_)
+            | Update::ToolsChanged
             | Update::Older { .. }
             | Update::Workspace { .. }
             | Update::SessionGone(_)
@@ -350,12 +351,13 @@ impl Transcript {
                 status,
                 text,
                 said: result_said,
-                ..
+                display,
             } => {
                 let at = self.calls.get(&call_id).copied();
                 let now = self.clock.now();
                 if let Some(step) = at.and_then(|at| self.step_mut(at)) {
                     step.stop_at(now);
+                    step.display = display;
                     if let StepKind::Tool {
                         state,
                         output,

@@ -59,7 +59,9 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
             ..
         } => {
             let face = ctx.human.tool(name);
-            let shown = ctx.human.tool_name(name);
+            let shown = ctx
+                .human
+                .step_name(name, &step.display, ctx.config.language.code());
             if *state == ToolState::Preparing {
                 (text.prepare.replace("{name}", &shown), Vec::new())
             } else {

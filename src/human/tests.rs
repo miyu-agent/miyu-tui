@@ -55,3 +55,32 @@ fn an_mcp_tool_without_a_face_is_named_by_its_service_and_tool() {
     let named = Human::from_reply(&serde_json::json!({"tools": {"read": {"name": "读取"}}}));
     assert_eq!(named.tool_name("read"), "读取");
 }
+
+#[test]
+fn a_step_takes_the_name_recorded_at_call_time_in_the_shown_language() {
+    // 核心 9-8 六补：照界面语言挑，挑不到照 en、zh、ja 的先后；都没有的照这一刻的工具表。
+    let human = Human::from_reply(&json!({"tools": {"read": {"name": "读取"}}}));
+    let names = |pairs: &[(&str, &str)]| -> std::collections::BTreeMap<String, String> {
+        pairs
+            .iter()
+            .map(|(l, n)| ((*l).to_string(), (*n).to_string()))
+            .collect()
+    };
+    let both = names(&[("en", "Dice"), ("zh", "掷骰子")]);
+    assert_eq!(human.step_name("roll", &both, "zh"), "掷骰子");
+    assert_eq!(
+        human.step_name("roll", &both, "ja"),
+        "Dice",
+        "没有日文照英文"
+    );
+    assert_eq!(
+        human.step_name("roll", &names(&[("zh", "掷骰子")]), "ja"),
+        "掷骰子",
+        "没有英文照中文"
+    );
+    assert_eq!(
+        human.step_name("read", &names(&[]), "zh"),
+        "读取",
+        "没记下的照这一刻的表"
+    );
+}

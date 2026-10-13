@@ -60,7 +60,8 @@ pub(super) async fn take(
                 | Awaiting::UiLanguage
                 | Awaiting::Human
                 | Awaiting::Models
-                | Awaiting::SessionsStream,
+                | Awaiting::SessionsStream
+                | Awaiting::PackagesStream,
             ) => true,
             Some(Awaiting::Choices) => notify(Update::Choices(Vec::new())),
             Some(Awaiting::Efforts) => notify(Update::Efforts(super::EffortList::default())),
@@ -197,6 +198,7 @@ pub(super) async fn take(
         Some(Awaiting::List | Awaiting::SessionsStream) => {
             return notify(Update::Sessions(sessions::read(&message["result"])));
         }
+        Some(Awaiting::PackagesStream) => return true,
         // 最新一页到了：画进去，再带 `after` 订阅（`page.rs`）。
         Some(Awaiting::Page(session)) => {
             return super::page::take_latest(
@@ -296,6 +298,16 @@ pub(super) async fn take(
     if message["method"] == "resync" && params["stream"] == "sessions" {
         if let Ok(id) = sessions::follow(rpc).await {
             awaiting.insert(id, Awaiting::SessionsStream);
+        }
+        return true;
+    }
+    // 工具目录变了（装卸包、MCP 服务）：界面重取给人看的字；掉了队重新订（`packages.rs`）。
+    if super::packages::tools_changed(message) {
+        return notify(Update::ToolsChanged);
+    }
+    if message["method"] == "resync" && params["stream"] == "packages" {
+        if let Ok(id) = super::packages::follow(rpc).await {
+            awaiting.insert(id, Awaiting::PackagesStream);
         }
         return true;
     }
