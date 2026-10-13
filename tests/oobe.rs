@@ -49,6 +49,12 @@ fn read(path: &PathBuf) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
 }
 
+/// 沙盒那一步（2026-10-13 项目主人定，默认「开」）：回车照默认的往下走。
+fn through_sandbox(tui: &mut support::Tui) {
+    tui.wait_for("命令在沙盒里运行");
+    tui.key(b"\r");
+}
+
 #[test]
 fn a_home_that_never_walked_the_guide_opens_it_and_one_that_did_does_not() {
     // 核心 8-11 四补：没走过的（`ui.welcomed` 是假）连上就进引导，盖住首页；走过的照常进首页。
@@ -121,6 +127,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     // 选着现在的默认预设（全部功能），回车。
     tui.wait_for("全部功能");
     tui.key(b"\r");
+    through_sandbox(&mut tui);
     tui.wait_for("按 Enter 开始对话");
     assert!(
         tui.shows("小助手") && tui.shows("全部功能"),
@@ -129,6 +136,9 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     );
     until(&mut tui, "默认预设", || {
         home.settings().contains("[preset]")
+    });
+    until(&mut tui, "沙盒照默认的开写工作区", || {
+        home.settings().contains("level = \"workspace\"")
     });
     // 回车走：记下走过了，回到平常的首页。
     tui.key(b"\r");
@@ -209,6 +219,7 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
     // 功能多的往下滚，停上去就露出来。
     tui.wait_for("创建 →");
     tui.key(b"\r");
+    through_sandbox(&mut tui);
     tui.wait_for("按 Enter 开始对话");
     let file = home.root().join("home/alice/presets/preset-1.toml");
     let text = read(&file);
@@ -248,6 +259,7 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     // 选基础功能（不是出厂的默认）。
     tui.key(b"\x1b[A");
     tui.key(b"\r");
+    through_sandbox(&mut tui);
     tui.wait_for("按 Enter 开始对话");
     tui.key(b"\r");
     tui.wait_for("Tab 切换权限级别");

@@ -93,6 +93,19 @@ pub struct Icons {
     pub no: String,
 }
 
+/// 沙盒那一步。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Sandbox {
+    /// 标题、说明。
+    #[serde(flatten)]
+    pub head: Heading,
+    /// 「开」，后面暗色的一句。
+    pub on: [String; 2],
+    /// 「关」，后面暗色的一句。
+    pub off: [String; 2],
+}
+
 /// 接模型那一步。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -274,6 +287,8 @@ pub struct Texts {
     pub persona: Persona,
     /// 选预设。
     pub preset: Preset,
+    /// 沙盒。
+    pub sandbox: Sandbox,
     /// 好了。
     pub done: Done,
     /// 没连上核心。

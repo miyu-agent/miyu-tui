@@ -64,6 +64,10 @@ pub enum Waiting {
     PresetPick(String),
     /// 写「引导走过了」（`config.set ui.welcomed`）。
     Welcomed,
+    /// 新会话从哪一档开局（`config.get permission.level`）。
+    SandboxRead,
+    /// 写开局的那一档（`config.set permission.level`）。
+    SandboxSave,
 }
 
 impl Waiting {
@@ -82,6 +86,7 @@ impl Waiting {
                 | Self::Presets
                 | Self::PresetDefault
                 | Self::PresetGet(_)
+                | Self::SandboxRead
         )
     }
 }

@@ -1253,7 +1253,8 @@
       "Icons",
       "Model",
       "Persona",
-      "Preset"
+      "Preset",
+      "Sandbox"
     ],
     "keys": {
       "searching": "Type to search · Ctrl+J/K select · Enter done · Esc cancel",
@@ -1379,6 +1380,12 @@
       "name_needed": "A name is needed",
       "loading": "Loading…",
       "create": "Create"
+    },
+    "sandbox": {
+      "title": "Sandbox",
+      "sub": "Default permissions for new sessions. You can change this in settings later",
+      "on": ["On", "Commands run in a sandbox; changes outside the workspace need approval"],
+      "off": ["Off", "Full access, no approvals"]
     },
     "done": {
       "title": "All set",
