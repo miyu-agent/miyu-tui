@@ -143,3 +143,26 @@ fn two_escapes_right_after_sending_stop_the_turn_once_it_starts() {
         tui.lines().join("\n")
     );
 }
+
+#[test]
+fn a_line_sent_before_she_answers_a_word_joins_the_request_at_once() {
+    // 核心 4-15（2026-10-14 项目主人定）：请求发出去、一个字都还没回时又发一句，核心撤掉那次、带上它重发，不再排着等
+    // 下一步。剧本：第一次请求一个字都不回，重发的那一次回话。
+    let home = Home::new(Script::new([Play::Stalls, Play::Says("两句都收到了。")]));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("第一句");
+    let end = Instant::now() + support::WAIT;
+    while !running(&tui) {
+        assert!(Instant::now() < end, "没开轮：\n{}", tui.lines().join("\n"));
+        tui.pump(Duration::from_millis(100));
+    }
+    tui.say("第二句");
+    tui.wait_for("两句都收到了。");
+    tui.pump(Duration::from_millis(300));
+    assert!(
+        tui.shows("┃ 第二句") && !tui.shows("↳ 第二句"),
+        "第二句进了正文、没排着：\n{}",
+        tui.lines().join("\n")
+    );
+}
