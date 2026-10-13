@@ -22,7 +22,15 @@
     "kb_save": "\uf0c7",
     "kb_edit": "\uf040",
     "kb_delete": "\uf1f8",
-    "package": "\uf187"
+    "package": "\uf187",
+    "memory_search": "\uf00e",
+    "remember": "\uf02e",
+    "recall": "\uf0eb",
+    "forget": "\uf12d",
+    "fetch_media": "\uf03e",
+    "mute": "\uf131",
+    "poke": "\uf0a6",
+    "skip_reply": "\uf05e"
   },
   "tool": "",
   "think": "󰝨",
