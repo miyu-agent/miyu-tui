@@ -110,6 +110,7 @@
     "lift": 0.35
   },
   "queued_mark": "↳ ",
+  "goal_mark": "◎ ",
   "icons": "nerd",
   "sidebar_from": 120,
   "sidebar_width": 38,

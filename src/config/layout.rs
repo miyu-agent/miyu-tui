@@ -101,6 +101,8 @@ pub struct Layout {
     pub prompt: String,
     /// 排队的消息前面的记号，连同它后面的空格。
     pub queued_mark: String,
+    /// 框上面那一行长期目标进度打头的记号，连同它后面的空格（「长期目标」第 5 条）。
+    pub goal_mark: String,
     /// 斜杠命令列表最多露出几行。取单数，选中的那一行才停得在正中间。
     pub menu_rows: usize,
     /// 输入历史列表最多露几条（`tui.md`「输入历史列表」）。

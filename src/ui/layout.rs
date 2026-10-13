@@ -24,6 +24,8 @@ pub struct Areas {
     pub pulse: Rect,
     /// 排队的消息，一条一行，列在运行状态行下面；没有的高是 0。
     pub queued: Rect,
+    /// 框上面紧挨着的那一行（和框里的字一样宽）：长期目标的进度右对齐写在这里（`goal_tag.rs`）；放不下的高是 0。
+    pub goal: Rect,
     /// 首页的吉祥物；不在首页、放不下时高是 0（`tui.md`「空会话的首页」）。
     pub mascot: Rect,
     /// 框下面那一行中间的后台按钮；没有时宽是 0（`tui.md`「后台命令、子代理和侧边栏」第 1 条）。
@@ -100,6 +102,12 @@ pub fn areas(
         footer,
         pulse,
         queued,
+        goal: Rect::new(inner_x, frame.y.saturating_sub(1), text_width, 1).intersection(Rect::new(
+            area.x,
+            area.y,
+            area.width,
+            frame.y.saturating_sub(area.y),
+        )),
         agents: agents_area(inner_x, text_width, footer_y + 1, agent_rows, layout)
             .intersection(area),
         todo: Rect::new(inner_x, todo_y, text_width, todo_rows).intersection(area),

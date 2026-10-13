@@ -267,6 +267,18 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         status::draw(frame, areas.pulse, &seen, mascot);
     });
     status::queued(frame, areas.queued, &queued, &app.config.layout.queued_mark);
+    // 长期目标的进度：框上面那一行右对齐，看着子会话时不写（「长期目标」第 5 条，2026-10-14 项目主人定）；列表、面板开着时
+    // 盖在它上面（下面才画）。
+    let goal = app
+        .talk
+        .viewing_title()
+        .is_none()
+        .then(|| goal_tag::goal(app.talk.transcript.goal.as_ref(), &app.config))
+        .flatten()
+        .filter(|_| !home);
+    if let Some(goal) = goal {
+        goal_tag::draw(frame, areas.goal, &goal);
+    }
     if let Some(matches) = &matches {
         let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);
         let (chrome, lines) = menu::lines(
