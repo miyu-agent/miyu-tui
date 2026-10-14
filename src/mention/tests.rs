@@ -27,7 +27,8 @@ fn which_question_goes_to_the_core() {
         Ask::of("main", true),
         Ask::Find {
             query: "main".into(),
-            fresh: true
+            fresh: true,
+            wait: false
         }
     );
 }
@@ -68,7 +69,8 @@ fn the_word_asks_once_and_a_building_index_is_asked_again() {
         ask,
         Ask::Find {
             query: "main".into(),
-            fresh: true
+            fresh: true,
+            wait: false
         },
         "刚弹出来写 fresh"
     );
@@ -81,16 +83,25 @@ fn the_word_asks_once_and_a_building_index_is_asked_again() {
     assert!(found.ready);
     assert_eq!(found.status, Status::Indexing);
     assert_eq!(found.items[0].shown, "src/main.rs");
-    assert!(m.next_ask(now).is_none(), "隔 poll_ms 才再问");
-    let due = m.deadline().expect("清单在建：到点醒来");
-    let (_, again) = m.next_ask(due).unwrap();
+    // 清单在建：当场再问一次，带 `wait` 等核心建完了再答（核心 V-6 上；原来隔 poll_ms 一问）。
+    assert_eq!(m.deadline(), Some(now), "当场醒来再问");
+    let (_, again) = m.next_ask(now).unwrap();
     assert_eq!(
         again,
         Ask::Find {
             query: "main".into(),
-            fresh: false
+            fresh: false,
+            wait: true
         }
     );
+    assert_eq!(again.request("/w").1["wait"], true);
+    assert!(m.next_ask(now).is_none(), "等着的那一条回来以前不再问");
+    // 旧核心不认 `wait`、回来还说在建：照原来隔 poll_ms 再问。
+    m.replied(&word, Some(&building));
+    assert!(m.next_ask(now).is_none(), "旧核心：隔 poll_ms 才再问");
+    let due = m.deadline().expect("清单在建：到点醒来");
+    assert!(due > now);
+    assert!(m.next_ask(due).is_some());
     let done = json!({"building": false, "items": [], "partial": true});
     m.replied(&word, Some(&done));
     assert_eq!(m.find(text, text.len()).unwrap().status, Status::Partial);
@@ -115,7 +126,8 @@ fn a_late_reply_for_an_old_word_is_not_used_but_the_last_one_stays_shown() {
         ask,
         Ask::Find {
             query: "mai".into(),
-            fresh: false
+            fresh: false,
+            wait: false
         }
     );
     let found = m.find("@mai", 4).unwrap();
