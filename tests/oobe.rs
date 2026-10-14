@@ -135,6 +135,18 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     // 和配置页选值的同一个），挪到深色就当场铺上 tokyonight 深色的底；回车选好，挪到「下一步」写下。
     tui.wait_for("选择明暗和配色");
     assert!(tui.shows("Tokyo Night"), "{}", tui.lines().join("\n"));
+    // 两格之间空一行，同别的几步的表单（2026-10-14 项目主人报：挤在一起）。
+    let lines = tui.lines();
+    // 那一格的行：去掉光标的 `❯` 以后以名字打头（说明那一行里也有「明暗」「配色」）。
+    let row = |word: &str| {
+        lines.iter().position(|l| {
+            let l = l.trim_start();
+            l.trim_start_matches('❯').trim_start().starts_with(word)
+        })
+    };
+    let (mode, colors) = (row("明暗").unwrap_or(0), row("配色").unwrap_or(0));
+    assert_eq!(colors, mode + 2, "{}", lines.join("\n"));
+    assert!(lines[mode + 1].trim().is_empty(), "{}", lines.join("\n"));
     assert_eq!(tui.background(0, 0), vt100::Color::Default, "自动不铺");
     tui.key(b"\r");
     tui.wait_for("浅色");

@@ -28,6 +28,8 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
     let on = |slot| !step.busy && step.slot == slot;
     let mode = words.modes.get(step.mode).map_or("", String::as_str);
     c.chip(&words.rows[0], label_w, mode, "", on(Slot::Mode));
+    // 格子之间空一行，同别的几步的表单（2026-10-14 项目主人报：明暗、配色挤在一起）。
+    c.blank();
     let colors = words.colors.get(step.colors).map_or("", String::as_str);
     c.chip(&words.rows[1], label_w, colors, "", on(Slot::Colors));
     // 跟随头像的：名字下面对齐写照谁取色。
