@@ -112,6 +112,8 @@ impl Tui {
         command.env("XDG_CACHE_HOME", home.join("cache"));
         command.env("TERM", "xterm-256color");
         command.env("COLORTERM", "truecolor");
+        // 跟随壁纸只认测试家目录里的 matugen 那一份，不看跑测试的这台电脑的桌面。
+        command.env("MIYU_TUI_DESKTOP_WALLPAPER", "0");
         command.env("LANG", lang);
         for (name, value) in env {
             command.env(name, value);

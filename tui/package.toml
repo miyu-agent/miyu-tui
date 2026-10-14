@@ -87,11 +87,11 @@ description = { en = "Which mascot to show. Leave unset for the built-in one.", 
 # 第一次打开的引导里「主题」那一步写前两项；配置页「通用」里一组「主题」，名字照终端的字写。
 [settings.theme]
 type = "option"
-choices = ["persona", "tokyonight", "terminal"]
+choices = ["persona", "wallpaper", "tokyonight", "terminal"]
 default = "tokyonight"
 applies = "now"
 name = { en = "Colors", zh = "配色", ja = "配色" }
-description = { en = "Follow the persona's avatar, Tokyo Night, or the terminal's own colors.", zh = "跟随人格的头像生成、tokyonight，或者跟着终端自己的配色。", ja = "ペルソナのアバターから作る配色、Tokyo Night、またはターミナル自身の配色。" }
+description = { en = "Follow the persona's avatar, follow the desktop wallpaper, Tokyo Night, or the terminal's own colors.", zh = "跟随人格的头像生成、跟随桌面壁纸生成、tokyonight，或者跟着终端自己的配色。", ja = "ペルソナのアバターから作る配色、デスクトップの壁紙から作る配色、Tokyo Night、またはターミナル自身の配色。" }
 
 [settings.theme_mode]
 type = "option"

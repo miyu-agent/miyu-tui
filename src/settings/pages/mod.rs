@@ -76,6 +76,9 @@ pub struct More {
     pub menu_at: usize,
     /// 进了哪一页。
     pub section: Option<Section>,
+    /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
+    /// 找不到的不列）。
+    pub wallpaper: bool,
 }
 
 impl More {
@@ -109,6 +112,14 @@ impl More {
             out.push(Entry::Page(LAST.to_string()));
         }
         out
+    }
+
+    /// 选择窗列哪几个：找不到壁纸的，配色里不列「跟随壁纸」。
+    pub fn offered(&self, key: &str, mut list: Vec<Choice>) -> Vec<Choice> {
+        if key == "tui.theme" && !self.wallpaper {
+            list.retain(|c| c.value != "wallpaper");
+        }
+        list
     }
 
     /// 名字照列表写、下拉照列表列的那几项（默认人格、默认预设）的列表；别的项、还没读到的是 `None`。

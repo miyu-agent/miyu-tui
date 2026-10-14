@@ -57,6 +57,8 @@ pub struct ThemeStep {
     pub picking: Option<Choose>,
     /// 开窗以前选着第几个：`Esc` 换回它。
     before: usize,
+    /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设）。
+    pub wallpaper: bool,
 }
 
 impl ThemeStep {
@@ -86,12 +88,11 @@ impl ThemeStep {
         if let Some(choose) = &mut self.picking {
             match choose.press(key) {
                 Pressed::Moved => {
-                    let at = choose.sel;
-                    self.set(at);
+                    let value = choose.chosen().cloned();
+                    self.set_value(value.as_ref());
                 }
-                Pressed::Picked(_) => {
-                    let at = choose.sel;
-                    self.set(at);
+                Pressed::Picked(value) => {
+                    self.set_value(Some(&value));
                     self.picking = None;
                 }
                 Pressed::Cancelled => {
@@ -150,9 +151,12 @@ impl ThemeStep {
             ),
             Slot::Next => return,
         };
+        // 找不到壁纸的不列「跟随壁纸」（「主题」的「跟随壁纸」）。
+        let wallpaper = self.wallpaper;
         let choices = names
             .iter()
             .zip(values)
+            .filter(|(_, value)| wallpaper || **value != "wallpaper")
             .map(|(name, value)| Choice {
                 value: json!(value),
                 label: name.clone(),
@@ -162,6 +166,21 @@ impl ThemeStep {
             .collect();
         self.before = at;
         self.picking = Some(Choose::open(key, title, choices, &json!(values[at])));
+    }
+
+    /// 光标那一行选成值是 `value` 的那一个（列表里少了跟随壁纸的，不照第几行算）。
+    fn set_value(&mut self, value: Option<&Value>) {
+        let Some(value) = value.and_then(Value::as_str) else {
+            return;
+        };
+        let at = match self.slot {
+            Slot::Mode => MODE_NAMES.iter().position(|v| *v == value),
+            Slot::Colors => COLORS.iter().position(|v| *v == value),
+            Slot::Next => None,
+        };
+        if let Some(at) = at {
+            self.set(at);
+        }
     }
 
     /// 光标那一行选成第 `at` 个：当场换样子。

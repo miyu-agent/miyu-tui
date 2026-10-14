@@ -125,14 +125,18 @@ pub struct Theme {
     pub rows: [String; 2],
     /// 明暗三档：跟随终端、深色、浅色。
     pub modes: [String; 3],
-    /// 配色三种：跟随头像、Tokyo Night、终端配色。
-    pub colors: [String; 3],
+    /// 配色四种：跟随头像、跟随壁纸、Tokyo Night、终端配色（同 `choice::COLORS` 的先后）。
+    pub colors: [String; 4],
     /// 跟随头像时配色下面暗色的一句：照头像取色，`{name}` 是人格的名字。
     pub from_avatar: String,
     /// 同上：人格写了主题色。
     pub from_seed: String,
     /// 同上：人格没有头像。
     pub no_avatar: String,
+    /// 跟随壁纸时配色下面暗色的一句：找到了壁纸。
+    pub from_wallpaper: String,
+    /// 同上：没找到壁纸，照 tokyonight。
+    pub no_wallpaper: String,
     /// 「下一步」。
     pub next: String,
     /// 「正在保存…」。

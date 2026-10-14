@@ -51,6 +51,16 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
             theme::dim(),
         );
     }
+    // 跟随壁纸的：照样对齐写取自哪（找不到的照 Tokyo Night）。
+    if COLORS.get(step.colors) == Some(&"wallpaper") {
+        let said = if step.wallpaper {
+            &words.from_wallpaper
+        } else {
+            &words.no_wallpaper
+        };
+        let lead = " ".repeat(2 + label_w + 2);
+        c.note(&format!("{lead}{said}"), theme::dim());
+    }
     c.blank();
     c.action(on(Slot::Next), &format!("{} →", words.next));
     if step.saving() {

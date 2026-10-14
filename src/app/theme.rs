@@ -42,6 +42,7 @@ impl App {
     /// 每一帧以后看一次（`tick`）：引导「主题」那一步选着的变了、跟随头像的主色变了（换了会话、人格框挪了、头像要到了、
     /// 取好了），重挑一套（「主题」第 5 条）。
     pub(super) fn follow_theme(&mut self) {
+        self.follow_wallpaper();
         let preview = self.boxes.oobe.as_ref().and_then(Oobe::theme_preview);
         let changed = preview != self.screen.theme_preview;
         self.screen.theme_preview = preview;
@@ -68,6 +69,41 @@ impl App {
         }
     }
 
+    /// 跟随壁纸（「主题」的「跟随壁纸」）：起来时找一次，打开配色列表、选上跟随壁纸时再找一次，不定时查（2026-10-14 项目主人：
+    /// 不要轮询）；找没找到交给两处配色列表（找不到的不列）。
+    fn follow_wallpaper(&mut self) {
+        let wanted = self.colors_list_open() || self.choice().colors == "wallpaper";
+        if !self.screen.wallpaper_seen || (wanted && !self.screen.wallpaper_wanted) {
+            self.screen.wallpaper_seen = true;
+            let dark = self.choice().dark(self.screen.terminal_dark);
+            self.screen.wallpaper.look(dark);
+        }
+        self.screen.wallpaper_wanted = wanted;
+        self.screen.wallpaper.collect();
+        let available = self.screen.wallpaper.available();
+        if let Some(oobe) = &mut self.boxes.oobe {
+            oobe.theme.wallpaper = available;
+        }
+        if let Some(settings) = &mut self.boxes.settings {
+            settings.more.wallpaper = available;
+        }
+    }
+
+    /// 开着配色的列表：引导「主题」那一步的、配置页外观页的。
+    fn colors_list_open(&self) -> bool {
+        let colors = |c: &crate::settings::pages::choose::Choose| c.key == "tui.theme";
+        let oobe = self
+            .boxes
+            .oobe
+            .as_ref()
+            .and_then(|o| o.theme.picking.as_ref());
+        let settings = self.boxes.settings.as_ref().and_then(|s| match &s.popup {
+            Some(crate::settings::popup::Popup::Choose(c)) => Some(c),
+            _ => None,
+        });
+        oobe.is_some_and(colors) || settings.is_some_and(colors)
+    }
+
     /// 现在是不是跟随头像的配色（引导「主题」那一步选着的也算）。
     pub(super) fn following(&self) -> bool {
         self.choice().colors == "persona"
@@ -76,6 +112,9 @@ impl App {
     /// 跟随头像的主色：写了主题色的照写的，没写的从头像取（后台取，一张只取一次）；不是跟随头像的、都没有的、头像还没要到
     /// 还没取好的是 `None`。
     fn wanted_seed(&mut self) -> Option<u32> {
+        if self.choice().colors == "wallpaper" {
+            return self.screen.wallpaper.seed();
+        }
         if !self.following() {
             return None;
         }
@@ -96,7 +135,13 @@ impl App {
     pub(super) fn next_theme(&mut self) {
         let colors = &mut self.screen.theme_choice.colors;
         let at = COLORS.iter().position(|c| c == colors).unwrap_or(0);
-        *colors = COLORS[(at + 1) % COLORS.len()].to_string();
+        // 找不到壁纸的跳过跟随壁纸（同配色列表里不列它）。
+        let wallpaper = self.screen.wallpaper.available();
+        let next = (1..=COLORS.len())
+            .map(|step| COLORS[(at + step) % COLORS.len()])
+            .find(|c| wallpaper || *c != "wallpaper")
+            .unwrap_or(COLORS[0]);
+        *colors = next.to_string();
         self.screen.theme_seed = self.wanted_seed();
         self.apply_theme();
         let text = self

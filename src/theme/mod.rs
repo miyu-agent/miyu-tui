@@ -13,6 +13,7 @@ pub mod persona;
 pub mod seeds;
 mod shimmer;
 pub mod terminal_colors;
+pub mod wallpaper;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};

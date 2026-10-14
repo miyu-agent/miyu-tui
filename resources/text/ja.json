@@ -1239,7 +1239,7 @@
       "mascot_missing": "{id}（未インストール）",
       "own_groups": {"theme": "テーマ", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン"},
       "appearance": "外観",
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}},
       "unavailable": "未インストール",
       "custom_model": "モデルを入力…"
     }
@@ -1394,10 +1394,10 @@
       "sub": "明暗と配色を選択します。すぐに反映され、あとで設定で変更できます",
       "rows": ["明暗", "配色"],
       "modes": ["自動", "ダーク", "ライト"],
-      "colors": ["アバターに合わせる", "Tokyo Night", "ターミナルの配色"],
+      "colors": ["アバターに合わせる", "壁紙に合わせる", "Tokyo Night", "ターミナルの配色"],
       "from_avatar": "「{name}」のアバターから取得",
       "from_seed": "「{name}」のテーマカラーを使用",
-      "no_avatar": "「{name}」はアバター未設定のため Tokyo Night を使用",
+      "no_avatar": "「{name}」はアバター未設定のため Tokyo Night を使用", "from_wallpaper": "デスクトップの壁紙から取得", "no_wallpaper": "デスクトップの壁紙が見つからないため Tokyo Night を使用",
       "next": "次へ",
       "saving": "保存中…"
     },

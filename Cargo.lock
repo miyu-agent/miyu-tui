@@ -2354,6 +2354,7 @@ dependencies = [
  "miyu-session",
  "miyu-store",
  "miyu-tool",
+ "miyu-wallpaper",
  "portable-pty",
  "pulldown-cmark",
  "ratatui",
@@ -2384,6 +2385,11 @@ dependencies = [
  "serde_json",
  "similar",
 ]
+
+[[package]]
+name = "miyu-wallpaper"
+version = "0.0.1"
+source = "git+https://github.com/miyu-agent/miyu-web?rev=ff0124ec6019402a52d65f50357988b8ead170ad#ff0124ec6019402a52d65f50357988b8ead170ad"
 
 [[package]]
 name = "moxcms"

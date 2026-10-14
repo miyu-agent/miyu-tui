@@ -1,4 +1,4 @@
-//! 用哪套主题（蓝图 `tui.md`「主题」第 2 到 4、6 条，2026-10-13 项目主人定）：配色（跟随头像、tokyonight、terminal）、明暗
+//! 用哪套主题（蓝图 `tui.md`「主题」第 2 到 4、6 条，2026-10-13 项目主人定）：配色（跟随头像、跟随壁纸、tokyonight、terminal）、明暗
 //! （跟随终端、深色、浅色），手动选了深浅铺不铺底色。照这几样和终端的底色挑出一套出厂的颜色、要不要铺。终端自己的配置项
 //! `tui.theme`、`tui.theme_mode`、`tui.theme_background`（终端软件包清单）。
 
@@ -31,8 +31,10 @@ impl Mode {
     }
 }
 
-/// 配色：配置里的写法。
-pub const COLORS: [&str; 3] = ["persona", "tokyonight", "terminal"];
+/// 配色：配置里的写法，列表照这个先后。
+pub const COLORS: [&str; 4] = ["persona", "wallpaper", "tokyonight", "terminal"];
+/// 照一个主色生成一套的配色：跟随头像、跟随壁纸（2026-10-14 项目主人定，同一套算法）。
+const SEEDED: [&str; 2] = ["persona", "wallpaper"];
 
 /// 主题的几个配置项。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,11 +133,11 @@ pub fn pick(
     let dark = choice.dark(terminal_dark);
     let name = choice.base(dark);
     let (_, base) = themes.iter().find(|(n, _)| n == name)?;
-    let (name, palette) = match seed.filter(|_| choice.colors == "persona") {
+    let (name, palette) = match seed.filter(|_| SEEDED.contains(&choice.colors.as_str())) {
         Some(seed) => {
             let shade = if dark { "night" } else { "day" };
             let palette = super::persona::overlay(base, seed, dark);
-            (format!("persona-{shade}"), palette)
+            (format!("{}-{shade}", choice.colors), palette)
         }
         None => (name.to_string(), terminal_or(base, &choice.colors)),
     };
@@ -157,6 +159,24 @@ mod tests {
 
     use super::{Choice, Mode, pick};
     use crate::theme::builtin;
+
+    #[test]
+    fn following_the_wallpaper_colors_like_following_an_avatar_with_the_same_seed() {
+        // 2026-10-14 项目主人定：跟随壁纸和跟随头像同一套算法，同一个主色出一样的颜色；没找到壁纸（没有主色）的照 tokyonight。
+        let themes = builtin().unwrap();
+        let choice = |colors: &str| Choice {
+            colors: colors.into(),
+            mode: Mode::Dark,
+            ground: true,
+        };
+        let wallpaper = pick(&choice("wallpaper"), None, &themes, Some(0x2f_ab34)).unwrap();
+        let persona = pick(&choice("persona"), None, &themes, Some(0x2f_ab34)).unwrap();
+        assert_eq!(wallpaper.name, "wallpaper-night");
+        assert_eq!(wallpaper.palette.background, persona.palette.background);
+        assert_eq!(wallpaper.palette.thought, persona.palette.thought);
+        let missing = pick(&choice("wallpaper"), None, &themes, None).unwrap();
+        assert_eq!(missing.name, "tokyonight-night");
+    }
 
     #[test]
     fn the_settings_are_read_and_unknown_values_are_ignored() {

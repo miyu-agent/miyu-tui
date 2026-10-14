@@ -1239,7 +1239,7 @@
       "mascot_missing": "{id} (not installed)",
       "own_groups": {"theme": "Theme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons"},
       "appearance": "Appearance",
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}},
       "unavailable": "Not installed",
       "custom_model": "Enter a model…"
     }
@@ -1394,10 +1394,10 @@
       "sub": "Choose mode and colors. Applies immediately. You can change this in settings later",
       "rows": ["Mode", "Colors"],
       "modes": ["Auto", "Dark", "Light"],
-      "colors": ["Follow the avatar", "Tokyo Night", "Terminal colors"],
+      "colors": ["Follow the avatar", "Follow the wallpaper", "Tokyo Night", "Terminal colors"],
       "from_avatar": "From {name}'s avatar",
       "from_seed": "Uses {name}'s theme color",
-      "no_avatar": "{name} has no avatar. Using Tokyo Night",
+      "no_avatar": "{name} has no avatar. Using Tokyo Night", "from_wallpaper": "From the desktop wallpaper", "no_wallpaper": "No desktop wallpaper found. Using Tokyo Night",
       "next": "Next",
       "saving": "Saving…"
     },
