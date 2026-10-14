@@ -51,6 +51,7 @@ impl App {
             self.screen.theme_seed = seed;
             self.apply_theme();
         }
+        self.share_seeds();
     }
 
     /// 跟随头像的配色照谁取色：引导开着的照人格那一步那一位，不然照正在看的人格（`Seen::theme_persona`）。
@@ -89,6 +90,16 @@ impl App {
         }
     }
 
+    /// 主色的候选、正在用的那个交给外观页（「主色」那一项照它画、开色块列表）。
+    fn share_seeds(&mut self) {
+        let following = matches!(self.choice().colors.as_str(), "persona" | "wallpaper");
+        if let Some(settings) = &mut self.boxes.settings {
+            settings.more.seeds.clone_from(&self.screen.theme_seeds);
+            settings.more.seed = self.screen.theme_seed;
+            settings.more.following = following;
+        }
+    }
+
     /// 开着配色的列表：引导「主题」那一步的、配置页外观页的。
     fn colors_list_open(&self) -> bool {
         let colors = |c: &crate::settings::pages::choose::Choose| c.key == "tui.theme";
@@ -109,26 +120,37 @@ impl App {
         self.choice().colors == "persona"
     }
 
-    /// 跟随头像的主色：写了主题色的照写的，没写的从头像取（后台取，一张只取一次）；不是跟随头像的、都没有的、头像还没要到
-    /// 还没取好的是 `None`。
-    fn wanted_seed(&mut self) -> Option<u32> {
+    /// 跟随头像、跟随壁纸能当主色的几个候选，好的在前：跟随壁纸的照找到的；跟随头像的写了主题色的只有它一个，没写的从
+    /// 头像取（后台取，一张只取一次）。别的配色、都没有的、头像还没要到还没取好的是空的。
+    fn wanted_seeds(&mut self) -> Vec<u32> {
         if self.choice().colors == "wallpaper" {
-            return self.screen.wallpaper.seed();
+            return self.screen.wallpaper.seeds().to_vec();
         }
         if !self.following() {
-            return None;
+            return Vec::new();
         }
-        match self.colors_source()? {
-            Colors::Seed(seed) => persona::hex(&seed),
-            Colors::File(path) => {
+        match self.colors_source() {
+            None => Vec::new(),
+            Some(Colors::Seed(seed)) => persona::hex(&seed).into_iter().collect(),
+            Some(Colors::File(path)) => {
                 let key = format!("file:{}", path.display());
-                self.screen.seeds.of(&key, &path)
+                self.screen.seeds.of(&key, &path).unwrap_or_default()
             }
-            Colors::Avatar { version, .. } => {
-                let file = self.media.avatars.file(&version)?;
-                self.screen.seeds.of(&version, &file)
-            }
+            Some(Colors::Avatar { version, .. }) => match self.media.avatars.file(&version) {
+                Some(file) => self.screen.seeds.of(&version, &file).unwrap_or_default(),
+                None => Vec::new(),
+            },
         }
+    }
+
+    /// 用哪个主色：候选里自选的那个（引导「主题」那一步挑着的盖在配置上），不在候选里的、没选的照打分最高的那个
+    /// （2026-10-14 项目主人定）。顺手记下候选，外观页、引导的「主色」照它列。
+    pub(super) fn wanted_seed(&mut self) -> Option<u32> {
+        let seeds = self.wanted_seeds();
+        let picked = self.screen.theme_pick;
+        let seed = choice::pick_seed(&seeds, picked);
+        self.screen.theme_seeds = seeds;
+        seed
     }
 
     /// 换下一种配色，只管这一次启动（「主题」第 6 条），提示「主题：名字」。

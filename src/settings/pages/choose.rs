@@ -46,6 +46,8 @@ pub struct Choose {
     pub sel: usize,
     /// 选好了写到哪（配置项、预设的一个键、新建预设的一步）。
     pub target: Target,
+    /// 值是 `#rrggbb` 的颜色：每一行前面画一块这个颜色（主色，2026-10-14）。
+    pub swatches: bool,
 }
 
 impl Choose {
@@ -62,6 +64,7 @@ impl Choose {
             choices,
             sel,
             target: Target::Setting,
+            swatches: false,
         }
     }
 

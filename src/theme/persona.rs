@@ -22,41 +22,47 @@ const MIN_ALPHA: u8 = 200;
 /// 取色前先缩到这么大（边长）：头像几百像素，缩小了取出来的主色一样，快得多。
 const SIDE: u32 = 128;
 
-/// 头像的主色：RGBA 的像素一格四个数，太透明的不算；一格都不剩的是 `None`。
-pub fn seed_of(rgba: &[u8]) -> Option<u32> {
+/// 一张图能当主色的几个候选，好的在前（2026-10-14 项目主人定：能自选主色，和网页 `seedsOf` 同一套）：RGBA 的像素一格四个
+/// 数，太透明的不算；Celebi 量化成 128 种，照 MD3 的 Score 挑，参数照 material-color-utilities 的默认（最多 4 个、滤掉
+/// 不像主题色的、一个都挑不出的交兜底的 `#4285f4`）。一格都不剩的是空的。
+pub fn seeds_of(rgba: &[u8]) -> Vec<u32> {
     let pixels: Vec<Rgb> = rgba
         .chunks_exact(4)
         .filter(|p| p[3] >= MIN_ALPHA)
         .map(|p| Rgb::new(p[0], p[1], p[2]))
         .collect();
     if pixels.is_empty() {
-        return None;
+        return Vec::new();
     }
     let result = QuantizerCelebi::quantize(&pixels, QUANTIZE);
-    let ranked = Score::score(&result.color_to_count, None, None, None);
-    ranked.first().map(|c| argb(*c))
+    Score::score(&result.color_to_count, None, None, None)
+        .into_iter()
+        .map(argb)
+        .collect()
 }
 
-/// 读一张头像取主色；读不成的是 `None`。格式照文件内容认：从核心要来的头像照版本存，文件名没有扩展名。
-pub fn seed_of_file(path: &Path) -> Option<u32> {
+/// 读一张头像取主色的几个候选（[`seeds_of`]）；读不成的是空的。格式照文件内容认：从核心要来的头像照版本存，文件名
+/// 没有扩展名。先缩到长边 128（同网页）。
+pub fn seeds_of_file(path: &Path) -> Vec<u32> {
     let image = image::ImageReader::open(path)
-        .ok()?
-        .with_guessed_format()
-        .ok()?
-        .decode()
-        .ok()?
-        .thumbnail(SIDE, SIDE)
-        .to_rgba8();
-    seed_of(image.as_raw())
+        .ok()
+        .and_then(|r| r.with_guessed_format().ok())
+        .and_then(|r| r.decode().ok());
+    image.map_or_else(Vec::new, |i| seeds_of(shrunk(i).as_raw()))
 }
 
-/// 一张图的字节取主色（跟随壁纸：macOS 的 HEIC 先转成 JPEG 交过来）；读不成的是 `None`。
-pub fn seed_of_bytes(bytes: &[u8]) -> Option<u32> {
-    let image = image::load_from_memory(bytes)
-        .ok()?
-        .thumbnail(SIDE, SIDE)
-        .to_rgba8();
-    seed_of(image.as_raw())
+/// 长边超过 128 的缩到 128（等比），小的不动（同网页的 `pixelsOf`：只缩不放）。
+fn shrunk(image: image::DynamicImage) -> image::RgbaImage {
+    if image.width().max(image.height()) > SIDE {
+        image.thumbnail(SIDE, SIDE).to_rgba8()
+    } else {
+        image.to_rgba8()
+    }
+}
+
+/// 一张图的字节取主色的几个候选（跟随壁纸：macOS 的 HEIC 先转成 JPEG 交过来）；读不成的是空的。
+pub fn seeds_of_bytes(bytes: &[u8]) -> Vec<u32> {
+    image::load_from_memory(bytes).map_or_else(|_| Vec::new(), |i| seeds_of(shrunk(i).as_raw()))
 }
 
 /// 人格里自选的主色 `#rrggbb`；写错的是 `None`。
@@ -179,7 +185,7 @@ mod tests {
     use material_colors::color::Rgb;
     use material_colors::hct::Hct;
 
-    use super::{hex, overlay, seed_of};
+    use super::{hex, overlay, seeds_of};
     use crate::theme::Tone;
     use crate::theme::builtin;
 
@@ -197,10 +203,28 @@ mod tests {
             };
             rgba.extend(px);
         }
-        let seed = seed_of(&rgba).unwrap();
+        let seed = seeds_of(&rgba)[0];
         let (r, g, b) = ((seed >> 16) & 0xff, (seed >> 8) & 0xff, seed & 0xff);
         assert!(r > g && r > b, "主色是红的：{seed:06x}");
-        assert_eq!(seed_of(&[0, 0, 0, 0]), None, "全透明的没有主色");
+        assert!(seeds_of(&[0, 0, 0, 0]).is_empty(), "全透明的没有主色");
+    }
+
+    #[test]
+    fn candidates_match_the_web_on_the_shared_pictures() {
+        // 2026-10-14 项目主人定能自选主色，候选和网页 `seedsOf` 逐个一致：四张不用缩的图（`tests/fixtures/seeds/`，网页仓库
+        // 同一份），参数照 material-color-utilities 的默认。灰的挑不出，交兜底的 `#4285f4`。
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/seeds");
+        let seeds = |name: &str| super::seeds_of_file(&dir.join(format!("{name}.png")));
+        assert_eq!(
+            seeds("four-hues"),
+            [0xd1_2b33, 0x36_b446, 0x37_4fd2, 0xed_be44]
+        );
+        assert_eq!(
+            seeds("sunset"),
+            [0x84_2fb7, 0xec_854c, 0xba_6180, 0x1b_1d25]
+        );
+        assert_eq!(seeds("gray"), [0x42_85f4]);
+        assert_eq!(seeds("leaf"), [0x23_ad2b, 0xf2_71b1]);
     }
 
     #[test]
@@ -263,7 +287,7 @@ mod tests {
             .save(&png)
             .unwrap();
         std::fs::rename(&png, &file).unwrap();
-        let seed = super::seed_of_file(&file).expect("读得出");
+        let seed = *super::seeds_of_file(&file).first().expect("读得出");
         assert!((seed >> 8) & 0xff > (seed >> 16) & 0xff, "绿的：{seed:06x}");
         std::fs::remove_dir_all(&dir).unwrap();
     }

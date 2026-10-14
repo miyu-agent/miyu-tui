@@ -8,10 +8,10 @@ use std::sync::mpsc::{Receiver, Sender, channel};
 /// 取过的、在取的。
 #[derive(Debug)]
 pub struct Seeds {
-    known: HashMap<String, Option<u32>>,
+    known: HashMap<String, Vec<u32>>,
     pending: HashSet<String>,
-    tx: Sender<(String, Option<u32>)>,
-    rx: Receiver<(String, Option<u32>)>,
+    tx: Sender<(String, Vec<u32>)>,
+    rx: Receiver<(String, Vec<u32>)>,
 }
 
 impl Default for Seeds {
@@ -27,17 +27,21 @@ impl Default for Seeds {
 }
 
 impl Seeds {
-    /// 这张图的主色：取过的交回（取不出来的是 `None`）；没取的在后台取，取好以前是 `None`。
-    pub fn of(&mut self, key: &str, path: &Path) -> Option<u32> {
+    /// 这张图能当主色的几个候选（好的在前，`persona::seeds_of`）：取过的交回（取不出来的是空的）；没取的在后台取，取好以前
+    /// 是 `None`。
+    pub fn of(&mut self, key: &str, path: &Path) -> Option<Vec<u32>> {
         self.collect();
-        if let Some(seed) = self.known.get(key) {
-            return *seed;
+        if let Some(seeds) = self.known.get(key) {
+            return Some(seeds.clone());
         }
         if self.pending.insert(key.to_string()) {
             let (tx, key, path) = (self.tx.clone(), key.to_string(), path.to_path_buf());
             std::thread::spawn(move || {
                 // 界面已经关了的，取好了也没人收。
-                if tx.send((key, super::persona::seed_of_file(&path))).is_err() {}
+                if tx
+                    .send((key, super::persona::seeds_of_file(&path)))
+                    .is_err()
+                {}
             });
         }
         None
@@ -80,11 +84,12 @@ mod tests {
             std::thread::sleep(Duration::from_millis(5));
             seed = seeds.of("v1", &file);
         }
-        let seed = seed.expect("取好了");
-        assert!((seed >> 8) & 0xff > (seed >> 16) & 0xff, "绿的：{seed:06x}");
+        let got = seed.expect("取好了");
+        let top = got[0];
+        assert!((top >> 8) & 0xff > (top >> 16) & 0xff, "绿的：{top:06x}");
         assert!(!seeds.busy());
         std::fs::remove_file(&file).unwrap();
-        assert_eq!(seeds.of("v1", &file), Some(seed), "取过的不再读文件");
+        assert_eq!(seeds.of("v1", &file), Some(got), "取过的不再读文件");
         std::fs::remove_dir(&dir).unwrap();
     }
 }

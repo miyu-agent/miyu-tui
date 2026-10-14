@@ -168,15 +168,14 @@ impl Settings {
 
     /// 一页里的项，照画的先后（第几项）。
     pub fn page_items(&self, page: &str) -> Vec<usize> {
-        self.more.schema.as_ref().map_or_else(Vec::new, |s| {
-            s.rows(page)
-                .into_iter()
-                .filter_map(|r| match r {
-                    Row::Item(i) => Some(i),
-                    Row::Group(_) => None,
-                })
-                .collect()
-        })
+        self.more
+            .rows(page)
+            .into_iter()
+            .filter_map(|r| match r {
+                Row::Item(i) => Some(i),
+                Row::Group(_) => None,
+            })
+            .collect()
     }
 
     /// `Enter` 改一项：两层都写不了的、终端还不能改的弹一句；下拉开选择窗，开关当场切，数、字开编辑窗。只有系统配置这一层
@@ -196,6 +195,12 @@ impl Settings {
         let words = &texts.more;
         if !item.writable() {
             self.say(words.no_editor.clone(), Tone::Note);
+            return;
+        }
+        // 主色：候选的色块列表，不开编辑窗（2026-10-14 项目主人定）。
+        if item.key == crate::theme::choice::SEED_KEY {
+            let choose = self.more.seed_choose(&item.name, &words.default_mark);
+            self.popup = Some(Popup::Choose(choose));
             return;
         }
         let (value, _) = current(&item, data);

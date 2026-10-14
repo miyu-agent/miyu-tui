@@ -37,6 +37,7 @@ mod menu;
 mod meter;
 mod model_list;
 mod money;
+mod note;
 mod notify;
 mod oobe;
 mod open;

@@ -2389,7 +2389,10 @@ dependencies = [
 [[package]]
 name = "miyu-wallpaper"
 version = "0.0.1"
-source = "git+https://github.com/miyu-agent/miyu-web?rev=ff0124ec6019402a52d65f50357988b8ead170ad#ff0124ec6019402a52d65f50357988b8ead170ad"
+source = "git+https://github.com/miyu-agent/miyu-web?rev=691aefd8ad0dcc2a6fa4c0483f4ef8d2d19de594#691aefd8ad0dcc2a6fa4c0483f4ef8d2d19de594"
+dependencies = [
+ "notify",
+]
 
 [[package]]
 name = "moxcms"
