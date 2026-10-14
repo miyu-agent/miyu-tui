@@ -736,7 +736,7 @@
       "system": "系统",
       "personal": "个人",
       "default": "默认",
-      "id": "编号"
+      "id": "ID"
     },
     "titles": [
       "添加供应商",
@@ -1238,7 +1238,7 @@
       "builtin_mascot": "内置",
       "mascot_missing": "{id}（未安装）",
       "own_groups": {"theme": "主题", "timeline": "时间线", "mascot": "吉祥物"},
-      "choice_names": {"tui.theme": {"persona": "跟随头像", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "跟随终端", "dark": "深色", "light": "浅色"}},
+      "choice_names": {"tui.theme": {"persona": "跟随头像", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}},
       "unavailable": "未安装",
       "custom_model": "输入模型…"
     }
@@ -1315,9 +1315,9 @@
       "key_env": "来自环境变量 {env}",
       "key_none": "无需密钥",
       "key_needed": "请填写密钥",
-      "id": "编号",
+      "id": "ID",
       "id_bad": "「{name}」无效：须以小写字母开头，仅含小写字母、数字、-、_，最长 64 个字符",
-      "id_taken": "编号「{name}」已有，换一个",
+      "id_taken": "ID「{name}」已有，换一个",
       "save_anyway": "仍然保存",
       "model_for_save": "填上模型名再保存",
       "cost": "将发送一条测试请求，消耗少量额度",
@@ -1392,7 +1392,7 @@
       "title": "主题",
       "sub": "选择明暗和配色，立即生效，以后可以在设置里改",
       "rows": ["明暗", "配色"],
-      "modes": ["跟随终端", "深色", "浅色"],
+      "modes": ["自动", "深色", "浅色"],
       "colors": ["跟随头像", "Tokyo Night", "终端配色"],
       "from_avatar": "取自「{name}」的头像",
       "from_seed": "使用「{name}」的主题色",
