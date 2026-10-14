@@ -34,14 +34,13 @@
     "yawn": 1.0,
     "yawn_ms": 1500,
     "yawn_half_life_ms": 220,
-    "yawn_idle": 6,
-    "yawn_every_ms": [25000, 60000],
     "hop": 0.7,
     "hop_ms": 200,
     "walk": 0.7
   },
   "idle": {
     "after_ms": 3000,
+    "awake_ms": 10000,
     "frame_ms": 33,
     "blink_every_ms": [2000, 7000],
     "blink_ms": [100, 200],

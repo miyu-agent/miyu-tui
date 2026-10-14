@@ -228,7 +228,9 @@ fn ms(t0: Instant, n: u64) -> Instant {
 
 #[test]
 fn it_glances_around_in_spells_only_while_nobody_moves() {
-    let cfg = look().idle;
+    let mut cfg = look().idle;
+    // 只看摇头：醒着的那一阵放到看完以后。
+    cfg.awake_ms = 1_000_000;
     let mut idle = Idle::new(7);
     let t0 = Instant::now();
     assert!(idle.pose(t0, &cfg).glance.is_none(), "刚打开：还没到待机");
@@ -277,8 +279,39 @@ fn it_does_not_redraw_while_holding_still() {
 }
 
 #[test]
+fn after_the_awake_spell_it_holds_still_until_something_happens() {
+    let cfg = look().idle;
+    let mut idle = Idle::new(7);
+    let t0 = Instant::now();
+    idle.pose(t0, &cfg);
+    // 醒着时一阵一阵地动，到头那一刻要醒来停下。
+    let mut t = 0;
+    while t < cfg.awake_ms {
+        idle.pose(ms(t0, t), &cfg);
+        let wake = idle.wake(ms(t0, t), &cfg);
+        assert!(
+            wake.is_some_and(|w| w <= ms(t0, cfg.awake_ms)),
+            "{t} ms：醒着"
+        );
+        t += 10;
+    }
+    let held = idle.pose(ms(t0, t), &cfg);
+    assert!(!held.blink && held.ear == 0.0, "停下：睁着眼、耳朵放下");
+    assert_eq!(idle.wake(ms(t0, t), &cfg), None, "停下了不再要重画");
+    let later = ms(t0, t + 60_000);
+    assert_eq!(idle.pose(later, &cfg), held, "一直停着");
+    assert_eq!(idle.wake(later, &cfg), None);
+    // 有了动静：重新醒着，排上下一次眨眼。
+    idle.poke(later);
+    idle.pose(later, &cfg);
+    assert!(idle.awake(later, &cfg));
+    assert!(idle.wake(later, &cfg).is_some_and(|w| w > later));
+}
+
+#[test]
 fn blinks_vary_and_sometimes_come_in_pairs() {
     let mut cfg = look().idle;
+    cfg.awake_ms = 1_000_000;
     cfg.double_blink = 1.0;
     let mut idle = Idle::new(7);
     let t0 = Instant::now();

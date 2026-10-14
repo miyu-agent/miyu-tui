@@ -5,7 +5,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use ratatui::crossterm::event::{Event, MouseEventKind};
 
 use super::App;
-use crate::mascot::{Attention, Gaze, Idle, Mouth, Perch};
+use crate::mascot::{Attention, Gaze, Idle, IdleLook, Mouth, Perch};
 use crate::pulse::Pulse;
 
 /// 吉祥物和运行状态行会动的那几样（蓝图 `app.md` 的 `mascot` 块）：画之前推一步，按键、动鼠标时记一笔。
@@ -36,14 +36,17 @@ impl MascotState {
             idle: Idle::new(nanos),
             attention: Attention::default(),
             perch: Perch::default(),
-            mouth: Mouth::new(nanos >> 5),
+            mouth: Mouth::new(),
         }
     }
 
-    /// 一个终端事件：有人按键、动鼠标、粘贴，停下待机的晃（「空会话的首页」第 8 条）；记下最近一次动鼠标、按键的时刻，
-    /// 看鼠标还是看输入光标照它（第 6 条）。
+    /// 一个终端事件：有人按键、动鼠标、粘贴、窗口拿回焦点，停下待机的晃、醒着的那一阵重新算（「空会话的首页」
+    /// 第 8 条）；记下最近一次动鼠标、按键的时刻，看鼠标还是看输入光标照它（第 6 条）。
     pub fn heard(&mut self, event: &Event, now: Instant) {
-        if matches!(event, Event::Key(_) | Event::Mouse(_) | Event::Paste(_)) {
+        if matches!(
+            event,
+            Event::Key(_) | Event::Mouse(_) | Event::Paste(_) | Event::FocusGained
+        ) {
             self.idle.poke(now);
         }
         match event {
@@ -55,6 +58,11 @@ impl MascotState {
             }
             _ => {}
         }
+    }
+
+    /// 停住了：醒着的那一阵过了、哈欠也打完了，转回正前方睁着眼不动（「空会话的首页」第 8 条）。
+    pub fn resting(&self, now: Instant, idle: &IdleLook) -> bool {
+        !self.idle.awake(now, idle) && !self.mouth.yawning(now)
     }
 }
 
