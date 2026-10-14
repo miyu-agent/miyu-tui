@@ -329,6 +329,11 @@ impl PersonaStep {
         self.existing.as_ref().is_some_and(|e| e.avatar.is_some())
     }
 
+    /// 这一位有头像：这一次填了的头像文件在，或者已有的人格有头像（主题那一步照它列不列吉祥物那一格）。
+    pub fn shows_avatar(&self) -> bool {
+        self.avatar_path().is_some_and(|p| p.is_file()) || self.has_avatar()
+    }
+
     /// 「好了」那一屏画谁（第 11 条，2026-10-13 项目主人定：设了头像的画头像）：这一次填了的头像文件；没填、已有的人格有
     /// 头像的，照它的版本找存下来的那一份（`cached`）；都没有的是 `None`，照旧画吉祥物。
     pub fn finale_avatar(

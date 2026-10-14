@@ -2,7 +2,8 @@
 //! 在一行上按 `Enter` 开选择窗（和配置页选值的同一个、同一套键，2026-10-14 项目主人：以后主题多了、有别人做的，左右切不
 //! 好用），上下挪的时候整个界面当场换成挪到的样子（App 每一帧照 [`ThemeStep::preview`] 挑，`app/theme.rs`），`Enter` 选好，
 //! `Esc` 换回开窗以前的。「下一步 →」写个人设置的 `tui.theme_mode`、`tui.theme`，`Esc` 回上一步、换回原来的样子。配色没
-//! 写过、人格那一步有头像（或写了主题色）的，进来停在「跟随头像」。
+//! 写过、人格那一步有头像（或写了主题色）的，进来停在「跟随头像」。人格那一步的这一位没头像的，多一格「吉祥物」显示、
+//! 不显示，一格同时写 `tui.mascot_home`、`tui.mascot_sidebar`（2026-10-15 项目主人定：有头像的头像替掉吉祥物，不列）。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
@@ -27,9 +28,14 @@ pub enum Slot {
     Mode,
     /// 配色。
     Colors,
+    /// 吉祥物：显示、不显示（人格没头像时才有）。
+    Mascot,
     /// 「下一步 →」。
     Next,
 }
+
+/// 吉祥物那一格写的两项：首页、侧边栏一起。
+const MASCOT_KEYS: [&str; 2] = ["tui.mascot_home", "tui.mascot_sidebar"];
 
 /// 这一步。
 #[derive(Debug, Default)]
@@ -40,6 +46,10 @@ pub struct ThemeStep {
     pub mode: usize,
     /// 配色选着第几种（`choice::COLORS`）。
     pub colors: usize,
+    /// 吉祥物选着「不显示」（配置项默认显示）。
+    pub mascot_off: bool,
+    /// 人格那一步的这一位有头像：不列吉祥物那一格、不写那两项。
+    pub avatar: bool,
     /// 在读、在写：按键先不认（`Esc` 照常回上一步）。
     pub busy: bool,
     /// 写不成：核心的原话。
@@ -63,12 +73,17 @@ pub struct ThemeStep {
 
 impl ThemeStep {
     /// 进这一步：第一次进的先读现在写的（重走引导时照它停）。`follow` 是人格那一步有没有能取色的（头像、主题色）：配色没
-    /// 写过、没换过的停在「跟随头像」。
-    pub fn enter(&mut self, asker: &mut Asker, follow: bool) {
+    /// 写过、没换过的停在「跟随头像」。`avatar` 是这一位有没有头像：有的不列吉祥物那一格。
+    pub fn enter(&mut self, asker: &mut Asker, follow: bool, avatar: bool) {
+        self.avatar = avatar;
+        if avatar && self.slot == Slot::Mascot {
+            self.slot = Slot::Next;
+        }
         if !self.entered {
             self.entered = true;
             self.busy = true;
-            let keys = json!({"keys": ["tui.theme", "tui.theme_mode"]});
+            let keys =
+                json!({"keys": ["tui.theme", "tui.theme_mode", MASCOT_KEYS[0], MASCOT_KEYS[1]]});
             asker.ask("config.get", keys, Waiting::ThemeRead);
             return;
         }
@@ -110,19 +125,11 @@ impl ThemeStep {
         if self.busy {
             return Move::Stay;
         }
+        let slots = self.slots();
+        let at = slots.iter().position(|s| *s == self.slot).unwrap_or(0);
         match nav::plain(key) {
-            Some(Nav::Up) => {
-                self.slot = match self.slot {
-                    Slot::Next => Slot::Colors,
-                    _ => Slot::Mode,
-                }
-            }
-            Some(Nav::Down) => {
-                self.slot = match self.slot {
-                    Slot::Mode => Slot::Colors,
-                    _ => Slot::Next,
-                }
-            }
+            Some(Nav::Up) => self.slot = slots[at.saturating_sub(1)],
+            Some(Nav::Down) => self.slot = slots[(at + 1).min(slots.len() - 1)],
             None if key.code == KeyCode::Enter => match self.slot {
                 Slot::Next => self.save(asker),
                 _ => self.open(words),
@@ -132,8 +139,38 @@ impl ThemeStep {
         Move::Stay
     }
 
+    /// 从上往下有哪几行：人格有头像的没有吉祥物那一格。
+    pub fn slots(&self) -> Vec<Slot> {
+        [Slot::Mode, Slot::Colors, Slot::Mascot, Slot::Next]
+            .into_iter()
+            .filter(|s| *s != Slot::Mascot || !self.avatar)
+            .collect()
+    }
+
     /// 光标那一行开选择窗：一个选项一行，停在选着的那个上。
     fn open(&mut self, words: &Words) {
+        if self.slot == Slot::Mascot {
+            let choices = words
+                .mascot
+                .iter()
+                .zip([true, false])
+                .map(|(name, on)| Choice {
+                    value: json!(on),
+                    label: name.clone(),
+                    note: None,
+                    off: None,
+                })
+                .collect();
+            self.before = usize::from(self.mascot_off);
+            let current = json!(!self.mascot_off);
+            self.picking = Some(Choose::open(
+                MASCOT_KEYS[0],
+                &words.rows[2],
+                choices,
+                &current,
+            ));
+            return;
+        }
         let (key, title, names, values, at): (_, _, &[String], &[&str], _) = match self.slot {
             Slot::Mode => (
                 "tui.theme_mode",
@@ -149,7 +186,7 @@ impl ThemeStep {
                 &COLORS,
                 self.colors,
             ),
-            Slot::Next => return,
+            Slot::Mascot | Slot::Next => return,
         };
         // 找不到壁纸的不列「跟随壁纸」（「主题」的「跟随壁纸」）。
         let wallpaper = self.wallpaper;
@@ -170,23 +207,30 @@ impl ThemeStep {
 
     /// 光标那一行选成值是 `value` 的那一个（列表里少了跟随壁纸的，不照第几行算）。
     fn set_value(&mut self, value: Option<&Value>) {
+        if self.slot == Slot::Mascot {
+            if let Some(on) = value.and_then(Value::as_bool) {
+                self.set(usize::from(!on));
+            }
+            return;
+        }
         let Some(value) = value.and_then(Value::as_str) else {
             return;
         };
         let at = match self.slot {
             Slot::Mode => MODE_NAMES.iter().position(|v| *v == value),
             Slot::Colors => COLORS.iter().position(|v| *v == value),
-            Slot::Next => None,
+            Slot::Mascot | Slot::Next => None,
         };
         if let Some(at) = at {
             self.set(at);
         }
     }
 
-    /// 光标那一行选成第 `at` 个：当场换样子。
+    /// 光标那一行选成第 `at` 个：当场换样子（吉祥物是第 0 个显示、第 1 个不显示）。
     fn set(&mut self, at: usize) {
         match self.slot {
             Slot::Mode => self.mode = at.min(MODES.len() - 1),
+            Slot::Mascot => self.mascot_off = at == 1,
             Slot::Colors => {
                 self.colors = at.min(COLORS.len() - 1);
                 self.turned = true;
@@ -197,10 +241,14 @@ impl ThemeStep {
     }
 
     fn save(&mut self, asker: &mut Asker) {
-        let params = json!({"layer": "personal", "changes": [
-            {"key": "tui.theme_mode", "value": MODE_NAMES[self.mode]},
-            {"key": "tui.theme", "value": COLORS[self.colors]},
-        ]});
+        let mut changes = vec![
+            json!({"key": "tui.theme_mode", "value": MODE_NAMES[self.mode]}),
+            json!({"key": "tui.theme", "value": COLORS[self.colors]}),
+        ];
+        if !self.avatar {
+            changes.extend(MASCOT_KEYS.map(|key| json!({"key": key, "value": !self.mascot_off})));
+        }
+        let params = json!({"layer": "personal", "changes": changes});
         self.error = None;
         self.busy = true;
         asker.ask("config.set", params, Waiting::ThemeSave);
@@ -228,6 +276,8 @@ impl ThemeStep {
                 if let Some(at) = mode.and_then(|m| MODES.iter().position(|v| *v == m)) {
                     self.mode = at;
                 }
+                // 吉祥物照首页那一项停（没有的照默认显示）。
+                self.mascot_off = items[MASCOT_KEYS[0]]["value"].as_bool() == Some(false);
                 let layer = items["tui.theme"]["origin"]["layer"].as_str();
                 self.unset = layer.is_none_or(|l| l == "default");
                 self.read = true;

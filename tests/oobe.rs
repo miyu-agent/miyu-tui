@@ -49,11 +49,13 @@ fn read(path: &PathBuf) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
 }
 
-/// 主题那一步（2026-10-13 项目主人定）：挪到「下一步」回车，照停着的写（明暗、配色那一格回车是开列表）。
+/// 主题那一步（2026-10-13 项目主人定）：挪到「下一步」回车，照停着的写（明暗、配色、吉祥物那一格回车是开列表；人格有头像
+/// 的没有吉祥物那一格，多按的一下停在「下一步」）。
 fn through_theme(tui: &mut support::Tui) {
     tui.wait_for("选择明暗和配色");
-    tui.key(b"j");
-    tui.key(b"j");
+    for _ in 0..3 {
+        tui.key(b"j");
+    }
     tui.key(b"\r");
 }
 
@@ -158,8 +160,15 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
         "挪到就当场换"
     );
     tui.key(b"\r");
-    tui.key(b"j");
-    tui.key(b"j");
+    // 没头像：明暗、配色下面还有一格吉祥物，停在显示，下面暗色一句（2026-10-15 项目主人定）。
+    assert!(
+        tui.shows("吉祥物") && tui.shows("显示") && tui.shows("开启会提高 CPU 占用，拖慢启动速度"),
+        "{}",
+        tui.lines().join("\n")
+    );
+    for _ in 0..3 {
+        tui.key(b"j");
+    }
     tui.key(b"\r");
     through_profile(&mut tui);
     tui.wait_for("选择预设");
@@ -186,6 +195,14 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     until(&mut tui, "主题写下深色", || {
         home.settings().contains("theme_mode = \"dark\"")
     });
+    until(
+        &mut tui,
+        "吉祥物照默认的显示写下首页、侧边栏两项",
+        || {
+            let settings = home.settings();
+            settings.contains("mascot_home = true") && settings.contains("mascot_sidebar = true")
+        },
+    );
     until(&mut tui, "沙盒照默认的开写工作区", || {
         home.settings().contains("level = \"workspace\"")
     });

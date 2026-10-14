@@ -385,7 +385,8 @@ impl Oobe {
             Step::Persona => self.persona.enter(&mut self.asker),
             Step::Theme => {
                 let follow = self.persona.colors().is_some();
-                self.theme.enter(&mut self.asker, follow);
+                let avatar = self.persona.shows_avatar();
+                self.theme.enter(&mut self.asker, follow, avatar);
             }
             Step::Profile => self.profile.enter(&mut self.asker),
             Step::Preset => self.preset.enter(&mut self.asker),

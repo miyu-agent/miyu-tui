@@ -1,5 +1,5 @@
 //! 主题那一步的那一块（「第一次打开的引导」第 23a 条）：明暗、配色两格（光标停着的右端暗色写「Enter 选择」），跟随头像的
-//! 下面暗色写照谁取色，再是「下一步 →」；在一格上按 `Enter` 开的选择窗和配置页选值的同一个（`ui/floating.rs`，2026-10-14
+//! 下面暗色写照谁取色；人格没头像的再一格吉祥物，下面暗色写一句；再是「下一步 →」；在一格上按 `Enter` 开的选择窗和配置页选值的同一个（`ui/floating.rs`，2026-10-14
 //! 项目主人）。
 
 use ratatui::Frame;
@@ -17,14 +17,20 @@ use crate::settings::pages::choose::Choose;
 use crate::theme;
 use crate::theme::choice::COLORS;
 
-/// 两格和「下一步」。
+/// 两三格和「下一步」。
 pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
     let words = &texts.theme;
     let step = &oobe.theme;
     let mut c = Content::new(width);
     c.cue = texts.keys.enter_pick.clone();
     c.heading(&words.head.title, &words.head.sub);
-    let label_w = words.rows.iter().map(|r| r.width()).max().unwrap_or(0);
+    // 列几格（人格有头像的没有吉祥物那一格），名字照列着的最宽的对齐。
+    let shown = if step.avatar { 2 } else { 3 };
+    let label_w = words.rows[..shown]
+        .iter()
+        .map(|r| r.width())
+        .max()
+        .unwrap_or(0);
     let on = |slot| !step.busy && step.slot == slot;
     let mode = words.modes.get(step.mode).map_or("", String::as_str);
     c.chip(&words.rows[0], label_w, mode, "", on(Slot::Mode));
@@ -60,6 +66,14 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
         };
         let lead = " ".repeat(2 + label_w + 2);
         c.note(&format!("{lead}{said}"), theme::dim());
+    }
+    // 吉祥物（2026-10-15 项目主人定）：显示、不显示，下面对齐暗色写项目主人定的那一句。
+    if !step.avatar {
+        c.blank();
+        let shown = &words.mascot[usize::from(step.mascot_off)];
+        c.chip(&words.rows[2], label_w, shown, "", on(Slot::Mascot));
+        let lead = " ".repeat(2 + label_w + 2);
+        c.note(&format!("{lead}{}", words.mascot_note), theme::dim());
     }
     c.blank();
     c.action(on(Slot::Next), &format!("{} →", words.next));
