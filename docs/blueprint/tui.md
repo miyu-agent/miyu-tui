@@ -47,6 +47,7 @@
 | `NO_COLOR` | 有值就不上色，只留加粗、斜体这些修饰（跨工具的约定，比 `MIYU_COLOR` 优先） |
 | `MIYU_TUI_FRAME_LOG` | 量性能用（设计 23「量界面」，2026-10-01 性能体检加的）：给一个文件路径，每画一帧往里追加一行 `距启动的毫秒 准备的微秒 整帧的微秒`。准备是排版、画进缓冲区、宽字清格、换色；整帧再加上比对、写给终端、光标和指针。整帧超过 `slow_frame_ms`（`layout.json`，8 毫秒）的，后面接着写各块各花了多少微秒（`body=…`、`rows=…`、`sidebar=…` 这样，正文、排行、画图、输入框、底栏、侧边栏、运行状态行、`@` 列表），好找慢在哪（2026-10-01 性能体检：release 版流式时偶尔一帧二三十毫秒，当场没找到，加了这个以后又量五次，最慢 12 毫秒，花在一轮结束时的排行和侧边栏）。不给就什么都不记，也不计时 |
 | `MIYU_TUI_DESKTOP_WALLPAPER` | 写 `0` 时跟随壁纸不看桌面、只认 matugen 那一份（「跟随壁纸」第 5 条）；伪终端测试都设它 |
+| `MIYU_TUI_WALLPAPER_WATCH` | 写 `0` 时跟随壁纸不盯文件、只在拿回焦点时找（「跟随壁纸」第 5 条） |
 | `MIYU_TUI_IME` | 写 `0` 时不跟着打字状态切输入法（「配置页」第 30 条）；伪终端测试、测具都设它，不切跑测试那台机器上人正在用的输入法 |
 
 **资源文件**（`resources/`，编译时带进来）：
@@ -692,9 +693,9 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 
 1. 来处：网页仓库的 `miyu-wallpaper`（`Cargo.toml` 照网页仓库的 git 提交钉住），先找 matugen 照网页仓库模板（`web/matugen/miyu-web.json`）生成的那一份（Linux `$XDG_CACHE_HOME/miyu/matugen.json`，没设的 `~/.cache/miyu/`；macOS `~/Library/Caches/miyu/`；Windows `%LOCALAPPDATA%\miyu\`），取它的 `source` 当主色；没有的照桌面找壁纸图（KDE、GNOME、XFCE、awww、swww、hyprpaper、swaybg……，macOS 先读系统的壁纸设置文件，读不到才问 System Events，第一次会弹授权框），取图的主色（同「跟随头像的配色」第 1 条的取法，macOS 的 HEIC 先转 JPEG）。
 2. 生成：主色照「跟随头像的配色」第 3 条那一套，名字是 `wallpaper-night`、`wallpaper-day`。
-3. 什么时候找（`theme/wallpaper.rs`）：要跑命令（一家最多等 2 秒），放在后台。起来时找一次；打开配色列表（配置页外观页的、引导主题那一步的）、选上跟随壁纸时再找一次；不定时查（项目主人：不要轮询）。换了壁纸的，重开一次配色列表或重启就跟上。
+3. 什么时候找（`theme/wallpaper.rs`）：要跑命令（一家最多等 2 秒），放在后台。起来时找一次；打开配色列表（配置页外观页的、引导主题那一步的）、选上跟随壁纸时再找一次。换了壁纸自动跟着变（2026-10-14 项目主人定，绝对不轮询）：盯着壁纸来处的文件（`miyu-wallpaper` 的 `Watch`，网页仓库 691aefd：matugen 那一份、壁纸图本身、各家存设置和缓存的文件，清单由它给；只用系统的文件通知 inotify、FSEvents、ReadDirectoryChangesW、kqueue，一阵变动收齐 300 毫秒才叫一次），一变就叫醒界面再找；起不来的不退回定时去看，在机器缓存目录的 `tui/tui.log` 记一行，只靠下面这条。窗口拿回焦点时（终端报 `ESC [ I`），选着跟随壁纸的再找一次：只能靠命令换壁纸的（hyprpaper、swaybg）也跟得上。
 4. 找不到（没有 matugen 那一份、桌面上也找不到图、找到的不是能读的图）：配色列表里不列「跟随壁纸」，`/theme` 跳过它；已经选着它的照 tokyonight，引导主题那一步配色下面暗色写「未找到桌面壁纸，使用 Tokyo Night」（找到的写「取自桌面壁纸」）。
-5. `MIYU_TUI_DESKTOP_WALLPAPER=0`：不看桌面、只认 matugen 那一份（伪终端测试都设它：不碰跑测试的这台电脑的桌面；单元测试里不找）。
+5. `MIYU_TUI_DESKTOP_WALLPAPER=0`：不看桌面、只认 matugen 那一份（伪终端测试都设它：不碰跑测试的这台电脑的桌面；单元测试里不找）。`MIYU_TUI_WALLPAPER_WATCH=0`：不盯文件，只在拿回焦点时找（测这一条、看有没有偷偷定时去看）。
 
 #### 终端配色
 

@@ -179,6 +179,74 @@ fn the_colors_list_offers_the_wallpaper_only_when_there_is_one() {
     }
 }
 
+#[test]
+fn a_changed_wallpaper_is_followed_without_polling() {
+    // 2026-10-14 项目主人：换了壁纸要自动跟着变，绝对不轮询：盯着壁纸来处的文件（`miyu-wallpaper` 的 `Watch`，系统的文件
+    // 通知），一变就再找。这里换的是 matugen 那一份：不按键、不切焦点，底色自己换。
+    let settings = "[tui]\ntheme = \"wallpaper\"\ntheme_mode = \"dark\"\n";
+    let home = Home::with_settings(Script::new([]), settings);
+    matugen(&home);
+    let (root, local) = cache_dirs(&home);
+    let env = [("HOME", root.as_str()), ("LOCALAPPDATA", local.as_str())];
+    let mut tui = home.tui_with("zh_CN.UTF-8", &env);
+    tui.wait_for("工作区");
+    let wait_until = |tui: &mut support::Tui, ok: &dyn Fn(Color) -> bool, what: &str| {
+        let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while !ok(tui.background(0, 0)) {
+            assert!(
+                std::time::Instant::now() < end,
+                "{what}：{:?}",
+                tui.background(0, 0)
+            );
+            tui.pump(std::time::Duration::from_millis(100));
+        }
+    };
+    wait_until(
+        &mut tui,
+        &|c| c != NIGHT && matches!(c, Color::Rgb(..)),
+        "先照绿的铺",
+    );
+    let green = tui.background(0, 0);
+    matugen_source(&home, "#b03060");
+    wait_until(
+        &mut tui,
+        &|c| c != green && c != NIGHT,
+        "matugen 那一份换了，底色跟着换",
+    );
+}
+
+#[test]
+fn without_file_notifications_only_regaining_focus_looks_again() {
+    // 2026-10-14 项目主人：盯不了文件的（系统通知起不来）不退回定时去看，只在窗口拿回焦点时再找。不盯文件：换了 matugen
+    // 那一份，等一阵底色不动（没有偷偷定时去看）；终端报拿回焦点（`ESC [ I`）才换。
+    let settings = "[tui]\ntheme = \"wallpaper\"\ntheme_mode = \"dark\"\n";
+    let home = Home::with_settings(Script::new([]), settings);
+    matugen(&home);
+    let (root, local) = cache_dirs(&home);
+    let env = [
+        ("HOME", root.as_str()),
+        ("LOCALAPPDATA", local.as_str()),
+        ("MIYU_TUI_WALLPAPER_WATCH", "0"),
+    ];
+    let mut tui = home.tui_with("zh_CN.UTF-8", &env);
+    tui.wait_for("工作区");
+    let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while tui.background(0, 0) == NIGHT || !matches!(tui.background(0, 0), Color::Rgb(..)) {
+        assert!(std::time::Instant::now() < end, "先照绿的铺");
+        tui.pump(std::time::Duration::from_millis(100));
+    }
+    let green = tui.background(0, 0);
+    matugen_source(&home, "#b03060");
+    tui.pump(std::time::Duration::from_secs(3));
+    assert_eq!(tui.background(0, 0), green, "不盯文件的不自己去看");
+    tui.send(b"\x1b[I");
+    let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while tui.background(0, 0) == green {
+        assert!(std::time::Instant::now() < end, "拿回焦点再找一次");
+        tui.pump(std::time::Duration::from_millis(100));
+    }
+}
+
 /// matugen 那一份在哪个缓存目录找（`miyu-wallpaper`）：Linux 照 `XDG_CACHE_HOME`（测具指在测试家目录的 `cache`），macOS
 /// 照 `HOME/Library/Caches`，Windows 照 `LOCALAPPDATA`：后两样起界面时也指到测试家目录（交回 `HOME`、`LOCALAPPDATA`）。
 fn cache_dirs(home: &Home) -> (String, String) {
@@ -189,13 +257,18 @@ fn cache_dirs(home: &Home) -> (String, String) {
 
 /// 在测试家目录的缓存里放一份 matugen 生成的颜色（照 [`cache_dirs`] 指的地方），主色绿。
 fn matugen(home: &Home) {
+    matugen_source(home, "#2fab34");
+}
+
+/// 同 [`matugen`]，主色是 `source`。
+fn matugen_source(home: &Home, source: &str) {
     let dir = if cfg!(target_os = "macos") {
         home.root().join("Library/Caches/miyu")
     } else {
         home.root().join("cache/miyu")
     };
     std::fs::create_dir_all(&dir).expect("建得了缓存目录");
-    let colors = r##"{"source": "#2fab34", "light": {}, "dark": {}}"##;
+    let colors = format!(r#"{{"source": "{source}", "light": {{}}, "dark": {{}}}}"#);
     std::fs::write(dir.join("matugen.json"), colors).expect("写得进去");
 }
 

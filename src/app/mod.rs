@@ -212,7 +212,12 @@ impl App {
             Event::Mouse(mouse) => self.mouse(mouse),
             // 终端报的在不在前台：系统通知照它（「系统通知」第 2 条）。
             Event::FocusGained | Event::FocusLost => {
-                self.notifier.focus(matches!(event, Event::FocusGained));
+                let gained = matches!(event, Event::FocusGained);
+                self.notifier.focus(gained);
+                // 跟随壁纸：拿回焦点时再找一次（只能靠命令换壁纸的也跟得上，「主题」的「跟随壁纸」第 3 条）。
+                if gained {
+                    self.wallpaper_focus();
+                }
                 Action::None
             }
             _ => Action::None,
