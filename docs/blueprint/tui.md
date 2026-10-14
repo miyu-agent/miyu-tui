@@ -676,11 +676,11 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 
 #### 跟随头像的配色
 
-2026-10-13 项目主人定：配色跟着人格走，取法照网页的 `theme-persona`（`model.js`），同一个人格两个头出来的颜色一样。
+2026-10-13 项目主人定：配色跟着人格走，同一个人格两个头出来的颜色一样（10-14 起两个头照第 3 条同一套算）。
 
 1. 主色：人格写了主题色的（`persona.toml` 的 `[appearance] seed`，核心 P-6 在 `persona.list` 的 `seed` 给）照它；没写的从头像取。头像照 `persona.avatar` 要来（终端画不了图也要，只为取色），缩到 128 见方，不透明度不到 200 的像素不算（圆角外面、抠掉的背景），量化成最多 128 种颜色（Celebi），照 Material 的打分挑第一个。在后台取（引导里填的可能是几千像素的照片，解码一两百毫秒），取好以前照 tokyonight；一张只取一次，照头像的版本（本机文件照路径）记着。格式照文件内容认，不照扩展名：从核心要来的头像照版本存，文件名没有扩展名（2026-10-14 项目主人报「主题跟随头像好像没生效」：原来照扩展名认，读不出，一直照 tokyonight）。没写主题色、也没有头像的，照 tokyonight。
 2. 看谁：引导开着的照人格那一步那一位（这一次填的头像文件，已有的人格的头像、写了的主题色，「第一次打开的引导」第 23a 条）；开着会话的照会话的人格；没开的照首页画的那一位（人格框停的那一行、选的、默认的，同「空会话的首页」第 10 条）。换了会话、人格框上下挪、头像要到了，主色一变当场换一套。
-3. 生成：照主色出一套 Material 的 tonal spot（对比度 0，`material-colors`），深浅照明暗那一档，盖在 tokyonight 同一档上，只换中性色和强调色：`dim` 换成 on surface variant；`accent`、`workspace`、`side_title`、`md_table_head` 换成 primary；`picked` 换成 tertiary；`shade` 换成 surface container high；`panel_bg` 换成 surface container；`row_bg` 换成 primary container；`row_dim_bg` 换成 surface container low；`chip_bg`、`chip_hover_bg` 换成 secondary container、tertiary container；热度图最淡一格是 surface container highest，往上从 primary container 走到 primary；`background`、`diagram_backdrop` 换成 surface；`text`、`hover` 换成 on surface；`faint` 换成 outline；`on_accent` 换成 on primary。出错的红、加删的红绿、链接、Markdown、代码着色、思考、吉祥物照 tokyonight：语义色跟着人格变了反而认不出。
+3. 生成（2026-10-14 项目主人定两个头统一、四件照推荐：项目主人报「思考还是青的、深色的底太深」，原来只换 19 格、底是 MD3 surface）：照主色出 Material 的 `SchemeContent`（对比度 0，`material-colors`，同网页），深浅照明暗那一档，取出中性、中性变体、主色、次色、第三色五条色板。59 格每一格都换（`theme/persona.rs` 的 `overlay` 逐格写，不留照抄 tokyonight 的口子）：不带含义的格子照 tokyonight 同一档那一格的亮度（HCT tone），从对应色板取同一亮度的颜色，明暗层次和 tokyonight 一样、只换色相——中性：`background`、`text`、`panel_bg`、`shade`、`row_dim_bg`、热度图最淡一格、`thought`、`thought_hover`、`md_bold`、`md_code`、`md_math`、`diagram_backdrop`、`on_accent`；中性变体：`dim`、`faint`、`hover`、`md_italic`、`md_quote`、`diagram_text`、`diagram_line`、`code_comment`、`code_operator`；主色：`accent`、`workspace`、`side_title`、`md_table_head`、`md_link`、`md_url`、`row_bg`、热度图后四格；次色：`chip_bg`、`chip_hover_bg`；第三色：`picked`、`md_image`；吉祥物（项目主人定也跟着换，原来照抄）：头 `mascot_head` 中性、耳朵 `mascot_ear` 中性变体、眼睛 `mascot_eye` 主色、鳍 `mascot_fin` 第三色。底色因此和 tokyonight 一样亮（深色 tone 10、浅色 90，项目主人选的 A 档；B 是再亮 4、C 是原来的 surface 深色 4–6、浅色 98）。有含义的颜色（`error`、`warn`、`good`、`added`、`removed`、四格差异、`full`、`read_only`、`md_mark`、`md_heading`、其余代码着色）色相往主色最多转 15°（`blend::harmonize`），亮度、色度不变，认得出是红是绿。网页照同一套改（`web-demo/src/lib/md3/index.js`，8aaeefe）；两边 tokyonight 原色表本来有几格不一样（网页的暗字、吉祥物），算出来那几格也不一样，浅色网页照晨光（项目主人定），这些不动。
 4. 名字是 `persona-night`、`persona-day`（`/theme` 的提示照它写）；还没有主色时是 tokyonight 那一份的名字。铺不铺底色照第 4 条。
 
 ### 图标
