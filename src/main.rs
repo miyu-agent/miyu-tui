@@ -92,6 +92,15 @@ fn main() -> io::Result<()> {
     let language = table.detect(|name| std::env::var(name).ok());
     // 启动时是自动：照系统语言（蓝图「界面语言」）。
     let config = Config::load(&language, true).map_err(io::Error::other)?;
+    // 连核心的线程最先起（核心没在跑的当场拉起），和下面进全屏、问终端的几样并着走；核心那头推来的先在通道里排着，
+    // 主循环起来再收（蓝图「连核心」第 1 条，2026-10-15 核心拆冷启动：原来问完终端才拉起核心，晚了约 6 毫秒）。
+    let (sender, incoming) = mpsc::channel();
+    let to_core = sender.clone();
+    let core = core::spawn(
+        config.layout.reconnect_ms,
+        launch.start.clone(),
+        move |update| to_core.send(Incoming::Core(update)).is_ok(),
+    );
     // 初始化原始模式、备用屏及 panic 收尾；自定义 writer 用来收齐一帧。
     drop(ratatui::init());
     let mut terminal = screen().inspect_err(|_| ratatui::restore())?;
@@ -125,7 +134,7 @@ fn main() -> io::Result<()> {
     let colors = theme::terminal_colors::probe();
     let result = run(
         &mut terminal,
-        config,
+        (config, core, (sender, incoming)),
         (graphics, ground, colors),
         keyboard,
         launch,
@@ -195,7 +204,11 @@ enum Incoming {
 /// 终端的事件在一个线程里读，核心在另一个线程里连，都送进同一个通道，主循环只等这一个口子。
 fn run(
     terminal: &mut Screen,
-    config: Config,
+    (config, core, (sender, incoming)): (
+        Config,
+        core::Core,
+        (mpsc::Sender<Incoming>, mpsc::Receiver<Incoming>),
+    ),
     (graphics, ground, colors): (
         Option<figures::Graphics>,
         Option<theme::terminal_colors::Ground>,
@@ -204,12 +217,6 @@ fn run(
     keyboard: bool,
     launch: startup::Launch,
 ) -> io::Result<()> {
-    let (sender, incoming) = mpsc::channel();
-    let to_core = sender.clone();
-    let reconnect = config.layout.reconnect_ms;
-    let core = core::spawn(reconnect, launch.start, move |update| {
-        to_core.send(Incoming::Core(update)).is_ok()
-    });
     let to_main = sender.clone();
     let to_wake = sender.clone();
     // 点开看的 mermaid 大图放在机器共用的缓存目录下（蓝图「图片、公式和 mermaid 图」第 4 条）。
