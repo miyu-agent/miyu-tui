@@ -247,3 +247,15 @@ fn typing_tilts_the_head_until_a_pause_and_a_new_step_gets_a_hop() {
         "跳两行、耳朵扑一下：{hop:?}"
     );
 }
+
+#[test]
+fn the_avatar_is_revealed_slower_than_the_mascot_walks() {
+    // 2026-10-14 项目主人：完成页头像揭幕太快了（原来跟着吉祥物走路那一段），放慢，用自己的时长。
+    let look = look();
+    let t0 = Instant::now();
+    let walked = super::finale(t0, t0 + ms(look.done.walk_ms), &look, 2);
+    assert!((walked.walk - 1.0).abs() < 1e-9, "吉祥物走到了");
+    assert!(walked.reveal < 0.7, "头像还没揭完：{}", walked.reveal);
+    let shown = super::finale(t0, t0 + ms(look.done.reveal_ms), &look, 2);
+    assert!((shown.reveal - 1.0).abs() < 1e-9, "到点整张露出来");
+}

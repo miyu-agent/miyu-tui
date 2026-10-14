@@ -151,7 +151,7 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     stars::draw(frame, area, &list, &look.stars.marks);
     if let Some(rect) = rect {
         // 回车以后落到首页的位置时整张露着。
-        let shown = if leave.is_some() { 1.0 } else { fin.walk };
+        let shown = if leave.is_some() { 1.0 } else { fin.reveal };
         let drawn = avatar.is_some_and(|path| {
             crate::ui::avatar_view::draw_file(frame, &p.media.figures, rect, &path, shown)
         });
