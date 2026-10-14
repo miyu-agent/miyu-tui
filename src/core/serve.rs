@@ -25,23 +25,10 @@ pub(super) async fn serve(
     notify: &impl Fn(Update) -> bool,
 ) -> Served {
     let mut awaiting: HashMap<String, Awaiting> = HashMap::new();
-    // 订阅配置流、读一次界面语言（「界面语言」）。
-    match config::follow(rpc).await {
-        Ok(id) => awaiting.insert(id, Awaiting::UiLanguage),
-        Err(_) => return Served::Lost,
-    };
-    // 订阅会话列表（核心 9-5）：`/sessions`、别处来的话写来处都照这一份，变了推过来（「会话列表」）。
-    match sessions::follow(rpc).await {
-        Ok(id) => awaiting.insert(id, Awaiting::SessionsStream),
-        Err(_) => return Served::Lost,
-    };
-    // 订阅软件包列表，只为听工具目录变了：变了重取给人看的字（`packages.rs`，核心 9-8 七补）。
-    match super::packages::follow(rpc).await {
-        Ok(id) => awaiting.insert(id, Awaiting::PackagesStream),
-        Err(_) => return Served::Lost,
-    };
     // 主会话：启动时进最近的那个、`--resume` 的，最新一页还没读到就断了的，先读最新一页，再带 `after` 订阅（「会话列表」
-    // 第 5、8 条）；重连的带 `after` 接着补，断开期间错过的补回来（「连核心」第 7 条，review B7）。
+    // 第 5、8 条）；重连的带 `after` 接着补，断开期间错过的补回来（「连核心」第 7 条，review B7）。排在最前面发：核心照收到的
+    // 先后答，这一页回来就带 `after` 订阅，订阅排在读配置、人格、给人看的字这些前面（2026-10-15 核心拆冷启动：原来这个会话的
+    // 订阅排在它们后面，打开会话多等约 7 毫秒；首页、正文先照记下的样子画，读配置晚一点不碍事）。
     if let Some(main) = link.main.clone() {
         let sent = if link.reread_main(&main) {
             page::latest(rpc, link, &main)
@@ -57,6 +44,21 @@ pub(super) async fn serve(
             Err(_) => return Served::Lost,
         };
     }
+    // 订阅配置流、读一次界面语言（「界面语言」）。
+    match config::follow(rpc).await {
+        Ok(id) => awaiting.insert(id, Awaiting::UiLanguage),
+        Err(_) => return Served::Lost,
+    };
+    // 订阅会话列表（核心 9-5）：`/sessions`、别处来的话写来处都照这一份，变了推过来（「会话列表」）。
+    match sessions::follow(rpc).await {
+        Ok(id) => awaiting.insert(id, Awaiting::SessionsStream),
+        Err(_) => return Served::Lost,
+    };
+    // 订阅软件包列表，只为听工具目录变了：变了重取给人看的字（`packages.rs`，核心 9-8 七补）。
+    match super::packages::follow(rpc).await {
+        Ok(id) => awaiting.insert(id, Awaiting::PackagesStream),
+        Err(_) => return Served::Lost,
+    };
     // 重连以后，另外订阅着的照旧订阅上，从读到的那一条往后补（「连核心」第 7 条）。
     for session in link.watched.clone() {
         match watch(rpc, &session, link.seen.get(&session).copied()).await {
