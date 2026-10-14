@@ -1,49 +1,17 @@
 //! 新几页的悬浮窗（蓝图「配置页」第 33、34、36、38 条）：下拉的选择窗（现在的值前面一个点，选不了的暗着、后面黄字写
-//! 原因）、填一行字的编辑窗、人格的窗、预设的窗。和别的悬浮窗一个底、一个排法（`popup.rs` 的 `Lines`）。
+//! 原因，画法在 `ui/floating.rs`，引导的主题那一步也用它）、填一行字的编辑窗、人格的窗、预设的窗。和别的悬浮窗一个底、一个
+//! 排法（`ui/floating.rs` 的 `Lines`）。
 
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
-use super::fit;
 use super::popup::{Body, Lines};
 use crate::features;
-use crate::settings::pages::choose::{Choose, LineEdit, PersonaView, PresetView};
+use crate::settings::pages::choose::{LineEdit, PersonaView, PresetView};
 use crate::settings::pages::preset_edit::{Field, fields};
-use crate::settings::{Hit, Settings, Texts};
+use crate::settings::{Settings, Texts};
 use crate::theme;
-
-/// 选择窗。
-pub(super) fn choose(lines: &mut Lines, choose: &Choose, texts: &Texts, width: u16) {
-    lines.title(choose.title.clone(), String::new());
-    let room = usize::from(width.saturating_sub(6));
-    for (i, c) in choose.choices.iter().enumerate() {
-        let style = if c.off.is_some() {
-            theme::dim()
-        } else {
-            Style::new()
-        };
-        let mut spans = vec![Span::raw("  "), Span::styled(fit(&c.label, room), style)];
-        let used = c.label.width() + 2;
-        if let Some(off) = &c.off {
-            spans.push(Span::styled(
-                fit(&format!("  {off}"), room.saturating_sub(used)),
-                theme::warn(),
-            ));
-        } else if let Some(note) = &c.note {
-            spans.push(Span::styled(
-                fit(&format!("  {note}"), room.saturating_sub(used)),
-                theme::dim(),
-            ));
-        }
-        lines.body.push(Body {
-            line: Line::from(spans),
-            focused: i == choose.sel,
-            hit: Some(Hit::PickRow(i)),
-        });
-    }
-    lines.hints = texts.more.hints[2].clone();
-}
 
 /// 编辑窗：一行输入框，原来的字下划线，光标跟着。
 pub(super) fn line(lines: &mut Lines, edit: &LineEdit, texts: &Texts) {

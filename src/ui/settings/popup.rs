@@ -2,13 +2,14 @@
 //! 一行说明；按钮、按键提示。编辑窗、选模型的窗、问一句的窗三种。
 
 use ratatui::Frame;
-use ratatui::layout::{Position, Rect};
+use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
+use super::super::floating;
 use super::fields::{source, value};
-use super::{Look, bar, fit, hint_line};
+use super::{Look, fit};
 use crate::caret::Caret;
 use crate::settings::forms::{Field, Focus, Form, Target, Val, window_text};
 use crate::settings::nav::Use;
@@ -67,60 +68,31 @@ pub fn draw(
             lines.button = Some(confirm.sel);
             lines.hints = texts.popup_hints[3].clone();
         }
-        Popup::Choose(choose) => super::more_popups::choose(&mut lines, choose, texts, width),
+        Popup::Choose(choose) => {
+            let hints = texts.more.hints[2].clone();
+            floating::choose(&mut lines, choose, hints, width, Hit::PickRow);
+        }
         Popup::Line(edit) => super::more_popups::line(&mut lines, edit, texts),
         Popup::Persona(view) => super::more_popups::persona(&mut lines, view, page, texts),
         Popup::Preset(view) => super::more_popups::preset(&mut lines, view, page, texts),
         Popup::Dialogs(view) => super::dialog_popups::dialogs(&mut lines, view, texts, width),
         Popup::Pair(edit) => super::dialog_popups::pair(&mut lines, edit, texts),
     }
-    let errors = lines.error.as_deref().map_or(0, |e| {
-        error_rows(e, usize::from(width.saturating_sub(4))).len()
-    });
-    let height = (lines.body.len() as u16 + 8 + errors as u16).min(max_height);
-    let rect = Rect::new(
-        area.x + (area.width.saturating_sub(width)) / 2,
-        area.y + (area.height.saturating_sub(height)) / 2,
-        width,
-        height,
+    floating::centered(
+        frame,
+        area,
+        (width, max_height),
+        &mut lines,
+        (&mut page.hits, Hit::Button),
+        caret,
     );
-    paint(frame, rect, &mut lines, page, caret);
     page.popup = Some(popup);
 }
 
-/// 窗里的一行行，画之前先排好。
-#[derive(Default)]
-pub(super) struct Lines {
-    pub(super) title: Option<(String, String)>,
-    pub(super) body: Vec<Body>,
-    pub(super) error: Option<String>,
-    pub(super) buttons: Vec<(String, bool)>,
-    pub(super) button: Option<usize>,
-    pub(super) hints: Vec<[String; 2]>,
-    /// 正在改的那一行：第几行、光标在第几列。
-    pub(super) caret: Option<(usize, u16)>,
-}
-
-/// 一行：字、选中没有、点到它是什么。
-pub(super) struct Body {
-    pub(super) line: Line<'static>,
-    pub(super) focused: bool,
-    pub(super) hit: Option<Hit>,
-}
-
-impl Lines {
-    pub(super) fn title(&mut self, title: String, sub: String) {
-        self.title = Some((title, sub));
-    }
-
-    pub(super) fn plain(&mut self, line: Line<'static>) {
-        self.body.push(Body {
-            line,
-            focused: false,
-            hit: None,
-        });
-    }
-}
+/// 窗里的一行行（`ui/floating.rs`）：点到的是配置页的 [`Hit`]。
+pub(super) type Lines = floating::Lines<Hit>;
+/// 一行。
+pub(super) type Body = floating::Body<Hit>;
 
 fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, width: u16) {
     let shown = |id: &str| {
@@ -278,118 +250,4 @@ fn pick_lines(lines: &mut Lines, pick: &Pick, page: &Settings, texts: &Texts, wi
         }
     }
     lines.hints = texts.popup_hints[2].clone();
-}
-
-/// 铺底色、写标题、滚着写一行行、出错的一句、按钮、按键提示。
-fn paint(frame: &mut Frame, rect: Rect, lines: &mut Lines, page: &mut Settings, caret: &mut Caret) {
-    // 先把格子整个清掉（字色、修饰都不留，不然窗里的字带着后面那页的暗色），再铺底色。
-    let buf = frame.buffer_mut();
-    for y in rect.y..rect.bottom() {
-        for x in rect.x..rect.right() {
-            if let Some(cell) = buf.cell_mut(Position::new(x, y)) {
-                cell.reset();
-            }
-        }
-    }
-    buf.set_style(rect, theme::panel());
-    let inner = Rect::new(
-        rect.x + 2,
-        rect.y + 1,
-        rect.width.saturating_sub(4),
-        rect.height.saturating_sub(2),
-    );
-    if let Some((title, sub)) = &lines.title {
-        buf.set_string(
-            inner.x,
-            inner.y,
-            fit(title, inner.width as usize),
-            theme::accent().add_modifier(Modifier::BOLD),
-        );
-        let w = sub.width() as u16;
-        if !sub.is_empty() && w + title.width() as u16 + 2 < inner.width {
-            buf.set_string(inner.right() - w, inner.y, sub, theme::dim());
-        }
-    }
-    let errors = lines
-        .error
-        .as_deref()
-        .map(|e| error_rows(e, usize::from(inner.width)))
-        .unwrap_or_default();
-    let room = inner.height.saturating_sub(6 + errors.len() as u16) as usize;
-    let focus = lines.body.iter().position(|b| b.focused).unwrap_or(0);
-    let top = focus
-        .saturating_sub(room.saturating_sub(1))
-        .min(lines.body.len().saturating_sub(room));
-    let top = if lines.caret.is_some_and(|(row, _)| row == 0) {
-        0
-    } else {
-        top
-    };
-    for (offset, body) in lines.body.iter().skip(top).take(room).enumerate() {
-        let y = inner.y + 2 + offset as u16;
-        let row = Rect::new(inner.x, y, inner.width, 1);
-        if body.focused {
-            frame.buffer_mut().set_style(row, theme::row_focus());
-            bar(frame, row);
-        }
-        frame.buffer_mut().set_line(row.x, y, &body.line, row.width);
-        if let Some(hit) = body.hit {
-            page.hits.push((row, hit));
-        }
-        if let Some((at, x)) = lines.caret
-            && at == top + offset
-        {
-            caret.put(
-                Position::new((row.x + x).min(row.right().saturating_sub(1)), y),
-                true,
-            );
-        }
-    }
-    let mut y = inner.bottom().saturating_sub(3);
-    // 报错、按钮、按键提示：落在窗里的才画。终端只有四五行高时它们算到窗外，原来 `y - 1` 下溢崩溃（review A7）。
-    let inside = |y: u16| y >= inner.y && y < inner.bottom();
-    // 报错折行写全（最多三行），写在按钮上面（2026-10-13 验收 T-181：原来一行截掉，「最长 64 个字符」看不到）。
-    for (i, text) in errors.iter().rev().enumerate() {
-        if let Some(above) = y.checked_sub(1 + i as u16).filter(|&r| inside(r)) {
-            frame
-                .buffer_mut()
-                .set_string(inner.x, above, text, theme::error());
-        }
-    }
-    let mut x = inner.x;
-    let buttons = if inside(y) {
-        lines.buttons.as_slice()
-    } else {
-        &[]
-    };
-    for (i, (label, danger)) in buttons.iter().enumerate() {
-        let text = format!("[ {label} ]");
-        let on = lines.button == Some(i);
-        let style = match (on, danger) {
-            (true, true) => theme::error().add_modifier(Modifier::REVERSED),
-            (true, false) => theme::picked_bar(),
-            _ => Style::new(),
-        };
-        let w = text.width() as u16;
-        frame.buffer_mut().set_string(x, y, &text, style);
-        page.hits.push((Rect::new(x, y, w, 1), Hit::Button(i)));
-        x += w + 2;
-    }
-    // 按钮和按键提示之间空一行（2026-10-07 项目主人）。
-    y += 2;
-    if inside(y) {
-        frame
-            .buffer_mut()
-            .set_line(inner.x, y, &hint_line(&lines.hints), inner.width);
-    }
-}
-
-/// 报错折成几行：最多三行，还放不下的第三行截掉加「…」。
-fn error_rows(error: &str, width: usize) -> Vec<String> {
-    let mut rows = crate::cells::wrap(error, width.max(1));
-    if rows.len() > 3 {
-        let rest: String = rows.split_off(2).concat();
-        rows.push(fit(&rest, width));
-    }
-    rows
 }

@@ -15,6 +15,7 @@ mod drawer;
 pub use drawer::PreviewLook;
 pub mod effort_list;
 mod figure_rows;
+mod floating;
 mod footer;
 mod foreign_rows;
 mod goal_tag;
