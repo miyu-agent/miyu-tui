@@ -89,6 +89,7 @@ impl App {
                 system_language,
                 human_asked: false,
                 config_asks: Default::default(),
+                look: Default::default(),
             },
             typing: super::typing::Typing {
                 input,

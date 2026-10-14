@@ -112,6 +112,10 @@ impl Tui {
         command.env("MIYU_TUI_PRESET", "full");
         command.env("MIYU_RESOURCES", resources());
         command.env("XDG_CACHE_HOME", home.join("cache"));
+        // macOS 的缓存目录照家目录（`~/Library/Caches/Miyu`），不认 `XDG_CACHE_HOME`：家目录也指测试的，不往跑测试的这台
+        // 电脑的缓存里写，几个测试也不共用一份（2026-10-15 先画后连记下的样子在 macOS 上被别的测试盖掉）。
+        #[cfg(target_os = "macos")]
+        command.env("HOME", home.join("macos-home"));
         command.env("TERM", "xterm-256color");
         command.env("COLORTERM", "truecolor");
         // 跟随壁纸只认测试家目录里的 matugen 那一份，不看跑测试的这台电脑的桌面。

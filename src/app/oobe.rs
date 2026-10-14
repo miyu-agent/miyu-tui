@@ -175,6 +175,7 @@ impl App {
                     .as_ref()
                     .map(|got| got["items"]["ui.welcomed"]["value"] == true);
                 // 核心不认这个键（旧核心）、读不成的当走过了（第 1 条）。
+                self.note_welcomed(welcomed != Ok(false));
                 let standalone = self.boxes.settings.as_ref().is_some_and(|s| s.standalone);
                 if welcomed == Ok(false) && self.boxes.oobe.is_none() && !standalone {
                     self.open_oobe();
@@ -204,6 +205,7 @@ impl App {
             }
             Update::Disconnected | Update::Failed(_) | Update::NoCoreBin | Update::Missing(_) => {
                 self.boxes.welcome_known = true;
+                self.boxes.personas_known = true;
                 let (lost, texts) = (
                     self.config.text.turn_cut.clone(),
                     self.config.text.oobe.clone(),

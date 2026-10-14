@@ -38,13 +38,8 @@ impl App {
                 false
             }
             Update::Answer { tag, result } if *tag == ICONS_TAG => {
-                if let Some(name) = result
-                    .as_ref()
-                    .ok()
-                    .and_then(|got| got["items"]["tui.icons"]["value"].as_str())
-                {
-                    let name = name.to_string();
-                    self.use_icons(&name);
+                if let Ok(got) = result {
+                    self.take_icons(got);
                 }
                 true
             }
@@ -63,11 +58,7 @@ impl App {
             // 主题那几项（「主题」第 6 条）：读到的盖上，照新的挑一套。
             Update::Answer { tag, result } if *tag == THEME_TAG => {
                 if let Ok(got) = result {
-                    self.screen.theme_choice.apply(got);
-                    // 跟随壁纸自选的主色（2026-10-14）：换了要重挑一套。
-                    self.screen.theme_pick = crate::theme::choice::chosen_seed(got);
-                    self.screen.theme_seed = self.wanted_seed();
-                    self.apply_theme();
+                    self.take_theme(got);
                 }
                 true
             }
@@ -80,6 +71,32 @@ impl App {
             }
             _ => false,
         }
+    }
+
+    /// 照读到的终端配置项办（先画后连时照上次记下的，`look.rs`）：图标、时间线、吉祥物的开关、主题、开局级别；没有的照旧。
+    pub(super) fn apply_head_settings(&mut self, got: &Value) {
+        self.take_icons(got);
+        self.config.timeline.apply(got);
+        self.config.layout.apply_mascot(got);
+        self.take_theme(got);
+        self.default_level(got);
+    }
+
+    /// 图标那一套（「图标」第 4 条）。
+    fn take_icons(&mut self, got: &Value) {
+        if let Some(name) = got["items"]["tui.icons"]["value"].as_str() {
+            let name = name.to_string();
+            self.use_icons(&name);
+        }
+    }
+
+    /// 主题那几项（「主题」第 6 条）：读到的盖上，照新的挑一套。
+    fn take_theme(&mut self, got: &Value) {
+        self.screen.theme_choice.apply(got);
+        // 跟随壁纸自选的主色（2026-10-14）：换了要重挑一套。
+        self.screen.theme_pick = crate::theme::choice::chosen_seed(got);
+        self.screen.theme_seed = self.wanted_seed();
+        self.apply_theme();
     }
 
     /// 读到新会话开局的级别：开局只读的是只读，不然照常用的那一级；认不出的不动。还没开会话、这一回的首页上没按过 Tab

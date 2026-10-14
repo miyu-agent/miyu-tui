@@ -137,6 +137,13 @@ impl Wallpaper {
         self.found == Found::Image
     }
 
+    /// 先画后连：还没找过的，先照上次记下的候选主色（`app/look.rs`）；找好了照找到的换。
+    pub fn restore(&mut self, seeds: &[u32]) {
+        if self.found == Found::Unknown && !seeds.is_empty() {
+            self.found = Found::Seeds(seeds.to_vec());
+        }
+    }
+
     /// 文件变了时怎么叫醒主循环（`main.rs` 装上）。
     pub fn set_wake(&mut self, wake: Wake) {
         self.wake = Some(wake);

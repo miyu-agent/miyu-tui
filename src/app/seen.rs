@@ -235,7 +235,7 @@ impl<'a> Seen<'a> {
     /// 还在等 `ui.welcomed`：问到以前、最多 `oobe.json` 的 `welcome_wait_ms`，不画首页（「第一次打开的引导」第 1 条，
     /// 2026-10-10 项目主人报：进引导前闪一下空会话）。
     pub fn welcome_pending(&self, now: Instant) -> bool {
-        !self.boxes.welcome_known && now < self.welcome_until()
+        !(self.boxes.welcome_known && self.boxes.personas_known) && now < self.welcome_until()
     }
 
     /// 等 `ui.welcomed` 等到什么时候。

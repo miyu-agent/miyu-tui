@@ -233,6 +233,8 @@ fn run(
     let depth = theme::Depth::detect(|name| std::env::var(name).ok());
     theme::terminal_colors::install(colors, ground, depth);
     app.set_terminal_dark(ground.map(|g| g.dark));
+    // 先画后连：照上次记下的样子摆好，第一帧不等核心（蓝图「连核心」第 1 条，`app/look.rs`）。
+    app.restore_look();
     // `MIYU_TUI_MASCOT`：照本机的模型文件画吉祥物（蓝图「吉祥物包」第 5 条）。
     app.mascot_preview();
     // `--page config`：一起来就停在配置页（蓝图「配置页」第 1 条）。
