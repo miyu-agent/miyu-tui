@@ -298,6 +298,9 @@ impl App {
             self.talk.transcript.link = link;
             self.talk.board = back.board;
             self.screen.view = back.view;
+            // 补完换上来的这一下当场画，不等下一拍（「每一帧」；2026-10-15 查出 `--resume` 打开长会话时正文要等到上一帧
+            // 后面的那一拍，白等二十多毫秒）。
+            self.screen.draw_now = true;
         }
         self.prune();
     }
