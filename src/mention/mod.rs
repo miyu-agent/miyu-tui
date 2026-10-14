@@ -86,6 +86,8 @@ pub struct Mention {
     opened: bool,
     /// 最近一次问的词、什么时候问的、回应到了没有。
     asked: Option<(Word, Instant, bool)>,
+    /// 最近一次问的是等清单建完再答的（`wait`）。
+    waited: bool,
     /// 最近一份用得上的回应。
     reply: Option<Reply>,
 }
@@ -101,6 +103,7 @@ impl Mention {
             dismissed: None,
             opened: false,
             asked: None,
+            waited: false,
             reply: None,
         }
     }
@@ -155,7 +158,8 @@ impl Mention {
         }
     }
 
-    /// 现在该不该问核心：开着、词没问过，或者这个词的清单还在建、上一次回来了、隔了 `poll_ms`。问了就记下。
+    /// 现在该不该问核心：开着、词没问过，或者这个词的清单还在建、上一次回来了。清单在建的再问一次带 `wait`，核心建完了
+    /// 才答（核心 V-6 上；原来隔 `poll_ms` 再问，直到建完）。问了就记下。
     pub fn next_ask(&mut self, now: Instant) -> Option<(Word, Ask)> {
         let word = self.typed.clone()?;
         if self.dismissed.as_ref() == Some(&word) {
@@ -169,17 +173,28 @@ impl Mention {
         if !again {
             return None;
         }
-        let ask = Ask::of(&word.1, std::mem::take(&mut self.opened));
+        let again_same = matches!(&self.asked, Some((asked, _, _)) if *asked == word);
+        let mut ask = Ask::of(&word.1, std::mem::take(&mut self.opened));
+        if let Ask::Find { wait, .. } = &mut ask {
+            *wait = again_same;
+        }
+        self.waited = again_same;
         self.asked = Some((word.clone(), now, false));
         Some((word, ask))
     }
 
-    /// 这个词的清单还在建、上一次回来了：几时再问。
+    /// 这个词的清单还在建、上一次回来了：几时再问。头一回当场问（带 `wait`）；带了 `wait` 回来还说在建的是旧核心（不认
+    /// `wait`），照原来隔 `poll_ms` 再问。
     fn due(&self) -> Option<Instant> {
         let (asked, at, back) = self.asked.as_ref()?;
         let reply = self.reply.as_ref()?;
+        let pause = if self.waited {
+            Duration::from_millis(self.look.poll_ms)
+        } else {
+            Duration::ZERO
+        };
         (*back && reply.building && reply.word == *asked && self.typed.as_ref() == Some(asked))
-            .then(|| *at + Duration::from_millis(self.look.poll_ms))
+            .then(|| *at + pause)
     }
 
     /// 下一次要自己醒来再问的时刻。

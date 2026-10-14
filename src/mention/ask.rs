@@ -12,8 +12,12 @@ use super::{Candidate, Status};
 pub enum Ask {
     /// 按目录找：`dir` 是打的那一截目录（带最后的 `/`，`~` 打头的写成 `~/`），`prefix` 是名字的开头。
     List { dir: String, prefix: String },
-    /// 模糊找；`fresh`：列表刚弹出来。
-    Find { query: String, fresh: bool },
+    /// 模糊找；`fresh`：列表刚弹出来；`wait`：清单还在建，等建完再答（核心 V-6 上）。
+    Find {
+        query: String,
+        fresh: bool,
+        wait: bool,
+    },
 }
 
 impl Ask {
@@ -23,6 +27,7 @@ impl Ask {
             return Ask::Find {
                 query: query.to_string(),
                 fresh,
+                wait: false,
             };
         }
         let (dir, prefix) = match query.rfind('/') {
@@ -45,10 +50,13 @@ impl Ask {
             Ask::List { dir, prefix } => {
                 ("fs.list", json!({"cwd": cwd, "dir": dir, "prefix": prefix}))
             }
-            Ask::Find { query, fresh } => (
-                "fs.find",
-                json!({"cwd": cwd, "query": query, "fresh": fresh}),
-            ),
+            Ask::Find { query, fresh, wait } => {
+                let mut params = json!({"cwd": cwd, "query": query, "fresh": fresh});
+                if *wait {
+                    params["wait"] = json!(true);
+                }
+                ("fs.find", params)
+            }
         }
     }
 
