@@ -53,6 +53,8 @@ pub struct Keys {
     pub view: String,
     /// 光标停着、没在编辑的格子右端写的。
     pub enter_edit: String,
+    /// 光标停着的选一个的格子右端暗色写的（主题那一步，「Enter 选择」）。
+    pub enter_pick: String,
     /// 选预设（自定义以外的几块）。
     pub presets: String,
     /// 「更多供应商」浮窗。

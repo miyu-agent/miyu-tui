@@ -1,7 +1,8 @@
-//! 主题那一步（蓝图 `tui.md`「第一次打开的引导」第 23a 条，2026-10-13 项目主人定，版面 2026-10-14 定）：明暗、配色两行
-//! 左右切换，选的时候整个界面当场换成选的样子（App 每一帧照 [`ThemeStep::preview`] 挑，`app/theme.rs`）。`Enter` 写个人
-//! 设置的 `tui.theme_mode`、`tui.theme`，`Esc` 回上一步、换回原来的样子。配色没写过、人格那一步有头像（或写了主题色）的，
-//! 进来停在「跟随头像」。
+//! 主题那一步（蓝图 `tui.md`「第一次打开的引导」第 23a 条，2026-10-13 项目主人定，版面 2026-10-14 定）：明暗、配色两行，
+//! 在一行上按 `Enter` 开选择窗（和配置页选值的同一个、同一套键，2026-10-14 项目主人：以后主题多了、有别人做的，左右切不
+//! 好用），上下挪的时候整个界面当场换成挪到的样子（App 每一帧照 [`ThemeStep::preview`] 挑，`app/theme.rs`），`Enter` 选好，
+//! `Esc` 换回开窗以前的。「下一步 →」写个人设置的 `tui.theme_mode`、`tui.theme`，`Esc` 回上一步、换回原来的样子。配色没
+//! 写过、人格那一步有头像（或写了主题色）的，进来停在「跟随头像」。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
@@ -9,10 +10,12 @@ use serde_json::{Value, json};
 use super::Move;
 use super::asker::{Asker, Waiting};
 use super::nav::{self, Nav};
+use super::texts::Theme as Words;
 use crate::core::Refusal;
+use crate::settings::pages::choose::{Choice, Choose, Pressed};
 use crate::theme::choice::{COLORS, Mode};
 
-/// 明暗三档，照这个先后左右换；配置里的写法同下标。
+/// 明暗三档，选择窗照这个先后列；配置里的写法同下标。
 pub const MODES: [Mode; 3] = [Mode::Auto, Mode::Dark, Mode::Light];
 const MODE_NAMES: [&str; 3] = ["auto", "dark", "light"];
 
@@ -47,9 +50,13 @@ pub struct ThemeStep {
     read: bool,
     /// 配色哪一层都没写（`config.get` 的来源是默认值）。
     unset: bool,
-    /// 这一回左右换过配色：不再替人停到「跟随头像」。
+    /// 这一回选过配色：不再替人停到「跟随头像」。
     turned: bool,
     entered: bool,
+    /// 开着的选择窗（明暗、配色那一行按 `Enter` 开的）。
+    pub picking: Option<Choose>,
+    /// 开窗以前选着第几个：`Esc` 换回它。
+    before: usize,
 }
 
 impl ThemeStep {
@@ -73,8 +80,29 @@ impl ThemeStep {
         }
     }
 
-    /// 按了一个键：上下换行，左右换值（当场换样子），`Enter` 写，`Esc` 回上一步。
-    pub fn key(&mut self, key: KeyEvent, asker: &mut Asker) -> Move {
+    /// 按了一个键：开着选择窗的归它（挪了当场换样子，`Esc` 换回开窗以前的）；不然上下换行，明暗、配色那一行 `Enter` 开
+    /// 选择窗，「下一步」那一行 `Enter` 写，`Esc` 回上一步。
+    pub fn key(&mut self, key: KeyEvent, asker: &mut Asker, words: &Words) -> Move {
+        if let Some(choose) = &mut self.picking {
+            match choose.press(key) {
+                Pressed::Moved => {
+                    let at = choose.sel;
+                    self.set(at);
+                }
+                Pressed::Picked(_) => {
+                    let at = choose.sel;
+                    self.set(at);
+                    self.picking = None;
+                }
+                Pressed::Cancelled => {
+                    let before = self.before;
+                    self.set(before);
+                    self.picking = None;
+                }
+                Pressed::Ignored => {}
+            }
+            return Move::Stay;
+        }
         if key.code == KeyCode::Esc {
             return Move::Back;
         }
@@ -94,20 +122,54 @@ impl ThemeStep {
                     _ => Slot::Next,
                 }
             }
-            Some(Nav::Left) => self.turn(MODES.len() - 1),
-            Some(Nav::Right) => self.turn(1),
-            None if key.code == KeyCode::Enter => self.save(asker),
-            None => {}
+            None if key.code == KeyCode::Enter => match self.slot {
+                Slot::Next => self.save(asker),
+                _ => self.open(words),
+            },
+            _ => {}
         }
         Move::Stay
     }
 
-    /// 光标那一行往右挪 `by` 个（左挪是挪「个数 - 1」个），到头绕回来。
-    fn turn(&mut self, by: usize) {
+    /// 光标那一行开选择窗：一个选项一行，停在选着的那个上。
+    fn open(&mut self, words: &Words) {
+        let (key, title, names, values, at): (_, _, &[String], &[&str], _) = match self.slot {
+            Slot::Mode => (
+                "tui.theme_mode",
+                &words.rows[0],
+                &words.modes,
+                &MODE_NAMES,
+                self.mode,
+            ),
+            Slot::Colors => (
+                "tui.theme",
+                &words.rows[1],
+                &words.colors,
+                &COLORS,
+                self.colors,
+            ),
+            Slot::Next => return,
+        };
+        let choices = names
+            .iter()
+            .zip(values)
+            .map(|(name, value)| Choice {
+                value: json!(value),
+                label: name.clone(),
+                note: None,
+                off: None,
+            })
+            .collect();
+        self.before = at;
+        self.picking = Some(Choose::open(key, title, choices, &json!(values[at])));
+    }
+
+    /// 光标那一行选成第 `at` 个：当场换样子。
+    fn set(&mut self, at: usize) {
         match self.slot {
-            Slot::Mode => self.mode = (self.mode + by) % MODES.len(),
+            Slot::Mode => self.mode = at.min(MODES.len() - 1),
             Slot::Colors => {
-                self.colors = (self.colors + by) % COLORS.len();
+                self.colors = at.min(COLORS.len() - 1);
                 self.turned = true;
             }
             Slot::Next => return,

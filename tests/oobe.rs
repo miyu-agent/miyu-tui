@@ -49,9 +49,11 @@ fn read(path: &PathBuf) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
 }
 
-/// 主题那一步（2026-10-13 项目主人定）：回车照停着的写。
+/// 主题那一步（2026-10-13 项目主人定）：挪到「下一步」回车，照停着的写（明暗、配色那一格回车是开列表）。
 fn through_theme(tui: &mut support::Tui) {
     tui.wait_for("选择明暗和配色");
+    tui.key(b"j");
+    tui.key(b"j");
     tui.key(b"\r");
 }
 
@@ -129,19 +131,23 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.wait_for("说话简短。");
     tui.key(b"\x1b[B");
     tui.key(b"\r");
-    // 建好、写成默认人格，到了主题（第 22a 条）：没头像的停在现在的配置；明暗往右一格是深色，当场铺上 tokyonight
-    // 深色的底；回车写下。
+    // 建好、写成默认人格，到了主题（第 22a 条）：没头像的停在现在的配置；明暗那一格回车开列表（2026-10-14 项目主人：
+    // 和配置页选值的同一个），挪到深色就当场铺上 tokyonight 深色的底；回车选好，挪到「下一步」写下。
     tui.wait_for("选择明暗和配色");
     assert!(tui.shows("Tokyo Night"), "{}", tui.lines().join("\n"));
-    assert_eq!(tui.background(0, 0), vt100::Color::Default, "跟随终端不铺");
-    tui.key(b"l");
-    tui.wait_for("深色");
+    assert_eq!(tui.background(0, 0), vt100::Color::Default, "自动不铺");
+    tui.key(b"\r");
+    tui.wait_for("浅色");
+    tui.key(b"j");
     tui.pump(Duration::from_millis(300));
     assert_eq!(
         tui.background(0, 0),
         vt100::Color::Rgb(0x1a, 0x1b, 0x26),
-        "选的时候当场换"
+        "挪到就当场换"
     );
+    tui.key(b"\r");
+    tui.key(b"j");
+    tui.key(b"j");
     tui.key(b"\r");
     through_profile(&mut tui);
     tui.wait_for("选择预设");

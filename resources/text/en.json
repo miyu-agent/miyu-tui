@@ -1276,10 +1276,10 @@
       "custom_name": "Enter edit · j/k move · Esc close",
       "create": "Enter create · j/k move · Esc close",
       "view": "j/k scroll · Space close",
-      "enter_edit": "Enter to edit",
+      "enter_edit": "Enter to edit", "enter_pick": "Enter to choose",
       "presets": "↑↓ choose · Space details · Enter next · Esc back",
       "more": "Type to search · ↑↓ choose · Enter confirm · Esc close",
-      "theme": "←→ change · j/k move · Enter next · Esc back"
+      "theme": "Enter choose · j/k move · Esc back"
     },
     "language": {
       "title": "Language",

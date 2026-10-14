@@ -1276,10 +1276,10 @@
       "custom_name": "Enter 編集 · j/k 移動 · Esc 閉じる",
       "create": "Enter 作成 · j/k 移動 · Esc 閉じる",
       "view": "j/k スクロール · Space 閉じる",
-      "enter_edit": "Enter で編集",
+      "enter_edit": "Enter で編集", "enter_pick": "Enter で選択",
       "presets": "↑↓ 選ぶ · Space 詳細 · Enter 次へ · Esc 戻る",
       "more": "入力して検索 · ↑↓ 選ぶ · Enter 確定 · Esc 閉じる",
-      "theme": "←→ 切替 · j/k 移動 · Enter 次へ · Esc 戻る"
+      "theme": "Enter 選択 · j/k 移動 · Esc 戻る"
     },
     "language": {
       "title": "表示言語",
