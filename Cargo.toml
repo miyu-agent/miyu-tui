@@ -17,7 +17,7 @@ jiff = "0.2"
 miyu-client = { git = "https://github.com/miyu-agent/miyu", rev = "68032763dd33034d013f181e4b7c7e6b1c928dfb" }
 # 主题「跟随壁纸」找桌面壁纸、matugen 那一份颜色（蓝图「主题」的「跟随壁纸」）：和网页同一个来处，照网页仓库的 git 提交钉住，
 # 升级就是改这个 rev。只用标准库，跑系统的命令（awww、gsettings、osascript……）。
-miyu-wallpaper = { git = "https://github.com/miyu-agent/miyu-web", rev = "691aefd8ad0dcc2a6fa4c0483f4ef8d2d19de594" }
+miyu-wallpaper = { git = "https://github.com/miyu-agent/miyu-web", rev = "55df88486cf27298494580d00da43f57a1725ea2" }
 # 她的回答按 Markdown 画（蓝图 tui.md「她的回答：Markdown」）；旧版用的也是它。
 pulldown-cmark = { version = "0.13", default-features = false }
 # 编辑、写入的差异按行比：和 crates/miyu-endpoint 用的是同一个。
