@@ -37,6 +37,7 @@ mod menu;
 mod meter;
 mod model_list;
 mod money;
+mod note;
 mod notify;
 mod oobe;
 mod open;
@@ -185,6 +186,8 @@ enum Incoming {
     Terminal(Event),
     Core(Update),
     Figure(figures::Done),
+    /// 只是叫醒：跟随壁纸盯着的文件变了，这一拍再找（`theme/wallpaper.rs`）。
+    Wake,
 }
 
 /// 主循环：画一帧，等事件；一次把攒着的都处理完再画，空闲时不重画。
@@ -208,6 +211,7 @@ fn run(
         to_core.send(Incoming::Core(update)).is_ok()
     });
     let to_main = sender.clone();
+    let to_wake = sender.clone();
     // 点开看的 mermaid 大图放在机器共用的缓存目录下（蓝图「图片、公式和 mermaid 图」第 4 条）。
     let zoom_dir = miyu_client::places::cache_root(&Env::current())
         .ok()
@@ -223,6 +227,10 @@ fn run(
     ));
     let human = human::Human::default();
     let mut app = App::new(config, core, human, figures);
+    // 跟随壁纸盯着的文件变了：叫醒主循环，这一拍再找（蓝图「主题」的「跟随壁纸」第 3 条）。
+    app.screen.wallpaper.set_wake(std::sync::Arc::new(move || {
+        if to_wake.send(Incoming::Wake).is_err() {}
+    }));
     // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）；问到的终端颜色在挑主题以前装上（终端配色照它推底色）。
     let depth = theme::Depth::detect(|name| std::env::var(name).ok());
     theme::terminal_colors::install(colors, ground, depth);
@@ -305,6 +313,7 @@ fn dispatch(app: &mut App, message: Incoming) {
         Incoming::Terminal(event) => app.handle(event),
         Incoming::Core(update) => app.core(update),
         Incoming::Figure(done) => app.media.figures.borrow_mut().done(done),
+        Incoming::Wake => {}
     }
 }
 

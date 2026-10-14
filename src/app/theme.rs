@@ -78,6 +78,11 @@ impl App {
             let dark = self.choice().dark(self.screen.terminal_dark);
             self.screen.wallpaper.look(dark);
         }
+        // 盯着的文件变了（换了壁纸）：再找一次（不定时查，2026-10-14 项目主人）。
+        if self.screen.wallpaper.take_changed() {
+            let dark = self.choice().dark(self.screen.terminal_dark);
+            self.screen.wallpaper.look(dark);
+        }
         self.screen.wallpaper_wanted = wanted;
         self.screen.wallpaper.collect();
         let available = self.screen.wallpaper.available();
@@ -86,6 +91,14 @@ impl App {
         }
         if let Some(settings) = &mut self.boxes.settings {
             settings.more.wallpaper = available;
+        }
+    }
+
+    /// 窗口拿回焦点：选着跟随壁纸的再找一次。
+    pub(super) fn wallpaper_focus(&mut self) {
+        if self.choice().colors == "wallpaper" {
+            let dark = self.choice().dark(self.screen.terminal_dark);
+            self.screen.wallpaper.look(dark);
         }
     }
 
