@@ -114,6 +114,7 @@ impl App {
                     problem: None,
                     avatar: None,
                     seed: None,
+                    seeds: None,
                 },
             );
         }
@@ -324,6 +325,7 @@ mod tests {
             problem: problem.map(str::to_string),
             avatar: None,
             seed: None,
+            seeds: None,
         }
     }
 

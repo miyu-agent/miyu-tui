@@ -1,63 +1,16 @@
-//! 跟随头像的配色（蓝图 `tui.md`「主题」第 5 条、「跟随头像的配色」，2026-10-13 项目主人定）：主色照人格的 `seed`，没写的从
-//! 头像的像素取；照 MD3 `SchemeContent` 生成几条色板，每一格都换（`overlay`）。两个头同一套算法（2026-10-14 项目主人定，
+//! 跟随头像的配色（蓝图 `tui.md`「主题」第 5 条、「跟随头像的配色」，2026-10-13 项目主人定）：主色照人格的 `seed`，没写的
+//! 照头像的候选里打分最高的（候选由核心算、人格信息里给，壁纸的用同一份门面 `miyu_client::seeds`，2026-10-14 项目主人定）；
+//! 照 MD3 `SchemeContent` 生成几条色板，每一格都换（`overlay`）。两个头同一套算法（2026-10-14 项目主人定，
 //! 网页 `web-demo/src/lib/md3/index.js` 照这个改），同一个人格出来的颜色一样。
-
-use std::path::Path;
 
 use material_colors::blend::harmonize;
 use material_colors::color::Rgb;
 use material_colors::hct::Hct;
 use material_colors::palette::TonalPalette;
-use material_colors::quantize::{Quantizer, QuantizerCelebi};
 use material_colors::scheme::variant::SchemeContent;
-use material_colors::score::Score;
 use ratatui::style::Color;
 
 use super::{Palette, Tone};
-
-/// 取主色时最多挑多少种颜色（MD3 取壁纸色的做法）。
-const QUANTIZE: usize = 128;
-/// 太透明的像素不算（头像的圆角外面、抠了图的背景）。
-const MIN_ALPHA: u8 = 200;
-/// 取色前先缩到这么大（边长）：头像几百像素，缩小了取出来的主色一样，快得多。
-const SIDE: u32 = 128;
-
-/// 头像的主色：RGBA 的像素一格四个数，太透明的不算；一格都不剩的是 `None`。
-pub fn seed_of(rgba: &[u8]) -> Option<u32> {
-    let pixels: Vec<Rgb> = rgba
-        .chunks_exact(4)
-        .filter(|p| p[3] >= MIN_ALPHA)
-        .map(|p| Rgb::new(p[0], p[1], p[2]))
-        .collect();
-    if pixels.is_empty() {
-        return None;
-    }
-    let result = QuantizerCelebi::quantize(&pixels, QUANTIZE);
-    let ranked = Score::score(&result.color_to_count, None, None, None);
-    ranked.first().map(|c| argb(*c))
-}
-
-/// 读一张头像取主色；读不成的是 `None`。格式照文件内容认：从核心要来的头像照版本存，文件名没有扩展名。
-pub fn seed_of_file(path: &Path) -> Option<u32> {
-    let image = image::ImageReader::open(path)
-        .ok()?
-        .with_guessed_format()
-        .ok()?
-        .decode()
-        .ok()?
-        .thumbnail(SIDE, SIDE)
-        .to_rgba8();
-    seed_of(image.as_raw())
-}
-
-/// 一张图的字节取主色（跟随壁纸：macOS 的 HEIC 先转成 JPEG 交过来）；读不成的是 `None`。
-pub fn seed_of_bytes(bytes: &[u8]) -> Option<u32> {
-    let image = image::load_from_memory(bytes)
-        .ok()?
-        .thumbnail(SIDE, SIDE)
-        .to_rgba8();
-    seed_of(image.as_raw())
-}
 
 /// 人格里自选的主色 `#rrggbb`；写错的是 `None`。
 pub fn hex(seed: &str) -> Option<u32> {
@@ -167,11 +120,6 @@ pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
     }
 }
 
-/// `Rgb` 写成 `0xRRGGBB`。
-fn argb(c: Rgb) -> u32 {
-    (u32::from(c.red) << 16) | (u32::from(c.green) << 8) | u32::from(c.blue)
-}
-
 #[cfg(test)]
 mod tests {
     use ratatui::style::Color;
@@ -179,29 +127,9 @@ mod tests {
     use material_colors::color::Rgb;
     use material_colors::hct::Hct;
 
-    use super::{hex, overlay, seed_of};
+    use super::{hex, overlay};
     use crate::theme::Tone;
     use crate::theme::builtin;
-
-    #[test]
-    fn the_seed_is_the_main_color_and_see_through_pixels_do_not_count() {
-        // 一张大部分是红、一小块绿的图：主色是红；透明的蓝不算。
-        let mut rgba = Vec::new();
-        for i in 0..400 {
-            let px: [u8; 4] = if i < 300 {
-                [0xd0, 0x30, 0x30, 255]
-            } else if i < 340 {
-                [0x30, 0xb0, 0x40, 255]
-            } else {
-                [0x20, 0x40, 0xf0, 10]
-            };
-            rgba.extend(px);
-        }
-        let seed = seed_of(&rgba).unwrap();
-        let (r, g, b) = ((seed >> 16) & 0xff, (seed >> 8) & 0xff, seed & 0xff);
-        assert!(r > g && r > b, "主色是红的：{seed:06x}");
-        assert_eq!(seed_of(&[0, 0, 0, 0]), None, "全透明的没有主色");
-    }
 
     #[test]
     fn a_hand_picked_seed_is_read_and_a_bad_one_is_not() {
@@ -249,22 +177,5 @@ mod tests {
             assert!(turned <= 15.5, "{name} 出错的红只偏一点：{turned}");
             assert!((error.2 - before.2).abs() < 1.0, "{name} 出错的红亮度不变");
         }
-    }
-
-    #[test]
-    fn a_cached_avatar_without_an_extension_still_gives_its_main_color() {
-        // 2026-10-14 项目主人报「主题跟随头像好像没生效」：从核心要来的头像照版本存成没有扩展名的文件，原来照扩展名认格式，
-        // 读不出，一直照 tokyonight。照文件内容认。
-        let dir = std::env::temp_dir().join(format!("miyu-tui-seed-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let file = dir.join("45d6f2bef190c961");
-        let png = dir.join("green.png");
-        image::RgbaImage::from_pixel(8, 8, image::Rgba([0x30, 0xb0, 0x40, 255]))
-            .save(&png)
-            .unwrap();
-        std::fs::rename(&png, &file).unwrap();
-        let seed = super::seed_of_file(&file).expect("读得出");
-        assert!((seed >> 8) & 0xff > (seed >> 16) & 0xff, "绿的：{seed:06x}");
-        std::fs::remove_dir_all(&dir).unwrap();
     }
 }

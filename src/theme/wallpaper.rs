@@ -17,15 +17,15 @@ use miyu_wallpaper::watch::Watch;
 use serde_json::Value;
 
 /// 找到了什么。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Found {
     /// 还没找过。
     #[default]
     Unknown,
     /// 找过了，没有能取色的。
     Nothing,
-    /// 主色。
-    Seed(u32),
+    /// 能当主色的几个候选，好的在前（matugen 那一份只有它的 `source` 一个）。
+    Seeds(Vec<u32>),
 }
 
 /// 叫醒主循环（盯着的文件变了，下一拍再找）。
@@ -149,17 +149,17 @@ impl Wallpaper {
         }
     }
 
-    /// 主色；没找到、还没找好的是 `None`。
-    pub fn seed(&self) -> Option<u32> {
-        match self.found {
-            Found::Seed(seed) => Some(seed),
-            _ => None,
+    /// 能当主色的几个候选，好的在前；没找到、还没找好的是空的。
+    pub fn seeds(&self) -> &[u32] {
+        match &self.found {
+            Found::Seeds(seeds) => seeds,
+            _ => &[],
         }
     }
 
     /// 配色里列不列「跟随壁纸」：找到了能取色的才列。
     pub fn available(&self) -> bool {
-        self.seed().is_some()
+        !self.seeds().is_empty()
     }
 
     /// 在找：界面每一拍醒来看一次（`app/deadline.rs`）。
@@ -182,7 +182,7 @@ fn probe(dark: bool, desktop: bool) -> (Found, Vec<PathBuf>) {
         .and_then(|m| m.read().ok())
         .and_then(|json| source_of(&json));
     if let Some(seed) = matugen {
-        return (Found::Seed(seed), list());
+        return (Found::Seeds(vec![seed]), list());
     }
     if !desktop {
         return (Found::Nothing, list());
@@ -190,11 +190,16 @@ fn probe(dark: bool, desktop: bool) -> (Found, Vec<PathBuf>) {
     let Some(wallpaper) = miyu_wallpaper::find(dark).ok().flatten() else {
         return (Found::Nothing, list());
     };
-    let seed = wallpaper
+    let seeds = wallpaper
         .read()
-        .ok()
-        .and_then(|bytes| super::persona::seed_of_bytes(&bytes));
-    (seed.map_or(Found::Nothing, Found::Seed), wallpaper.watch)
+        .map(|bytes| super::seeds::of_image(&bytes))
+        .unwrap_or_default();
+    let found = if seeds.is_empty() {
+        Found::Nothing
+    } else {
+        Found::Seeds(seeds)
+    };
+    (found, wallpaper.watch)
 }
 
 /// matugen 那一份（网页仓库 `web/matugen/miyu-web.json` 模板生成的）的 `source`：`#rrggbb`。

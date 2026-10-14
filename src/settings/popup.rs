@@ -232,6 +232,8 @@ pub enum Delete {
     Preset(String),
     /// 一个人格的个人那一层（核心 P-3 下）：编号。
     Persona(String),
+    /// 一个人格的主题色（外观页「主色」跟随头像时恢复默认）：编号。
+    PersonaSeed(String),
 }
 
 #[cfg(test)]

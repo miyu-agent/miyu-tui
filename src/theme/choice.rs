@@ -36,6 +36,23 @@ pub const COLORS: [&str; 4] = ["persona", "wallpaper", "tokyonight", "terminal"]
 /// 照一个主色生成一套的配色：跟随头像、跟随壁纸（2026-10-14 项目主人定，同一套算法）。
 const SEEDED: [&str; 2] = ["persona", "wallpaper"];
 
+/// 跟随壁纸自选的主色（2026-10-14 项目主人定：能从几个候选里挑；跟随头像的存在人格上）：`#rrggbb`，没写的照打分最高的。
+pub const SEED_KEY: &str = "tui.theme_seed";
+
+/// `config.get` 回应里自选的主色；没写的、写错的是 `None`。
+pub fn chosen_seed(got: &Value) -> Option<u32> {
+    got["items"][SEED_KEY]["value"]
+        .as_str()
+        .and_then(super::persona::hex)
+}
+
+/// 候选里挑一个：自选的在候选里照它；不在的（换了壁纸，和 Android 一样）、没选的照打分最高的那个。
+pub fn pick_seed(seeds: &[u32], chosen: Option<u32>) -> Option<u32> {
+    chosen
+        .filter(|c| seeds.contains(c))
+        .or_else(|| seeds.first().copied())
+}
+
 /// 主题的几个配置项。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Choice {
@@ -159,6 +176,20 @@ mod tests {
 
     use super::{Choice, Mode, pick};
     use crate::theme::builtin;
+
+    #[test]
+    fn a_picked_main_color_holds_only_while_it_is_still_a_candidate() {
+        // 2026-10-14 项目主人定：跟随壁纸自选的主色在候选里照它；换了壁纸候选整个换了，回到打分最高的那个（和 Android 一样）。
+        let seeds = [0xd1_2b33, 0x36_b446];
+        assert_eq!(super::pick_seed(&seeds, Some(0x36_b446)), Some(0x36_b446));
+        assert_eq!(
+            super::pick_seed(&seeds, Some(0x12_3456)),
+            Some(0xd1_2b33),
+            "不在候选里"
+        );
+        assert_eq!(super::pick_seed(&seeds, None), Some(0xd1_2b33), "没选");
+        assert_eq!(super::pick_seed(&[], Some(0x36_b446)), None, "没有候选");
+    }
 
     #[test]
     fn following_the_wallpaper_colors_like_following_an_avatar_with_the_same_seed() {

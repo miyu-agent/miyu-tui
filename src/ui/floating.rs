@@ -83,7 +83,17 @@ pub fn choose<H>(
         } else {
             Style::new()
         };
-        let mut spans = vec![Span::raw("  "), Span::styled(fit(&c.label, room), style)];
+        let mut spans = vec![Span::raw("  ")];
+        // 主色的候选：前面一块那个颜色。
+        if let Some(rgb) = choose
+            .swatches
+            .then(|| c.value.as_str().and_then(crate::theme::persona::hex))
+            .flatten()
+        {
+            spans.push(swatch(rgb));
+            spans.push(Span::raw(" "));
+        }
+        spans.push(Span::styled(fit(&c.label, room), style));
         let used = c.label.width() + 2;
         if let Some(off) = &c.off {
             spans.push(Span::styled(
@@ -103,6 +113,12 @@ pub fn choose<H>(
         });
     }
     lines.hints = hints;
+}
+
+/// 一块颜色（两格宽）：主色的候选、外观页「主色」那一项的值。
+pub fn swatch(rgb: u32) -> Span<'static> {
+    let [_, r, g, b] = rgb.to_be_bytes();
+    Span::styled("██", Style::new().fg(ratatui::style::Color::Rgb(r, g, b)))
 }
 
 /// 在 `area` 正中画一个 `width` 宽的窗：点得到的行、按钮记进 `hits`，按钮交回 `button(i)`。

@@ -93,6 +93,15 @@ applies = "now"
 name = { en = "Colors", zh = "配色", ja = "配色" }
 description = { en = "Follow the persona's avatar, follow the desktop wallpaper, Tokyo Night, or the terminal's own colors.", zh = "跟随人格的头像生成、跟随桌面壁纸生成、tokyonight，或者跟着终端自己的配色。", ja = "ペルソナのアバターから作る配色、デスクトップの壁紙から作る配色、Tokyo Night、またはターミナル自身の配色。" }
 
+# 跟随壁纸自选的主色（终端蓝图「主题」的「主色」，2026-10-14 项目主人定）：从壁纸的几个候选里挑，`#rrggbb`；没写的、不在
+# 候选里的（换了壁纸）照打分最高的那个。跟随头像的主色存在人格上（`persona.set` 的 `seed`），不在这里。
+[settings.theme_seed]
+type = "text"
+max = 7
+applies = "now"
+name = { en = "Main color", zh = "主色", ja = "メインカラー" }
+description = { en = "The main color the colors are generated from, picked from a few candidates.", zh = "生成配色用的主色，从几个候选里挑。", ja = "配色を作るメインカラー。いくつかの候補から選ぶ。" }
+
 [settings.theme_mode]
 type = "option"
 choices = ["auto", "dark", "light"]

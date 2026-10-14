@@ -137,6 +137,11 @@ impl PersonaStep {
                         name: got["name"].as_str().unwrap_or_default().to_string(),
                         avatar: got["avatar"].as_str().map(str::to_string),
                         seed: got["seed"].as_str().map(str::to_string),
+                        seeds: got["seeds"].as_array().map(|list| {
+                            list.iter()
+                                .filter_map(|s| s.as_str().map(str::to_string))
+                                .collect()
+                        }),
                         ..Existing::default()
                     });
                     for prompt in PROMPTS {

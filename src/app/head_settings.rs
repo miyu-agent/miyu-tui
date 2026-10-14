@@ -31,7 +31,9 @@ impl App {
                 self.ask_config(ICONS_TAG, &["tui.icons"]);
                 self.ask_config(TIMELINE_TAG, &Timeline::KEYS);
                 self.ask_config(MASCOT_TAG, &Layout::MASCOT_KEYS);
-                self.ask_config(THEME_TAG, &crate::theme::choice::Choice::KEYS);
+                let mut keys = crate::theme::choice::Choice::KEYS.to_vec();
+                keys.push(crate::theme::choice::SEED_KEY);
+                self.ask_config(THEME_TAG, &keys);
                 self.ask_config(LEVEL_TAG, &LEVEL_KEYS);
                 false
             }
@@ -62,6 +64,9 @@ impl App {
             Update::Answer { tag, result } if *tag == THEME_TAG => {
                 if let Ok(got) = result {
                     self.screen.theme_choice.apply(got);
+                    // 跟随壁纸自选的主色（2026-10-14）：换了要重挑一套。
+                    self.screen.theme_pick = crate::theme::choice::chosen_seed(got);
+                    self.screen.theme_seed = self.wanted_seed();
                     self.apply_theme();
                 }
                 true

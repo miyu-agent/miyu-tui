@@ -103,6 +103,8 @@ enum Waiting {
     PersonaSaved(String, bool),
     /// 删一个人格的个人那一层（`persona.delete`）。
     PersonaDeleted,
+    /// 写一个人格的主题色（外观页「主色」，跟随头像时）。
+    PersonaSeed,
     /// 传头像（`blob.put`）：人格、换掉的头像的版本（「配置页」第 36 条）。
     AvatarPut(String, Option<String>),
     /// 读一份提示词的原文（`persona.read`），回来了交给编辑器：人格、哪一份。
@@ -167,6 +169,8 @@ pub struct Settings {
     prompt: Option<pages::persona_edit::PromptEdit>,
     /// 刚读到、要交给编辑器的：`App` 拿走一次（[`Settings::take_prompt`]）。
     editing: bool,
+    /// 改了人格（主色）：`App` 拿走一次，重读人格列表、照新的换颜色。
+    pub personas_changed: bool,
 }
 
 impl Settings {
@@ -263,6 +267,7 @@ impl Settings {
             Waiting::PresetDeleted => self.preset_deleted(result, texts),
             Waiting::PersonaSaved(id, open) => self.persona_saved((id, open), result, texts),
             Waiting::PersonaDeleted => self.persona_deleted(result, texts),
+            Waiting::PersonaSeed => self.persona_seed_saved(result, texts),
             Waiting::AvatarPut(id, version) => self.avatar_put((id, version), result),
             Waiting::PromptRead(id, prompt) => self.prompt_read((id, prompt), result),
             Waiting::ExamplesRead(id) => self.examples_read(id, result),

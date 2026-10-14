@@ -36,8 +36,12 @@ pub struct Screen {
     pub theme_choice: crate::theme::choice::Choice,
     /// 起来时问到的终端底色是不是深色；问不到的是 `None`（「主题」第 3 条）。
     pub terminal_dark: Option<bool>,
-    /// 跟随头像的配色正在用的主色（「主题」第 5 条）；没有的是 `None`。
+    /// 跟随头像、跟随壁纸的配色正在用的主色（「主题」第 5 条）；没有的是 `None`。
     pub theme_seed: Option<u32>,
+    /// 能当主色的几个候选，好的在前（头像的核心给，壁纸的门面算；外观页「主色」照它列）。
+    pub theme_seeds: Vec<u32>,
+    /// 跟随壁纸自选的主色（`tui.theme_seed`）：在候选里才用，不然照打分最高的那个。
+    pub theme_pick: Option<u32>,
     /// 从头像取出来的主色（后台取，一张只取一次）。
     pub seeds: crate::theme::seeds::Seeds,
     /// 跟随壁纸：后台找桌面壁纸、matugen 那一份（`theme/wallpaper.rs`）。
@@ -71,6 +75,8 @@ impl Screen {
             theme_choice: crate::theme::choice::Choice::default(),
             terminal_dark: None,
             theme_seed: None,
+            theme_seeds: Vec::new(),
+            theme_pick: None,
             seeds: crate::theme::seeds::Seeds::default(),
             wallpaper: crate::theme::wallpaper::Wallpaper::default(),
             wallpaper_seen: false,

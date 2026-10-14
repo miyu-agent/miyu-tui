@@ -41,7 +41,7 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
             .or(persona.existing_name.as_deref())
             .unwrap_or_default();
         let said = match persona.colors() {
-            Some(Colors::Seed(_)) => &words.from_seed,
+            Some(Colors::Given { seed: Some(_), .. }) => &words.from_seed,
             Some(_) => &words.from_avatar,
             None => &words.no_avatar,
         };

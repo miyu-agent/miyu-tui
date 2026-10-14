@@ -10,7 +10,6 @@ use super::App;
 use super::new_session::Pick;
 use crate::core::{Command, Update};
 use crate::oobe::asker::TAG_BASE;
-use crate::oobe::persona::Colors;
 
 /// 要头像的请求编号。
 const AVATAR_TAG: u64 = TAG_BASE - 5;
@@ -80,25 +79,15 @@ impl App {
         });
     }
 
-    /// 挑一张还没存的头像去要（`tick`）：画得了图的要首页、侧边栏的；跟随头像的配色另要正在看的人格的（画不了图也要，
-    /// 取色用，「主题」第 5 条）。
+    /// 挑一张还没存的头像去要（`tick`）：画得了图的要首页、侧边栏的（跟随头像的取色不用要：候选由核心给，「主题」第 5 条）。
     pub(super) fn ask_avatars(&mut self) {
         let shows = self.media.figures.borrow().shows();
-        let colors = self
-            .following()
-            .then(|| self.colors_source())
-            .flatten()
-            .and_then(|c| match c {
-                Colors::Avatar { persona, version } => Some((persona, version)),
-                _ => None,
-            });
         let seen = self.seen();
         let wanted: Vec<(String, String)> = [Place::Home, Place::Sidebar]
             .into_iter()
             .filter(|_| shows)
             .filter_map(|place| seen.wanted(place))
             .map(|(p, v)| (p.to_string(), v.to_string()))
-            .chain(colors)
             .collect();
         let refs: Vec<(&str, &str)> = wanted
             .iter()

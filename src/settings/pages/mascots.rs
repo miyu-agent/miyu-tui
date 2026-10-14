@@ -20,6 +20,7 @@ pub fn read(got: &Value) -> Vec<Persona> {
             problem: text(&p["problem"]),
             avatar: None,
             seed: None,
+            seeds: None,
         })
         .collect()
 }
