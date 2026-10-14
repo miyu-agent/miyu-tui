@@ -50,16 +50,12 @@ fn editor(work: &Path, text: &str, also: Option<&Path>) -> String {
     script.display().to_string()
 }
 
-/// 起在配置页，挪到「人格」进去（主菜单第三项：「权限」2026-10-10 并进了「通用」），`a` 建一个「我的人格」：建好开它的窗，光标
-/// 停在人格提示词。
+/// 起在配置页，挪到「人格」进去，`a` 建一个「我的人格」：建好开它的窗，光标停在人格提示词。
 fn made(home: &Home, editor: &str) -> Tui {
     let env = [("EDITOR", editor), ("VISUAL", editor)];
     let mut tui = home.tui_args_with("zh_CN.UTF-8", &["config"], &env);
     tui.wait_for("人格和记忆");
-    for _ in 0..2 {
-        tui.key(b"j");
-    }
-    tui.key(b"\r");
+    tui.open_menu("人格");
     // 出厂不带人格（核心 P-4 下）：列表是空的。
     tui.wait_for("暂无人格");
     tui.key(b"a");

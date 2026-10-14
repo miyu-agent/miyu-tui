@@ -13,13 +13,11 @@ const TAB: &[u8] = b"\t";
 /// 一家中转站：模型名带组织前缀；一个池。
 const RELAY: &str = "[models]\nchat = \"relay/cline/v4\"\n\n[pools.duo]\nmodels = [\"relay/cline/v4\"]\nstrategy = \"rotate\"\n\n[providers.relay]\ndriver = \"openai-chat\"\nbase_url = \"http://relay.invalid/v1\"\n\n[providers.relay.models.\"cline/v4\"]\nwindow = 128000\n\n[providers.relay.models.\"zhipu/glm\"]\nwindow = 64000\ninputs = [\"text\", \"image\"]\n";
 
-/// 主菜单上从「通用」挪到「供应商和模型」进去（2026-10-07 起通用排第一行）：先等清单读到、菜单里有了通用，
-/// 不然 `j` 落到人格上。
+/// 主菜单上挪到「供应商和模型」进去（2026-10-07 起通用排第一行，2026-10-14 起外观排第二）：先等清单读到、菜单里有了通用。
 fn to_models(tui: &mut Tui) {
     tui.wait_for("供应商、默认模型、模型池");
     tui.wait_for("显示");
-    tui.key(b"j");
-    tui.key(b"\r");
+    tui.open_menu("供应商和模型");
 }
 
 /// 照清单画的一页里，名字是 `name` 的那一项是第几项：一项一行、名字和值中间空着几格，组名（只有一个词）、空行不算；
@@ -277,6 +275,17 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     let menu = tui.lines();
     let at = |word: &str| menu.iter().position(|l| l.contains(word));
     assert!(at("通用") < at("供应商和模型"), "通用排第一行");
+    // 2026-10-14 照推荐定：终端自己的「外观」排在通用后面，底下照组名写。
+    assert!(
+        at("通用") < at("外观") && at("外观") < at("供应商和模型"),
+        "外观在通用后面：\n{}",
+        menu.join("\n")
+    );
+    assert!(
+        menu.iter().any(|l| l.contains("主题、吉祥物、图标")),
+        "{}",
+        menu.join("\n")
+    );
     assert!(
         at("权限") < at("人格和记忆") && at("人格和记忆") < at("高级"),
         "人格在权限后面、高级前面"
@@ -325,13 +334,9 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
         tui.lines().join("\n")
     );
     tui.key(b"\x1b");
-    // 回主菜单，挪到人格（第三项：「权限」并进了「通用」）进去，回车看详情。
+    // 回主菜单，挪到人格进去，回车看详情。
     tui.key(b"\x1b");
-    tui.wait_for("人格和记忆");
-    for _ in 0..2 {
-        tui.key(b"j");
-    }
-    tui.key(b"\r");
+    tui.open_menu("人格");
     tui.wait_for("海盗");
     // 列表右边不写来自哪一层（2026-10-08 项目主人：用户用不上）。
     assert!(!tui.shows("内置"), "{}", tui.lines().join("\n"));
@@ -343,8 +348,7 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     // 核心 P-4 下改名），基础功能的窗里一个功能一个开关（核心 F-3 下起是功能，不是软件包），写了没装的写「未安装」。
     tui.key(b"\x1b");
     tui.wait_for("决定开关哪些功能");
-    tui.key(b"j");
-    tui.key(b"\r");
+    tui.open_menu("预设");
     tui.wait_for("全部功能");
     tui.wait_for("基础功能");
     tui.key(b"\r");
@@ -361,7 +365,8 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
 #[test]
 fn the_terminals_own_switches_sit_on_the_general_page() {
     // 「配置页」第 33 条、「时间线」第 18 条（2026-10-10 项目主人：「通用配置界面里没有 timeline 样式的配置项吗」「timeline
-    // 的配置项不应该是 tui 自己的吗」）：终端清单里声明的 `tui.*` 挪到通用页「终端界面」一组，开关当场存。
+    // 的配置项不应该是 tui 自己的吗」）：终端清单里声明的 `tui.timeline_*` 挪到通用页「时间线」一组，开关当场存（主题、
+    // 吉祥物、图标 2026-10-14 起在「外观」）。
     let home = Home::with_settings(Script::new([]), RELAY);
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     tui.wait_for("显示");
@@ -379,20 +384,24 @@ fn the_terminals_own_switches_sit_on_the_general_page() {
         }
         tui.key(b"j");
     }
-    assert!(tui.shows("终端界面"), "{}", tui.lines().join("\n"));
+    assert!(tui.shows("时间线"), "{}", tui.lines().join("\n"));
+    assert!(
+        !tui.shows("配色"),
+        "主题在外观页：{}",
+        tui.lines().join("\n")
+    );
     tui.key(b"\r");
     wait_settings(&home, &mut tui, "timeline_fold = false");
 }
 
 #[test]
 fn the_mascot_item_offers_the_built_in_one_first() {
-    // 「吉祥物包」第 3 条（2026-10-11 项目主人）：通用页「终端界面」一组多一项「吉祥物」，没设的写「内置」；回车开选择窗，
-    // 第一行「内置」，下面是装了的吉祥物包。
+    // 「吉祥物包」第 3 条（2026-10-11 项目主人）：「吉祥物」一项没设的写「内置」；回车开选择窗，第一行「内置」，下面是装了
+    // 的吉祥物包。2026-10-14 起在「外观」页（主菜单第二行）。
     let home = Home::with_settings(Script::new([]), RELAY);
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
-    tui.wait_for("显示");
-    tui.key(b"\r");
-    tui.wait_for("界面语言");
+    tui.open_menu("外观");
+    tui.wait_for("配色");
     for _ in 0..80 {
         if tui
             .lines()

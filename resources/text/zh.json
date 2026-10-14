@@ -1237,7 +1237,8 @@
       "no_persona": "无人格",
       "builtin_mascot": "内置",
       "mascot_missing": "{id}（未安装）",
-      "own_groups": {"theme": "主题", "timeline": "时间线", "mascot": "吉祥物"},
+      "own_groups": {"theme": "主题", "timeline": "时间线", "mascot": "吉祥物", "icons": "图标"},
+      "appearance": "外观",
       "choice_names": {"tui.theme": {"persona": "跟随头像", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}},
       "unavailable": "未安装",
       "custom_model": "输入模型…"

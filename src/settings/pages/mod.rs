@@ -79,8 +79,8 @@ pub struct More {
 }
 
 impl More {
-    /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、供应商和模型、人格、预设、软件包（和以后的别的页）、
-    /// 高级。「权限」并进了「通用」，「接入」并进了「软件包」（`schema.rs`）。
+    /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、外观（2026-10-14 加）、供应商和模型、人格、预设、
+    /// 软件包（和以后的别的页）、高级。「权限」并进了「通用」，「接入」并进了「软件包」（`schema.rs`）。
     pub fn entries(&self) -> Vec<Entry> {
         let pages: Vec<&str> = self
             .schema
@@ -88,8 +88,10 @@ impl More {
             .map(Schema::listed_pages)
             .unwrap_or_default();
         let mut out = Vec::new();
-        if pages.contains(&FIRST) {
-            out.push(Entry::Page(FIRST.to_string()));
+        for page in [FIRST, schema::APPEARANCE] {
+            if pages.contains(&page) {
+                out.push(Entry::Page(page.to_string()));
+            }
         }
         out.push(Entry::Models);
         out.push(Entry::Personas);
@@ -100,7 +102,7 @@ impl More {
         out.extend(
             pages
                 .iter()
-                .filter(|p| ![FIRST, LAST].contains(*p))
+                .filter(|p| ![FIRST, schema::APPEARANCE, LAST].contains(*p))
                 .map(|p| Entry::Page((*p).to_string())),
         );
         if pages.contains(&LAST) {
@@ -167,6 +169,8 @@ pub struct Texts {
     pub mascot_missing: String,
     /// 终端自己的配置项另分的几组的名字（「配置页」第 33 条）。
     pub own_groups: schema::OwnGroups,
+    /// 「外观」那一页的名字（主题、吉祥物、图标，2026-10-14）。
+    pub appearance: String,
     /// 终端自己的选项写成什么（清单里只有值，照界面语言写名字）：键、值、名字。
     pub choice_names: HashMap<String, HashMap<String, String>>,
     /// 选项用不了（核心给了 `available: false`，现在只有没装内置语义模型时的「内置模型」）。
