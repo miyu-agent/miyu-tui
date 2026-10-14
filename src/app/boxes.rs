@@ -26,4 +26,7 @@ pub struct Boxes {
     pub welcome_checked: bool,
     /// `ui.welcomed` 问到了（或者连不上核心）：这以前不画首页（[`super::seen::Seen::welcome_pending`]）。
     pub welcome_known: bool,
+    /// 人格列表到了（或者连不上核心）：首页的头像、跟随头像的主色照它，这以前也不画首页，免得先闪一下吉祥物和 tokyonight
+    /// （2026-10-15 冷启动查出）。
+    pub personas_known: bool,
 }

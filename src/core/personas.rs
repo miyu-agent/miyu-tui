@@ -1,13 +1,14 @@
 //! 人格和预设（核心 P-1 上、P-2 上，蓝图 `tui.md`「新会话：人格、工作区」「配置页」第 34 到 38 条）：
 //! `persona.list`、`preset.list` 读成一行行，两样一个形状；新会话的框、配置页的两页、默认人格和默认预设的下拉都用它。
 
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// `preset.list` 里的一个预设：和人格一个形状。
 pub type Preset = Persona;
 
-/// `persona.list` 里的一个人格（`preset.list` 里的一个预设也是它）。
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+/// `persona.list` 里的一个人格（`preset.list` 里的一个预设也是它）。先画后连时照上次记下的（`app/look.rs`）。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Persona {
     /// 编号。
     pub id: String,

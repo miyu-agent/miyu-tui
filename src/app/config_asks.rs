@@ -69,7 +69,10 @@ impl App {
         };
         let unknown = match result {
             Err(refusal) => unknown_keys(refusal),
-            Ok(_) => HashSet::new(),
+            Ok(got) => {
+                self.note_items(got);
+                HashSet::new()
+            }
         };
         let (again, answered): (Vec<Part>, Vec<Part>) = parts.into_iter().partition(|(_, keys)| {
             !unknown.is_empty() && !keys.iter().any(|k| unknown.contains(k))

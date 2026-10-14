@@ -85,7 +85,10 @@ impl App {
         }
         wallpaper.follow(following);
         self.screen.wallpaper_wanted = wanted;
-        self.screen.wallpaper.collect();
+        // 找好了、变了：记下候选主色，下次起来先照它（`look.rs`）。
+        if self.screen.wallpaper.collect() {
+            self.note_wallpaper();
+        }
         let available = self.screen.wallpaper.available();
         if let Some(oobe) = &mut self.boxes.oobe {
             oobe.theme.wallpaper = available;

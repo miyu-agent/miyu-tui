@@ -84,6 +84,7 @@ impl App {
         }
         // 人格：记下，该问的时候开人格框（`persona.rs`）。
         if let Update::Personas(list) = update {
+            self.note_personas(&list);
             self.listed(super::new_session::Kind::Persona, list);
             return;
         }
@@ -102,6 +103,7 @@ impl App {
                 self.link.core.send(Command::FetchHuman(code));
             }
             self.refresh_effort();
+            self.note_head(&head.language, head.persona.as_deref());
             self.link.currency = head.currency;
             self.language_from_config(&head.language);
             return;

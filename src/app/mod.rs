@@ -29,6 +29,7 @@ mod help;
 mod keys;
 mod language;
 mod link;
+mod look;
 mod lost;
 mod mascot;
 mod mascot_pick;
@@ -153,6 +154,8 @@ impl App {
     /// 退出程序前收尾：输入法还原成进来时的样子（`ime.rs`）。
     pub fn finish(&mut self) {
         std::mem::take(&mut self.typing.ime).finish();
+        // 这一回的样子记下，下次起来连上以前先照它画（`look.rs`）。
+        self.save_look();
     }
 
     /// 处理一个终端事件。
