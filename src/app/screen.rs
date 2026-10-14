@@ -40,6 +40,12 @@ pub struct Screen {
     pub theme_seed: Option<u32>,
     /// 从头像取出来的主色（后台取，一张只取一次）。
     pub seeds: crate::theme::seeds::Seeds,
+    /// 跟随壁纸：后台找桌面壁纸、matugen 那一份（`theme/wallpaper.rs`）。
+    pub wallpaper: crate::theme::wallpaper::Wallpaper,
+    /// 起来以后找过一次壁纸了。
+    pub wallpaper_seen: bool,
+    /// 上一拍要不要壁纸（开着配色列表、选着跟随壁纸）：从不要变成要的时候再找一次。
+    pub wallpaper_wanted: bool,
     /// 引导「主题」那一步选着的配色、明暗，盖在配置项上（「第一次打开的引导」第 23a 条）；不在选的是 `None`。
     pub theme_preview: Option<(String, crate::theme::choice::Mode)>,
     /// 程序启动的时刻：转圈照它算第几帧。
@@ -66,6 +72,9 @@ impl Screen {
             terminal_dark: None,
             theme_seed: None,
             seeds: crate::theme::seeds::Seeds::default(),
+            wallpaper: crate::theme::wallpaper::Wallpaper::default(),
+            wallpaper_seen: false,
+            wallpaper_wanted: false,
             theme_preview: None,
             started: Instant::now(),
             rng: crate::rng::Rng::from_clock(),

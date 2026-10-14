@@ -50,6 +50,15 @@ pub fn seed_of_file(path: &Path) -> Option<u32> {
     seed_of(image.as_raw())
 }
 
+/// 一张图的字节取主色（跟随壁纸：macOS 的 HEIC 先转成 JPEG 交过来）；读不成的是 `None`。
+pub fn seed_of_bytes(bytes: &[u8]) -> Option<u32> {
+    let image = image::load_from_memory(bytes)
+        .ok()?
+        .thumbnail(SIDE, SIDE)
+        .to_rgba8();
+    seed_of(image.as_raw())
+}
+
 /// 人格里自选的主色 `#rrggbb`；写错的是 `None`。
 pub fn hex(seed: &str) -> Option<u32> {
     let digits = seed.strip_prefix('#')?;

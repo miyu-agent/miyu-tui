@@ -179,3 +179,32 @@ fn a_refused_write_stays_and_says_why() {
     assert_eq!(oobe.step, Step::Theme);
     assert_eq!(oobe.theme.error.as_deref(), Some("写不进去"));
 }
+
+#[test]
+fn the_colors_list_offers_the_wallpaper_only_when_one_was_found() {
+    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    at_theme(&mut oobe, t0, &texts, defaults());
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let labels = |oobe: &Oobe| -> Vec<String> {
+        let list = oobe.theme.picking.as_ref().expect("开了列表");
+        list.choices.iter().map(|c| c.label.clone()).collect()
+    };
+    assert_eq!(labels(&oobe), ["跟随头像", "Tokyo Night", "终端配色"]);
+    // 少了一行，挪到哪还是照值认：往上一个是跟随头像。
+    oobe.key(key(KeyCode::Up), t0, &texts);
+    assert_eq!(oobe.theme_preview().map(|p| p.0), Some("persona".into()));
+    oobe.key(key(KeyCode::Esc), t0, &texts);
+    // 找到了：列着，选上它当场换。
+    oobe.theme.wallpaper = true;
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert_eq!(
+        labels(&oobe),
+        ["跟随头像", "跟随壁纸", "Tokyo Night", "终端配色"]
+    );
+    oobe.key(key(KeyCode::Up), t0, &texts);
+    assert_eq!(oobe.theme_preview().map(|p| p.0), Some("wallpaper".into()));
+}

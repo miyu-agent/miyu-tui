@@ -1239,7 +1239,7 @@
       "mascot_missing": "{id}（未安装）",
       "own_groups": {"theme": "主题", "timeline": "时间线", "mascot": "吉祥物", "icons": "图标"},
       "appearance": "外观",
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}},
       "unavailable": "未安装",
       "custom_model": "输入模型…"
     }
@@ -1394,10 +1394,10 @@
       "sub": "选择明暗和配色，立即生效，以后可以在设置里改",
       "rows": ["明暗", "配色"],
       "modes": ["自动", "深色", "浅色"],
-      "colors": ["跟随头像", "Tokyo Night", "终端配色"],
+      "colors": ["跟随头像", "跟随壁纸", "Tokyo Night", "终端配色"],
       "from_avatar": "取自「{name}」的头像",
       "from_seed": "使用「{name}」的主题色",
-      "no_avatar": "「{name}」未设置头像，使用 Tokyo Night",
+      "no_avatar": "「{name}」未设置头像，使用 Tokyo Night", "from_wallpaper": "取自桌面壁纸", "no_wallpaper": "未找到桌面壁纸，使用 Tokyo Night",
       "next": "下一步",
       "saving": "正在保存…"
     },

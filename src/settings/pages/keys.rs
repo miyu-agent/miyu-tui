@@ -209,6 +209,7 @@ impl Settings {
         match control {
             "select" => {
                 let list = choices(&item, self.more.named(&item.key), &texts.more);
+                let list = self.more.offered(&item.key, list);
                 self.popup = Some(Popup::Choose(Choose::open(
                     &item.key, &item.name, list, &value,
                 )));

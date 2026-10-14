@@ -108,3 +108,24 @@ fn icon_sets_are_named_in_the_interface_language() {
         "普通字符"
     );
 }
+
+#[test]
+fn the_colors_list_hides_the_wallpaper_until_one_is_found() {
+    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。
+    let choice = |value: &str| crate::settings::pages::choose::Choice {
+        value: json!(value),
+        label: value.into(),
+        note: None,
+        off: None,
+    };
+    let list = || vec![choice("persona"), choice("wallpaper"), choice("tokyonight")];
+    let mut more = More::default();
+    assert_eq!(more.offered("tui.theme", list()).len(), 2);
+    assert_eq!(
+        more.offered("tui.theme_mode", list()).len(),
+        3,
+        "别的项不管"
+    );
+    more.wallpaper = true;
+    assert_eq!(more.offered("tui.theme", list()).len(), 3);
+}

@@ -135,6 +135,70 @@ fn terminal_colors_lean_the_selected_rows_ground_from_the_terminals_own() {
     }
 }
 
+#[test]
+fn following_the_wallpaper_takes_matugens_source_like_an_avatar_color() {
+    // 2026-10-14 项目主人定：跟随壁纸和网页同一个来处，matugen 生成的那一份优先，取它的 `source` 当主色，和跟随头像同一套
+    // 算：同一个主色铺一样的底。
+    let persona = ground("[tui]\ntheme = \"persona\"\ntheme_mode = \"dark\"\n");
+    let settings = "[tui]\ntheme = \"wallpaper\"\ntheme_mode = \"dark\"\n";
+    let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
+    matugen(&home);
+    let (root, local) = cache_dirs(&home);
+    let env = [("HOME", root.as_str()), ("LOCALAPPDATA", local.as_str())];
+    let mut tui = home.tui_with("zh_CN.UTF-8", &env);
+    tui.wait_for("工作区");
+    let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while tui.background(0, 0) != persona {
+        assert!(
+            std::time::Instant::now() < end,
+            "跟随壁纸铺的底：{:?}，同一个主色跟随头像的：{persona:?}",
+            tui.background(0, 0)
+        );
+        tui.pump(std::time::Duration::from_millis(100));
+    }
+}
+
+#[test]
+fn the_colors_list_offers_the_wallpaper_only_when_there_is_one() {
+    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。
+    for found in [false, true] {
+        let home = Home::with_settings(Script::new([]), "");
+        if found {
+            matugen(&home);
+        }
+        let (root, local) = cache_dirs(&home);
+        let env = [("HOME", root.as_str()), ("LOCALAPPDATA", local.as_str())];
+        let mut tui = home.tui_args_with("zh_CN.UTF-8", &["config"], &env);
+        tui.open_menu("外观");
+        tui.wait_for("配色");
+        // 等起来时的那一次找完再开列表。
+        tui.pump(std::time::Duration::from_millis(500));
+        tui.key(b"\r");
+        tui.wait_for("终端配色");
+        assert_eq!(tui.shows("跟随壁纸"), found, "{}", tui.lines().join("\n"));
+    }
+}
+
+/// matugen 那一份在哪个缓存目录找（`miyu-wallpaper`）：Linux 照 `XDG_CACHE_HOME`（测具指在测试家目录的 `cache`），macOS
+/// 照 `HOME/Library/Caches`，Windows 照 `LOCALAPPDATA`：后两样起界面时也指到测试家目录（交回 `HOME`、`LOCALAPPDATA`）。
+fn cache_dirs(home: &Home) -> (String, String) {
+    let root = home.root().display().to_string();
+    let local = home.root().join("cache").display().to_string();
+    (root, local)
+}
+
+/// 在测试家目录的缓存里放一份 matugen 生成的颜色（照 [`cache_dirs`] 指的地方），主色绿。
+fn matugen(home: &Home) {
+    let dir = if cfg!(target_os = "macos") {
+        home.root().join("Library/Caches/miyu")
+    } else {
+        home.root().join("cache/miyu")
+    };
+    std::fs::create_dir_all(&dir).expect("建得了缓存目录");
+    let colors = r##"{"source": "#2fab34", "light": {}, "dark": {}}"##;
+    std::fs::write(dir.join("matugen.json"), colors).expect("写得进去");
+}
+
 /// 一个词是读秒（`12s`）。
 fn seconds(w: &str) -> bool {
     w.len() > 1 && w.ends_with('s') && w[..w.len() - 1].chars().all(|c| c.is_ascii_digit())
