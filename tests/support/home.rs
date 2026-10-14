@@ -34,11 +34,13 @@ fn welcomed(settings: &str) -> String {
 
 /// 照用户装软件包那样把终端自己的清单（`tui/package.toml`）装进 alice 的家：核心 S-5 起出厂不再带它，`tui.*` 配置
 /// 项、终端的状态目录都照它认（README「装上终端」那一步）。程序不放进去：界面的程序不在，配置项照旧在。
-fn install_the_terminal(dir: &Path) {
+/// `edit` 改一改清单再装（装着旧清单的样子）。
+fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tui/package.toml");
     let to = dir.join("home/alice/packages/tui");
     std::fs::create_dir_all(&to).expect("建得了包的目录");
-    std::fs::copy(manifest, to.join("package.toml")).expect("装得上终端的清单");
+    let text = std::fs::read_to_string(manifest).expect("读得了终端的清单");
+    std::fs::write(to.join("package.toml"), edit(text)).expect("装得上终端的清单");
 }
 
 impl Home {
@@ -68,7 +70,25 @@ impl Home {
         Home::build(script, &welcomed(settings), Tools::Only(vec![tool]))
     }
 
+    /// 同 [`Home::with_settings`]，装的终端清单先照 `edit` 改过（清单比终端旧、没重装的样子）。
+    pub fn with_manifest(
+        script: Script,
+        settings: &str,
+        edit: impl FnOnce(String) -> String,
+    ) -> Home {
+        Home::build_with(script, &welcomed(settings), Tools::None, edit)
+    }
+
     fn build(script: Script, settings: &str, tools: Tools) -> Home {
+        Home::build_with(script, settings, tools, |text| text)
+    }
+
+    fn build_with(
+        script: Script,
+        settings: &str,
+        tools: Tools,
+        manifest: impl FnOnce(String) -> String,
+    ) -> Home {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("miyu-tui-{}-{n}", std::process::id()));
@@ -86,7 +106,7 @@ impl Home {
         };
         let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
         root.prepare().expect("临时目录里建得了骨架");
-        install_the_terminal(&dir);
+        install_the_terminal(&dir, manifest);
         if !settings.is_empty() {
             let file = dir.join("home/alice/settings.toml");
             std::fs::create_dir_all(file.parent().expect("有上一层")).expect("建得了");

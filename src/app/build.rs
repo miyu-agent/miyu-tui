@@ -87,6 +87,8 @@ impl App {
                 currency: "USD".to_string(),
                 default_chat: None,
                 system_language,
+                human_asked: false,
+                config_asks: Default::default(),
             },
             typing: super::typing::Typing {
                 input,

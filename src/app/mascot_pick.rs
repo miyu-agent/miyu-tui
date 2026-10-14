@@ -54,7 +54,7 @@ impl App {
     pub(super) fn mascot_pick_update(&mut self, update: &Update) -> bool {
         match update {
             Update::HeadConfig(_) if !self.media.mascot_pick.preview => {
-                self.mascot_ask(SETTING_TAG, "config.get", json!({"keys": ["tui.mascot"]}));
+                self.ask_config(SETTING_TAG, &["tui.mascot"]);
                 false
             }
             Update::Answer { tag, result } if *tag == SETTING_TAG => {
