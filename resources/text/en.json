@@ -1239,7 +1239,7 @@
       "mascot_missing": "{id} (not installed)",
       "own_groups": {"theme": "Theme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons"},
       "appearance": "Appearance",
-      "choice_names": {"tui.theme": {"persona": "Follow the avatar", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}},
       "unavailable": "Not installed",
       "custom_model": "Enter a model…"
     }
