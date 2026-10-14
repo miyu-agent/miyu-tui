@@ -1239,7 +1239,7 @@
       "mascot_missing": "{id}（未インストール）",
       "own_groups": {"theme": "テーマ", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン"},
       "appearance": "外観",
-      "choice_names": {"tui.theme": {"persona": "アバターに合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}},
       "unavailable": "未インストール",
       "custom_model": "モデルを入力…"
     }

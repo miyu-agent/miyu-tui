@@ -89,3 +89,22 @@ fn a_removed_mascot_package_is_named_as_not_installed() {
         "内置"
     );
 }
+
+#[test]
+fn icon_sets_are_named_in_the_interface_language() {
+    // 2026-10-14 项目主人：外观页「图标」照界面语言写「Nerd Font 图标」「普通字符」，不写清单里的 nerd、plain。
+    let texts = crate::config::Config::builtin().unwrap().text.settings.more;
+    let s = Schema::read(&json!({"items": [
+        {"key": "tui.icons", "control": "select", "layers": ["personal"], "name": "图标", "page": "general", "group": "tui",
+         "options": [{"value": "nerd", "name": "nerd"}, {"value": "plain", "name": "plain"}]}
+    ]}));
+    let item = &s.items[0];
+    assert_eq!(
+        super::shown(item, &json!("nerd"), None, &texts),
+        "Nerd Font 图标"
+    );
+    assert_eq!(
+        super::shown(item, &json!("plain"), None, &texts),
+        "普通字符"
+    );
+}
