@@ -78,6 +78,7 @@ mod tests {
             lines: 0,
             running: false,
             truncated,
+            ..JobOutput::default()
         };
         assert_eq!(
             note_detail(&out("\x1b[1mok\x1b[0m\n\n", false), 4, "没有输出"),

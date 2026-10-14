@@ -87,10 +87,11 @@ pub(super) async fn take(
                 notify(gone.unwrap_or(Update::Refused { reason, message }))
             }
             // 读不了输出（任务没了、是子代理）：不用说，界面不再等它。
-            Some(Awaiting::Output(session, job)) => notify(Update::Output {
+            Some(Awaiting::Output(session, job, after)) => notify(Update::Output {
                 session,
                 job,
                 output: None,
+                after,
             }),
             _ => notify(Update::Refused { reason, message }),
         };
@@ -145,12 +146,13 @@ pub(super) async fn take(
                 said: text("said"),
             });
         }
-        Some(Awaiting::Output(session, job)) => {
+        Some(Awaiting::Output(session, job, after)) => {
             let output = Some(JobOutput::read(&message["result"]));
             return notify(Update::Output {
                 session,
                 job,
                 output,
+                after,
             });
         }
         // 要不到一行行的（核心旧、出错）：交回空的，框里写没有。
