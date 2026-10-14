@@ -48,6 +48,8 @@ pub struct Tui {
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     child: Box<dyn Child + Send + Sync>,
     _master: Box<dyn MasterPty + Send>,
+    /// 起进程以前的那一刻（量首帧，[`Tui::wait_for_at`]）。
+    pub started: Instant,
 }
 
 impl Tui {
@@ -118,6 +120,7 @@ impl Tui {
         for (name, value) in env {
             command.env(name, value);
         }
+        let started = Instant::now();
         let child = pty.slave.spawn_command(command).expect("起得来界面");
         drop(pty.slave);
         let mut reader = pty.master.try_clone_reader().expect("读得了");
@@ -141,6 +144,7 @@ impl Tui {
             writer,
             child,
             _master: pty.master,
+            started,
         }
     }
 
@@ -361,6 +365,28 @@ impl Tui {
 }
 
 impl Tui {
+    /// 等到屏幕上出现这串字，交回带出它的那一块字节到的时刻：一块一块地看，不等满一拍（量首帧用）。
+    pub fn wait_for_at(&mut self, text: &str) -> Instant {
+        let end = Instant::now() + WAIT;
+        while !self.shows(text) {
+            let left = end.saturating_duration_since(Instant::now());
+            let data = self.bytes.recv_timeout(left).unwrap_or_else(|_| {
+                panic!("等不到「{text}」，屏幕是：\n{}", self.lines().join("\n"))
+            });
+            let at = Instant::now();
+            self.feed(&data);
+            if self.shows(text) {
+                return at;
+            }
+        }
+        Instant::now()
+    }
+
+    /// 界面的进程号。
+    pub fn pid(&self) -> Option<u32> {
+        self.child.process_id()
+    }
+
     /// 界面这个进程的所有线程到现在一共切进来几次（自愿的加被抢的）：量空闲时醒没醒。只有 Linux 读得到
     /// （`/proc/<进程>/task/*/status`），别的系统交回 `None`。
     pub fn wakeups(&self) -> Option<u64> {
