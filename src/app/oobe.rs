@@ -6,7 +6,6 @@ use std::time::{Duration, Instant};
 
 use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind};
 use ratatui::layout::Position;
-use serde_json::json;
 
 use super::App;
 use crate::core::{Command, Update};
@@ -192,12 +191,7 @@ impl App {
             }
             Update::HeadConfig(_) => {
                 if !std::mem::replace(&mut self.boxes.welcome_checked, true) {
-                    let params = json!({"keys": ["ui.welcomed"]});
-                    self.link.core.send(Command::Ask {
-                        tag: WELCOMED_TAG,
-                        method: "config.get",
-                        params,
-                    });
+                    self.ask_config(WELCOMED_TAG, &["ui.welcomed"]);
                 }
                 false
             }

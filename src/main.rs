@@ -221,10 +221,6 @@ fn run(
     });
     // 读按键的线程：让出终端给编辑器时停下（`reader.rs`）。
     let reader = reader::Reader::spawn(move |event| sender.send(Incoming::Terminal(event)).is_ok());
-    // 工具的显示名、说法向核心要：连上以前发的排着，连上再发（`human.rs`，核心 W-1）。
-    core.send(core::Command::FetchHuman(
-        config.language.code().to_string(),
-    ));
     let human = human::Human::default();
     let mut app = App::new(config, core, human, figures);
     // 跟随壁纸盯着的文件变了：叫醒主循环，这一拍再找（蓝图「主题」的「跟随壁纸」第 3 条）。
@@ -256,6 +252,10 @@ fn run(
         app.notifier.session(app.talk.main_session().as_deref());
         frame(terminal, &mut app, &mut pointer, depth, &mut log)?;
         let drawn_at = Instant::now();
+        // 这一帧整屏空着在等 `ui.welcomed`：问到了当场画首页，不等下一拍（蓝图「每一帧」；2026-10-15 冷启动查出，空着的
+        // 那一帧画在连上之前，首页要等它后面的一拍，白等三十毫秒）。
+        let waiting = app.seen().welcome_pending(drawn_at);
+        let arrived = |app: &App| waiting && !app.seen().welcome_pending(Instant::now());
         let wait = app.deadline().map_or(Duration::from_secs(3600), |d| {
             d.saturating_duration_since(Instant::now())
         });
@@ -268,6 +268,7 @@ fn run(
         while let Some(message) = next {
             urgent |= matches!(&message, Incoming::Terminal(e) if pacing::urgent(e));
             dispatch(&mut app, message);
+            urgent |= arrived(&app);
             next = incoming.try_recv().ok();
         }
         // 离上一帧还不到 `frame_ms`：接着收，到点一起画（蓝图「每一帧」：一段段推来的字每段画一帧，
@@ -282,11 +283,12 @@ fn run(
         {
             match incoming.recv_timeout(left) {
                 Ok(message) => {
-                    if matches!(&message, Incoming::Terminal(e) if pacing::urgent(e)) {
+                    let key = matches!(&message, Incoming::Terminal(e) if pacing::urgent(e));
+                    dispatch(&mut app, message);
+                    if key || arrived(&app) {
                         until = pacing::deadline(drawn_at, beat, Instant::now(), burst, true)
                             .min(until);
                     }
-                    dispatch(&mut app, message);
                 }
                 Err(RecvTimeoutError::Timeout) => break,
                 Err(RecvTimeoutError::Disconnected) => return Ok(()),

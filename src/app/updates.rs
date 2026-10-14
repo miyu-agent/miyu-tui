@@ -12,6 +12,10 @@ impl App {
         if matches!(update, Update::Disconnected) {
             self.lost_requests();
         }
+        // 读配置合起来的那一条回来了：照原来的编号一处一处交回去（`config_asks.rs`）。
+        if self.config_asks_update(&update) {
+            return;
+        }
         // 引导的回应归它；连上、断开也告诉它；头的配置读到了去看引导走过没有（`oobe.rs`）。
         if self.oobe_update(&update) {
             return;
@@ -24,6 +28,8 @@ impl App {
         if self.mascot_pick_update(&update) {
             return;
         }
+        // 上面几处要读的配置合成一条，抢在人格、模型列表、给人看的字这些前头发（`config_asks.rs`）。
+        self.flush_config_asks();
         // 人格头像的回应归它（`avatars.rs`）。
         if self.avatar_update(&update) {
             return;
@@ -86,10 +92,16 @@ impl App {
             return;
         }
         if let Update::HeadConfig(head) = update {
-            self.refresh_effort();
-            // 连上、配置变了都会来：默认人格、默认预设照它，两样的列表顺手再要一次（新会话的框用）。
+            // 连上、配置变了都会来：默认人格、默认预设照它，两样的列表顺手再要一次（新会话的框用）。核心照收到的先后答，大的
+            // 排在后面（「连核心」第 9 条）：读配置（上面已经发了）、人格、预设、软件包，再是给人看的字（头一次）、模型资料
+            // （要等核心读完模型目录）。
             self.picks_configured(head.persona.clone(), head.preset.clone());
             self.ask_packages();
+            if !std::mem::replace(&mut self.link.human_asked, true) {
+                let code = self.config.language.code().to_string();
+                self.link.core.send(Command::FetchHuman(code));
+            }
+            self.refresh_effort();
             self.link.currency = head.currency;
             self.language_from_config(&head.language);
             return;

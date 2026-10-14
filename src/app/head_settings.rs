@@ -3,11 +3,11 @@
 //! 盖过 `timeline.json`（「时间线」第 18 条）；吉祥物的两个开关照 `tui.mascot_*` 盖过 `layout.json`（「后台命令、子代理和
 //! 侧边栏」第 7 条）。几样分开问：旧核心不认时间线那几个键时，整份拒，图标照样读得到。
 
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use super::App;
 use crate::config::{Layout, Timeline};
-use crate::core::{Command, Update};
+use crate::core::Update;
 use crate::oobe::asker::TAG_BASE;
 
 /// 读图标那一套的请求编号：在引导自己的编号下面，和「引导走过没有」的（`TAG_BASE - 1`）分开。
@@ -97,15 +97,5 @@ impl App {
             self.talk.default_level = level;
             self.show_default_level();
         }
-    }
-
-    /// 读几个配置项。
-    fn ask_config(&mut self, tag: u64, keys: &[&str]) {
-        let params: Value = json!({ "keys": keys });
-        self.link.core.send(Command::Ask {
-            tag,
-            method: "config.get",
-            params,
-        });
     }
 }
