@@ -272,6 +272,8 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     home.restart_core();
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     tui.wait_for("显示");
+    // 等到最后一项也画出来再读：只等到「显示」的，macOS 上读到过画了一半的一帧，下面几项还没有（10-14 CI）。
+    tui.wait_for("运行日志");
     let menu = tui.lines();
     let at = |word: &str| menu.iter().position(|l| l.contains(word));
     assert!(at("通用") < at("供应商和模型"), "通用排第一行");
