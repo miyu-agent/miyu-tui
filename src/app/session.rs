@@ -97,6 +97,9 @@ impl App {
         self.screen.view = Default::default();
         self.boxes.panel = None;
         *self.media.row_cache.borrow_mut() = Default::default();
+        // 换上的是一份空的正文：新会话的首页照配置的开局级别画（切会话的随后整份换掉）。
+        self.talk.level_picked = false;
+        self.show_default_level();
     }
 
     /// Tab、Shift+Tab：切到下一档，告诉核心，等 `session.policy_changed` 来了再画（「权限级别」第 2 条）。会话还没开的
@@ -109,10 +112,20 @@ impl App {
             .talk
             .transcript
             .next_level(&self.config.layout.level_cycle);
-        if self.not_opened() {
+        // 还没开会话（连着、正在连都算）：照按的画，记着这一回按过，配置再读到也不盖。
+        if self.talk.transcript.session.is_none() {
             self.talk.transcript.level = target;
+            self.talk.level_picked = true;
         }
         self.link.core.send(Command::Level(target));
+    }
+
+    /// 还没开会话的首页照配置的开局级别画（2026-10-14 项目主人报：选了完全放开，首页、会话里都写工作区）；这一回按过
+    /// Tab 的照按的。
+    pub(super) fn show_default_level(&mut self) {
+        if self.talk.transcript.session.is_none() && !self.talk.level_picked {
+            self.talk.transcript.level = self.talk.default_level;
+        }
     }
 
     /// 按过 `/new`、还没说话：连着核心，却还没开会话。
