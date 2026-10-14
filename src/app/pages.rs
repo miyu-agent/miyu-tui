@@ -96,6 +96,11 @@ impl App {
                 transcript.named = named;
             }
         }
+        // 正在看的会话最新一页读完了（`--resume`、启动时进最近的）：当场画，不等下一拍（「每一帧」；2026-10-15 查出打开
+        // 长会话时正文要等到首页那一帧后面的一拍，白等二十多毫秒）。停放着的补完了换上来时另算（`switch.rs`）。
+        if self.talk.transcript.session.as_deref() == Some(session) {
+            self.screen.draw_now = true;
+        }
     }
 
     /// 订阅回应里会话的工作区（核心 9-7 上）：记下，接上老会话时终端在别的目录的写一句（`transcript/workspace.rs`）。

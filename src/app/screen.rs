@@ -14,6 +14,8 @@ use crate::ui::Areas;
 pub struct Screen {
     /// 上一帧各块的位置。
     pub areas: Areas,
+    /// 这一帧当急的画，不等下一拍（会话补完换上来；`main.rs` 取走）。
+    pub draw_now: bool,
     /// 正文区：滚到哪、悬在哪、选了哪。
     pub view: BodyView,
     /// 这一帧的光标停在哪、显不显示；画的时候填，画完 `main` 写出去（蓝图「每一帧」）。
@@ -82,6 +84,7 @@ impl Screen {
             wallpaper_seen: false,
             wallpaper_wanted: false,
             theme_preview: None,
+            draw_now: false,
             started: Instant::now(),
             rng: crate::rng::Rng::from_clock(),
         }

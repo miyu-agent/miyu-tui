@@ -270,7 +270,7 @@ fn run(
         while let Some(message) = next {
             urgent |= matches!(&message, Incoming::Terminal(e) if pacing::urgent(e));
             dispatch(&mut app, message);
-            urgent |= arrived(&app);
+            urgent |= arrived(&app) || std::mem::take(&mut app.screen.draw_now);
             next = incoming.try_recv().ok();
         }
         // 离上一帧还不到 `frame_ms`：接着收，到点一起画（蓝图「每一帧」：一段段推来的字每段画一帧，
@@ -287,7 +287,7 @@ fn run(
                 Ok(message) => {
                     let key = matches!(&message, Incoming::Terminal(e) if pacing::urgent(e));
                     dispatch(&mut app, message);
-                    if key || arrived(&app) {
+                    if key || arrived(&app) || std::mem::take(&mut app.screen.draw_now) {
                         until = pacing::deadline(drawn_at, beat, Instant::now(), burst, true)
                             .min(until);
                     }

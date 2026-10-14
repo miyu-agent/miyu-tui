@@ -19,6 +19,8 @@ const PSS_BUDGET: u64 = 20 * MIB;
 const PEAK_OVER_STEADY: u64 = 10 * MIB;
 /// 热启动（核心已经在跑）到首页输入框出来，p95 最多多久（设计 23 F5：人整段等着的，上限 50 ms）。
 const FIRST_FRAME_P95: Duration = Duration::from_millis(50);
+/// 核心已经在跑，`--resume` 打开长会话到最后一句出来，p95 最多多久（同上）。
+const OPEN_P95: Duration = Duration::from_millis(50);
 /// 吉祥物醒着的那一阵、哈欠、转回正前方都过去要多久（`mascot.json` 的 `idle.awake_ms` 10 秒，加上哈欠和转头）。
 const SETTLE: Duration = Duration::from_secs(13);
 /// 停住以后量多久。
@@ -155,12 +157,27 @@ fn assert_flat(what: &str, (peak, steady, pss): (u64, u64, u64)) {
 
 #[test]
 #[ignore = "量尺：CI 单独一步用 release 编、一个一个跑"]
-fn opening_a_long_session_has_no_memory_spike() {
+fn opening_a_long_session_is_quick_and_has_no_memory_spike() {
     let plays: Vec<Play> = (1..=TURNS)
         .map(|i| Play::Says(Box::leak(format!("第 {i} 条记下了。").into_boxed_str())))
         .collect();
     let home = Home::new(Script::new(plays));
     let id = long_session(&home);
+    // 打开到最后一句出来：核心已经在跑，起十次。
+    let mut took: Vec<Duration> = (0..10)
+        .map(|_| {
+            let mut tui = home.tui_args("zh_CN.UTF-8", &["--resume", &id]);
+            let at = tui.wait_for_at(&format!("第 {TURNS} 条记下了。"));
+            at.duration_since(tui.started)
+        })
+        .collect();
+    took.sort();
+    let p95 = took[took.len() * 95 / 100 - 1];
+    println!(
+        "打开 {TURNS} 轮的会话到最后一句：中位数 {:?}，p95 {p95:?}",
+        took[took.len() / 2]
+    );
+    assert!(p95 <= OPEN_P95, "p95 {p95:?} 超过预算：{took:?}");
     // 桌面上有一张 4K 的壁纸：没跟随壁纸的不解它（2026-10-15 查出原来起来就解，峰值冲到 40 MiB）。
     let env = desktop(&home);
     assert_flat("打开长会话", open(&home, &id, &env));
