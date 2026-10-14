@@ -26,6 +26,8 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState
         .word(start, beat, now, &seen.config.pulse)
         .to_string();
     let layout = &seen.config.layout;
+    // 流光照底栏模式字的颜色（现在的权限级别，2026-10-14 项目主人定：原来写死的强调色，终端配色时和模式字对不上）。
+    let base = theme::level_color(seen.talk.transcript.level);
     // 换了词，亮光从头扫（`tui.md`「运行状态行和排队的消息」第 1 条）。
     let t = mascot
         .pulse
@@ -40,14 +42,14 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState
         .map(|(i, c)| {
             Span::styled(
                 c.to_string(),
-                theme::shimmer(i, chars.len(), t, &layout.shimmer),
+                theme::shimmer_on(base, i, chars.len(), t, &layout.shimmer),
             )
         })
         .collect();
     // 补到词库里最宽的词那么宽，用时的位置不跟着词长短跳。
     let pad = seen.config.pulse.widest().saturating_sub(word.width()) + 1;
     spans.push(Span::raw(" ".repeat(pad)));
-    let rest = theme::shimmer_rest(&layout.shimmer);
+    let rest = theme::shimmer_rest_on(base, &layout.shimmer);
     spans.push(Span::styled(
         crate::meter::clock(start.elapsed().as_secs()),
         rest,
