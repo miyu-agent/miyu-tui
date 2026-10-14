@@ -70,6 +70,8 @@ struct Existing {
     avatar: Option<String>,
     /// 写了的主题色 `#rrggbb`（`persona.get` 的 `seed`，核心 P-6）；没写的是 `None`。
     seed: Option<String>,
+    /// 头像的候选主色（`persona.get` 的 `seeds`，核心 P-6 补）：没有头像的是 `None`。
+    seeds: Option<Vec<String>>,
     read: usize,
 }
 

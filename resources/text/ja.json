@@ -1237,6 +1237,7 @@
       "no_persona": "人格なし",
       "builtin_mascot": "内蔵",
       "mascot_missing": "{id}（未インストール）",
+      "seed_unset": "ペルソナのテーマカラーを消して、アバターの最初の候補に戻す",
       "own_groups": {"theme": "テーマ", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン"},
       "appearance": "外観",
       "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}},

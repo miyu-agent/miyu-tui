@@ -19,8 +19,10 @@ pub struct Persona {
     pub problem: Option<String>,
     /// 头像的版本（核心 P-5）：没有头像的、预设的是 `None`。
     pub avatar: Option<String>,
-    /// 自选的主题色 `#rrggbb`（核心 P-6 的 `seed`）：没写的是 `None`，跟随头像的配色从头像取色（「主题」第 5 条）。
+    /// 自选的主题色 `#rrggbb`（核心 P-6 的 `seed`）：没写的是 `None`，跟随头像的配色照头像的候选里打分最高的（「主题」第 5 条）。
     pub seed: Option<String>,
+    /// 头像的候选主色 `#rrggbb`，好的在前（核心 P-6 补的 `seeds`，最多 4 个）：没有头像、解不开的是 `None`，全透明的是空的。
+    pub seeds: Option<Vec<String>>,
 }
 
 impl Persona {
@@ -54,6 +56,11 @@ fn read_list(got: &Value, list: &str, id: &str) -> Vec<Persona> {
             problem: text(&p["problem"]),
             avatar: text(&p["avatar"]),
             seed: text(&p["seed"]),
+            seeds: p["seeds"].as_array().map(|list| {
+                list.iter()
+                    .filter_map(|s| s.as_str().map(str::to_string))
+                    .collect()
+            }),
         })
         .collect()
 }

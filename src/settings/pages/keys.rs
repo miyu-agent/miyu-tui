@@ -168,15 +168,14 @@ impl Settings {
 
     /// 一页里的项，照画的先后（第几项）。
     pub fn page_items(&self, page: &str) -> Vec<usize> {
-        self.more.schema.as_ref().map_or_else(Vec::new, |s| {
-            s.rows(page)
-                .into_iter()
-                .filter_map(|r| match r {
-                    Row::Item(i) => Some(i),
-                    Row::Group(_) => None,
-                })
-                .collect()
-        })
+        self.more
+            .rows(page)
+            .into_iter()
+            .filter_map(|r| match r {
+                Row::Item(i) => Some(i),
+                Row::Group(_) => None,
+            })
+            .collect()
     }
 
     /// `Enter` 改一项：两层都写不了的、终端还不能改的弹一句；下拉开选择窗，开关当场切，数、字开编辑窗。只有系统配置这一层
@@ -196,6 +195,12 @@ impl Settings {
         let words = &texts.more;
         if !item.writable() {
             self.say(words.no_editor.clone(), Tone::Note);
+            return;
+        }
+        // 主色：候选的色块列表，不开编辑窗（2026-10-14 项目主人定）。
+        if item.key == crate::theme::choice::SEED_KEY {
+            let choose = self.more.seed_choose(&item.name, &words.default_mark);
+            self.popup = Some(Popup::Choose(choose));
             return;
         }
         let (value, _) = current(&item, data);
@@ -245,6 +250,25 @@ impl Settings {
             return;
         };
         let words = &texts.more;
+        // 跟随头像的主色存在人格上：恢复默认是清掉人格的主题色。
+        if let Some(persona) = self
+            .more
+            .seed_persona
+            .clone()
+            .filter(|_| item.key == crate::theme::choice::SEED_KEY)
+        {
+            self.popup = Some(Popup::Confirm(Confirm {
+                title: words.unset[0].replace("{name}", &item.name),
+                lines: vec![(words.seed_unset.clone(), true)],
+                buttons: vec![
+                    (words.unset[2].clone(), true),
+                    (words.unset[3].clone(), false),
+                ],
+                sel: 1,
+                ask: Delete::PersonaSeed(persona),
+            }));
+            return;
+        }
         let system = item.system_only();
         let written = if system { &data.system } else { &data.personal };
         if !written.contains_key(&item.key) {
@@ -364,6 +388,12 @@ impl Settings {
 
     /// 选择窗、编辑窗选好了：改预设的照它办（`preset_edit.rs`），别的写个人设置。
     fn write_to(&mut self, target: super::target::Target, key: &str, value: Value, texts: &Texts) {
+        // 跟随头像的主色写在人格上（`persona.set` 的 `seed`）。
+        if let super::target::Target::PersonaSeed(persona) = &target {
+            let params = json!({"persona": persona, "seed": value});
+            self.ask("persona.set", params, Waiting::PersonaSeed);
+            return;
+        }
         if !self.model_or_write(&target, key, &value)
             && !self.preset_write(target.clone(), key, value.clone())
             && !self.avatar_write(target.clone(), &value)
@@ -387,6 +417,27 @@ impl Settings {
         }
         self.refresh();
         self.save(false, texts);
+    }
+
+    /// 清掉人格的主题色（`persona.set` 的 `seed: {"unset": true}`）。
+    pub(in crate::settings) fn clear_persona_seed(&mut self, persona: &str) {
+        let params = json!({"persona": persona, "seed": {"unset": true}});
+        self.ask("persona.set", params, Waiting::PersonaSeed);
+    }
+
+    /// 人格的主色写好了：说一声、叫 App 重读人格列表照新的换颜色；没写成的写原话。
+    pub(in crate::settings) fn persona_seed_saved(
+        &mut self,
+        result: Result<Value, crate::core::Refusal>,
+        texts: &Texts,
+    ) {
+        match result {
+            Ok(_) => {
+                self.say(texts.status("saved"), Tone::Good);
+                self.personas_changed = true;
+            }
+            Err(refusal) => self.say(super::target::said(&refusal), Tone::Bad),
+        }
     }
 
     /// 清单里这一项只有系统配置这一层（「配置页」第 33 条）。

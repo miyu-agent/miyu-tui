@@ -682,17 +682,27 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 
 2026-10-13 项目主人定：配色跟着人格走，同一个人格两个头出来的颜色一样（10-14 起两个头照第 3 条同一套算）。
 
-1. 主色：人格写了主题色的（`persona.toml` 的 `[appearance] seed`，核心 P-6 在 `persona.list` 的 `seed` 给）照它；没写的从头像取。头像照 `persona.avatar` 要来（终端画不了图也要，只为取色），缩到 128 见方，不透明度不到 200 的像素不算（圆角外面、抠掉的背景），量化成最多 128 种颜色（Celebi），照 Material 的打分挑第一个。在后台取（引导里填的可能是几千像素的照片，解码一两百毫秒），取好以前照 tokyonight；一张只取一次，照头像的版本（本机文件照路径）记着。格式照文件内容认，不照扩展名：从核心要来的头像照版本存，文件名没有扩展名（2026-10-14 项目主人报「主题跟随头像好像没生效」：原来照扩展名认，读不出，一直照 tokyonight）。没写主题色、也没有头像的，照 tokyonight。
+1. 主色：人格写了主题色的（`persona.toml` 的 `[appearance] seed`，核心 P-6 在 `persona.list` 的 `seed` 给）照它；没写的照头像的候选里打分最高的那个。候选由核心算（2026-10-14 项目主人定：头像取色归核心，两个头拿到的一样）：`persona.list`、`persona.get`、`persona.set` 的回应里每个人格多一格 `seeds`，最多 4 个小写的 `#rrggbb`、好的在前（没有头像、解不开的是 `null`，全透明的是空的），换了头像跟着变；终端不再自己取、也不为取色去要头像。引导里刚选、人格还没存的头像文件，用核心的门面 `miyu_client::seeds::from_image` 现取（同一份代码，参数同核心：缩到 128、不透明度不到 200 的不算、Celebi 128 种、MD3 打分默认的 4 个、一个都挑不出给 `#4285f4`），在后台取，一张只取一次。没写主题色、也没有头像的，照 tokyonight。
 2. 看谁：引导开着的照人格那一步那一位（这一次填的头像文件，已有的人格的头像、写了的主题色，「第一次打开的引导」第 23a 条）；开着会话的照会话的人格；没开的照首页画的那一位（人格框停的那一行、选的、默认的，同「空会话的首页」第 10 条）。换了会话、人格框上下挪、头像要到了，主色一变当场换一套。
 3. 生成（2026-10-14 项目主人定两个头统一、四件照推荐：项目主人报「思考还是青的、深色的底太深」，原来只换 19 格、底是 MD3 surface）：照主色出 Material 的 `SchemeContent`（对比度 0，`material-colors`，同网页），深浅照明暗那一档，取出中性、中性变体、主色、次色、第三色五条色板。59 格每一格都换（`theme/persona.rs` 的 `overlay` 逐格写，不留照抄 tokyonight 的口子）：不带含义的格子照 tokyonight 同一档那一格的亮度（HCT tone），从对应色板取同一亮度的颜色，明暗层次和 tokyonight 一样、只换色相——中性：`background`、`text`、`panel_bg`、`shade`、`row_dim_bg`、热度图最淡一格、`thought`、`thought_hover`、`md_bold`、`md_code`、`md_math`、`diagram_backdrop`、`on_accent`；中性变体：`dim`、`faint`、`hover`、`md_italic`、`md_quote`、`diagram_text`、`diagram_line`、`code_comment`、`code_operator`；主色：`accent`、`workspace`、`side_title`、`md_table_head`、`md_link`、`md_url`、`row_bg`、热度图后四格；次色：`chip_bg`、`chip_hover_bg`；第三色：`picked`、`md_image`；吉祥物（项目主人定也跟着换，原来照抄）：头 `mascot_head` 中性、耳朵 `mascot_ear` 中性变体、眼睛 `mascot_eye` 主色、鳍 `mascot_fin` 第三色。底色因此和 tokyonight 一样亮（深色 tone 10、浅色 90，项目主人选的 A 档；B 是再亮 4、C 是原来的 surface 深色 4–6、浅色 98）。有含义的颜色（`error`、`warn`、`good`、`added`、`removed`、四格差异、`full`、`read_only`、`md_mark`、`md_heading`、其余代码着色）色相往主色最多转 15°（`blend::harmonize`），亮度、色度不变，认得出是红是绿。网页照同一套改（`web-demo/src/lib/md3/index.js`，8aaeefe）；两边 tokyonight 原色表本来有几格不一样（网页的暗字、吉祥物），算出来那几格也不一样，浅色网页照晨光（项目主人定），这些不动。
 4. 名字是 `persona-night`、`persona-day`（`/theme` 的提示照它写）；还没有主色时是 tokyonight 那一份的名字。铺不铺底色照第 4 条。
+
+#### 主色
+
+2026-10-14 项目主人定：跟随头像、跟随壁纸都能从几个候选里挑主色（网页只给跟随壁纸：网页的人格卡片里能选主题色；终端的人格编辑里没有，项目主人在终端会话里定跟随头像也给）。
+
+1. 外观页「主题」一组，配色下面一格「主色」，只在配色是跟随头像、跟随壁纸时列（别的配色不列）；值画一块正在用的颜色，后面写它的 `#rrggbb`。
+2. `Enter` 开选择窗（和配置页选值的同一个，`ui/floating.rs`），候选一个一行、前面一块那个颜色，第一个后面暗色写「默认」，停在正在用的那个上；`Enter` 选好当场存、当场换，`Esc` 不选。
+3. 跟随头像：候选是人格的 `seeds`（核心给的）；选了写进那个人格（`persona.set` 的 `seed`），存在人格上，两个头看到的是同一个；存好重读人格列表，当场换。`d` 恢复默认是清掉人格的主题色（`seed: {"unset": true}`），回到打分最高的那个。
+4. 跟随壁纸：候选是壁纸取出来的（门面 `from_image`，matugen 那一份只有它的 `source` 一个）；选了写个人设置的 `tui.theme_seed`（终端软件包清单，`#rrggbb`）。用的时候它在当前候选里照它，不在（换了壁纸，候选整个换了）照打分最高的那个，和 Android 一样，不用另记壁纸换没换。
+5. 引导的主题那一步不给这一格（两格照旧）：头像刚选好，主色先照打分最高的，以后在外观页改。
 
 #### 跟随壁纸
 
 2026-10-14 项目主人定（方案页第 4 件照推荐、同一天又答「不要轮询吧？」）：配色跟着桌面壁纸走，和网页同一个来处、同一套算法。
 
 1. 来处：网页仓库的 `miyu-wallpaper`（`Cargo.toml` 照网页仓库的 git 提交钉住），先找 matugen 照网页仓库模板（`web/matugen/miyu-web.json`）生成的那一份（Linux `$XDG_CACHE_HOME/miyu/matugen.json`，没设的 `~/.cache/miyu/`；macOS `~/Library/Caches/miyu/`；Windows `%LOCALAPPDATA%\miyu\`），取它的 `source` 当主色；没有的照桌面找壁纸图（KDE、GNOME、XFCE、awww、swww、hyprpaper、swaybg……，macOS 先读系统的壁纸设置文件，读不到才问 System Events，第一次会弹授权框），取图的主色（同「跟随头像的配色」第 1 条的取法，macOS 的 HEIC 先转 JPEG）。
-2. 生成：主色照「跟随头像的配色」第 3 条那一套，名字是 `wallpaper-night`、`wallpaper-day`。
+2. 生成：候选照核心的门面 `miyu_client::seeds::from_image` 取（和头像同一份代码）；用哪个照「主色」第 4 条；主色照「跟随头像的配色」第 3 条那一套，名字是 `wallpaper-night`、`wallpaper-day`。
 3. 什么时候找（`theme/wallpaper.rs`）：要跑命令（一家最多等 2 秒），放在后台。起来时找一次；打开配色列表（配置页外观页的、引导主题那一步的）、选上跟随壁纸时再找一次。换了壁纸自动跟着变（2026-10-14 项目主人定，绝对不轮询）：盯着壁纸来处的文件（`miyu-wallpaper` 的 `Watch`，网页仓库 691aefd：matugen 那一份、壁纸图本身、各家存设置和缓存的文件，清单由它给；只用系统的文件通知 inotify、FSEvents、ReadDirectoryChangesW、kqueue，一阵变动收齐 300 毫秒才叫一次），一变就叫醒界面再找；起不来的不退回定时去看，在机器缓存目录的 `tui/tui.log` 记一行，只靠下面这条。窗口拿回焦点时（终端报 `ESC [ I`），选着跟随壁纸的再找一次：只能靠命令换壁纸的（hyprpaper、swaybg）也跟得上。
 4. 找不到（没有 matugen 那一份、桌面上也找不到图、找到的不是能读的图）：配色列表里不列「跟随壁纸」，`/theme` 跳过它；已经选着它的照 tokyonight，引导主题那一步配色下面暗色写「未找到桌面壁纸，使用 Tokyo Night」（找到的写「取自桌面壁纸」）。
 5. `MIYU_TUI_DESKTOP_WALLPAPER=0`：不看桌面、只认 matugen 那一份（伪终端测试都设它：不碰跑测试的这台电脑的桌面；单元测试里不找）。`MIYU_TUI_WALLPAPER_WATCH=0`：不盯文件，只在拿回焦点时找（测这一条、看有没有偷偷定时去看）。

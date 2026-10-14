@@ -21,7 +21,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::data::Data;
-use choose::Choice;
+use choose::{Choice, Choose};
 use personas::Persona;
 use schema::{Item, Schema};
 
@@ -79,6 +79,14 @@ pub struct More {
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
     /// 找不到的不列）。
     pub wallpaper: bool,
+    /// 能当主色的几个候选，好的在前（跟随头像、跟随壁纸时；App 每一拍照 `app/theme.rs` 设）。
+    pub seeds: Vec<u32>,
+    /// 正在用的主色：「主色」那一项照它画色块。
+    pub seed: Option<u32>,
+    /// 配色是跟随头像、跟随壁纸：「主色」那一项才列（2026-10-14 项目主人定）。
+    pub following: bool,
+    /// 跟随头像时是哪个人格：选了主色写它（`persona.set`）；跟随壁纸的是 `None`（写 `tui.theme_seed`）。
+    pub seed_persona: Option<String>,
 }
 
 impl More {
@@ -112,6 +120,48 @@ impl More {
             out.push(Entry::Page(LAST.to_string()));
         }
         out
+    }
+
+    /// 一页排成行：配色不是跟随头像、跟随壁纸的，「主色」那一项不列。
+    pub fn rows(&self, page: &str) -> Vec<schema::Row> {
+        let Some(schema) = self.schema.as_ref() else {
+            return Vec::new();
+        };
+        schema
+            .rows(page)
+            .into_iter()
+            .filter(|row| match row {
+                schema::Row::Item(i) => {
+                    self.following || schema.items[*i].key != crate::theme::choice::SEED_KEY
+                }
+                schema::Row::Group(_) => true,
+            })
+            .collect()
+    }
+
+    /// 主色的选择窗：候选一个一行、前面一块颜色，第一个后面暗色写「默认」；停在正在用的那个上。跟随头像的写人格，跟随
+    /// 壁纸的写个人设置。
+    pub fn seed_choose(&self, title: &str, default_mark: &str) -> Choose {
+        let choices = self
+            .seeds
+            .iter()
+            .enumerate()
+            .map(|(i, seed)| Choice {
+                value: Value::from(format!("#{seed:06x}")),
+                label: format!("#{seed:06x}"),
+                note: (i == 0).then(|| default_mark.to_string()),
+                off: None,
+            })
+            .collect();
+        let at = self
+            .seed
+            .map_or(Value::Null, |s| Value::from(format!("#{s:06x}")));
+        let mut choose = Choose::open(crate::theme::choice::SEED_KEY, title, choices, &at);
+        choose.swatches = true;
+        if let Some(persona) = &self.seed_persona {
+            choose.target = target::Target::PersonaSeed(persona.clone());
+        }
+        choose
     }
 
     /// 选择窗列哪几个：找不到壁纸的，配色里不列「跟随壁纸」。
@@ -178,6 +228,8 @@ pub struct Texts {
     pub builtin_mascot: String,
     /// 选着的吉祥物包卸掉了：`{id}` 是它的编号。
     pub mascot_missing: String,
+    /// 「主色」跟随头像时恢复默认问的那一句：清掉人格的主题色。
+    pub seed_unset: String,
     /// 终端自己的配置项另分的几组的名字（「配置页」第 33 条）。
     pub own_groups: schema::OwnGroups,
     /// 「外观」那一页的名字（主题、吉祥物、图标，2026-10-14）。

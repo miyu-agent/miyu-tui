@@ -1237,6 +1237,7 @@
       "no_persona": "无人格",
       "builtin_mascot": "内置",
       "mascot_missing": "{id}（未安装）",
+      "seed_unset": "清除人格的主题色，恢复为头像取出的第一个",
       "own_groups": {"theme": "主题", "timeline": "时间线", "mascot": "吉祥物", "icons": "图标"},
       "appearance": "外观",
       "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}},

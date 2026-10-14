@@ -157,7 +157,7 @@ fn page_lines(page: &Settings, id: &str, at: usize, texts: &Texts, width: u16) -
             false,
         )];
     };
-    let rows = schema.rows(id);
+    let rows = page.more.rows(id);
     let name_w = rows
         .iter()
         .filter_map(|r| match r {
@@ -194,10 +194,24 @@ fn page_lines(page: &Settings, id: &str, at: usize, texts: &Texts, width: u16) -
                 };
                 let room = usize::from(width).saturating_sub(name_w + 8);
                 let pad = " ".repeat(name_w.saturating_sub(item.name.width()));
-                let line = Line::from(vec![
-                    Span::styled(format!("{}{pad}", item.name), style),
-                    Span::styled(fit(&value, room), style.add_modifier(Modifier::BOLD)),
-                ]);
+                let mut spans = vec![Span::styled(format!("{}{pad}", item.name), style)];
+                // 主色：正在用的那个画一块颜色，后面写它的 `#rrggbb`（2026-10-14）。
+                match page
+                    .more
+                    .seed
+                    .filter(|_| item.key == crate::theme::choice::SEED_KEY)
+                {
+                    Some(seed) => {
+                        spans.push(super::super::floating::swatch(seed));
+                        let hex = format!(" #{seed:06x}");
+                        spans.push(Span::styled(hex, style.add_modifier(Modifier::BOLD)));
+                    }
+                    None => spans.push(Span::styled(
+                        fit(&value, room),
+                        style.add_modifier(Modifier::BOLD),
+                    )),
+                }
+                let line = Line::from(spans);
                 out.push((line, n == at));
                 n += 1;
             }

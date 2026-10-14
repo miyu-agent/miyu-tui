@@ -417,6 +417,11 @@ impl Settings {
                 self.delete_persona(id);
                 return Outcome::Stay;
             }
+            // 清掉人格的主题色：回到头像候选里打分最高的那个（2026-10-14）。
+            Delete::PersonaSeed(id) => {
+                self.clear_persona_seed(id);
+                return Outcome::Stay;
+            }
             _ => {}
         }
         let Some(data) = &self.data else {
@@ -426,7 +431,9 @@ impl Settings {
             Delete::Provider(id) => super::keys::provider(id),
             Delete::Model(p, m) => super::keys::model_table(p, m),
             Delete::Pool(name) => super::keys::pool(name),
-            Delete::Preset(_) | Delete::Persona(_) => return Outcome::Stay,
+            Delete::Preset(_) | Delete::Persona(_) | Delete::PersonaSeed(_) => {
+                return Outcome::Stay;
+            }
             // 恢复默认：只去掉个人设置里的这一项（只有系统配置这一层的去掉系统配置里的）。
             Delete::Setting(key) => {
                 self.draft.system = self.system_only(key);

@@ -51,6 +51,7 @@ impl App {
             self.screen.theme_seed = seed;
             self.apply_theme();
         }
+        self.share_seeds();
     }
 
     /// 跟随头像的配色照谁取色：引导开着的照人格那一步那一位，不然照正在看的人格（`Seen::theme_persona`）。
@@ -59,14 +60,11 @@ impl App {
             return oobe.persona.colors();
         }
         let row = self.seen().theme_persona()?;
-        match (&row.seed, &row.avatar) {
-            (Some(seed), _) => Some(Colors::Seed(seed.clone())),
-            (None, Some(version)) => Some(Colors::Avatar {
-                persona: row.id.clone(),
-                version: version.clone(),
-            }),
-            (None, None) => None,
-        }
+        let seeds = row.seeds.clone().unwrap_or_default();
+        (row.seed.is_some() || !seeds.is_empty()).then(|| Colors::Given {
+            seed: row.seed.clone(),
+            seeds,
+        })
     }
 
     /// 跟随壁纸（「主题」的「跟随壁纸」）：起来时找一次，打开配色列表、选上跟随壁纸时再找一次，不定时查（2026-10-14 项目主人：
@@ -102,6 +100,24 @@ impl App {
         }
     }
 
+    /// 主色的候选、正在用的那个交给外观页（「主色」那一项照它画、开色块列表；跟随头像的选了写那个人格）。
+    fn share_seeds(&mut self) {
+        let colors = self.choice().colors;
+        let persona = (colors == "persona")
+            .then(|| self.seen().theme_persona().map(|p| p.id.clone()))
+            .flatten();
+        if let Some(settings) = &mut self.boxes.settings {
+            settings.more.seeds.clone_from(&self.screen.theme_seeds);
+            settings.more.seed = self.screen.theme_seed;
+            settings.more.following = matches!(colors.as_str(), "persona" | "wallpaper");
+            settings.more.seed_persona = persona;
+            // 配置页里改了人格的主色：重读人格列表，照新的换颜色。
+            if std::mem::take(&mut settings.personas_changed) {
+                self.link.core.send(crate::core::Command::ListPersonas);
+            }
+        }
+    }
+
     /// 开着配色的列表：引导「主题」那一步的、配置页外观页的。
     fn colors_list_open(&self) -> bool {
         let colors = |c: &crate::settings::pages::choose::Choose| c.key == "tui.theme";
@@ -122,26 +138,42 @@ impl App {
         self.choice().colors == "persona"
     }
 
-    /// 跟随头像的主色：写了主题色的照写的，没写的从头像取（后台取，一张只取一次）；不是跟随头像的、都没有的、头像还没要到
-    /// 还没取好的是 `None`。
-    fn wanted_seed(&mut self) -> Option<u32> {
+    /// 能当主色的几个候选（好的在前）、正在用的那个：跟随壁纸的照找到的，自选的（`tui.theme_seed`）在候选里照它；跟随头像的
+    /// 候选由核心给（2026-10-14 项目主人定），人格写了主题色的照它，没写的照打分最高的；引导里刚选、还没存的头像照门面现取
+    /// （后台取，一张只取一次）。别的配色、都没有的、还没取好的是空的。
+    fn wanted(&mut self) -> (Vec<u32>, Option<u32>) {
         if self.choice().colors == "wallpaper" {
-            return self.screen.wallpaper.seed();
+            let seeds = self.screen.wallpaper.seeds().to_vec();
+            let seed = choice::pick_seed(&seeds, self.screen.theme_pick);
+            return (seeds, seed);
         }
         if !self.following() {
-            return None;
+            return (Vec::new(), None);
         }
-        match self.colors_source()? {
-            Colors::Seed(seed) => persona::hex(&seed),
-            Colors::File(path) => {
+        match self.colors_source() {
+            None => (Vec::new(), None),
+            Some(Colors::Given { seed, seeds }) => {
+                let seeds: Vec<u32> = seeds.iter().filter_map(|s| persona::hex(s)).collect();
+                let seed = seed
+                    .as_deref()
+                    .and_then(persona::hex)
+                    .or_else(|| seeds.first().copied());
+                (seeds, seed)
+            }
+            Some(Colors::File(path)) => {
                 let key = format!("file:{}", path.display());
-                self.screen.seeds.of(&key, &path)
-            }
-            Colors::Avatar { version, .. } => {
-                let file = self.media.avatars.file(&version)?;
-                self.screen.seeds.of(&version, &file)
+                let seeds = self.screen.seeds.of(&key, &path).unwrap_or_default();
+                let seed = seeds.first().copied();
+                (seeds, seed)
             }
         }
+    }
+
+    /// 用哪个主色，顺手记下候选（外观页「主色」照它列）。
+    pub(super) fn wanted_seed(&mut self) -> Option<u32> {
+        let (seeds, seed) = self.wanted();
+        self.screen.theme_seeds = seeds;
+        seed
     }
 
     /// 换下一种配色，只管这一次启动（「主题」第 6 条），提示「主题：名字」。

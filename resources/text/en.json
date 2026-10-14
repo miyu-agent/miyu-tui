@@ -1237,6 +1237,7 @@
       "no_persona": "No persona",
       "builtin_mascot": "Built-in",
       "mascot_missing": "{id} (not installed)",
+      "seed_unset": "Clear the persona's theme color and go back to the avatar's first candidate",
       "own_groups": {"theme": "Theme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons"},
       "appearance": "Appearance",
       "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}},
