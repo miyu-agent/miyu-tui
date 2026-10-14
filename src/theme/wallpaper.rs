@@ -211,16 +211,10 @@ impl Wallpaper {
 }
 
 /// 找：matugen 那一份优先，没有的（`desktop` 开着时）照桌面找壁纸图，缓存里记着这张的直接用，没记的 `decode` 才解开取色
-/// 再记下。一并交回要盯的文件：找到了图的照它的（图本身加上各家的清单），不然照这台电脑的清单；不看桌面的只盯 matugen
-/// 那一份。
+/// 再记下。一并交回要盯的文件：找到了图的照它的（图本身、找到它的那一家的文件、matugen 那一份），不然只盯 matugen 那一份
+/// （`miyu-wallpaper` 的 `watch_list`；别家的不盯，后来才设上的靠拿回焦点时再找）。
 fn probe(dark: bool, desktop: bool, decode: bool) -> (Found, Vec<PathBuf>) {
-    let list = || {
-        if desktop {
-            miyu_wallpaper::watch::watch_list()
-        } else {
-            miyu_wallpaper::matugen::output_path().into_iter().collect()
-        }
-    };
+    let list = miyu_wallpaper::watch::watch_list;
     let matugen = miyu_wallpaper::matugen::find()
         .and_then(|m| m.read().ok())
         .and_then(|json| source_of(&json));
