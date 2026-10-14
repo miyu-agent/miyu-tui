@@ -17,7 +17,10 @@ fn at_theme(oobe: &mut Oobe, t0: Instant, texts: &Texts, items: serde_json::Valu
     oobe.moved(Move::Next, t0);
     assert_eq!(oobe.step, Step::Theme);
     let (tag, params) = find(&asks(oobe), "config.get");
-    assert_eq!(params, json!({"keys": ["tui.theme", "tui.theme_mode"]}));
+    assert_eq!(
+        params,
+        json!({"keys": ["tui.theme", "tui.theme_mode", "tui.mascot_home", "tui.mascot_sidebar"]})
+    );
     assert_eq!(oobe.theme_preview(), None, "读到以前照原来的样子");
     oobe.answer(tag, Ok(json!({"items": items})), t0, texts);
 }
@@ -90,6 +93,7 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert!(asks(&mut oobe).is_empty(), "选的时候不写");
     oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Down), t0, &texts);
     assert_eq!(oobe.theme.slot, Slot::Next);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let (tag, params) = find(&asks(&mut oobe), "config.set");
@@ -97,7 +101,9 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
         params,
         json!({"layer": "personal", "changes": [
             {"key": "tui.theme_mode", "value": "dark"},
-            {"key": "tui.theme", "value": "terminal"}
+            {"key": "tui.theme", "value": "terminal"},
+            {"key": "tui.mascot_home", "value": true},
+            {"key": "tui.mascot_sidebar", "value": true}
         ]})
     );
     assert_eq!(oobe.step, Step::Theme, "写成了才往下走");
@@ -165,8 +171,9 @@ fn a_refused_write_stays_and_says_why() {
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
     at_theme(&mut oobe, t0, &texts, defaults());
-    oobe.key(key(KeyCode::Down), t0, &texts);
-    oobe.key(key(KeyCode::Down), t0, &texts);
+    for _ in 0..3 {
+        oobe.key(key(KeyCode::Down), t0, &texts);
+    }
     assert_eq!(oobe.theme.slot, Slot::Next);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let (tag, _) = find(&asks(&mut oobe), "config.set");
@@ -207,4 +214,77 @@ fn the_colors_list_offers_the_wallpaper_only_when_one_was_found() {
     );
     oobe.key(key(KeyCode::Up), t0, &texts);
     assert_eq!(oobe.theme_preview().map(|p| p.0), Some("wallpaper".into()));
+}
+
+#[test]
+fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offered() {
+    // 2026-10-15 项目主人定：主题那一步第三格「吉祥物」显示、不显示，一格同时管首页、侧边栏；默认停在显示；人格有头像的
+    // 不列（头像替掉吉祥物）。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    at_theme(&mut oobe, t0, &texts, defaults());
+    assert_eq!(
+        oobe.theme.slots(),
+        [Slot::Mode, Slot::Colors, Slot::Mascot, Slot::Next]
+    );
+    assert!(!oobe.theme.mascot_off, "没写过的停在显示");
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    assert_eq!(oobe.theme.slot, Slot::Mascot);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let labels: Vec<String> = oobe
+        .theme
+        .picking
+        .as_ref()
+        .expect("开了列表")
+        .choices
+        .iter()
+        .map(|c| c.label.clone())
+        .collect();
+    assert_eq!(labels, ["显示", "不显示"]);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(oobe.theme.mascot_off);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (_, params) = find(&asks(&mut oobe), "config.set");
+    assert_eq!(
+        params["changes"],
+        json!([
+            {"key": "tui.theme_mode", "value": "auto"},
+            {"key": "tui.theme", "value": "tokyonight"},
+            {"key": "tui.mascot_home", "value": false},
+            {"key": "tui.mascot_sidebar", "value": false}
+        ])
+    );
+    // 写过不显示的：重走引导停在不显示。
+    let mut again = fresh(t0);
+    let mut items = defaults();
+    items["tui.mascot_home"] = json!({"value": false, "origin": {"layer": "personal"}});
+    at_theme(&mut again, t0, &texts, items);
+    assert!(again.theme.mascot_off);
+    // 人格有头像：不列这一格，往下两下就是「下一步」，不写那两项。
+    let dir = std::env::temp_dir().join(format!("miyu-theme-mascot-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("avatar.png");
+    std::fs::write(&file, b"\x89PNG\r\n\x1a\n").unwrap();
+    let mut pictured = fresh(t0);
+    pictured.persona.avatar = Field::line().with(&file.display().to_string());
+    at_theme(&mut pictured, t0, &texts, defaults());
+    assert_eq!(
+        pictured.theme.slots(),
+        [Slot::Mode, Slot::Colors, Slot::Next]
+    );
+    pictured.key(key(KeyCode::Down), t0, &texts);
+    pictured.key(key(KeyCode::Down), t0, &texts);
+    assert_eq!(pictured.theme.slot, Slot::Next);
+    pictured.key(key(KeyCode::Enter), t0, &texts);
+    let (_, params) = find(&asks(&mut pictured), "config.set");
+    assert_eq!(
+        params["changes"].as_array().map(Vec::len),
+        Some(2),
+        "{params}"
+    );
+    std::fs::remove_dir_all(&dir).unwrap();
 }

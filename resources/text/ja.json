@@ -1393,12 +1393,14 @@
     "theme": {
       "title": "テーマ",
       "sub": "明暗と配色を選択します。すぐに反映され、あとで設定で変更できます",
-      "rows": ["明暗", "配色"],
+      "rows": ["明暗", "配色", "マスコット"],
       "modes": ["自動", "ダーク", "ライト"],
       "colors": ["アバターに合わせる", "壁紙に合わせる", "Tokyo Night", "ターミナルの配色"],
       "from_avatar": "「{name}」のアバターから取得",
       "from_seed": "「{name}」のテーマカラーを使用",
       "no_avatar": "「{name}」はアバター未設定のため Tokyo Night を使用", "from_wallpaper": "デスクトップの壁紙から取得", "no_wallpaper": "デスクトップの壁紙が見つからないため Tokyo Night を使用",
+      "mascot": ["表示", "非表示"],
+      "mascot_note": "オンにすると CPU 使用率が上がり、起動が遅くなります",
       "next": "次へ",
       "saving": "保存中…"
     },
