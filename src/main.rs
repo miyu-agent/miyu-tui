@@ -228,9 +228,11 @@ fn run(
     let human = human::Human::default();
     let mut app = App::new(config, core, human, figures);
     // 跟随壁纸盯着的文件变了：叫醒主循环，这一拍再找（蓝图「主题」的「跟随壁纸」第 3 条）。
-    app.screen.wallpaper.set_wake(std::sync::Arc::new(move || {
-        if to_wake.send(Incoming::Wake).is_err() {}
-    }));
+    // 头像的主色、壁纸在后台取好了：同样叫醒主循环，不每一拍醒来看（蓝图「空闲不醒」）。
+    let wake: theme::wallpaper::Wake =
+        std::sync::Arc::new(move || if to_wake.send(Incoming::Wake).is_err() {});
+    app.screen.wallpaper.set_wake(wake.clone());
+    app.screen.seeds.set_wake(wake);
     // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）；问到的终端颜色在挑主题以前装上（终端配色照它推底色）。
     let depth = theme::Depth::detect(|name| std::env::var(name).ok());
     theme::terminal_colors::install(colors, ground, depth);

@@ -41,13 +41,9 @@ impl App {
             .chain(self.typing.mention.deadline())
             // 链接卡片、mermaid 图的单子上有没发的：马上醒来发（`cards.rs`、`diagrams.rs`）。
             .chain((self.card_asks_pending() || self.diagram_asks_pending()).then(Instant::now))
-            // 整份重排没排完的：下一帧接着排（蓝图「正文」第 8 条）。
+            // 整份重排没排完的：下一帧接着排（蓝图「正文」第 8 条）。头像的主色在后台取、壁纸在后台找的，好了自己叫醒主循环
+            // （`theme/seeds.rs`、`theme/wallpaper.rs`），不每一拍醒来看。
             .chain((self.media.row_cache.borrow().stale > 0).then(Instant::now))
-            // 头像的主色在后台取、壁纸在后台找：每一拍醒来看好了没有（`theme/seeds.rs`、`theme/wallpaper.rs`）。
-            .chain(
-                (self.screen.seeds.busy() || self.screen.wallpaper.busy())
-                    .then(|| Instant::now() + Duration::from_millis(self.config.layout.frame_ms)),
-            )
             .min()
     }
 }
