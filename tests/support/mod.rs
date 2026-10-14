@@ -37,6 +37,8 @@ pub struct Tui {
     cols: u16,
     /// 录着的界面写出来的原样字节（[`Tui::record`]）。
     recording: Option<Vec<u8>>,
+    /// 问终端 16 色（OSC 4）时答什么（[`Tui::answer_colors`]）；不设的不答，像不认 OSC 4 的终端。
+    colors: Option<[(u8, u8, u8); 16]>,
     bytes: Receiver<Vec<u8>>,
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     child: Box<dyn Child + Send + Sync>,
@@ -126,6 +128,7 @@ impl Tui {
             screen: vt100::Parser::new(ROWS, cols, 0),
             cols,
             recording: None,
+            colors: None,
             bytes,
             writer,
             child,
@@ -179,6 +182,17 @@ impl Tui {
         if has(b"\x1b[?u") {
             self.send(b"\x1b[?0u");
         }
+        // 先答 16 色、再答 DA1：真终端照问的先后答。
+        if let Some(colors) = self.colors.filter(|_| has(b"\x1b]4;")) {
+            let answer: String = colors
+                .iter()
+                .enumerate()
+                .map(|(n, (r, g, b))| {
+                    format!("\x1b]4;{n};rgb:{r:02x}{r:02x}/{g:02x}{g:02x}/{b:02x}{b:02x}\x1b\\")
+                })
+                .collect();
+            self.send(answer.as_bytes());
+        }
         if has(b"\x1b[c") {
             self.send(b"\x1b[?62c");
         }
@@ -189,6 +203,11 @@ impl Tui {
             recording.extend_from_slice(data);
         }
         self.screen.process(data);
+    }
+
+    /// 界面起来问终端 16 色时照这一组答（kitty 这类终端会答）：要在第一次读屏以前设。
+    pub fn answer_colors(&mut self, colors: [(u8, u8, u8); 16]) {
+        self.colors = Some(colors);
     }
 
     /// 从现在起录下界面写出来的每一个字节：看中间有没有闪过哪一帧（读屏只看得到最后那一帧）。

@@ -120,7 +120,15 @@ fn main() -> io::Result<()> {
     let graphics = figures::terminal::probe();
     // 问终端的底色是深是浅：主题「跟随终端」照它挑（蓝图「主题」第 3 条），同样在开始读按键之前问。
     let dark = theme::choice::probe();
-    let result = run(&mut terminal, config, (graphics, dark), keyboard, launch);
+    // 问终端调色板 16 色的真颜色：终端配色的流光照它算渐变（蓝图「主题」第 10 条），同样在开始读按键之前问。
+    let colors = theme::terminal_colors::probe();
+    let result = run(
+        &mut terminal,
+        config,
+        (graphics, dark, colors),
+        keyboard,
+        launch,
+    );
     leave(keyboard)?;
     ratatui::restore();
     result
@@ -185,7 +193,11 @@ enum Incoming {
 fn run(
     terminal: &mut Screen,
     config: Config,
-    (graphics, dark): (Option<figures::Graphics>, Option<bool>),
+    (graphics, dark, colors): (
+        Option<figures::Graphics>,
+        Option<bool>,
+        Option<theme::terminal_colors::Colors>,
+    ),
     keyboard: bool,
     launch: startup::Launch,
 ) -> io::Result<()> {
@@ -225,6 +237,7 @@ fn run(
     let mut pointer = pointer::Pointer::default();
     // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）。
     let depth = theme::Depth::detect(|name| std::env::var(name).ok());
+    theme::terminal_colors::install(colors, depth);
     // 量性能用：给了路径才记每一帧的耗时（蓝图「环境变量」）。
     let log_path = std::env::var_os("MIYU_TUI_FRAME_LOG").map(std::path::PathBuf::from);
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
