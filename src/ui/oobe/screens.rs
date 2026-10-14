@@ -129,9 +129,14 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         0,
     )
     .mascot;
+    // 设了头像的画头像（第 11 条，2026-10-13 项目主人定）：在中间从上往下一行行露出来，不从左边走过来（2026-10-14 项目主人
+    // 定）；画不了的照旧画吉祥物，从左边走回中间、转一圈。
+    let avatar = oobe
+        .persona
+        .finale_avatar(|version| p.media.avatars.file(version));
     let rect = match (from, middle) {
         (Some(from), Some(middle)) => {
-            let walked = lerp(from, middle, fin.walk);
+            let walked = arrival(avatar.is_some(), from, middle, fin.walk);
             Some(match leave {
                 Some(p) if home.height > 0 => lerp(middle, home, p),
                 _ => walked,
@@ -145,12 +150,10 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     let summary = oobe.summary();
     stars::draw(frame, area, &list, &look.stars.marks);
     if let Some(rect) = rect {
-        // 设了头像的画头像，跟着走回中间、落到首页的位置；画不了的照旧画吉祥物（第 11 条，2026-10-13 项目主人定）。
-        let avatar = oobe
-            .persona
-            .finale_avatar(|version| p.media.avatars.file(version));
+        // 回车以后落到首页的位置时整张露着。
+        let shown = if leave.is_some() { 1.0 } else { fin.walk };
         let drawn = avatar.is_some_and(|path| {
-            crate::ui::avatar_view::draw_file(frame, &p.media.figures, rect, &path)
+            crate::ui::avatar_view::draw_file(frame, &p.media.figures, rect, &path, shown)
         });
         if !drawn {
             let extra = Extra {
@@ -186,7 +189,37 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
 }
 
 /// 两块之间走了 `p` 成。
+/// 好了那一屏开场时那一块在哪：吉祥物从中间几步站的地方（`from`）走回中间，走了 `walk` 成；头像一开始就在中间，从上往下
+/// 露出来（`avatar_view::draw_file` 的 `shown`）。
+fn arrival(avatar: bool, from: Rect, middle: Rect, walk: f64) -> Rect {
+    if avatar {
+        middle
+    } else {
+        lerp(from, middle, walk)
+    }
+}
+
 fn lerp(a: Rect, b: Rect, p: f64) -> Rect {
     let go = |x: u16, y: u16| (f64::from(x) + (f64::from(y) - f64::from(x)) * p).round() as u16;
     Rect::new(go(a.x, b.x), go(a.y, b.y), a.width, a.height)
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui::layout::Rect;
+
+    use super::arrival;
+
+    #[test]
+    fn an_avatar_starts_in_the_middle_and_the_mascot_walks_there() {
+        // 2026-10-14 项目主人定：完成页的头像不从左边走过来，在中间从上往下露出来；吉祥物照旧走回中间。
+        let (from, middle) = (Rect::new(4, 10, 20, 10), Rect::new(40, 10, 20, 10));
+        assert_eq!(
+            arrival(true, from, middle, 0.0),
+            middle,
+            "头像一开始就在中间"
+        );
+        assert_eq!(arrival(false, from, middle, 0.0), from, "吉祥物从左边起步");
+        assert_eq!(arrival(false, from, middle, 1.0), middle);
+    }
 }
