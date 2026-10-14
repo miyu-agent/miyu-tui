@@ -1,5 +1,6 @@
 //! 新页面的几种悬浮窗（蓝图「配置页」第 33、34、36 条）：下拉的选择窗、填一行字的编辑窗、人格的详情窗。
 
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::Value;
 
 use super::personas::Detail;
@@ -19,7 +20,20 @@ pub struct Choice {
     pub off: Option<String>,
 }
 
-/// 下拉的选择窗：停在现在的值上，选了当场存。
+/// 选择窗上按了一个键的结果。
+#[derive(Debug, Clone, PartialEq)]
+pub enum Pressed {
+    /// 上下挪了：引导的主题那一步照挪到的当场换样子。
+    Moved,
+    /// 选好了这个值。
+    Picked(Value),
+    /// 不选了，关窗。
+    Cancelled,
+    /// 别的键，不管。
+    Ignored,
+}
+
+/// 下拉的选择窗：停在现在的值上，选了当场存。配置页和引导的主题那一步共用这一个，按键同一套（2026-10-14 项目主人）。
 #[derive(Debug, Clone, PartialEq)]
 pub struct Choose {
     /// 改的是哪一项。
@@ -48,6 +62,26 @@ impl Choose {
             choices,
             sel,
             target: Target::Setting,
+        }
+    }
+
+    /// 按了一个键：`j` `k`、上下挪，`Enter` 选，`Esc`、`q` 不选。
+    pub fn press(&mut self, key: KeyEvent) -> Pressed {
+        match key.code {
+            KeyCode::Char('j') | KeyCode::Down => {
+                self.step(true);
+                Pressed::Moved
+            }
+            KeyCode::Char('k') | KeyCode::Up => {
+                self.step(false);
+                Pressed::Moved
+            }
+            KeyCode::Enter => self
+                .chosen()
+                .cloned()
+                .map_or(Pressed::Ignored, Pressed::Picked),
+            KeyCode::Esc | KeyCode::Char('q') => Pressed::Cancelled,
+            _ => Pressed::Ignored,
         }
     }
 

@@ -297,44 +297,7 @@ fn status(page: &Settings, texts: &Texts) -> (String, Style) {
     (text, theme::warn())
 }
 
-/// 一行按键提示：整行暗下去，键暗色、说明更暗，每格隔三列（「配置页」第 42 条，2026-10-09 项目主人：「底下这种按键提示
-/// 我觉得才应该是暗色」；原来键是黄的，比内容还亮）。
-pub(super) fn hint_line(hints: &[[String; 2]]) -> Line<'_> {
-    let mut spans = Vec::new();
-    for (i, [key, what]) in hints.iter().enumerate() {
-        if i > 0 {
-            spans.push(Span::raw("   "));
-        }
-        spans.push(Span::styled(key.as_str(), theme::dim()));
-        spans.push(Span::styled(format!(" {what}"), theme::faint()));
-    }
-    Line::from(spans)
-}
-
-/// 选中的那一行左边的强调色竖条。
-pub(super) fn bar(frame: &mut Frame, row: Rect) {
-    for y in row.y..row.bottom() {
-        frame
-            .buffer_mut()
-            .set_string(row.x, y, "┃", theme::accent());
-    }
-}
-
-/// 字太长裁掉、末尾写「…」。
-pub(super) fn fit(text: &str, width: usize) -> String {
-    if text.width() <= width {
-        return text.to_string();
-    }
-    let mut out = String::new();
-    for c in text.chars() {
-        if out.width() + unicode_width::UnicodeWidthChar::width(c).unwrap_or(0) + 1 > width {
-            break;
-        }
-        out.push(c);
-    }
-    out.push('…');
-    out
-}
+pub(super) use super::floating::{bar, fit, hint_line};
 
 #[cfg(test)]
 mod tests;

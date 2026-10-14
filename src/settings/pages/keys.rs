@@ -4,7 +4,7 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
 
-use super::choose::{Choose, LineEdit, PersonaView, PresetView};
+use super::choose::{Choose, LineEdit, PersonaView, PresetView, Pressed};
 use super::schema::{Row, Schema};
 use super::{Entry, Section, choices, current, is_named, personas, presets};
 use crate::core::Refusal;
@@ -324,21 +324,10 @@ impl Settings {
         texts: &Texts,
     ) {
         match popup {
-            Popup::Choose(mut choose) => match key.code {
-                KeyCode::Char('j') | KeyCode::Down => {
-                    choose.step(true);
-                    self.popup = Some(Popup::Choose(choose));
-                }
-                KeyCode::Char('k') | KeyCode::Up => {
-                    choose.step(false);
-                    self.popup = Some(Popup::Choose(choose));
-                }
-                KeyCode::Enter => match choose.chosen().cloned() {
-                    Some(value) => self.write_to(choose.target, &choose.key, value, texts),
-                    None => self.popup = Some(Popup::Choose(choose)),
-                },
-                KeyCode::Esc | KeyCode::Char('q') => self.edit_cancel(choose.target),
-                _ => self.popup = Some(Popup::Choose(choose)),
+            Popup::Choose(mut choose) => match choose.press(key) {
+                Pressed::Picked(value) => self.write_to(choose.target, &choose.key, value, texts),
+                Pressed::Cancelled => self.edit_cancel(choose.target),
+                Pressed::Moved | Pressed::Ignored => self.popup = Some(Popup::Choose(choose)),
             },
             Popup::Line(mut edit) => {
                 match key.code {
