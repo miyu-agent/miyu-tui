@@ -93,7 +93,7 @@ pub(super) fn request(
         | Command::ListModels
         | Command::ListChoices
         | Command::Files { .. }
-        | Command::ListEfforts
+        | Command::ListEfforts(_)
         | Command::SetChat(_)
         | Command::LinkPreview(_)
         | Command::FetchBlob(_)

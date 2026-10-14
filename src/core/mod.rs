@@ -49,7 +49,7 @@ use connect::connect;
 pub use abilities::Abilities;
 pub use config::HeadConfig;
 pub use cost::{Bill, Cost, UsageAsk, UsageKind, UsageRow};
-pub use efforts::{EffortList, Efforts};
+pub use efforts::{EffortList, Efforts, wanted as wanted_models};
 pub use kinds::{EndReason, Level, ToolStatus};
 pub use limits::Limits;
 pub use links::{Card, CardKind, blob_path, cards_dir};
@@ -126,8 +126,9 @@ pub enum Command {
     RenderMermaid(String),
     /// 手动换的模型也记成新会话的默认：写个人设置的 `models.chat`（2026-10-02 项目主人定，`models.md`「头的约定」）。
     SetChat(String),
-    /// `/effort` 要的：每个模型有哪几级、配置的默认、配置键（`model.list`，核心 8-18 补）。
-    ListEfforts,
+    /// `/effort`、底栏要的：每个模型有哪几级、配置的默认、配置键（`model.list`，核心 8-18 补）。给了的只要这几个模型
+    /// （`models`，核心 V-6 上），`None` 要整份。
+    ListEfforts(Option<Vec<String>>),
     /// 写个人设置里一个模型的思考强度：配置键、哪一级（`None` 是去掉这一项，回到供应商定）。
     SetEffort {
         /// 配置键（照 `facts.effort.key` 抄）。

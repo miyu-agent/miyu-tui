@@ -17,13 +17,35 @@ impl App {
         }
         self.boxes.efforts = None;
         self.boxes.panel = Some(Panel::Effort { selected: 0 });
-        self.link.core.send(Command::ListEfforts);
+        self.refresh_effort();
     }
 
-    /// 向核心要一次 `model.list`，底栏照它写模型和这一档：连上核心、`/new` 以后、换了强度以后（2026-10-02 项目主人
-    /// 报：空会话的底栏没有模型、强度，换了强度要等下一轮才变）。
+    /// 向核心要一次 `model.list`，底栏照它写模型和这一档：连上核心（读到默认的聊天模型以后）、`/new` 以后、换了强度以后
+    /// （2026-10-02 项目主人报：空会话的底栏没有模型、强度，换了强度要等下一轮才变）。只要正在用的、会话的、默认的那几个
+    /// （核心 V-6 上的 `models`，2026-10-15 核心转来：整份 120 KB，只为底栏一个模型名）；有池的、还不知道的要整份。
     pub(super) fn refresh_effort(&mut self) {
-        self.link.core.send(Command::ListEfforts);
+        let in_use = self
+            .talk
+            .transcript
+            .model
+            .as_ref()
+            .map(|(m, e)| format!("{e}/{m}"));
+        let refs = [
+            self.talk.transcript.model_ref(),
+            in_use.as_deref(),
+            self.link.default_chat.as_deref(),
+        ];
+        let wanted = crate::core::wanted_models(&refs);
+        self.link.core.send(Command::ListEfforts(wanted));
+    }
+
+    /// 读到默认的聊天模型（`models.chat`，连上时和别的配置合成一条读）：记下，照它要底栏的模型资料；读不到的（核心不认、
+    /// 没配）要整份。
+    pub(super) fn chat_configured(&mut self, got: Option<&serde_json::Value>) {
+        if let Some(chat) = got.and_then(|g| g["items"]["models.chat"]["value"].as_str()) {
+            self.link.default_chat = Some(chat.to_string());
+        }
+        self.refresh_effort();
     }
 
     /// 核心交回了：底栏照它写；框开着的，找出改哪个模型、选着配置的默认那一级，用的是模型池的关框、提示一句。

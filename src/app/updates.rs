@@ -94,15 +94,14 @@ impl App {
         }
         if let Update::HeadConfig(head) = update {
             // 连上、配置变了都会来：默认人格、默认预设照它，两样的列表顺手再要一次（新会话的框用）。核心照收到的先后答，大的
-            // 排在后面（「连核心」第 9 条）：读配置（上面已经发了）、人格、预设、软件包，再是给人看的字（头一次）、模型资料
-            // （要等核心读完模型目录）。
+            // 排在后面（「连核心」第 9 条）：读配置（上面已经发了）、人格、预设、软件包，再是给人看的字（头一次）；底栏的模型
+            // 资料等读到默认的聊天模型再要，只要它那一个（`effort.rs`）。
             self.picks_configured(head.persona.clone(), head.preset.clone());
             self.ask_packages();
             if !std::mem::replace(&mut self.link.human_asked, true) {
                 let code = self.config.language.code().to_string();
                 self.link.core.send(Command::FetchHuman(code));
             }
-            self.refresh_effort();
             self.note_head(&head.language, head.persona.as_deref());
             self.link.currency = head.currency;
             self.language_from_config(&head.language);

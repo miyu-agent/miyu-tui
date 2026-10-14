@@ -20,6 +20,8 @@ const MASCOT_TAG: u64 = TAG_BASE - 4;
 const THEME_TAG: u64 = TAG_BASE - 9;
 /// 读新会话开局级别的请求编号。
 const LEVEL_TAG: u64 = TAG_BASE - 10;
+/// 读默认的聊天模型的请求编号（底栏只要它的资料，`effort.rs`）。
+const CHAT_TAG: u64 = TAG_BASE - 11;
 /// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
 const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
 
@@ -35,7 +37,13 @@ impl App {
                 keys.push(crate::theme::choice::SEED_KEY);
                 self.ask_config(THEME_TAG, &keys);
                 self.ask_config(LEVEL_TAG, &LEVEL_KEYS);
+                self.ask_config(CHAT_TAG, &["models.chat"]);
                 false
+            }
+            // 默认的聊天模型：读到了照它要底栏的模型资料（`effort.rs`）。
+            Update::Answer { tag, result } if *tag == CHAT_TAG => {
+                self.chat_configured(result.as_ref().ok());
+                true
             }
             Update::Answer { tag, result } if *tag == ICONS_TAG => {
                 if let Ok(got) = result {
