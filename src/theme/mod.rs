@@ -5,6 +5,7 @@
 
 pub mod choice;
 mod depth;
+mod derived;
 mod ground;
 mod motion;
 mod palette;
@@ -55,15 +56,29 @@ pub fn generation() -> u64 {
 }
 
 /// 取当前主题里的一个颜色。
-fn pick(get: impl Fn(&Palette) -> palette::Tone) -> Color {
+fn tone(get: impl Fn(&Palette) -> palette::Tone) -> palette::Tone {
     match CURRENT.read() {
-        Ok(current) => get(&current).0,
-        Err(poisoned) => get(&poisoned.into_inner()).0,
+        Ok(current) => get(&current),
+        Err(poisoned) => get(&poisoned.into_inner()),
     }
 }
 
+fn pick(get: impl Fn(&Palette) -> palette::Tone) -> Color {
+    tone(get).0
+}
+
 fn fg(get: impl Fn(&Palette) -> palette::Tone) -> Style {
-    Style::new().fg(pick(get))
+    styled(tone(get))
+}
+
+/// 一格的字色；主题里写了 `dim:` 的另加变暗。
+fn styled(palette::Tone(color, dim): palette::Tone) -> Style {
+    let style = Style::new().fg(color);
+    if dim {
+        style.add_modifier(Modifier::DIM)
+    } else {
+        style
+    }
 }
 
 /// 侧边栏各段的标题：蓝色、不加粗（`tui.md`「后台命令、子代理和侧边栏」第 7 条：加粗太抢眼）。
@@ -351,7 +366,7 @@ pub fn code_parameter() -> Style {
     fg(|p| p.code_parameter)
 }
 
-/// 主题的 `accent` 的三个字节：流光要按字节算明暗；不是真彩色的，退回 tokyonight 的前景色。
+/// 主题的 `accent` 的三个字节：流光要按字节算明暗；不知道真颜色的，退回 tokyonight 的前景色。
 fn accent_rgb() -> (u8, u8, u8) {
     rgb_or(pick(|p| p.accent), (192, 202, 245))
 }
@@ -386,60 +401,14 @@ pub struct DiagramColors {
     pub backdrop: (u8, u8, u8),
 }
 
+/// 一个颜色的三个字节：真彩色的原样；终端调色板的、终端自己的字色（`default`）照起来时问到的终端真颜色
+/// （`terminal_colors`）；都不知道的照 `fallback`。
 fn rgb_or(color: Color, fallback: (u8, u8, u8)) -> (u8, u8, u8) {
     match color {
-        Color::Rgb(r, g, b) => (r, g, b),
-        _ => fallback,
+        Color::Reset => terminal_colors::seen().1.map_or(fallback, |g| g.fg),
+        other => terminal_colors::rgb(other).unwrap_or(fallback),
     }
 }
 
 #[cfg(test)]
-mod tests {
-    #[test]
-    fn thoughts_are_upright_not_dimmed() {
-        use ratatui::style::Modifier;
-        let style = super::thought();
-        assert!(
-            !style.add_modifier.contains(Modifier::ITALIC),
-            "思考的字不斜"
-        );
-        assert!(
-            !style.add_modifier.contains(Modifier::DIM),
-            "叠了变暗在深色底上发闷"
-        );
-    }
-
-    use super::{accent_rgb, shimmer};
-    use crate::config::Config;
-    use ratatui::style::Color;
-
-    fn rgb(style: ratatui::style::Style) -> (u8, u8, u8) {
-        match style.fg {
-            Some(Color::Rgb(r, g, b)) => (r, g, b),
-            other => panic!("{other:?}"),
-        }
-    }
-
-    #[test]
-    fn far_from_the_band_is_the_base_color_dimmed() {
-        let look = Config::builtin().unwrap().layout.shimmer;
-        let (r, g, b) = accent_rgb();
-        // 亮光刚出发、还在最左边外面时，第 3 个字离它最远。
-        let far = rgb(shimmer(3, 4, 0.0, &look));
-        let dim = |c: u8| (f64::from(c) * look.dim).round() as u8;
-        assert_eq!(far, (dim(r), dim(g), dim(b)));
-    }
-
-    #[test]
-    fn the_band_lights_what_it_passes() {
-        let look = Config::builtin().unwrap().layout.shimmer;
-        let sum = |c: (u8, u8, u8)| u32::from(c.0) + u32::from(c.1) + u32::from(c.2);
-        let bright = |i: usize, t: f64| sum(rgb(shimmer(i, 4, t, &look)));
-        let span = 4.0 + 2.0 * look.band;
-        let at = |i: f64| (i + look.band) / span * look.sweep_seconds;
-        assert!(bright(0, at(0.0)) > bright(3, at(0.0)));
-        assert!(bright(3, at(3.0)) > bright(0, at(3.0)));
-        let base = sum(accent_rgb());
-        assert!(bright(1, at(1.0)) > base, "正中的比底色还亮");
-    }
-}
+mod tests;

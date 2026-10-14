@@ -76,14 +76,14 @@ pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
         Color::Rgb(r, g, b) => {
             let lightness = Hct::new(Rgb::new(r, g, b)).get_tone();
             let c = Rgb::from(from.get_hct(lightness));
-            Tone(Color::Rgb(c.red, c.green, c.blue))
+            Tone::of(Color::Rgb(c.red, c.green, c.blue))
         }
         _ => tone,
     };
     let near = |tone: Tone| match tone.0 {
         Color::Rgb(r, g, b) => {
             let c = harmonize(Rgb::new(r, g, b), source);
-            Tone(Color::Rgb(c.red, c.green, c.blue))
+            Tone::of(Color::Rgb(c.red, c.green, c.blue))
         }
         _ => tone,
     };

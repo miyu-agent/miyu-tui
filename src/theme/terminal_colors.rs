@@ -1,6 +1,9 @@
 //! 终端调色板 16 色真实的颜色（蓝图 `tui.md`「主题」第 10 条，2026-10-14 项目主人定）：进了全屏、开始读按键以前用 OSC 4 问
 //! 一次，后面跟一句 DA1（不认 OSC 4 的终端先答 DA1，当场知道问不到），最多等 1 秒。问到了、又是真彩色的，终端配色里调色板的
 //! 颜色也能照字节算：运行状态行的流光照真颜色算渐变，和模式字一个颜色。问不到的照旧加粗、变暗。
+//!
+//! 终端的字色、底色（OSC 10、11，`terminal-colorsaurus`）也在这里问：明暗「自动」照它挑深浅，终端配色的面板、差异这些底色
+//! 照它推（`derived.rs`）。
 
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -15,9 +18,28 @@ pub type Colors = [(u8, u8, u8); 16];
 /// 最多等这么久。
 const WAIT: Duration = Duration::from_secs(1);
 
-static REAL: OnceLock<Colors> = OnceLock::new();
+/// 终端自己的字色、底色。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ground {
+    /// 字色。
+    pub fg: (u8, u8, u8),
+    /// 底色。
+    pub bg: (u8, u8, u8),
+    /// 底比字暗（照 `terminal-colorsaurus` 的看法）。
+    pub dark: bool,
+}
 
-/// 问终端：16 个都答了才算；不是终端、不认的、测试里的是 `None`。
+/// 起来时问到的。
+#[derive(Debug, Clone, Copy)]
+struct Seen {
+    sixteen: Option<Colors>,
+    ground: Option<Ground>,
+    truecolor: bool,
+}
+
+static SEEN: OnceLock<Seen> = OnceLock::new();
+
+/// 问终端 16 色：16 个都答了才算；不是终端、不认的、测试里的是 `None`。
 pub fn probe() -> Option<Colors> {
     if cfg!(test) {
         return None;
@@ -25,16 +47,42 @@ pub fn probe() -> Option<Colors> {
     ask(WAIT).and_then(|got| parse(&got))
 }
 
-/// 装上问到的。只有真彩色装：别的色深要把渐变换成最近的 256 色、16 色，一道光扫过去会跳成别的颜色。
-pub fn install(colors: Option<Colors>, depth: Depth) {
-    if let Some(colors) = colors.filter(|_| depth == Depth::True) {
-        REAL.get_or_init(|| colors);
+/// 问终端的字色、底色（OSC 10、11）：要在开始读按键之前问；不认的终端、问不到的、测试里的是 `None`。
+pub fn probe_ground() -> Option<Ground> {
+    if cfg!(test) {
+        return None;
     }
+    let options = terminal_colorsaurus::QueryOptions::default();
+    let palette = terminal_colorsaurus::color_palette(options).ok()?;
+    Some(Ground {
+        fg: palette.foreground.scale_to_8bit(),
+        bg: palette.background.scale_to_8bit(),
+        dark: palette.theme_mode() == terminal_colorsaurus::ThemeMode::Dark,
+    })
 }
 
-/// 一个颜色的真字节：真彩色的原样；调色板 16 色的照问到的；别的（256 色 16 号以后、终端自己的前景色、没问到的）是 `None`。
+/// 装上问到的（启动时一次）。
+pub fn install(sixteen: Option<Colors>, ground: Option<Ground>, depth: Depth) {
+    SEEN.get_or_init(|| Seen {
+        sixteen,
+        ground,
+        truecolor: depth == Depth::True,
+    });
+}
+
+/// 问到的 16 色、字色和底色：终端配色照它推底色。
+pub fn seen() -> (Option<Colors>, Option<Ground>) {
+    SEEN.get().map_or((None, None), |s| (s.sixteen, s.ground))
+}
+
+/// 一个颜色的真字节，流光照它算渐变：真彩色的原样；调色板 16 色的照问到的；别的（256 色 16 号以后、终端自己的前景色、
+/// 没问到的）是 `None`。不是真彩色的也是 `None`：别的色深要把渐变换成最近的 256 色、16 色，一道光扫过去会跳成别的颜色。
 pub fn rgb(color: Color) -> Option<(u8, u8, u8)> {
-    rgb_in(color, REAL.get())
+    let sixteen = SEEN
+        .get()
+        .filter(|s| s.truecolor)
+        .and_then(|s| s.sixteen.as_ref());
+    rgb_in(color, sixteen)
 }
 
 fn rgb_in(color: Color, real: Option<&Colors>) -> Option<(u8, u8, u8)> {

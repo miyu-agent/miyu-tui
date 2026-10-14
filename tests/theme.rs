@@ -108,6 +108,33 @@ fn the_running_line_sweeps_a_real_gradient_when_the_terminal_tells_its_colors() 
     panic!("一直是一个颜色，不是渐变：{seen:?}");
 }
 
+#[test]
+fn terminal_colors_lean_the_selected_rows_ground_from_the_terminals_own() {
+    // 2026-10-14 项目主人照推荐定：终端配色的面板、选中行这些底色照终端的底色往字色掺一点，不再是写死的 256 色序号。
+    // 配置页主菜单选中的那一行铺 `row_bg`：底 (20,20,20) 往字 (200,200,200) 掺 18%。
+    let home = Home::with_settings(Script::new([]), "[tui]\ntheme = \"terminal\"\n");
+    let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
+    tui.answer_ground((200, 200, 200), (20, 20, 20));
+    tui.answer_colors([(128, 128, 128); 16]);
+    tui.wait_for("显示");
+    // 读到 `tui.theme` 以前照出厂的 tokyonight 画（选中行是它的 #3d59a1），等配置读到、换成终端配色（10-14 CI 读早过一次）。
+    let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        let lines = tui.lines();
+        let (row, col) = position(&lines, "通用").expect("主菜单的通用");
+        let ground = tui.background(row, col);
+        if ground == Color::Rgb(52, 52, 52) {
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < end,
+            "选中行的底照终端的底推：{ground:?}\n{}",
+            lines.join("\n")
+        );
+        tui.pump(std::time::Duration::from_millis(100));
+    }
+}
+
 /// 一个词是读秒（`12s`）。
 fn seconds(w: &str) -> bool {
     w.len() > 1 && w.ends_with('s') && w[..w.len() - 1].chars().all(|c| c.is_ascii_digit())

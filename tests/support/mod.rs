@@ -31,6 +31,9 @@ mod home;
 pub use home::Home;
 
 /// 伪终端里跑着的界面。
+/// 一个颜色的三个字节。
+type Rgb = (u8, u8, u8);
+
 pub struct Tui {
     screen: vt100::Parser,
     /// 终端几列宽。
@@ -38,7 +41,9 @@ pub struct Tui {
     /// 录着的界面写出来的原样字节（[`Tui::record`]）。
     recording: Option<Vec<u8>>,
     /// 问终端 16 色（OSC 4）时答什么（[`Tui::answer_colors`]）；不设的不答，像不认 OSC 4 的终端。
-    colors: Option<[(u8, u8, u8); 16]>,
+    colors: Option<[Rgb; 16]>,
+    /// 问终端字色、底色（OSC 10、11）时答什么（[`Tui::answer_ground`]）；不设的不答。
+    ground: Option<(Rgb, Rgb)>,
     bytes: Receiver<Vec<u8>>,
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     child: Box<dyn Child + Send + Sync>,
@@ -129,6 +134,7 @@ impl Tui {
             cols,
             recording: None,
             colors: None,
+            ground: None,
             bytes,
             writer,
             child,
@@ -182,7 +188,12 @@ impl Tui {
         if has(b"\x1b[?u") {
             self.send(b"\x1b[?0u");
         }
-        // 先答 16 色、再答 DA1：真终端照问的先后答。
+        // 先答颜色、再答 DA1：真终端照问的先后答。
+        let rgb = |(r, g, b): Rgb| format!("rgb:{r:02x}{r:02x}/{g:02x}{g:02x}/{b:02x}{b:02x}");
+        if let Some((fg, bg)) = self.ground.filter(|_| has(b"\x1b]10;?")) {
+            let answer = format!("\x1b]10;{}\x1b\\\x1b]11;{}\x1b\\", rgb(fg), rgb(bg));
+            self.send(answer.as_bytes());
+        }
         if let Some(colors) = self.colors.filter(|_| has(b"\x1b]4;")) {
             let answer: String = colors
                 .iter()
@@ -206,8 +217,13 @@ impl Tui {
     }
 
     /// 界面起来问终端 16 色时照这一组答（kitty 这类终端会答）：要在第一次读屏以前设。
-    pub fn answer_colors(&mut self, colors: [(u8, u8, u8); 16]) {
+    pub fn answer_colors(&mut self, colors: [Rgb; 16]) {
         self.colors = Some(colors);
+    }
+
+    /// 界面起来问终端字色、底色时照这一对答：要在第一次读屏以前设。
+    pub fn answer_ground(&mut self, fg: Rgb, bg: Rgb) {
+        self.ground = Some((fg, bg));
     }
 
     /// 从现在起录下界面写出来的每一个字节：看中间有没有闪过哪一帧（读屏只看得到最后那一帧）。

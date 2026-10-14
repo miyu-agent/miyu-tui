@@ -109,19 +109,19 @@ pub struct Picked {
     pub ground: Option<(Color, Color)>,
 }
 
-/// 问终端的底色是深是浅（OSC 11，`terminal-colorsaurus`）：要在开始读按键之前问；不认的终端、问不到的是 `None`。测试里不问。
-pub fn probe() -> Option<bool> {
-    if cfg!(test) {
-        return None;
+/// 终端配色照问到的终端颜色推底色；别的配色、没问到的照主题文件。
+fn terminal_or(base: &Palette, colors: &str) -> Palette {
+    match super::terminal_colors::seen() {
+        (sixteen, Some(ground)) if colors == "terminal" => {
+            super::derived::terminal(base, ground, sixteen.as_ref())
+        }
+        _ => base.clone(),
     }
-    let options = terminal_colorsaurus::QueryOptions::default();
-    terminal_colorsaurus::theme_mode(options)
-        .ok()
-        .map(|mode| mode == terminal_colorsaurus::ThemeMode::Dark)
 }
 
 /// 照配置项、终端的底色挑：出厂的那一份找不到的是 `None`。跟随头像的、有主色（`seed`）的照它生成一套盖在 tokyonight
-/// 上（第 5 条）；还没有主色的（没头像、头像还没要到）照 tokyonight。
+/// 上（第 5 条）；还没有主色的（没头像、头像还没要到）照 tokyonight。终端配色的、起来时问到了终端颜色的，底色照它推
+/// （「终端配色」）。
 pub fn pick(
     choice: &Choice,
     terminal_dark: Option<bool>,
@@ -137,7 +137,7 @@ pub fn pick(
             let palette = super::persona::overlay(base, seed, dark);
             (format!("persona-{shade}"), palette)
         }
-        None => (name.to_string(), base.clone()),
+        None => (name.to_string(), terminal_or(base, &choice.colors)),
     };
     let ground = choice
         .grounded()
