@@ -10,6 +10,7 @@ mod motion;
 mod palette;
 pub mod persona;
 pub mod seeds;
+mod shimmer;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};
@@ -20,8 +21,8 @@ pub use depth::{Depth, degrade};
 pub use ground::{paint, set_ground};
 pub use motion::{frontier, lifted};
 pub use palette::{Palette, Tone, builtin};
+pub use shimmer::{shimmer, shimmer_on, shimmer_rest, shimmer_rest_on};
 
-use crate::config::Shimmer;
 use crate::core::Level;
 
 #[cfg(test)]
@@ -122,8 +123,8 @@ pub fn level(level: Level) -> Style {
         .add_modifier(Modifier::BOLD)
 }
 
-/// 权限级别对应的颜色：提示符、左下角、你说的话的竖线三处共用。
-fn level_color(level: Level) -> Color {
+/// 权限级别对应的颜色：提示符、左下角、你说的话的竖线、运行状态行的流光共用。
+pub fn level_color(level: Level) -> Color {
     match level {
         Level::ReadOnly => pick(|p| p.read_only),
         Level::Full => pick(|p| p.full),
@@ -347,32 +348,6 @@ pub fn code_macro() -> Style {
 /// shell 命令的参数。
 pub fn code_parameter() -> Style {
     fg(|p| p.code_parameter)
-}
-
-/// 运行状态行第 `index` 个字（一共 `len` 个）在 `t` 秒时的颜色：底色不变；一道亮光从左往右扫过，
-/// 没扫到的乘 `dim` 压暗，扫到的往白里偏，正中偏 `lift`。
-pub fn shimmer(index: usize, len: usize, t: f64, look: &Shimmer) -> Style {
-    let (r, g, b) = accent_rgb();
-    // 亮光走一趟要多走两个带宽，头尾都扫得干净。
-    let span = len as f64 + 2.0 * look.band;
-    let head = (t / look.sweep_seconds.max(0.1)).fract() * span - look.band;
-    let near = 1.0 - ((index as f64 - head).abs() / look.band.max(0.1)).min(1.0);
-    let scale = look.dim + (1.0 - look.dim) * near;
-    let lift = look.lift * near;
-    let mix = |c: u8| {
-        let v = f64::from(c) * scale;
-        (v + (255.0 - v) * lift).round().clamp(0.0, 255.0) as u8
-    };
-    Style::new()
-        .fg(Color::Rgb(mix(r), mix(g), mix(b)))
-        .add_modifier(Modifier::BOLD)
-}
-
-/// 运行状态行的点和用时：流光的底色压暗（和没扫到的字一样），不跟着流光变。
-pub fn shimmer_rest(look: &Shimmer) -> Style {
-    let (r, g, b) = accent_rgb();
-    let dim = |c: u8| (f64::from(c) * look.dim).round().clamp(0.0, 255.0) as u8;
-    Style::new().fg(Color::Rgb(dim(r), dim(g), dim(b)))
 }
 
 /// 主题的 `accent` 的三个字节：流光要按字节算明暗；不是真彩色的，退回 tokyonight 的前景色。
