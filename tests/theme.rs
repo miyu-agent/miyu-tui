@@ -67,6 +67,52 @@ fn the_running_line_sweeps_in_the_color_of_the_mode_word() {
     );
 }
 
+#[test]
+fn the_running_line_sweeps_a_real_gradient_when_the_terminal_tells_its_colors() {
+    // 2026-10-14 项目主人：终端配色时流光只加粗变暗「怪怪的，是字变颜色，不是真的流光了」。启动时问到终端 16 色的真颜色
+    // （OSC 4），流光照真的蓝算渐变：挨着的字字节不一样，都是那个蓝压暗、提亮出来的。
+    let home = Home::with_settings(Script::new([Play::Holds]), "[tui]\ntheme = \"terminal\"\n");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    let mut colors = [(0x80, 0x80, 0x80); 16];
+    colors[4] = (0x40, 0x80, 0xff);
+    tui.answer_colors(colors);
+    tui.wait_for("工作区");
+    tui.say("在吗");
+    tui.wait_for_line("…");
+    let lines = tui.lines();
+    let row = lines
+        .iter()
+        .rposition(|l| l.split_whitespace().last().is_some_and(seconds))
+        .expect("运行状态行");
+    let row = u16::try_from(row).unwrap();
+    // 亮光一直在走：隔一会儿看一次整行，看到挨着的两个字颜色不一样就是渐变。中文占两格，后半格空着、没有颜色，跳过。
+    let mut seen = Vec::new();
+    for _ in 0..40 {
+        let fg: Vec<Color> = (0..tui.lines()[usize::from(row)].chars().count())
+            .filter_map(|col| u16::try_from(col).ok())
+            .filter(|&col| !tui.cell(row, col).trim().is_empty())
+            .map(|col| tui.foreground(row, col))
+            .collect();
+        for color in &fg {
+            let Color::Rgb(r, g, b) = *color else {
+                panic!("照真字节算：{color:?}\n{}", lines.join("\n"));
+            };
+            assert!(b >= g && g >= r, "还是终端的那个蓝：{r} {g} {b}");
+        }
+        if fg.windows(2).any(|w| w[0] != w[1]) {
+            return;
+        }
+        seen.push(fg);
+        tui.pump(std::time::Duration::from_millis(100));
+    }
+    panic!("一直是一个颜色，不是渐变：{seen:?}");
+}
+
+/// 一个词是读秒（`12s`）。
+fn seconds(w: &str) -> bool {
+    w.len() > 1 && w.ends_with('s') && w[..w.len() - 1].chars().all(|c| c.is_ascii_digit())
+}
+
 /// `text` 第一次出现在第几行、第几格（格照显示宽度数）。
 fn position(lines: &[String], text: &str) -> Option<(u16, u16)> {
     lines.iter().enumerate().find_map(|(y, l)| {

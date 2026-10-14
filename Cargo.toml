@@ -50,10 +50,10 @@ ratex-types = "0.1.14"
 ratex-render = { version = "0.1.14", features = ["embed-fonts"] }
 
 # RaTeX 第一次找中文字体时往 stderr 打字，全屏会被搅乱：那一下把 stderr 临时指到空设备（蓝图「图片、公式和 mermaid 图」第 7 条）；
-# Ctrl+Z 挂起时给自己发 SIGTSTP（蓝图「按键」）。
+# Ctrl+Z 挂起时给自己发 SIGTSTP（蓝图「按键」）；启动时问终端 16 色，轮询标准输入等回话（蓝图「主题」第 10 条）。
 # 用它的安全接口，演示程序不写 unsafe。crossterm 已经带着它。
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "1", features = ["stdio", "process"] }
+rustix = { version = "1", features = ["stdio", "process", "event"] }
 
 # 伪终端里的端到端测试（`tests/pty.rs`，蓝图「守着它的」）：测试进程里起一个照剧本回话的核心（和端点的测试同一套），
 # 在伪终端里起真的界面连上去，读屏幕、发按键。只在测试里用。

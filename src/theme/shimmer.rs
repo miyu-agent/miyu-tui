@@ -1,9 +1,10 @@
 //! 运行状态行的流光（蓝图 `tui.md`「运行状态行和排队的消息」第 1 条）：一道亮光从左往右扫过，没扫到的压暗。底色是真彩色的照
-//! 字节算明暗；是终端调色板的（终端配色）没法按字节算，扫到的加粗、没扫到的变暗，照样跟着终端的配色走。
+//! 字节算明暗；是终端调色板的（终端配色），启动时问到了终端 16 色的真颜色就照它算（`terminal_colors`，2026-10-14 项目主人：
+//! 只加粗变暗「怪怪的，是字变颜色，不是真的流光了」），问不到的扫到的加粗、没扫到的变暗，照样跟着终端的配色走。
 
 use ratatui::style::{Color, Modifier, Style};
 
-use super::accent_rgb;
+use super::{accent_rgb, terminal_colors};
 use crate::config::Shimmer;
 
 /// 第 `index` 个字（一共 `len` 个）在 `t` 秒时离亮光多近：0 是远，1 是正中。
@@ -16,8 +17,20 @@ fn nearness(index: usize, len: usize, t: f64, look: &Shimmer) -> f64 {
 
 /// 底色是 `base` 的流光：没扫到的乘 `dim` 压暗，扫到的往白里偏，正中偏 `lift`。
 pub fn shimmer_on(base: Color, index: usize, len: usize, t: f64, look: &Shimmer) -> Style {
+    sweep(base, terminal_colors::rgb(base), index, len, t, look)
+}
+
+/// `bytes` 是 `base` 的真字节，不知道的（问不到的终端调色板色）是 `None`。
+fn sweep(
+    base: Color,
+    bytes: Option<(u8, u8, u8)>,
+    index: usize,
+    len: usize,
+    t: f64,
+    look: &Shimmer,
+) -> Style {
     let near = nearness(index, len, t, look);
-    let Color::Rgb(r, g, b) = base else {
+    let Some((r, g, b)) = bytes else {
         let style = Style::new().fg(base).add_modifier(Modifier::BOLD);
         return if near > 0.5 {
             style
@@ -38,7 +51,7 @@ pub fn shimmer_on(base: Color, index: usize, len: usize, t: f64, look: &Shimmer)
 
 /// 流光的点和用时：底色压暗（和没扫到的字一样），不跟着流光变。
 pub fn shimmer_rest_on(base: Color, look: &Shimmer) -> Style {
-    let Color::Rgb(r, g, b) = base else {
+    let Some((r, g, b)) = terminal_colors::rgb(base) else {
         return Style::new().fg(base).add_modifier(Modifier::DIM);
     };
     let dim = |c: u8| (f64::from(c) * look.dim).round().clamp(0.0, 255.0) as u8;
@@ -61,7 +74,7 @@ pub fn shimmer_rest(look: &Shimmer) -> Style {
 mod tests {
     use ratatui::style::{Color, Modifier};
 
-    use super::{shimmer_on, shimmer_rest_on};
+    use super::{shimmer_on, shimmer_rest_on, sweep};
     use crate::config::Config;
 
     #[test]
@@ -76,5 +89,27 @@ mod tests {
         let rest = shimmer_rest_on(Color::Blue, &look);
         assert_eq!(rest.fg, Some(Color::Blue));
         assert!(rest.add_modifier.contains(Modifier::DIM));
+    }
+
+    #[test]
+    fn an_answered_palette_color_sweeps_as_a_real_gradient() {
+        // 2026-10-14 项目主人：终端配色时流光只加粗变暗「怪怪的，是字变颜色，不是真的流光了」。问到了终端蓝的真颜色，就照它
+        // 算渐变：挨着的字字节不一样，都是那个蓝压暗、提亮出来的。
+        let look = Config::builtin().unwrap().layout.shimmer;
+        let blue = Some((0x40, 0x80, 0xff));
+        let t = look.sweep_seconds * 0.4;
+        let colors: Vec<_> = (0..6)
+            .map(|i| sweep(Color::Blue, blue, i, 6, t, &look).fg)
+            .collect();
+        assert!(
+            colors.windows(2).any(|w| w[0] != w[1]),
+            "挨着的字颜色不一样：{colors:?}"
+        );
+        for color in colors {
+            let Some(Color::Rgb(r, g, b)) = color else {
+                panic!("照真字节算：{color:?}");
+            };
+            assert!(b >= g && g >= r, "还是那个蓝：{r} {g} {b}");
+        }
     }
 }
