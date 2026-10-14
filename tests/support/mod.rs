@@ -360,6 +360,27 @@ impl Tui {
     }
 }
 
+impl Tui {
+    /// 界面这个进程的所有线程到现在一共切进来几次（自愿的加被抢的）：量空闲时醒没醒。只有 Linux 读得到
+    /// （`/proc/<进程>/task/*/status`），别的系统交回 `None`。
+    pub fn wakeups(&self) -> Option<u64> {
+        let pid = self.child.process_id()?;
+        let tasks = std::fs::read_dir(format!("/proc/{pid}/task")).ok()?;
+        let mut total = 0;
+        for task in tasks.flatten() {
+            let Ok(status) = std::fs::read_to_string(task.path().join("status")) else {
+                continue;
+            };
+            total += status
+                .lines()
+                .filter(|l| l.contains("voluntary_ctxt_switches:"))
+                .filter_map(|l| l.split_whitespace().last()?.parse::<u64>().ok())
+                .sum::<u64>();
+        }
+        Some(total)
+    }
+}
+
 impl Drop for Tui {
     fn drop(&mut self) {
         drop(self.child.kill());

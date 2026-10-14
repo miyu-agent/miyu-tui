@@ -61,6 +61,8 @@ pub fn draw(
         look.gaze.half_life_ms
     };
     let aim = match idling.glance {
+        // 醒着的那一阵过了：转回正前方停住（同首页，「空会话的首页」第 8 条）。
+        _ if p.mascot.resting(now, &idle) => (0.0, 0.0),
         Some(angles) => angles,
         None => target.map_or((0.0, 0.0), |p| {
             let at = (f64::from(p.x) + 0.5, f64::from(p.y) + 0.5);

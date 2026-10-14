@@ -276,12 +276,13 @@ impl App {
             oobe.step,
             crate::oobe::Step::Welcome | crate::oobe::Step::Done
         );
+        let idle = crate::ui::oobe_idle_look(&self.config.mascot, &self.config.oobe.idle);
+        // 星点只在醒着的那一阵里闪，过了和吉祥物一起停住（「空会话的首页」第 8 条）。
         let beat = if busy {
             look.frame_ms
-        } else if calm {
+        } else if calm && self.mascot.idle.awake(now, &idle) {
             look.stars.frame_ms
         } else {
-            let idle = crate::ui::oobe_idle_look(&self.config.mascot, &self.config.oobe.idle);
             return self.mascot.idle.wake(now, &idle);
         };
         Some(now + ms(beat))

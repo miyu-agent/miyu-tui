@@ -1,5 +1,7 @@
-//! 吉祥物的待机小动作（蓝图 `tui.md`「空会话的首页」第 8 条）：一直隔一阵眨一次眼（长短、间隔随机，
+//! 吉祥物的待机小动作（蓝图 `tui.md`「空会话的首页」第 8 条）：醒着时隔一阵眨一次眼（长短、间隔随机，
 //! 有时连眨两下）；没人动时一阵一阵地摇头（角度随机、停一阵再换，有时回正前方）、隔一阵抖一下耳朵，一动就停。
+//! 最后一次有动静以后过了 `awake_ms` 就停成静态：不眨、不摇、不抖，不再要重画（打哈欠、转回正前方在
+//! `app/mascot.rs`）。
 
 use std::f64::consts::PI;
 use std::time::{Duration, Instant};
@@ -51,7 +53,7 @@ impl Idle {
         }
     }
 
-    /// 有人按键、动鼠标了：停下摇头和抖耳朵。
+    /// 有动静了（按键、动鼠标、粘贴、拿回焦点）：停下摇头和抖耳朵，醒着的那一阵从这一刻重新算。
     pub fn poke(&mut self, now: Instant) {
         self.active = Some(now);
         self.glance = None;
@@ -60,9 +62,15 @@ impl Idle {
         self.twitch = None;
     }
 
-    /// 最后有人动的时刻（嘴照它看要不要打哈欠）；还没画过是 `None`。
-    pub fn quiet_since(&self) -> Option<Instant> {
+    /// 醒着的那一阵到哪一刻为止；还没画过是 `None`（画第一帧时从那一刻算，启动也算一次动静）。
+    pub fn awake_until(&self, look: &Look) -> Option<Instant> {
         self.active
+            .map(|a| a + Duration::from_millis(look.awake_ms))
+    }
+
+    /// 还醒着：小动作照常做。
+    pub fn awake(&self, now: Instant, look: &Look) -> bool {
+        self.awake_until(look).is_none_or(|until| now < until)
     }
 
     /// 没人动了。
@@ -74,6 +82,19 @@ impl Idle {
     /// 走到 `now` 这一刻，给出这一刻的样子。
     pub fn pose(&mut self, now: Instant, look: &Look) -> Idling {
         self.active.get_or_insert(now);
+        if !self.awake(now, look) {
+            // 停下：闭着的眼睁开、抖着的耳朵放下、排好的下一次都不要；摇到的角度先留着，打完哈欠才转回正前方。
+            self.next_blink = None;
+            self.blink_until = None;
+            self.double = false;
+            self.next_glance = None;
+            self.next_twitch = None;
+            self.twitch = None;
+            return Idling {
+                glance: self.glance,
+                ..Idling::default()
+            };
+        }
         let blink = self.blink(now, look);
         if !self.idling(now, look) {
             return Idling {
@@ -150,10 +171,13 @@ impl Idle {
         size * (PI * now.saturating_duration_since(start).as_secs_f64() / span).sin()
     }
 
-    /// 下一次该画的时刻：抖耳朵时一小段一帧；别的时候等到下一次眨眼、睁眼、换角度、抖耳朵或进入待机。
-    /// 摇过去的那一会儿由转头的缓动照它自己的节拍画。
+    /// 下一次该画的时刻：抖耳朵时一小段一帧；别的时候等到下一次眨眼、睁眼、换角度、抖耳朵、进入待机或停下。
+    /// 摇过去的那一会儿由转头的缓动照它自己的节拍画。停下了不再醒来。
     pub fn wake(&self, now: Instant, look: &Look) -> Option<Instant> {
         let since = self.active? + Duration::from_millis(look.after_ms);
+        if !self.awake(now, look) {
+            return None;
+        }
         if self.twitch.is_some() {
             return Some(now + Duration::from_millis(look.frame_ms));
         }
@@ -164,6 +188,7 @@ impl Idle {
             Some(since),
             idle.then_some(self.next_glance).flatten(),
             idle.then_some(self.next_twitch).flatten(),
+            self.awake_until(look),
         ]
         .into_iter()
         .flatten()

@@ -1,5 +1,6 @@
 //! 画吉祥物（蓝图 `tui.md`「空会话的首页」第 5–8 条）：首页中间、宽屏的侧边栏都用它。顺手定它往哪看：
-//! 鼠标在动看鼠标指针，停着、框里有字看输入光标，没人动时一阵一阵地摇头；嘴怎么张（第 9 条）。
+//! 鼠标在动看鼠标指针，停着、框里有字看输入光标，没人动时一阵一阵地摇头，醒着的那一阵过了打个哈欠、转回
+//! 正前方停住；嘴怎么张（第 9 条）。
 
 use std::time::{Duration, Instant};
 
@@ -47,7 +48,12 @@ pub fn draw(
     } else {
         look.gaze.clone()
     };
+    // 嘴：醒着的那一阵过了打哈欠（闭着眼）、被顶上去张一下、走下来张着（第 9 条）。
+    let rest_at = mascot.idle.awake_until(&look.idle);
+    let mouth = mascot.mouth.step(now, &look.mouth, rest_at);
     let aim = match idling.glance {
+        // 哈欠打完：转回正前方停住（第 8 条）。
+        _ if mascot.resting(now, &look.idle) => (0.0, 0.0),
         Some(angles) => angles,
         None => target.map_or((0.0, 0.0), |p| {
             let at = (f64::from(p.x) + 0.5, f64::from(p.y) + 0.5);
@@ -57,11 +63,6 @@ pub fn draw(
     mascot.gaze.aim(aim);
     mascot.gaze.step(now, Duration::from_millis(half_life));
     let (yaw, pitch) = mascot.gaze.angles();
-    // 嘴：打哈欠（闭着眼）、被顶上去张一下、走下来张着（第 9 条）。
-    let quiet = mascot.idle.quiet_since();
-    let mouth = mascot
-        .mouth
-        .step(now, &look.mouth, quiet, look.idle.after_ms);
     let pose = mascot::Pose {
         blink: idling.blink || mascot.mouth.yawning(now),
         ear: idling.ear,

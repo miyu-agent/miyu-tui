@@ -89,14 +89,10 @@ pub struct MouthLook {
     pub frame_ms: u64,
     /// 打哈欠：张多大。
     pub yawn: f64,
-    /// 打哈欠多久（闭着眼）。
+    /// 打哈欠多久（闭着眼）：醒着的那一阵（`idle.awake_ms`）过了打一个。
     pub yawn_ms: u64,
     /// 打哈欠张得慢：缓动的半衰期。
     pub yawn_half_life_ms: u64,
-    /// 没人动多久才打：`idle.after_ms` 的几倍。
-    pub yawn_idle: u64,
-    /// 隔多久看一次要不要打。
-    pub yawn_every_ms: [u64; 2],
     /// 被列表顶上去：张多大。
     pub hop: f64,
     /// 同上，多久。
@@ -129,6 +125,9 @@ pub struct Gaze {
 pub struct Idle {
     /// 多久没按键、没动鼠标算没人动。
     pub after_ms: u64,
+    /// 有动静（启动、按键、动鼠标、粘贴、拿回焦点）以后小动作接着做多久；过了打一个哈欠、转回正前方停住，
+    /// 不再重画（「空会话的首页」第 8 条）。
+    pub awake_ms: u64,
     /// 抖耳朵时隔多少毫秒画一帧。
     pub frame_ms: u64,
     /// 隔多久眨一次眼。
