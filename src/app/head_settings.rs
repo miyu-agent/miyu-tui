@@ -18,6 +18,10 @@ const TIMELINE_TAG: u64 = TAG_BASE - 3;
 const MASCOT_TAG: u64 = TAG_BASE - 4;
 /// 读主题那几项的请求编号（`TAG_BASE - 6` 到 `- 8` 是换吉祥物的，`mascot_pick.rs`）。
 const THEME_TAG: u64 = TAG_BASE - 9;
+/// 读新会话开局级别的请求编号。
+const LEVEL_TAG: u64 = TAG_BASE - 10;
+/// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
+const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
 
 impl App {
     /// 头的配置读到了（连上、配置变了）就去读；回应归这里（交回 `true`）。
@@ -28,6 +32,7 @@ impl App {
                 self.ask_config(TIMELINE_TAG, &Timeline::KEYS);
                 self.ask_config(MASCOT_TAG, &Layout::MASCOT_KEYS);
                 self.ask_config(THEME_TAG, &crate::theme::choice::Choice::KEYS);
+                self.ask_config(LEVEL_TAG, &LEVEL_KEYS);
                 false
             }
             Update::Answer { tag, result } if *tag == ICONS_TAG => {
@@ -61,7 +66,31 @@ impl App {
                 }
                 true
             }
+            // 新会话开局的级别（「权限级别」第 2 条，2026-10-14）：首页照它画。
+            Update::Answer { tag, result } if *tag == LEVEL_TAG => {
+                if let Ok(got) = result {
+                    self.default_level(got);
+                }
+                true
+            }
             _ => false,
+        }
+    }
+
+    /// 读到新会话开局的级别：开局只读的是只读，不然照常用的那一级；认不出的不动。还没开会话、这一回的首页上没按过 Tab
+    /// 的，当场照它画。
+    fn default_level(&mut self, got: &Value) {
+        let value = |key: &str| &got["items"][key]["value"];
+        let level = if value("permission.start_read_only") == true {
+            Some(crate::core::Level::ReadOnly)
+        } else {
+            value("permission.level")
+                .as_str()
+                .and_then(crate::core::Level::parse)
+        };
+        if let Some(level) = level {
+            self.talk.default_level = level;
+            self.show_default_level();
         }
     }
 

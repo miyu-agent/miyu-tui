@@ -223,6 +223,7 @@ pub(super) async fn serve(
                                     || joined.workspace.is_some_and(|cwd| {
                                         !notify(Update::Workspace { cwd, joined: false })
                                     })
+                                    || joined.snapshot.is_some_and(|s| !notify(Update::Snapshot(s)))
                                 {
                                     return Served::Quit;
                                 }

@@ -102,6 +102,9 @@ pub(super) struct Joined {
     pub preset: Option<String>,
     /// 会话的工作区（核心 9-7 上）：侧边栏照它写。
     pub workspace: Option<String>,
+    /// 订阅回应里「当前的」几格：新会话真正的权限级别在这里（照配置的开局级别开，2026-10-14 项目主人报：开成开放权限、
+    /// 界面却写工作区）。
+    pub snapshot: Option<super::Snapshot>,
 }
 
 /// 订阅刚开的会话的事件流，交回订阅的回应里头要的几样（已有的会话照 `serve.rs` 读页、带 `after` 订阅）。
@@ -117,6 +120,7 @@ pub(super) async fn subscribe(rpc: &mut Rpc, session: &str) -> Result<Joined, Up
         persona: text("persona"),
         preset: text("preset"),
         workspace: workspace(&subscribed),
+        snapshot: super::Snapshot::read(&subscribed),
     })
 }
 

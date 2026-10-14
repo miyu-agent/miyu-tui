@@ -42,6 +42,10 @@ pub struct Talk {
     pub persona: new_session::Pick,
     /// 新会话要选的预设。
     pub preset: new_session::Pick,
+    /// 新会话照配置开局的那一级（`permission.level`、`permission.start_read_only`，`head_settings.rs` 读）：首页照它画。
+    pub default_level: crate::core::Level,
+    /// 这一回的首页上按过 Tab：照按的画，配置再读到也不盖（按的那一级记在核心那头，开会话时补发）。
+    pub level_picked: bool,
 }
 
 impl Talk {

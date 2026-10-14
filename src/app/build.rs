@@ -61,6 +61,8 @@ impl App {
             mascot: super::mascot::MascotState::new(),
             screen: super::screen::Screen::new(theme),
             talk: super::talk::Talk {
+                default_level: crate::core::Level::Workspace,
+                level_picked: false,
                 transcript: Transcript::default(),
                 board: Board::default(),
                 parked: Default::default(),
