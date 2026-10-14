@@ -40,6 +40,18 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("advanced".into()),
         ]
     );
+    // 2026-10-14：终端自己加的「外观」排在通用后面。
+    more.schema = Some(schema(&["advanced", "appearance", "general", "models"]));
+    assert_eq!(
+        more.entries(),
+        [
+            Entry::Page("general".into()),
+            Entry::Page("appearance".into()),
+            Entry::Models,
+            Entry::Personas,
+            Entry::Page("advanced".into()),
+        ]
+    );
     more.menu_at = 99;
     assert_eq!(
         more.selected(),

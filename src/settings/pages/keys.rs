@@ -30,7 +30,7 @@ impl Settings {
         match (waiting, result) {
             (Waiting::Schema, Ok(got)) => {
                 let mut schema = Schema::read(&got);
-                schema.split_own(&texts.own_groups);
+                schema.split_own(&texts.own_groups, &texts.appearance);
                 self.more.schema = Some(schema);
             }
             (Waiting::Personas, Ok(got)) => self.more.personas = Some(personas::read(&got)),

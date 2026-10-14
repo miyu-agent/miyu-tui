@@ -91,15 +91,18 @@ pub enum Row {
 pub const MODELS: &str = "models";
 /// 「通用」那一页的编号。
 pub const GENERAL: &str = "general";
+/// 「外观」那一页的编号：终端自己加的一页，核心不知道，主菜单排在通用后面（2026-10-14 项目主人照推荐定）。
+pub const APPEARANCE: &str = "appearance";
 /// 终端自己的配置项的键打头的那一截（终端软件包的编号）。
 const OWN: &str = "tui.";
 
-/// 终端自己的配置项里另分一组的：键的开头、组的编号（「配置页」第 33 条，2026-10-11 项目主人：时间线单独一个标题，
-/// 吉祥物也分出去）。
-const OWN_GROUPS: [(&str, &str); 3] = [
-    ("tui.theme", "tui.theme"),
-    ("tui.timeline_", "tui.timeline"),
-    ("tui.mascot", "tui.mascot"),
+/// 终端自己的配置项里另分一组的：键的开头、组的编号、放哪一页（「配置页」第 33 条，2026-10-11 项目主人：时间线单独一个
+/// 标题，吉祥物也分出去；2026-10-14：主题、吉祥物、图标单开一页「外观」，时间线留在通用）。组照这个先后排。
+const OWN_GROUPS: [(&str, &str, &str); 4] = [
+    ("tui.theme", "tui.theme", APPEARANCE),
+    ("tui.mascot", "tui.mascot", APPEARANCE),
+    ("tui.icons", "tui.icons", APPEARANCE),
+    ("tui.timeline_", "tui.timeline", GENERAL),
 ];
 
 /// 另分的那几组的名字（`text/zh.json` 的 `settings.more.own_groups`）。
@@ -112,6 +115,8 @@ pub struct OwnGroups {
     pub timeline: String,
     /// 吉祥物。
     pub mascot: String,
+    /// 图标。
+    pub icons: String,
 }
 
 impl OwnGroups {
@@ -120,6 +125,7 @@ impl OwnGroups {
         match id {
             "tui.theme" => &self.theme,
             "tui.timeline" => &self.timeline,
+            "tui.icons" => &self.icons,
             _ => &self.mascot,
         }
     }
@@ -202,9 +208,10 @@ impl Schema {
         }
     }
 
-    /// 终端自己的配置项里，时间线、吉祥物各分一组，排在终端那一组后面、同一页；组名照界面的字。核心没有这几项的（旧核心）
-    /// 那几组是空的，不画。
-    pub fn split_own(&mut self, names: &OwnGroups) {
+    /// 终端自己的配置项分组、分页：主题、吉祥物、图标各一组放进「外观」（`appearance` 是这一页的名字，排在通用后面），
+    /// 时间线一组留在通用、排在终端那一组后面；组名照界面的字。核心没有这几项的（旧核心）那几组是空的，不画，外观一项都没有
+    /// 的主菜单不列。
+    pub fn split_own(&mut self, names: &OwnGroups, appearance: &str) {
         let own = |g: &Group, items: &[Item]| {
             items
                 .iter()
@@ -213,18 +220,27 @@ impl Schema {
         let Some(at) = self.groups.iter().position(|g| own(g, &self.items)) else {
             return;
         };
-        let page = self.groups[at].page.clone();
-        for (n, (prefix, id)) in OWN_GROUPS.iter().enumerate() {
+        let here = self.groups[at].page.clone();
+        for (n, (prefix, id, page)) in OWN_GROUPS.iter().enumerate() {
+            let page = if *page == APPEARANCE {
+                APPEARANCE
+            } else {
+                &here
+            };
             for item in self.items.iter_mut().filter(|i| i.key.starts_with(prefix)) {
                 item.group = (*id).to_string();
+                item.page = page.to_string();
             }
             let group = Group {
                 id: (*id).to_string(),
                 name: names.name(id).to_string(),
-                page: page.clone(),
+                page: page.to_string(),
             };
             self.groups.insert(at + 1 + n, group);
         }
+        let after = self.pages.iter().position(|(id, _)| id == GENERAL);
+        let page = (APPEARANCE.to_string(), appearance.to_string());
+        self.pages.insert(after.map_or(0, |at| at + 1), page);
     }
 
     /// 这一页的名字。
@@ -345,8 +361,9 @@ mod tests {
     }
 
     #[test]
-    fn the_terminals_timeline_and_mascot_items_get_their_own_groups() {
-        // 「配置页」第 33 条（2026-10-11 项目主人：时间线相关的配置项单独一个标题，不和终端界面混在一起；吉祥物也分出去）。
+    fn the_terminals_look_items_move_to_an_appearance_page_after_general() {
+        // 「配置页」第 33 条（2026-10-11 项目主人：时间线相关的配置项单独一个标题，吉祥物也分出去；2026-10-14 照推荐定：
+        // 主题、吉祥物、图标单开一页「外观」，排在通用后面，时间线留在通用）。
         let item = |key: &str, name: &str| json!({"key": key, "control": "toggle", "layers": ["personal"], "name": name, "page": "packages", "group": "tui"});
         let mut s = Schema::read(&json!({
             "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
@@ -362,28 +379,32 @@ mod tests {
                 item("tui.mascot", "吉祥物")
             ]
         }));
-        s.split_own(&super::OwnGroups {
-            theme: "主题".into(),
-            timeline: "时间线".into(),
-            mascot: "吉祥物".into(),
-        });
-        assert_eq!(
-            s.group_names("general"),
-            ["显示", "终端界面", "主题", "时间线", "吉祥物"]
+        s.split_own(
+            &super::OwnGroups {
+                theme: "主题".into(),
+                timeline: "时间线".into(),
+                mascot: "吉祥物".into(),
+                icons: "图标".into(),
+            },
+            "外观",
         );
+        assert_eq!(s.group_names("general"), ["显示", "时间线"]);
+        assert_eq!(s.group_names("appearance"), ["主题", "吉祥物", "图标"]);
+        assert_eq!(s.listed_pages(), ["general", "appearance"]);
+        assert_eq!(s.page_name("appearance"), Some("外观"));
         let group = |key: &str| {
             s.items
                 .iter()
                 .find(|i| i.key == key)
-                .map(|i| i.group.clone())
+                .map(|i| (i.page.clone(), i.group.clone()))
         };
-        assert_eq!(group("tui.icons").as_deref(), Some("tui"));
-        assert_eq!(group("tui.timeline_fold").as_deref(), Some("tui.timeline"));
-        assert_eq!(group("tui.mascot").as_deref(), Some("tui.mascot"));
         assert_eq!(
-            group("tui.theme_mode").as_deref(),
-            Some("tui.theme"),
-            "主题单独一组（2026-10-13）"
+            group("tui.theme_mode"),
+            Some(("appearance".into(), "tui.theme".into()))
+        );
+        assert_eq!(
+            group("tui.timeline_fold"),
+            Some(("general".into(), "tui.timeline".into()))
         );
     }
 }

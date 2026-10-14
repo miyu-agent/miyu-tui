@@ -32,15 +32,11 @@ fn until(tui: &mut Tui, what: &str, check: impl Fn() -> bool) {
     }
 }
 
-/// 起在配置页，挪到「预设」进去（主菜单第四项：通用、供应商和模型、人格、预设；「权限」2026-10-10 并进了「通用」），`a`
-/// 建一个「我的预设」。
+/// 起在配置页，挪到「预设」进去，`a` 建一个「我的预设」。
 fn made(home: &Home) -> Tui {
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     tui.wait_for("决定开关哪些功能");
-    for _ in 0..3 {
-        tui.key(b"j");
-    }
-    tui.key(b"\r");
+    tui.open_menu("预设");
     tui.wait_for("全部功能");
     tui.key(b"a");
     tui.wait_for("新预设名称");
