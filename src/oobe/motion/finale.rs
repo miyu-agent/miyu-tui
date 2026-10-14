@@ -11,6 +11,8 @@ use crate::oobe::look::Look;
 pub struct Finale {
     /// 从左边走到中间走了几成（0 到 1）。
     pub walk: f64,
+    /// 头像露出来几成（0 到 1，设了头像的才用）。
+    pub reveal: f64,
     /// 还差多少度转完一圈（负的，从 -360 到 0）。
     pub spin: f64,
     /// 嘴张多大。
@@ -30,6 +32,7 @@ pub fn finale(start: Instant, now: Instant, look: &Look, chars: usize) -> Finale
     let spun = walked + ms(look.done.spin_ms);
     let typed_end = spun + ms(look.intro.type_ms) * u32::try_from(chars).unwrap_or(u32::MAX);
     let walk = ease_out(fraction(start, now, ms(look.done.walk_ms)));
+    let reveal = ease_out(fraction(start, now, ms(look.done.reveal_ms)));
     let spin = now.checked_duration_since(walked).map_or(0.0, |_| {
         swing(
             fraction(walked, now, ms(look.done.spin_ms)),
@@ -46,6 +49,7 @@ pub fn finale(start: Instant, now: Instant, look: &Look, chars: usize) -> Finale
     let walking = now < walked;
     Finale {
         walk,
+        reveal,
         spin: if now < walked {
             0.0
         } else {

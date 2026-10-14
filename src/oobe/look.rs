@@ -144,6 +144,8 @@ pub struct Done {
     pub walk_ms: u64,
     /// 原地转一圈多久。
     pub spin_ms: u64,
+    /// 设了头像的：头像从上往下露出来多久（2026-10-14 项目主人：原来跟着走路的那一段，太快）。
+    pub reveal_ms: u64,
     /// 回车以后散开、走到首页多久。
     pub leave_ms: u64,
 }
