@@ -806,10 +806,25 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 | `tests/tool_names.rs`、`ui/timeline/tests/mcp.rs`、`human/tests.rs`、`core/push/tests/mod.rs` 的 `display_name`、`core/packages.rs` | 工具的显示名：还在跑的那一步照核心给的工具表（七补起有脚本、MCP、扩展工具）；跑完的照结果里记下的，照界面语言挑、挑不到往后退；工具卸了、重开会话照日志补发还是记下的那个；`package.changed`、`mcp.changed` 算工具目录变了 |
 | `tests/interrupt.rs`、`app/takeback.rs` 的 `two_escapes_before_the_turn_starts_stop_it_when_it_starts`、`core/push/tests/mod.rs` 的 `a_call_superseded_by_a_new_message_is_not_an_error` | 两下 `Esc` 打断：她开口了的留着这一轮；还没开始做事的撤掉、那一句放回输入框、放回来的照常能再发；发出去马上按两下的（开轮以前）也撤回；还没回一个字时又发的一句被核心带上重发，进正文、不排着（`core/push/tests` 的 `superseded` 不当出错） |
 | `tests/sessions.rs` | `/sessions` 正在用的不能删、切过去画出补发来的以前的对话、中间不闪空会话的首页（录下每个字节查吉祥物）、切回来；十二个会话只露十行、选到底露最后十个；置顶排第一；空格勾两个、`Ctrl+D` 按两次一起删、光标停在原位；没勾的删选中的那个；个人设置 `ui.startup = "recent"` 启动时画出最近那个会话以前的对话；`/resume` 当别名还认 |
+| `tests/idle.rs`、`mascot/tests/mod.rs` 的 `after_the_awake_spell_it_holds_still_until_something_happens`、`mascot/mouth.rs` | 空闲不醒：首页、会话里（侧边栏的吉祥物）停住以后一个字节不写，Linux 上界面所有线程一次不醒；吉祥物醒着那一阵到头打一个哈欠、停住不再要重画、有动静再醒（「空闲不醒」） |
+| `tests/startup.rs`、`theme/wallpaper.rs` 的 `the_picture_is_decoded_only_when_following_and_only_once`、`theme/wallpaper_cache.rs`、`theme/seeds.rs` | 读配置合成一条、清单旧的去掉不认的再问一次（「连核心」第 9 条）；壁纸只在跟随着时解、解过的记缓存（「跟随壁纸」第 6 条）；后台取好了叫醒主循环 |
 
 macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 上照提交的版本编译（48 秒）、510 个测试、clippy 都过；伪终端里起界面、连上核心、打字上屏、Ctrl+D 退出都正常，帧记录照写、没有崩溃记录。测完沙箱目录、临时家目录、拉起的核心都清掉了。
 
 伪终端测具（2026-10-01 搬进仓库）：原来只在临时目录里用 pyte 接真模型测的几样，改成 `cargo test` 就跑、不花钱、每次一样，M9 并进主仓库时直接进门禁。测具替界面回终端的查询（像一个认得键盘协议、不能显示图的终端），按键之间停 250 毫秒：单独的 Esc 后面紧跟着字会被读成 Alt 加那个字，真人按键之间总会停一下。新加的测试依赖（`portable-pty`、`vt100` 和它们带进来的）许可证都在 `xtask` 的白名单里；`ratatui` 带着的可选 `termwiz` 后端里有一个 WTFPL 的 `terminfo`，不编译进来，但 `xtask licenses` 照 `cargo metadata` 查会报它，M9 并进去时要处理（关掉那个可选依赖或者登记例外，到时候问项目主人）。
+
+### 量尺
+
+2026-10-15 项目主人定：量尺进 CI，超预算就拦，不打倍数（核心转来的三家性能对比，设计 23 第二节的预算）。`tests/meters.rs`，只在 Linux 上量（`/proc`），要照发出去的样子：CI 单独一个任务用 release 编、一个一个跑（`cargo test --release --test meters -- --ignored --test-threads=1`），平常的 `cargo test` 不跑。
+
+| 量什么 | 怎么量 | 预算 |
+|---|---|---|
+| 空闲唤醒、写出的字节 | 首页停住（等吉祥物醒着那 10 秒、哈欠、转回正前方过去，13 秒）以后量 5 秒：界面所有线程切进来几次、往终端写几个字节 | 0 次、0 字节 |
+| 空闲的内存 | 同上那一刻界面的 PSS | 20 MiB（设计 23：终端界面自己载着一个大会话 20 MB） |
+| 打开长会话的峰值 | 说 50 轮（每句粘贴约 1.5 KB 资料，回答一句话），退出，`--resume` 打开，正文出来以后等 3 秒：`VmHWM` 减 `VmRSS`，再看 PSS。桌面上放一张 4K 的壁纸（waypaper 的设置指它）量三回：没跟随壁纸、跟随壁纸头一次（解图，只看不拦）、跟随壁纸记过的 | 峰值比稳下来多不过 10 MiB（项目主人定），PSS 20 MiB |
+| 热启动到首页输入框 | 核心已经在跑，起 20 次界面，从起进程到带出「Tab 切换权限级别」的那一块字节到 | p95 50 ms（设计 23 F5） |
+
+冷启动（终端拉起核心）要量核心那一截，在核心仓库量；这里的测具里核心是测试进程自己起的，量的是热启动。本机 2026-10-15 量（release）：热启动中位数 11.7 ms、p95 14.3 ms；空闲 0 次、0 字节、PSS 10.8 MiB；长会话峰值 15.0 MiB = 稳下来，PSS 12.3 MiB；跟随壁纸头一次 40.5 MiB、记过的 15.1 MiB。退回「没跟随也解图」：长会话那一回峰值比稳下来多 23.3 MiB，报红；起来以前多睡 60 毫秒：热启动 p95 70 ms，报红。
 
 ### 出处
 

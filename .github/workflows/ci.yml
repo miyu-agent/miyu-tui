@@ -49,3 +49,21 @@ jobs:
         run: |
           over=$(find src tests -name '*.rs' -print0 | xargs -0 wc -l | awk '$2 != "total" && $1 > 500 {print}')
           if [ -n "$over" ]; then echo "超过 500 行：" && echo "$over" && exit 1; fi
+
+  # 量尺（蓝图 `tui.md`「量尺」，设计 23 的预算；2026-10-15 项目主人定进 CI、超预算就拦、不打倍数）：空闲唤醒、内存、打开长
+  # 会话的峰值、热启动到首页输入框。只在 Linux 上量（`/proc`），照发出去的样子用 release 编，一个一个跑，不和别的测试抢核。
+  meters:
+    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: 装上 rust-toolchain.toml 钉住的工具链
+        run: rustup toolchain install
+      - name: 取编译缓存
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: meters
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          add-rust-environment-hash-key: false
+      - name: 量尺
+        run: cargo test --release --locked --test meters -- --ignored --test-threads=1 --nocapture
