@@ -45,7 +45,7 @@ pub fn draw(
     far: bool,
 ) {
     let shown = match seen.avatar(place) {
-        Avatar::File(path) => picture(frame, &seen.media.figures, rect, &path),
+        Avatar::File(path) => picture(frame, &seen.media.figures, rect, &path, 1.0),
         Avatar::Waiting => Shown::Waiting,
         Avatar::None => Shown::Unable,
     };
@@ -54,14 +54,31 @@ pub fn draw(
     }
 }
 
-/// 引导「好了」那一屏（「第一次打开的引导」第 11 条）：把头像照比例放进 `rect`、居中画。画了、还在做的交回 `true`（那一块
-/// 不再画吉祥物），读不出来、终端显示不了的交回 `false`。
-pub fn draw_file(frame: &mut Frame, figures: &RefCell<Figures>, rect: Rect, path: &Path) -> bool {
-    !matches!(picture(frame, figures, rect, path), Shown::Unable)
+/// 引导「好了」那一屏（「第一次打开的引导」第 11 条）：把头像照比例放进 `rect`、居中画，从上往下露出 `shown` 成（0 到 1，
+/// 2026-10-14 项目主人定的揭幕）。画了、还在做的交回 `true`（那一块不再画吉祥物），读不出来、终端显示不了的交回 `false`。
+pub fn draw_file(
+    frame: &mut Frame,
+    figures: &RefCell<Figures>,
+    rect: Rect,
+    path: &Path,
+    shown: f64,
+) -> bool {
+    !matches!(picture(frame, figures, rect, path, shown), Shown::Unable)
 }
 
-/// 把图照比例放进 `rect`、居中画。
-fn picture(frame: &mut Frame, figures: &RefCell<Figures>, rect: Rect, path: &Path) -> Shown {
+/// 露出几行：一共 `rows` 行露 `shown` 成，往上取整（刚开始就露一行，到 1 整张）。
+fn revealed(rows: u16, shown: f64) -> u16 {
+    ((f64::from(rows) * shown.clamp(0.0, 1.0)).ceil() as u16).min(rows)
+}
+
+/// 把图照比例放进 `rect`、居中画，从上往下露出 `shown` 成（首页、侧边栏整张：1）。
+fn picture(
+    frame: &mut Frame,
+    figures: &RefCell<Figures>,
+    rect: Rect,
+    path: &Path,
+    shown: f64,
+) -> Shown {
     let mut figures = figures.borrow_mut();
     let source = path.display().to_string();
     let look = figures.look(
@@ -86,10 +103,29 @@ fn picture(frame: &mut Frame, figures: &RefCell<Figures>, rect: Rect, path: &Pat
         cols,
         rows,
     );
-    // 整张露在窗口里才画（侧边栏、首页都不会把它切掉一截）。
+    // 整张露在窗口里才画（侧边栏、首页都不会把它切掉一截）。只画露出来的上面几行：区域比图矮的，下面的不画。
     if frame.area().contains(own.as_position()) && own.bottom() <= frame.area().bottom() {
+        let top = Rect {
+            height: revealed(own.height, shown),
+            ..own
+        };
         SlicedImage::new(&drawn.protocol, SignedPosition { x: 0, y: 0 })
-            .render(own, frame.buffer_mut());
+            .render(top, frame.buffer_mut());
     }
     Shown::Yes
+}
+
+#[cfg(test)]
+mod tests {
+    use super::revealed;
+
+    #[test]
+    fn the_avatar_is_revealed_row_by_row_from_the_top() {
+        // 2026-10-14 项目主人定：完成页的头像从上往下一行行露出来。
+        assert_eq!(revealed(10, 0.0), 0, "还没开始：一行都不露");
+        assert_eq!(revealed(10, 0.01), 1, "刚开始就露一行");
+        assert_eq!(revealed(10, 0.5), 5);
+        assert_eq!(revealed(10, 1.0), 10, "到头整张");
+        assert_eq!(revealed(10, 2.0), 10, "多了的不超过整张");
+    }
 }
