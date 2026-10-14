@@ -29,7 +29,12 @@ pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<
             json!({"source": source}),
             Some(Awaiting::Mermaid(source.clone())),
         ),
-        Command::ListEfforts => ("model.list", json!({}), Some(Awaiting::Efforts)),
+        Command::ListEfforts(models) => {
+            let params = models
+                .as_ref()
+                .map_or_else(|| json!({}), |m| json!({ "models": m }));
+            ("model.list", params, Some(Awaiting::Efforts))
+        }
         Command::SetEffort { key, level } => (
             "config.set",
             config::set_effort(key, level.as_deref()),

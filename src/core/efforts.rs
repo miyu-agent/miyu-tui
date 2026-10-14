@@ -32,6 +32,22 @@ pub struct EffortList {
     pub abilities: super::Abilities,
 }
 
+/// 底栏、`/effort` 只看这几个模型：会话的引用、正在请求的那个、默认的聊天模型（核心 V-6 上的 `models`，不要整份）。
+/// 有池（`@名字`，要它的成员）、写法认不出、一个都不知道的交回 `None`：要整份。
+pub fn wanted(refs: &[Option<&str>]) -> Option<Vec<String>> {
+    let mut wanted: Vec<String> = Vec::new();
+    for reference in refs.iter().flatten() {
+        let (provider, model) = reference.split_once('/')?;
+        if reference.starts_with('@') || provider.is_empty() || model.is_empty() {
+            return None;
+        }
+        if !wanted.iter().any(|w| w == reference) {
+            wanted.push((*reference).to_string());
+        }
+    }
+    (!wanted.is_empty()).then_some(wanted)
+}
+
 impl EffortList {
     /// 从 `model.list` 的回应里读；读不懂的格当没有。
     pub fn read(result: &Value) -> Self {
@@ -94,6 +110,25 @@ mod tests {
     use serde_json::json;
 
     use super::EffortList;
+
+    #[test]
+    fn only_the_models_in_use_are_asked_for_unless_a_pool_is_involved() {
+        // 核心 V-6 上的 `models`：底栏只要正在用的、会话的、默认的那几个，重复的只要一次。
+        let chat = Some("dev/flash");
+        assert_eq!(
+            super::wanted(&[None, None, chat]),
+            Some(vec!["dev/flash".to_string()])
+        );
+        assert_eq!(
+            super::wanted(&[Some("dev/pro"), Some("dev/pro"), chat]),
+            Some(vec!["dev/pro".to_string(), "dev/flash".to_string()])
+        );
+        // 有池的要它的成员，还不知道的、写法认不出的：要整份。
+        assert_eq!(super::wanted(&[Some("@standard"), None, chat]), None);
+        assert_eq!(super::wanted(&[None, None, None]), None);
+        assert_eq!(super::wanted(&[None, None, Some("flash")]), None);
+        assert_eq!(super::wanted(&[None, None, Some("dev/")]), None);
+    }
 
     fn sample() -> EffortList {
         EffortList::read(&json!({
