@@ -167,14 +167,14 @@ pub enum Command {
         /// 任务编号。
         job: String,
     },
-    /// 读一条后台命令到这时为止的输出（`job.output`）：哪个会话派的、任务编号、要最后几行。
+    /// 读一条后台命令到这时为止的输出（`job.output`）：哪个会话派的、任务编号、怎么读。
     Output {
         /// 哪个会话派的。
         session: String,
         /// 任务编号。
         job: String,
-        /// 要最后几行。
-        tail: usize,
+        /// 要最后几行，还是接着读。
+        read: OutputRead,
     },
     /// 切权限级别（`session.set_permission_level`）：切到这一级。会话还没开的记着，开了再发。
     Level(Level),
@@ -422,7 +422,18 @@ pub enum Update {
         job: String,
         /// 读到的。
         output: Option<JobOutput>,
+        /// 是接着读的一段（带 `after`）：接在已有的后面，不整份换。
+        after: bool,
     },
+}
+
+/// 怎么读一条后台命令的输出（`job.output`）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OutputRead {
+    /// 要最后几行。
+    Tail(usize),
+    /// 从第 `size` 个字节接着读；`wait`：没有新的、还在跑，等长了、结束了再答（核心 V-6 上）。
+    After { size: u64, wait: bool },
 }
 
 /// 核心拒了一条请求：原因码（`data.reason`，没有的是 `None`）、原话，和 `data` 整个（`config_conflict` 的 `current` 在里面）。

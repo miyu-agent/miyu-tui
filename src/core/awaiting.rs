@@ -13,8 +13,8 @@ pub(super) enum Awaiting {
     Redo,
     /// 订阅另一个会话：回应里的限额交给界面，说明是哪个会话。
     Watch(String),
-    /// 读一条后台命令的输出：哪个会话、任务编号。
-    Output(String, String),
+    /// 读一条后台命令的输出：哪个会话、任务编号、是不是接着读的一段。
+    Output(String, String, bool),
     /// 要回顾：交回的是上一句的，界面照回应画（写成了的照推送画）。
     Recap,
     /// 改名：成了弹一句（`None` 是去掉标题）。

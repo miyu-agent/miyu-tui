@@ -47,9 +47,10 @@ impl App {
             session,
             job,
             output,
+            after,
         } = update
         {
-            self.took_output(&session, &job, output);
+            self.took_output(&session, &job, output, after);
             return;
         }
         // 都在冷却：向核心要一次模型资料，看最早几时恢复（「配置与模型」第 7 条）。

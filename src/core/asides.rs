@@ -4,7 +4,7 @@
 use serde_json::{Value, json};
 
 use super::awaiting::Awaiting;
-use super::{Command, config};
+use super::{Command, OutputRead, config};
 
 /// 这个命令是不是一条不对着会话的请求：方法、参数、回应要不要另外办。不是的交回 `None`。
 pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<Awaiting>)> {
@@ -52,11 +52,19 @@ pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<
         ),
         Command::SetLanguage(code) => ("config.set", config::set_language(code), None),
         // 读输出对着派它的那个会话，不管现在对着哪个（`protocol.md` 的 `job.output`）。
-        Command::Output { session, job, tail } => (
-            "job.output",
-            json!({"session": session, "job": job, "tail": tail}),
-            Some(Awaiting::Output(session.clone(), job.clone())),
-        ),
+        Command::Output { session, job, read } => {
+            let (params, after) = match read {
+                OutputRead::Tail(tail) => {
+                    (json!({"session": session, "job": job, "tail": tail}), false)
+                }
+                OutputRead::After { size, wait } => (
+                    json!({"session": session, "job": job, "after": size, "wait": wait}),
+                    true,
+                ),
+            };
+            let awaiting = Awaiting::Output(session.clone(), job.clone(), after);
+            ("job.output", params, Some(awaiting))
+        }
         Command::ListPersonas => ("persona.list", json!({}), Some(Awaiting::Personas)),
         Command::ListPresets => ("preset.list", json!({}), Some(Awaiting::Presets)),
         Command::ListPackages => ("package.list", json!({}), Some(Awaiting::Packages)),

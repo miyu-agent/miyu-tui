@@ -301,6 +301,7 @@ mod tests {
             lines: 15,
             running: true,
             truncated: false,
+            ..JobOutput::default()
         });
         let (lines, text, map) = open(&board);
         assert_eq!(text[1], "", "点开的下面先空一行");
