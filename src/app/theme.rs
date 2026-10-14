@@ -68,19 +68,22 @@ impl App {
     }
 
     /// 跟随壁纸（「主题」的「跟随壁纸」）：起来时找一次，打开配色列表、选上跟随壁纸时再找一次，不定时查（2026-10-14 项目主人：
-    /// 不要轮询）；找没找到交给两处配色列表（找不到的不列）。
+    /// 不要轮询）；找没找到交给两处配色列表（找不到的不列）。跟随着才解图取色、才盯文件（第 6 条）。
     fn follow_wallpaper(&mut self) {
-        let wanted = self.colors_list_open() || self.choice().colors == "wallpaper";
-        if !self.screen.wallpaper_seen || (wanted && !self.screen.wallpaper_wanted) {
-            self.screen.wallpaper_seen = true;
-            let dark = self.choice().dark(self.screen.terminal_dark);
-            self.screen.wallpaper.look(dark);
-        }
+        let following = self.choice().colors == "wallpaper";
+        let wanted = self.colors_list_open() || following;
+        let dark = self.choice().dark(self.screen.terminal_dark);
+        let wallpaper = &mut self.screen.wallpaper;
         // 盯着的文件变了（换了壁纸）：再找一次（不定时查，2026-10-14 项目主人）。
-        if self.screen.wallpaper.take_changed() {
-            let dark = self.choice().dark(self.screen.terminal_dark);
-            self.screen.wallpaper.look(dark);
+        let changed = wallpaper.take_changed();
+        if !self.screen.wallpaper_seen || (wanted && !self.screen.wallpaper_wanted) || changed {
+            self.screen.wallpaper_seen = true;
+            wallpaper.look(dark, following);
+        } else if following && wallpaper.undecoded() {
+            // 刚选上跟随壁纸：找到的图还没解，解开取色。
+            wallpaper.look(dark, true);
         }
+        wallpaper.follow(following);
         self.screen.wallpaper_wanted = wanted;
         self.screen.wallpaper.collect();
         let available = self.screen.wallpaper.available();
@@ -96,7 +99,7 @@ impl App {
     pub(super) fn wallpaper_focus(&mut self) {
         if self.choice().colors == "wallpaper" {
             let dark = self.choice().dark(self.screen.terminal_dark);
-            self.screen.wallpaper.look(dark);
+            self.screen.wallpaper.look(dark, true);
         }
     }
 

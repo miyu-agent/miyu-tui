@@ -711,9 +711,10 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 
 1. 来处：网页仓库的 `miyu-wallpaper`（`Cargo.toml` 照网页仓库的 git 提交钉住），先找 matugen 照网页仓库模板（`web/matugen/miyu-web.json`）生成的那一份（Linux `$XDG_CACHE_HOME/miyu/matugen.json`，没设的 `~/.cache/miyu/`；macOS `~/Library/Caches/miyu/`；Windows `%LOCALAPPDATA%\miyu\`），取它的 `source` 当主色；没有的照桌面找壁纸图（KDE、GNOME、XFCE、awww、swww、hyprpaper、swaybg……，macOS 先读系统的壁纸设置文件，读不到才问 System Events，第一次会弹授权框），取图的主色（同「跟随头像的配色」第 1 条的取法，macOS 的 HEIC 先转 JPEG）。
 2. 生成：候选照核心的门面 `miyu_client::seeds::from_image` 取（和头像同一份代码）；用哪个照「主色」第 4 条；主色照「跟随头像的配色」第 3 条那一套，名字是 `wallpaper-night`、`wallpaper-day`。
-3. 什么时候找（`theme/wallpaper.rs`）：要跑命令（一家最多等 2 秒），放在后台。起来时找一次；打开配色列表（配置页外观页的、引导主题那一步的）、选上跟随壁纸时再找一次。换了壁纸自动跟着变（2026-10-14 项目主人定，绝对不轮询）：盯着壁纸来处的文件（`miyu-wallpaper` 的 `Watch`，网页仓库 691aefd：matugen 那一份、壁纸图本身、各家存设置和缓存的文件，清单由它给；只用系统的文件通知 inotify、FSEvents、ReadDirectoryChangesW、kqueue，一阵变动收齐 300 毫秒才叫一次），一变就叫醒界面再找；起不来的不退回定时去看，在机器缓存目录的 `tui/tui.log` 记一行，只靠下面这条。窗口拿回焦点时（终端报 `ESC [ I`），选着跟随壁纸的再找一次：只能靠命令换壁纸的（hyprpaper、swaybg）也跟得上。
+3. 什么时候找（`theme/wallpaper.rs`）：要跑命令（一家最多等 2 秒），放在后台，找好了叫醒界面（不每一拍醒来看有没有找好，2026-10-15 改，见「空闲不醒」）。起来时找一次；打开配色列表（配置页外观页的、引导主题那一步的）、选上跟随壁纸时再找一次。换了壁纸自动跟着变（2026-10-14 项目主人定，绝对不轮询）：跟随着壁纸时盯着壁纸来处的文件（`miyu-wallpaper` 的 `Watch`，网页仓库 691aefd：matugen 那一份、壁纸图本身、各家存设置和缓存的文件，清单由它给；只用系统的文件通知 inotify、FSEvents、ReadDirectoryChangesW、kqueue，一阵变动收齐 300 毫秒才叫一次），一变就叫醒界面再找；起不来的不退回定时去看，在机器缓存目录的 `tui/tui.log` 记一行，只靠下面这条。窗口拿回焦点时（终端报 `ESC [ I`），选着跟随壁纸的再找一次：只能靠命令换壁纸的（hyprpaper、swaybg）也跟得上。
 4. 找不到（没有 matugen 那一份、桌面上也找不到图、找到的不是能读的图）：配色列表里不列「跟随壁纸」，`/theme` 跳过它；已经选着它的照 tokyonight，引导主题那一步配色下面暗色写「未找到桌面壁纸，使用 Tokyo Night」（找到的写「取自桌面壁纸」）。
 5. `MIYU_TUI_DESKTOP_WALLPAPER=0`：不看桌面、只认 matugen 那一份（伪终端测试都设它：不碰跑测试的这台电脑的桌面；单元测试里不找）。`MIYU_TUI_WALLPAPER_WATCH=0`：不盯文件，只在拿回焦点时找（测这一条、看有没有偷偷定时去看）。
+6. 只在跟随着时解图取色（2026-10-15 性能对比查出：起来时不管选的是哪种配色都把桌面壁纸整张解开取色，4K 的图解开要三十多 MB，`--resume` 打开长会话时终端的内存从 16 MiB 冲到 40 MiB）：没跟随的只看找不找得到图（配色列表列不列它照这个），不读、不解。解过的照图的路径、大小、改动时间记在机器缓存目录的 `tui/wallpaper.json`（只记最近一张），同一张图下次起来直接用记着的候选；换了壁纸的照常解一次再记。没跟随时也不盯文件，选上跟随壁纸才开始盯。
 
 #### 终端配色
 
