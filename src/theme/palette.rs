@@ -1,16 +1,31 @@
-//! 主题文件（蓝图 `tui.md`「主题」）：一个语义色一格，值是 `#rrggbb`、`idx:N`、终端 16 色的名字，或 `default`。
+//! 主题文件（蓝图 `tui.md`「主题」）：一个语义色一格，值是 `#rrggbb`、`idx:N`、终端 16 色的名字，或 `default`；前面加
+//! `dim:` 的这一格另加「变暗」。
 
 use ratatui::style::Color;
 use serde::{Deserialize, Deserializer};
 
-/// 一个颜色：从主题文件的字读出来。
+/// 一个颜色：从主题文件的字读出来；后一个是要不要另加「变暗」（`dim:` 打头的，终端配色照旧 Miyu：思考是暗的亮绿，
+/// 2026-10-14）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Tone(pub Color);
+pub struct Tone(pub Color, pub bool);
+
+impl Tone {
+    /// 不另加变暗的一个颜色。
+    pub const fn of(color: Color) -> Tone {
+        Tone(color, false)
+    }
+}
 
 impl<'de> Deserialize<'de> for Tone {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let text = String::deserialize(deserializer)?;
-        parse(&text).map(Tone).map_err(serde::de::Error::custom)
+        let (dim, color) = match text.trim().strip_prefix("dim:") {
+            Some(color) => (true, color),
+            None => (false, text.as_str()),
+        };
+        parse(color)
+            .map(|c| Tone(c, dim))
+            .map_err(serde::de::Error::custom)
     }
 }
 

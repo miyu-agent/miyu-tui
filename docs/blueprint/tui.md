@@ -650,7 +650,7 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 7. 加粗、斜体、变暗这些修饰写在代码里，颜色都从主题来；上面「样子」一节的颜色表写的是语义，具体颜色看主题文件。
 8. 色深（2026-09-29，技术上的取舍，照旧版 `terminal/palette.rs` 的探测）：启动时看一次。`NO_COLOR` 有值，不上色；`MIYU_COLOR` 手动压（`truecolor`、`256`、`16`、`none`，写错的当 256）；`COLORTERM` 是 `truecolor` 或 `24bit`，真彩色；`TERM` 空或 `dumb`，不上色；`TERM` 里有 `kitty`、`wezterm`、`alacritty`、`ghostty`、`foot`，或 `TERM_PROGRAM` 是 `iTerm.app`、`WezTerm`、`ghostty`、`vscode`，真彩色（没设 `COLORTERM` 的也是）；`TERM` 里有 `256color`，256 色（macOS 自带的「终端」是这一档）；别的 16 色。
 9. 画完一帧、交给终端之前统一换色，主题、流光、吉祥物、Markdown 都在这一处换，各处画的时候不管色深：真彩色原样；256 色把 `#rrggbb` 换成 256 色里最近的（6×6×6 色立方、24 级灰阶各找最近的一个，取更近的，照 tmux）；16 色把 `#rrggbb` 和 16 号以后的 256 色换成 16 色里最近的（照 VGA 那一套、也就是 Linux 控制台的默认色算距离：xterm 默认的红是纯红，粉红的出错色照它算会落到暗灰），写成 16 色的名字（`SGR 31` 这类，认不得 256 色写法的终端也认）；不上色把前景、背景都换成终端自己的，加粗、斜体、下划线照留。图占着的格子不换色：kitty 靠这些格子的前景色认是哪张图，换了就找不到图，只剩留出来的空白。显示得了图的终端虽然都是真彩色，但设了 `MIYU_COLOR`、`NO_COLOR` 的照样压色深（2026-09-30 项目主人照验收命令带着 `MIYU_COLOR=256` 开，图的位置全是空的）。
-10. 终端调色板 16 色的真颜色（2026-10-14 项目主人定）：进了全屏、开始读按键以前用 OSC 4 问一次 0 到 15 号（`ESC ] 4 ; n ; ? ST`，后面跟一句 DA1：不认 OSC 4 的终端先答 DA1，当场知道问不到），最多等 1 秒，16 个都答了才算（`theme/terminal_colors.rs`）；照 `ratatui-image` 问图的协议的读法轮询标准输入（macOS 轮询不了 `/dev/tty`），Windows 不问。只有真彩色装上：别的色深要把渐变换成最近的 256 色、16 色，会跳成别的颜色。装上了，主题里写终端调色板颜色的格子也能照字节算：运行状态行的流光照它算渐变，颜色和模式字一致。kitty、foot、wezterm、ghostty、alacritty、iTerm2 都答。
+10. 终端调色板 16 色的真颜色（2026-10-14 项目主人定）：进了全屏、开始读按键以前用 OSC 4 问一次 0 到 15 号（`ESC ] 4 ; n ; ? ST`，后面跟一句 DA1：不认 OSC 4 的终端先答 DA1，当场知道问不到），最多等 1 秒，16 个都答了才算（`theme/terminal_colors.rs`）；照 `ratatui-image` 问图的协议的读法轮询标准输入（macOS 轮询不了 `/dev/tty`），Windows 不问。问到了，主题里写终端调色板颜色的格子也能照字节算：运行状态行的流光照它算渐变，颜色和模式字一致（只在真彩色时：别的色深要把渐变换成最近的 256 色、16 色，会跳成别的颜色）；终端配色的差异底色照它推（「终端配色」第 2 条）。kitty、foot、wezterm、ghostty、alacritty、iTerm2 都答。
 
 | 语义色 | 用在哪 | tokyonight-night |
 |---|---|---|
@@ -683,6 +683,32 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 2. 看谁：引导开着的照人格那一步那一位（这一次填的头像文件，已有的人格的头像、写了的主题色，「第一次打开的引导」第 23a 条）；开着会话的照会话的人格；没开的照首页画的那一位（人格框停的那一行、选的、默认的，同「空会话的首页」第 10 条）。换了会话、人格框上下挪、头像要到了，主色一变当场换一套。
 3. 生成（2026-10-14 项目主人定两个头统一、四件照推荐：项目主人报「思考还是青的、深色的底太深」，原来只换 19 格、底是 MD3 surface）：照主色出 Material 的 `SchemeContent`（对比度 0，`material-colors`，同网页），深浅照明暗那一档，取出中性、中性变体、主色、次色、第三色五条色板。59 格每一格都换（`theme/persona.rs` 的 `overlay` 逐格写，不留照抄 tokyonight 的口子）：不带含义的格子照 tokyonight 同一档那一格的亮度（HCT tone），从对应色板取同一亮度的颜色，明暗层次和 tokyonight 一样、只换色相——中性：`background`、`text`、`panel_bg`、`shade`、`row_dim_bg`、热度图最淡一格、`thought`、`thought_hover`、`md_bold`、`md_code`、`md_math`、`diagram_backdrop`、`on_accent`；中性变体：`dim`、`faint`、`hover`、`md_italic`、`md_quote`、`diagram_text`、`diagram_line`、`code_comment`、`code_operator`；主色：`accent`、`workspace`、`side_title`、`md_table_head`、`md_link`、`md_url`、`row_bg`、热度图后四格；次色：`chip_bg`、`chip_hover_bg`；第三色：`picked`、`md_image`；吉祥物（项目主人定也跟着换，原来照抄）：头 `mascot_head` 中性、耳朵 `mascot_ear` 中性变体、眼睛 `mascot_eye` 主色、鳍 `mascot_fin` 第三色。底色因此和 tokyonight 一样亮（深色 tone 10、浅色 90，项目主人选的 A 档；B 是再亮 4、C 是原来的 surface 深色 4–6、浅色 98）。有含义的颜色（`error`、`warn`、`good`、`added`、`removed`、四格差异、`full`、`read_only`、`md_mark`、`md_heading`、其余代码着色）色相往主色最多转 15°（`blend::harmonize`），亮度、色度不变，认得出是红是绿。网页照同一套改（`web-demo/src/lib/md3/index.js`，8aaeefe）；两边 tokyonight 原色表本来有几格不一样（网页的暗字、吉祥物），算出来那几格也不一样，浅色网页照晨光（项目主人定），这些不动。
 4. 名字是 `persona-night`、`persona-day`（`/theme` 的提示照它写）；还没有主色时是 tokyonight 那一份的名字。铺不铺底色照第 4 条。
+
+#### 终端配色
+
+2026-10-14 项目主人照推荐定：字全用终端自己的 16 色（照旧 Miyu），换终端主题就跟着换；面板、差异这些底色照终端的底色推。项目主人报的「终端配色下思考是青的」并在这里改。
+
+1. 字：主题文件（`terminal.json`、`terminal-light.json`）只写终端 16 色的名字，加粗、斜体照代码里的；要「变暗」的写 `dim:<名字>`（「主题」第 1 条）。测试拦着：只有下面第 2 条的底色、mermaid 图那几格能写固定的颜色。浅色那一份用不带 `light` 的那几色（亮色在浅底上发白）。
+2. 底色：起来时问到了终端的字色、底色（OSC 10、11，「主题」第 3 条），面板、点开的一步、标签、选中行这些底照终端的底往字色掺一点，差异的底往终端的绿、红掺一点（问到了 16 色才掺，「主题」第 10 条），mermaid 图的字、线、底照终端的字色、底色（`theme/derived.rs`）。问不到的照主题文件里写的 256 色、真彩色。色深压到 256 色、16 色时，掺出来的底照「主题」第 9 条换成最近的。
+3. 对照（深色那一份；浅色把亮色换成不带 `light` 的）：
+
+| 格子 | 原来 | 旧 Miyu | 现在 |
+|---|---|---|---|
+| `accent`（流光、压缩那一行） | `#7aa2f7` | 青 | `blue`（流光照问到的真颜色算渐变，「主题」第 10 条） |
+| `thought` / `thought_hover` | 256 色 73 / 116（青） | 暗 + 256 色 10 号 | `dim:lightgreen` / `lightgreen` |
+| `md_bold` | 256 色 180 | 粗 + 蓝 | `blue`（加粗照代码） |
+| `md_italic` | 256 色 250 | 斜 + 256 色 250 | `default`（斜体照代码） |
+| `md_code` | `default` | 青 | `cyan` |
+| `md_link` / `md_url` | 256 色 68 | 256 色 117 / 暗 + 75 | `lightblue` / `dim:blue` |
+| `md_image` | 256 色 183 | 256 色 183 | `magenta` |
+| `diff_added_fg` / `diff_removed_fg` | 256 色 157 / 210 | 同 | `lightgreen` / `lightred` |
+| `heat`（用量的柱） | 256 色 236、24、25、33、117 | | `darkgray`、`dim:blue`、`blue`、`lightblue`、`lightcyan` |
+| `code_keyword` / `code_function` / `code_string` / `code_number`、`code_constant` | 真彩色 | 真彩色 | `magenta` / `blue` / `green` / `yellow` |
+| `code_property` / `code_operator` | 256 色 115 / 117 | | `cyan` / `lightcyan` |
+| `row_dim_bg`、`panel_bg` 和 `shade`、`chip_bg`、`chip_hover_bg`、`row_bg` | 256 色 235、236、237、239、60 | | 终端的底往字色掺 4%、8%、12%、16%、18% |
+| `diff_added_bg` / `diff_removed_bg` | `#203443` / `#3c2935` | 同 | 终端的底往它的绿 / 红掺 15% |
+| `diagram_text`、`diagram_line`、`diagram_backdrop` | 真彩色 | | 终端的字色、底往字色掺 55%、终端的底 |
+| 别的（标题、表头、侧边栏标题、出错、警告、成功、权限级别、吉祥物、注释、类型、宏、参数） | 已经是 16 色 | | 不动 |
 
 ### 图标
 

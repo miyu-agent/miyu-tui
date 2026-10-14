@@ -118,14 +118,14 @@ fn main() -> io::Result<()> {
     }));
     // 问终端能不能显示图：进了全屏、还没开始读按键的时候问（蓝图「图片、公式和 mermaid 图」第 1 条）。
     let graphics = figures::terminal::probe();
-    // 问终端的底色是深是浅：主题「跟随终端」照它挑（蓝图「主题」第 3 条），同样在开始读按键之前问。
-    let dark = theme::choice::probe();
-    // 问终端调色板 16 色的真颜色：终端配色的流光照它算渐变（蓝图「主题」第 10 条），同样在开始读按键之前问。
+    // 问终端的字色、底色：明暗「自动」照它挑深浅（蓝图「主题」第 3 条），终端配色照它推底色；同样在开始读按键之前问。
+    let ground = theme::terminal_colors::probe_ground();
+    // 问终端调色板 16 色的真颜色：终端配色的流光照它算渐变、底色照它推（蓝图「主题」第 10 条），同样在开始读按键之前问。
     let colors = theme::terminal_colors::probe();
     let result = run(
         &mut terminal,
         config,
-        (graphics, dark, colors),
+        (graphics, ground, colors),
         keyboard,
         launch,
     );
@@ -193,9 +193,9 @@ enum Incoming {
 fn run(
     terminal: &mut Screen,
     config: Config,
-    (graphics, dark, colors): (
+    (graphics, ground, colors): (
         Option<figures::Graphics>,
-        Option<bool>,
+        Option<theme::terminal_colors::Ground>,
         Option<theme::terminal_colors::Colors>,
     ),
     keyboard: bool,
@@ -223,7 +223,10 @@ fn run(
     ));
     let human = human::Human::default();
     let mut app = App::new(config, core, human, figures);
-    app.set_terminal_dark(dark);
+    // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）；问到的终端颜色在挑主题以前装上（终端配色照它推底色）。
+    let depth = theme::Depth::detect(|name| std::env::var(name).ok());
+    theme::terminal_colors::install(colors, ground, depth);
+    app.set_terminal_dark(ground.map(|g| g.dark));
     // `MIYU_TUI_MASCOT`：照本机的模型文件画吉祥物（蓝图「吉祥物包」第 5 条）。
     app.mascot_preview();
     // `--page config`：一起来就停在配置页（蓝图「配置页」第 1 条）。
@@ -235,9 +238,6 @@ fn run(
         app.open_oobe();
     }
     let mut pointer = pointer::Pointer::default();
-    // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）。
-    let depth = theme::Depth::detect(|name| std::env::var(name).ok());
-    theme::terminal_colors::install(colors, depth);
     // 量性能用：给了路径才记每一帧的耗时（蓝图「环境变量」）。
     let log_path = std::env::var_os("MIYU_TUI_FRAME_LOG").map(std::path::PathBuf::from);
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
