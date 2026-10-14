@@ -66,7 +66,8 @@ impl Form {
     /// 有哪几格，照画的先后；有格子的最后一行是「测试连接」。
     pub fn slots(&self) -> Vec<Slot> {
         let mut out = match &self.provider {
-            None => vec![Slot::Url, Slot::Driver, Slot::Id, Slot::Key],
+            // 编号在最上面（2026-10-14 项目主人定，同配置页「添加供应商」ID 排第一）。
+            None => vec![Slot::Id, Slot::Url, Slot::Driver, Slot::Key],
             Some(p) if p.ready() => Vec::new(),
             Some(_) => vec![Slot::Key],
         };
