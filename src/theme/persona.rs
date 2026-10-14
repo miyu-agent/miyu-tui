@@ -35,9 +35,16 @@ pub fn seed_of(rgba: &[u8]) -> Option<u32> {
     ranked.first().map(|c| argb(*c))
 }
 
-/// 读一张头像取主色；读不成的是 `None`。
+/// 读一张头像取主色；读不成的是 `None`。格式照文件内容认：从核心要来的头像照版本存，文件名没有扩展名。
 pub fn seed_of_file(path: &Path) -> Option<u32> {
-    let image = image::open(path).ok()?.thumbnail(SIDE, SIDE).to_rgba8();
+    let image = image::ImageReader::open(path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .decode()
+        .ok()?
+        .thumbnail(SIDE, SIDE)
+        .to_rgba8();
     seed_of(image.as_raw())
 }
 
@@ -161,5 +168,22 @@ mod tests {
             u32::from(r) + u32::from(g) + u32::from(b) > 3 * 0xc0,
             "浅色的底是亮的"
         );
+    }
+
+    #[test]
+    fn a_cached_avatar_without_an_extension_still_gives_its_main_color() {
+        // 2026-10-14 项目主人报「主题跟随头像好像没生效」：从核心要来的头像照版本存成没有扩展名的文件，原来照扩展名认格式，
+        // 读不出，一直照 tokyonight。照文件内容认。
+        let dir = std::env::temp_dir().join(format!("miyu-tui-seed-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("45d6f2bef190c961");
+        let png = dir.join("green.png");
+        image::RgbaImage::from_pixel(8, 8, image::Rgba([0x30, 0xb0, 0x40, 255]))
+            .save(&png)
+            .unwrap();
+        std::fs::rename(&png, &file).unwrap();
+        let seed = super::seed_of_file(&file).expect("读得出");
+        assert!((seed >> 8) & 0xff > (seed >> 16) & 0xff, "绿的：{seed:06x}");
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 }
