@@ -1276,10 +1276,10 @@
       "custom_name": "Enter 编辑 · j/k 移动 · Esc 关闭",
       "create": "Enter 创建 · j/k 移动 · Esc 关闭",
       "view": "j/k 滚动 · 空格 关闭",
-      "enter_edit": "Enter 编辑",
+      "enter_edit": "Enter 编辑", "enter_pick": "Enter 选择",
       "presets": "↑↓ 选择 · 空格 详情 · Enter 下一步 · Esc 上一步",
       "more": "输入以搜索 · ↑↓ 选择 · Enter 确定 · Esc 关闭",
-      "theme": "←→ 切换 · j/k 移动 · Enter 下一步 · Esc 上一步"
+      "theme": "Enter 选择 · j/k 移动 · Esc 上一步"
     },
     "language": {
       "title": "界面语言",

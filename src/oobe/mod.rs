@@ -266,7 +266,7 @@ impl Oobe {
             Step::Persona => self
                 .persona
                 .key(key, &mut self.asker, &texts.persona, &mut effects),
-            Step::Theme => self.theme.key(key, &mut self.asker),
+            Step::Theme => self.theme.key(key, &mut self.asker, &texts.theme),
             Step::Profile => self.profile.key(key, &mut self.asker, &mut effects),
             Step::Preset => self.preset.key(key, &mut self.asker, &texts.preset),
             Step::Sandbox => self.sandbox.key(key, &mut self.asker),

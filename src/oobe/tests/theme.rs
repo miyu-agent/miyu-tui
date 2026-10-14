@@ -31,7 +31,9 @@ fn defaults() -> serde_json::Value {
 }
 
 #[test]
-fn turning_a_row_previews_it_and_enter_writes_both() {
+fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
+    // 2026-10-14 项目主人：明暗、配色按 Enter 弹列表选，和配置页选值的同一个组件、同一套键（上下、Enter 选、Esc 回），
+    // 挪的时候当场换样子，Esc 换回原来的；不再左右切（以后主题多了、有别人做的，左右切不好用）。
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
@@ -41,19 +43,54 @@ fn turning_a_row_previews_it_and_enter_writes_both() {
         Some(("tokyonight".into(), Mode::Auto)),
         "没有头像：停在现在的配置"
     );
-    // 明暗往右一格：深色，当场换。
+    // 左右不再换。
     oobe.key(key(KeyCode::Right), t0, &texts);
     assert_eq!(
         oobe.theme_preview(),
-        Some(("tokyonight".into(), Mode::Dark))
+        Some(("tokyonight".into(), Mode::Auto))
     );
-    // 配色往左一格：绕到「跟随头像」；再左是终端配色。
+    // 明暗那一格 Enter：开列表，停在「自动」；往下挪一个，当场换成深色；Enter 选好、关窗。
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let labels: Vec<String> = oobe
+        .theme
+        .picking
+        .as_ref()
+        .expect("开了列表")
+        .choices
+        .iter()
+        .map(|c| c.label.clone())
+        .collect();
+    assert_eq!(labels, ["自动", "深色", "浅色"]);
+    assert!(asks(&mut oobe).is_empty(), "开列表不写");
     oobe.key(key(KeyCode::Down), t0, &texts);
-    oobe.key(key(KeyCode::Char('h')), t0, &texts);
-    assert_eq!(oobe.theme_preview(), Some(("persona".into(), Mode::Dark)));
-    oobe.key(key(KeyCode::Left), t0, &texts);
+    assert_eq!(
+        oobe.theme_preview(),
+        Some(("tokyonight".into(), Mode::Dark)),
+        "挪到就换"
+    );
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(oobe.theme.picking.is_none(), "选好关窗");
+    assert_eq!(oobe.step, Step::Theme, "选好不往下走");
+    // 配色那一格：挪到终端配色看一眼，Esc 换回 Tokyo Night，还在这一步。
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
     assert_eq!(oobe.theme_preview(), Some(("terminal".into(), Mode::Dark)));
-    assert!(asks(&mut oobe).is_empty(), "换的时候不写");
+    oobe.key(key(KeyCode::Esc), t0, &texts);
+    assert!(oobe.theme.picking.is_none());
+    assert_eq!(oobe.step, Step::Theme, "Esc 只关列表");
+    assert_eq!(
+        oobe.theme_preview(),
+        Some(("tokyonight".into(), Mode::Dark)),
+        "换回原来的"
+    );
+    // 再开、选终端配色；「下一步」写两项。
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(asks(&mut oobe).is_empty(), "选的时候不写");
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    assert_eq!(oobe.theme.slot, Slot::Next);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let (tag, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
@@ -79,7 +116,9 @@ fn going_back_puts_the_old_look_back() {
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
     at_theme(&mut oobe, t0, &texts, defaults());
-    oobe.key(key(KeyCode::Right), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
     assert!(oobe.theme_preview().is_some());
     oobe.key(key(KeyCode::Esc), t0, &texts);
     assert_eq!(oobe.step, Step::Persona);
