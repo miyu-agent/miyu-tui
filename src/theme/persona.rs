@@ -1,13 +1,15 @@
 //! 跟随头像的配色（蓝图 `tui.md`「主题」第 5 条、「跟随头像的配色」，2026-10-13 项目主人定）：主色照人格的 `seed`，没写的从
-//! 头像的像素取；照 MD3 `TonalSpot`、对比度 0 生成一套，只盖中性色和强调色。算法照网页的 `theme-persona`（`model.js`），
-//! 两个头同一个人格出来的颜色一样。
+//! 头像的像素取；照 MD3 `SchemeContent` 生成几条色板，每一格都换（`overlay`）。两个头同一套算法（2026-10-14 项目主人定，
+//! 网页 `web-demo/src/lib/md3/index.js` 照这个改），同一个人格出来的颜色一样。
 
 use std::path::Path;
 
+use material_colors::blend::harmonize;
 use material_colors::color::Rgb;
 use material_colors::hct::Hct;
+use material_colors::palette::TonalPalette;
 use material_colors::quantize::{Quantizer, QuantizerCelebi};
-use material_colors::scheme::variant::SchemeTonalSpot;
+use material_colors::scheme::variant::SchemeContent;
 use material_colors::score::Score;
 use ratatui::style::Color;
 
@@ -56,48 +58,103 @@ pub fn hex(seed: &str) -> Option<u32> {
         .flatten()
 }
 
-/// 照主色生成一套盖在 `base` 上：中性色、强调色换成 MD3 的角色（深浅照 `dark`），出错的红、差异的红绿、链接、Markdown、
-/// 代码高亮、吉祥物、思考的青照 `base`（语义色跟着人格变了反而认不出，同网页）。
+/// 照主色生成一套盖在 `base`（tokyonight 深色或浅色那一份）上，两个头同一套算法（2026-10-14 项目主人定统一，网页
+/// `theme-persona` 照这个改）：MD3 `SchemeContent`，对比度 0。不带色相的、强调色每一格照 `base` 那一格的亮度（tone），从
+/// 主色生成的几条色板里取同一亮度的颜色，明暗层次和 tokyonight 一样，只换色相（项目主人报：思考还是青的、深色的底太深）：
+/// 底、正文、面板、思考、粗体、行内代码、公式从中性色板，暗字、边框、引用、斜体、图里的字线、代码注释和运算符从中性变体，
+/// 强调色、链接、表头、热度图从主色，标签的底从次色，选中、图片从第三色。有含义的颜色（出错、增删、警告、成功、权限级别、
+/// 高亮、标题、代码着色其余几格）色相往主色最多转 15°（`harmonize`），认得出是哪一种；吉祥物也跟着换。
 pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
-    let s = SchemeTonalSpot::new(Hct::new(Rgb::from_u32(seed)), dark, Some(0.0)).scheme;
-    let tone = |c: Rgb| Tone(Color::Rgb(c.red, c.green, c.blue));
-    let mix = |a: Rgb, b: Rgb, t: f64| {
-        let m = |x: u8, y: u8| (f64::from(x) + (f64::from(y) - f64::from(x)) * t).round() as u8;
-        Tone(Color::Rgb(
-            m(a.red, b.red),
-            m(a.green, b.green),
-            m(a.blue, b.blue),
-        ))
+    let source = Rgb::from_u32(seed);
+    let s = SchemeContent::new(Hct::new(source), dark, Some(0.0)).scheme;
+    let neutral = &s.neutral_palette;
+    let variant = &s.neutral_variant_palette;
+    let primary = &s.primary_palette;
+    let second = &s.secondary_palette;
+    let third = &s.tertiary_palette;
+    let like = |from: &TonalPalette, tone: Tone| match tone.0 {
+        Color::Rgb(r, g, b) => {
+            let lightness = Hct::new(Rgb::new(r, g, b)).get_tone();
+            let c = Rgb::from(from.get_hct(lightness));
+            Tone(Color::Rgb(c.red, c.green, c.blue))
+        }
+        _ => tone,
     };
-    let (low, high) = (s.primary_container(), s.primary());
+    let near = |tone: Tone| match tone.0 {
+        Color::Rgb(r, g, b) => {
+            let c = harmonize(Rgb::new(r, g, b), source);
+            Tone(Color::Rgb(c.red, c.green, c.blue))
+        }
+        _ => tone,
+    };
+    let b = base;
     Palette {
-        dim: tone(s.on_surface_variant()),
-        accent: tone(s.primary()),
-        workspace: tone(s.primary()),
-        picked: tone(s.tertiary()),
-        shade: tone(s.surface_container_high()),
-        chip_bg: tone(s.secondary_container()),
-        chip_hover_bg: tone(s.tertiary_container()),
-        panel_bg: tone(s.surface_container()),
-        row_bg: tone(s.primary_container()),
-        row_dim_bg: tone(s.surface_container_low()),
-        // 热度图：最淡一格是底上浮起来的那一层，往上从主色的容器色走到主色。
+        dim: like(variant, b.dim),
+        accent: like(primary, b.accent),
+        workspace: like(primary, b.workspace),
+        full: near(b.full),
+        read_only: near(b.read_only),
+        picked: like(third, b.picked),
+        thought: like(neutral, b.thought),
+        thought_hover: like(neutral, b.thought_hover),
+        shade: like(neutral, b.shade),
+        chip_bg: like(second, b.chip_bg),
+        chip_hover_bg: like(second, b.chip_hover_bg),
+        panel_bg: like(neutral, b.panel_bg),
+        row_bg: like(primary, b.row_bg),
+        row_dim_bg: like(neutral, b.row_dim_bg),
         heat: [
-            tone(s.surface_container_highest()),
-            mix(low, high, 0.0),
-            mix(low, high, 1.0 / 3.0),
-            mix(low, high, 2.0 / 3.0),
-            mix(low, high, 1.0),
+            like(neutral, b.heat[0]),
+            like(primary, b.heat[1]),
+            like(primary, b.heat[2]),
+            like(primary, b.heat[3]),
+            like(primary, b.heat[4]),
         ],
-        md_table_head: tone(s.primary()),
-        diagram_backdrop: tone(s.surface()),
-        side_title: tone(s.primary()),
-        hover: tone(s.on_surface()),
-        faint: tone(s.outline()),
-        on_accent: tone(s.on_primary()),
-        background: tone(s.surface()),
-        text: tone(s.on_surface()),
-        ..base.clone()
+        added: near(b.added),
+        removed: near(b.removed),
+        diff_added_fg: near(b.diff_added_fg),
+        diff_added_bg: near(b.diff_added_bg),
+        diff_removed_fg: near(b.diff_removed_fg),
+        diff_removed_bg: near(b.diff_removed_bg),
+        error: near(b.error),
+        warn: near(b.warn),
+        good: near(b.good),
+        md_heading: near(b.md_heading),
+        md_bold: like(neutral, b.md_bold),
+        md_italic: like(variant, b.md_italic),
+        md_code: like(neutral, b.md_code),
+        md_link: like(primary, b.md_link),
+        md_url: like(primary, b.md_url),
+        md_image: like(third, b.md_image),
+        md_quote: like(variant, b.md_quote),
+        md_mark: near(b.md_mark),
+        md_table_head: like(primary, b.md_table_head),
+        md_math: like(neutral, b.md_math),
+        diagram_text: like(variant, b.diagram_text),
+        diagram_line: like(variant, b.diagram_line),
+        diagram_backdrop: like(neutral, b.diagram_backdrop),
+        side_title: like(primary, b.side_title),
+        hover: like(variant, b.hover),
+        faint: like(variant, b.faint),
+        on_accent: like(neutral, b.on_accent),
+        code_keyword: near(b.code_keyword),
+        code_function: near(b.code_function),
+        code_string: near(b.code_string),
+        code_number: near(b.code_number),
+        code_comment: like(variant, b.code_comment),
+        code_type: near(b.code_type),
+        code_constant: near(b.code_constant),
+        code_property: near(b.code_property),
+        code_operator: like(variant, b.code_operator),
+        code_macro: near(b.code_macro),
+        code_parameter: near(b.code_parameter),
+        // 吉祥物也跟着换（2026-10-14 项目主人定）：头、耳朵照中性色，眼睛照主色，鳍照第三色。
+        mascot_head: like(neutral, b.mascot_head),
+        mascot_ear: like(variant, b.mascot_ear),
+        mascot_eye: like(primary, b.mascot_eye),
+        mascot_fin: like(third, b.mascot_fin),
+        background: like(neutral, b.background),
+        text: like(neutral, b.text),
     }
 }
 
@@ -110,7 +167,11 @@ fn argb(c: Rgb) -> u32 {
 mod tests {
     use ratatui::style::Color;
 
+    use material_colors::color::Rgb;
+    use material_colors::hct::Hct;
+
     use super::{hex, overlay, seed_of};
+    use crate::theme::Tone;
     use crate::theme::builtin;
 
     #[test]
@@ -140,34 +201,45 @@ mod tests {
         assert_eq!(hex("#7aa2f"), None);
     }
 
+    /// 一格的 HCT：色相、色度、亮度。
+    fn hct(tone: Tone) -> (f64, f64, f64) {
+        let Color::Rgb(r, g, b) = tone.0 else {
+            panic!("{tone:?}")
+        };
+        let h = Hct::new(Rgb::new(r, g, b));
+        (h.get_hue(), h.get_chroma(), h.get_tone())
+    }
+
     #[test]
-    fn the_overlay_changes_the_neutrals_and_accents_but_keeps_the_meaningful_colors() {
+    fn every_neutral_and_accent_follows_at_tokyonights_lightness_and_meanings_only_lean() {
+        // 2026-10-14 项目主人报思考还是青的、深色的底太深，定两个头统一一套：照 tokyonight 每一格的亮度取色，有含义的颜色
+        // 色相往主色最多转 15°，吉祥物也跟着换（同一天定）。
         let themes = builtin().unwrap();
-        let (_, night) = themes
-            .iter()
-            .find(|(n, _)| n == "tokyonight-night")
-            .unwrap();
-        let green = overlay(night, 0x2fab34, true);
-        assert_ne!(green.accent, night.accent, "强调色跟着主色");
-        assert_ne!(green.background, night.background, "底色跟着主色");
-        assert_eq!(green.error, night.error, "出错的红不动");
-        assert_eq!(green.diff_added_bg, night.diff_added_bg, "差异的颜色不动");
-        assert_eq!(green.code_keyword, night.code_keyword, "代码高亮不动");
-        let Color::Rgb(r, g, b) = green.background.0 else {
-            panic!()
-        };
-        assert!(
-            u32::from(r) + u32::from(g) + u32::from(b) < 3 * 0x40,
-            "深色的底是暗的"
-        );
-        let (_, day) = themes.iter().find(|(n, _)| n == "tokyonight-day").unwrap();
-        let Color::Rgb(r, g, b) = overlay(day, 0x2fab34, false).background.0 else {
-            panic!()
-        };
-        assert!(
-            u32::from(r) + u32::from(g) + u32::from(b) > 3 * 0xc0,
-            "浅色的底是亮的"
-        );
+        for name in ["tokyonight-night", "tokyonight-day"] {
+            let (_, base) = themes.iter().find(|(n, _)| n == name).unwrap();
+            let green = overlay(base, 0x2fab34, name.ends_with("night"));
+            for (got, was, what) in [
+                (green.background, base.background, "底"),
+                (green.text, base.text, "正文"),
+                (green.thought, base.thought, "思考"),
+                (green.accent, base.accent, "强调色"),
+                (green.mascot_head, base.mascot_head, "吉祥物的头"),
+                (green.mascot_eye, base.mascot_eye, "吉祥物的眼睛"),
+            ] {
+                assert_ne!(got, was, "{name} {what}跟着主色");
+                assert!(
+                    (hct(got).2 - hct(was).2).abs() < 1.0,
+                    "{name} {what}和 tokyonight 一样亮"
+                );
+            }
+            assert!(hct(green.thought).1 < 12.0, "{name} 思考是中性色");
+            let (error, before) = (hct(green.error), hct(base.error));
+            let turned = (error.0 - before.0)
+                .abs()
+                .min(360.0 - (error.0 - before.0).abs());
+            assert!(turned <= 15.5, "{name} 出错的红只偏一点：{turned}");
+            assert!((error.2 - before.2).abs() < 1.0, "{name} 出错的红亮度不变");
+        }
     }
 
     #[test]
