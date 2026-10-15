@@ -229,6 +229,9 @@ impl Transcript {
             | Update::SessionGone(_)
             | Update::Catalog(_)
             | Update::SlashRefused { .. }
+            | Update::Widgets(_)
+            | Update::WidgetChanged { .. }
+            | Update::PackageCallRefused { .. }
             | Update::DirChecked(_) => {}
             Update::CoolingUntil(until) => self.cooling_until(until),
             Update::CurrentModel(current) => self.current_model(current),

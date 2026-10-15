@@ -410,6 +410,11 @@
       ]
     ]
   },
+  "widget": {
+    "folded": "{count} done",
+    "more": "… {count} more",
+    "more_blocks": "… {count} more blocks"
+  },
   "jobs": {
     "button": "Background: {count}",
     "title": "Background",

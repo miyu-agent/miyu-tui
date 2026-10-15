@@ -59,6 +59,13 @@ pub(super) async fn serve(
         Ok(id) => awaiting.insert(id, Awaiting::PackagesStream),
         Err(_) => return Served::Lost,
     };
+    // 界面块照记着的再订阅（「界面块」第 8 条）：重连以前屏上有的，接着推。
+    if super::widgets::rejoin(rpc, link, &mut awaiting)
+        .await
+        .is_err()
+    {
+        return Served::Lost;
+    }
     // 重连以后，另外订阅着的照旧订阅上，从读到的那一条往后补（「连核心」第 7 条）。
     for session in link.watched.clone() {
         match watch(rpc, &session, link.seen.get(&session).copied()).await {
@@ -126,6 +133,12 @@ pub(super) async fn serve(
                     }
                     Command::View(session) => {
                         link.viewing = session;
+                        continue;
+                    }
+                    Command::Widgets(view) => {
+                        if super::widgets::follow(rpc, link, view, &mut awaiting).await.is_err() {
+                            return Served::Lost;
+                        }
                         continue;
                     }
                     // 更早的一页：没按页读的（核心旧）不要，告诉界面没有了。

@@ -58,6 +58,10 @@ pub struct Screen {
     pub started: Instant,
     /// 压缩那一行的进度条一顿一顿地追，停多久、追几格要的随机数。
     pub rng: crate::rng::Rng,
+    /// 这一帧界面块能点的地方（蓝图「界面块」第 7 条）：画的时候记，鼠标照它分。
+    pub widget_spots: Vec<crate::ui::widget::Spot>,
+    /// 指针停在底栏哪个界面块的那一格上（包、编号）：换了一格才提示一次是谁放的。
+    pub status_hover: Option<(String, String)>,
 }
 
 impl Screen {
@@ -87,6 +91,8 @@ impl Screen {
             draw_now: false,
             started: Instant::now(),
             rng: crate::rng::Rng::from_clock(),
+            widget_spots: Vec::new(),
+            status_hover: None,
         }
     }
 }

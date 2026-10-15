@@ -72,6 +72,15 @@ pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<
                 .map_or_else(|| json!({}), |s| json!({ "session": s }));
             ("command.catalog", params, Some(Awaiting::Catalog))
         }
+        Command::PackageCall {
+            package,
+            method,
+            params,
+        } => (
+            "package.call",
+            json!({"package": package, "method": method, "params": params}),
+            Some(Awaiting::PackageCall),
+        ),
         Command::ListPresets => ("preset.list", json!({}), Some(Awaiting::Presets)),
         Command::ListPackages => ("package.list", json!({}), Some(Awaiting::Packages)),
         Command::Usage(ask) => ("usage.query", ask.params(), Some(Awaiting::Usage(ask.kind))),

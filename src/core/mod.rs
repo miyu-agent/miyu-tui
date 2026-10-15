@@ -36,8 +36,10 @@ mod spawn;
 mod switch;
 mod take;
 mod todos;
+mod types;
 mod undo;
 mod upload;
+mod widgets;
 mod workspace;
 
 use std::thread;
@@ -70,6 +72,7 @@ pub use sessions::{
 pub use snapshot::{Snapshot, Spent};
 pub use spawn::spawn;
 pub use todos::TodoItem;
+pub use types::{OutputRead, Refusal, Start};
 pub use undo::{Report, UndoFile};
 
 /// 界面要核心做的事。
@@ -217,6 +220,18 @@ pub enum Command {
     Slash(String),
     /// 要核心认的斜杠命令（`command.catalog`）：带会话的只列这个会话里能用的。
     Catalog(Option<String>),
+    /// 订阅界面块（`subscribe {stream: widgets}`，核心 X-15）：屏上有哪几个位置、正在看的会话、开着的整页；`None` 是不再
+    /// 订阅。记在连接上，重连、掉队时照它重新订阅（蓝图「界面块」第 8 条）。
+    Widgets(Option<crate::widgets::View>),
+    /// 点了界面块里调方法的动作（`package.call`）：回应不看，拒了的回 [`Update::PackageCallRefused`]。
+    PackageCall {
+        /// 哪个包。
+        package: String,
+        /// 它的程序登记的方法。
+        method: String,
+        /// 参数：一个对象。
+        params: serde_json::Value,
+    },
     /// `/goal` 交给核心办（`command.run`，核心 X-8），带着后面的字；会话还没开时先开会话（蓝图「长期目标」第 3 条）。
     Goal(String),
     /// 要一段回顾（`session.recap`，`/recap`）。
@@ -348,6 +363,22 @@ pub enum Update {
     },
     /// 核心认的斜杠命令（[`Command::Catalog`] 的回应）。
     Catalog(Vec<CoreCommand>),
+    /// 订阅界面块的回应：装着、开着的扩展声明的全部块。
+    Widgets(Vec<crate::widgets::Block>),
+    /// 一块界面块变了（`widget.changed`）；`None` 是关掉、卸掉了。
+    WidgetChanged {
+        /// 哪个包。
+        package: String,
+        /// 包里的编号。
+        id: String,
+        /// 现在的样子。
+        block: Option<crate::widgets::Block>,
+    },
+    /// [`Command::PackageCall`] 被拒：原话。
+    PackageCallRefused {
+        /// 原话。
+        message: String,
+    },
     /// [`Command::Slash`] 被拒：照连接语言写的原话（`data.why` 有的照它；`command_failed` 的扩展原话接在下一行）。
     SlashRefused {
         /// 原话。
@@ -441,26 +472,6 @@ pub enum Update {
     },
 }
 
-/// 怎么读一条后台命令的输出（`job.output`）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OutputRead {
-    /// 要最后几行。
-    Tail(usize),
-    /// 从第 `size` 个字节接着读；`wait`：没有新的、还在跑，等长了、结束了再答（核心 V-6 上）。
-    After { size: u64, wait: bool },
-}
-
-/// 核心拒了一条请求：原因码（`data.reason`，没有的是 `None`）、原话，和 `data` 整个（`config_conflict` 的 `current` 在里面）。
-#[derive(Debug, Clone, PartialEq)]
-pub struct Refusal {
-    /// 原因码。
-    pub reason: Option<String>,
-    /// 核心照握手时的语言说的原话。
-    pub message: String,
-    /// 错误的 `data`。
-    pub data: serde_json::Value,
-}
-
 /// 连着核心的这一头，界面拿着它发命令。克隆一份交给后台线程，做完了照样发（缩头像，`app/avatars.rs`）。
 #[derive(Clone)]
 pub struct Core {
@@ -473,17 +484,6 @@ impl Core {
         // 收的一头只在连核心的线程退出时关掉，那时已经报过「断开了」，丢了也无妨。
         if self.commands.send(command).is_err() {}
     }
-}
-
-/// 启动时进哪个会话。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Start {
-    /// 照配置 `ui.startup`：`recent` 的进最近的那个，别的等第一句话再开。
-    Usual,
-    /// 进指定的会话（`--resume`）。
-    Resume(String),
-    /// 不进任何会话、不看 `ui.startup`（`--page config`，蓝图「配置页」第 1 条）。
-    Bare,
 }
 
 #[cfg(test)]

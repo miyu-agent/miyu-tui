@@ -69,6 +69,10 @@ pub(super) enum Awaiting {
     Slash,
     /// 要核心认的斜杠命令。
     Catalog,
+    /// 订阅界面块：回应交给界面。
+    Widgets,
+    /// 调界面块的程序登记的方法：拒了的告诉界面。
+    PackageCall,
     /// 回答确认、提问：问的会话、调用编号（拒了要告诉界面）。
     Answer(String, String),
 }

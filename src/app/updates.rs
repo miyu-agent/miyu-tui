@@ -11,6 +11,8 @@ impl App {
         // 断开了：在途的请求不会回来了，等着的几处先复位（`lost.rs`）；下面各处照样收到这一条。
         if matches!(update, Update::Disconnected) {
             self.lost_requests();
+            // 界面块跟着扩展一起停了：清掉，重连以后核心照记着的订阅重推（`widgets.rs`）。
+            self.link.widgets.blocks.clear();
         }
         // 读配置合起来的那一条回来了：照原来的编号一处一处交回去（`config_asks.rs`）。
         if self.config_asks_update(&update) {
@@ -202,6 +204,10 @@ impl App {
         // 核心认的斜杠命令：清单到了接上；交给核心的那一行被拒弹原话、放回输入框（`catalog.rs`）。
         if let Update::Catalog(listed) = &update {
             self.catalog_arrived(listed);
+            return;
+        }
+        // 界面块：整份、一块一块换；调方法被拒的弹原话（`widgets.rs`）。
+        if self.widget_update(&update) {
             return;
         }
         if let Update::SlashRefused { message, .. } = &update {

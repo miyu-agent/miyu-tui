@@ -40,6 +40,7 @@ pub mod session_list;
 pub mod settings;
 mod sidebar;
 pub mod usage;
+pub mod widget;
 
 pub use history::{index_at as history_index_at, lines as history_lines};
 pub use menu::{index_at as menu_index_at, rows as menu_rows};
@@ -73,6 +74,8 @@ pub(super) use layout::{above, agents_area, box_width, list_text};
 /// 画一帧。顺手把各块的位置记进 `app`，鼠标事件要用。
 pub fn draw(frame: &mut Frame, app: &mut App) {
     app.screen.caret.begin();
+    // 界面块能点的地方每一帧重记（`widget/place.rs`）。
+    app.screen.widget_spots.clear();
     // 第一次打开的引导开着：整屏归它（蓝图「第一次打开的引导」第 1 条）。
     if let Some(oobe) = app.boxes.oobe.as_mut() {
         let mut parts = oobe::Parts {
@@ -134,6 +137,16 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         Vec::new()
     };
     let todo_rows = u16::try_from(todo_lines.len()).unwrap_or(u16::MAX);
+    // 首页的界面块照首页框里的字宽排好，要几行交给 `place` 定位（蓝图「界面块」第 4 条）。
+    let home_blocks = if home {
+        widget::home(
+            &app.seen(),
+            home::text_width(main.width, &app.config.layout),
+        )
+    } else {
+        Vec::new()
+    };
+    let widget_rows = widget::home_rows(&home_blocks);
     // 框里占几行：抽屉开着时是抽屉的行数，连边框最高半屏；带文字画的放得下整张为止，屏幕顶上留几行
     // （`tui.md`「确认和提问的抽屉」第 2 条）。
     let texts = &app.config.text.drawer;
@@ -168,6 +181,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
                 menu_rows,
                 agent_rows,
                 todo_rows,
+                widget_rows,
             )
         } else {
             areas(
@@ -241,6 +255,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         section("home", || {
             let (seen, screen, mascot) = app.parts();
             home::draw(frame, areas, &seen, screen, mascot);
+            let pointer = screen.pointer;
+            let spots = &mut screen.widget_spots;
+            widget::draw_home(frame, areas.widgets, &home_blocks, &seen, pointer, spots);
         });
     } else {
         section("body", || {
@@ -320,9 +337,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         panel_chrome,
         panel_lines,
     );
-    app.screen.areas.button = section("footer", || {
+    let (button, status_spots) = section("footer", || {
         footer::draw(frame, areas.footer, &app.seen(), &app.screen)
     });
+    app.screen.areas.button = button;
+    app.screen.widget_spots.extend(status_spots);
     // 不在首页才有正文可翻。
     app.screen.areas.bottom = if home {
         Rect::default()

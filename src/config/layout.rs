@@ -39,6 +39,8 @@ pub struct Layout {
     pub output: OutputLook,
     /// 待办每一项前面的记号。
     pub todo_marks: TodoMarks,
+    /// 界面块：每个位置的上限、列表的记号（蓝图「界面块」第 4 条）。
+    pub widgets: super::WidgetLayout,
     /// 待办默认最多露几行项目（不算标题）；侧边栏照它剩下的高度。
     pub todo_rows: usize,
     /// 输入框和屏幕左右边之间至少留几列。

@@ -14,6 +14,7 @@ use crate::focus::{Button, Focus};
 use crate::meter;
 use crate::theme;
 use crate::transcript::{Link, Transcript};
+use crate::ui::widget::{Kind, Spot};
 
 /// 左右两段之间至少空几列。
 const GAP: usize = 2;
@@ -24,7 +25,7 @@ const GAP: usize = 2;
 ///
 /// 一行放不下时，右边的格子照顺序往下丢，上下文留到最后（`13-终端界面.md` 第八节）：左右两段不许叠在一起，
 /// 叠上以后宽字被盖掉一半，下一帧会留下残字。按钮留到最后。
-pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> Rect {
+pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rect, Vec<Spot>) {
     let focus = seen.focus();
     let count = seen.talk.board.shells_running();
     let button = (count > 0).then(|| {
@@ -36,15 +37,28 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> Rect
     });
     let button_w = button.as_ref().map_or(0, |b| b.width() + GAP);
     let total = seen.talk.usage_total();
-    let mut cells = right(&seen.talk.transcript, &total, seen.config);
+    // 扩展包放的界面块：用量前面，一块一格，最先丢（蓝图「界面块」第 1、4 条）。
+    let status = crate::ui::widget::status(seen);
+    let mut cells: Vec<Part> = status
+        .iter()
+        .map(|(text, style, _)| Part {
+            keep: 0,
+            spans: vec![Span::styled(text.clone(), *style)],
+        })
+        .collect();
+    cells.extend(right(&seen.talk.transcript, &total, seen.config));
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
     if let Some(amounts) = seen.spent() {
         cells.push(Part {
-            keep: 2,
+            keep: 3,
             spans: vec![Span::styled(amounts, theme::dim())],
         });
     }
-    let (left, right) = split(
+    let widths: Vec<usize> = cells
+        .iter()
+        .map(|p| p.spans.iter().map(Span::width).sum())
+        .collect();
+    let (left, right, kept) = split(
         left(seen, false),
         left(seen, true),
         cells,
@@ -54,9 +68,10 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> Rect
     frame.render_widget(Paragraph::new(left.clone()), area);
     let right_w = right.width();
     frame.render_widget(Paragraph::new(right.right_aligned()), area);
+    let spots = status_spots(area, right_w, &widths, &kept, &status);
     let none = Rect::new(area.x, area.y, 0, 0);
     let Some(button) = button else {
-        return none;
+        return (none, spots);
     };
     let Some(x) = middle(
         left.width(),
@@ -64,7 +79,7 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> Rect
         button.width(),
         usize::from(area.width),
     ) else {
-        return none;
+        return (none, spots);
     };
     let at = Rect::new(
         area.x + u16::try_from(x).unwrap_or(0),
@@ -74,7 +89,41 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> Rect
     );
     let style = button_style(screen, at, focus == Focus::Footer(Button::Background));
     frame.render_widget(Paragraph::new(Line::styled(button, style)), at);
-    at
+    (at, spots)
+}
+
+/// 底栏上界面块那几格在哪：右边那一段右对齐，留下的格子照先后排、之间 ` · `；界面块排在最前面（悬停时说是哪个软件放的）。
+fn status_spots(
+    area: Rect,
+    right_w: usize,
+    widths: &[usize],
+    kept: &[bool],
+    status: &[(String, ratatui::style::Style, &crate::widgets::Block)],
+) -> Vec<Spot> {
+    let mut x = usize::from(area.right()).saturating_sub(right_w);
+    let mut spots = Vec::new();
+    for (i, (&w, _)) in widths
+        .iter()
+        .zip(kept)
+        .enumerate()
+        .filter(|(_, (_, k))| **k)
+    {
+        if let Some((_, _, block)) = status.get(i) {
+            spots.push(Spot {
+                rect: Rect::new(
+                    u16::try_from(x).unwrap_or(0),
+                    area.y,
+                    u16::try_from(w).unwrap_or(0),
+                    1,
+                ),
+                package: block.package.clone(),
+                id: block.id.clone(),
+                what: Kind::Status,
+            });
+        }
+        x += w + 3;
+    }
+    spots
 }
 
 /// 按钮的样子：强调色；悬停加粗；焦点在上面反色（第 1、2 条）。
@@ -92,7 +141,7 @@ fn button_style(screen: &Screen, at: Rect, focused: bool) -> ratatui::style::Sty
 }
 
 /// 一行怎么分：右边的格子全放得下就照左边全的（`full`）写，不然左边换短的（`short`：模型编号只写最后一段），空出的
-/// 地方给右边；还不够再照 [`fit`] 挑格子（2026-10-11 项目主人定：原来模型编号一长，速度、累计先丢了，中间空着一大截）。
+/// 地方给右边；还不够再照 [`choose`] 挑格子（2026-10-11 项目主人定：原来模型编号一长，速度、累计先丢了，中间空着一大截）。
 /// `button` 是后台按钮连两边的空占几列。交回左边、右边。
 fn split(
     full: Vec<Span<'_>>,
@@ -100,13 +149,15 @@ fn split(
     cells: Vec<Part>,
     button: usize,
     width: u16,
-) -> (Line<'static>, Line<'static>) {
+) -> (Line<'static>, Line<'static>, Vec<bool>) {
     let need = joined_width(&cells);
     let full_w: usize = full.iter().map(Span::width).sum();
     let roomy = full_w + GAP + button + need <= usize::from(width);
     let left = left_line(if roomy { full } else { short }, width);
     let room = usize::from(width).saturating_sub(left.width() + GAP + button);
-    (left, Line::from(fit(cells, room)))
+    let kept = choose(&cells, room);
+    let right = Line::from(join(cells, &kept));
+    (left, right, kept)
 }
 
 /// 这几格照 ` · ` 连起来有几列。
@@ -135,7 +186,14 @@ struct Part {
 
 /// 照 `keep` 从大到小挑，放得进 `room` 列的留下、放不下的跳过（后面短的照样能进：2026-10-11 项目主人报，长的那一格
 /// 放不下时，放得下的累计跟着丢了）；留下的照原来的先后，用 ` · ` 隔开。
+#[cfg(test)]
 fn fit(parts: Vec<Part>, room: usize) -> Vec<Span<'static>> {
+    let kept = choose(&parts, room);
+    join(parts, &kept)
+}
+
+/// 照 `keep` 从大到小挑：哪几格留下。
+fn choose(parts: &[Part], room: usize) -> Vec<bool> {
     let mut order: Vec<usize> = (0..parts.len()).collect();
     order.sort_by_key(|&i| std::cmp::Reverse(parts[i].keep));
     let mut kept = vec![false; parts.len()];
@@ -148,10 +206,15 @@ fn fit(parts: Vec<Part>, room: usize) -> Vec<Span<'static>> {
             kept[i] = true;
         }
     }
+    kept
+}
+
+/// 留下的照原来的先后，用 ` · ` 隔开。
+fn join(parts: Vec<Part>, kept: &[bool]) -> Vec<Span<'static>> {
     let parts = parts
         .into_iter()
         .zip(kept)
-        .filter(|(_, k)| *k)
+        .filter(|(_, k)| **k)
         .map(|(p, _)| p);
     let mut spans = Vec::new();
     for (i, part) in parts.enumerate() {
@@ -233,7 +296,7 @@ fn cooling_word(
     Some(texts.cooling_until.replace("{n}", &minutes.to_string()))
 }
 
-/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢速度，再丢累计，上下文留到最后。还是 0 的格子不写
+/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢速度，再丢累计，上下文留到最后。还是 0 的格子不写
 /// （`tui.md`「框下面那一行」）。
 fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
     let text = &config.text;
@@ -242,19 +305,19 @@ fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
         let rate = format!("{speed:.0}");
         let speed = Span::styled(text.speed.replace("{rate}", &rate), theme::dim());
         parts.push(Part {
-            keep: 0,
+            keep: 1,
             spans: vec![speed],
         });
     }
     if let Some(context) = context_text(t, config) {
         parts.push(Part {
-            keep: 3,
+            keep: 4,
             spans: vec![Span::styled(context, theme::dim())],
         });
     }
     if let Some(total) = total_text(total, config) {
         parts.push(Part {
-            keep: 1,
+            keep: 2,
             spans: vec![Span::styled(total, theme::dim())],
         });
     }
@@ -294,149 +357,4 @@ pub fn context_text(t: &Transcript, config: &Config) -> Option<String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use ratatui::text::Span;
-
-    use super::{Part, fit, left_line, middle, right, split};
-
-    #[test]
-    fn a_narrow_left_side_is_clipped_with_an_ellipsis() {
-        // 2026-09-29 28 列实测：`▣ 工作区 · deepseek-v4.` 硬截，没有 `…`。
-        let spans = vec![
-            Span::raw("▣ 工作区"),
-            Span::raw(" · "),
-            Span::raw("deepseek-v4.1-flash"),
-            Span::raw(" dev"),
-        ];
-        assert_eq!(
-            left_line(spans.clone(), 40).to_string(),
-            "▣ 工作区 · deepseek-v4.1-flash dev"
-        );
-        let clipped = left_line(spans, 22).to_string();
-        assert_eq!(
-            clipped, "▣ 工作区 · deepseek-v…",
-            "占满 22 列，最后一格是 …"
-        );
-    }
-
-    #[test]
-    fn the_button_sits_in_the_middle_of_the_gap() {
-        // 左 20 列、右 30 列、宽 100：空当是第 22 列到第 68 列，按钮 10 列放正中。
-        assert_eq!(middle(20, 30, 10, 100), Some(22 + (46 - 10) / 2));
-        assert_eq!(middle(20, 30, 50, 100), None, "放不下");
-    }
-    use crate::config::Config;
-    use crate::transcript::Transcript;
-
-    #[test]
-    fn nothing_on_the_right_while_everything_is_zero() {
-        let config = Config::builtin().unwrap();
-        let mut t = Transcript::default();
-        assert!(
-            right(&t, &t.total, &config).is_empty(),
-            "还没用过：右边整段空着"
-        );
-        t.context = 1800;
-        let cells = right(&t, &t.total, &config);
-        assert_eq!(cells.len(), 1, "只有上下文有数");
-    }
-
-    fn part(keep: u8, text: &'static str) -> Part {
-        Part {
-            keep,
-            spans: vec![Span::raw(text)],
-        }
-    }
-
-    fn shown(spans: Vec<Span<'static>>) -> String {
-        spans.iter().map(|s| s.content.as_ref()).collect()
-    }
-
-    #[test]
-    fn fit_drops_the_least_kept_first_and_keeps_the_order() {
-        let parts = || {
-            vec![
-                part(2, "回复中 3s"),
-                part(0, "200 tok/s"),
-                part(3, "1.7k/1M"),
-                part(1, "Σ3k"),
-            ]
-        };
-        assert_eq!(
-            shown(fit(parts(), 100)),
-            "回复中 3s · 200 tok/s · 1.7k/1M · Σ3k"
-        );
-        // 放不下：先丢速度，再丢累计。
-        assert_eq!(shown(fit(parts(), 25)), "回复中 3s · 1.7k/1M · Σ3k");
-        assert_eq!(shown(fit(parts(), 20)), "回复中 3s · 1.7k/1M");
-        assert_eq!(shown(fit(parts(), 8)), "1.7k/1M");
-        // 上下文都放不下了：放得下的照放（2026-10-11 项目主人：明明还有空，看不到别的）。
-        assert_eq!(shown(fit(parts(), 3)), "Σ3k");
-        assert_eq!(shown(fit(parts(), 2)), "");
-    }
-
-    #[test]
-    fn a_long_part_that_does_not_fit_lets_a_shorter_one_in() {
-        // 2026-10-11 项目主人报：明明还有空，累计却看不到。花费那一格比累计晚丢，它太长放不下时累计跟着丢了。
-        let parts = vec![
-            part(3, "342.6k/1M(32.7%)"),
-            part(1, "Σ27.5M(C97%)"),
-            part(2, "¥12.34 · $0.56 · €0.78"),
-        ];
-        assert_eq!(shown(fit(parts, 32)), "342.6k/1M(32.7%) · Σ27.5M(C97%)");
-    }
-
-    #[test]
-    fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
-        // 2026-10-11 项目主人定：放不下时模型编号先只写最后一段，空出的地方给速度、上下文、累计；宽的照旧写全。
-        let full = || {
-            vec![
-                Span::raw("▣ 工作区 · "),
-                Span::raw("clinepass/cline-pass/deepseek-v4.1-flash dev · max"),
-            ]
-        };
-        let short = || {
-            vec![
-                Span::raw("▣ 工作区 · "),
-                Span::raw("deepseek-v4.1-flash dev · max"),
-            ]
-        };
-        let cells = || {
-            vec![
-                part(0, "41 tok/s"),
-                part(3, "342.6k/1M(32.7%)"),
-                part(1, "Σ27.5M(C97.3%)"),
-            ]
-        };
-        let (left, right) = split(full(), short(), cells(), 0, 95);
-        assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
-        assert_eq!(
-            right.to_string(),
-            "41 tok/s · 342.6k/1M(32.7%) · Σ27.5M(C97.3%)"
-        );
-        let (left, _) = split(full(), short(), cells(), 0, 140);
-        assert!(left.to_string().contains("clinepass/"), "宽的照旧写全");
-    }
-
-    #[test]
-    fn cooling_says_how_long_until_it_is_back_and_goes_away_on_time() {
-        // 「配置与模型」第 7 条，核心 8-9。
-        let texts = crate::config::Config::builtin().unwrap().text.models;
-        let now: jiff::Timestamp = "2026-10-01T08:00:00Z".parse().unwrap();
-        let at = |s: &str| Some(s.parse::<jiff::Timestamp>().unwrap());
-        assert_eq!(
-            super::cooling_word(None, now, &texts).as_deref(),
-            Some("模型均在冷却")
-        );
-        assert_eq!(
-            super::cooling_word(at("2026-10-01T08:01:10Z"), now, &texts).as_deref(),
-            Some("模型均在冷却，2 分钟后恢复"),
-            "向上取整"
-        );
-        assert_eq!(
-            super::cooling_word(at("2026-10-01T07:59:00Z"), now, &texts),
-            None,
-            "到点了变回原样"
-        );
-    }
-}
+mod tests;

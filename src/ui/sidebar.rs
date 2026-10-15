@@ -403,6 +403,25 @@ pub fn draw(
         text: line.to_string(),
     }));
     frame.render_widget(Paragraph::new(todo), below);
+    // 扩展包放的界面块：接在待办后面，空一行（蓝图「界面块」第 2 条）。
+    let after = if tall > 0 {
+        below.y + tall + 1
+    } else {
+        below.y
+    };
+    let rest = Rect::new(
+        below.x,
+        after,
+        below.width,
+        below.bottom().saturating_sub(after),
+    );
+    let pointer = screen.pointer;
+    let rows = super::widget::sidebar(frame, rest, seen, pointer, &mut screen.widget_spots);
+    text_rows.extend(rows.into_iter().map(|(y, text)| TextRow {
+        y,
+        x: below.x,
+        text,
+    }));
     // 选中的反色。
     for row in &text_rows {
         if let Some((from, to)) = screen.side_select.cols(row.y) {

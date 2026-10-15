@@ -32,6 +32,8 @@ pub struct Link {
     pub pending_cwd: Option<String>,
     /// 连上以后先读主会话的最新一页，再带 `after` 订阅（启动时进最近的那个、`--resume` 的，「会话列表」第 8 条）。
     pub replay_main: bool,
+    /// 界面块照什么订阅着（「界面块」第 8 条）：重连、掉队时照它重新订阅；`None` 是没订阅。
+    pub widgets: Option<crate::widgets::View>,
 }
 
 impl Link {

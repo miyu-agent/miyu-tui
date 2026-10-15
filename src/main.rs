@@ -58,6 +58,7 @@ mod tips;
 mod transcript;
 mod ui;
 mod usage;
+mod widgets;
 
 use std::io::{self, Write, stdout};
 use std::sync::mpsc::{self, RecvTimeoutError};

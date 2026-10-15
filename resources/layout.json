@@ -127,6 +127,21 @@
     "done": "☑ "
   },
   "todo_rows": 5,
+  "widgets": {
+    "home_blocks": 3,
+    "home_rows": 6,
+    "home_total": 12,
+    "sidebar_rows": 10,
+    "status_cells": 3,
+    "status_width": 40,
+    "marks": {
+      "todo": "☐ ",
+      "doing": "■ ",
+      "done": "☑ ",
+      "failed": "✗ ",
+      "off": "○ "
+    }
+  },
   "mascot_home": true,
   "mascot_sidebar": true,
   "compaction": {

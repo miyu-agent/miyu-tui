@@ -108,7 +108,7 @@ fn a_narrow_window_drops_the_margins() {
     assert_eq!(a.text.x, 3, "边线一列，提示符两列");
     assert_eq!(a.text.width, 44 - 3 - 2, "右边只留光标一列和边线");
     assert_eq!(a.footer.x, a.text.x, "框下面那一行跟着字对齐");
-    let h = super::home::areas(Rect::new(0, 0, 44, 30), &rows, &layout, (0, 0), 0, 0, 0);
+    let h = super::home::areas(Rect::new(0, 0, 44, 30), &rows, &layout, (0, 0), 0, 0, 0, 0);
     assert_eq!((h.frame.x, h.text.x, h.text.width), (0, 3, 39), "首页一样");
     // 79 列还是紧凑的；80 列起照旧留白。
     let c = areas(Rect::new(0, 0, 79, 30), &rows, &layout, 0, false, 0, 0, 0);
@@ -159,7 +159,7 @@ fn nothing_above_the_box_covers_it_in_a_short_window() {
         );
     }
     // 首页：输入框上面没地方时整组往下挪，给列表腾地方；挪到底也不盖。
-    let h = super::home::areas(Rect::new(0, 0, 30, 7), &rows, &layout, (0, 0), 6, 0, 0);
+    let h = super::home::areas(Rect::new(0, 0, 30, 7), &rows, &layout, (0, 0), 6, 0, 0, 0);
     assert!(!h.menu.intersects(h.frame), "首页的列表盖住了输入框");
     assert!(h.menu.height >= 1, "首页挪出至少一行给列表");
     assert!(h.footer.bottom() <= 7);
@@ -181,7 +181,7 @@ fn the_lists_sit_in_a_frame_lined_up_with_the_input_box() {
         ("正文", areas(area, &rows, &layout, 7, false, 0, 0, 0)),
         (
             "首页",
-            super::home::areas(area, &rows, &layout, (0, 0), 7, 0, 0),
+            super::home::areas(area, &rows, &layout, (0, 0), 7, 0, 0, 0),
         ),
     ] {
         assert_eq!(
@@ -222,7 +222,7 @@ fn the_agent_circles_line_up_with_the_level_icon() {
         ("正文", areas(area, &rows, &layout, 0, false, 0, 4, 0)),
         (
             "首页",
-            super::home::areas(area, &rows, &layout, (0, 0), 0, 4, 0),
+            super::home::areas(area, &rows, &layout, (0, 0), 0, 4, 0, 0),
         ),
     ] {
         assert_eq!(a.agents.x + lead, a.footer.x, "{name}：圆圈和 ▣ 同一列");

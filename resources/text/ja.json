@@ -410,6 +410,11 @@
       ]
     ]
   },
+  "widget": {
+    "folded": "{count} 件完了",
+    "more": "… 他 {count} 件",
+    "more_blocks": "… 他 {count} ブロック"
+  },
   "jobs": {
     "button": "バックグラウンド：{count}",
     "title": "バックグラウンド",

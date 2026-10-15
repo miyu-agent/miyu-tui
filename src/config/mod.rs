@@ -29,6 +29,7 @@ mod notify;
 mod open;
 mod panels;
 mod timeline;
+mod widgets;
 mod words;
 
 pub use attach::{AttachLook, AttachTexts};
@@ -43,6 +44,7 @@ pub use notify::{NotifyLook, NotifyTexts};
 pub use open::OpenTexts;
 pub use panels::{HistoryTexts, MenuTexts};
 pub use timeline::{Summary, Timeline, ToolKind};
+pub use widgets::{WidgetLayout, WidgetMarks};
 pub use words::{JobTexts, ModelTexts, RecapTexts, RenameTexts, UndoFileTexts};
 
 /// 界面上给人看的字。`{count}` 这样的占位由代码填。
@@ -80,6 +82,8 @@ pub struct Texts {
     pub jobs: JobTexts,
     /// 帮助框里的字（`/help`）。
     pub help: crate::ui::help::Texts,
+    /// 界面块上的字（蓝图「界面块」）。
+    pub widget: crate::ui::widget::Texts,
     /// 用量框里的字（`/usage`）。
     pub usage: crate::ui::usage::Texts,
     /// 配置页的字（`/config`，蓝图「配置页」）。

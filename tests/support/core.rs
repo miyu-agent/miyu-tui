@@ -74,6 +74,8 @@ impl Running {
                         .unwrap_or_else(PoisonError::into_inner)
                         .clone();
                     let core = Arc::new(build(&root, Arc::clone(&script), now, opened.token));
+                    // 照开关拉起开着的扩展，和真核心起来时一样（界面块的测试装了扩展，`tests/widgets.rs`）。
+                    core.start_extensions();
                     if report.send(()).is_err() {
                         return;
                     }

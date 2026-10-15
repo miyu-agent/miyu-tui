@@ -112,6 +112,8 @@ pub(super) fn request(
         | Command::NewWorkspace(_)
         | Command::SetEffort { .. }
         | Command::Catalog(_)
+        | Command::Widgets(_)
+        | Command::PackageCall { .. }
         | Command::Output { .. } => {
             return None;
         }

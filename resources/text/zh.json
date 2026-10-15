@@ -410,6 +410,11 @@
       ]
     ]
   },
+  "widget": {
+    "folded": "已完成 {count} 项",
+    "more": "… 还有 {count} 项",
+    "more_blocks": "… 还有 {count} 块"
+  },
   "jobs": {
     "button": "{count} 个后台命令",
     "title": "后台",
