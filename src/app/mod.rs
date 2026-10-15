@@ -56,6 +56,7 @@ mod switch;
 mod takeback;
 mod talk;
 mod theme;
+mod theme_box;
 mod typing;
 mod updates;
 pub mod usage;
@@ -310,6 +311,8 @@ impl App {
             &mut self.screen.rng,
         );
         self.drawer_tick();
+        // 配色框没定下就关了：换回打开以前的（`theme_box.rs`）。
+        self.theme_box_closed();
         // 界面块照屏上这一刻有的位置订阅，变了才再订（`widgets.rs`）。
         self.sync_widgets();
         if self

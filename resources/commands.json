@@ -103,9 +103,9 @@
     {
       "name": "theme",
       "summary": {
-        "zh": "换一套颜色：tokyonight-night、terminal 轮着换",
-        "en": "Switch colors: tokyonight-night, terminal in turn",
-        "ja": "配色を切り替える：tokyonight-night、terminal を順に切り替え"
+        "zh": "选一套配色：跟随头像、跟随壁纸、Tokyo Night、终端配色",
+        "en": "Pick colors: follow avatar, follow wallpaper, Tokyo Night, terminal colors",
+        "ja": "配色を選ぶ：アバターに合わせる、壁紙に合わせる、Tokyo Night、端末の配色"
       },
       "run": "theme"
     },

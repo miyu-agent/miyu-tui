@@ -8,7 +8,7 @@ use ratatui::text::Line;
 use super::panel::Chrome;
 use super::{
     background, effort_list, help, languages, model_list, persona_list, session_list, spin_frame,
-    usage,
+    themes, usage,
 };
 use crate::app::Seen;
 
@@ -61,6 +61,12 @@ pub(super) fn content(
             width,
             max,
         ),
+        Some(crate::app::Panel::Theme { selected }) => {
+            let open = seen.boxes.theme_box.as_ref();
+            let options = open.map_or(&[][..], |b| b.options.as_slice());
+            let before = open.map_or("", |b| b.before.as_str());
+            themes::lines(seen.config, (options, before), selected, width, max)
+        }
         Some(crate::app::Panel::Usage { tab, scroll, money }) => {
             let (chrome, lines) = usage::lines(seen, (tab, scroll, money), width, max);
             let map = vec![None; lines.len()];

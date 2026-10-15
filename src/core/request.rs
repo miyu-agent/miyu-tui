@@ -91,6 +91,7 @@ pub(super) fn request(
         | Command::Pin { .. }
         | Command::Delete(_)
         | Command::SetLanguage(_)
+        | Command::SetTheme(_)
         | Command::FetchHuman(_)
         | Command::ListModels
         | Command::ListChoices

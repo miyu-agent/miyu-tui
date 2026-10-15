@@ -20,6 +20,7 @@ impl App {
                 Some(
                     Panel::Pick { .. }
                         | Panel::Language { .. }
+                        | Panel::Theme { .. }
                         | Panel::Effort { .. }
                         | Panel::Background { .. }
                         | Panel::Help { .. }

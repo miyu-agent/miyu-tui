@@ -136,7 +136,6 @@
   "stashed": "> 一時保存",
   "esc_clear_hint": "もう一度 Esc でクリア",
   "no_clear_running": "返信中は画面をクリアできません",
-  "theme_changed": "テーマ：{name}",
   "icons_changed": "アイコン：{name}",
   "figure_pending": "⋯ 描画中",
   "mascot_failed": "マスコットパッケージを読み込めないため、内蔵のマスコットを使用しています",
@@ -578,6 +577,11 @@
     "pending": "新しいセッションは {path} で開きます",
     "elsewhere": "{path} で作業しています · /workspace . でここに移る",
     "changed": "作業場所を {path} に変更しました"
+  },
+  "themes": {
+    "title": "配色",
+    "hint": "↑/↓ 選択 · Enter 決定 · Esc キャンセル",
+    "current": "現在"
   },
   "languages": {
     "title": "表示言語",
