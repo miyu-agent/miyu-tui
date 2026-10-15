@@ -66,6 +66,12 @@ pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<
             ("job.output", params, Some(awaiting))
         }
         Command::ListPersonas => ("persona.list", json!({}), Some(Awaiting::Personas)),
+        Command::Catalog(session) => {
+            let params = session
+                .as_ref()
+                .map_or_else(|| json!({}), |s| json!({ "session": s }));
+            ("command.catalog", params, Some(Awaiting::Catalog))
+        }
         Command::ListPresets => ("preset.list", json!({}), Some(Awaiting::Presets)),
         Command::ListPackages => ("package.list", json!({}), Some(Awaiting::Packages)),
         Command::Usage(ask) => ("usage.query", ask.params(), Some(Awaiting::Usage(ask.kind))),

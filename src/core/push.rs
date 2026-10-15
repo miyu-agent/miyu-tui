@@ -464,6 +464,14 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
 }
 
 /// 事件正文里的 `blocks`，没有的当空的。
+/// `message.user` 是命令模板展开成的（核心 X-14 上，`body.command`）：人敲的那一行；不是的是 `None`。
+pub(super) fn typed_text(body: &Value) -> Option<String> {
+    body["command"]["text"]
+        .as_str()
+        .filter(|t| !t.is_empty())
+        .map(str::to_string)
+}
+
 pub(super) fn blocks(body: &Value) -> impl Iterator<Item = &Value> {
     body["blocks"].as_array().into_iter().flatten()
 }

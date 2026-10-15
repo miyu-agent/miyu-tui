@@ -77,24 +77,52 @@ pub(super) fn swept(word: &str, dots: &Dots, t: f64, sweep: f64) -> String {
 }
 
 /// 提示：圆角细边框的小框，底边压在 `bottom` 那一行，框里的字从 `text_x` 起（和输入框里的字左对齐），
-/// 左右各空一格。浮着，先把底下的格子清掉再画（`tui.md`「提示」）。
+/// 左右各空一格。浮着，先把底下的格子清掉再画（`tui.md`「提示」）。字有好几行的（扩展办的斜杠命令的回执，核心 X-14
+/// 下）照行数长高，一行一行各自截，宽照最宽的一行；上面放不下的只露最后几行。
 pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, seen: &Seen) {
     let Some(notice) = &seen.typing.notice else {
         return;
     };
-    let text = fitted(&notice.text, &notice.tail, max_width.saturating_sub(4));
-    let width = u16::try_from(text.width()).unwrap_or(0) + 4;
-    let Some(area) = toast_area(text_x, bottom, width, frame.area()) else {
+    let room = max_width.saturating_sub(4);
+    let raw: Vec<&str> = notice.text.lines().collect();
+    let last = raw.len().saturating_sub(1);
+    let lines: Vec<String> = raw
+        .iter()
+        .enumerate()
+        .map(|(i, line)| {
+            let tail = if i == last { notice.tail.as_str() } else { "" };
+            fitted(line, tail, room)
+        })
+        .collect();
+    let lines = if lines.is_empty() {
+        vec![fitted("", &notice.tail, room)]
+    } else {
+        lines
+    };
+    let width = lines.iter().map(|l| l.width()).max().unwrap_or(0);
+    let width = u16::try_from(width).unwrap_or(0) + 4;
+    let wanted = u16::try_from(lines.len()).unwrap_or(u16::MAX);
+    let Some(area) = toast_area(text_x, bottom, width, wanted, frame.area()) else {
         return;
     };
+    let shown = usize::from(area.height.saturating_sub(2));
+    let lines: Vec<Line> = lines[lines.len() - shown.min(lines.len())..]
+        .iter()
+        .map(|l| Line::raw(l.clone()))
+        .collect();
     frame.render_widget(Clear, area);
     let block = Block::bordered()
         .border_type(BorderType::Rounded)
         .border_style(theme::notice_border(notice.good));
-    let inner =
-        Rect::new(area.x + 2, area.y + 1, area.width.saturating_sub(4), 1).intersection(area);
+    let inner = Rect::new(
+        area.x + 2,
+        area.y + 1,
+        area.width.saturating_sub(4),
+        area.height.saturating_sub(2),
+    )
+    .intersection(area);
     frame.render_widget(block, area);
-    frame.render_widget(Paragraph::new(text), inner);
+    frame.render_widget(Paragraph::new(lines), inner);
 }
 
 /// 提示框里写的：放得进 `width` 列的照原样；放不下的截 `text` 加 `…`，后面的 `tail` 整个留着（`/goal` 看进度的
@@ -109,11 +137,16 @@ fn fitted(text: &str, tail: &str, width: u16) -> String {
     format!("{}{tail}", clip(text, rest))
 }
 
-/// 提示的框放在哪：三行高，底边在 `bottom` 那一行。上面放不下三行就不画，不往下盖到输入框上（`tui.md`
-/// 「窗口小的时候」第 2 条）。
-fn toast_area(text_x: u16, bottom: u16, width: u16, screen: Rect) -> Option<Rect> {
-    let top = bottom.checked_sub(2).filter(|&top| top >= screen.y)?;
-    Some(Rect::new(text_x.saturating_sub(2), top, width, 3).intersection(screen))
+/// 提示的框放在哪：`lines` 行字加上下边框高，底边在 `bottom` 那一行；上面放不下的少露几行，一行都放不下就不画，
+/// 不往下盖到输入框上（`tui.md`「窗口小的时候」第 2 条）。
+fn toast_area(text_x: u16, bottom: u16, width: u16, lines: u16, screen: Rect) -> Option<Rect> {
+    let above = bottom.checked_sub(screen.y)?;
+    let lines = lines.max(1).min(above.checked_sub(1)?);
+    if lines == 0 {
+        return None;
+    }
+    let top = bottom - lines - 1;
+    Some(Rect::new(text_x.saturating_sub(2), top, width, lines + 2).intersection(screen))
 }
 
 /// 排队的消息：一条一行，暗色的记号加这句话，放不下截掉加 `…`（`tui.md`「运行状态行和排队的消息」第 5 条）。
@@ -150,11 +183,26 @@ mod tests {
     fn a_toast_without_three_rows_above_the_box_is_not_drawn() {
         let screen = Rect::new(0, 0, 30, 7);
         // 输入框在第 4 行起：底边压在第 3 行，框占第 1 到 3 行。
-        assert_eq!(toast_area(5, 3, 12, screen), Some(Rect::new(3, 1, 12, 3)));
-        assert_eq!(toast_area(5, 2, 12, screen), Some(Rect::new(3, 0, 12, 3)));
+        assert_eq!(
+            toast_area(5, 3, 12, 1, screen),
+            Some(Rect::new(3, 1, 12, 3))
+        );
+        assert_eq!(
+            toast_area(5, 2, 12, 1, screen),
+            Some(Rect::new(3, 0, 12, 3))
+        );
         // 30×7 的首页：输入框在最上面，框上面没有地方。
-        assert_eq!(toast_area(5, 1, 12, screen), None, "不往下盖到输入框上");
-        assert_eq!(toast_area(5, 0, 12, screen), None);
+        assert_eq!(toast_area(5, 1, 12, 1, screen), None, "不往下盖到输入框上");
+        assert_eq!(toast_area(5, 0, 12, 1, screen), None);
+        // 好几行的照行数长高；上面放不下的少露几行（扩展办的斜杠命令的回执，核心 X-14 下）。
+        assert_eq!(
+            toast_area(5, 6, 12, 3, screen),
+            Some(Rect::new(3, 2, 12, 5))
+        );
+        assert_eq!(
+            toast_area(5, 3, 12, 4, screen),
+            Some(Rect::new(3, 0, 12, 4))
+        );
     }
 
     #[test]

@@ -111,6 +111,8 @@ impl App {
         };
         self.config.text = fresh.text;
         self.config.commands = fresh.commands;
+        // 核心认的命令的说明照新的语言：再问一次（换上以前列表里先没有它们）。
+        self.ask_catalog();
         self.config.pulse = fresh.pulse;
         self.link
             .core

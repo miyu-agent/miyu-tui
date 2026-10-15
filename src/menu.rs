@@ -19,6 +19,11 @@ pub struct Menu {
 
 impl Menu {
     /// 照输入框里的字和筛出来的条数，定开不开。字变了，选中回到第一条。
+    /// 上一次照着筛的时候在打命令名（列表开着，或者 `Esc` 关着但字没变）。
+    pub fn typing(&self) -> bool {
+        self.typed.is_some()
+    }
+
     pub fn sync(&mut self, text: &str, typed: Option<&str>, matches: usize) -> bool {
         let Some(typed) = typed else {
             // 不是命令了（`/` 删掉了）：Esc 关掉的那一次也算过去了，再打 `/` 照常打开。

@@ -150,8 +150,14 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
         return Some(round);
     }
     let by = &event["by"];
+    // 命令模板展开成的（核心 X-14 上）：给人看的是人敲的那一行（`body.command.text`），不是展开给模型的那段。
+    let typed = super::typed_text(&event["body"]);
     if by["kind"] == "person" && event["cause"].as_str().is_some_and(mine) {
-        return Some(Push::UserMessage(seq));
+        // 自己发的话界面早画上了，只配序号；自己打的命令模板界面没画过（交给核心的是命令），照那一行画上。
+        return Some(match typed {
+            Some(text) => Push::Said { seq, text },
+            None => Push::UserMessage(seq),
+        });
     }
     let from = match by["kind"].as_str() {
         Some("person") => Sender::Person,
@@ -168,6 +174,6 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
     Some(Push::Foreign(Said {
         seq,
         from,
-        text: text.join("\n"),
+        text: typed.unwrap_or_else(|| text.join("\n")),
     }))
 }

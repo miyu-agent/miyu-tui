@@ -42,6 +42,8 @@ pub struct PackageTexts {
     pub skill: String,
     /// 见 `mcp`。
     pub script: String,
+    /// 包里带的斜杠命令（命令模板、扩展声明的，核心 X-14），`{name}`。
+    pub slash: String,
     /// 一行打头的：包含、读不成、需要、一并删除、大小。
     pub includes: String,
     /// 见 `includes`。
@@ -172,6 +174,7 @@ fn included(preview: &Value, doing: Doing, texts: &PackageTexts) -> Vec<String> 
         ("mcp", &texts.mcp),
         ("skills", &texts.skill),
         ("scripts", &texts.script),
+        ("slash", &texts.slash),
     ] {
         let names = list(&preview[key]).filter_map(Value::as_str);
         items.extend(names.map(|name| template.replace("{name}", name)));

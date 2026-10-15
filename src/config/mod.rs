@@ -223,8 +223,6 @@ pub struct Texts {
     pub model_panel: crate::ui::model_list::Texts,
     /// `/effort` 的框（`ui/effort_list.rs`）。
     pub effort: crate::ui::effort_list::Texts,
-    /// 没有这个斜杠命令，`{name}`。
-    pub unknown_command: String,
     /// 思考进行中那一行的字。
     pub thinking: String,
     /// 想完以后那一行的字。

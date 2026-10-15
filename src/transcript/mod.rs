@@ -227,6 +227,8 @@ impl Transcript {
             | Update::Older { .. }
             | Update::Workspace { .. }
             | Update::SessionGone(_)
+            | Update::Catalog(_)
+            | Update::SlashRefused { .. }
             | Update::DirChecked(_) => {}
             Update::CoolingUntil(until) => self.cooling_until(until),
             Update::CurrentModel(current) => self.current_model(current),
