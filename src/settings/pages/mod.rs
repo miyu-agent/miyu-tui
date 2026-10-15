@@ -85,6 +85,8 @@ pub struct More {
     pub seed: Option<u32>,
     /// 配色是跟随头像、跟随壁纸：「主色」那一项才列（2026-10-14 项目主人定）。
     pub following: bool,
+    /// 配色是终端配色：「铺底色」那一项不列，永远露出终端自己的底（2026-10-15 项目主人定）。
+    pub terminal_colors: bool,
     /// 跟随头像时是哪个人格：选了主色写它（`persona.set`）；跟随壁纸的是 `None`（写 `tui.theme_seed`）。
     pub seed_persona: Option<String>,
 }
@@ -122,7 +124,7 @@ impl More {
         out
     }
 
-    /// 一页排成行：配色不是跟随头像、跟随壁纸的，「主色」那一项不列。
+    /// 一页排成行：配色不是跟随头像、跟随壁纸的，「主色」那一项不列；配色是终端配色的，「铺底色」那一项不列。
     pub fn rows(&self, page: &str) -> Vec<schema::Row> {
         let Some(schema) = self.schema.as_ref() else {
             return Vec::new();
@@ -132,7 +134,9 @@ impl More {
             .into_iter()
             .filter(|row| match row {
                 schema::Row::Item(i) => {
-                    self.following || schema.items[*i].key != crate::theme::choice::SEED_KEY
+                    let key = schema.items[*i].key.as_str();
+                    (self.following || key != crate::theme::choice::SEED_KEY)
+                        && !(self.terminal_colors && key == crate::theme::choice::GROUND_KEY)
                 }
                 schema::Row::Group(_) => true,
             })

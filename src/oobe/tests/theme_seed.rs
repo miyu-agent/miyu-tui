@@ -123,3 +123,30 @@ fn a_seed_picked_while_following_the_avatar_is_written_to_the_persona() {
     oobe.answer(tag, Ok(json!({})), t0, &texts);
     assert_eq!(oobe.step, Step::Profile);
 }
+
+#[test]
+fn terminal_colors_hide_the_background_row_and_keep_its_value() {
+    // 2026-10-15 项目主人定：配色是终端配色时不铺，「铺底色」这一格不列，永远露出终端自己的底；换走了再出来，值照原来的。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    let mut items = defaults();
+    items["tui.theme"] = json!({"value": "terminal", "origin": {"layer": "personal"}});
+    items["tui.theme_background"] = json!({"value": false, "origin": {"layer": "personal"}});
+    at_theme(&mut oobe, t0, &texts, items);
+    assert!(
+        !oobe.theme.slots().contains(&Slot::Ground),
+        "{:?}",
+        oobe.theme.slots()
+    );
+    // 换成 Tokyo Night：这一格出来，还是关。
+    oobe.theme.colors = crate::theme::choice::COLORS
+        .iter()
+        .position(|c| *c == "tokyonight")
+        .unwrap();
+    assert!(oobe.theme.slots().contains(&Slot::Ground));
+    assert!(
+        oobe.theme_preview().is_some_and(|p| !p.ground),
+        "值照原来的"
+    );
+}

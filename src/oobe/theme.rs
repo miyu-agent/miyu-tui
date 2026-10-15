@@ -16,7 +16,7 @@ use super::nav::{self, Nav};
 use super::texts::Theme as Words;
 use crate::core::Refusal;
 use crate::settings::pages::choose::{Choice, Choose, Pressed};
-use crate::theme::choice::{COLORS, Mode, SEED_KEY};
+use crate::theme::choice::{COLORS, GROUND_KEY, Mode, SEED_KEY};
 
 /// 明暗三档，选择窗照这个先后列；配置里的写法同下标。
 pub const MODES: [Mode; 3] = [Mode::Auto, Mode::Dark, Mode::Light];
@@ -42,9 +42,6 @@ pub enum Slot {
 
 /// 吉祥物那一格写的两项：首页、侧边栏一起。
 const MASCOT_KEYS: [&str; 2] = ["tui.mascot_home", "tui.mascot_sidebar"];
-/// 铺底色那一格写的。
-const GROUND_KEY: &str = "tui.theme_background";
-
 /// 选着的样子：App 照它盖在配置项上（`app/theme.rs`）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Preview {
@@ -216,7 +213,8 @@ impl ThemeStep {
         matches!(COLORS.get(self.colors), Some(&"persona" | &"wallpaper")) && !self.seeds.is_empty()
     }
 
-    /// 从上往下有哪几行：没候选的没有主色那一格，人格有头像的没有吉祥物那一格。
+    /// 从上往下有哪几行：没候选的没有主色那一格，配色是终端配色的没有铺底色那一格（2026-10-15 项目主人定：永远露出终端
+    /// 自己的底，换走了再出来、值照原来的），人格有头像的没有吉祥物那一格。
     pub fn slots(&self) -> Vec<Slot> {
         [
             Slot::Mode,
@@ -229,6 +227,7 @@ impl ThemeStep {
         .into_iter()
         .filter(|s| match s {
             Slot::Seed => self.seeding(),
+            Slot::Ground => COLORS.get(self.colors) != Some(&"terminal"),
             Slot::Mascot => !self.avatar,
             _ => true,
         })
