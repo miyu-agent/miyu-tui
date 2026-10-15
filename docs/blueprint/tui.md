@@ -11,8 +11,8 @@
 | 代码 | 管什么 |
 |---|---|
 | `src/main.rs` | 进出全屏；主循环：终端事件和核心的消息进同一个通道，空闲不重画 |
-| `src/app/` | 程序状态：`mod.rs` 状态、事件分给各块、核心的消息；`keys.rs` 按键和斜杠命令的执行；`catalog.rs` 核心认的斜杠命令（问清单、交给核心、被拒放回）；`mouse.rs` 鼠标；`drawer.rs` 抽屉接到程序上（按键、收起、了结） |
-| `src/core/` | 连核心：`mod.rs` 连上、握手、开会话、订阅、收发；`rpc.rs` 一行一条的 JSON-RPC；`push.rs` 把推送读成界面关心的几样；`kinds.rs` 有固定取值的几样（权限级别、工具结果的状态、一轮结束的原因）读成类型；`undo.rs` 撤销、恢复的回应；`catalog.rs` `command.catalog` 的回应 |
+| `src/app/` | 程序状态：`mod.rs` 状态、事件分给各块、核心的消息；`keys.rs` 按键和斜杠命令的执行；`catalog.rs` 核心认的斜杠命令（问清单、交给核心、被拒放回）；`widgets.rs` 界面块（照屏上的位置订阅、收推送、点了做什么）；`mouse.rs` 鼠标；`drawer.rs` 抽屉接到程序上（按键、收起、了结） |
+| `src/core/` | 连核心：`mod.rs` 连上、握手、开会话、订阅、收发；`rpc.rs` 一行一条的 JSON-RPC；`push.rs` 把推送读成界面关心的几样；`kinds.rs` 有固定取值的几样（权限级别、工具结果的状态、一轮结束的原因）读成类型；`undo.rs` 撤销、恢复的回应；`catalog.rs` `command.catalog` 的回应；`widgets.rs` 界面块的流（订阅、重连和掉队重订、`widget.changed`）；`types.rs` 几个小类型 |
 | `src/transcript/` | 界面记着的会话：`mod.rs` 正文、在不在跑、用量、权限；`blocks.rs` 一块块流式的字接到哪里；`steps.rs` 时间线的一段和一步；`words.rs` 旁白的拼法；`beat.rs` 这一轮出过几件事（运行状态行照它换词） |
 | `src/input/` | 输入框：`editor.rs` 编辑（粘贴块按位置记着、当一个字），`pasted.rs` 大段粘贴什么时候收成一块、带着块的一段字（`Draft`），`wrap.rs` 折行和坐标换算，`saved.rs` 输入历史记进文件、起来读回（「输入历史列表」第 8 条），`mod.rs` 键盘和鼠标 |
 | `src/drawer/` | 确认和提问的抽屉：`mod.rs` 选到哪、勾了哪些、写了什么；`keys.rs` 按键和编辑；`event.rs` 核心推的提问、确认和作答的形状；`report.rs` 了结以后留什么；`texts.rs` 抽屉上的字 |
@@ -22,6 +22,8 @@
 | `src/ui/` | 画：`mod.rs` 各块的位置；`margins.rs` 按窗口宽度定留白（窄屏紧凑版面）；`row_cache/` 正文按条缓存排好的行；`rulers.rs` 量尺（忽略的测试，只打数字）；`user_rows.rs` 你说的话（粘贴块能点开）；`input_box.rs` 输入框（抽屉开着时框里画抽屉）；`drawer/` 抽屉（`mod.rs` 排成行、放不下时怎么滚，`items.rs` 选项、补充、「确认」页，`preview.rs` 选项旁边的文字画）；`rows.rs` 把正文排成行；`timeline/` 时间线（`mod.rs` 一段怎么排、`summary.rs` 收起那一行、`step.rs` 一步的标题、预览、点开的内容）；`body.rs` 视口、底色、反色；`menu.rs` 命令列表；`history.rs` 输入历史列表；`status.rs` 运行状态行和提示；`diff_rows.rs` 差异排成行；`footer.rs` 框下面那一行 |
 | `src/markdown/` | 回答的 Markdown：`mod.rs` 走一遍解析出的事件、排成行；`inline.rs` 行内的样子和带样子的折行；`table.rs` 表格；`code.rs` 代码着色；`links.rs` 认链接；`blocks.rs` 代码块、图片、公式、mermaid 这几种自成一块的；`math.rs` 公式转成 Unicode |
 | `src/figures/` | 正文里的图：`mod.rs` 记着做好的图、把活交给后台；`terminal.rs` 问终端认哪种图片协议；`worker.rs` 后台线程；`file.rs` 图片文件；`mermaid.rs` 核心交回的 SVG 换成主题色、写点开看的大图；`math.rs` 块级公式排成图；`cells.rs` 像素和格子的换算 |
+| `src/widgets/`、`ui/widget/` | 界面块：读进来的样子和记着的那一份；六种段怎么排、收，放进首页、侧边栏、底栏，记下能点的地方 |
+| `examples/widget_extension.rs` | 测试用的扩展：照给它的 JSON 推块，登记一个方法 `refresh`，记下收到的 `widget.watch`、`method.call`（`cargo test` 会编，发行不带） |
 | `src/diagrams.rs`、`core/mermaid.rs` | mermaid 的账：每份源码问没问过核心、交回了什么 SVG；`mermaid.render` 的回应读成 SVG 和三种记号色 |
 | `src/clipboard/` | 剪贴板：`mod.rs` 复制走 OSC 52；`read.rs` `Ctrl+V` 读系统剪贴板（按平台试命令，卡住的放弃） |
 | `src/open.rs`、`local.rs` | 用系统的打开方式开一个地址；回答里写的本机地址指到哪个文件（点链接和画图片共用） |
@@ -393,7 +395,7 @@
    - 吉祥物能关（2026-09-29 项目主人定，首页、侧边栏各一个开关）：出厂值在 `layout.json` 的 `mascot_home`、`mascot_sidebar`；2026-10-11 起配置页能改（项目主人照推荐定搬进去）：终端软件包清单声明 `tui.mascot_home`「首页显示吉祥物」、`tui.mascot_sidebar`「侧边栏显示吉祥物」，开关、当场生效，读法同时间线的开关（「时间线」第 18 条），在「外观」页「吉祥物」那一组（2026-10-14 前在「通用」页）。首页关了只剩输入框居中；侧边栏关了从会话编号起。关掉的地方不为它转头、眨眼重画。人格有头像的照样画头像（「空会话的首页」第 10 条）。
    - 窄屏没有侧边栏：待办展开在输入框上面（第 4 条）。
 
-**界面块**（扩展包放在终端上的东西：设计 33、核心蓝图 `widgets.md`，核心施工 X-15；2026-10-15 版面、上限终端定，等核心 X-15 中合了再接）
+**界面块**（扩展包放在终端上的东西：设计 33、核心蓝图 `widgets.md`，核心施工 X-15，main `ac7421b0`；2026-10-15 版面、上限终端定。同一天接了首页、侧边栏、底栏、调方法、复制、展开收起；整页（`page`、`open`、整页的命令）、图标、自带侧边栏块挪过来是下一步）
 
 1. **一个规矩**：包放的块排在终端自带的后面，挤的时候最先让：侧边栏里在自带的几段后面，底栏里在速度后面才挑，首页窗口矮时先收块、收完了还放不下才照第 3 条去掉吉祥物。现有的版面一条都不因为它改。
 2. **四个位置**：
@@ -417,7 +419,7 @@
    - `text`：照 `tone`：`normal` 原色（侧边栏里照暗：自带的内容一律暗，2026-09-29 项目主人定）、`dim` 暗、`accent` 强调色、`good` 绿、`warn` 黄、`bad` 红。按宽度折行，有 `/`、空格的先断在它后面。
    - `pairs`：一对一行，名字暗、值照 `tone`；名字一列对齐，名字那一列最多占一半宽，长的截掉加 `…`。
    - `progress`：上一行写 `text`（暗），下一行一根条，画法同侧边栏「上下文」那根（满了的强调色、没满的暗，最多 20 格）；带 `mark`（0 到 1，核心 W4 补）的，落在的那一格换成警示色，同压缩线；没写 `text` 的条后面接百分比。
-   - `list`：一条一行：记号、`title`（原色）、`detail`（暗，接在后面）、`right`（暗，贴右边，不被挤掉）；放不下的先截 `detail`、再截 `title`。记号照 `state`：`todo` `☐` 暗、`doing` `■` 强调色加粗、`done` `☑` 暗加删除线、`failed` `✗` 红、`off` `○` 暗；没写 `state` 的不写记号。图标是 `plain` 那一套时换成 ASCII（同待办）。
+   - `list`：一条一行：记号、`title`（原色）、`detail`（暗，接在后面）、`right`（暗，贴右边，不被挤掉）；放不下的先截 `detail`、再截 `title`。`title` 和 `detail` 之间是暗色的 ` · `。记号照 `state`：`todo` `☐` 暗、`doing` `■` 强调色加粗（标题也是）、`done` `☑` 暗加删除线、`failed` `✗` 红、`off` `○` 暗；没写 `state` 的不写记号。记号在 `layout.json` 的 `widgets.marks`，和待办的同一套字，不跟图标那一套换。
    - `buttons`：一排，按钮的字强调色，按钮之间空两格，放不下的折到下一行。
 7. **点了做什么**：带动作的列表项、按钮，鼠标悬停时整行（按钮是那几个字）铺底色、指针变成手。
    - `call`：发 `package.call`，回应不看；拒了的弹核心的原话（「提示」小框）。
@@ -429,6 +431,7 @@
    - `session` 是正在看的会话：切进子会话的是那个子会话，首页不带。
    - 什么时候重新订阅：换会话、首页和对话之间换、窗口宽度跨过 120 列、开关整页；掉队（`resync`）也重新订阅。
    - 推来的 `widget.changed` 只换那一块，攒到下一帧画；什么都不推时不重画（「空闲不醒」）。核心太旧、不认这个流的，什么都不画。
+   - 断了线：块全清掉（扩展跟着核心停了）；连上以后照记着的说法重新订阅，核心照它推回来。说法记在连核心的线程里，界面那头只在说法变了时再发。
 9. **还没内容的**：`content` 是 `null`（程序还没推、清掉了、没在跑）的块不画，不先画一个空标题。整页：程序在跑、还没推来的写「正在读…」（暗），没在跑的写「<软件名> 没有运行」。
 10. **整页的命令**：命令列表照 `command.catalog` 列（「斜杠命令列表」第 6 条）；`command.run` 回了 `opens` 的，打开那一整页。
 11. **自带的侧边栏也照这几种画**（设计 33 第六节）：数据照旧从视图流来，终端里转成这几种段，走同一套画法。
@@ -677,8 +680,8 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
         风    东南 3 级
 
         构建 · CI Watch
-        ■ #128 main                                              3m
-        ✗ #127 pkg-approval                                      1h
+        ■ #128 · main                                            3m
+        ✗ #127 · pkg-approval                                    1h
         … 还有 4 条
 ```
 
@@ -702,9 +705,9 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 │   ☐ 回核心
 │
 │ 构建 · CI Watch                      ← 标题蓝，软件名暗
-│   ■ #128 main                    3m
-│   ☑ #126 fix-crash              12m
-│   ✗ #127 pkg-approval            1h
+│   ■ #128 · main                  3m
+│   ☑ #126 · fix-crash            12m
+│   ✗ #127 · pkg-approval          1h
 │   刷新  全部构建                     ← 按钮，强调色
 │ … 还有 1 块
 ```
@@ -716,7 +719,7 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 
           本周                                     ← heading，原色加粗
           ■ #128 main · 修首页的版式                                  3m
-          ☑ #126 fix-crash                                          12m
+          ☑ #126 · fix-crash                                        12m
           ✗ #127 pkg-approval · 测试没过                              1h
 
           通过率  92%
@@ -928,6 +931,7 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 | `tests/idle.rs`、`mascot/tests/mod.rs` 的 `after_the_awake_spell_it_holds_still_until_something_happens`、`mascot/mouth.rs` | 空闲不醒：首页、会话里（侧边栏的吉祥物）停住以后一个字节不写，Linux 上界面所有线程一次不醒；吉祥物醒着那一阵到头打一个哈欠、停住不再要重画、有动静再醒（「空闲不醒」） |
 | `tests/startup.rs`、`theme/wallpaper.rs` 的 `the_picture_is_decoded_only_when_following_and_only_once`、`theme/wallpaper_cache.rs`、`theme/seeds.rs` | 读配置合成一条、清单旧的去掉不认的再问一次（「连核心」第 9 条）；壁纸只在跟随着时解、解过的记缓存（「跟随壁纸」第 6 条）；后台取好了叫醒主循环 |
 | `tests/slash.rs`、`core/catalog.rs`、`commands.rs` 的 `the_cores_commands_follow_ours_without_the_ones_we_have`、`ui/status.rs` 的 toast 测试 | 核心认的命令（「斜杠命令列表」第 4、6 条，伪终端连真核心）：家目录放的模板列进命令列表，名字后面暗色跟参数提示、说明照中文；打了回车正文里是打的那一行、模型拿到展开的那段；没有的名字交给核心，弹「命令不存在」、字放回输入框。清单读别名和参数提示；和终端自己撞名的不列、接在后面；提示框几行字画几行 |
+| `tests/widgets.rs`、`ui/widget/tests.rs`、`widgets/tests.rs`、`core/widgets.rs`、`ui/home.rs` 的 `widgets_give_way_before_the_mascot` | 界面块（「界面块」，伪终端连真核心、拉起测试用的扩展）：首页工作目录下面一块、标题是软件名；底栏一格、悬停提示软件名；进了对话侧边栏画跟着会话的那块、标题接软件名；点列表里的一条经 `package.call` 调到方法、内容跟着换；窄屏不订阅侧边栏、扩展没被叫醒；核心重启块先清掉、重连后回来。排法：标题、缩进、能点的行和按钮的列、列表照待办收、字截掉加 `…`、一对对对齐、进度条和标记、侧边栏普通字照暗；首页窗口矮时块先让、吉祥物后让 |
 
 macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 上照提交的版本编译（48 秒）、510 个测试、clippy 都过；伪终端里起界面、连上核心、打字上屏、Ctrl+D 退出都正常，帧记录照写、没有崩溃记录。测完沙箱目录、临时家目录、拉起的核心都清掉了。
 
@@ -1187,7 +1191,7 @@ macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 
 30. 测具：伪终端测试的核心没有目录、不能真的试一家，接模型那一步走「已配好 · 用它」（`tests/oobe.rs`）；选一家、试、存在单元测试里；真的试一家照验收流程在沙箱里用开发端点跑过（2026-10-08，自定义填地址、OpenAI 兼容、贴 key，连上、选模型、写进系统配置，key 只在密钥库里）。
 
 ### 还没有的
-- 界面块（「界面块」那一节）：版面、上限 2026-10-15 先定了，等核心 X-15 上、中、下合了再接（核心做完一步告诉一次）。缺的三样核心已经收了（W4 补：`copy`、`mark`、`title`），等它写进 `widgets.md`。
+- 界面块（「界面块」那一节）：核心 X-15 合了（main `ac7421b0`），2026-10-15 接了首页、侧边栏、底栏、调方法、复制、展开收起；还没做：整页（`page` 的块、`open` 动作、`command.catalog` 带 `opens` 的整页命令）、标题前面的图标（Lucide 名字换成 nerd 图标的小表）、自带的侧边栏块改走同一套画法（设计 33 第六节）。
 - 终端管理员的平台账号（`external.bindings.<平台身份>`）：2026-10-10 项目主人定（网页转来），两个头一样：放在平台接入那个软件（`package.list` 里带 `connection` 的，平台照 `connection.platform` 认，不写死 QQ）的信息页上，一项叫「终端管理员的 QQ 号」（照平台名），只填号码；头替人写成 `external.bindings.<平台>:<号>`，值是本机账号（现在只有管理员，账号那一列不画）。原来核心请画在「高级」页的键值表不做了。核心图纸 `package-pages.md`（main `3ccb6bd6`）：值写 `admin`，删号用 `unset`；信息页「在网页里打开」那一行，包自己的命令里有 `web` 子命令的写包自己的（接入QQ 是 `miyu onebot web`），没有的写 `miyu web --package <编号>`。这一批验收以后和「软件包」信息页一起做。
 - 界面包的配置项（`tui.icons`）：核心 2026-10-10 定（main `38284463`），`kind = "ui"` 的包程序不在也照旧在 `config.schema` 里、写得进，`status` 写 `program_missing`；终端不用改，引导的「图标」那一步照旧写。
 - M9 头几步（项目主人 2026-10-07 批了，main `dd24a389`；施工顺序 D-4 → 9-5 → O-2 → O-3 → O-4 → 9-1 → 9-2 → 9-3 → 9-4 → 9-6）：9-1 软件包清单 `packages/<包>.toml`：`[package]`、`kind`（终端是 `ui`）、`protocol` 范围、`[command]`（名字 `tui`、程序 `miyu-tui`）、`[settings]`，界面认的页叫 `opens`（终端写 `["config"]`）；每个包在本机放自己东西的地方是 `<状态根>/packages/<包>/`，到时输入历史从数据根的 `state/tui/` 挪过去（2026-10-07 核心告知：这个目录照 `package.list` 里 `tui` 那一项的 `state` 拿，是核心那台机器上的真路径，目录由包自己建，随 9-1 上合）；清单草稿已交给核心当测试样例（程序 `miyu-tui`、子命令 `tui`、`opens = ["config"]`），9-1 合了在 proto 里加了 `resources/packages/tui.toml`（2026-10-08 核心问起：清单先由核心照 proto 这份一字不差地加进 main，网页的界面下拉、`package.list` 列得出终端，程序 `miyu-tui` 随 M9 再合；以后清单改了在 proto 改，再把同一份交给核心；9-3 合了以后在 proto 上实测过：程序临时叫 `miyu-tui` 放在 `miyu` 旁边，敲 `miyu` 换成了终端、`miyu config` 进了设置页）；9-3 三个入口照清单找（并了 8-24：`miyu config` 拉起终端带 `--page config`）；9-5 `sessions.changed`；9-6 `view.page` 按页读，形状动手前和两个头商量（2026-10-08 核心发来草案，终端答：按回合数切、默认 20 轮，加字节上限但不切开一轮；触发消息重复带、头照序号去重；`around` 现在不要；接老会话改成「最新一页 → 画出来 → `subscribe after=last`」，往上滚到顶再要更早的一页、照序号去重重拼正文；另请核心在订阅回应里给会话累计的用量（四项、金额、没价格的次数、压缩几次，能给的话缓存断了几次）和还在跑的后台命令、子代理，只看最新一页拼不出这两样）。核心同一天定稿、拆两步：9-6 上，订阅回应多带 `usage`（这个会话的累计，同 `usage.query` 一行，另加 `compactions`、`cache_breaks`；之后头照推来的 `model.called` 往上加）、`permission`、`jobs`（还在跑的后台命令、子代理，之后照 `job.started`、`job.reported`、`child.reported` 增减）；9-6 下，`view.page {session, before?, turns?}` → `{events, first, last, more, capped?}`，约 1 MiB 在回合之间提前切、至少一整轮。上合了终端先改成照订阅回应拿这三样，下合了再改成按页读。

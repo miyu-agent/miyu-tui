@@ -90,6 +90,9 @@ pub(super) async fn take(
             }
             // 核心清单里的斜杠命令被拒：另报，界面把打的那一行放回输入框（「斜杠命令列表」第 4 条）。
             Some(Awaiting::Slash) => notify(Update::SlashRefused { message }),
+            // 订阅不上界面块（核心旧、不认这个流）：什么都不画，不用说（「界面块」第 8 条）。
+            Some(Awaiting::Widgets) => true,
+            Some(Awaiting::PackageCall) => notify(Update::PackageCallRefused { message }),
             // 读不了输出（任务没了、是子代理）：不用说，界面不再等它。
             Some(Awaiting::Output(session, job, after)) => notify(Update::Output {
                 session,
@@ -116,6 +119,9 @@ pub(super) async fn take(
                 || notify(Update::Recap(text.to_string()));
         }
         Some(Awaiting::Rename(title)) => return notify(Update::Renamed(title)),
+        Some(Awaiting::Widgets) => return notify(super::widgets::listed(&message["result"])),
+        // 调方法成了：回应不用看（`widgets.md`「头」第 6 条）。
+        Some(Awaiting::PackageCall) => return true,
         Some(Awaiting::Packages) => {
             let packages = message["result"]["packages"]
                 .as_array()
@@ -313,6 +319,16 @@ pub(super) async fn take(
     // 工具目录变了（装卸包、MCP 服务）：界面重取给人看的字；掉了队重新订（`packages.rs`）。
     if super::packages::tools_changed(message) {
         return notify(Update::ToolsChanged);
+    }
+    // 界面块（核心 X-15 中）：一块变了交给界面；掉了队照记着的重新订阅。
+    if let Some(update) = super::widgets::changed(message) {
+        return notify(update);
+    }
+    if super::widgets::lost(message) {
+        if super::widgets::rejoin(rpc, link, awaiting).await.is_err() {
+            // 发不出去是连接断了：下一条读不到，照断开重连，重连时照样再订阅。
+        }
+        return true;
     }
     if message["method"] == "resync" && params["stream"] == "packages" {
         if let Ok(id) = super::packages::follow(rpc).await {

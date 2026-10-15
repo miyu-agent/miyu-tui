@@ -90,6 +90,7 @@ impl App {
                 human_asked: false,
                 config_asks: Default::default(),
                 look: Default::default(),
+                widgets: Default::default(),
             },
             typing: super::typing::Typing {
                 input,

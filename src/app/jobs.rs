@@ -340,5 +340,10 @@ impl App {
             || over(self.screen.areas.todo)
             || over(self.screen.areas.bottom)
             || self.screen.agents_hover.is_some_and(|r| r >= 2)
+            || self
+                .screen
+                .widget_spots
+                .iter()
+                .any(|s| s.clickable() && over(s.rect))
     }
 }

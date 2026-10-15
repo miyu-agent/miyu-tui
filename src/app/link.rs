@@ -24,4 +24,6 @@ pub struct Link {
     pub config_asks: super::config_asks::ConfigAsks,
     /// 启动时照系统认出来的界面语言：`/language` 选回自动用它，框的第一行写它（蓝图「界面语言」）。
     pub system_language: crate::language::Language,
+    /// 扩展包放的界面块（蓝图「界面块」，`app/widgets.rs`）。
+    pub widgets: crate::widgets::Widgets,
 }

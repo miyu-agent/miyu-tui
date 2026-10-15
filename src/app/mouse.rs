@@ -18,6 +18,10 @@ impl App {
         // 已抓住的拖选和松开始终归起点区域，经过侧栏、按钮或抽屉也不被截走。
         let captured = self.screen.grab.is_some()
             && matches!(mouse.kind, MouseEventKind::Drag(_) | MouseEventKind::Up(_));
+        // 界面块：点了做那个动作、展开收起；悬停底栏那一格说是谁放的（`widgets.rs`）。
+        if !captured && self.widgets_mouse(mouse, at) {
+            return Action::None;
+        }
         if !captured && self.jobs_mouse(mouse, at) {
             return Action::None;
         }

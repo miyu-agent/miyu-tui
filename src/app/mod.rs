@@ -16,6 +16,7 @@ mod effort;
 mod frame;
 mod goal;
 mod jobs;
+mod widgets;
 
 pub use avatars::{Avatar, Place};
 pub use frame::Lists;
@@ -309,6 +310,8 @@ impl App {
             &mut self.screen.rng,
         );
         self.drawer_tick();
+        // 界面块照屏上这一刻有的位置订阅，变了才再订（`widgets.rs`）。
+        self.sync_widgets();
         if self
             .typing
             .notice

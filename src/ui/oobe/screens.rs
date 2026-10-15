@@ -127,6 +127,7 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         0,
         0,
         0,
+        0,
     )
     .mascot;
     // 设了头像的画头像（第 11 条，2026-10-13 项目主人定）：在中间从上往下一行行露出来，不从左边走过来（2026-10-14 项目主人

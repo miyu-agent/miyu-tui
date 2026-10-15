@@ -76,18 +76,33 @@ impl Home {
         settings: &str,
         edit: impl FnOnce(String) -> String,
     ) -> Home {
-        Home::build_with(script, &welcomed(settings), Tools::None, edit)
+        Home::build_with(
+            script,
+            &welcomed(settings),
+            Tools::None,
+            (edit, |_: &Path| {}),
+        )
+    }
+
+    /// 同 [`Home::with_settings`]，核心起来以前先照 `prepare` 往数据根里摆东西（装一个扩展包、写好开关这类）。
+    pub fn prepared(script: Script, settings: &str, prepare: impl FnOnce(&Path)) -> Home {
+        Home::build_with(
+            script,
+            &welcomed(settings),
+            Tools::None,
+            (|text| text, prepare),
+        )
     }
 
     fn build(script: Script, settings: &str, tools: Tools) -> Home {
-        Home::build_with(script, settings, tools, |text| text)
+        Home::build_with(script, settings, tools, (|text| text, |_: &Path| {}))
     }
 
     fn build_with(
         script: Script,
         settings: &str,
         tools: Tools,
-        manifest: impl FnOnce(String) -> String,
+        (manifest, prepare): (impl FnOnce(String) -> String, impl FnOnce(&Path)),
     ) -> Home {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
@@ -112,6 +127,7 @@ impl Home {
             std::fs::create_dir_all(file.parent().expect("有上一层")).expect("建得了");
             std::fs::write(&file, settings).expect("写得进去");
         }
+        prepare(&dir);
         let core = Running::start(root, script, tools);
         Home { dir, work, core }
     }

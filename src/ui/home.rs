@@ -18,7 +18,8 @@ pub fn text_width(area_width: u16, layout: &Layout) -> u16 {
 }
 
 /// 首页各块的位置。`mascot` 是吉祥物占几列几行，`menu_rows` 是列表要露出几行（贴在输入框上面，盖住上面的东西，
-/// 输入框不挪）。
+/// 输入框不挪）；`widget_rows` 是界面块要几行（工作目录、子代理状态行下面，空一行接着画，蓝图「界面块」第 2 条）。
+#[allow(clippy::too_many_arguments)]
 pub fn areas(
     area: Rect,
     rows: &dyn Fn(u16) -> u16,
@@ -27,6 +28,7 @@ pub fn areas(
     menu_rows: u16,
     agent_rows: u16,
     todo_rows: u16,
+    widget_rows: u16,
 ) -> Areas {
     // 首页的输入框收窄，和吉祥物成一组（「空会话的首页」第 2 条）。
     let width = super::box_width(area.width, layout).min(layout.home_max_width);
@@ -41,7 +43,17 @@ pub fn areas(
     let (cols, tall) = mascot;
     let mascot_h = tall + 1;
     let show_mascot = cols <= area.width && base + mascot_h <= area.height;
-    let total = base + if show_mascot { mascot_h } else { 0 };
+    // 界面块最先让（「界面块」第 1 条）：吉祥物放得下就照放，块只用剩下的；连标题带一行都放不下的不画。
+    let spare = area
+        .height
+        .saturating_sub(base + if show_mascot { mascot_h } else { 0 });
+    let widget_h = if widget_rows > 0 {
+        (widget_rows + 1).min(spare)
+    } else {
+        0
+    };
+    let widget_h = if widget_h >= 3 { widget_h } else { 0 };
+    let total = base + widget_h + if show_mascot { mascot_h } else { 0 };
     let mut y = area.y + area.height.saturating_sub(total) / 2;
     // 开着列表、输入框上面放不下：整组往下挪，挪到底为止（「窗口小的时候」第 1 条）。
     let over = if show_mascot { mascot_h } else { 0 };
@@ -68,6 +80,11 @@ pub fn areas(
     let todo = Rect::new(inner_x, todo_y, text_width, todo_rows);
     // 没有正文：高是 0，底边在输入框（开着列表时是列表）上面一行，提示照它浮着（「提示」）。
     let body = Rect::new(frame.x, todo_y.saturating_sub(1), frame.width, 0);
+    let agents = super::agents_area(inner_x, text_width, cwd.bottom(), agent_rows, layout)
+        .intersection(area);
+    let below = cwd.bottom().max(agents.bottom()) + 1;
+    let widgets =
+        Rect::new(inner_x, below, text_width, widget_h.saturating_sub(1)).intersection(area);
     Areas {
         body,
         menu,
@@ -77,9 +94,9 @@ pub fn areas(
         footer,
         mascot,
         cwd,
-        agents: super::agents_area(inner_x, text_width, cwd.bottom(), agent_rows, layout)
-            .intersection(area),
+        agents,
         todo,
+        widgets,
         ..Areas::default()
     }
 }
@@ -160,6 +177,7 @@ mod tests {
             0,
             0,
             0,
+            0,
         );
         // 吉祥物 16 · 空 · 输入框 3 · 框下面 1 · 空 · 工作目录：共 23 行，上面空 (40 − 23) ÷ 2 = 8 行，多出来的一行放下面。
         assert_eq!((a.mascot.y, a.mascot.height, a.mascot.width), (8, 16, 36));
@@ -183,6 +201,7 @@ mod tests {
             0,
             0,
             0,
+            0,
         );
         assert_eq!(a.frame.width, layout.home_max_width, "宽窗口里收窄");
         assert_eq!(a.frame.x, (200 - layout.home_max_width) / 2, "左右居中");
@@ -191,6 +210,7 @@ mod tests {
             &|w| input().rows(w),
             &layout,
             (36, 16),
+            0,
             0,
             0,
             0,
@@ -209,6 +229,7 @@ mod tests {
             0,
             4,
             0,
+            0,
         );
         assert_eq!(
             (a.agents.y, a.agents.height),
@@ -226,7 +247,7 @@ mod tests {
         // 首页的输入框收窄了，待办原来照正文的宽度排，长的一项被框的宽度裁掉、没有「…」（2026-09-30 查到）。
         let layout = Config::builtin().unwrap().layout;
         let area = Rect::new(0, 0, 140, 40);
-        let a = areas(area, &|w| input().rows(w), &layout, (36, 15), 0, 0, 6);
+        let a = areas(area, &|w| input().rows(w), &layout, (36, 15), 0, 0, 6, 0);
         assert_eq!(a.todo.width, super::text_width(area.width, &layout));
         assert!(
             super::text_width(area.width, &layout) < super::super::text_width(area.width, &layout),
@@ -245,6 +266,7 @@ mod tests {
             0,
             0,
             6,
+            0,
         );
         // 吉祥物 15 · 空 · 待办 6 · 空 · 输入框 3 · 框下面 1 · 空 · 工作目录：共 29 行。
         assert_eq!(a.mascot.y, (40 - 29) / 2);
@@ -260,6 +282,7 @@ mod tests {
             4,
             0,
             6,
+            0,
         );
         assert_eq!(b.frame, a.frame);
         assert_eq!(b.todo.bottom() + 1, b.menu.y);
@@ -285,6 +308,7 @@ mod tests {
             0,
             0,
             0,
+            0,
         );
         assert_eq!(a.mascot.height, 0, "放不下吉祥物");
         assert_eq!(
@@ -293,6 +317,40 @@ mod tests {
         );
         assert_eq!(a.footer.y, 6);
         assert_eq!(a.cwd.y, 8);
+    }
+
+    #[test]
+    fn widgets_give_way_before_the_mascot() {
+        let layout = Config::builtin().unwrap().layout;
+        let place = |height: u16| {
+            areas(
+                Rect::new(0, 0, 100, height),
+                &|w| input().rows(w),
+                &layout,
+                (36, 15),
+                0,
+                0,
+                0,
+                6,
+            )
+        };
+        // 整组 6 行、吉祥物连空行 16 行：高 29 都放得下，块在工作目录下面空一行。
+        let roomy = place(29);
+        assert_eq!(roomy.mascot.height, 15);
+        assert_eq!(roomy.widgets.y, roomy.cwd.y + 2);
+        assert_eq!(roomy.widgets.height, 6);
+        // 矮一点：吉祥物照放，块只用剩下的（「界面块」第 1 条）。
+        let tight = place(26);
+        assert_eq!(tight.mascot.height, 15);
+        assert_eq!(tight.widgets.height, 3);
+        // 剩下的连空行、标题、一行内容都放不下（剩两行）：块不画，吉祥物照放。
+        let none = place(24);
+        assert_eq!(none.mascot.height, 15);
+        assert_eq!(none.widgets.height, 0);
+        // 吉祥物也放不下：不画吉祥物，块照放。
+        let short = place(20);
+        assert_eq!(short.mascot.height, 0);
+        assert_eq!(short.widgets.height, 6);
     }
 
     #[test]
@@ -306,6 +364,7 @@ mod tests {
             0,
             0,
             0,
+            0,
         );
         let open = areas(
             Rect::new(0, 0, 100, 40),
@@ -313,6 +372,7 @@ mod tests {
             &layout,
             (36, 15),
             5,
+            0,
             0,
             0,
         );
