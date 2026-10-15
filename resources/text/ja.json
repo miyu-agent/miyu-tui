@@ -685,6 +685,8 @@
     "gone": "（存在しない）",
     "options": {
       "": "自動",
+      "on": "オン",
+      "off": "オフ",
       "rotate": "ローテーション",
       "pin": "固定",
       "secret": "API key",
@@ -703,6 +705,7 @@
       "driver": "API",
       "auth": "認証",
       "key": "API key",
+      "strict_tools": "制約付きデコード",
       "env_key": "変数名",
       "model": "モデル",
       "inputs": "入力",

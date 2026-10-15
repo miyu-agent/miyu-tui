@@ -31,6 +31,7 @@ pub enum Field {
     Driver,
     Auth,
     Key,
+    StrictTools,
     Model,
     Inputs,
     Window,
@@ -59,6 +60,7 @@ impl Field {
             Field::Driver => "driver",
             Field::Auth => "auth",
             Field::Key => "key",
+            Field::StrictTools => "strict_tools",
             Field::Model => "model",
             Field::Inputs => "inputs",
             Field::Window => "window",
@@ -288,6 +290,12 @@ pub fn provider(view: &Data, data: &Data, draft: &Draft, id: Option<&str>) -> Fo
         },
     );
     key.inherit = Some(if key_set { "key_set" } else { "key_unset" }.to_string());
+    // 约束解码（核心 L-2）：自动是不写、照档案，开、关写 `compat.strict_tools`。
+    let strict = match written("compat.strict_tools").and_then(|v| v.as_bool()) {
+        Some(true) => 1,
+        Some(false) => 2,
+        None => 0,
+    };
     let rows = vec![
         id_row,
         Row::text(Field::Name, name.unwrap_or_default())
@@ -311,6 +319,13 @@ pub fn provider(view: &Data, data: &Data, draft: &Draft, id: Option<&str>) -> Fo
             },
         ),
         key,
+        Row::new(
+            Field::StrictTools,
+            Val::Choice {
+                options: vec![String::new(), "on".into(), "off".into()],
+                at: Some(strict),
+            },
+        ),
     ];
     Form::new(Target::Provider(id.map(str::to_string)), rows, Vec::new())
 }
