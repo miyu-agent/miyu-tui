@@ -1033,6 +1033,8 @@
       "default_mark": "default",
       "no_personas": "No personas yet",
       "loading": "Reading…",
+      "no_packages": "No package has settings",
+      "package_items": "{n} settings",
       "detail": [
         "Name",
         "Persona prompt",
@@ -1192,6 +1194,16 @@
           [
             "Esc",
             "cancel"
+          ]
+        ],
+        [
+          [
+            "Enter",
+            "open"
+          ],
+          [
+            "Esc",
+            "back"
           ]
         ]
       ],

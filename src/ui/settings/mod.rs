@@ -5,6 +5,7 @@ mod columns;
 mod dialog_popups;
 mod fields;
 mod more_popups;
+mod package_list;
 mod pages;
 mod popup;
 

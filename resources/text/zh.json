@@ -1033,6 +1033,8 @@
       "default_mark": "默认",
       "no_personas": "暂无人格",
       "loading": "正在加载…",
+      "no_packages": "没有带设置的软件包",
+      "package_items": "{n} 项",
       "detail": [
         "名称",
         "人格提示词",
@@ -1192,6 +1194,16 @@
           [
             "Esc",
             "取消"
+          ]
+        ],
+        [
+          [
+            "Enter",
+            "进入"
+          ],
+          [
+            "Esc",
+            "返回"
           ]
         ]
       ],
