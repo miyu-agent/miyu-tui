@@ -75,10 +75,24 @@ pub fn draw(
 /// 照 `pose` 把吉祥物画进 `rect`（它自己那么大的一块）：首页、侧边栏、引导都用（引导摆姿势的在 `ui/oobe/figure.rs`）。
 /// 没打中的格子不写，底下的东西（引导的星点）照样露着。
 pub fn paint(frame: &mut Frame, rect: Rect, look: &mascot::Look, pose: &mascot::Pose) {
+    paint_clipped(frame, rect, look, pose, 0);
+}
+
+/// 同 [`paint`]，左边截掉 `skip` 列再画（引导里往左走出画面的那一段，`ui/oobe/figure.rs`）。
+pub fn paint_clipped(
+    frame: &mut Frame,
+    rect: Rect,
+    look: &mascot::Look,
+    pose: &mascot::Pose,
+    skip: u16,
+) {
     let area = rect.intersection(frame.area());
     let buf = frame.buffer_mut();
     for (r, row) in mascot::render(look, pose).into_iter().enumerate() {
         for (c, cell) in row.into_iter().enumerate() {
+            let Some(c) = c.checked_sub(usize::from(skip)) else {
+                continue;
+            };
             let (Ok(dx), Ok(dy)) = (u16::try_from(c), u16::try_from(r)) else {
                 continue;
             };

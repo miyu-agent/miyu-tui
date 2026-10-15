@@ -29,6 +29,8 @@ pub struct Extra {
     pub pitch: Option<f64>,
     /// 歪头多少度（打字时）。
     pub roll: f64,
+    /// 左边截掉几列（往左走出画面的那一段）。
+    pub skip: u16,
 }
 
 /// 照 `look` 的大小画在 `rect`：鼠标在动看鼠标，不然看 `target`（人正在填的那一格），都没有的看正前方。`reach` 是看的东西
@@ -93,7 +95,7 @@ pub fn draw(
         spin: extra.spin,
         dark: extra.dark,
     };
-    mascot_view::paint(frame, rect, look, &pose);
+    mascot_view::paint_clipped(frame, rect, look, &pose, extra.skip);
 }
 
 /// 引导里闲着时比首页勤（第 10 条）：首页的待机小动作盖上 `oobe.json` 的几项。画和定下一次醒来都照它。

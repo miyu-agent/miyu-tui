@@ -156,7 +156,9 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         let drawn = avatar.is_some_and(|path| {
             crate::ui::avatar_view::draw_file(frame, &p.media.figures, rect, &path, shown)
         });
-        if !drawn {
+        // 主题那一步选了吉祥物不显示的（左边那一块已经收掉了）：好了那一屏也不画它（第 11a 条）。
+        let off = p.oobe.figure.shown == crate::oobe::figure::Shown::Nothing;
+        if !drawn && !off {
             let extra = Extra {
                 spin: fin.spin,
                 mouth: fin.mouth,

@@ -14,6 +14,7 @@ mod profile;
 mod screens;
 mod stage;
 mod stars;
+mod swap;
 mod theme_step;
 
 use std::time::{Duration, Instant};
@@ -214,7 +215,6 @@ fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         roll: act.roll,
         ..Extra::default()
     };
-    let mascot = p.config.mascot.clone();
     let reach = f64::from(
         places
             .content
@@ -223,14 +223,9 @@ fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     );
     // 浮窗开着时吉祥物看浮窗里的光标。
     let popup_caret = popup_caret(frame, area, p);
-    figure::draw(
-        frame,
-        rect,
-        &mascot,
-        p,
-        (popup_caret.or(focus), reach),
-        extra,
-    );
+    // 吉祥物、头像，或者什么都不画；要画的变了当场换（`swap.rs`，第 11a 条）。
+    let gaze = (popup_caret.or(focus), reach);
+    swap::draw(frame, (area, rect, act.lift), p, gaze, extra, now);
     // 人格建好了：名字一个字一个字写到它脚下（第 10 条）。
     if let Some((name, at)) = badge {
         let per = Duration::from_millis(look.react.name_ms.max(1));

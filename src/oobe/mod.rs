@@ -5,6 +5,7 @@
 
 pub mod asker;
 pub mod field;
+pub mod figure;
 mod focus;
 mod link;
 pub mod look;
@@ -169,6 +170,8 @@ pub struct Oobe {
     pub stars: Stars,
     /// 吉祥物的反应。
     pub react: React,
+    /// 左边那一块画什么：吉祥物、头像、什么都不画（`figure.rs`）。
+    pub figure: figure::Figure,
     /// 名字写到吉祥物脚下：名字、从哪一刻起写。
     pub badge: Option<(String, Instant)>,
     /// 语言那一步。
@@ -214,6 +217,7 @@ impl Oobe {
             marked: None,
             stars: Stars::gather(now, seed),
             react: React::default(),
+            figure: figure::Figure::default(),
             badge: None,
             language,
             // 两行的字照界面语言画（「看得到图标」「是方块或者乱码」），这里记哪一套。
@@ -433,6 +437,27 @@ impl Oobe {
             self.persona.chosen_id.clone(),
             self.preset.chosen_id.clone(),
         )
+    }
+
+    /// 左边那一块这一刻该画什么（第 11a 条，2026-10-15 项目主人）：人格那一步以前画吉祥物；从人格那一步起，这一位有头像
+    /// （`avatar`：画得出来的头像文件）的画头像；主题那一步选着吉祥物不显示的（在这一步、写成了的）什么都不画。
+    pub fn wanted_figure(&self, avatar: bool) -> figure::Shown {
+        let early = matches!(
+            self.step,
+            Step::Welcome | Step::Language | Step::Icons | Step::Model
+        );
+        if early {
+            return figure::Shown::Mascot;
+        }
+        if avatar {
+            return figure::Shown::Avatar;
+        }
+        let off = self.theme.mascot_off && (self.step == Step::Theme || self.theme.saved);
+        if off {
+            figure::Shown::Nothing
+        } else {
+            figure::Shown::Mascot
+        }
     }
 
     /// 主题那一步选着的样子（第 23a 条）：在这一步、读到了配置的，或者写成了的（引导关上以前一直照它）交回配色、明暗、

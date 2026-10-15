@@ -267,6 +267,7 @@ impl App {
                 now < *at
                     + ms(look.react.name_ms) * u32::try_from(name.chars().count()).unwrap_or(0)
             })
+            || oobe.figure.moving(now, &look.swap)
             || self.mascot.gaze.moving();
         let calm = matches!(
             oobe.step,

@@ -182,6 +182,8 @@ pub struct Look {
     pub idle: Idle,
     /// 好了那一屏。
     pub done: Done,
+    /// 左边那一块换成头像、收掉吉祥物时走多久、露多久（2026-10-15 项目主人）。
+    pub swap: super::figure::Swap,
     /// 浮窗。
     pub popup: Popup,
     /// 动着的时候多久画一帧。
