@@ -35,17 +35,26 @@ pub(super) fn line(lines: &mut Lines, edit: &LineEdit, texts: &Texts) {
     lines.hints = texts.more.hints[3].clone();
 }
 
+/// 人格、预设的窗的标题：读回来的详情里的名字，没读回来的照列表里那一行；都没有的才写编号。新建的窗开在列表重读回来
+/// 以前，只看列表会先露一下编号（「配置页」第 40 条：编号不出现在界面上；macOS 上 `preset_edit` 偶发红就是它）。
+fn title(named: Option<&str>, listed: Option<&crate::core::Persona>, id: &str) -> String {
+    named
+        .or_else(|| listed.map(crate::core::Persona::label))
+        .unwrap_or(id)
+        .to_string()
+}
+
 /// 人格的窗（蓝图「配置页」第 36 条）：名字、人设、示范对话、角色扮演提示四行，光标那一行铺底色；没读回来写「正在读…」。
 pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, texts: &Texts) {
     let words = &texts.more;
-    let label = page
+    let listed = page
         .more
         .personas
         .iter()
         .flatten()
-        .find(|p| p.id == view.id)
-        .map_or(view.id.clone(), |p| p.label().to_string());
-    lines.title(label, String::new());
+        .find(|p| p.id == view.id);
+    let named = view.detail.as_ref().and_then(|d| d.name.as_deref());
+    lines.title(title(named, listed, &view.id), String::new());
     lines.hints = words.hints[6].clone();
     let Some(detail) = &view.detail else {
         let text = view.error.clone().unwrap_or_else(|| words.loading.clone());
@@ -92,14 +101,9 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
 /// 没装的暗着、右边黄字「没安装」；关掉的单件工具一行，写显示名。光标那一行铺底色。
 pub(super) fn preset(lines: &mut Lines, view: &PresetView, page: &Settings, texts: &Texts) {
     let words = &texts.more;
-    let label = page
-        .more
-        .presets
-        .iter()
-        .flatten()
-        .find(|p| p.id == view.id)
-        .map_or(view.id.clone(), |p| p.label().to_string());
-    lines.title(label, String::new());
+    let listed = page.more.presets.iter().flatten().find(|p| p.id == view.id);
+    let named = view.detail.as_ref().and_then(|d| d.name.as_deref());
+    lines.title(title(named, listed, &view.id), String::new());
     lines.hints = words.hints[7].clone();
     let Some(detail) = &view.detail else {
         let text = view.error.clone().unwrap_or_else(|| words.loading.clone());
