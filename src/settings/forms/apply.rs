@@ -67,6 +67,14 @@ fn provider(
             None => draft.unset(&key("driver"), data),
         }
     }
+    if form.moved(Field::StrictTools) {
+        let strict = key("compat.strict_tools");
+        match form.choice(Field::StrictTools) {
+            Some("on") => draft.set(&strict, json!(true), data),
+            Some("off") => draft.set(&strict, json!(false), data),
+            _ => draft.unset(&strict, data),
+        }
+    }
     if !pasted.is_empty() {
         if auth == "env" {
             draft.set(&key("key"), json!({"env": pasted}), data);

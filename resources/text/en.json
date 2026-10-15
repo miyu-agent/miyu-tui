@@ -685,6 +685,8 @@
     "gone": " (gone)",
     "options": {
       "": "Auto",
+      "on": "On",
+      "off": "Off",
       "rotate": "Rotate",
       "pin": "Pin",
       "secret": "API key",
@@ -703,6 +705,7 @@
       "driver": "API",
       "auth": "Auth",
       "key": "API key",
+      "strict_tools": "Constrained decoding",
       "env_key": "Variable",
       "model": "Model",
       "inputs": "Inputs",

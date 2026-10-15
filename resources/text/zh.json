@@ -685,6 +685,8 @@
     "gone": "（不存在）",
     "options": {
       "": "自动",
+      "on": "开",
+      "off": "关",
       "rotate": "轮换",
       "pin": "固定",
       "secret": "API Key",
@@ -703,6 +705,7 @@
       "driver": "接口",
       "auth": "认证",
       "key": "API Key",
+      "strict_tools": "约束解码",
       "env_key": "变量名",
       "model": "模型",
       "inputs": "支持输入",

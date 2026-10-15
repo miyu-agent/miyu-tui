@@ -159,3 +159,31 @@ fn inputs_offer_audio_and_video_too() {
     };
     assert_eq!(options, &["text", "image", "pdf", "audio", "video"]);
 }
+
+#[test]
+fn constrained_decoding_is_auto_on_or_off_and_auto_writes_nothing() {
+    // 核心 L-2（2026-10-15）：供应商多一项 `compat.strict_tools`，自动照档案（不写），开、关写布尔。
+    let data = sample();
+    let pick = |at: usize| {
+        let mut draft = Draft::default();
+        let mut form = provider(&data, &data, &draft, Some("relay"));
+        let row = form
+            .rows
+            .iter_mut()
+            .find(|r| r.field == Field::StrictTools)
+            .expect("有约束解码这一行");
+        assert!(
+            matches!(&row.val, Val::Choice { at: Some(0), .. }),
+            "没写的停在自动"
+        );
+        if let Val::Choice { at: a, .. } = &mut row.val {
+            *a = Some(at);
+        }
+        apply(&form, &data, &data, &mut draft).unwrap();
+        draft
+    };
+    let key = "providers.relay.compat.strict_tools";
+    assert_eq!(pick(1).value(key, &data), Some(&json!(true)));
+    assert_eq!(pick(2).value(key, &data), Some(&json!(false)));
+    assert!(!pick(0).changed(key), "自动不写");
+}
