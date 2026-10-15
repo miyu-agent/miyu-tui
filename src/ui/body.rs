@@ -108,6 +108,8 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     });
     // 鼠标、复制照这一帧的行；共享记着的那一份，不复制。
     screen.view.rows = rows.clone();
+    screen.view.older_shown =
+        crate::body_view::BodyView::older_on_top(&rows, first, &seen.talk.transcript.entries);
     // 悬停在链接上：这个链接露出来的每一截都加下划线。
     if let Some(url) = &screen.view.hover_link {
         for (i, row) in rows.window(first, height) {

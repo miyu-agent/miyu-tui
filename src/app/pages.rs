@@ -66,8 +66,7 @@ impl App {
         let Some(session) = self.talk.transcript.session.clone() else {
             return;
         };
-        let shown = !self.screen.view.rows.is_empty() && self.screen.view.first == 0;
-        if shown && self.talk.transcript.wants_older() {
+        if older_due(&self.screen.view, &self.talk.transcript) {
             self.talk.transcript.asked_older();
             self.link.core.send(Command::Older(session));
         }
@@ -257,4 +256,51 @@ fn place<'a>(
     parked
         .get_mut(session)
         .map(|p| (&mut p.transcript, &mut p.board, &mut p.view))
+}
+
+/// 该要更早的一页了：上一帧画出来的第一行就是最上面那一行（[`BodyView::older_shown`]），而且还没要。只看「上一帧从
+/// 顶上起」不够：最新一页的推送跨了一帧时，那一帧画的是半页、从顶上起，那时还没有那一行。
+fn older_due(view: &BodyView, transcript: &Transcript) -> bool {
+    view.older_shown && transcript.wants_older()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::older_due;
+    use crate::body_view::BodyView;
+    use crate::config::Config;
+    use crate::transcript::{Kind, Transcript};
+    use crate::ui::row_cache::Rows;
+
+    /// 画了一帧：照正文现在的条目，第 i 条占 `heights[i]` 行，从顶上起。
+    fn drawn(view: &mut BodyView, transcript: &Transcript, heights: &[usize]) {
+        let chunks: Vec<_> = heights
+            .iter()
+            .enumerate()
+            .map(|(i, &n)| (n, Some(i)))
+            .collect();
+        let rows = Rows::of_blank(&chunks);
+        view.first = 0;
+        view.older_shown = BodyView::older_on_top(&rows, 0, &transcript.entries);
+        view.rows = rows;
+    }
+
+    #[test]
+    fn the_earlier_page_waits_until_its_line_was_actually_drawn_at_the_top() {
+        let texts = Config::builtin().unwrap().text;
+        let mut transcript = Transcript::default();
+        let mut view = BodyView::default();
+        // 最新一页的推送跨了一帧：那一帧画的是半页，放得下、从顶上起。
+        transcript.note(Kind::Reply, "第 3 号的回答。".into());
+        drawn(&mut view, &transcript, &[2]);
+        // 这一页读完了、更早的还有：最上面多了那一行，可它还没画出来过。
+        transcript.paged(true, &texts);
+        assert_eq!(transcript.entries[0].kind, Kind::Older);
+        assert!(!older_due(&view, &transcript), "那一行还没露出来就要了");
+        // 下一帧画出来了，第一行就是它：要。
+        drawn(&mut view, &transcript, &[1, 2]);
+        assert!(older_due(&view, &transcript));
+        transcript.asked_older();
+        assert!(!older_due(&view, &transcript), "要了的不再要");
+    }
 }
