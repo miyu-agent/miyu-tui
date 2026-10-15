@@ -259,3 +259,22 @@ fn the_avatar_is_revealed_slower_than_the_mascot_walks() {
     let shown = super::finale(t0, t0 + ms(look.done.reveal_ms), &look, 2);
     assert!((shown.reveal - 1.0).abs() < 1e-9, "到点整张露出来");
 }
+
+#[test]
+fn the_finale_gathers_more_stars_and_more_slowly_than_the_intro() {
+    // 2026-10-15 项目主人重测 T-235：「感觉星星有点少，也有点快」。好了那一屏另用一套，开场的不动。
+    let look = look();
+    let (intro, done) = (look.stars_for(false), look.stars_for(true));
+    assert!(done.count > intro.count && done.linger > intro.linger, "多");
+    assert!(done.gather_ms > intro.gather_ms, "聚得慢");
+    assert!(done.twinkle_ms[0] > intro.twinkle_ms[0], "闪得慢");
+    // 聚到一半时，好了那一屏照它画的星比开场多。
+    let t0 = Instant::now();
+    let center = (0.5, 0.45);
+    let half = |l: &crate::oobe::look::Stars| {
+        Stars::gather(t0, 7)
+            .at(t0 + ms(l.gather_ms / 2), l, center)
+            .len()
+    };
+    assert!(half(done) > half(intro));
+}

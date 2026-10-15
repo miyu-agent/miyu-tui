@@ -77,7 +77,7 @@ pub fn parse(text: &str) -> Result<Color, String> {
 }
 
 /// 一套主题：每个语义色的颜色。每一格用在哪，见蓝图「主题」的表。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Palette {
     /// 边框、时间线、旁白、用量、占位字。

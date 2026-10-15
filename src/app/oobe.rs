@@ -260,7 +260,9 @@ impl App {
                 .is_some_and(|(_, s)| s.offsets(now, ms(look.slide_ms), 1).is_some())
             || oobe.react.busy(now, &look.react)
             || oobe.react.waiting
-            || oobe.stars.moving(now, &look.stars)
+            || oobe
+                .stars
+                .moving(now, look.stars_for(oobe.step == crate::oobe::Step::Done))
             || oobe.leaving.is_some()
             || (oobe.done_at.is_some() && !oobe.finale(now, texts).ready)
             || oobe.badge.as_ref().is_some_and(|(name, at)| {
@@ -278,7 +280,8 @@ impl App {
         let beat = if busy {
             look.frame_ms
         } else if calm && self.mascot.idle.awake(now, &idle) {
-            look.stars.frame_ms
+            look.stars_for(oobe.step == crate::oobe::Step::Done)
+                .frame_ms
         } else {
             return self.mascot.idle.wake(now, &idle);
         };
