@@ -147,3 +147,44 @@ fn the_view_says_where_it_looks() {
         json!({"stream": "widgets", "showing": [], "session": "s1", "page": {"package": "wx", "widget": "week"}})
     );
 }
+
+#[test]
+fn the_right_side_of_a_list_item_is_one_text_or_up_to_four_toned_runs() {
+    use super::Run;
+    let b = block(&json!({
+        "package": "git", "id": "changes", "place": "sidebar", "source": "Git", "running": true,
+        "content": [{"type": "list", "items": [
+            {"title": "a.rs", "right": "3m"},
+            {"title": "b.rs", "right": [{"text": "+12", "tone": "good"}, {"text": "−3", "tone": "bad"}]},
+            {"title": "c.rs", "right": [{"text": "1"}, {"text": "2"}, {"text": "3"}, {"text": "4"}, {"text": "5"}]},
+            {"title": "d.rs", "right": ""}
+        ]}]
+    }))
+    .expect("读得出");
+    let Some(Segment::List(items)) = b.content.as_ref().and_then(|c| c.first()) else {
+        panic!("{b:?}")
+    };
+    assert_eq!(
+        items[0].right,
+        [Run {
+            text: "3m".into(),
+            tone: None
+        }],
+        "一句字不带语气"
+    );
+    assert_eq!(
+        items[1].right,
+        [
+            Run {
+                text: "+12".into(),
+                tone: Some(Tone::Good)
+            },
+            Run {
+                text: "−3".into(),
+                tone: Some(Tone::Bad)
+            }
+        ]
+    );
+    assert_eq!(items[2].right.len(), 4, "最多 4 段");
+    assert!(items[3].right.is_empty());
+}

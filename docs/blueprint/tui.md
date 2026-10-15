@@ -419,7 +419,7 @@
    - `text`：照 `tone`：`normal` 原色（侧边栏里照暗：自带的内容一律暗，2026-09-29 项目主人定）、`dim` 暗、`accent` 强调色、`good` 绿、`warn` 黄、`bad` 红。按宽度折行，有 `/`、空格的先断在它后面。
    - `pairs`：一对一行，名字暗、值照 `tone`；名字一列对齐，名字那一列最多占一半宽，长的截掉加 `…`。
    - `progress`：上一行写 `text`（暗），下一行一根条，画法同侧边栏「上下文」那根（满了的强调色、没满的暗，最多 20 格）；带 `mark`（0 到 1，核心 W4 补）的，落在的那一格换成警示色，同压缩线；没写 `text` 的条后面接百分比。
-   - `list`：一条一行：记号、`title`（原色）、`detail`（暗，接在后面）、`right`（暗，贴右边，不被挤掉）；放不下的先截 `detail`、再截 `title`。`title` 和 `detail` 之间是暗色的 ` · `。记号照 `state`：`todo` `☐` 暗、`doing` `■` 强调色加粗（标题也是）、`done` `☑` 暗加删除线、`failed` `✗` 红、`off` `○` 暗；没写 `state` 的不写记号。记号在 `layout.json` 的 `widgets.marks`，和待办的同一套字，不跟图标那一套换。
+   - `list`：一条一行：记号、`title`（原色）、`detail`（暗，接在后面）、`right`（贴右边，不被挤掉：一句字的暗；写成几段的（核心 X-15 补，最多 4 段）每段照自己的语气，段之间空一格，放不下的从后往前丢段）；放不下的先截 `detail`、再截 `title`。`title` 和 `detail` 之间是暗色的 ` · `。记号照 `state`：`todo` `☐` 暗、`doing` `■` 强调色加粗（标题也是）、`done` `☑` 暗加删除线、`failed` `✗` 红、`off` `○` 暗；没写 `state` 的不写记号。记号在 `layout.json` 的 `widgets.marks`，和待办的同一套字，不跟图标那一套换。
    - `buttons`：一排，按钮的字强调色，按钮之间空两格，放不下的折到下一行。
 7. **点了做什么**：带动作的列表项、按钮，鼠标悬停时整行（按钮是那几个字）铺底色、指针变成手。
    - `call`：发 `package.call`，回应不看；拒了的弹核心的原话（「提示」小框）。
@@ -936,6 +936,7 @@ herdr 通知回归修正（2026-10-03）：herdr 的弹窗默认关闭，不能�
 | `theme/tests.rs` 的 `setting_the_same_palette_again_keeps_what_was_drawn_with_it`、`oobe/motion/tests.rs` 的 `the_finale_gathers_more_stars_and_more_slowly_than_the_intro` | 同一套颜色再设一次不算换主题（换代数不加，图、排好的行照旧用）；完成页的星点比开场的多、聚得慢、闪得慢，聚到一半时画的星更多 |
 | `oobe/figure.rs`、`oobe/tests/figure.rs`、`tests/oobe.rs` 的 `choosing_no_mascot_on_the_theme_step_walks_it_out_at_once` | 引导左边那一块（「第一次打开的引导」第 11a 条）：人格那一步以前画吉祥物、有头像的画头像、主题那一步选了不显示的不画、退回上一步又画；吉祥物先走出去再露头像、走回来；伪终端里挪到「不显示」吉祥物一帧帧往左走开（录下的帧里最左边的 `@` 至少到过三列），挪回「显示」走回来 |
 | `ui/row_cache/tests.rs` 的 `clearing_while_the_tail_spins_starts_the_new_screen_after_the_entries` | 清屏（`Ctrl+L`、`/clear`）记的位置不算末尾转着的那几行 |
+| `widgets/tests.rs` 的 `the_right_side_of_a_list_item_is_one_text_or_up_to_four_toned_runs`、`ui/widget/tests.rs` 的 `toned_runs_on_the_right_keep_their_own_colors` | 列表一条右边的字：一句字不带语气、照暗画；几段的每段照自己的语气（`+12` 绿、`−3` 红），最多 4 段 |
 | `oobe/tests/theme_seed.rs`、`tests/oobe.rs` 的 `walking_the_whole_guide_creates_the_persona_and_sets_the_defaults`、`the_lower_rows_open_a_whole_list_even_on_a_crowded_step` | 引导「主题」那一步的主色、铺底色：主色只在跟随头像、跟随壁纸、有候选时列，色块列表挪了当场换、`Esc` 换回，跟随壁纸的写 `tui.theme_seed`，跟随头像的配置写成了再写回人格；铺底色挪到关当场不铺（伪终端里左上角那格不铺底色）、写进设置；靠下那几格的选择窗下面放不下时往上挪、两项都看得见 |
 
 macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 上照提交的版本编译（48 秒）、510 个测试、clippy 都过；伪终端里起界面、连上核心、打字上屏、Ctrl+D 退出都正常，帧记录照写、没有崩溃记录。测完沙箱目录、临时家目录、拉起的核心都清掉了。

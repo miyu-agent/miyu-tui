@@ -104,9 +104,17 @@ pub struct Pair {
 pub struct Item {
     pub title: String,
     pub detail: Option<String>,
-    pub right: Option<String>,
+    /// 右边的字：一段或者几段（核心 X-15 补，最多 4 段，每段自己的语气）；没写的是空的。
+    pub right: Vec<Run>,
     pub state: Option<State>,
     pub action: Option<Action>,
+}
+
+/// 列表一条右边的一段：字、语气。只写了一句字的没有语气（照暗画，同以前）。
+#[derive(Debug, Clone, PartialEq)]
+pub struct Run {
+    pub text: String,
+    pub tone: Option<Tone>,
 }
 
 /// 一个按钮。

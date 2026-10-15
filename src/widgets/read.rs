@@ -3,7 +3,7 @@
 
 use serde_json::Value;
 
-use super::{Action, Block, Button, Item, Pair, Place, Segment, State, Tone};
+use super::{Action, Block, Button, Item, Pair, Place, Run, Segment, State, Tone};
 
 /// 订阅回应里的 `widgets`。
 pub fn blocks(result: &Value) -> Vec<Block> {
@@ -74,7 +74,7 @@ fn segment(value: &Value) -> Option<Segment> {
                     Some(Item {
                         title: text(&i["title"])?,
                         detail: text(&i["detail"]).filter(|t| !t.is_empty()),
-                        right: text(&i["right"]).filter(|t| !t.is_empty()),
+                        right: runs(&i["right"]),
                         state: state(&i["state"]),
                         action: action(&i["action"]),
                     })
@@ -93,6 +93,31 @@ fn segment(value: &Value) -> Option<Segment> {
         ),
         _ => return None,
     })
+}
+
+/// 列表一条右边的字：一句字（不带语气），或者几段 `[{"text", "tone"?}]`（核心 X-15 补，最多 4 段）。
+fn runs(value: &Value) -> Vec<Run> {
+    if let Some(one) = value.as_str() {
+        return (!one.is_empty())
+            .then(|| Run {
+                text: one.to_string(),
+                tone: None,
+            })
+            .into_iter()
+            .collect();
+    }
+    value
+        .as_array()
+        .into_iter()
+        .flatten()
+        .take(4)
+        .filter_map(|run| {
+            Some(Run {
+                text: text(&run["text"]).filter(|t| !t.is_empty())?,
+                tone: Some(tone(&run["tone"])),
+            })
+        })
+        .collect()
 }
 
 /// 0 到 1 之间的数；超出的夹回来。

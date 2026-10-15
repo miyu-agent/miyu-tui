@@ -154,3 +154,27 @@ fn normal_text_is_dim_in_the_sidebar_only() {
     assert_eq!(shown(&side.lines[0], 1), crate::theme::dim());
     assert_eq!(shown(&home.lines[0], 0), ratatui::style::Style::new());
 }
+
+#[test]
+fn toned_runs_on_the_right_keep_their_own_colors() {
+    let s = segments(json!([{"type": "list", "items": [
+        {"title": "b.rs", "right": [{"text": "+12", "tone": "good"}, {"text": "−3", "tone": "bad"}]},
+        {"title": "c.rs", "right": "3m"}
+    ]}]));
+    let got = with_look(Mode::Home, 30, |look| content(&s, look, None));
+    let lines = texts(&got.lines);
+    assert!(lines[0].ends_with("+12 −3"), "{lines:?}");
+    let style_of = |line: &Line, text: &str| {
+        line.spans
+            .iter()
+            .find(|s| s.content == text)
+            .map(|s| s.style)
+    };
+    assert_eq!(style_of(&got.lines[0], "+12"), Some(crate::theme::good()));
+    assert_eq!(style_of(&got.lines[0], "−3"), Some(crate::theme::error()));
+    assert_eq!(
+        style_of(&got.lines[1], "3m"),
+        Some(crate::theme::dim()),
+        "一句字的照旧暗"
+    );
+}
