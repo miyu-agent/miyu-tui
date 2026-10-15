@@ -285,7 +285,9 @@ impl BodyView {
     pub fn clear(&mut self) {
         self.top = None;
         self.floor_end = 0;
-        self.cleared_at = Some(self.rows.len());
+        // 末尾转着的那几行不算（等第一个字时有，过一会儿就没了）：算进去的话，后来的字落在新的一屏外面，整块空白
+        // （2026-10-15，`/clear` 开轮和清空之间画过一帧时）。
+        self.cleared_at = Some(self.rows.content_len());
     }
 
     /// PgUp、PgDn：往上、往下翻半屏（`tui.md`「按键」）。翻到底由画的时候改回跟着最新的。

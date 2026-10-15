@@ -66,6 +66,14 @@ impl Rows {
         self.owners.push(owner);
     }
 
+    /// 属于条目的有几行：末尾不属于哪一条的（等第一个字时转着的那几行）不算；一行都不属于条目的照全部算。
+    pub fn content_len(&self) -> usize {
+        self.owners
+            .iter()
+            .rposition(Option::is_some)
+            .map_or_else(|| self.len(), |k| self.ends[k])
+    }
+
     /// 第 `row` 行是第几条的；落在条目间空行上的，照它下面那一条。
     pub fn entry_at(&self, row: usize) -> Option<usize> {
         let k = self.ends.partition_point(|&end| end <= row);
