@@ -8,6 +8,7 @@ pub mod dialogs;
 mod keys;
 pub mod mascots;
 pub mod model_or;
+pub mod packages;
 pub mod persona_edit;
 pub mod personas;
 pub mod preset_edit;
@@ -59,6 +60,8 @@ pub enum Section {
     Personas(usize),
     /// 预设：选中第几个。
     Presets(usize),
+    /// 「软件包」：有配置项的包的列表，选中第几个（「配置页」第 43a 条）；进去是 `Page("packages/<包>")`。
+    Packages(usize),
 }
 
 /// 新几页的状态。
@@ -74,6 +77,8 @@ pub struct More {
     pub mascots: Option<Vec<Persona>>,
     /// 主菜单选中第几项。
     pub menu_at: usize,
+    /// 每个包的一句说明（`package.list` 的 `summary`）：「软件包」的列表照它写。
+    pub summaries: HashMap<String, String>,
     /// 进了哪一页。
     pub section: Option<Section>,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
@@ -126,6 +131,9 @@ impl More {
 
     /// 一页排成行：配色不是跟随头像、跟随壁纸的，「主色」那一项不列；配色是终端配色的，「铺底色」那一项不列。
     pub fn rows(&self, page: &str) -> Vec<schema::Row> {
+        if let Some(id) = packages::package_of(page) {
+            return self.package_rows(id);
+        }
         let Some(schema) = self.schema.as_ref() else {
             return Vec::new();
         };
@@ -226,6 +234,10 @@ pub struct Texts {
     pub no_personas: String,
     /// 正在读。
     pub loading: String,
+    /// 「软件包」一个有配置项的包都没有。
+    pub no_packages: String,
+    /// 「软件包」列表右边写的几项：`{n}`。
+    pub package_items: String,
     /// 默认人格没设、选择窗第一行：不带人格（2026-10-08 项目主人定叫「无人格」）。
     pub no_persona: String,
     /// 吉祥物没设、选择窗第一行：内置的那只（「吉祥物包」第 3 条）。
@@ -246,8 +258,8 @@ pub struct Texts {
     /// 就空着，不需要写`没有`」）。
     pub detail: [String; 6],
     /// 几页的按键提示（键、做什么）：通用这类的页、（空）、选择窗、编辑窗、（空）、人格页和预设页、人格的窗、预设的窗、
-    /// 示范对话列表、两格窗。
-    pub hints: [Vec<[String; 2]>; 10],
+    /// 示范对话列表、两格窗、「软件包」的包列表。
+    pub hints: [Vec<[String; 2]>; 11],
     /// 改预设（「配置页」第 39 条）。
     pub preset_edit: preset_edit::EditTexts,
     /// 改人格（「配置页」第 36、37 条）。

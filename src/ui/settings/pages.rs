@@ -9,6 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::{bar, crumb, fit, footer};
 use crate::core::Persona;
+use crate::settings::pages::packages::{PACKAGES, package_of};
 use crate::settings::pages::schema::Row;
 use crate::settings::pages::{DEFAULT_PERSONA, DEFAULT_PRESET, Entry, Section, current, shown};
 use crate::settings::{Hit, Settings, Texts};
@@ -91,11 +92,23 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
     let Some(section) = page.more.section.clone() else {
         return;
     };
+    let packages = || entry_words(page, &Entry::Page(PACKAGES.to_string()), texts).0;
     let (title, hints) = match &section {
+        // 包自己那一页：「软件包 › 包名」（第 43a 条）。
+        Section::Page(id, _) if package_of(id).is_some() => {
+            let id = package_of(id).unwrap_or_default();
+            let listed = page.more.packages();
+            let name = listed
+                .iter()
+                .find(|p| p.id == id)
+                .map_or(id, |p| p.name.as_str());
+            (format!("{} › {name}", packages()), &texts.more.hints[0])
+        }
         Section::Page(id, _) => (
             entry_words(page, &Entry::Page(id.clone()), texts).0,
             &texts.more.hints[0],
         ),
+        Section::Packages(_) => (packages(), &texts.more.hints[10]),
         Section::Personas(_) => (texts.more.personas[0].clone(), &texts.more.hints[5]),
         Section::Presets(_) => (texts.more.presets[0].clone(), &texts.more.hints[5]),
     };
@@ -121,6 +134,11 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
             let list = page.more.presets.as_deref();
             let lines = list_lines(page, (list, DEFAULT_PRESET, false), *at, texts, body.width);
             (lines, *at, list.map_or(0, <[_]>::len))
+        }
+        Section::Packages(at) => {
+            let list = page.more.packages();
+            let lines = super::package_list::lines(&list, *at, texts, body.width);
+            (lines, *at, list.len())
         }
     };
     paint(frame, body, &lines);

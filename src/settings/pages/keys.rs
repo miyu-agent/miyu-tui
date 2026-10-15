@@ -5,6 +5,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
 
 use super::choose::{Choose, LineEdit, PersonaView, PresetView, Pressed};
+use super::packages::PACKAGES;
 use super::schema::{Row, Schema};
 use super::{Entry, Section, choices, current, is_named, personas, presets};
 use crate::core::Refusal;
@@ -37,7 +38,10 @@ impl Settings {
             (Waiting::Presets, Ok(got)) => {
                 self.more.presets = Some(crate::core::read_presets(&got));
             }
-            (Waiting::Mascots, Ok(got)) => self.more.mascots = Some(super::mascots::read(&got)),
+            (Waiting::Mascots, Ok(got)) => {
+                self.more.summaries = super::packages::summaries(&got);
+                self.more.mascots = Some(super::mascots::read(&got));
+            }
             (Waiting::PresetDetail(id), result) => {
                 if let Some(Popup::Preset(view)) = &mut self.popup
                     && view.id == id
@@ -77,6 +81,8 @@ impl Settings {
                 self.status = None;
                 self.more.section = match self.more.selected() {
                     Entry::Models => None,
+                    // 「软件包」先列包，进去一包一页（第 43a 条）。
+                    Entry::Page(id) if id == PACKAGES => Some(Section::Packages(0)),
                     Entry::Page(id) => Some(Section::Page(id, 0)),
                     Entry::Personas => Some(Section::Personas(0)),
                     Entry::Presets => Some(Section::Presets(0)),
@@ -102,12 +108,10 @@ impl Settings {
             }),
             Section::Personas(at) => (*at, |n, _| Section::Personas(n)),
             Section::Presets(at) => (*at, |n, _| Section::Presets(n)),
+            Section::Packages(at) => (*at, |n, _| Section::Packages(n)),
         };
         match key.code {
-            KeyCode::Esc | KeyCode::Char('q' | 'h') | KeyCode::Left => {
-                self.more.section = None;
-                self.on_menu = true;
-            }
+            KeyCode::Esc | KeyCode::Char('q' | 'h') | KeyCode::Left => self.leave_section(&section),
             KeyCode::Char('j') | KeyCode::Down => {
                 let n = (at + 1).min(count.saturating_sub(1));
                 self.more.section = Some(rebuild(n, &section));
@@ -116,6 +120,7 @@ impl Settings {
                 self.more.section = Some(rebuild(at.saturating_sub(1), &section));
             }
             KeyCode::Enter => match &section {
+                Section::Packages(at) => self.open_package(*at),
                 Section::Page(id, at) => self.change(id, *at, texts),
                 Section::Personas(at) => self.open_persona(*at),
                 Section::Presets(at) => self.open_preset(*at),
@@ -146,6 +151,7 @@ impl Settings {
                         self.ask_delete_persona(&id, texts);
                     }
                 }
+                Section::Packages(_) => {}
             },
             // 预设页、人格页 `a`：新建（第 37、39 条，同旧版）。
             KeyCode::Char('a') if matches!(section, Section::Presets(_)) => self.new_preset(texts),
@@ -163,6 +169,28 @@ impl Settings {
             Section::Page(id, _) => self.page_items(id).len(),
             Section::Personas(_) => self.more.personas.as_ref().map_or(0, Vec::len),
             Section::Presets(_) => self.more.presets.as_ref().map_or(0, Vec::len),
+            Section::Packages(_) => self.more.packages().len(),
+        }
+    }
+
+    /// 从一页退出来：包自己那一页回到包的列表、停在它上面；别的回主菜单。
+    fn leave_section(&mut self, section: &Section) {
+        let back = match section {
+            Section::Page(page, _) => super::packages::package_of(page).map(|id| {
+                let at = self.more.packages().iter().position(|p| p.id == id);
+                Section::Packages(at.unwrap_or(0))
+            }),
+            _ => None,
+        };
+        self.on_menu = back.is_none();
+        self.more.section = back;
+    }
+
+    /// 包的列表里 `Enter`：进这个包自己那一页。
+    fn open_package(&mut self, at: usize) {
+        if let Some(listed) = self.more.packages().get(at) {
+            let page = super::packages::page_of(&listed.id);
+            self.more.section = Some(Section::Page(page, 0));
         }
     }
 
