@@ -125,12 +125,25 @@ mod tests {
         let dir = std::path::Path::new(miyu_client::WORKSPACE_ROOT)
             .join("resources/software/basesystem/tools");
         let nerd = &builtin().unwrap()[0];
+        // 内核当场答的（`load_tools`，核心 L-1）不在那个目录里，在基础系统给人看的字里登记着显示名：一起查。改了名的旧名
+        // （`agent`、`message_agent`）蓝图定了不认，不查。
+        let human = std::path::Path::new(miyu_client::WORKSPACE_ROOT)
+            .join("resources/software/basesystem/human/zh.json");
+        let human: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(human).unwrap()).unwrap();
+        let named = human["tools"]
+            .as_object()
+            .into_iter()
+            .flat_map(|t| t.keys().cloned())
+            .filter(|n| !["agent", "message_agent"].contains(&n.as_str()));
         let mut missing: Vec<String> = std::fs::read_dir(&dir)
             .unwrap()
             .filter_map(|e| e.ok()?.path().file_stem()?.to_str().map(str::to_string))
+            .chain(named)
             .filter(|name| !nerd.tools.contains_key(name))
             .collect();
         missing.sort();
+        missing.dedup();
         assert!(missing.is_empty(), "这几件工具没有图标：{missing:?}");
     }
 

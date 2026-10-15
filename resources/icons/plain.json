@@ -1,6 +1,7 @@
 {
   "tools": {
-    "shell": "$"
+    "shell": "$",
+    "load_tools": "⇣"
   },
   "tool": "⚙",
   "think": "✳",
