@@ -36,8 +36,10 @@ pub struct Screen {
     pub theme: String,
     /// 主题的几个配置项（`tui.theme*`，「主题」第 6 条）。
     pub theme_choice: crate::theme::choice::Choice,
-    /// 起来时问到的终端底色是不是深色；问不到的是 `None`（「主题」第 3 条）。
+    /// 起来时问到的终端底色是不是深色；问不到的是 `None`（「主题」第 3 条）。拿回焦点再问到的盖上。
     pub terminal_dark: Option<bool>,
+    /// 拿回了焦点、主题跟着终端的颜色：这一拍过后再问一次终端的颜色（`main.rs` 取走，「主题」第 11 条）。
+    pub ask_colors: bool,
     /// 跟随头像、跟随壁纸的配色正在用的主色（「主题」第 5 条）；没有的是 `None`。
     pub theme_seed: Option<u32>,
     /// 能当主色的几个候选，好的在前（头像的核心给，壁纸的门面算；外观页「主色」照它列）。
@@ -82,6 +84,7 @@ impl Screen {
             theme,
             theme_choice: crate::theme::choice::Choice::default(),
             terminal_dark: None,
+            ask_colors: false,
             theme_seed: None,
             theme_seeds: Vec::new(),
             theme_pick: None,

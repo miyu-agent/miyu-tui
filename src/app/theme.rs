@@ -4,8 +4,8 @@
 use super::App;
 use crate::oobe::Oobe;
 use crate::oobe::persona::Colors;
-use crate::theme::choice::{self, Choice};
-use crate::theme::persona;
+use crate::theme::choice::{self, Choice, Mode};
+use crate::theme::{persona, terminal_colors};
 
 impl App {
     /// 起来时问到了终端的底色：照它重挑（跟随终端的才看它）。
@@ -99,11 +99,27 @@ impl App {
         }
     }
 
-    /// 窗口拿回焦点：选着跟随壁纸的再找一次。
-    pub(super) fn wallpaper_focus(&mut self) {
-        if self.choice().colors == "wallpaper" {
-            let dark = self.choice().dark(self.screen.terminal_dark);
+    /// 窗口拿回焦点：选着跟随壁纸的再找一次；明暗自动、终端配色的记下这一拍过后再问一次终端的颜色（「主题」第 11 条）。
+    pub(super) fn theme_focus(&mut self) {
+        let choice = self.choice();
+        if choice.colors == "wallpaper" {
+            let dark = choice.dark(self.screen.terminal_dark);
             self.screen.wallpaper.look(dark, true);
+        }
+        if choice.mode == Mode::Auto || choice.colors == "terminal" {
+            self.screen.ask_colors = true;
+        }
+    }
+
+    /// 再问一次终端的颜色：读按键停下（回话不能让它读走），问完接着读；变了照新的重挑（终端配色照它重新生成、明暗自动
+    /// 照它挑深浅）。没变的什么都不做。
+    pub fn ask_colors_again(&mut self, reader: &crate::reader::Reader) {
+        reader.pause();
+        let changed = terminal_colors::ask_again();
+        reader.resume();
+        if changed {
+            let dark = terminal_colors::seen().ground.map(|g| g.dark);
+            self.set_terminal_dark(dark.or(self.screen.terminal_dark));
         }
     }
 

@@ -411,7 +411,7 @@ pub struct DiagramColors {
 /// （`terminal_colors`）；都不知道的照 `fallback`。
 fn rgb_or(color: Color, fallback: (u8, u8, u8)) -> (u8, u8, u8) {
     match color {
-        Color::Reset => terminal_colors::seen().1.map_or(fallback, |g| g.fg),
+        Color::Reset => terminal_colors::seen().ground.map_or(fallback, |g| g.fg),
         other => terminal_colors::rgb(other).unwrap_or(fallback),
     }
 }
