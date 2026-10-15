@@ -15,6 +15,8 @@ pub struct Said {
     pub from: Sender,
     /// 说的字（文字那几块连起来）。
     pub text: String,
+    /// 附的图片、文件（核心 C-9：别的会话发来的话也能带附件），照先后。
+    pub attached: Vec<super::Attached>,
 }
 
 /// 谁发的（`by`）。
@@ -155,7 +157,11 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
     if by["kind"] == "person" && event["cause"].as_str().is_some_and(mine) {
         // 自己发的话界面早画上了，只配序号；自己打的命令模板界面没画过（交给核心的是命令），照那一行画上。
         return Some(match typed {
-            Some(text) => Push::Said { seq, text },
+            Some(text) => Push::Said {
+                seq,
+                text,
+                attached: super::read_attached(&event["body"]),
+            },
             None => Push::UserMessage(seq),
         });
     }
@@ -175,5 +181,6 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
         seq,
         from,
         text: typed.unwrap_or_else(|| text.join("\n")),
+        attached: super::read_attached(&event["body"]),
     }))
 }

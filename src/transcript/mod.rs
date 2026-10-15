@@ -3,6 +3,7 @@
 //! 只收核心推来的，不自己编：正文照推送一块块接起来，思考和调工具记进时间线的一段（`steps.rs`），
 //! 用量照 `model.called` 加起来。纯状态，不碰终端，好测。
 
+mod attached;
 mod beat;
 mod blocks;
 mod cache;
@@ -334,7 +335,14 @@ impl Transcript {
                 reference,
                 replaced,
             } => self.model_set(reference, replaced, texts),
-            Push::Said { seq, text } => self.said(seq, text),
+            Push::Said {
+                seq,
+                text,
+                attached,
+            } => {
+                self.said(seq, text);
+                self.attach_to(seq, &attached, &texts.attach);
+            }
             Push::BlockStart { index, block } => {
                 self.spoke = true;
                 self.retry = None;

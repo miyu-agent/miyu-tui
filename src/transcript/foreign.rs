@@ -9,11 +9,12 @@ impl Transcript {
     /// 一句不是这个界面发的话落了盘：画成一条带来处的你说的话，序号记上，开轮时照它归到那一轮。子会话开头先画上的那句
     /// 交代（序号还没有、字一样的）只补上序号，不画第二遍（「切进子会话」第 1 条）。
     pub fn foreign(&mut self, seq: Option<u64>, from: String, text: String) {
+        // 先画上的那句带着附件块的，字后面接着块上的字（`attached.rs`）。
         let drawn = self.entries.iter_mut().find(|e| {
             e.kind == Kind::User
                 && e.seq.is_none()
                 && e.from.as_deref() == Some(from.as_str())
-                && e.text == text
+                && (e.text == text || (!e.pasted.is_empty() && e.text.starts_with(text.as_str())))
         });
         if let Some(entry) = drawn {
             entry.seq = seq;

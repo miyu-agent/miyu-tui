@@ -21,6 +21,7 @@ fn turn(n: u64, said: &str, reply: &str) -> Vec<Push> {
         Push::Said {
             seq: n * 10,
             text: said.into(),
+            attached: Vec::new(),
         },
         Push::TurnStarted(n, Some(n * 10)),
         Push::BlockStart {

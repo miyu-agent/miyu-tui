@@ -8,7 +8,7 @@ use std::time::Instant;
 use super::App;
 use crate::body_view::BodyView;
 use crate::config::JobTexts;
-use crate::core::{Command, JobStart, Push, Sender, Update};
+use crate::core::{Attached, Command, JobStart, Push, Sender, Update};
 use crate::jobs::{Board, Job, JobKind};
 use crate::transcript::Transcript;
 
@@ -148,8 +148,11 @@ impl App {
             }
             Push::Foreign(said) => {
                 let from = self.label(session, &said.from, &words);
+                let attach = self.config.text.attach.clone();
                 if let Some((transcript, _)) = self.slot(session) {
                     transcript.foreign(Some(said.seq), from, said.text.clone());
+                    // 别的会话发来的话也能带附件（核心 C-9）：照人发附件那样画成块。
+                    transcript.attach_to(said.seq, &said.attached, &attach);
                 }
             }
             _ => return false,
@@ -194,7 +197,18 @@ impl App {
         self.link.core.send(Command::Watch(child.clone()));
         // 交代的活是派它的会话发来的：来处和核心推来的那一句算得一样，才认得出是同一句（`transcript/foreign.rs`）。
         let from = self.label(&child, &Sender::Session(session.to_string()), words);
-        let transcript = self.talk.transcript.child(child.clone(), from, task);
+        let mut transcript = self.talk.transcript.child(child.clone(), from, task);
+        // 交代带着附件的（核心 C-9）：参数里写的路径照扩展名认种类，画成块。
+        let rule = super::paste::attach_rule(&self.config);
+        let attached: Vec<Attached> = args
+            .as_ref()
+            .and_then(|a| a["attachments"].as_array())
+            .into_iter()
+            .flatten()
+            .filter_map(|p| p.as_str())
+            .map(|p| Attached::from_path(p, rule.kind_of(std::path::Path::new(p))))
+            .collect();
+        transcript.attach_handed(&attached, &self.config.text.attach);
         self.talk.parked.insert(
             child,
             Parked {
