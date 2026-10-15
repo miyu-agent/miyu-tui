@@ -305,6 +305,10 @@ fn run(
             }
         }
         app.tick();
+        // 拿回焦点、主题跟着终端的颜色：再问一次终端的颜色（蓝图「主题」第 11 条）。
+        if std::mem::take(&mut app.screen.ask_colors) {
+            app.ask_colors_again(&reader);
+        }
         if std::mem::take(&mut app.suspend) {
             suspend(terminal, keyboard)?;
             app.media.figures.borrow_mut().forget();

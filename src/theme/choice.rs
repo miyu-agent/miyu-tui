@@ -128,13 +128,12 @@ pub struct Picked {
     pub ground: Option<(Color, Color)>,
 }
 
-/// 终端配色照问到的终端颜色推底色；别的配色、没问到的照主题文件。
+/// 终端配色照问到的终端颜色生成（「终端配色」，H15）；别的配色、没问到的照主题文件。
 fn terminal_or(base: &Palette, colors: &str) -> Palette {
-    match super::terminal_colors::seen() {
-        (sixteen, Some(ground)) if colors == "terminal" => {
-            super::derived::terminal(base, ground, sixteen.as_ref())
-        }
-        _ => base.clone(),
+    if colors == "terminal" {
+        super::derived::terminal(base, super::terminal_colors::seen())
+    } else {
+        base.clone()
     }
 }
 
