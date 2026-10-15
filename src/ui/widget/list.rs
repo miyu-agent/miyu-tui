@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 use super::{Drawn, Hit, Look};
 use crate::cells::clip;
 use crate::theme;
-use crate::widgets::{Item, State, Tone};
+use crate::widgets::{Item, Run, State, Tone};
 
 /// 排一个列表；`left` 是还剩几行。
 pub(super) fn lay(items: &[Item], look: &Look, left: Option<usize>) -> Drawn {
@@ -88,11 +88,9 @@ fn line(item: &Item, look: &Look) -> Line<'static> {
         Some(State::Failed) => (marks.failed.clone(), theme::error(), base),
         Some(State::Off) => (marks.off.clone(), theme::dim(), theme::dim()),
     };
-    let right = item
-        .right
-        .as_deref()
-        .map(|r| clip(r, room.saturating_sub(mark.width()) / 2));
-    let right_w = right.as_ref().map_or(0, |r| r.width() + 1);
+    let right = right_spans(&item.right, room.saturating_sub(mark.width()) / 2, look);
+    let right_width: usize = right.iter().map(Span::width).sum();
+    let right_w = if right.is_empty() { 0 } else { right_width + 1 };
     let left_room = room.saturating_sub(mark.width() + right_w);
     let mut spans = vec![Span::styled(mark.clone(), mark_style)];
     let title = clip(&item.title, left_room);
@@ -106,10 +104,34 @@ fn line(item: &Item, look: &Look) -> Line<'static> {
             spans.push(Span::styled(detail, theme::dim()));
         }
     }
-    if let Some(right) = right {
-        let pad = room.saturating_sub(mark.width() + used + right.width());
+    if !right.is_empty() {
+        let pad = room.saturating_sub(mark.width() + used + right_width);
         spans.push(Span::raw(" ".repeat(pad)));
-        spans.push(Span::styled(right, theme::dim()));
+        spans.extend(right);
     }
     Line::from(spans)
+}
+
+/// 右边的字：几段之间空一格，每段照自己的语气（只写了一句字的照暗，核心 X-15 补）；最多 `cap` 列，放不下的从后往前
+/// 丢段，一段都放不下的截掉加 `…`。
+fn right_spans(runs: &[Run], cap: usize, look: &Look) -> Vec<Span<'static>> {
+    let style = |run: &Run| run.tone.map_or_else(theme::dim, |t| look.tone(t));
+    let mut out = Vec::new();
+    let mut used = 0;
+    for run in runs {
+        let gap = usize::from(!out.is_empty());
+        let w = run.text.width();
+        if used + gap + w > cap {
+            if out.is_empty() {
+                out.push(Span::styled(clip(&run.text, cap), style(run)));
+            }
+            break;
+        }
+        if gap > 0 {
+            out.push(Span::raw(" "));
+        }
+        out.push(Span::styled(run.text.clone(), style(run)));
+        used += gap + w;
+    }
+    out
 }
