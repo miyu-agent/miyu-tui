@@ -15,6 +15,25 @@ impl Rows {
         out
     }
 
+    /// 照 `(几行, 第几条)` 一块块拼起来；行都是空白的。
+    pub fn of_blank(chunks: &[(usize, Option<usize>)]) -> Rows {
+        let row = Row {
+            line: ratatui::text::Line::default(),
+            target: None,
+            shade: false,
+            plain: String::new(),
+            copy_blocks: Vec::new(),
+            content_x: 0,
+            joined: false,
+            links: Vec::new(),
+            copy: true,
+            figure: None,
+            icon: None,
+            figure_pending: false,
+        };
+        Rows::of_chunks(chunks, &row)
+    }
+
     /// 照给的行拼成一块。
     pub fn of_rows(rows: Vec<Row>) -> Rows {
         let mut out = Rows::default();

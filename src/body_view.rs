@@ -47,6 +47,8 @@ pub struct BodyView {
     pub hover_link: Option<String>,
     /// 上一帧第一行露出的是第几行。
     pub first: usize,
+    /// 上一帧画出来的第一行就是正文最上面那一行「正在读更早的…」（[`BodyView::older_on_top`]）：露进视口了，该要更早的一页。
+    pub older_shown: bool,
     /// 按过 Ctrl+L：清屏那一刻一共有几行。最底下至少滚到这里，所以清过的视口是空的，往回滚内容还在。
     pub cleared_at: Option<usize>,
     /// 跟着最新的时，视口底边至少露到第几行（不含）：只往下走、不往回退，内容变短时看着的行不掉下来；
@@ -225,6 +227,16 @@ impl BodyView {
     }
 
     /// 一轮结束：放开「只往下走」一次，思考、工具收起留下的空白由上面的行补满（`tui.md`「正文」第 1 条）。
+    /// 照这一帧排好的行看：视口从第一行起，第一行归正文最上面那一行「正在读更早的…」。只照画出来的行算：最新一页的
+    /// 推送跨了一帧时，上一帧画的是半页（放得下、从顶上起），那时还没有那一行，不能当它露出来了。
+    pub fn older_on_top(rows: &Rows, first: usize, entries: &[Entry]) -> bool {
+        first == 0
+            && rows
+                .entry_at(0)
+                .and_then(|i| entries.get(i))
+                .is_some_and(|e| e.kind == Kind::Older)
+    }
+
     pub fn settle(&mut self) {
         self.floor_end = 0;
     }
@@ -253,6 +265,7 @@ impl BodyView {
             .and_then(|at| mark(at - 1));
         self.pinned = Some(Pinned { top, cleared });
         self.rows = Rows::default();
+        self.older_shown = false;
         self.hover = None;
         self.anchor = None;
         self.select = None;
