@@ -30,7 +30,8 @@
     "fetch_media": "\uf03e",
     "mute": "\uf131",
     "poke": "\uf0a6",
-    "skip_reply": "\uf05e"
+    "skip_reply": "\uf05e",
+    "load_tools": "\uf019"
   },
   "tool": "",
   "think": "󰝨",
