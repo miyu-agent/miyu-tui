@@ -285,3 +285,17 @@ fn position(lines: &[String], text: &str) -> Option<(u16, u16)> {
         Some((u16::try_from(y).ok()?, u16::try_from(col).ok()?))
     })
 }
+
+#[test]
+fn the_background_item_is_hidden_while_the_colors_follow_the_terminal() {
+    // 2026-10-15 项目主人定：配色是终端配色时不铺，外观页不列「铺底色」，永远露出终端自己的底；别的配色照列。
+    for (colors, listed) in [("terminal", false), ("tokyonight", true)] {
+        let settings = format!("[tui]\ntheme = \"{colors}\"\n");
+        let home = Home::with_settings(Script::new([]), &settings);
+        let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
+        tui.open_menu("外观");
+        tui.wait_for("配色");
+        tui.pump(std::time::Duration::from_millis(500));
+        assert_eq!(tui.shows("铺底色"), listed, "{}", tui.lines().join("\n"));
+    }
+}

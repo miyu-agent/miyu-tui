@@ -36,6 +36,9 @@ pub const COLORS: [&str; 4] = ["persona", "wallpaper", "tokyonight", "terminal"]
 /// 照一个主色生成一套的配色：跟随头像、跟随壁纸（2026-10-14 项目主人定，同一套算法）。
 const SEEDED: [&str; 2] = ["persona", "wallpaper"];
 
+/// 铺底色那一项的键：配色是终端配色时引导、配置页都不列它（2026-10-15 项目主人定）。
+pub const GROUND_KEY: &str = "tui.theme_background";
+
 /// 跟随壁纸自选的主色（2026-10-14 项目主人定：能从几个候选里挑；跟随头像的存在人格上）：`#rrggbb`，没写的照打分最高的。
 pub const SEED_KEY: &str = "tui.theme_seed";
 

@@ -138,6 +138,7 @@ impl App {
             settings.more.seeds.clone_from(&self.screen.theme_seeds);
             settings.more.seed = self.screen.theme_seed;
             settings.more.following = matches!(colors.as_str(), "persona" | "wallpaper");
+            settings.more.terminal_colors = colors == "terminal";
             settings.more.seed_persona = persona;
             // 配置页里改了人格的主色：重读人格列表，照新的换颜色。
             if std::mem::take(&mut settings.personas_changed) {
