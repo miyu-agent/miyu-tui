@@ -100,17 +100,22 @@ fn lone_lines(text: &str) -> Vec<(usize, usize, String)> {
 }
 
 /// 排好的字里的一块：字节范围、样子；附件另带它的文件，点块打开。
-struct Piece {
-    from: usize,
-    to: usize,
-    style: Style,
+pub(super) struct Piece {
+    pub(super) from: usize,
+    pub(super) to: usize,
+    pub(super) style: Style,
     file: Option<String>,
     replacement: Option<(usize, Rc<str>)>,
 }
 
 /// 排成的字，和每一块。收着的块写块上的字，悬停时亮一档；点开了粘贴块原地换成全文，悬停时粘的那几段铺上块的
 /// 底色；附件怎么都是块，是指向它的文件的链接（「输入框」第 12 条：不展开、底色不掉，点块用系统的程序打开）。
-fn shaped(text: &str, chips: &[Chip], open: bool, hovered: bool) -> (String, Vec<Piece>) {
+pub(super) fn shaped(
+    text: &str,
+    chips: &[Chip],
+    open: bool,
+    hovered: bool,
+) -> (String, Vec<Piece>) {
     let chip = if hovered {
         theme::chip_hover()
     } else {
@@ -180,7 +185,12 @@ fn copy_blocks(
 }
 
 /// `[start, end)` 这一行里附件块占的列（从内容开头算）和文件：点它、悬停它照链接办（「她的回答：Markdown」第 10 条）。
-fn links(text: &str, start: usize, end: usize, pieces: &[Piece]) -> Vec<(u16, u16, String)> {
+pub(super) fn links(
+    text: &str,
+    start: usize,
+    end: usize,
+    pieces: &[Piece],
+) -> Vec<(u16, u16, String)> {
     let cols = |a: usize, b: usize| u16::try_from(text[a..b].width()).unwrap_or(u16::MAX);
     pieces
         .iter()
@@ -208,7 +218,7 @@ fn block_ranges(text: &str, chips: &[Chip]) -> Vec<(usize, usize)> {
 }
 
 /// `[start, end)` 这一截排成几段：落在块里的（折行折到一半的也算）用块的样子，别的原色。
-fn spans(
+pub(super) fn spans(
     text: &str,
     start: usize,
     end: usize,

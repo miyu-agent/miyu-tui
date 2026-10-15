@@ -62,8 +62,8 @@ pub use models::{Choice, ChoiceState, Current};
 pub use output::JobOutput;
 pub use personas::{Persona, Preset, read_personas, read_presets};
 pub use push::{
-    Asking, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobReason, JobStart, Push,
-    Sender, Usage,
+    Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobReason, JobStart,
+    Push, Sender, Usage,
 };
 use rpc::Rpc;
 pub use sessions::{

@@ -51,7 +51,8 @@ fn what_a_person_said_is_drawn_as_yours_with_its_time() {
             Push::Clock(t("2026-09-25T07:04:05.123Z")),
             Push::Said {
                 seq: 41,
-                text: "看看 src 目录".into()
+                text: "看看 src 目录".into(),
+                attached: Vec::new(),
             }
         ]
     );

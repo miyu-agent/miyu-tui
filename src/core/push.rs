@@ -10,12 +10,15 @@ use super::Limits;
 use super::kinds::{EndReason, Level, ToolStatus};
 
 mod asking;
+mod attached;
 mod called;
 mod goal;
 mod jobs;
 mod result;
 
 pub use asking::Asking;
+pub use attached::Attached;
+pub(crate) use attached::read as read_attached;
 pub(crate) use goal::read as read_goal;
 pub use goal::{Goal, GoalState};
 
@@ -177,12 +180,14 @@ pub enum Push {
     Heard(u64),
     /// 补发来的事件是什么时候的（`at`）：后面几条照它算用时、写时刻；`None` 是补完了，回到照现在的钟（蓝图「会话列表」第 6 条）。
     Clock(Option<jiff::Timestamp>),
-    /// 补发来的你说的话（人发的 `message.user`）：带着序号和字，照你说的画（「会话列表」第 6 条）。
+    /// 补发来的你说的话（人发的 `message.user`）：带着序号、字和附的图片、文件，照你说的画（「会话列表」第 6 条）。
     Said {
         /// 落盘的序号。
         seq: u64,
         /// 说的字。
         text: String,
+        /// 附的图片、文件，照先后。
+        attached: Vec<Attached>,
     },
     BlockStart {
         /// 这一块在这一次请求里的序号。

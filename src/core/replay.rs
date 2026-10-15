@@ -43,6 +43,7 @@ impl Replay {
                     seq: event["seq"].as_u64().unwrap_or_default(),
                     text: push::typed_text(&event["body"])
                         .unwrap_or_else(|| text_of(&event["body"])),
+                    attached: push::read_attached(&event["body"]),
                 });
             }
             _ => {

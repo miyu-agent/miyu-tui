@@ -32,3 +32,42 @@ fn stopping_an_agent_while_viewing_it_stops_that_agent() {
     tui.key(b"x");
     tui.wait_for("已停止");
 }
+
+/// 1×1 的 PNG。
+const PNG: &[u8] = &[
+    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+    0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+    0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+    0x42, 0x60, 0x82,
+];
+
+/// 核心 C-9（2026-10-15）：派子代理时交代带着附件，子会话里那句交代照人发附件那样画成块。
+#[test]
+fn a_task_handed_over_with_an_image_shows_it_as_a_block_in_the_agents_session() {
+    let png = std::env::temp_dir().join(format!("miyu-tui-c9-{}.png", std::process::id()));
+    std::fs::write(&png, PNG).expect("写得了图");
+    let args = serde_json::json!({
+        "description": "看图",
+        "prompt": "看看这张图",
+        "attachments": [png.display().to_string()],
+    })
+    .to_string();
+    let script = Script::new([
+        Play::Calls(vec![("subagent".into(), args)]),
+        Play::Holds,
+        Play::Holds,
+    ]);
+    let home = Home::with_tools(script, "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("派个子代理看图");
+    tui.wait_for("○ 看图");
+    tui.key(DOWN);
+    tui.key(DOWN);
+    tui.key(b"\r");
+    tui.wait_for("● 看图");
+    // 交代那一句：字后面接着图的块。
+    tui.wait_for("看看这张图 [图片 1]");
+    if std::fs::remove_file(&png).is_err() {}
+}
