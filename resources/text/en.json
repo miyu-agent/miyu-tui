@@ -1414,7 +1414,7 @@
       "mascot": ["Show", "Hide"],
       "mascot_note": "Uses more CPU and slows startup when on",
       "ground": ["On", "Off"],
-      "ground_note": "When dark or light is chosen, paint the whole screen in that theme's background",
+      "ground_note": "Paint the whole screen in the theme's background",
       "seed_default": "default",
       "next": "Next",
       "saving": "Saving…"
