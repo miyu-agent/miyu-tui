@@ -1,5 +1,5 @@
 //! 用哪套主题（蓝图 `tui.md`「主题」第 2 到 4、6 条，2026-10-13 项目主人定）：配色（跟随头像、跟随壁纸、tokyonight、terminal）、明暗
-//! （跟随终端、深色、浅色），手动选了深浅铺不铺底色。照这几样和终端的底色挑出一套出厂的颜色、要不要铺。终端自己的配置项
+//! （自动、深色、浅色），铺不铺底色。照这几样和终端的底色挑出一套出厂的颜色、要不要铺。终端自己的配置项
 //! `tui.theme`、`tui.theme_mode`、`tui.theme_background`（终端软件包清单）。
 
 use ratatui::style::Color;
@@ -60,7 +60,7 @@ pub struct Choice {
     pub colors: String,
     /// 明暗。
     pub mode: Mode,
-    /// 手动选了深浅时铺底色（第 4 条：能关）。
+    /// 铺底色（第 4 条：能关）。
     pub ground: bool,
 }
 
@@ -111,9 +111,10 @@ impl Choice {
         }
     }
 
-    /// 铺不铺底色：手动选了深浅、开着；terminal 那一套跟着终端的配色走，不铺（第 4 条）。
+    /// 铺不铺底色：开着就铺（明暗自动的铺照终端挑出的那一套，2026-10-15 项目主人定）；terminal 那一套跟着终端的配色走，
+    /// 不铺（第 4 条）。
     pub fn grounded(&self) -> bool {
-        self.mode != Mode::Auto && self.ground && self.colors != "terminal"
+        self.ground && self.colors != "terminal"
     }
 }
 
@@ -231,8 +232,9 @@ mod tests {
     }
 
     #[test]
-    fn auto_follows_the_terminal_and_only_a_chosen_mode_paints_the_ground() {
-        // 2026-10-13 项目主人定：跟随终端照终端的底色挑深浅、不铺；手动选的铺这一套的底色，能关。
+    fn auto_follows_the_terminal_and_the_switch_paints_the_ground_in_every_mode() {
+        // 2026-10-13 项目主人定：自动照终端的底色挑深浅，手动选的不看终端；铺底色能关。2026-10-15 项目主人定：三种明暗下
+        // 开关意思一样，自动的开着也铺（原来自动不铺，引导里写着「开」却没铺）。
         let themes = builtin().unwrap();
         let auto = Choice::default();
         assert_eq!(
@@ -244,12 +246,21 @@ mod tests {
             "tokyonight-night",
             "问不到的当深色"
         );
+        assert_eq!(
+            pick(&auto, Some(false), &themes, None).unwrap().ground,
+            Some((Color::Rgb(0xe1, 0xe2, 0xe7), Color::Rgb(0x37, 0x60, 0xbf))),
+            "自动的开着也铺照终端挑出的那一套"
+        );
+        let auto_off = Choice {
+            ground: false,
+            ..Choice::default()
+        };
         assert!(
-            pick(&auto, Some(false), &themes, None)
+            pick(&auto_off, Some(false), &themes, None)
                 .unwrap()
                 .ground
                 .is_none(),
-            "跟随终端不铺"
+            "自动的关了不铺"
         );
         let light = Choice {
             mode: Mode::Light,

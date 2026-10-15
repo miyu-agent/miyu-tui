@@ -134,7 +134,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.key(b"\x1b[B");
     tui.key(b"\r");
     // 建好、写成默认人格，到了主题（第 22a 条）：没头像的停在现在的配置；明暗那一格回车开列表（2026-10-14 项目主人：
-    // 和配置页选值的同一个），挪到深色就当场铺上 tokyonight 深色的底；回车选好，挪到「下一步」写下。
+    // 和配置页选值的同一个），挪到哪当场换成哪的底；选好深色，挪到「下一步」写下。
     tui.wait_for("选择明暗和配色");
     assert!(tui.shows("Tokyo Night"), "{}", tui.lines().join("\n"));
     // 两格之间空一行，同别的几步的表单（2026-10-14 项目主人报：挤在一起）。
@@ -149,16 +149,22 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     let (mode, colors) = (row("明暗").unwrap_or(0), row("配色").unwrap_or(0));
     assert_eq!(colors, mode + 2, "{}", lines.join("\n"));
     assert!(lines[mode + 1].trim().is_empty(), "{}", lines.join("\n"));
-    assert_eq!(tui.background(0, 0), vt100::Color::Default, "自动不铺");
+    // 自动的开着也铺（2026-10-15 项目主人定）：测试终端不答底色，当深色，铺 tokyonight 深色的底。
+    let night = vt100::Color::Rgb(0x1a, 0x1b, 0x26);
+    assert_eq!(tui.background(0, 0), night, "自动的开着也铺");
     tui.key(b"\r");
     tui.wait_for("浅色");
+    tui.key(b"j");
     tui.key(b"j");
     tui.pump(Duration::from_millis(300));
     assert_eq!(
         tui.background(0, 0),
-        vt100::Color::Rgb(0x1a, 0x1b, 0x26),
-        "挪到就当场换"
+        vt100::Color::Rgb(0xe1, 0xe2, 0xe7),
+        "挪到浅色当场换成浅色的底"
     );
+    tui.key(b"k");
+    tui.pump(Duration::from_millis(300));
+    assert_eq!(tui.background(0, 0), night, "挪回深色");
     tui.key(b"\r");
     // 没头像：明暗、配色下面还有铺底色、吉祥物两格，吉祥物停在显示，下面暗色一句（2026-10-15 项目主人定）。
     assert!(

@@ -115,4 +115,4 @@ type = "bool"
 default = true
 applies = "now"
 name = { en = "Paint the background", zh = "铺底色", ja = "背景を塗る" }
-description = { en = "When dark or light is chosen by hand, paint the whole screen in that theme's background.", zh = "手动选了深色、浅色时，整个界面铺这一套的底色。", ja = "ダーク／ライトを手動で選んだとき、画面全体をそのテーマの背景色で塗る。" }
+description = { en = "Paint the whole screen in the theme's background.", zh = "整个界面铺主题的底色。", ja = "画面全体をテーマの背景色で塗る。" }

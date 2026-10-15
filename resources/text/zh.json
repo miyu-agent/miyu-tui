@@ -1414,7 +1414,7 @@
       "mascot": ["显示", "不显示"],
       "mascot_note": "开启会提高 CPU 占用，拖慢启动速度",
       "ground": ["开", "关"],
-      "ground_note": "明暗选深色、浅色时，整个界面铺这一套的底色",
+      "ground_note": "整个界面铺主题的底色",
       "seed_default": "默认",
       "next": "下一步",
       "saving": "正在保存…"
