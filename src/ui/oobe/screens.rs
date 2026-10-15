@@ -146,10 +146,10 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         _ => None,
     };
     let center = middle.map_or((0.5, 0.45), |r| stars::center(area, r));
-    let list = oobe.stars.at(now, &look.stars, center);
+    let list = oobe.stars.at(now, look.stars_for(true), center);
     let t = now.saturating_duration_since(oobe.born).as_secs_f64();
     let summary = oobe.summary();
-    stars::draw(frame, area, &list, &look.stars.marks);
+    stars::draw(frame, area, &list, &look.stars_for(true).marks);
     if let Some(rect) = rect {
         // 回车以后落到首页的位置时整张露着。
         let shown = if leave.is_some() { 1.0 } else { fin.reveal };

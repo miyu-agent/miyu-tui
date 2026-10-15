@@ -59,6 +59,8 @@ fn terminal_colors_write_every_text_slot_with_the_terminals_own_sixteen() {
 #[test]
 fn thoughts_are_upright_not_dimmed() {
     use ratatui::style::Modifier;
+    // 读的是全局的主题：别的测试换着主题时等它换完。
+    let _hold = super::hold();
     let style = super::thought();
     assert!(
         !style.add_modifier.contains(Modifier::ITALIC),
@@ -102,4 +104,25 @@ fn the_band_lights_what_it_passes() {
     assert!(bright(3, at(3.0)) > bright(0, at(3.0)));
     let base = sum(accent_rgb());
     assert!(bright(1, at(1.0)) > base, "正中的比底色还亮");
+}
+
+#[test]
+fn setting_the_same_palette_again_keeps_what_was_drawn_with_it() {
+    // 2026-10-15 T-235：引导关上时主题照配置项重挑一次，颜色和引导里预览的一模一样，换代数却加了一，头像（图的缓存键带着
+    // 换代数）就得重做、重传，首页那一块空了一下。同一套颜色再设一次不算换。
+    let _hold = super::hold();
+    let themes = super::builtin().unwrap();
+    let (_, night) = themes
+        .iter()
+        .find(|(n, _)| n == "tokyonight-night")
+        .unwrap();
+    let (_, terminal) = themes.iter().find(|(n, _)| n == "terminal").unwrap();
+    super::set(night.clone());
+    let before = super::generation();
+    super::set(night.clone());
+    assert_eq!(super::generation(), before, "同一套颜色不算换");
+    super::set(terminal.clone());
+    assert_ne!(super::generation(), before, "换了颜色才算");
+    // 换回出厂的那一套：别的测试读的是全局的主题。
+    super::set(night.clone());
 }

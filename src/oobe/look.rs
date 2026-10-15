@@ -148,6 +148,8 @@ pub struct Done {
     pub reveal_ms: u64,
     /// 回车以后散开、走到首页多久。
     pub leave_ms: u64,
+    /// 这一屏的星点：比开场的多、慢（2026-10-15 项目主人：星星有点少，也有点快）。
+    pub stars: Stars,
 }
 
 /// 浮在一步上面的窗（第 21a 条）：大编辑浮窗、示范对话。
@@ -196,4 +198,10 @@ pub struct Look {
     pub catalog_limit: u64,
     /// 建人格时头像的小图几行高（第 21 条）。
     pub avatar_rows: u16,
+}
+impl Look {
+    /// 这一屏的星点照哪一套：好了那一屏照 `done.stars`，开场照 `stars`。
+    pub fn stars_for(&self, done: bool) -> &Stars {
+        if done { &self.done.stars } else { &self.stars }
+    }
 }
