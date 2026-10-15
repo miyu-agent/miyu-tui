@@ -23,12 +23,14 @@ pub(super) async fn take(
     let kind = message["id"].as_str().and_then(|id| awaiting.remove(id));
     if let Some(error) = message.get("error") {
         let reason = error["data"]["reason"].as_str().map(str::to_string);
-        // 用不了的斜杠命令照连接的语言说为什么（`data.why`，核心 O-6 再补），比原话具体（蓝图「长期目标」第 2 条）。
-        let message = error["data"]["why"]
-            .as_str()
-            .or(error["message"].as_str())
-            .unwrap_or_default()
-            .to_string();
+        // 用不了的斜杠命令照连接的语言说为什么（`data.why`，核心 O-6 再补），比原话具体（蓝图「长期目标」第 2 条）。扩展办
+        // 命令出了错的（`command_failed`，核心 X-14 下）：`why` 是扩展的原话，接在「命令执行失败」下一行，两句都给人看。
+        let said = error["message"].as_str().unwrap_or_default();
+        let message = match (reason.as_deref(), error["data"]["why"].as_str()) {
+            (Some("command_failed"), Some(why)) => format!("{said}\n{why}"),
+            (_, Some(why)) => why.to_string(),
+            (_, None) => said.to_string(),
+        };
         return match kind {
             Some(Awaiting::Answer(session, call)) => notify(Update::AnswerRefused {
                 session,
@@ -86,6 +88,8 @@ pub(super) async fn take(
                 let gone = link.gone(&session, reason.as_deref());
                 notify(gone.unwrap_or(Update::Refused { reason, message }))
             }
+            // 核心清单里的斜杠命令被拒：另报，界面把打的那一行放回输入框（「斜杠命令列表」第 4 条）。
+            Some(Awaiting::Slash) => notify(Update::SlashRefused { message }),
             // 读不了输出（任务没了、是子代理）：不用说，界面不再等它。
             Some(Awaiting::Output(session, job, after)) => notify(Update::Output {
                 session,
@@ -134,7 +138,10 @@ pub(super) async fn take(
             let rows = Ok(super::cost::rows(&message["result"]));
             return notify(Update::UsageRows { kind, rows });
         }
-        Some(Awaiting::CommandRun) => {
+        Some(Awaiting::Catalog) => {
+            return notify(Update::Catalog(super::catalog::read(&message["result"])));
+        }
+        Some(Awaiting::CommandRun | Awaiting::Slash) => {
             let text = |key: &str| {
                 message["result"][key]
                     .as_str()

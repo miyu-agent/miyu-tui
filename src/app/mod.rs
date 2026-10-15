@@ -6,6 +6,7 @@ mod avatars;
 mod boxes;
 mod build;
 mod cards;
+mod catalog;
 mod compose;
 mod config_asks;
 mod deadline;
@@ -246,10 +247,13 @@ impl App {
 
     /// 同 [`App::hint`]，后面接着 `tail`：放不下时截前面的字，它整个留着。
     fn hint_keeping(&mut self, text: String, tail: String, good: bool) {
+        // 好几行的（扩展办的斜杠命令的回执）多停一会儿：一行一份，最多五份。
+        let lines = u32::try_from(text.lines().count().clamp(1, 5)).unwrap_or(1);
+        let stay = Duration::from_millis(self.config.layout.notice_ms) * lines;
         self.typing.notice = Some(Notice {
             text,
             tail,
-            until: Instant::now() + Duration::from_millis(self.config.layout.notice_ms),
+            until: Instant::now() + stay,
             good,
         });
     }
@@ -323,6 +327,8 @@ impl App {
         }
         let text = self.typing.input.editor.text();
         let typed = commands::menu_typed(text);
+        // 列表刚弹出来：问一次核心认哪些（会话换了、写了新模板的照新的列，`catalog.rs`）。
+        let opening = typed.is_some() && !self.typing.menu.typing();
         let matches: Vec<Spec> = typed
             .map(|t| {
                 self.config
@@ -333,9 +339,14 @@ impl App {
                     .collect()
             })
             .unwrap_or_default();
-        self.typing
+        let open = self
+            .typing
             .menu
             .sync(text, typed, matches.len())
-            .then_some(matches)
+            .then_some(matches);
+        if opening {
+            self.ask_catalog();
+        }
+        open
     }
 }

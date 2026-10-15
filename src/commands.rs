@@ -1,4 +1,5 @@
-//! 斜杠命令：清单住在 `resources/commands.json`，一条一个名字、一句说明、做什么。
+//! 斜杠命令：清单住在 `resources/commands.json`，一条一个名字、一句说明、做什么。核心认的（命令模板、扩展声明的，
+//! `command.catalog`，核心 X-14）另放一份 [`Commands::core`]，接在终端自己的后面，同名的照终端自己的。
 //!
 //! 加命令只登记：写进清单，`run` 选下面几种之一；要新的一种才动代码。
 
@@ -12,6 +13,9 @@ pub struct Commands {
     /// 命令被拒时，这几种原因码弹核心的原话（带 `data.why` 的照它），不写进正文（蓝图「长期目标」第 2 条）。
     #[serde(default)]
     pub hinted_refusals: Vec<String>,
+    /// 核心认的、终端自己没有的那几条（`command.catalog` 读来的，`app/catalog.rs` 放进来）：接在后面列、照样能打。
+    #[serde(skip)]
+    pub core: Vec<Spec>,
 }
 
 /// 一条命令。
@@ -29,6 +33,9 @@ pub struct Spec {
     /// 名字后面空一格能接参数（`/compact 要求`，蓝图「斜杠命令列表」第 5 条）。
     #[serde(default)]
     pub args: bool,
+    /// 名字后面跟什么的提示（核心清单里模板的 `argument-hint`，例如 `<路径>`）：列表里名字后面暗色写着。
+    #[serde(default)]
+    pub argument: Option<String>,
 }
 
 /// 回车时输入框里那一行是什么（蓝图「斜杠命令列表」第 4、5 条）。
@@ -36,7 +43,7 @@ pub struct Spec {
 pub enum Line<'a> {
     /// 一条命令，带着名字后面的字（没写的是 `None`）。
     Command(&'a Spec, Option<&'a str>),
-    /// 像命令，没有这个命令：弹「命令不存在」。
+    /// 像命令，终端没有这个命令：交给核心，由它说行不行（`app/catalog.rs`）。
     Unknown,
     /// 一句话，发给她。
     Talk,
@@ -98,6 +105,8 @@ pub enum Run {
     Help,
     /// 在中英文之间切换界面语言（蓝图「界面语言」）。
     Language,
+    /// 核心认的命令（命令模板、扩展声明的）：整行交给核心（`command.run`，核心 X-14）。
+    Core,
 }
 
 impl Commands {
@@ -105,7 +114,7 @@ impl Commands {
     pub fn filter(&self, typed: &str) -> Vec<&Spec> {
         let typed = typed.to_lowercase();
         let (mut starts, mut contains) = (Vec::new(), Vec::new());
-        for spec in &self.commands {
+        for spec in self.all() {
             let mut names = std::iter::once(&spec.name).chain(&spec.aliases);
             if names.clone().any(|n| n.starts_with(&typed)) {
                 starts.push(spec);
@@ -119,9 +128,35 @@ impl Commands {
 
     /// 名字或别名正好是 `name` 的那一条。
     pub fn find(&self, name: &str) -> Option<&Spec> {
-        self.commands
-            .iter()
+        self.all()
             .find(|s| s.name == name || s.aliases.iter().any(|a| a == name))
+    }
+
+    /// 全部：终端自己的在前，核心认的接在后面。
+    pub fn all(&self) -> impl Iterator<Item = &Spec> + Clone {
+        self.commands.iter().chain(&self.core)
+    }
+
+    /// 照核心认的那一份换上（`command.catalog` 的回应）：终端自己有的名字、别名不要，能接参数。
+    pub fn take_core(&mut self, listed: &[crate::core::CoreCommand]) {
+        let own = |name: &str| {
+            self.commands
+                .iter()
+                .any(|s| s.name == name || s.aliases.iter().any(|a| a == name))
+        };
+        let core = listed
+            .iter()
+            .filter(|c| !own(&c.name) && !c.aliases.iter().any(|a| own(a)))
+            .map(|c| Spec {
+                name: c.name.clone(),
+                aliases: c.aliases.clone(),
+                summary: c.summary.clone(),
+                run: Run::Core,
+                args: true,
+                argument: c.argument.clone(),
+            })
+            .collect();
+        self.core = core;
     }
 }
 
@@ -278,5 +313,42 @@ mod tests {
         assert_eq!(typed("/1st"), None);
         assert_eq!(typed("/foo-bar_2"), Some("foo-bar_2"));
         assert_eq!(typed("/foo 带参数"), Some("foo"));
+    }
+
+    #[test]
+    fn the_cores_commands_follow_ours_without_the_ones_we_have() {
+        // 核心 X-14：模板、扩展声明的接在终端自己的后面；终端有的名字、别名不要；能接参数。
+        let mut c = commands();
+        let core = |name: &str, aliases: &[&str]| crate::core::CoreCommand {
+            name: name.into(),
+            aliases: aliases.iter().map(ToString::to_string).collect(),
+            summary: format!("{name} 的说明"),
+            argument: (name == "review").then(|| "<路径>".to_string()),
+        };
+        c.take_core(&[
+            core("clear", &[]),
+            core("review", &[]),
+            core("tidy", &["reset"]),
+            core("remember", &[]),
+        ]);
+        let names: Vec<&str> = c.core.iter().map(|s| s.name.as_str()).collect();
+        assert_eq!(
+            names,
+            ["review", "remember"],
+            "同名、别名撞了终端自己的都不要"
+        );
+        let review = c.find("review").expect("找得到");
+        assert_eq!((review.run, review.args), (super::Run::Core, true));
+        assert_eq!(review.argument.as_deref(), Some("<路径>"));
+        assert!(
+            matches!(c.read("/review src"), Line::Command(s, Some("src")) if s.name == "review"),
+            "接参数"
+        );
+        let filtered: Vec<&str> = c.filter("re").iter().map(|s| s.name.as_str()).collect();
+        let at = |n: &str| filtered.iter().position(|f| *f == n);
+        assert!(
+            at("review") > at("restore"),
+            "接在终端自己的后面：{filtered:?}"
+        );
     }
 }

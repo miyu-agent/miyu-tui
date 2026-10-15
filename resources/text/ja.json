@@ -77,7 +77,6 @@
     "other": "そのまま",
     "more": "⋯ あと {count} 行"
   },
-  "unknown_command": "そのコマンドはありません",
   "thinking": "考え中",
   "thought": "思考済み",
   "prepare": "{name}を準備中",
@@ -508,6 +507,7 @@
       "mcp": "MCP サーバー {name}",
       "skill": "スキル {name}",
       "script": "スクリプト {name}",
+      "slash": "スラッシュコマンド /{name}",
       "includes": "含むもの：",
       "skipped": "読めないもの：",
       "needs": "必要：",

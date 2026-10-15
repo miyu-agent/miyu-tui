@@ -1,5 +1,5 @@
 //! 帮助框（蓝图 `tui.md`「帮助 `/help`」，2026-09-30 项目主人定：在输入框上面开一个框）：和命令列表、后台面板一个框，
-//! 两段：命令（照 `commands.json`，还不做事的假命令不列）、按键（`text/zh.json` 的 `help.keys`）。放不下时照滚到哪露一截。
+//! 两段：命令（照 `commands.json`，接着核心认的，还不做事的假命令不列）、按键（`text/zh.json` 的 `help.keys`）。放不下时照滚到哪露一截。
 
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -49,15 +49,19 @@ pub fn count(config: &Config, width: u16) -> usize {
 /// 全部的行：段名，一条一行（左边一列对齐，右边暗色的说明，放不下折到下一行）。
 fn rows(config: &Config, width: u16) -> Vec<Line<'static>> {
     let texts = &config.text.help;
+    // 终端自己的在前，核心认的（命令模板、扩展声明的）接在后面；写了参数提示的跟在名字后面。
     let commands: Vec<(String, String)> = config
         .commands
-        .commands
-        .iter()
+        .all()
         .map(|c| {
-            let names: Vec<String> = std::iter::once(&c.name)
+            let mut names: Vec<String> = std::iter::once(&c.name)
                 .chain(&c.aliases)
                 .map(|n| format!("/{n}"))
                 .collect();
+            if let (Some(first), Some(argument)) = (names.first_mut(), &c.argument) {
+                first.push(' ');
+                first.push_str(argument);
+            }
             (names.join(" · "), c.summary.clone())
         })
         .collect();

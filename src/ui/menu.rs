@@ -32,6 +32,10 @@ pub fn lines(
         let pad = " ".repeat(column.saturating_sub(label(spec).width()));
         let (name_style, summary_style) = looks(picked);
         let mut content = vec![Span::styled(name, name_style)];
+        // 核心认的命令写了参数提示的（模板的 `argument-hint`）：名字后面暗色跟着（2026-10-15 项目主人照 Claude Code 定）。
+        if let Some(argument) = &spec.argument {
+            content.push(Span::styled(format!(" {argument}"), theme::faint()));
+        }
         if !spec.aliases.is_empty() {
             let aliases = format!(" ({})", spec.aliases.join(", "));
             content.push(Span::styled(aliases, theme::faint()));
@@ -50,10 +54,15 @@ pub fn rows(configured: usize, room: u16) -> usize {
 
 /// 名字那一列写的：`/名字`，有别名的跟上 ` (别名)`（2026-09-29 项目主人：原来在说明里写「也可以打」）。
 fn label(spec: &Spec) -> String {
+    let argument = spec
+        .argument
+        .as_ref()
+        .map(|a| format!(" {a}"))
+        .unwrap_or_default();
     if spec.aliases.is_empty() {
-        format!("/{}", spec.name)
+        format!("/{}{argument}", spec.name)
     } else {
-        format!("/{} ({})", spec.name, spec.aliases.join(", "))
+        format!("/{}{argument} ({})", spec.name, spec.aliases.join(", "))
     }
 }
 

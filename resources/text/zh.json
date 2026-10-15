@@ -77,7 +77,6 @@
     "other": "未还原",
     "more": "⋯ 还有 {count} 行"
   },
-  "unknown_command": "命令不存在",
   "thinking": "思考中",
   "thought": "已思考",
   "prepare": "准备{name}",
@@ -508,6 +507,7 @@
       "mcp": "MCP 服务 {name}",
       "skill": "技能 {name}",
       "script": "脚本 {name}",
+      "slash": "斜杠命令 /{name}",
       "includes": "包含：",
       "skipped": "读不成：",
       "needs": "需要：",

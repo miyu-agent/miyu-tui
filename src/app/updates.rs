@@ -104,6 +104,8 @@ impl App {
                 self.link.core.send(Command::FetchHuman(code));
             }
             self.note_head(&head.language, head.persona.as_deref());
+            // 核心认的斜杠命令：连上、配置变了（装卸了包、写了模板的照样算）问一次。
+            self.ask_catalog();
             self.link.currency = head.currency;
             self.language_from_config(&head.language);
             return;
@@ -197,7 +199,17 @@ impl App {
         }
         // 命令的回执弹提示，去掉句末的句号，和别的提示一样；`/clear` 不弹，正文里已有「上下文已清空」那一行（蓝图
         // 「斜杠命令」`/stop`，2026-10-07 项目主人：提示框里不要句号）。
+        // 核心认的斜杠命令：清单到了接上；交给核心的那一行被拒弹原话、放回输入框（`catalog.rs`）。
+        if let Update::Catalog(listed) = &update {
+            self.catalog_arrived(listed);
+            return;
+        }
+        if let Update::SlashRefused { message, .. } = &update {
+            self.slash_refused(message);
+            return;
+        }
         if let Update::CommandRan { command, said } = &update {
+            self.slash_ran();
             let said = said.trim_end().trim_end_matches(['。', '.']);
             // `/goal` 看进度的：原文长了截原文，在哪一步、第几轮留着（「长期目标」第 1 条）。
             let (text, tail) = match command.as_str() {

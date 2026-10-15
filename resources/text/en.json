@@ -77,7 +77,6 @@
     "other": "left alone",
     "more": "⋯ {count} more lines"
   },
-  "unknown_command": "No such command",
   "thinking": "Thinking",
   "thought": "Thought",
   "prepare": "Preparing {name}",
@@ -508,6 +507,7 @@
       "mcp": "MCP server {name}",
       "skill": "skill {name}",
       "script": "script {name}",
+      "slash": "slash command /{name}",
       "includes": "Includes: ",
       "skipped": "Cannot read: ",
       "needs": "Needs: ",

@@ -10,6 +10,7 @@ mod abilities;
 mod asides;
 mod awaiting;
 mod backoff;
+mod catalog;
 mod config;
 mod connect;
 mod cost;
@@ -47,6 +48,7 @@ use backoff::Backoff;
 use connect::connect;
 
 pub use abilities::Abilities;
+pub use catalog::CoreCommand;
 pub use config::HeadConfig;
 pub use cost::{Bill, Cost, UsageAsk, UsageKind, UsageRow};
 pub use efforts::{EffortList, Efforts, wanted as wanted_models};
@@ -210,6 +212,11 @@ pub enum Command {
     NewWorkspace(Option<String>),
     /// 一条斜杠命令交给核心办（`command.run`，核心 O-6）：`/stop`、`/clear`，原文照规范的名字。
     Run(String),
+    /// 核心清单里的、终端不认的一条斜杠命令（命令模板、扩展声明的，核心 X-14）：人打的那一行原样交给 `command.run`；
+    /// 还没开会话的先开会话（模板是当人说的一句发出去的）。被拒的回 [`Update::SlashRefused`]。
+    Slash(String),
+    /// 要核心认的斜杠命令（`command.catalog`）：带会话的只列这个会话里能用的。
+    Catalog(Option<String>),
     /// `/goal` 交给核心办（`command.run`，核心 X-8），带着后面的字；会话还没开时先开会话（蓝图「长期目标」第 3 条）。
     Goal(String),
     /// 要一段回顾（`session.recap`，`/recap`）。
@@ -338,6 +345,13 @@ pub enum Update {
         kind: UsageKind,
         /// 一行行，或者拒绝的原话。
         rows: Result<Vec<UsageRow>, String>,
+    },
+    /// 核心认的斜杠命令（[`Command::Catalog`] 的回应）。
+    Catalog(Vec<CoreCommand>),
+    /// [`Command::Slash`] 被拒：照连接语言写的原话（`data.why` 有的照它；`command_failed` 的扩展原话接在下一行）。
+    SlashRefused {
+        /// 原话。
+        message: String,
     },
     /// 斜杠命令办了（`command.run` 的回应）：规范的命令名、照连接语言写好的回执。
     CommandRan {

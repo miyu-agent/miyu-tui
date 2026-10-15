@@ -208,7 +208,9 @@ pub(super) async fn serve(
                         continue;
                     }
                     // 说第一句话、设长期目标（「长期目标」第 3 条）：先开会话。
-                    Command::Send { .. } | Command::Goal(_) if link.target().is_none() => {
+                    Command::Send { .. } | Command::Goal(_) | Command::Slash(_)
+                        if link.target().is_none() =>
+                    {
                         let chosen = super::connect::Chosen {
                             model: link.pending_model.take(),
                             persona: link.pending_persona.clone(),
@@ -315,6 +317,7 @@ async fn send(
         Command::Run(_) | Command::Goal(_) | Command::Workspace { .. } => {
             Some(Awaiting::CommandRun)
         }
+        Command::Slash(_) => Some(Awaiting::Slash),
         _ => None,
     };
     let files = match &command {

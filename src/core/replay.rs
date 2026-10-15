@@ -41,7 +41,8 @@ impl Replay {
                 tick(&mut out, at(event));
                 out.push(Push::Said {
                     seq: event["seq"].as_u64().unwrap_or_default(),
-                    text: text_of(&event["body"]),
+                    text: push::typed_text(&event["body"])
+                        .unwrap_or_else(|| text_of(&event["body"])),
                 });
             }
             _ => {

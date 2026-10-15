@@ -211,7 +211,7 @@ impl App {
         Action::None
     }
 
-    /// 回车发出去的字：是命令就执行；像命令又没有这个命令的弹提示「命令不存在」，字留在输入框里（`tui.md`
+    /// 回车发出去的字：是命令就执行；像命令、终端又没有这个命令的交给核心，被拒的弹核心的原话、字放回输入框（`tui.md`
     /// 「斜杠命令列表」第 4 条）；别的发给她。
     pub(super) fn submit(&mut self, draft: Draft) {
         let text = draft.text.clone();
@@ -223,13 +223,14 @@ impl App {
                 self.run(&spec, words.as_deref());
                 return;
             }
+            // 终端不认的名字：交给核心，由它说为什么不行（核心可能有，只是这个会话用不了，`data.why` 说得清；协议
+            // `command.catalog` 第 2 条）；被拒的弹它的原话、字放回输入框（`catalog.rs`）。在编辑上一句的接着编辑。
             Line::Unknown => {
-                let note = self.config.text.unknown_command.clone();
-                self.hint(note, false);
-                self.typing.input.editor.set_draft(draft);
                 if let Some(original) = edit {
                     self.typing.input.resume_edit(original);
                 }
+                self.typing.input.remember(draft.clone());
+                self.slash(&text);
                 return;
             }
             Line::Talk => {}
@@ -341,6 +342,8 @@ impl App {
             Run::Quit => self.quit = true,
             Run::Help => self.open_help(),
             Run::Language => self.open_languages(),
+            // 核心认的命令（模板、扩展声明的）：整行交给核心（`catalog.rs`）。
+            Run::Core => self.slash(&line),
         }
     }
 

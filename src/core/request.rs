@@ -48,7 +48,9 @@ pub(super) fn request(
             params["session"] = json!(session);
             ("session.set_permission_level", params)
         }
-        Command::Run(text) => ("command.run", json!({"session": session, "text": text})),
+        Command::Run(text) | Command::Slash(text) => {
+            ("command.run", json!({"session": session, "text": text}))
+        }
         Command::Goal(words) => {
             let text = match words.as_str() {
                 "" => "/goal".to_string(),
@@ -109,6 +111,7 @@ pub(super) fn request(
         | Command::CheckDir { .. }
         | Command::NewWorkspace(_)
         | Command::SetEffort { .. }
+        | Command::Catalog(_)
         | Command::Output { .. } => {
             return None;
         }
