@@ -1,5 +1,6 @@
 //! 引导走到哪、按键、回应（「第一次打开的引导」）：拿假钟一步步走，查发给核心的请求和交给 App 办的。
 
+mod figure;
 mod link;
 mod persona;
 mod preset;

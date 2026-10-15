@@ -52,6 +52,7 @@
     "glance_roll": 0.5
   },
   "done": { "walk_ms": 650, "spin_ms": 1800, "reveal_ms": 2400, "leave_ms": 700 },
+  "swap": { "walk_ms": 600, "reveal_ms": 900 },
   "popup": { "width": 0.8, "height": 0.75, "max_width": 110 },
   "frame_ms": 33,
   "sample_icons": ["edit", "read", "grep", "history", "subagent", "jobs", "send_message", "sessions", "ask_user", "todowrite"],

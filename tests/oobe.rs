@@ -360,10 +360,8 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     tui.wait_for("预设 基础功能");
 }
 
-#[test]
-fn the_lower_rows_open_a_whole_list_even_on_a_crowded_step() {
-    // 主题那一步多了主色、铺底色两格（2026-10-15）以后，靠下那几格的选择窗在下面放不下：往上挪到放得下，不截掉选项。
-    let home = Home::unwelcomed(Script::new([]), CONFIGURED);
+/// 宽屏（窄于这个宽度的引导不画左边那一块）从头走到主题那一步，建一个没头像的人格。
+fn to_theme_wide(home: &Home) -> Tui {
     let mut tui = home.tui_wide_with("zh_CN.UTF-8", 140, &[]);
     for (wait, press) in [
         ("按 Enter 开始", b"\r"),
@@ -382,10 +380,56 @@ fn the_lower_rows_open_a_whole_list_even_on_a_crowded_step() {
     }
     tui.key(b"\r");
     tui.wait_for("选择明暗和配色");
+    tui
+}
+
+#[test]
+fn the_lower_rows_open_a_whole_list_even_on_a_crowded_step() {
+    // 主题那一步多了主色、铺底色两格（2026-10-15）以后，靠下那几格的选择窗在下面放不下：往上挪到放得下，不截掉选项。
+    let home = Home::unwelcomed(Script::new([]), CONFIGURED);
+    let mut tui = to_theme_wide(&home);
     // 明暗、配色、铺底色，第四格是吉祥物：开列表，两项都在。
     for _ in 0..3 {
         tui.key(b"j");
     }
     tui.key(b"\r");
     tui.wait_for("不显示");
+}
+
+#[test]
+fn choosing_no_mascot_on_the_theme_step_walks_it_out_at_once() {
+    // 2026-10-15 项目主人：选择不显示吉祥物之后当场就可以把吉祥物关掉。
+    let home = Home::unwelcomed(Script::new([]), CONFIGURED);
+    let mut tui = to_theme_wide(&home);
+    tui.pump(Duration::from_millis(300));
+    assert!(tui.shows("@"), "吉祥物在：\n{}", tui.lines().join("\n"));
+    for _ in 0..3 {
+        tui.key(b"j");
+    }
+    tui.key(b"\r");
+    tui.wait_for("不显示");
+    let start = tui.record_from_here();
+    tui.key(b"j");
+    let end = std::time::Instant::now() + Duration::from_secs(5);
+    while tui.shows("@") {
+        assert!(
+            std::time::Instant::now() < end,
+            "吉祥物没走开：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(50));
+    }
+    // 是一帧帧往左走开的，不是一下没了：录下的帧里它最左边的 `@` 至少到过三个不同的列，往左走（走到边上剩下的那半截
+    // 边缘会抖一列，不要求每一帧都更靠左）。
+    let lefts: Vec<usize> = support::frames(start, &tui.recorded())
+        .iter()
+        .filter_map(|f| f.iter().filter_map(|l| l.find('@')).min())
+        .collect();
+    let mut seen = lefts.clone();
+    seen.dedup();
+    assert!(seen.len() >= 3, "走了几步：{lefts:?}");
+    assert!(seen.first() > seen.last(), "往左走：{lefts:?}");
+    // 挪回「显示」：走回来。
+    tui.key(b"k");
+    tui.wait_for("@");
 }
