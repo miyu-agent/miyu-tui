@@ -73,7 +73,7 @@ pub fn draw(frame: &mut Frame, page: &mut Settings, config: &Config, caret: &mut
 }
 
 /// 整块放在哪：宽、高各占八成居中；窄屏用满宽，左右留一列。
-fn stage(area: Rect, look: &Look) -> Rect {
+pub(crate) fn stage(area: Rect, look: &Look) -> Rect {
     if area.width < look.narrow_below {
         let x = area.x + area.width.min(1);
         let height = area.height.saturating_sub(2);

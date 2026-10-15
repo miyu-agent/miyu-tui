@@ -31,12 +31,16 @@ fn extension() -> PathBuf {
 
 /// 每一块推什么。
 const CONTENT: &str = r#"{
-  "intro": {"content": [{"type": "text", "text": "早上好，今天晴"}]},
+  "intro": {"content": [
+    {"type": "text", "text": "早上好，今天晴"},
+    {"type": "buttons", "items": [{"label": "看本周", "action": {"open": "week"}}]}
+  ]},
   "temp": {"content": [{"type": "text", "text": "晴 23°C"}]},
   "today": {"content": [
     {"type": "list", "items": [{"title": "刷新一下", "state": "todo", "action": {"call": "refresh", "params": {"widget": "today"}}}]},
     {"type": "text", "text": "湿度 40%"}
-  ]}
+  ]},
+  "week": {"content": [{"type": "heading", "text": "这一周"}, {"type": "list", "items": DAYS}]}
 }"#;
 
 /// 装扩展 `wx`（批了 `widgets`、开着）：首页一块、底栏一块、侧边栏一块（跟着会话）。程序记下收到的 `widget.watch`、
@@ -49,10 +53,15 @@ fn install(dir: &Path) {
         .join(format!("wx-ext{}", std::env::consts::EXE_SUFFIX));
     std::fs::copy(extension(), &program).expect("拷得了扩展的程序");
     let content = dir.join("wx-content.json");
-    std::fs::write(&content, CONTENT).expect("写得进去");
+    // 整页里三十天，一天一条，点了调 `refresh`：一屏放不下，要滚。
+    let days: Vec<String> = (1..=30)
+        .map(|n| format!(r#"{{"title": "第 {n} 天", "action": {{"call": "refresh", "params": {{"widget": "week"}}}}}}"#))
+        .collect();
+    let text = CONTENT.replace("DAYS", &format!("[{}]", days.join(", ")));
+    std::fs::write(&content, text).expect("写得进去");
     let record = dir.join("wx-calls.log");
     let manifest = format!(
-        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Weather\" }}\n\n[command]\nname = \"wx\"\nprogram = \"wx-ext\"\nabout = {{ en = \"W\" }}\n\n[process]\nargs = [{:?}, {:?}]\nstart = \"always\"\ncapabilities = [\"widgets\"]\n\n[[widget]]\nid = \"intro\"\nplace = \"home\"\n\n[[widget]]\nid = \"temp\"\nplace = \"status\"\n\n[[widget]]\nid = \"today\"\nplace = \"sidebar\"\ntitle = {{ en = \"Today\", zh = \"天气\" }}\nscope = \"session\"\n",
+        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Weather\" }}\n\n[command]\nname = \"wx\"\nprogram = \"wx-ext\"\nabout = {{ en = \"W\" }}\n\n[process]\nargs = [{:?}, {:?}]\nstart = \"always\"\ncapabilities = [\"widgets\"]\n\n[[widget]]\nid = \"intro\"\nplace = \"home\"\n\n[[widget]]\nid = \"temp\"\nplace = \"status\"\n\n[[widget]]\nid = \"today\"\nplace = \"sidebar\"\ntitle = {{ en = \"Today\", zh = \"天气\" }}\nscope = \"session\"\n\n[[widget]]\nid = \"week\"\nplace = \"page\"\ntitle = {{ en = \"This week\", zh = \"本周\" }}\ncommand = \"week\"\n",
         format!("content:{}", content.display()),
         format!("record:{}", record.display()),
     );
@@ -161,4 +170,47 @@ fn blocks_come_back_after_the_core_restarts() {
     // 再起来：连上以后照原来的说法重新订阅，扩展又推过来。
     home.restart_core();
     tui.wait_for("晴 23°C");
+}
+
+#[test]
+fn a_page_opens_from_a_button_or_its_command_scrolls_and_esc_goes_back() {
+    let home = Home::prepared(Script::new([]), "", install);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("早上好，今天晴");
+    tui.type_text("草稿");
+    // 首页那一块里的按钮：开同一个包的整页，面包屑写软件名和标题。
+    let (x, y) = locate(&tui, "看本周");
+    tui.key(format!("\x1b[<0;{};{}M", x + 1, y + 1).as_bytes());
+    tui.key(format!("\x1b[<0;{};{}m", x + 1, y + 1).as_bytes());
+    tui.wait_for("Weather — 本周");
+    tui.wait_for("第 1 天");
+    assert!(
+        !tui.shows("第 30 天"),
+        "一屏放不下：\n{}",
+        tui.lines().join("\n")
+    );
+    // 翻页看到后面的；Enter 做选着的那一条（调到扩展的方法，它换了内容）。
+    tui.key(b"\x1b[6~");
+    tui.wait_for("第 30 天");
+    tui.key(b"\r");
+    tui.wait_for("refreshed");
+    // Esc 回到首页，打了一半的字还在。
+    tui.key(b"\x1b");
+    tui.wait_for("早上好，今天晴");
+    assert_eq!(tui.input(), "草稿", "{}", tui.lines().join("\n"));
+    // 打整页带的命令：当场开那一页。
+    tui.key(b"\x7f\x7f");
+    tui.say("/week");
+    tui.wait_for("Weather — 本周");
+    // 只是开一页：不为它开会话（不交给 `command.run`，「界面块」第 10 条）。
+    tui.pump(Duration::from_millis(300));
+    let sessions = std::fs::read_dir(home.root().join("home/alice/sessions"))
+        .map(|d| d.count())
+        .unwrap_or(0);
+    assert_eq!(sessions, 0, "开整页不开会话");
+    let seen = std::fs::read_to_string(home.root().join("wx-calls.log")).unwrap_or_default();
+    assert!(
+        seen.contains(r#""widget":"week""#),
+        "整页开着有人看：{seen}"
+    );
 }

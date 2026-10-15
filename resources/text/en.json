@@ -412,7 +412,10 @@
   "widget": {
     "folded": "{count} done",
     "more": "… {count} more",
-    "more_blocks": "… {count} more blocks"
+    "more_blocks": "… {count} more blocks",
+    "loading": "Loading…",
+    "not_running": "{source} is not running",
+    "page_keys": [["↑/↓", "select"], ["Enter", "confirm"], ["PgUp/PgDn", "page"], ["Esc", "back"]]
   },
   "jobs": {
     "button": "Background: {count}",

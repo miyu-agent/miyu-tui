@@ -412,7 +412,10 @@
   "widget": {
     "folded": "{count} 件完了",
     "more": "… 他 {count} 件",
-    "more_blocks": "… 他 {count} ブロック"
+    "more_blocks": "… 他 {count} ブロック",
+    "loading": "読み込み中…",
+    "not_running": "{source} は実行されていません",
+    "page_keys": [["↑/↓", "選択"], ["Enter", "決定"], ["PgUp/PgDn", "ページ"], ["Esc", "戻る"]]
   },
   "jobs": {
     "button": "バックグラウンド：{count}",

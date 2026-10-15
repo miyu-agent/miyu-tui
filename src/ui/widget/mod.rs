@@ -3,6 +3,7 @@
 //! 哪几列、点了做什么，画的地方照它记下点击区。
 
 mod list;
+mod page;
 mod place;
 mod segment;
 #[cfg(test)]
@@ -13,6 +14,7 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use serde::Deserialize;
 
+pub use page::{PageFrame, draw as page};
 pub use place::{Kind, Spot, draw_home, home, home_rows, sidebar, status};
 
 use crate::config::{Bar, WidgetMarks};
@@ -29,6 +31,12 @@ pub struct Texts {
     pub more: String,
     /// 侧边栏后面放不下的块收成的那一行，`{count}`。
     pub more_blocks: String,
+    /// 整页：程序在跑、还没推来。
+    pub loading: String,
+    /// 整页：程序没在跑，`{source}` 是软件名。
+    pub not_running: String,
+    /// 整页最下面的按键提示：一项是键、做什么。
+    pub page_keys: Vec<[String; 2]>,
 }
 
 /// 画在哪：侧边栏里内容缩进两格、普通的字照暗（自带的内容一律暗），小标题蓝色。
@@ -36,6 +44,7 @@ pub struct Texts {
 pub enum Mode {
     Home,
     Sidebar,
+    Page,
 }
 
 /// 画一块要的。

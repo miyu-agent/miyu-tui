@@ -342,6 +342,12 @@ impl App {
             Run::Quit => self.quit = true,
             Run::Help => self.open_help(),
             Run::Language => self.open_languages(),
+            // 扩展的整页带的命令：当场开那一页，不找核心（不为开一页先开会话，「界面块」第 10 条）。
+            Run::Core if spec.opens.is_some() => {
+                if let Some(page) = spec.opens.clone() {
+                    self.open_widget_page(page);
+                }
+            }
             // 核心认的命令（模板、扩展声明的）：整行交给核心（`catalog.rs`）。
             Run::Core => self.slash(&line),
         }

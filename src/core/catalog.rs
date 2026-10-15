@@ -15,6 +15,8 @@ pub struct CoreCommand {
     pub summary: String,
     /// 名字后面跟什么的提示（模板的 `argument-hint`，例如 `<路径>`）；没写的是 `None`。
     pub argument: Option<String>,
+    /// 扩展的整页带的命令：打了就开这一页（核心 X-15 下）；别的是 `None`。
+    pub opens: Option<crate::widgets::PageRef>,
 }
 
 /// 读回应的 `commands`；读不懂的那一条不要。
@@ -35,6 +37,7 @@ pub fn read(result: &Value) -> Vec<CoreCommand> {
                     .collect(),
                 summary: text(&c["summary"]).unwrap_or_default(),
                 argument: text(&c["argument"]).filter(|a| !a.is_empty()),
+                opens: crate::widgets::PageRef::read(&c["opens"]),
             })
         })
         .collect()
@@ -51,7 +54,8 @@ mod tests {
         let got = json!({"commands": [
             {"name": "clear", "aliases": ["reset"], "summary": "清空上下文"},
             {"name": "review", "aliases": [], "summary": "审一遍代码", "argument": "<路径>"},
-            {"name": "", "summary": "坏的"}
+            {"name": "", "summary": "坏的"},
+            {"name": "ci", "aliases": [], "summary": "构建", "opens": {"package": "ciw", "widget": "all"}}
         ]});
         assert_eq!(
             read(&got),
@@ -61,12 +65,24 @@ mod tests {
                     aliases: vec!["reset".into()],
                     summary: "清空上下文".into(),
                     argument: None,
+                    opens: None,
                 },
                 CoreCommand {
                     name: "review".into(),
                     aliases: vec![],
                     summary: "审一遍代码".into(),
                     argument: Some("<路径>".into()),
+                    opens: None,
+                },
+                CoreCommand {
+                    name: "ci".into(),
+                    aliases: vec![],
+                    summary: "构建".into(),
+                    argument: None,
+                    opens: Some(crate::widgets::PageRef {
+                        package: "ciw".into(),
+                        widget: "all".into(),
+                    }),
                 },
             ]
         );

@@ -376,6 +376,8 @@ pub enum Update {
         /// 现在的样子。
         block: Option<crate::widgets::Block>,
     },
+    /// `command.run` 回了 `opens`：打开那一整页（扩展的整页带的命令）。
+    OpenPage(crate::widgets::PageRef),
     /// [`Command::PackageCall`] 被拒：原话。
     PackageCallRefused {
         /// 原话。

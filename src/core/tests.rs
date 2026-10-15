@@ -1,7 +1,7 @@
 use serde_json::json;
 
 use super::request::request;
-use super::{Command, Level};
+use super::{Command, Level, Update};
 
 #[test]
 fn switching_the_level_writes_only_what_changes() {
@@ -44,4 +44,21 @@ fn a_goal_goes_to_command_run_with_what_follows() {
     );
     let (_, params) = request(Command::Goal(String::new()), "s1").unwrap();
     assert_eq!(params["text"], "/goal", "只打 /goal 是看进度");
+}
+
+#[test]
+fn a_command_that_opens_a_page_says_so() {
+    use serde_json::json;
+    let opened = super::take::ran(
+        &json!({"command": "week", "opens": {"package": "wx", "widget": "week"}, "said": ""}),
+    );
+    assert!(
+        matches!(&opened, Update::OpenPage(p) if p.package == "wx" && p.widget == "week"),
+        "{opened:?}"
+    );
+    let ran = super::take::ran(&json!({"command": "stop", "said": "已停止。"}));
+    assert!(
+        matches!(&ran, Update::CommandRan { command, said } if command == "stop" && said == "已停止。"),
+        "{ran:?}"
+    );
 }
