@@ -121,8 +121,8 @@ pub struct Theme {
     /// 标题、说明。
     #[serde(flatten)]
     pub head: Heading,
-    /// 三行的名字：明暗、配色、吉祥物。
-    pub rows: [String; 3],
+    /// 几行的名字：明暗、配色、吉祥物、主色、铺底色。
+    pub rows: [String; 5],
     /// 明暗三档：跟随终端、深色、浅色。
     pub modes: [String; 3],
     /// 配色四种：跟随头像、跟随壁纸、Tokyo Night、终端配色（同 `choice::COLORS` 的先后）。
@@ -141,6 +141,12 @@ pub struct Theme {
     pub mascot: [String; 2],
     /// 吉祥物那一格下面暗色的一句（项目主人定的原话）。
     pub mascot_note: String,
+    /// 铺底色两档：开、关。
+    pub ground: [String; 2],
+    /// 铺底色那一格下面暗色的一句：什么时候铺。
+    pub ground_note: String,
+    /// 主色列表里第一个后面暗色写的「默认」。
+    pub seed_default: String,
     /// 「下一步」。
     pub next: String,
     /// 「正在保存…」。

@@ -4,6 +4,8 @@
 //! `Esc` 换回开窗以前的。「下一步 →」写个人设置的 `tui.theme_mode`、`tui.theme`，`Esc` 回上一步、换回原来的样子。配色没
 //! 写过、人格那一步有头像（或写了主题色）的，进来停在「跟随头像」。人格那一步的这一位没头像的，多一格「吉祥物」显示、
 //! 不显示，一格同时写 `tui.mascot_home`、`tui.mascot_sidebar`（2026-10-15 项目主人定：有头像的头像替掉吉祥物，不列）。
+//! 跟随头像、跟随壁纸、有候选时多一格「主色」，开色块列表挑（跟随壁纸的写 `tui.theme_seed`，跟随头像的写回这个人格）；
+//! 再一格「铺底色」开、关，写 `tui.theme_background`（2026-10-15 项目主人：配色方案和主色，铺底色也缺了）。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
@@ -14,7 +16,7 @@ use super::nav::{self, Nav};
 use super::texts::Theme as Words;
 use crate::core::Refusal;
 use crate::settings::pages::choose::{Choice, Choose, Pressed};
-use crate::theme::choice::{COLORS, Mode};
+use crate::theme::choice::{COLORS, Mode, SEED_KEY};
 
 /// 明暗三档，选择窗照这个先后列；配置里的写法同下标。
 pub const MODES: [Mode; 3] = [Mode::Auto, Mode::Dark, Mode::Light];
@@ -28,6 +30,10 @@ pub enum Slot {
     Mode,
     /// 配色。
     Colors,
+    /// 主色（跟随头像、跟随壁纸、有候选时才有）。
+    Seed,
+    /// 铺底色：开、关。
+    Ground,
     /// 吉祥物：显示、不显示（人格没头像时才有）。
     Mascot,
     /// 「下一步 →」。
@@ -36,9 +42,21 @@ pub enum Slot {
 
 /// 吉祥物那一格写的两项：首页、侧边栏一起。
 const MASCOT_KEYS: [&str; 2] = ["tui.mascot_home", "tui.mascot_sidebar"];
+/// 铺底色那一格写的。
+const GROUND_KEY: &str = "tui.theme_background";
+
+/// 选着的样子：App 照它盖在配置项上（`app/theme.rs`）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Preview {
+    pub colors: String,
+    pub mode: Mode,
+    pub ground: bool,
+    /// 这一回挑的主色；没挑的照配置、人格的。
+    pub seed: Option<u32>,
+}
 
 /// 这一步。
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ThemeStep {
     /// 光标停在哪一行。
     pub slot: Slot,
@@ -48,8 +66,21 @@ pub struct ThemeStep {
     pub colors: usize,
     /// 吉祥物选着「不显示」（配置项默认显示）。
     pub mascot_off: bool,
+    /// 铺底色（配置项默认开）。
+    pub ground: bool,
     /// 人格那一步的这一位有头像：不列吉祥物那一格、不写那两项。
     pub avatar: bool,
+    /// 能当主色的候选（好的在前）、正用着的那个：跟随头像、跟随壁纸时 App 每一拍设（`app/theme.rs`）。
+    pub seeds: Vec<u32>,
+    pub seed: Option<u32>,
+    /// 这一回挑的主色：当场换样子，「下一步」时写。
+    pub seed_pick: Option<u32>,
+    /// 开主色的窗以前挑的：`Esc` 换回它。
+    seed_before: Option<u32>,
+    /// 跟随头像的主色写给哪个人格：人格那一步存好的编号。
+    persona: Option<String>,
+    /// 配置写成了，还要写人格的主色。
+    seed_pending: bool,
     /// 在读、在写：按键先不认（`Esc` 照常回上一步）。
     pub busy: bool,
     /// 写不成：核心的原话。
@@ -71,19 +102,56 @@ pub struct ThemeStep {
     pub wallpaper: bool,
 }
 
+impl Default for ThemeStep {
+    fn default() -> Self {
+        Self {
+            slot: Slot::default(),
+            mode: 0,
+            colors: 0,
+            mascot_off: false,
+            ground: true,
+            avatar: false,
+            seeds: Vec::new(),
+            seed: None,
+            seed_pick: None,
+            seed_before: None,
+            persona: None,
+            seed_pending: false,
+            busy: false,
+            error: None,
+            saved: false,
+            read: false,
+            unset: false,
+            turned: false,
+            entered: false,
+            picking: None,
+            before: 0,
+            wallpaper: false,
+        }
+    }
+}
+
 impl ThemeStep {
     /// 进这一步：第一次进的先读现在写的（重走引导时照它停）。`follow` 是人格那一步有没有能取色的（头像、主题色）：配色没
-    /// 写过、没换过的停在「跟随头像」。`avatar` 是这一位有没有头像：有的不列吉祥物那一格。
-    pub fn enter(&mut self, asker: &mut Asker, follow: bool, avatar: bool) {
+    /// 写过、没换过的停在「跟随头像」。`avatar` 是这一位有没有头像：有的不列吉祥物那一格。`persona` 是人格那一步存好的
+    /// 编号：跟随头像挑的主色写给它。
+    pub fn enter(
+        &mut self,
+        asker: &mut Asker,
+        (follow, avatar): (bool, bool),
+        persona: Option<String>,
+    ) {
         self.avatar = avatar;
+        self.persona = persona;
         if avatar && self.slot == Slot::Mascot {
             self.slot = Slot::Next;
         }
         if !self.entered {
             self.entered = true;
             self.busy = true;
-            let keys =
-                json!({"keys": ["tui.theme", "tui.theme_mode", MASCOT_KEYS[0], MASCOT_KEYS[1]]});
+            let keys = json!({"keys": [
+                "tui.theme", "tui.theme_mode", MASCOT_KEYS[0], MASCOT_KEYS[1], GROUND_KEY
+            ]});
             asker.ask("config.get", keys, Waiting::ThemeRead);
             return;
         }
@@ -97,8 +165,8 @@ impl ThemeStep {
         }
     }
 
-    /// 按了一个键：开着选择窗的归它（挪了当场换样子，`Esc` 换回开窗以前的）；不然上下换行，明暗、配色那一行 `Enter` 开
-    /// 选择窗，「下一步」那一行 `Enter` 写，`Esc` 回上一步。
+    /// 按了一个键：开着选择窗的归它（挪了当场换样子，`Esc` 换回开窗以前的）；不然上下换行，几格那一行 `Enter` 开选择窗，
+    /// 「下一步」那一行 `Enter` 写，`Esc` 回上一步。
     pub fn key(&mut self, key: KeyEvent, asker: &mut Asker, words: &Words) -> Move {
         if let Some(choose) = &mut self.picking {
             match choose.press(key) {
@@ -111,8 +179,12 @@ impl ThemeStep {
                     self.picking = None;
                 }
                 Pressed::Cancelled => {
-                    let before = self.before;
-                    self.set(before);
+                    if self.slot == Slot::Seed {
+                        self.seed_pick = self.seed_before;
+                    } else {
+                        let before = self.before;
+                        self.set(before);
+                    }
                     self.picking = None;
                 }
                 Pressed::Ignored => {}
@@ -139,37 +211,92 @@ impl ThemeStep {
         Move::Stay
     }
 
-    /// 从上往下有哪几行：人格有头像的没有吉祥物那一格。
+    /// 配色是跟随头像、跟随壁纸，有主色的候选：列「主色」那一格。
+    pub fn seeding(&self) -> bool {
+        matches!(COLORS.get(self.colors), Some(&"persona" | &"wallpaper")) && !self.seeds.is_empty()
+    }
+
+    /// 从上往下有哪几行：没候选的没有主色那一格，人格有头像的没有吉祥物那一格。
     pub fn slots(&self) -> Vec<Slot> {
-        [Slot::Mode, Slot::Colors, Slot::Mascot, Slot::Next]
-            .into_iter()
-            .filter(|s| *s != Slot::Mascot || !self.avatar)
-            .collect()
+        [
+            Slot::Mode,
+            Slot::Colors,
+            Slot::Seed,
+            Slot::Ground,
+            Slot::Mascot,
+            Slot::Next,
+        ]
+        .into_iter()
+        .filter(|s| match s {
+            Slot::Seed => self.seeding(),
+            Slot::Mascot => !self.avatar,
+            _ => true,
+        })
+        .collect()
+    }
+
+    /// 主色那一格画的：挑过的，没挑的照正用着的。
+    pub fn shown_seed(&self) -> Option<u32> {
+        self.seed_pick
+            .filter(|s| self.seeds.contains(s))
+            .or(self.seed)
     }
 
     /// 光标那一行开选择窗：一个选项一行，停在选着的那个上。
     fn open(&mut self, words: &Words) {
-        if self.slot == Slot::Mascot {
-            let choices = words
-                .mascot
+        let switch = |names: &[String; 2], on: bool| -> (Vec<Choice>, Value) {
+            let choices = names
                 .iter()
                 .zip([true, false])
-                .map(|(name, on)| Choice {
-                    value: json!(on),
+                .map(|(name, value)| Choice {
+                    value: json!(value),
                     label: name.clone(),
                     note: None,
                     off: None,
                 })
                 .collect();
-            self.before = usize::from(self.mascot_off);
-            let current = json!(!self.mascot_off);
-            self.picking = Some(Choose::open(
-                MASCOT_KEYS[0],
-                &words.rows[2],
-                choices,
-                &current,
-            ));
-            return;
+            (choices, json!(on))
+        };
+        match self.slot {
+            Slot::Mascot => {
+                let (choices, current) = switch(&words.mascot, !self.mascot_off);
+                self.before = usize::from(self.mascot_off);
+                self.picking = Some(Choose::open(
+                    MASCOT_KEYS[0],
+                    &words.rows[2],
+                    choices,
+                    &current,
+                ));
+                return;
+            }
+            Slot::Ground => {
+                let (choices, current) = switch(&words.ground, self.ground);
+                self.before = usize::from(!self.ground);
+                self.picking = Some(Choose::open(GROUND_KEY, &words.rows[4], choices, &current));
+                return;
+            }
+            Slot::Seed => {
+                let choices = self
+                    .seeds
+                    .iter()
+                    .enumerate()
+                    .map(|(i, seed)| Choice {
+                        value: Value::from(format!("#{seed:06x}")),
+                        label: format!("#{seed:06x}"),
+                        note: (i == 0).then(|| words.seed_default.clone()),
+                        off: None,
+                    })
+                    .collect();
+                let current = self
+                    .shown_seed()
+                    .map_or(Value::Null, |s| Value::from(format!("#{s:06x}")));
+                self.seed_before = self.seed_pick;
+                let mut choose = Choose::open(SEED_KEY, &words.rows[3], choices, &current);
+                choose.swatches = true;
+                self.picking = Some(choose);
+                return;
+            }
+            Slot::Mode | Slot::Colors | Slot::Next => {}
         }
         let (key, title, names, values, at): (_, _, &[String], &[&str], _) = match self.slot {
             Slot::Mode => (
@@ -186,7 +313,7 @@ impl ThemeStep {
                 &COLORS,
                 self.colors,
             ),
-            Slot::Mascot | Slot::Next => return,
+            _ => return,
         };
         // 找不到壁纸的不列「跟随壁纸」（「主题」的「跟随壁纸」）。
         let wallpaper = self.wallpaper;
@@ -207,11 +334,24 @@ impl ThemeStep {
 
     /// 光标那一行选成值是 `value` 的那一个（列表里少了跟随壁纸的，不照第几行算）。
     fn set_value(&mut self, value: Option<&Value>) {
-        if self.slot == Slot::Mascot {
-            if let Some(on) = value.and_then(Value::as_bool) {
-                self.set(usize::from(!on));
+        match self.slot {
+            Slot::Mascot | Slot::Ground => {
+                if let Some(on) = value.and_then(Value::as_bool) {
+                    self.set(usize::from(!on));
+                }
+                return;
             }
-            return;
+            Slot::Seed => {
+                let hex = value
+                    .and_then(Value::as_str)
+                    .and_then(|v| v.strip_prefix('#'));
+                if let Some(seed) = hex.and_then(|h| u32::from_str_radix(h, 16).ok()) {
+                    self.seed_pick = Some(seed);
+                    self.saved = false;
+                }
+                return;
+            }
+            Slot::Mode | Slot::Colors | Slot::Next => {}
         }
         let Some(value) = value.and_then(Value::as_str) else {
             return;
@@ -219,47 +359,60 @@ impl ThemeStep {
         let at = match self.slot {
             Slot::Mode => MODE_NAMES.iter().position(|v| *v == value),
             Slot::Colors => COLORS.iter().position(|v| *v == value),
-            Slot::Mascot | Slot::Next => None,
+            _ => None,
         };
         if let Some(at) = at {
             self.set(at);
         }
     }
 
-    /// 光标那一行选成第 `at` 个：当场换样子（吉祥物是第 0 个显示、第 1 个不显示）。
+    /// 光标那一行选成第 `at` 个：当场换样子（吉祥物、铺底色是第 0 个开、第 1 个关）。换了配色，挑过的主色不算了。
     fn set(&mut self, at: usize) {
         match self.slot {
             Slot::Mode => self.mode = at.min(MODES.len() - 1),
             Slot::Mascot => self.mascot_off = at == 1,
+            Slot::Ground => self.ground = at == 0,
             Slot::Colors => {
-                self.colors = at.min(COLORS.len() - 1);
+                let colors = at.min(COLORS.len() - 1);
+                if colors != self.colors {
+                    self.seed_pick = None;
+                }
+                self.colors = colors;
                 self.turned = true;
             }
-            Slot::Next => return,
+            Slot::Seed | Slot::Next => return,
         }
         self.saved = false;
     }
 
     fn save(&mut self, asker: &mut Asker) {
+        let colors = COLORS[self.colors];
         let mut changes = vec![
             json!({"key": "tui.theme_mode", "value": MODE_NAMES[self.mode]}),
-            json!({"key": "tui.theme", "value": COLORS[self.colors]}),
+            json!({"key": "tui.theme", "value": colors}),
+            json!({"key": GROUND_KEY, "value": self.ground}),
         ];
         if !self.avatar {
             changes.extend(MASCOT_KEYS.map(|key| json!({"key": key, "value": !self.mascot_off})));
         }
+        // 挑过主色的：跟随壁纸的写个人设置，跟随头像的写完配置再写人格（`seed_pending`）。
+        let pick = self.seed_pick.filter(|_| self.seeding());
+        if let (Some(seed), "wallpaper") = (pick, colors) {
+            changes.push(json!({"key": SEED_KEY, "value": format!("#{seed:06x}")}));
+        }
+        self.seed_pending = pick.is_some() && colors == "persona" && self.persona.is_some();
         let params = json!({"layer": "personal", "changes": changes});
         self.error = None;
         self.busy = true;
         asker.ask("config.set", params, Waiting::ThemeSave);
     }
 
-    /// 回应：读到的照它停；写成了下一步，写不成的写原话、留在这一步。
+    /// 回应：读到的照它停；写成了下一步（还要写人格的主色的接着写），写不成的写原话、留在这一步。
     pub fn answer(
         &mut self,
         waiting: &Waiting,
         result: Result<Value, Refusal>,
-        follow: bool,
+        (follow, asker): (bool, &mut Asker),
     ) -> Move {
         self.busy = false;
         match waiting {
@@ -276,8 +429,9 @@ impl ThemeStep {
                 if let Some(at) = mode.and_then(|m| MODES.iter().position(|v| *v == m)) {
                     self.mode = at;
                 }
-                // 吉祥物照首页那一项停（没有的照默认显示）。
+                // 吉祥物照首页那一项停（没有的照默认显示）；铺底色没有的照默认开。
                 self.mascot_off = items[MASCOT_KEYS[0]]["value"].as_bool() == Some(false);
+                self.ground = items[GROUND_KEY]["value"].as_bool() != Some(false);
                 let layer = items["tui.theme"]["origin"]["layer"].as_str();
                 self.unset = layer.is_none_or(|l| l == "default");
                 self.read = true;
@@ -285,6 +439,15 @@ impl ThemeStep {
                 Move::Stay
             }
             Waiting::ThemeSave => match result {
+                Ok(_) if self.seed_pending => {
+                    self.seed_pending = false;
+                    self.saved = true;
+                    let seed = self.seed_pick.map(|s| format!("#{s:06x}"));
+                    let params = json!({"persona": self.persona, "seed": seed});
+                    self.busy = true;
+                    asker.ask("persona.set", params, Waiting::ThemeSeed);
+                    Move::Stay
+                }
                 Ok(_) => {
                     self.saved = true;
                     Move::Next
@@ -294,14 +457,25 @@ impl ThemeStep {
                     Move::Stay
                 }
             },
+            Waiting::ThemeSeed => match result {
+                Ok(_) => Move::Next,
+                Err(refusal) => {
+                    self.error = Some(crate::settings::pages::target::said(&refusal));
+                    Move::Stay
+                }
+            },
             _ => Move::Stay,
         }
     }
 
-    /// 选着的样子：配色、明暗；还没读到现在的配置的是 `None`（照原来的样子）。
-    pub fn preview(&self) -> Option<(String, Mode)> {
-        self.read
-            .then(|| (COLORS[self.colors].to_string(), MODES[self.mode]))
+    /// 选着的样子：配色、明暗、铺底色、挑过的主色；还没读到现在的配置的是 `None`（照原来的样子）。
+    pub fn preview(&self) -> Option<Preview> {
+        self.read.then(|| Preview {
+            colors: COLORS[self.colors].to_string(),
+            mode: MODES[self.mode],
+            ground: self.ground,
+            seed: self.seed_pick,
+        })
     }
 
     /// 在写（读到配置以后才会忙的只有写）。

@@ -5,6 +5,7 @@ mod persona;
 mod preset;
 mod profile;
 mod theme;
+mod theme_seed;
 
 use std::time::{Duration, Instant};
 

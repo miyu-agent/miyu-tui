@@ -17,9 +17,10 @@ impl App {
     /// 现在照哪几样挑：配置项，引导「主题」那一步选着的盖在上面（「第一次打开的引导」第 23a 条）。
     fn choice(&self) -> Choice {
         let mut choice = self.screen.theme_choice.clone();
-        if let Some((colors, mode)) = &self.screen.theme_preview {
-            choice.colors.clone_from(colors);
-            choice.mode = *mode;
+        if let Some(preview) = &self.screen.theme_preview {
+            choice.colors.clone_from(&preview.colors);
+            choice.mode = preview.mode;
+            choice.ground = preview.ground;
         }
         choice
     }
@@ -112,6 +113,11 @@ impl App {
         let persona = (colors == "persona")
             .then(|| self.seen().theme_persona().map(|p| p.id.clone()))
             .flatten();
+        // 引导「主题」那一步的「主色」照它列、画色块（2026-10-15 项目主人：配色方案和主色）。
+        if let Some(oobe) = &mut self.boxes.oobe {
+            oobe.theme.seeds.clone_from(&self.screen.theme_seeds);
+            oobe.theme.seed = self.screen.theme_seed;
+        }
         if let Some(settings) = &mut self.boxes.settings {
             settings.more.seeds.clone_from(&self.screen.theme_seeds);
             settings.more.seed = self.screen.theme_seed;
@@ -149,6 +155,19 @@ impl App {
     /// 候选由核心给（2026-10-14 项目主人定），人格写了主题色的照它，没写的照打分最高的；引导里刚选、还没存的头像照门面现取
     /// （后台取，一张只取一次）。别的配色、都没有的、还没取好的是空的。
     fn wanted(&mut self) -> (Vec<u32>, Option<u32>) {
+        let (seeds, seed) = self.wanted_by_config();
+        // 引导「主题」那一步挑过的主色在候选里的，照它（当场换样子）。
+        let picked = self
+            .screen
+            .theme_preview
+            .as_ref()
+            .and_then(|p| p.seed)
+            .filter(|s| seeds.contains(s));
+        (seeds, picked.or(seed))
+    }
+
+    /// 同 [`App::wanted`]，不看引导里挑的：照配置项、人格的。
+    fn wanted_by_config(&mut self) -> (Vec<u32>, Option<u32>) {
         if self.choice().colors == "wallpaper" {
             let seeds = self.screen.wallpaper.seeds().to_vec();
             let seed = choice::pick_seed(&seeds, self.screen.theme_pick);

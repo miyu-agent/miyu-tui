@@ -265,6 +265,27 @@ impl Content {
         self.lines.push(Line::from(spans));
     }
 
+    /// 一格颜色（主色）：名字后面一块这个颜色，接着写 `#rrggbb`，别的同 [`Content::chip`]。
+    pub fn chip_swatch(&mut self, label: &str, label_w: usize, seed: u32, focused: bool) {
+        if focused {
+            self.focus = Some(self.at());
+        }
+        let room = self.room(label_w);
+        let ground = ground(focused || self.on_panel);
+        let [_, r, g, b] = seed.to_be_bytes();
+        let swatch = ground.fg(ratatui::style::Color::Rgb(r, g, b));
+        let cue = if focused {
+            self.cue.clone()
+        } else {
+            String::new()
+        };
+        let mut spans = labelled(label, label_w, focused);
+        spans.push(Span::styled("■ ", swatch));
+        let body = Span::styled(format!("#{seed:06x}"), ground);
+        spans.extend(boxed(body, room.saturating_sub(2), &cue, ground));
+        self.lines.push(Line::from(spans));
+    }
+
     /// 左右换的一格（自定义的接口）：只写选着的那一个，两边 `‹` `›`，不铺底色；光标在的时候箭头用强调色
     /// （「第一次打开的引导」第 18 条，2026-10-09 项目主人：「那三个接口可以是左右切换的那种」，2026-10-10：「似乎不需要
     /// 有背景颜色」）。

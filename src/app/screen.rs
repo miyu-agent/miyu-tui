@@ -53,7 +53,7 @@ pub struct Screen {
     /// 上一拍要不要壁纸（开着配色列表、选着跟随壁纸）：从不要变成要的时候再找一次。
     pub wallpaper_wanted: bool,
     /// 引导「主题」那一步选着的配色、明暗，盖在配置项上（「第一次打开的引导」第 23a 条）；不在选的是 `None`。
-    pub theme_preview: Option<(String, crate::theme::choice::Mode)>,
+    pub theme_preview: Option<crate::oobe::theme::Preview>,
     /// 程序启动的时刻：转圈照它算第几帧。
     pub started: Instant,
     /// 压缩那一行的进度条一顿一顿地追，停多久、追几格要的随机数。
