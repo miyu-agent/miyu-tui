@@ -94,6 +94,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         settings::draw(frame, page, &app.config, &mut app.screen.caret);
         return;
     }
+    // 扩展的整页开着：整屏归它（「界面块」第 2 条）。
+    if let Some(view) = app.boxes.widget_page.clone() {
+        let (seen, screen, _) = app.parts();
+        widget::page(frame, &view, &seen, screen);
+        return;
+    }
     // 还在问 `ui.welcomed`：整屏空着，免得进引导前闪一下首页（「第一次打开的引导」第 1 条）。
     if app.seen().welcome_pending(std::time::Instant::now()) {
         return;

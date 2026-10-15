@@ -7,7 +7,7 @@ use ratatui::layout::Position;
 use super::App;
 use crate::core::{Command, Update};
 use crate::ui::widget::Kind;
-use crate::widgets::{Action, Place, View};
+use crate::widgets::{Action, PageRef, Place, View};
 
 impl App {
     /// 屏上这一刻有的位置：首页 `home`、`status`；对话里宽屏 `sidebar`、`status`，窄屏只有 `status`。整屏被配置页、引导
@@ -15,6 +15,14 @@ impl App {
     fn widget_view(&self) -> Option<View> {
         if self.boxes.settings.is_some() || self.boxes.oobe.is_some() {
             return None;
+        }
+        // 整页盖住了首页、侧边栏、底栏：只带开着的那一页。
+        if let Some(page) = &self.boxes.widget_page {
+            return Some(View {
+                session: None,
+                showing: Vec::new(),
+                page: Some(page.target.clone()),
+            });
         }
         if self.talk.blank() {
             return Some(View {
@@ -52,6 +60,11 @@ impl App {
             Update::Widgets(blocks) => self.link.widgets.listed(blocks.clone()),
             Update::WidgetChanged { package, id, block } => {
                 self.link.widgets.changed(package, id, block.clone());
+            }
+            // 扩展的整页带的命令，交给核心认出来的：开那一页（「界面块」第 10 条）。
+            Update::OpenPage(page) => {
+                self.slash_ran();
+                self.open_widget_page(page.clone());
             }
             Update::PackageCallRefused { message } => {
                 let said = message.trim_end().trim_end_matches(['。', '.']);
@@ -109,7 +122,7 @@ impl App {
     }
 
     /// 做一个动作：调方法交给核心（回应不看，拒了的弹原话）；复制照拖选的复制。
-    fn widget_act(&mut self, package: &str, action: Action) {
+    pub(super) fn widget_act(&mut self, package: &str, action: Action) {
         match action {
             Action::Call { method, params } => self.link.core.send(Command::PackageCall {
                 package: package.to_string(),
@@ -117,8 +130,11 @@ impl App {
                 params,
             }),
             Action::Copy(text) => self.copy(&text),
-            // 打开整页随整页一起做（「界面块」第 2 条）。
-            Action::Open(_) => {}
+            // 同一个包的一整页（「界面块」第 7 条）。
+            Action::Open(widget) => self.open_widget_page(PageRef {
+                package: package.to_string(),
+                widget,
+            }),
         }
     }
 }

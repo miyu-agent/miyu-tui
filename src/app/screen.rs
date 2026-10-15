@@ -62,6 +62,8 @@ pub struct Screen {
     pub widget_spots: Vec<crate::ui::widget::Spot>,
     /// 指针停在底栏哪个界面块的那一格上（包、编号）：换了一格才提示一次是谁放的。
     pub status_hover: Option<(String, String)>,
+    /// 上一帧扩展的整页画成什么样：键盘照它选、滚（`app/widget_page.rs`）。
+    pub widget_page: crate::ui::widget::PageFrame,
 }
 
 impl Screen {
@@ -93,6 +95,7 @@ impl Screen {
             rng: crate::rng::Rng::from_clock(),
             widget_spots: Vec::new(),
             status_hover: None,
+            widget_page: Default::default(),
         }
     }
 }

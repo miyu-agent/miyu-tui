@@ -156,6 +156,24 @@ pub struct PageRef {
     pub widget: String,
 }
 
+impl PageRef {
+    /// 读 `{"package", "widget"}`（`command.catalog` 的 `opens`、`command.run` 回的 `opens`）。
+    pub fn read(value: &Value) -> Option<PageRef> {
+        Some(PageRef {
+            package: value["package"].as_str()?.to_string(),
+            widget: value["widget"].as_str()?.to_string(),
+        })
+    }
+}
+
+/// 开着的整页（蓝图「界面块」第 2、7 条）：哪一页、往下滚了几行、键盘选着第几个能点的。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PageView {
+    pub target: PageRef,
+    pub scroll: usize,
+    pub selected: usize,
+}
+
 /// 订阅时说的：正在看的会话、屏上这一刻有的位置、开着的那一整页（「界面块」第 8 条）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct View {

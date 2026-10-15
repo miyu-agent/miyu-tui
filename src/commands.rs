@@ -36,6 +36,9 @@ pub struct Spec {
     /// 名字后面跟什么的提示（核心清单里模板的 `argument-hint`，例如 `<路径>`）：列表里名字后面暗色写着。
     #[serde(default)]
     pub argument: Option<String>,
+    /// 扩展的整页带的命令：打了就开这一页（核心清单的 `opens`，蓝图「界面块」第 10 条）。
+    #[serde(skip)]
+    pub opens: Option<crate::widgets::PageRef>,
 }
 
 /// 回车时输入框里那一行是什么（蓝图「斜杠命令列表」第 4、5 条）。
@@ -154,6 +157,7 @@ impl Commands {
                 run: Run::Core,
                 args: true,
                 argument: c.argument.clone(),
+                opens: c.opens.clone(),
             })
             .collect();
         self.core = core;
@@ -324,6 +328,7 @@ mod tests {
             aliases: aliases.iter().map(ToString::to_string).collect(),
             summary: format!("{name} 的说明"),
             argument: (name == "review").then(|| "<路径>".to_string()),
+            opens: None,
         };
         c.take_core(&[
             core("clear", &[]),

@@ -412,7 +412,10 @@
   "widget": {
     "folded": "已完成 {count} 项",
     "more": "… 还有 {count} 项",
-    "more_blocks": "… 还有 {count} 块"
+    "more_blocks": "… 还有 {count} 块",
+    "loading": "正在读…",
+    "not_running": "{source} 没有运行",
+    "page_keys": [["↑/↓", "选"], ["Enter", "确定"], ["PgUp/PgDn", "翻页"], ["Esc", "返回"]]
   },
   "jobs": {
     "button": "{count} 个后台命令",

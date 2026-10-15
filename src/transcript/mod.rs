@@ -232,6 +232,7 @@ impl Transcript {
             | Update::Widgets(_)
             | Update::WidgetChanged { .. }
             | Update::PackageCallRefused { .. }
+            | Update::OpenPage(_)
             | Update::DirChecked(_) => {}
             Update::CoolingUntil(until) => self.cooling_until(until),
             Update::CurrentModel(current) => self.current_model(current),

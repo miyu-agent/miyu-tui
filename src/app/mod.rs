@@ -16,6 +16,7 @@ mod effort;
 mod frame;
 mod goal;
 mod jobs;
+mod widget_page;
 mod widgets;
 
 pub use avatars::{Avatar, Place};
@@ -172,6 +173,11 @@ impl App {
         // 配置页开着：按键、鼠标、粘贴都归它（`settings.rs`）。
         if self.boxes.settings.is_some() {
             self.settings_event(event);
+            return;
+        }
+        // 扩展的整页开着：按键、鼠标都归它（`widget_page.rs`）。
+        if self.boxes.widget_page.is_some() {
+            self.widget_page_event(event);
             return;
         }
         let menu_open = self.menu_matches().is_some() || self.mention_found().is_some();

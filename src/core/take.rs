@@ -147,18 +147,7 @@ pub(super) async fn take(
         Some(Awaiting::Catalog) => {
             return notify(Update::Catalog(super::catalog::read(&message["result"])));
         }
-        Some(Awaiting::CommandRun | Awaiting::Slash) => {
-            let text = |key: &str| {
-                message["result"][key]
-                    .as_str()
-                    .unwrap_or_default()
-                    .to_string()
-            };
-            return notify(Update::CommandRan {
-                command: text("command"),
-                said: text("said"),
-            });
-        }
+        Some(Awaiting::CommandRun | Awaiting::Slash) => return notify(ran(&message["result"])),
         Some(Awaiting::Output(session, job, after)) => {
             let output = Some(JobOutput::read(&message["result"]));
             return notify(Update::Output {
@@ -379,5 +368,18 @@ pub(super) async fn take(
             true
         }
         _ => true,
+    }
+}
+
+/// 斜杠命令办了（`command.run` 的回应）：回了 `opens` 的是扩展的整页带的命令，界面打开那一页（核心 X-15 下）；别的交回规范的
+/// 命令名和回执。
+pub(super) fn ran(result: &Value) -> Update {
+    if let Some(page) = crate::widgets::PageRef::read(&result["opens"]) {
+        return Update::OpenPage(page);
+    }
+    let text = |key: &str| result[key].as_str().unwrap_or_default().to_string();
+    Update::CommandRan {
+        command: text("command"),
+        said: text("said"),
     }
 }
