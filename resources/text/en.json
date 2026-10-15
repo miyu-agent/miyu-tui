@@ -1405,7 +1405,7 @@
     "theme": {
       "title": "Theme",
       "sub": "Choose mode and colors. Applies immediately. You can change this in settings later",
-      "rows": ["Mode", "Colors", "Mascot"],
+      "rows": ["Mode", "Colors", "Mascot", "Accent", "Background"],
       "modes": ["Auto", "Dark", "Light"],
       "colors": ["Follow the avatar", "Follow the wallpaper", "Tokyo Night", "Terminal colors"],
       "from_avatar": "From {name}'s avatar",
@@ -1413,6 +1413,9 @@
       "no_avatar": "{name} has no avatar. Using Tokyo Night", "from_wallpaper": "From the desktop wallpaper", "no_wallpaper": "No desktop wallpaper found. Using Tokyo Night",
       "mascot": ["Show", "Hide"],
       "mascot_note": "Uses more CPU and slows startup when on",
+      "ground": ["On", "Off"],
+      "ground_note": "When dark or light is chosen, paint the whole screen in that theme's background",
+      "seed_default": "default",
       "next": "Next",
       "saving": "Saving…"
     },

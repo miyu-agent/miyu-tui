@@ -47,9 +47,10 @@ impl Oobe {
                 self.persona
                     .answer(&waiting, result, &mut self.asker, &texts.persona)
             }
-            Waiting::ThemeRead | Waiting::ThemeSave => {
+            Waiting::ThemeRead | Waiting::ThemeSave | Waiting::ThemeSeed => {
                 let follow = self.persona.colors().is_some();
-                self.theme.answer(&waiting, result, follow)
+                self.theme
+                    .answer(&waiting, result, (follow, &mut self.asker))
             }
             Waiting::ProfileRead | Waiting::ProfileSave => self.profile.answer(&waiting, result),
             Waiting::SandboxRead | Waiting::SandboxSave => {

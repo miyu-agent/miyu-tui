@@ -386,7 +386,8 @@ impl Oobe {
             Step::Theme => {
                 let follow = self.persona.colors().is_some();
                 let avatar = self.persona.shows_avatar();
-                self.theme.enter(&mut self.asker, follow, avatar);
+                let persona = self.persona.chosen_id.clone();
+                self.theme.enter(&mut self.asker, (follow, avatar), persona);
             }
             Step::Profile => self.profile.enter(&mut self.asker),
             Step::Preset => self.preset.enter(&mut self.asker),
@@ -434,9 +435,9 @@ impl Oobe {
         )
     }
 
-    /// 主题那一步选着的样子（第 23a 条）：在这一步、读到了配置的，或者写成了的（引导关上以前一直照它）交回配色、明暗；
-    /// 别的时候是 `None`，照配置项。
-    pub fn theme_preview(&self) -> Option<(String, crate::theme::choice::Mode)> {
+    /// 主题那一步选着的样子（第 23a 条）：在这一步、读到了配置的，或者写成了的（引导关上以前一直照它）交回配色、明暗、
+    /// 铺底色、挑过的主色；别的时候是 `None`，照配置项。
+    pub fn theme_preview(&self) -> Option<theme::Preview> {
         (self.step == Step::Theme || self.theme.saved)
             .then(|| self.theme.preview())
             .flatten()

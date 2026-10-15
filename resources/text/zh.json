@@ -1405,7 +1405,7 @@
     "theme": {
       "title": "主题",
       "sub": "选择明暗和配色，立即生效，以后可以在设置里改",
-      "rows": ["明暗", "配色", "吉祥物"],
+      "rows": ["明暗", "配色", "吉祥物", "主色", "铺底色"],
       "modes": ["自动", "深色", "浅色"],
       "colors": ["跟随头像", "跟随壁纸", "Tokyo Night", "终端配色"],
       "from_avatar": "取自「{name}」的头像",
@@ -1413,6 +1413,9 @@
       "no_avatar": "「{name}」未设置头像，使用 Tokyo Night", "from_wallpaper": "取自桌面壁纸", "no_wallpaper": "未找到桌面壁纸，使用 Tokyo Night",
       "mascot": ["显示", "不显示"],
       "mascot_note": "开启会提高 CPU 占用，拖慢启动速度",
+      "ground": ["开", "关"],
+      "ground_note": "明暗选深色、浅色时，整个界面铺这一套的底色",
+      "seed_default": "默认",
       "next": "下一步",
       "saving": "正在保存…"
     },

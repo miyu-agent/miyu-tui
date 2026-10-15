@@ -11,22 +11,29 @@ use crate::oobe::theme::Slot;
 use crate::oobe::{Move, Oobe, Step, Texts};
 use crate::theme::choice::Mode;
 
+/// 选着的配色、明暗。
+pub(super) fn shown(oobe: &Oobe) -> Option<(String, Mode)> {
+    oobe.theme_preview().map(|p| (p.colors, p.mode))
+}
+
 /// 从人格那一步走进来，读到的两项是 `items`。
-fn at_theme(oobe: &mut Oobe, t0: Instant, texts: &Texts, items: serde_json::Value) {
+pub(super) fn at_theme(oobe: &mut Oobe, t0: Instant, texts: &Texts, items: serde_json::Value) {
     oobe.step = Step::Persona;
     oobe.moved(Move::Next, t0);
     assert_eq!(oobe.step, Step::Theme);
     let (tag, params) = find(&asks(oobe), "config.get");
     assert_eq!(
         params,
-        json!({"keys": ["tui.theme", "tui.theme_mode", "tui.mascot_home", "tui.mascot_sidebar"]})
+        json!({"keys": [
+            "tui.theme", "tui.theme_mode", "tui.mascot_home", "tui.mascot_sidebar", "tui.theme_background"
+        ]})
     );
-    assert_eq!(oobe.theme_preview(), None, "读到以前照原来的样子");
+    assert_eq!(shown(oobe), None, "读到以前照原来的样子");
     oobe.answer(tag, Ok(json!({"items": items})), t0, texts);
 }
 
 /// 出厂的两项：都是默认值。
-fn defaults() -> serde_json::Value {
+pub(super) fn defaults() -> serde_json::Value {
     json!({
         "tui.theme": {"value": "tokyonight", "origin": {"layer": "default"}},
         "tui.theme_mode": {"value": "auto", "origin": {"layer": "default"}}
@@ -42,16 +49,13 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     let mut oobe = fresh(t0);
     at_theme(&mut oobe, t0, &texts, defaults());
     assert_eq!(
-        oobe.theme_preview(),
+        shown(&oobe),
         Some(("tokyonight".into(), Mode::Auto)),
         "没有头像：停在现在的配置"
     );
     // 左右不再换。
     oobe.key(key(KeyCode::Right), t0, &texts);
-    assert_eq!(
-        oobe.theme_preview(),
-        Some(("tokyonight".into(), Mode::Auto))
-    );
+    assert_eq!(shown(&oobe), Some(("tokyonight".into(), Mode::Auto)));
     // 明暗那一格 Enter：开列表，停在「自动」；往下挪一个，当场换成深色；Enter 选好、关窗。
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let labels: Vec<String> = oobe
@@ -67,7 +71,7 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     assert!(asks(&mut oobe).is_empty(), "开列表不写");
     oobe.key(key(KeyCode::Down), t0, &texts);
     assert_eq!(
-        oobe.theme_preview(),
+        shown(&oobe),
         Some(("tokyonight".into(), Mode::Dark)),
         "挪到就换"
     );
@@ -78,12 +82,12 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
-    assert_eq!(oobe.theme_preview(), Some(("terminal".into(), Mode::Dark)));
+    assert_eq!(shown(&oobe), Some(("terminal".into(), Mode::Dark)));
     oobe.key(key(KeyCode::Esc), t0, &texts);
     assert!(oobe.theme.picking.is_none());
     assert_eq!(oobe.step, Step::Theme, "Esc 只关列表");
     assert_eq!(
-        oobe.theme_preview(),
+        shown(&oobe),
         Some(("tokyonight".into(), Mode::Dark)),
         "换回原来的"
     );
@@ -92,8 +96,9 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     oobe.key(key(KeyCode::Down), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert!(asks(&mut oobe).is_empty(), "选的时候不写");
-    oobe.key(key(KeyCode::Down), t0, &texts);
-    oobe.key(key(KeyCode::Down), t0, &texts);
+    for _ in 0..3 {
+        oobe.key(key(KeyCode::Down), t0, &texts);
+    }
     assert_eq!(oobe.theme.slot, Slot::Next);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let (tag, params) = find(&asks(&mut oobe), "config.set");
@@ -102,6 +107,7 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
         json!({"layer": "personal", "changes": [
             {"key": "tui.theme_mode", "value": "dark"},
             {"key": "tui.theme", "value": "terminal"},
+            {"key": "tui.theme_background", "value": true},
             {"key": "tui.mascot_home", "value": true},
             {"key": "tui.mascot_sidebar", "value": true}
         ]})
@@ -110,7 +116,7 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     oobe.answer(tag, Ok(json!({})), t0, &texts);
     assert_eq!(oobe.step, Step::Profile);
     assert_eq!(
-        oobe.theme_preview(),
+        shown(&oobe),
         Some(("terminal".into(), Mode::Dark)),
         "写成了：引导关上以前一直照选的，不闪回原来的"
     );
@@ -125,14 +131,10 @@ fn going_back_puts_the_old_look_back() {
     oobe.key(key(KeyCode::Enter), t0, &texts);
     oobe.key(key(KeyCode::Down), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    assert!(oobe.theme_preview().is_some());
+    assert!(shown(&oobe).is_some());
     oobe.key(key(KeyCode::Esc), t0, &texts);
     assert_eq!(oobe.step, Step::Persona);
-    assert_eq!(
-        oobe.theme_preview(),
-        None,
-        "退回去：照配置项，换回原来的样子"
-    );
+    assert_eq!(shown(&oobe), None, "退回去：照配置项，换回原来的样子");
 }
 
 #[test]
@@ -148,7 +150,7 @@ fn with_an_avatar_the_colors_start_on_follow_the_avatar_unless_already_chosen() 
     oobe.persona.avatar = Field::line().with(&file.display().to_string());
     at_theme(&mut oobe, t0, &texts, defaults());
     assert_eq!(oobe.theme.colors, 0, "停在跟随头像");
-    assert_eq!(oobe.theme_preview().map(|p| p.0), Some("persona".into()));
+    assert_eq!(shown(&oobe).map(|p| p.0), Some("persona".into()));
     // 写过配色的照写的。
     let mut chosen = fresh(t0);
     chosen.persona.avatar = Field::line().with(&file.display().to_string());
@@ -158,7 +160,7 @@ fn with_an_avatar_the_colors_start_on_follow_the_avatar_unless_already_chosen() 
     });
     at_theme(&mut chosen, t0, &texts, items);
     assert_eq!(
-        chosen.theme_preview(),
+        shown(&chosen),
         Some(("terminal".into(), Mode::Light)),
         "重走引导：照写过的停"
     );
@@ -171,7 +173,7 @@ fn a_refused_write_stays_and_says_why() {
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
     at_theme(&mut oobe, t0, &texts, defaults());
-    for _ in 0..3 {
+    for _ in 0..4 {
         oobe.key(key(KeyCode::Down), t0, &texts);
     }
     assert_eq!(oobe.theme.slot, Slot::Next);
@@ -203,7 +205,7 @@ fn the_colors_list_offers_the_wallpaper_only_when_one_was_found() {
     assert_eq!(labels(&oobe), ["跟随头像", "Tokyo Night", "终端配色"]);
     // 少了一行，挪到哪还是照值认：往上一个是跟随头像。
     oobe.key(key(KeyCode::Up), t0, &texts);
-    assert_eq!(oobe.theme_preview().map(|p| p.0), Some("persona".into()));
+    assert_eq!(shown(&oobe).map(|p| p.0), Some("persona".into()));
     oobe.key(key(KeyCode::Esc), t0, &texts);
     // 找到了：列着，选上它当场换。
     oobe.theme.wallpaper = true;
@@ -213,7 +215,7 @@ fn the_colors_list_offers_the_wallpaper_only_when_one_was_found() {
         ["跟随头像", "跟随壁纸", "Tokyo Night", "终端配色"]
     );
     oobe.key(key(KeyCode::Up), t0, &texts);
-    assert_eq!(oobe.theme_preview().map(|p| p.0), Some("wallpaper".into()));
+    assert_eq!(shown(&oobe).map(|p| p.0), Some("wallpaper".into()));
 }
 
 #[test]
@@ -226,11 +228,18 @@ fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offe
     at_theme(&mut oobe, t0, &texts, defaults());
     assert_eq!(
         oobe.theme.slots(),
-        [Slot::Mode, Slot::Colors, Slot::Mascot, Slot::Next]
+        [
+            Slot::Mode,
+            Slot::Colors,
+            Slot::Ground,
+            Slot::Mascot,
+            Slot::Next
+        ]
     );
     assert!(!oobe.theme.mascot_off, "没写过的停在显示");
-    oobe.key(key(KeyCode::Down), t0, &texts);
-    oobe.key(key(KeyCode::Down), t0, &texts);
+    for _ in 0..3 {
+        oobe.key(key(KeyCode::Down), t0, &texts);
+    }
     assert_eq!(oobe.theme.slot, Slot::Mascot);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let labels: Vec<String> = oobe
@@ -254,6 +263,7 @@ fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offe
         json!([
             {"key": "tui.theme_mode", "value": "auto"},
             {"key": "tui.theme", "value": "tokyonight"},
+            {"key": "tui.theme_background", "value": true},
             {"key": "tui.mascot_home", "value": false},
             {"key": "tui.mascot_sidebar", "value": false}
         ])
@@ -264,7 +274,7 @@ fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offe
     items["tui.mascot_home"] = json!({"value": false, "origin": {"layer": "personal"}});
     at_theme(&mut again, t0, &texts, items);
     assert!(again.theme.mascot_off);
-    // 人格有头像：不列这一格，往下两下就是「下一步」，不写那两项。
+    // 人格有头像：不列这一格，往下三下就是「下一步」，不写那两项。
     let dir = std::env::temp_dir().join(format!("miyu-theme-mascot-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("avatar.png");
@@ -274,16 +284,17 @@ fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offe
     at_theme(&mut pictured, t0, &texts, defaults());
     assert_eq!(
         pictured.theme.slots(),
-        [Slot::Mode, Slot::Colors, Slot::Next]
+        [Slot::Mode, Slot::Colors, Slot::Ground, Slot::Next]
     );
-    pictured.key(key(KeyCode::Down), t0, &texts);
-    pictured.key(key(KeyCode::Down), t0, &texts);
+    for _ in 0..3 {
+        pictured.key(key(KeyCode::Down), t0, &texts);
+    }
     assert_eq!(pictured.theme.slot, Slot::Next);
     pictured.key(key(KeyCode::Enter), t0, &texts);
     let (_, params) = find(&asks(&mut pictured), "config.set");
     assert_eq!(
         params["changes"].as_array().map(Vec::len),
-        Some(2),
+        Some(3),
         "{params}"
     );
     std::fs::remove_dir_all(&dir).unwrap();

@@ -49,11 +49,11 @@ fn read(path: &PathBuf) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
 }
 
-/// 主题那一步（2026-10-13 项目主人定）：挪到「下一步」回车，照停着的写（明暗、配色、吉祥物那一格回车是开列表；人格有头像
-/// 的没有吉祥物那一格，多按的一下停在「下一步」）。
+/// 主题那一步（2026-10-13 项目主人定）：挪到「下一步」回车，照停着的写（明暗、配色、铺底色、吉祥物那一格回车是开列表；
+/// 人格有头像的没有吉祥物那一格，多按的一下停在「下一步」）。
 fn through_theme(tui: &mut support::Tui) {
     tui.wait_for("选择明暗和配色");
-    for _ in 0..3 {
+    for _ in 0..4 {
         tui.key(b"j");
     }
     tui.key(b"\r");
@@ -160,13 +160,23 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
         "挪到就当场换"
     );
     tui.key(b"\r");
-    // 没头像：明暗、配色下面还有一格吉祥物，停在显示，下面暗色一句（2026-10-15 项目主人定）。
+    // 没头像：明暗、配色下面还有铺底色、吉祥物两格，吉祥物停在显示，下面暗色一句（2026-10-15 项目主人定）。
     assert!(
         tui.shows("吉祥物") && tui.shows("显示") && tui.shows("开启会提高 CPU 占用，拖慢启动速度"),
         "{}",
         tui.lines().join("\n")
     );
-    for _ in 0..3 {
+    assert!(tui.shows("铺底色"), "{}", tui.lines().join("\n"));
+    // 铺底色挪到关：当场不铺（2026-10-15 项目主人：主题设置那里的铺底色也缺了）。
+    tui.key(b"j");
+    tui.key(b"j");
+    tui.key(b"\r");
+    tui.wait_for("关");
+    tui.key(b"j");
+    tui.pump(Duration::from_millis(300));
+    assert_eq!(tui.background(0, 0), vt100::Color::Default, "关了当场不铺");
+    tui.key(b"\r");
+    for _ in 0..2 {
         tui.key(b"j");
     }
     tui.key(b"\r");
@@ -194,6 +204,9 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     });
     until(&mut tui, "主题写下深色", || {
         home.settings().contains("theme_mode = \"dark\"")
+    });
+    until(&mut tui, "铺底色写下关", || {
+        home.settings().contains("theme_background = false")
     });
     until(
         &mut tui,
@@ -345,4 +358,34 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     tui.wait_for("好。");
     tui.wait_for("人格 小助手");
     tui.wait_for("预设 基础功能");
+}
+
+#[test]
+fn the_lower_rows_open_a_whole_list_even_on_a_crowded_step() {
+    // 主题那一步多了主色、铺底色两格（2026-10-15）以后，靠下那几格的选择窗在下面放不下：往上挪到放得下，不截掉选项。
+    let home = Home::unwelcomed(Script::new([]), CONFIGURED);
+    let mut tui = home.tui_wide_with("zh_CN.UTF-8", 140, &[]);
+    for (wait, press) in [
+        ("按 Enter 开始", b"\r"),
+        ("界面语言", b"\r"),
+        ("方块或乱码", b"\r"),
+        ("已配置", b"\r"),
+        ("创建人格", b"\r"),
+    ] {
+        tui.wait_for(wait);
+        tui.key(press);
+    }
+    tui.type_text("小助手");
+    tui.key(b"\r");
+    for _ in 0..5 {
+        tui.key(b"\x1b[B");
+    }
+    tui.key(b"\r");
+    tui.wait_for("选择明暗和配色");
+    // 明暗、配色、铺底色，第四格是吉祥物：开列表，两项都在。
+    for _ in 0..3 {
+        tui.key(b"j");
+    }
+    tui.key(b"\r");
+    tui.wait_for("不显示");
 }
