@@ -4,7 +4,7 @@
 use super::App;
 use crate::oobe::Oobe;
 use crate::oobe::persona::Colors;
-use crate::theme::choice::{self, COLORS, Choice};
+use crate::theme::choice::{self, Choice};
 use crate::theme::persona;
 
 impl App {
@@ -124,7 +124,7 @@ impl App {
         }
     }
 
-    /// 开着配色的列表：引导「主题」那一步的、配置页外观页的。
+    /// 开着配色的列表：引导「主题」那一步的、配置页外观页的、`/theme` 的框。
     fn colors_list_open(&self) -> bool {
         let colors = |c: &crate::settings::pages::choose::Choose| c.key == "tui.theme";
         let oobe = self
@@ -136,7 +136,8 @@ impl App {
             Some(crate::settings::popup::Popup::Choose(c)) => Some(c),
             _ => None,
         });
-        oobe.is_some_and(colors) || settings.is_some_and(colors)
+        let own = matches!(self.boxes.panel, Some(super::Panel::Theme { .. }));
+        oobe.is_some_and(colors) || settings.is_some_and(colors) || own
     }
 
     /// 现在是不是跟随头像的配色（引导「主题」那一步选着的也算）。
@@ -180,26 +181,5 @@ impl App {
         let (seeds, seed) = self.wanted();
         self.screen.theme_seeds = seeds;
         seed
-    }
-
-    /// 换下一种配色，只管这一次启动（「主题」第 6 条），提示「主题：名字」。
-    pub(super) fn next_theme(&mut self) {
-        let colors = &mut self.screen.theme_choice.colors;
-        let at = COLORS.iter().position(|c| c == colors).unwrap_or(0);
-        // 找不到壁纸的跳过跟随壁纸（同配色列表里不列它）。
-        let wallpaper = self.screen.wallpaper.available();
-        let next = (1..=COLORS.len())
-            .map(|step| COLORS[(at + step) % COLORS.len()])
-            .find(|c| wallpaper || *c != "wallpaper")
-            .unwrap_or(COLORS[0]);
-        *colors = next.to_string();
-        self.screen.theme_seed = self.wanted_seed();
-        self.apply_theme();
-        let text = self
-            .config
-            .text
-            .theme_changed
-            .replace("{name}", &self.screen.theme);
-        self.hint(text, true);
     }
 }

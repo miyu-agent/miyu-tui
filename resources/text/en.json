@@ -136,7 +136,6 @@
   "stashed": "> stashed",
   "esc_clear_hint": "Press Esc again to clear",
   "no_clear_running": "Can't clear the screen while a reply is running",
-  "theme_changed": "Theme: {name}",
   "icons_changed": "Icons: {name}",
   "figure_pending": "⋯ drawing",
   "mascot_failed": "Mascot package unreadable, using the built-in mascot",
@@ -578,6 +577,11 @@
     "pending": "New session will open in {path}",
     "elsewhere": "Workspace: {path} · /workspace . to switch here",
     "changed": "Workspace changed to {path}"
+  },
+  "themes": {
+    "title": "Colors",
+    "hint": "↑/↓ select · Enter confirm · Esc cancel",
+    "current": "current"
   },
   "languages": {
     "title": "Interface language",

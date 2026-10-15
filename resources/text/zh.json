@@ -136,7 +136,6 @@
   "stashed": "> 暂存",
   "esc_clear_hint": "再按一次 Esc 清空",
   "no_clear_running": "回答进行中，无法清屏",
-  "theme_changed": "主题：{name}",
   "icons_changed": "图标：{name}",
   "figure_pending": "⋯ 正在渲染图片",
   "mascot_failed": "吉祥物包无法读取，已使用内置吉祥物",
@@ -578,6 +577,11 @@
     "pending": "新会话的工作区：{path}",
     "elsewhere": "工作区：{path} · /workspace . 切换到当前目录",
     "changed": "工作区已切换到 {path}"
+  },
+  "themes": {
+    "title": "配色",
+    "hint": "↑/↓ 选择 · Enter 确定 · Esc 取消",
+    "current": "当前"
   },
   "languages": {
     "title": "界面语言",

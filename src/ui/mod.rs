@@ -39,6 +39,7 @@ pub mod persona_list;
 pub mod session_list;
 pub mod settings;
 mod sidebar;
+pub mod themes;
 pub mod usage;
 pub mod widget;
 

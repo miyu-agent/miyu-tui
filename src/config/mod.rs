@@ -195,8 +195,6 @@ pub struct Texts {
     pub mascot_failed: String,
     /// mermaid 图下面那一行，点了开大图。
     pub figure_zoom: String,
-    /// 换了主题，`{name}` 是名字。
-    pub theme_changed: String,
     /// 换了图标，`{name}` 是那一套的名字。
     pub icons_changed: String,
     /// 撤销那一行打头的：`已撤销`（不写几轮：撤销只能一轮一轮撤）。
@@ -217,6 +215,8 @@ pub struct Texts {
     pub language_switched: String,
     /// `/language` 开的框里的字。
     pub languages: crate::ui::languages::Texts,
+    /// `/theme` 开的框里的字。
+    pub themes: crate::ui::themes::Texts,
     /// 新会话的人格框（蓝图「新会话：人格、工作区」）。
     pub persona_box: crate::ui::persona_list::Texts,
     /// 工作区那几句（「新会话：人格、工作区」第 4、5 条）。

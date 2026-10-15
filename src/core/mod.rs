@@ -158,6 +158,8 @@ pub enum Command {
     FetchHuman(String),
     /// 界面语言写进个人设置（`ui.language`，`auto` 或者语言代码；蓝图「界面语言」）。
     SetLanguage(String),
+    /// 写个人设置的配色（`tui.theme`，`/theme` 的框里定下的）。
+    SetTheme(String),
     /// 另外订阅一个会话：子代理的会话（「后台命令、子代理和侧边栏」、「切进子会话」）。它推来的包成 [`Update::Elsewhere`]。
     Watch(String),
     /// 退订另外订阅着的一个会话。

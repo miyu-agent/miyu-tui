@@ -337,7 +337,7 @@ impl App {
                     .core
                     .send(Command::Compact(words.map(str::to_string)));
             }
-            Run::Theme => self.next_theme(),
+            Run::Theme => self.open_themes(),
             Run::Icons => self.next_icons(),
             Run::Quit => self.quit = true,
             Run::Help => self.open_help(),

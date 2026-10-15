@@ -33,6 +33,11 @@ pub enum Panel {
         /// 选中语言表里的第几种。
         selected: usize,
     },
+    /// 配色（`/theme`）：选中第几种；列哪几种、打开以前用的哪种在 [`App::boxes`](super::App) 的 `theme_box` 上。
+    Theme {
+        /// 选中第几种。
+        selected: usize,
+    },
     /// 会话列表（`/sessions`）：列表的状态在 [`App::session_list`](super::App) 上。
     Sessions,
     /// 换模型（`/model`）：框的状态在 [`App::model_list`](super::App) 上。
@@ -162,6 +167,7 @@ impl App {
             } => (selected, open, all),
             Panel::Help { scroll } => return self.help_key(scroll, key),
             Panel::Language { selected } => return self.language_key(selected, key),
+            Panel::Theme { selected } => return self.theme_key(selected, key),
             Panel::Sessions => return self.sessions_key(key),
             Panel::Models => return self.models_key(key),
             Panel::Effort { selected } => return self.effort_key(selected, key),
@@ -222,6 +228,7 @@ impl App {
     pub(super) fn jobs_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
         if self.help_mouse(mouse, at)
             || self.language_mouse(mouse, at)
+            || self.theme_mouse(mouse, at)
             || self.sessions_mouse(mouse, at)
             || self.models_mouse(mouse, at)
             || self.effort_mouse(mouse, at)
