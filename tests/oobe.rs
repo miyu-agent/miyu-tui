@@ -59,9 +59,10 @@ fn through_theme(tui: &mut support::Tui) {
     tui.key(b"\r");
 }
 
-/// 「AI 怎么认识你」那一步（2026-10-13 项目主人定，都可以不填）：挪到「下一步」回车。
+/// 「AI 怎么认识你」那一步（2026-10-13 项目主人定，都可以不填；2026-10-16 起多一格回复语言）：挪到「下一步」回车。
 fn through_profile(tui: &mut support::Tui) {
     tui.wait_for("AI 怎么称呼你");
+    tui.key(b"j");
     tui.key(b"j");
     tui.key(b"j");
     tui.key(b"\r");

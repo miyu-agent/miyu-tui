@@ -1287,7 +1287,9 @@
       "appearance": "Appearance",
       "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}},
       "unavailable": "Not installed",
-      "custom_model": "Enter a model…"
+      "custom_model": "Enter a model…",
+      "combo": ["Not set", "Other…"],
+      "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]]
     }
   },
   "oobe": {
@@ -1454,9 +1456,10 @@
     },
     "profile": {
       "title": "How the AI knows you",
-      "sub": "Applies to new sessions. You can change this in settings later. Both are optional",
-      "fields": ["What should the AI call you", "More about you (optional)"],
-      "hints": ["e.g. Alex", "What you do and how you'd like the AI to treat you"],
+      "sub": "Applies to new sessions. You can change this in settings later. All are optional",
+      "fields": ["What should the AI call you", "More about you (optional)", "Reply language"],
+      "hints": ["e.g. Alex", "What you do and how you'd like the AI to treat you", "Not set"],
+      "other": "Other…",
       "next": "Next",
       "saving": "Saving…"
     },

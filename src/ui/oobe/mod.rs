@@ -109,7 +109,12 @@ fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
         }
         Step::Theme if oobe.theme.slot == crate::oobe::theme::Slot::Next => keys.pick.clone(),
         Step::Theme => keys.theme.clone(),
-        Step::Profile if oobe.profile.name.editing() => keys.editing.clone(),
+        Step::Profile if oobe.profile.picking.is_some() => {
+            joined(&p.config.text.settings.more.hints[2])
+        }
+        Step::Profile if oobe.profile.name.editing() || oobe.profile.language.editing() => {
+            keys.editing.clone()
+        }
         Step::Profile if oobe.profile.focus == crate::oobe::profile::Slot::Next => {
             keys.pick.clone()
         }
@@ -268,6 +273,23 @@ fn popup_frame(
             // 放在内容那一栏、两格下面：不盖吉祥物，挪的时候看得见整个界面换成什么样。
             let places = stage::places(area, &p.config.oobe, &p.config.mascot);
             let built = theme_step::content(p.oobe, &p.config.text.oobe, places.content.width);
+            let below = (places.content, built.len());
+            theme_step::picker(frame, below, choose, p.config, &mut p.screen.caret);
+        }
+        return (true, None);
+    }
+    // 「关于你」那一步回复语言的选择窗：同主题那一步，放在格子下面（第 23b 条）。
+    if let Some(choose) = p
+        .oobe
+        .profile
+        .picking
+        .as_ref()
+        .filter(|_| p.oobe.step == Step::Profile)
+    {
+        if paint {
+            let places = stage::places(area, &p.config.oobe, &p.config.mascot);
+            let built =
+                profile::content(&p.oobe.profile, &p.config.text.oobe, places.content.width);
             let below = (places.content, built.len());
             theme_step::picker(frame, below, choose, p.config, &mut p.screen.caret);
         }

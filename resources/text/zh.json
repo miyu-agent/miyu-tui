@@ -1287,7 +1287,9 @@
       "appearance": "外观",
       "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}},
       "unavailable": "未安装",
-      "custom_model": "输入模型…"
+      "custom_model": "输入模型…",
+      "combo": ["不设", "其他…"],
+      "sheet_hints": [["Enter", "换行"], ["Ctrl+G", "外部编辑器"], ["Esc", "完成"]]
     }
   },
   "oobe": {
@@ -1455,8 +1457,9 @@
     "profile": {
       "title": "AI 怎么认识你",
       "sub": "新会话生效，以后可以在设置里改。都可以不填",
-      "fields": ["AI 怎么称呼你", "更多描述（可选）"],
-      "hints": ["例如：小林", "你是做什么的、希望 AI 怎么待你"],
+      "fields": ["AI 怎么称呼你", "更多描述（可选）", "回复语言"],
+      "hints": ["例如：小林", "你是做什么的、希望 AI 怎么待你", "不设"],
+      "other": "其他…",
       "next": "下一步",
       "saving": "正在保存…"
     },
