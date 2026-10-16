@@ -148,3 +148,37 @@ fn icons_share_the_title_colour_and_a_thought_preview_has_its_own_colour() {
     );
     assert_ne!(theme::thought_hover(), theme::hover());
 }
+
+#[test]
+fn a_package_tool_is_drawn_with_its_package_icon() {
+    // 2026-10-16 项目主人验 T-260：「挑选表情包」那一行还是扳手。包清单写了 `icon = "face-slightly-smiling"`，那一行画笑脸。
+    let mut f = Fixture::new();
+    f.human = crate::human::Human::from_reply(&serde_json::json!({
+        "language": "zh", "said": {}, "tools": {"meme_pick": {"name": "挑选表情包"}},
+        "packages": {"meme_pick": "miyu-memes"}
+    }));
+    let t0 = Instant::now();
+    let mut pick = command(t0, 1, ToolStatus::Ok);
+    if let crate::transcript::StepKind::Tool { name, .. } = &mut pick.kind {
+        *name = "meme_pick".into();
+    }
+    let title = |f: &Fixture| {
+        let seg = segment(vec![thought(t0, 0), pick.clone()], Some(true));
+        text(&rows(0, &seg, &f.ctx()))
+            .into_iter()
+            .find(|l| l.contains("挑选表情包"))
+            .unwrap()
+    };
+    assert!(
+        title(&f).contains(&format!("{} 挑选表情包", f.config.icons.tool)),
+        "包没写图标：扳手"
+    );
+    f.human.set_icons(
+        [(
+            "miyu-memes".to_string(),
+            "face-slightly-smiling".to_string(),
+        )]
+        .into(),
+    );
+    assert!(title(&f).contains("\u{f118} 挑选表情包"), "{}", title(&f));
+}

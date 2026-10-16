@@ -28,7 +28,7 @@ fn extension() -> PathBuf {
     built
 }
 
-/// 装扩展 `memes`（开着）：登记工具 `sticker`，发的图是先放进 alice 名下的一个 blob。
+/// 装扩展 `memes`（开着，清单写了图标 `face-slightly-smiling`）：登记工具 `sticker`，发的图是先放进 alice 名下的一个 blob。
 fn install(dir: &Path) {
     let blob = miyu_store::blob::Blobs::new(dir.join("home/alice/blobs"))
         .put(b"\x89PNG not really a picture")
@@ -40,7 +40,7 @@ fn install(dir: &Path) {
         .join(format!("memes-ext{}", std::env::consts::EXE_SUFFIX));
     std::fs::copy(extension(), &program).expect("拷得了扩展的程序");
     let manifest = format!(
-        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Memes\" }}\n\n[command]\nname = \"memes\"\nprogram = \"memes-ext\"\nabout = {{ en = \"M\" }}\n\n[process]\nargs = [{:?}]\nstart = \"always\"\n",
+        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Memes\" }}\nicon = \"face-slightly-smiling\"\n\n[command]\nname = \"memes\"\nprogram = \"memes-ext\"\nabout = {{ en = \"M\" }}\n\n[process]\nargs = [{:?}]\nstart = \"always\"\n",
         format!("sticker:{}", blob.as_str()),
     );
     std::fs::write(package.join("package.toml"), manifest).expect("写得进去");
@@ -51,6 +51,19 @@ fn install(dir: &Path) {
     .expect("写得进去");
 }
 
+/// 起终端，等扩展登记成了（核心写下登记缓存）才交回：不然她调到的时候还没有这件工具。
+fn started(home: &Home) -> support::Tui {
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    let cache = home.root().join("state/providers/memes.json");
+    let end = Instant::now() + support::WAIT;
+    while !cache.exists() {
+        assert!(Instant::now() < end, "扩展一直没登记工具");
+        tui.pump(Duration::from_millis(50));
+    }
+    tui
+}
+
 #[test]
 fn a_sticker_she_sends_is_written_after_its_step_when_pictures_cannot_be_shown() {
     let script = Script::new([
@@ -58,15 +71,7 @@ fn a_sticker_she_sends_is_written_after_its_step_when_pictures_cannot_be_shown()
         Play::Says("好。"),
     ]);
     let home = Home::prepared(script, "", install);
-    let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
-    // 扩展登记成了（核心写下登记缓存）才说话：不然她调到的时候还没有这件工具。
-    let cache = home.root().join("state/providers/memes.json");
-    let end = Instant::now() + support::WAIT;
-    while !cache.exists() {
-        assert!(Instant::now() < end, "扩展一直没登记工具");
-        tui.pump(Duration::from_millis(50));
-    }
+    let mut tui = started(&home);
     tui.say("发个表情");
     tui.wait_for("好。");
     tui.wait_for("[表情包] 招手的猫");
@@ -88,4 +93,18 @@ fn a_sticker_she_sends_is_written_after_its_step_when_pictures_cannot_be_shown()
         !lines.iter().any(|l| l.contains("Used 1 tool")),
         "不再数用了几件工具"
     );
+}
+
+#[test]
+fn the_step_of_a_package_tool_carries_its_package_icon() {
+    // 2026-10-16 项目主人验 T-260：表情包那一步还是扳手。包清单写了 Lucide 名的，那一步画对照表里的字形（笑脸）。
+    let script = Script::new([
+        Play::Calls(vec![("sticker".into(), "{}".into())]),
+        Play::Says("好。"),
+    ]);
+    let home = Home::prepared(script, "[tui]\ntimeline_fold = false\n", install);
+    let mut tui = started(&home);
+    tui.say("发个表情");
+    tui.wait_for("好。");
+    tui.wait_for("\u{f118} 发送表情包");
 }

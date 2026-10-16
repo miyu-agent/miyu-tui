@@ -99,3 +99,25 @@ fn the_reply_tells_which_package_each_tool_belongs_to() {
     assert_eq!(human.package("read"), None, "目录里没有的没有包");
     assert_eq!(human.package("nothing"), None);
 }
+
+#[test]
+fn a_tool_finds_its_package_icon() {
+    let mut human = Human::from_reply(&json!({
+        "language": "zh", "said": {}, "tools": {},
+        "packages": {"meme_send": "miyu-memes", "read": "basesystem"}
+    }));
+    assert_eq!(human.package_icon("meme_send"), None, "还没要到图标");
+    human.set_icons(
+        [(
+            "miyu-memes".to_string(),
+            "face-slightly-smiling".to_string(),
+        )]
+        .into(),
+    );
+    assert_eq!(
+        human.package_icon("meme_send"),
+        Some("face-slightly-smiling")
+    );
+    assert_eq!(human.package_icon("read"), None, "包没写图标");
+    assert_eq!(human.package_icon("bare"), None, "不属于哪个包");
+}

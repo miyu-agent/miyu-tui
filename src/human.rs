@@ -16,6 +16,7 @@ const MCP: &str = "mcp__";
 pub struct Human {
     tools: BTreeMap<String, Face>,
     packages: BTreeMap<String, String>,
+    icons: BTreeMap<String, String>,
     said: BTreeMap<String, Template>,
 }
 
@@ -48,6 +49,7 @@ impl Human {
         Human {
             tools,
             packages,
+            icons: BTreeMap::new(),
             said,
         }
     }
@@ -60,6 +62,21 @@ impl Human {
     /// 叫 `name` 的工具这一刻属于哪个包（工具目录里的包编号，核心 X-24）；不在目录里的是 `None`。
     pub fn package(&self, name: &str) -> Option<&str> {
         self.packages.get(name).map(String::as_str)
+    }
+
+    /// 换上每个包清单里写的图标（包编号到 Lucide 名，`package.list` 的 `icon`）：`human.get` 不带，另外要。
+    pub fn set_icons(&mut self, icons: BTreeMap<String, String>) {
+        self.icons = icons;
+    }
+
+    /// 每个包清单里写的图标（包编号到 Lucide 名）。
+    pub fn icons(&self) -> &BTreeMap<String, String> {
+        &self.icons
+    }
+
+    /// 叫 `name` 的工具的包在清单里写的图标（Lucide 名）；不属于哪个包、包没写的是 `None`。
+    pub fn package_icon(&self, name: &str) -> Option<&str> {
+        self.icons.get(self.package(name)?).map(String::as_str)
     }
 
     /// 叫 `name` 的工具给人看的名字：核心给了的照它；没给的照原名，MCP 服务的工具（`mcp__<服务>__<工具>`，核心 X-3）写

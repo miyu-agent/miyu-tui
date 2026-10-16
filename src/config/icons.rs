@@ -1,5 +1,6 @@
 //! 图标（`resources/icons/*.json`，蓝图 `tui.md`「图标」）：一套一个文件，时间线的图标、暂存着东西时的提示符
-//! 都从当前这一套取。出厂 `nerd`（Nerd Font 的字形）和 `plain`（普通字符）；用哪套照 `layout.json` 的 `icons`，
+//! 都从当前这一套取。包的工具没登记自己的图标时，照包清单 `[package] icon` 写的 Lucide 名在这一套的 `lucide` 里换成
+//! 字形（核心定的规矩，2026-10-16 项目主人要表情包有自己的图标）；这一套没有这个名字的、包没写的照旧用 `tool`。出厂 `nerd`（Nerd Font 的字形）和 `plain`（普通字符）；用哪套照 `layout.json` 的 `icons`，
 //! `/icons` 轮换。以后第一次启动时问看不看得到 Nerd Font 的图标，选好的记进设置。
 
 use std::collections::HashMap;
@@ -13,8 +14,11 @@ pub struct Icons {
     /// 这一套叫什么（文件名，不写在文件里）。
     #[serde(skip)]
     pub name: String,
-    /// 每件工具的图标；没登记的用 `tool`。
+    /// 每件工具的图标；没登记的照它的包的图标，再没有的用 `tool`。
     pub tools: HashMap<String, String>,
+    /// Lucide 图标名到这一套的字形：包清单 `[package] icon` 写的是 Lucide 名。普通字符那一套不写（一律 `tool`）。
+    #[serde(default)]
+    pub lucide: HashMap<String, String>,
     /// 没登记的工具的图标。
     pub tool: String,
     /// 思考的图标。
@@ -32,7 +36,15 @@ pub struct Icons {
 impl Icons {
     /// 这件工具的图标。
     pub fn tool(&self, name: &str) -> &str {
-        self.tools.get(name).unwrap_or(&self.tool)
+        self.tool_in(name, None)
+    }
+
+    /// 这件工具的图标，`package` 是它的包在清单里写的 Lucide 图标名：先照工具自己登记的，再照包的，都没有的用 `tool`。
+    pub fn tool_in(&self, name: &str, package: Option<&str>) -> &str {
+        self.tools
+            .get(name)
+            .or_else(|| package.and_then(|icon| self.lucide.get(icon)))
+            .unwrap_or(&self.tool)
     }
 }
 
@@ -81,7 +93,12 @@ mod tests {
     }
 
     fn every_icon(icons: &Icons) -> Vec<&str> {
-        let mut all: Vec<&str> = icons.tools.values().map(String::as_str).collect();
+        let mut all: Vec<&str> = icons
+            .tools
+            .values()
+            .chain(icons.lucide.values())
+            .map(String::as_str)
+            .collect();
         all.extend([
             icons.tool.as_str(),
             icons.think.as_str(),
@@ -163,6 +180,49 @@ mod tests {
         missing.sort();
         missing.dedup();
         assert!(missing.is_empty(), "这几件工具没有图标：{missing:?}");
+    }
+
+    #[test]
+    fn a_package_tool_takes_its_package_icon_in_the_nerd_set_only() {
+        // 2026-10-16 项目主人验 T-260：「挑选表情包」那一行还是扳手；包清单写了 Lucide 名的，照它换。
+        let sets = builtin().unwrap();
+        let (nerd, plain) = (&sets[0], &sets[1]);
+        assert_eq!(
+            nerd.tool_in("meme_send", Some("face-slightly-smiling")),
+            "\u{f118}"
+        );
+        assert_eq!(
+            nerd.tool_in("meme_send", Some("没有这个名字")),
+            nerd.tool,
+            "表里没有的用扳手"
+        );
+        assert_eq!(nerd.tool_in("meme_send", None), nerd.tool, "包没写图标");
+        assert_eq!(
+            nerd.tool_in("read", Some("face-slightly-smiling")),
+            nerd.tool("read"),
+            "工具自己登记了的照自己的"
+        );
+        assert_eq!(
+            plain.tool_in("meme_send", Some("face-slightly-smiling")),
+            "⚙",
+            "没有 Nerd Font 的照旧"
+        );
+        for name in [
+            "face-slightly-smiling",
+            "image",
+            "music",
+            "globe",
+            "book",
+            "bot",
+            "message-circle",
+            "calendar",
+            "database",
+            "terminal",
+            "search",
+            "file",
+        ] {
+            assert!(nerd.lucide.contains_key(name), "常用的 {name} 要有");
+        }
     }
 
     #[test]
