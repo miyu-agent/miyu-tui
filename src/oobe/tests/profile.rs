@@ -19,7 +19,7 @@ fn at_profile(t0: Instant, texts: &Texts, items: serde_json::Value) -> Oobe {
     let (tag, params) = find(&sent, "config.get");
     assert_eq!(
         params,
-        json!({"keys": ["profile.name", "profile.about", "profile.preferred_reply_language"]})
+        json!({"keys": ["profile.preferred_reply_language", "profile.name", "profile.about"]})
     );
     oobe.answer(tag, Ok(json!({"items": items})), t0, texts);
     let (tag, _) = find(&sent, "config.schema");
@@ -54,6 +54,7 @@ fn what_is_typed_is_written_to_personal_settings_and_a_cleared_one_is_unset() {
     );
     assert_eq!(oobe.profile.about.text(), "写 Rust 的", "读到的填好");
     // 称呼：回车才编辑。
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     typed(&mut oobe, "小林", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -66,7 +67,7 @@ fn what_is_typed_is_written_to_personal_settings_and_a_cleared_one_is_unset() {
     }
     oobe.key(key(KeyCode::Esc), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
-    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    assert_eq!(oobe.profile.focus, Slot::Next, "更多描述是最后一格");
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let (tag, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
@@ -115,4 +116,22 @@ fn the_reply_language_is_picked_from_the_suggestions_or_typed_after_other() {
             {"key": "profile.preferred_reply_language", "value": "粤语"}
         ]})
     );
+}
+
+#[test]
+fn the_reply_language_comes_first() {
+    // 2026-10-16 项目主人定：「AI 用什么语言回复」排在「AI 怎么称呼你」上面，进这一步光标就在它上。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = at_profile(t0, &texts, json!({}));
+    assert_eq!(oobe.profile.focus, Slot::Language);
+    assert_eq!(texts.profile.fields[0], "AI 用什么语言回复");
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(
+        oobe.profile.picking.is_some(),
+        "第一格回车开回复语言的选择窗"
+    );
+    oobe.profile.picking = None;
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    assert_eq!(oobe.profile.focus, Slot::Name, "往下是称呼");
 }

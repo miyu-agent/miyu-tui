@@ -1,6 +1,7 @@
 //! 「AI 怎么认识你」那一步（蓝图 `tui.md`「第一次打开的引导」第 23b 条，2026-10-13 项目主人定，核心 P-9）：三项，
-//! 「AI 怎么称呼你」写 `profile.name`，「更多描述（可选）」写 `profile.about`（长文，在大编辑浮窗里写，`sheet.rs`），
-//! 「回复语言」写 `profile.preferred_reply_language`（核心 P-9 补：下拉加「其他」手写，同配置页，`settings/pages/combo.rs`）。
+//! 「AI 用什么语言回复」写 `profile.preferred_reply_language`（核心 P-9 补：下拉加「其他」手写，同配置页，
+//! `settings/pages/combo.rs`；2026-10-16 项目主人定排第一），「AI 怎么称呼你」写 `profile.name`，「更多描述（可选）」写
+//! `profile.about`（长文，在大编辑浮窗里写，`sheet.rs`）。
 //! 都写个人设置，都可以不填：一个字没改的不写，清空了原来有的去掉。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
@@ -15,29 +16,35 @@ use crate::core::Refusal;
 use crate::settings::pages::choose::{Choose, Pressed};
 use crate::settings::pages::combo;
 
-/// 三项的键，照画的先后。
+/// 三项的键，照画的先后（下标是 [`LANGUAGE`]、[`NAME`]、[`ABOUT`]，字表的 `fields`、`hints` 也照这个先后）。
 pub const KEYS: [&str; 3] = [
+    "profile.preferred_reply_language",
     "profile.name",
     "profile.about",
-    "profile.preferred_reply_language",
 ];
+/// 回复语言在第几项。
+pub const LANGUAGE: usize = 0;
+/// 称呼在第几项。
+pub const NAME: usize = 1;
+/// 更多描述在第几项。
+pub const ABOUT: usize = 2;
 
 /// 光标停的几格。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Slot {
-    /// AI 怎么称呼你。
+    /// 回复语言。
     #[default]
+    Language,
+    /// AI 怎么称呼你。
     Name,
     /// 更多描述。
     About,
-    /// 回复语言。
-    Language,
     /// 「下一步」。
     Next,
 }
 
 /// 照画的先后。
-pub const SLOTS: [Slot; 4] = [Slot::Name, Slot::About, Slot::Language, Slot::Next];
+pub const SLOTS: [Slot; 4] = [Slot::Language, Slot::Name, Slot::About, Slot::Next];
 
 /// 这一步。
 #[derive(Debug)]
@@ -75,7 +82,7 @@ impl Default for ProfileStep {
             suggestions: Vec::new(),
             picking: None,
             writing: None,
-            focus: Slot::Name,
+            focus: Slot::Language,
             busy: false,
             error: None,
             read: [None, None, None],
@@ -161,7 +168,7 @@ impl ProfileStep {
                     let now = self.language_value();
                     let rows = combo::rows(&self.suggestions, words);
                     let at = combo::landing(&self.suggestions, &now);
-                    self.picking = Some(Choose::open(KEYS[2], "", rows, &at));
+                    self.picking = Some(Choose::open(KEYS[LANGUAGE], "", rows, &at));
                 }
                 Slot::Next => return self.save(asker),
             },
@@ -192,13 +199,18 @@ impl ProfileStep {
         self.language = Field::line().with(value.as_str().unwrap_or_default());
     }
 
+    /// 三项现在写的，照 [`KEYS`] 的先后。
+    fn now(&self) -> [String; 3] {
+        let mut now = [const { String::new() }; 3];
+        now[LANGUAGE] = self.language.trimmed();
+        now[NAME] = self.name.trimmed();
+        now[ABOUT] = self.about.text().trim().to_string();
+        now
+    }
+
     /// 「下一步」：改了的写进个人设置（清空了原来有的去掉），一个字没改的直接下一步。
     fn save(&mut self, asker: &mut Asker) -> Move {
-        let fields = [
-            self.name.trimmed(),
-            self.about.text().trim().to_string(),
-            self.language.trimmed(),
-        ];
+        let fields = self.now();
         let changes: Vec<Value> = KEYS
             .iter()
             .zip(fields)
@@ -236,9 +248,9 @@ impl ProfileStep {
                         .map(str::to_string);
                     if let Some(text) = &value {
                         match i {
-                            0 => self.name = Field::line().with(text),
-                            1 => self.about = Field::lines().with(text),
-                            _ => self.language = Field::line().with(text),
+                            LANGUAGE => self.language = Field::line().with(text),
+                            NAME => self.name = Field::line().with(text),
+                            _ => self.about = Field::lines().with(text),
                         }
                     }
                     self.read[i] = value;
@@ -247,11 +259,7 @@ impl ProfileStep {
             }
             Waiting::ProfileSave => match result {
                 Ok(_) => {
-                    self.read = [
-                        Some(self.name.trimmed()).filter(|t| !t.is_empty()),
-                        Some(self.about.text().trim().to_string()).filter(|t| !t.is_empty()),
-                        Some(self.language.trimmed()).filter(|t| !t.is_empty()),
-                    ];
+                    self.read = self.now().map(|t| Some(t).filter(|t| !t.is_empty()));
                     Move::Next
                 }
                 Err(refusal) => {
@@ -265,7 +273,7 @@ impl ProfileStep {
                     .as_array()
                     .into_iter()
                     .flatten()
-                    .find(|i| i["key"] == KEYS[2])
+                    .find(|i| i["key"] == KEYS[LANGUAGE])
                     .and_then(|i| i["suggestions"].as_array())
                     .into_iter()
                     .flatten()
