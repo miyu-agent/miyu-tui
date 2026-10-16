@@ -119,6 +119,24 @@ mod tests {
     }
 
     #[test]
+    fn every_icon_stays_in_the_basic_plane() {
+        // 2026-10-16 项目主人经 ssh 在手机上用：思考的图标原来是 md-atom（U+F0768，第 15 平面的私用区），那边的终端
+        // 认不准它占几格，转圈那一行往上推时在时间线左边留下半个字形。BMP 的私用区它照一格画；出厂的每个图标都只用
+        // BMP 的字（Nerd Font 的 fa、cod、oct 几套都在 BMP 里）。
+        for set in builtin().unwrap() {
+            let mut all = every_icon(&set);
+            all.extend([set.pin.as_str(), set.stash.as_str()]);
+            for icon in all {
+                assert!(
+                    icon.chars().all(|c| u32::from(c) <= 0xFFFF),
+                    "{} 这一套的 {icon:?} 不在 BMP 里",
+                    set.name
+                );
+            }
+        }
+    }
+
+    #[test]
     fn every_tool_the_core_ships_has_a_nerd_icon() {
         // 2026-10-07 项目主人：工具的图标别忘了加。核心基础系统的每件工具（钉住的那份核心检出里的 `resources/software/basesystem/tools/`）在
         // Nerd Font 那一套里都要有自己的一个，核心加了新工具这里当场红。
