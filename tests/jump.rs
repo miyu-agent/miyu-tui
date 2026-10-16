@@ -8,9 +8,10 @@ use std::time::Duration;
 use miyu_session::testkit::{Play, Script};
 use support::Home;
 
-/// 一段占满好几屏的回答：每段一行，`tag` 打头好认。
+/// 一段回答：每段一行，`tag` 打头好认。比一屏短：长过视口的回答会停在开头（「正文」第 1 条），最后一段露不出来，流得慢的
+/// 机器上等不到它（2026-10-16 macOS CI）；三轮加起来照样把第二问挤出视口。
 fn long(tag: &str) -> &'static str {
-    let text: Vec<String> = (1..=30).map(|i| format!("{tag} 第 {i} 段。")).collect();
+    let text: Vec<String> = (1..=10).map(|i| format!("{tag} 第 {i} 段。")).collect();
     Box::leak(text.join("\n\n").into_boxed_str())
 }
 
@@ -24,9 +25,9 @@ fn jump_lists_what_was_said_and_puts_the_picked_one_at_the_top() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     for (said, last) in [
-        ("第一问 alpha", "甲 第 30 段。"),
-        ("第二问 beta", "乙 第 30 段。"),
-        ("第三问 gamma", "丙 第 30 段。"),
+        ("第一问 alpha", "甲 第 10 段。"),
+        ("第二问 beta", "乙 第 10 段。"),
+        ("第三问 gamma", "丙 第 10 段。"),
     ] {
         tui.say(said);
         tui.wait_for(last);
