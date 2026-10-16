@@ -9,7 +9,7 @@ use ratatui::text::Span;
 
 use super::super::panel::clip_spans;
 use super::super::rows::{Ctx, clip};
-use crate::config::ToolKind;
+use crate::config::{Summary, ToolKind};
 use crate::transcript::StepKind;
 use crate::transcript::{Segment, Tally};
 use crate::{diff, meter, theme};
@@ -38,7 +38,40 @@ pub fn line(segment: &Segment, ctx: &Ctx, base: Style) -> Vec<Span<'static>> {
             style,
         )];
     }
-    // 一格一格：字，和这一格要不要接加减的行数。
+    // 一格一格：字，和这一格要不要接加减的行数。只为发一张图的那一段打头写那件工具的显示名，不再数别的类。
+    let (mut parts, titled) = match sending(segment, ctx) {
+        Some(name) => (vec![(name, false)], true),
+        None => cells(&tally, words),
+    };
+    if tally.thoughts > 0 {
+        parts.push((count(tally.thoughts, &words.thoughts), false));
+    }
+    if tally.errors > 0 {
+        parts.push((count(tally.errors, &words.errors), false));
+    }
+    parts.push((took, false));
+    let mut out = spans(parts, style, changed(segment, ctx));
+    // 出错的那一格红：整行不红的时候也看得出有一步没成（2026-09-30 项目主人：写入被拒和写成了看起来一样）。
+    let errs = count(tally.errors, &words.errors);
+    for span in out
+        .iter_mut()
+        .filter(|s| tally.errors > 0 && s.content == errs)
+    {
+        span.style = theme::error();
+    }
+    // 短标题、显示名打头的照它截，次数、用时留着；别的整行截（「窗口小的时候」第 4 条）。
+    if titled {
+        clip_title(out, room(ctx))
+    } else {
+        clip_spans(out, room(ctx))
+    }
+}
+
+/// 照类数的那几格（「时间线」第 17 条）：打头那一格、别的类依次跟在后面；交回这几格、打头的是不是短标题。
+fn cells(tally: &Tally, words: &Summary) -> (Vec<(String, bool)>, bool) {
+    let count = |n: usize, forms: &[String; 2]| {
+        forms[usize::from(n != 1)].replace("{count}", &n.to_string())
+    };
     let mut parts: Vec<(String, bool)> = Vec::new();
     // 打头那一格：一段里只有一条命令、它有短标题时用短标题（和编辑、别的工具同段也用，2026-10-02 项目主人定）；
     // 否则命令、子代理、留言、别的工具、编辑，先有哪样写哪样（派子代理的不写 Used 1 tool，2026-10-01 项目主人；
@@ -89,28 +122,32 @@ pub fn line(segment: &Segment, ctx: &Ctx, base: Style) -> Vec<Span<'static>> {
     if lead != Lead::Tools && tally.tools > 0 {
         parts.push((count(tally.tools, &words.tools), false));
     }
-    if tally.thoughts > 0 {
-        parts.push((count(tally.thoughts, &words.thoughts), false));
+    let titled = matches!(lead, Lead::Title(_));
+    (parts, titled)
+}
+
+/// 只为发一张图的那一段（核心 X-24，2026-10-16 项目主人定）：这一段的工具全是同一个包的（`human.get` 这一刻的包编号，
+/// 没有包编号的不算）、`sent` 一共一张，交回发出那张的那件工具的显示名（照调用那一刻记下的、界面语言那一份）。
+fn sending(segment: &Segment, ctx: &Ctx) -> Option<String> {
+    let mut package = None;
+    let mut sent = 0;
+    let mut named = None;
+    for step in &segment.steps {
+        let StepKind::Tool { name, .. } = &step.kind else {
+            continue;
+        };
+        let own = ctx.human.package(name)?;
+        if package.is_some_and(|first| first != own) {
+            return None;
+        }
+        package = Some(own);
+        sent += step.sent;
+        if step.sent > 0 {
+            let lang = ctx.config.language.code();
+            named = Some(ctx.human.step_name(name, &step.display, lang));
+        }
     }
-    if tally.errors > 0 {
-        parts.push((count(tally.errors, &words.errors), false));
-    }
-    parts.push((took, false));
-    let mut out = spans(parts, style, changed(segment, ctx));
-    // 出错的那一格红：整行不红的时候也看得出有一步没成（2026-09-30 项目主人：写入被拒和写成了看起来一样）。
-    let errs = count(tally.errors, &words.errors);
-    for span in out
-        .iter_mut()
-        .filter(|s| tally.errors > 0 && s.content == errs)
-    {
-        span.style = theme::error();
-    }
-    // 短标题打头的照短标题截，次数、用时留着；别的整行截（「窗口小的时候」第 4 条）。
-    if matches!(&lead, Lead::Title(_)) {
-        clip_title(out, room(ctx))
-    } else {
-        clip_spans(out, room(ctx))
-    }
+    named.filter(|_| sent == 1)
 }
 
 /// 这一行能写几列：去掉行首两格槽。

@@ -31,6 +31,7 @@ fn every_new_thing_in_a_turn_moves_the_beat() {
                 text: "a.txt".into(),
                 said: None,
                 display: Default::default(),
+                sent: 0,
             },
         ],
         vec![Push::BlockStart {

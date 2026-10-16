@@ -15,11 +15,13 @@ const MCP: &str = "mcp__";
 #[derive(Debug, Clone, Default)]
 pub struct Human {
     tools: BTreeMap<String, Face>,
+    packages: BTreeMap<String, String>,
     said: BTreeMap<String, Template>,
 }
 
 impl Human {
-    /// 照 `human.get` 的回应造：`tools` 每件工具的样子，`said` 每一句说法的模板原文；读不懂的那一件、那一句不要。
+    /// 照 `human.get` 的回应造：`tools` 每件工具的样子，`packages` 每件工具属于哪个包（核心 X-24 补），`said` 每一句说法的
+    /// 模板原文；读不懂的那一件、那一句不要。
     pub fn from_reply(reply: &Value) -> Human {
         let tools = reply["tools"]
             .as_object()
@@ -29,6 +31,12 @@ impl Human {
                 Some((name.clone(), serde_json::from_value(face.clone()).ok()?))
             })
             .collect();
+        let packages = reply["packages"]
+            .as_object()
+            .into_iter()
+            .flatten()
+            .filter_map(|(name, package)| Some((name.clone(), package.as_str()?.to_string())))
+            .collect();
         let said = reply["said"]
             .as_object()
             .into_iter()
@@ -37,12 +45,21 @@ impl Human {
                 Some((key.clone(), Template::parse(source.as_str()?).ok()?))
             })
             .collect();
-        Human { tools, said }
+        Human {
+            tools,
+            packages,
+            said,
+        }
     }
 
     /// 叫 `name` 的工具给人看的样子；没有的是空的。
     pub fn tool(&self, name: &str) -> Option<&Face> {
         self.tools.get(name)
+    }
+
+    /// 叫 `name` 的工具这一刻属于哪个包（工具目录里的包编号，核心 X-24）；不在目录里的是 `None`。
+    pub fn package(&self, name: &str) -> Option<&str> {
+        self.packages.get(name).map(String::as_str)
     }
 
     /// 叫 `name` 的工具给人看的名字：核心给了的照它；没给的照原名，MCP 服务的工具（`mcp__<服务>__<工具>`，核心 X-3）写
