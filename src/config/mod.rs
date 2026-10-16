@@ -356,6 +356,21 @@ impl Config {
             auto,
         })
     }
+
+    /// 时间线收起那一行照哪种语言写（`text.summary` 是哪一份）：自动时是语言表的 `auto_summary`（英文），手动选了哪种
+    /// 是哪种（蓝图「时间线」第 17 条）。
+    pub fn summary_language(&self) -> &str {
+        if self.auto
+            && self
+                .language_table
+                .find(&self.language_table.auto_summary)
+                .is_some()
+        {
+            &self.language_table.auto_summary
+        } else {
+            self.language.code()
+        }
+    }
 }
 
 fn parse<T: for<'de> Deserialize<'de>>(name: &str, json: &str) -> Result<T, String> {

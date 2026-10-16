@@ -1,6 +1,6 @@
 //! 她发出去的图（蓝图 `tui.md`「她发的图」，核心 X-19）：真核心拉起测试用的扩展（`examples/widget_extension.rs`），她调它的
 //! `sticker`，扩展答的 `sent` 记进 `tool.result`；伪终端画不了图，正文里那一步后面是「[表情包] 一句描述」，时间线照常收起，
-//! 收起那一行写那件工具的显示名（核心 X-24）。
+//! 收起那一行写那件工具的英文显示名（核心 X-24，界面语言是自动）。
 
 mod support;
 
@@ -77,9 +77,10 @@ fn a_sticker_she_sends_is_written_after_its_step_when_pictures_cannot_be_shown()
             .position(|l| l.contains(text))
             .unwrap_or_else(|| panic!("屏上没有「{text}」：\n{}", lines.join("\n")))
     };
-    // 只为发这一张的那一段，收起那一行写那件工具的显示名（核心 X-24）。
+    // 只为发这一张的那一段，收起那一行写那件工具的显示名（核心 X-24）；界面语言是自动，收起那一行整行英文，显示名取
+    // 调用那一刻记下的英文那一份（2026-10-16 项目主人验 T-260）。
     assert!(
-        at("发送表情包 · ") < at("[表情包] 招手的猫") && at("[表情包] 招手的猫") < at("好。"),
+        at("Send sticker · ") < at("[表情包] 招手的猫") && at("[表情包] 招手的猫") < at("好。"),
         "那一步收进时间线，图排在它后面、回答前面：\n{}",
         lines.join("\n")
     );
