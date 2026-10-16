@@ -127,7 +127,7 @@ fn cells(tally: &Tally, words: &Summary) -> (Vec<(String, bool)>, bool) {
 }
 
 /// 只为发一张图的那一段（核心 X-24，2026-10-16 项目主人定）：这一段的工具全是同一个包的（`human.get` 这一刻的包编号，
-/// 没有包编号的不算）、`sent` 一共一张，交回发出那张的那件工具的显示名（照调用那一刻记下的、界面语言那一份）。
+/// 没有包编号的不算）、`sent` 一共一张，交回发出那张的那件工具的显示名（照调用那一刻记下的、收起那一行那种语言的一份）。
 fn sending(segment: &Segment, ctx: &Ctx) -> Option<String> {
     let mut package = None;
     let mut sent = 0;
@@ -143,11 +143,24 @@ fn sending(segment: &Segment, ctx: &Ctx) -> Option<String> {
         package = Some(own);
         sent += step.sent;
         if step.sent > 0 {
-            let lang = ctx.config.language.code();
-            named = Some(ctx.human.step_name(name, &step.display, lang));
+            named = Some(shown_name(name, step, ctx));
         }
     }
     named.filter(|_| sent == 1)
+}
+
+/// 收起那一行里一件工具的显示名，和这一行的字同一种语言：界面语言是自动、收起那一行写英文时（2026-10-16 项目主人验
+/// T-260：原来写成「发送表情包 · 2 thoughts」），照调用那一刻记下的英文那一份，没有的写工具名（核心给的工具表是界面语言
+/// 那一种，不拿它凑）；和界面同一种语言的照一步的标题取名的规矩。
+fn shown_name(name: &str, step: &crate::transcript::Step, ctx: &Ctx) -> String {
+    let lang = ctx.config.summary_language();
+    if lang == ctx.config.language.code() {
+        return ctx.human.step_name(name, &step.display, lang);
+    }
+    step.display
+        .get(lang)
+        .cloned()
+        .unwrap_or_else(|| name.to_string())
 }
 
 /// 这一行能写几列：去掉行首两格槽。
