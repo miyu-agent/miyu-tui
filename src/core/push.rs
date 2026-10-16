@@ -15,12 +15,14 @@ mod called;
 mod goal;
 mod jobs;
 mod result;
+mod sent;
 
 pub use asking::Asking;
 pub use attached::Attached;
 pub(crate) use attached::read as read_attached;
 pub(crate) use goal::read as read_goal;
 pub use goal::{Goal, GoalState};
+pub use sent::Sent;
 
 pub use jobs::{JobEnd, JobReason, JobStart, Said as Foreign, Sender};
 
@@ -226,6 +228,8 @@ pub enum Push {
         /// 图的内容哈希，照块的先后。
         blobs: Vec<String>,
     },
+    /// 她发出去的图（`tool.result` 的 `sent`，核心 X-19），照先后。
+    Media(Vec<Sent>),
     /// 确认、提问（核心 D-1、D-2）：开、收抽屉，写结果。
     Asking(Asking),
     /// 待办换了（`todos.changed`，订阅回应里的也照它交，核心 D-3）：整份，空的是清空了；做完最后一项清空时 `done`

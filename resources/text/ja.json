@@ -138,6 +138,10 @@
   "no_clear_running": "返信中は画面をクリアできません",
   "icons_changed": "アイコン：{name}",
   "figure_pending": "⋯ 描画中",
+  "sent": {
+    "sticker": "[スタンプ]",
+    "image": "[画像]"
+  },
   "mascot_failed": "マスコットパッケージを読み込めないため、内蔵のマスコットを使用しています",
   "figure_zoom": "クリックで拡大",
   "markdown": {

@@ -15,6 +15,11 @@
     "width": [3, 10],
     "min_rows": 3
   },
+  "sticker_room": {
+    "height": [1, 5],
+    "width": [1, 4],
+    "min_rows": 3
+  },
   "fonts": [
     "Noto Sans CJK SC",
     "PingFang SC"

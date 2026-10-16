@@ -1,6 +1,6 @@
 //! 正文里的一条：种类、字、属于哪一轮，和各种条目自己带的东西。
 
-use crate::core::{Level, Report};
+use crate::core::{Level, Report, Sent};
 
 use super::{Chip, Progress, Segment};
 
@@ -33,6 +33,8 @@ pub enum Kind {
     Older,
     /// 长期目标开一轮的那一句：暗色一行「● 长期目标 · 第 N 轮」，原文不露（蓝图「长期目标」第 4 条）。
     Goal,
+    /// 她发出去的一张图（核心 X-19）：和回答一样画在正文里（蓝图「她发的图」）。
+    Media,
 }
 
 /// 后台任务结束的通知：成败决定记号的颜色（蓝图「后台命令、子代理和侧边栏」第 5 条）。
@@ -96,6 +98,8 @@ pub struct Entry {
     pub progress: Option<Progress>,
     /// 旁白前面绿色的记号（压好了的 `● `，蓝图「正文」第 9 条）；别的是 `None`。
     pub mark: Option<String>,
+    /// 她发出去的那张图。别的条是 `None`。
+    pub media: Option<Sent>,
 }
 
 impl Entry {
@@ -120,6 +124,7 @@ impl Entry {
             details: Vec::new(),
             progress: None,
             mark: None,
+            media: None,
         }
     }
 }

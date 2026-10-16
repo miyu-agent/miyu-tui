@@ -138,6 +138,10 @@
   "no_clear_running": "Can't clear the screen while a reply is running",
   "icons_changed": "Icons: {name}",
   "figure_pending": "⋯ drawing",
+  "sent": {
+    "sticker": "[Sticker]",
+    "image": "[Image]"
+  },
   "mascot_failed": "Mascot package unreadable, using the built-in mascot",
   "figure_zoom": "Click to enlarge",
   "markdown": {

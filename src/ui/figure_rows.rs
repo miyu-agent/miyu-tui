@@ -40,13 +40,7 @@ pub fn rows(lead: Vec<Span<'static>>, figure: &Figure, ctx: &Ctx) -> Vec<Row> {
             .iter()
             .map(|line| md_row(line.clone(), ctx))
             .collect(),
-        Look::Pending => {
-            let text = Span::styled(ctx.config.text.figure_pending.clone(), theme::dim());
-            let mut row = ctx.led_row(ctx.blank_slot(), lead, vec![text]);
-            row.copy = false;
-            row.figure_pending = true;
-            vec![row]
-        }
+        Look::Pending => vec![pending(lead, ctx)],
         Look::Ready { key, rows } => {
             let mut out: Vec<Row> = (0..rows)
                 .map(|i| {
@@ -63,6 +57,15 @@ pub fn rows(lead: Vec<Span<'static>>, figure: &Figure, ctx: &Ctx) -> Vec<Row> {
             out
         }
     }
+}
+
+/// 图还在做时那一行暗色的「正在渲染图片」，复制时不带。
+pub fn pending(lead: Vec<Span<'static>>, ctx: &Ctx) -> Row {
+    let text = Span::styled(ctx.config.text.figure_pending.clone(), theme::dim());
+    let mut row = ctx.led_row(ctx.blank_slot(), lead, vec![text]);
+    row.copy = false;
+    row.figure_pending = true;
+    row
 }
 
 /// mermaid 图：SVG 由核心画（蓝图第 4 条），没回来是在做，核心拒了的写源码；回来了换成主题色交给后台栅格化。

@@ -5,7 +5,9 @@
 //!
 //! - `content:<路径>`：每一块推什么，一个 JSON 对象：块的编号 → `{"title"?, "content"}`；核心说有人看（`widget.watch`）时
 //!   照它推 `widget.set`（每次现读，测试可以中途改）；
-//! - `record:<路径>`：收到的 `widget.watch`、`method.call` 一行一条记下。
+//! - `record:<路径>`：收到的 `widget.watch`、`method.call` 一行一条记下；
+//! - `sticker:<blob>`：登记一件工具 `sticker`，调到时答「Sent.」，`sent` 里是这个 blob 的一张表情包（核心 X-19，
+//!   `tests/sent.rs`）。
 //!
 //! 登记一个方法 `refresh`：照 `params.widget` 把那一块换成一段字 `refreshed`，再答。
 
@@ -18,11 +20,14 @@ use serde_json::{Value, json};
 fn main() {
     let mut content = None;
     let mut record = None;
+    let mut sticker = None;
     for arg in std::env::args().skip(1) {
         if let Some(path) = arg.strip_prefix("content:") {
             content = Some(path.to_string());
         } else if let Some(path) = arg.strip_prefix("record:") {
             record = Some(path.to_string());
+        } else if let Some(blob) = arg.strip_prefix("sticker:") {
+            sticker = Some(blob.to_string());
         }
     }
     let stdin = io::stdin();
@@ -40,6 +45,13 @@ fn main() {
         &json!({"jsonrpc": "2.0", "id": "m", "method": "package.methods",
         "params": {"methods": [{"name": "refresh"}]}}),
     );
+    if sticker.is_some() {
+        send(
+            &json!({"jsonrpc": "2.0", "id": "p", "method": "provide", "params": {"tools": [
+            {"name": "sticker", "description": "Send a sticker.", "input_schema": {"type": "object"},
+             "access": "read", "venues": ["local"]}]}}),
+        );
+    }
     // 每一块最近一次有人看时的会话：`refresh` 照它推。
     let mut sessions: HashMap<String, Option<String>> = HashMap::new();
     let mut n = 0;
@@ -80,6 +92,12 @@ fn main() {
                 send(
                     &json!({"jsonrpc": "2.0", "id": message["id"], "result": {"answered": params["method"]}}),
                 );
+            }
+            Some("tool.call") if params["tool"] == "sticker" => {
+                let sent = json!([{"blob": sticker, "media_type": "image/png", "width": 2, "height": 2,
+                    "alt": "招手的猫", "sticker": true}]);
+                send(&json!({"jsonrpc": "2.0", "id": message["id"],
+                    "result": {"blocks": [{"type": "text", "text": "Sent."}], "sent": sent}}));
             }
             _ => {}
         }
