@@ -220,6 +220,8 @@ pub enum Push {
         said: Option<Said>,
         /// 调用那一刻的显示名，语言到名字（核心 9-8 六补：脚本、MCP、扩展工具的）；没有的是空的。
         display: std::collections::BTreeMap<String, String>,
+        /// 发出去了几张（`sent` 有几格，核心 X-19）：收起那一行照它认「只为发一张图」（核心 X-24）。
+        sent: usize,
     },
     /// 结果里的图（读了图片文件的 `read`）：这一次调用、每张图的内容哈希（蓝图「时间线」第 8 条）。
     ToolImages {

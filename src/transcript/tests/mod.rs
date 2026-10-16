@@ -126,6 +126,7 @@ fn a_tool_goes_from_preparing_to_its_result() {
             text: "boom".into(),
             said: None,
             display: Default::default(),
+            sent: 0,
         }],
     );
     assert!(tool(&t).failed() && !tool(&t).busy());

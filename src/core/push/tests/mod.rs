@@ -273,6 +273,7 @@ fn tool_calls_and_results_carry_their_ids() {
             text: "a\nb".into(),
             said: None,
             display: Default::default(),
+            sent: 0,
         }]
     );
     let end =

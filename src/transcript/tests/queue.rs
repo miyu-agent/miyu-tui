@@ -150,6 +150,7 @@ fn what_she_said_before_hearing_it_stays_above_it() {
             text: "a.txt".into(),
             said: None,
             display: Default::default(),
+            sent: 0,
         }],
     );
     let kinds: Vec<(Kind, String)> = shown(&t)

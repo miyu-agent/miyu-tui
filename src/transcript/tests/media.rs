@@ -32,6 +32,7 @@ fn a_sent_picture_comes_after_its_step_and_folds_the_segment_like_a_reply() {
                 text: String::new(),
                 said: None,
                 display: Default::default(),
+                sent: 2,
             },
             Push::Media(vec![sent("摊手"), sent("比心")]),
         ],
@@ -44,6 +45,10 @@ fn a_sent_picture_comes_after_its_step_and_folds_the_segment_like_a_reply() {
     );
     let segment = t.entries[0].segment.as_ref().unwrap();
     assert_eq!(segment.steps.len(), 1, "那一步照旧在时间线里");
+    assert_eq!(
+        segment.steps[0].sent, 2,
+        "那一步记下发了几张（收起那一行照它认）"
+    );
     assert!(!segment.expanded(true), "和回答一样收起前面那一段");
     assert_eq!(
         t.entries[2].media.as_ref().unwrap().alt.as_deref(),

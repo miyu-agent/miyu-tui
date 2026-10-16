@@ -482,6 +482,7 @@ mod edits;
 mod icons;
 mod live;
 mod narrow;
+mod sent;
 mod session_arg;
 mod unfolded;
 mod waiting;

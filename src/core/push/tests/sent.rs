@@ -16,7 +16,10 @@ fn pictures_she_sent_come_after_the_result_and_odd_ones_are_left_out() {
                 {"media_type": "image/png", "width": 1, "height": 1},
                 {"blob": "sha256:cc", "media_type": "audio/ogg"}]}});
     let got = read_mine(&result);
-    assert!(matches!(&got[0], Push::ToolResult { .. }), "结果照旧先交");
+    assert!(
+        matches!(&got[0], Push::ToolResult { sent: 4, .. }),
+        "结果照旧先交，记下发了几格（核心 X-24 照 sent 有几格数）"
+    );
     assert_eq!(
         got[1],
         Push::Media(vec![

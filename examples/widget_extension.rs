@@ -49,7 +49,7 @@ fn main() {
         send(
             &json!({"jsonrpc": "2.0", "id": "p", "method": "provide", "params": {"tools": [
             {"name": "sticker", "description": "Send a sticker.", "input_schema": {"type": "object"},
-             "access": "read", "venues": ["local"]}]}}),
+             "access": "read", "venues": ["local"], "display_name": {"zh": "发送表情包", "en": "Send sticker"}}]}}),
         );
     }
     // 每一块最近一次有人看时的会话：`refresh` 照它推。
