@@ -396,3 +396,37 @@ fn a_selection_follows_its_entry_and_is_dropped_when_the_text_reflows() {
     first_row(&of(5), Rect::new(0, 0, 30, 30), &mut view, true);
     assert_eq!(view.select, None);
 }
+
+#[test]
+fn clearing_right_after_a_reply_that_fit_does_not_stop_at_its_start() {
+    // 2026-10-16 项目主人报：刚起来的第一轮，回答一屏放得下，答完按 Ctrl+L，回答和收尾行还留着，再按一次才清干净。
+    // 清屏以后视口要越过最新那段回答的开头，「长回答停在开头」照「上一帧开头还露着、还没停过」把它停住了。
+    let blank = rows(1).get(0).unwrap().clone();
+    // 你说的话、思考、回答（编号 7，从第 8 行起）、收尾行：一共 16 行，20 行的视口放得下。
+    let all = crate::ui::row_cache::Rows::of_chunks(
+        &[
+            (3, Some(0)),
+            (1, None),
+            (3, Some(1)),
+            (1, None),
+            (6, Some(2)),
+            (1, None),
+            (1, Some(3)),
+        ],
+        &blank,
+    );
+    let area = Rect::new(0, 0, 40, 20);
+    let mut view = BodyView::default();
+    assert_eq!(first_row(&all, area, &mut view, true), 0);
+    view.rows = all.clone();
+    view.first = 0;
+    view.latest = Some((7, 8));
+    view.clear();
+    // 下一帧：回答写完了、上一帧开头露着，照 `still_reading` 算还在看。
+    view.reading = super::still_reading(&view, Some((7, 8, false)));
+    assert_eq!(
+        first_row(&all, area, &mut view, true),
+        all.len(),
+        "一下就清干净，不停在回答的开头"
+    );
+}
