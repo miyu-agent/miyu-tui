@@ -85,7 +85,8 @@ fn switching_draws_the_other_ones_past_without_flashing_an_empty_session() {
     let (_home, mut tui) = sessions(2);
     tui.say("/sessions");
     tui.wait_for("2 个");
-    tui.wait_for("● ");
+    // 打开时选中的是正在用的那个（`❯` 那一列，2026-10-16 起 `●` 不另占一列，选中的写 `❯`）。
+    tui.wait_for("❯ 第 2 号的话");
     tui.key(CTRL_D);
     tui.wait_for("无法删除当前会话");
     tui.key(DOWN);
@@ -136,8 +137,11 @@ fn pinning_moves_it_to_the_top() {
     tui.key(CTRL_P);
     tui.wait_for("已置顶");
     let shown = rows(&tui);
-    assert!(!shown[0].contains("● "), "置顶的旧会话排第一：{shown:?}");
-    assert!(shown[1].contains("● "), "{shown:?}");
+    assert!(
+        shown[0].contains("第 1 号的话"),
+        "置顶的旧会话排第一：{shown:?}"
+    );
+    assert!(shown[1].contains("第 2 号的话"), "{shown:?}");
 }
 
 #[test]

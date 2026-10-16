@@ -127,7 +127,22 @@ pub fn item(
     right: Option<Span<'static>>,
     width: u16,
 ) -> Line<'static> {
-    let mark = Span::raw(if picked { "❯ " } else { "  " });
+    item_with(picked, None, content, right, width)
+}
+
+/// 同 [`item`]，没选中的那两格写 `lead`（两格宽，例如会话列表正在用的 `● `、在跑的转圈）：不另占一列，字和别的列表对齐
+/// （2026-10-16 项目主人：会话列表左边空出一大块，和模型、历史列表不一样）。`lead` 写了 `force` 的选中了也照它写。
+pub fn item_with(
+    picked: bool,
+    lead: Option<(Span<'static>, bool)>,
+    content: Vec<Span<'static>>,
+    right: Option<Span<'static>>,
+    width: u16,
+) -> Line<'static> {
+    let mark = match lead {
+        Some((lead, force)) if force || !picked => lead,
+        _ => Span::raw(if picked { "❯ " } else { "  " }),
+    };
     let width = usize::from(width);
     let right_width = right.as_ref().map_or(0, |r| r.width() + 1);
     let room = width.saturating_sub(2 + right_width);
