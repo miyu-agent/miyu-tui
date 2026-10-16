@@ -23,6 +23,7 @@ mod mermaid;
 mod models;
 mod output;
 mod packages;
+pub use packages::PackageEntry;
 mod page;
 mod personas;
 mod push;
@@ -346,8 +347,8 @@ pub enum Update {
     Sessions(Vec<SessionInfo>),
     /// 改名成了（`None` 是去掉了标题）：弹一句提示，标题照推送换（蓝图「改名」第 3 条）。
     Renamed(Option<String>),
-    /// 软件包（[`Command::ListPackages`] 的回应）：编号、放状态的目录；读不了、核心不认的是空的。
-    Packages(Vec<(String, Option<std::path::PathBuf>)>),
+    /// 软件包（[`Command::ListPackages`] 的回应）：编号、放状态的目录、图标；读不了、核心不认的是空的。
+    Packages(Vec<PackageEntry>),
     /// 会话用哪个人格（订阅的回应里的 `persona`，核心 P-1 下）：人格编号。
     SessionPersona(String),
     /// 会话用哪个预设（订阅的回应里的 `preset`，核心 P-2 上）：预设编号。

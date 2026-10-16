@@ -123,7 +123,7 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
     let icon = match &step.kind {
         _ if step.failed() => &icons.error,
         StepKind::Thought { .. } => &icons.think,
-        StepKind::Tool { name, .. } => icons.tool(name),
+        StepKind::Tool { name, .. } => icons.tool_in(name, ctx.human.package_icon(name)),
     };
     let icon = format!("{icon} ");
     let room = usize::from(width)

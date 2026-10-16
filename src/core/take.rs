@@ -123,16 +123,9 @@ pub(super) async fn take(
         // 调方法成了：回应不用看（`widgets.md`「头」第 6 条）。
         Some(Awaiting::PackageCall) => return true,
         Some(Awaiting::Packages) => {
-            let packages = message["result"]["packages"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(|p| {
-                    let id = p["package"].as_str()?.to_string();
-                    Some((id, p["state"].as_str().map(std::path::PathBuf::from)))
-                })
-                .collect();
-            return notify(Update::Packages(packages));
+            return notify(Update::Packages(super::packages::listed(
+                &message["result"],
+            )));
         }
         Some(Awaiting::Presets) => {
             return notify(Update::Presets(super::read_presets(&message["result"])));
