@@ -1,8 +1,8 @@
 //! 会话列表的框（蓝图 `tui.md`「会话列表 `/sessions`」第 1、2 条）：和输入历史列表一个位置、一个样子。上边框写「会话」、
 //! 几个、打的字；一行一个会话：置顶的打头一个记号，标题（没起名的暗色），暗色短编号，有工作目录的接着写；右边写
-//! 多久以前有过动静。勾上的行首一个紫色的勾（主题的 `picked`，2026-10-01 项目主人要紫色）。标题前面一个记号：正在用的
-//! 强调色的 `●`，在跑的转着的盲文（照时间线的转圈，正在用的转圈也是强调色），别的空着（2026-10-02 项目主人：在跑的
-//! 看不出来，右边的「当前」不够显眼）。
+//! 多久以前有过动静。勾上的行首一个紫色的勾（主题的 `picked`，2026-10-01 项目主人要紫色）。选中的 `❯` 那一列写一个记号：
+//! 正在用的强调色的 `●`，在跑的转着的盲文（照时间线的转圈，正在用的转圈也是强调色），别的空着（2026-10-02 项目主人：在跑的
+//! 看不出来，右边的「当前」不够显眼；2026-10-16 起不另占一列，左边不再空一大块）。
 
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
@@ -134,17 +134,15 @@ pub fn lines(
                 };
                 content.push(Span::styled(mark, theme::picked()));
             }
-            content.push(marker(info, current, frame, config));
             content.extend(head(info, config, column));
             content.push(Span::styled(
                 format!("  #{}", short(&info.session)),
                 theme::faint(),
             ));
             let right = Span::styled(right(info, current, here, now, config), theme::faint());
-            (
-                Some(i),
-                panel::item(i == list.selected, content, Some(right), width),
-            )
+            let lead = marker(info, current, frame, config);
+            let line = panel::item_with(i == list.selected, lead, content, Some(right), width);
+            (Some(i), line)
         })
         .collect();
     let rows = panel::fit(rows, Some(list.selected), max);
@@ -152,13 +150,14 @@ pub fn lines(
     (chrome, lines, map)
 }
 
-/// 标题前面的记号：在跑的转圈，正在用的 `●`（都是的转圈、强调色），别的空着，占一样宽。
+/// 标题前面的记号，写在选中的 `❯` 那一列（不另占一列，2026-10-16 项目主人）：在跑的转圈，选中了也转；正在用的 `●`，
+/// 选中了让给 `❯`（选中的那一行整行铺了底）；都是的转圈、强调色；别的没有。
 fn marker(
     info: &SessionInfo,
     current: Option<&str>,
     frame: usize,
     config: &Config,
-) -> Span<'static> {
+) -> Option<(Span<'static>, bool)> {
     let spinner = &config.timeline.spinner;
     let is_current = current == Some(info.session.as_str());
     let mark = if info.busy {
@@ -166,14 +165,14 @@ fn marker(
     } else if is_current {
         config.layout.current_mark.clone()
     } else {
-        " ".to_string()
+        return None;
     };
     let style = if is_current {
         theme::accent()
     } else {
         theme::dim()
     };
-    Span::styled(format!("{mark} "), style)
+    Some((Span::styled(format!("{mark} "), style), info.busy))
 }
 
 /// 标题那一列有多宽：置顶的记号加标题（没起名的写「未命名会话」）。
@@ -338,8 +337,9 @@ mod tests {
     }
 
     #[test]
-    fn the_current_one_gets_a_dot_and_a_busy_one_a_spinner_before_its_title() {
+    fn the_current_one_gets_a_dot_and_a_busy_one_a_spinner_in_the_mark_column() {
         // 2026-10-02 项目主人：在跑的会话要看得出来，右边的「当前」不够显眼。标题前面加记号：正在用的 ●，在跑的转盲文。
+        // 2026-10-16 项目主人：会话列表左边空出一大块，和模型、历史列表不一样：记号写在选中的 ❯ 那一列，不另占一列。
         let config = Config::builtin().unwrap();
         let mut list = SessionList::default();
         let mut busy = info("0000-bbbbbbbb", Some("在跑的"), "~/src/miyu");
@@ -349,30 +349,38 @@ mod tests {
             busy,
             info("0000-cccccccc", Some("别的"), "~/src/miyu"),
         ]);
-        let (_, rows, _) = lines(
-            &list,
-            Some("0000-aaaaaaaa"),
-            "~/src/miyu",
-            &config,
-            90,
-            20,
-            0,
-        );
-        let text: Vec<String> = rows.iter().map(ToString::to_string).collect();
+        let shown = |list: &SessionList| -> Vec<String> {
+            let (_, rows, _) = lines(
+                list,
+                Some("0000-aaaaaaaa"),
+                "~/src/miyu",
+                &config,
+                90,
+                20,
+                0,
+            );
+            rows.iter().map(ToString::to_string).collect()
+        };
         let spin = &config.timeline.spinner[0];
-        assert!(text[0].contains("● 正在用的"), "{text:#?}");
-        assert!(text[1].contains(&format!("{spin} 在跑的")), "{text:#?}");
+        list.selected = 2;
+        let text = shown(&list);
+        assert!(text[0].starts_with("● 正在用的"), "{text:#?}");
+        assert!(text[1].starts_with(&format!("{spin} 在跑的")), "{text:#?}");
+        assert!(text[2].starts_with("❯ 别的"), "{text:#?}");
         assert!(
             !text
                 .iter()
                 .any(|l| l.contains("当前") || l.contains("在忙")),
             "右边不再写：{text:#?}"
         );
-        let column = |l: &str, word: &str| l.find(word).map(|at| l[..at].width());
-        assert_eq!(
-            column(&text[0], "正在用的"),
-            column(&text[2], "别的"),
-            "标题照样对齐"
+        list.selected = 0;
+        let text = shown(&list);
+        assert!(text[0].starts_with("❯ 正在用的"), "选中的写 ❯：{text:#?}");
+        list.selected = 1;
+        let text = shown(&list);
+        assert!(
+            text[1].starts_with(&format!("{spin} 在跑的")),
+            "在跑的选中了也转：{text:#?}"
         );
     }
 
