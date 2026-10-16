@@ -474,10 +474,12 @@ impl Transcript {
             _ => None,
         };
         let id = self.fresh_id();
+        let at = user.then(|| self.clock.wall().timestamp());
         self.entries.push(Entry {
             turn,
             queued,
             level,
+            at,
             ..Entry::new(id, kind, text)
         });
     }

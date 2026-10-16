@@ -213,7 +213,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let width = probe.menu_text.width;
     // 历史列表排成的行：占几行、画什么都照它（`history.rs` 的 `lines`）。
     let (history_chrome, history_rows) = if app.typing.history.open {
-        let found = app.typing.history.matches(app.typing.input.sent());
+        let (list, _) = app.list_items();
+        let found = app.typing.history.matches(&list);
         history::lines(
             &app.typing.history,
             &found,

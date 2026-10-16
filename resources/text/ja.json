@@ -264,6 +264,20 @@
     "days": "{n} 日前",
     "none": "送信履歴がありません"
   },
+  "jump": {
+    "title": "ジャンプ",
+    "count": "  {count}",
+    "query": " · 検索：",
+    "empty": "該当なし",
+    "lines": " · +{count} 行",
+    "more": "⋮ さらに {count} 行",
+    "hints": "↑/↓ 選択 · Tab 全文表示 · Enter 移動 · Esc 閉じる",
+    "now": "たった今",
+    "minutes": "{n} 分前",
+    "hours": "{n} 時間前",
+    "days": "{n} 日前",
+    "none": "このセッションではまだ発言がありません"
+  },
   "usage": {
     "title": "使用量",
     "tabs": [

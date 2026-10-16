@@ -109,6 +109,8 @@ pub struct Layout {
     pub menu_rows: usize,
     /// 输入历史列表最多露几条（`tui.md`「输入历史列表」）。
     pub history_rows: usize,
+    /// `/jump` 跳到的那一条竖线亮多久，毫秒（`tui.md`「跳到说过的话」第 3 条）。
+    pub jump_flash_ms: u64,
     /// 会话列表最多露几条（`tui.md`「会话列表」第 1 条）。
     pub session_rows: usize,
     /// 会话列表里工作目录最多几列，长了只写最后两层（「会话列表」第 1 条）。

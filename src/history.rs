@@ -1,7 +1,8 @@
 //! 输入历史列表的状态（蓝图 `tui.md`「输入历史列表」）：开没开、搜索的字、选中哪一条。
 //!
 //! 列的是输入框记着的发过的话和命令（和 `↑`、`↓` 翻的是同一份）。对得上的照「最新的在前」排，
-//! 选中的是其中第几条：0 是最新的，画的时候最新的贴着输入框。
+//! 选中的是其中第几条：0 是最新的，画的时候最新的贴着输入框。`/jump`（「跳到说过的话」）用同一个列表，列的是这个会话
+//! 正文里你说的话，同样的字说了两次是两条。
 
 use std::time::SystemTime;
 
@@ -12,6 +13,8 @@ use crate::input::Sent;
 pub struct History {
     /// 开着。
     pub open: bool,
+    /// 开的是 `/jump`：列这个会话里你说的话，`Enter` 跳过去（不是填进输入框）。
+    pub jump: bool,
     /// 「历史：」后面打的字。
     pub query: String,
     /// 选中的是对得上的第几条，0 是最新的。
@@ -28,6 +31,15 @@ impl History {
     pub fn open(&mut self) {
         *self = Self {
             open: true,
+            ..Self::default()
+        };
+    }
+
+    /// `/jump` 打开：同上，列的是这个会话里你说的话。
+    pub fn open_jump(&mut self) {
+        *self = Self {
+            open: true,
+            jump: true,
             ..Self::default()
         };
     }
@@ -52,13 +64,14 @@ impl History {
         self.open = false;
     }
 
-    /// 对得上的几条，最新的在前：包含搜索的字（不分大小写）；一样的字只留最新的那一次。
+    /// 对得上的几条，最新的在前：包含搜索的字（不分大小写）；一样的字只留最新的那一次（`/jump` 的每条都留：位置不一样）。
     pub fn matches<'a>(&self, sent: &'a [Sent]) -> Vec<&'a Sent> {
         let query = self.query.to_lowercase();
         let mut seen: Vec<&Sent> = Vec::new();
         for one in sent.iter().rev() {
             let text = &one.draft.text;
-            if text.to_lowercase().contains(&query) && !seen.iter().any(|s| s.draft.text == *text) {
+            let again = !self.jump && seen.iter().any(|s| s.draft.text == *text);
+            if text.to_lowercase().contains(&query) && !again {
                 seen.push(one);
             }
         }
@@ -122,6 +135,22 @@ mod tests {
         assert_eq!(
             texts(h.matches(&sent())),
             vec!["看看 README", "把失败的测试修掉", "跑一下全部测试"]
+        );
+    }
+
+    #[test]
+    fn the_jump_list_keeps_each_time_the_same_words_were_said() {
+        let mut h = History::default();
+        h.open_jump();
+        assert_eq!(
+            texts(h.matches(&sent())),
+            vec![
+                "看看 README",
+                "把失败的测试修掉",
+                "看看 README",
+                "跑一下全部测试"
+            ],
+            "说了两次是两个位置"
         );
     }
 

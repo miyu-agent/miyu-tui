@@ -319,6 +319,7 @@ impl App {
             Run::Goal => self.goal_command(words),
             Run::Workspace => self.workspace_command(words.unwrap_or_default()),
             Run::Sessions => self.open_sessions(),
+            Run::Jump => self.open_jump(),
             Run::Model => self.open_models(),
             Run::Persona => self.pick_command(super::new_session::Kind::Persona),
             Run::Preset => self.pick_command(super::new_session::Kind::Preset),
@@ -370,7 +371,7 @@ impl App {
         use ratatui::crossterm::event::KeyModifiers;
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let plain = !ctrl && !key.modifiers.contains(KeyModifiers::ALT);
-        let count = self.typing.history.matches(self.typing.input.sent()).len();
+        let count = self.typing.history.matches(&self.list_items().0).len();
         match key.code {
             KeyCode::Up => self.typing.history.older(count),
             KeyCode::Char('r') if ctrl => self.typing.history.older(count),
@@ -378,7 +379,8 @@ impl App {
             KeyCode::Enter => self.pick_history(),
             KeyCode::Tab => {
                 let selected = self.typing.history.selected;
-                let found = self.typing.history.matches(self.typing.input.sent());
+                let (list, _) = self.list_items();
+                let found = self.typing.history.matches(&list);
                 if let Some(at) = found.get(selected).map(|s| s.at) {
                     self.typing.history.toggle_full(at);
                 }
@@ -390,17 +392,24 @@ impl App {
         }
     }
 
-    /// 挑中选中的那一条：放进输入框，关掉列表。
+    /// 挑中选中的那一条：放进输入框，关掉列表；`/jump` 的跳过去（「跳到说过的话」第 3 条）。
     pub(super) fn pick_history(&mut self) {
-        let picked = self
-            .typing
-            .history
-            .matches(self.typing.input.sent())
-            .get(self.typing.history.selected)
-            .map(|sent| sent.draft.text.clone());
+        let (text, id) = {
+            let (list, ids) = self.list_items();
+            let found = self.typing.history.matches(&list);
+            let picked = found.get(self.typing.history.selected).copied();
+            // 列表是照先后排的一份，挑中的是其中哪一句：照位置找回它的条目编号。
+            let id = picked
+                .and_then(|p| list.iter().position(|s| std::ptr::eq(s, p)))
+                .and_then(|i| ids.get(i).copied());
+            (picked.map(|sent| sent.draft.text.clone()), id)
+        };
+        let jump = self.typing.history.jump;
         self.typing.history.close();
-        if let Some(text) = picked {
-            self.typing.input.pick(&text);
+        match (jump, id, text) {
+            (true, Some(id), _) => self.jump_to(id),
+            (false, _, Some(text)) => self.typing.input.pick(&text),
+            _ => {}
         }
     }
 }

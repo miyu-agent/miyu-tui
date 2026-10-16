@@ -176,7 +176,9 @@ impl App {
     /// 输入历史列表上的鼠标：悬停选中那一条，点一下等于 `Enter`（`tui.md`「输入历史列表」第 5 条）。
     fn history_mouse(&mut self, mouse: MouseEvent) -> Action {
         use ratatui::crossterm::event::MouseButton;
-        let found = self.typing.history.matches(self.typing.input.sent());
+        // 下面要改列表的状态：先拷一份列的东西。
+        let list = self.list_items().0.into_owned();
+        let found = self.typing.history.matches(&list);
         let width = self.screen.areas.menu_text.width;
         let now = std::time::SystemTime::now();
         // 和画出来的同一份：放进列表那块的高度（「窗口小的时候」第 1 条）。

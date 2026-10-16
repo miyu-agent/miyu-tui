@@ -97,6 +97,14 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
             .set_line(area.x, y, &row.line, area.width);
     }
     screen.view.first = first;
+    flash::paint(
+        frame.buffer_mut(),
+        area,
+        (&rows, first),
+        &seen.talk.transcript.entries,
+        &mut screen.view,
+        &seen.config.layout.user_bar,
+    );
     crate::frame_log::section("figures", || {
         super::figure_rows::draw(
             frame.buffer_mut(),
@@ -282,6 +290,8 @@ fn first_row(
     view.area = area;
     first
 }
+
+mod flash;
 
 #[cfg(test)]
 mod tests;

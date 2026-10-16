@@ -140,6 +140,15 @@
       "run": "sessions"
     },
     {
+      "name": "jump",
+      "summary": {
+        "zh": "列出这个会话里说过的话，跳过去",
+        "en": "List what you said in this session and jump to it",
+        "ja": "このセッションで送った発言を一覧して移動する"
+      },
+      "run": "jump"
+    },
+    {
       "name": "persona",
       "summary": {
         "zh": "新会话用哪个人格：开会话以前能换",

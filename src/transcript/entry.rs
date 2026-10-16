@@ -100,6 +100,8 @@ pub struct Entry {
     pub mark: Option<String>,
     /// 她发出去的那张图。别的条是 `None`。
     pub media: Option<Sent>,
+    /// 你说的话什么时候说的：看着发的是发的那一刻，补发来的是事件的时刻（`/jump` 的列表右边写它）。别的条是 `None`。
+    pub at: Option<jiff::Timestamp>,
 }
 
 impl Entry {
@@ -125,6 +127,7 @@ impl Entry {
             progress: None,
             mark: None,
             media: None,
+            at: None,
         }
     }
 }
