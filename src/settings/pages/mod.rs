@@ -99,8 +99,9 @@ pub struct More {
 }
 
 impl More {
-    /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、外观（2026-10-14 加）、供应商和模型、人格、预设、
-    /// 软件包（和以后的别的页）、高级。「权限」并进了「通用」，「接入」并进了「软件包」（`schema.rs`）。
+    /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、用户（核心 P-9 再补，2026-10-16 项目主人定紧跟通用，
+    /// 照核心给的先后、和网页一致）、外观（2026-10-14 加）、供应商和模型、人格、预设、软件包（和以后的别的页）、高级。「权限」
+    /// 并进了「通用」，「接入」并进了「软件包」（`schema.rs`）。
     pub fn entries(&self) -> Vec<Entry> {
         let pages: Vec<&str> = self
             .schema
@@ -108,7 +109,7 @@ impl More {
             .map(Schema::listed_pages)
             .unwrap_or_default();
         let mut out = Vec::new();
-        for page in [FIRST, schema::APPEARANCE] {
+        for page in [FIRST, schema::USER, schema::APPEARANCE] {
             if pages.contains(&page) {
                 out.push(Entry::Page(page.to_string()));
             }
@@ -122,7 +123,7 @@ impl More {
         out.extend(
             pages
                 .iter()
-                .filter(|p| ![FIRST, schema::APPEARANCE, LAST].contains(*p))
+                .filter(|p| ![FIRST, schema::USER, schema::APPEARANCE, LAST].contains(*p))
                 .map(|p| Entry::Page((*p).to_string())),
         );
         if pages.contains(&LAST) {
