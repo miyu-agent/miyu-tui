@@ -84,6 +84,9 @@ type Screen = ratatui::Terminal<
 >;
 
 fn main() -> io::Result<()> {
+    // 堆的两个参数（glibc 上限 arena、定大块门槛）：还没起别的线程时定（蓝图「量尺」图片内存，2026-10-16 量过：23 张图画过
+    // 以后 54 MiB，定了以后 23 MiB；解码大图的十几 MB 放掉以后留在 glibc 手里、还不回去）。别的平台什么都不做。
+    miyu_client::heap::tune();
     let launch = startup::launch(std::env::args().skip(1))?;
     if launch.help {
         println!("{}", startup::USAGE);
