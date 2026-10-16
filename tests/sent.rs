@@ -1,0 +1,84 @@
+//! 她发出去的图（蓝图 `tui.md`「她发的图」，核心 X-19）：真核心拉起测试用的扩展（`examples/widget_extension.rs`），她调它的
+//! `sticker`，扩展答的 `sent` 记进 `tool.result`；伪终端画不了图，正文里那一步后面是「[表情包] 一句描述」，时间线照常收起。
+
+mod support;
+
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+
+use miyu_session::testkit::{Play, Script};
+use support::Home;
+
+/// 测试用的扩展编在哪（同 `tests/widgets.rs`）。
+fn extension() -> PathBuf {
+    let exe = std::env::current_exe().expect("找得到测试程序");
+    let dir = exe
+        .parent()
+        .and_then(Path::parent)
+        .expect("测试程序在 target/<档>/deps 里");
+    let built = dir
+        .join("examples")
+        .join(format!("widget_extension{}", std::env::consts::EXE_SUFFIX));
+    assert!(
+        built.exists(),
+        "先编测试用的扩展：加 --examples（{}）",
+        built.display()
+    );
+    built
+}
+
+/// 装扩展 `memes`（开着）：登记工具 `sticker`，发的图是先放进 alice 名下的一个 blob。
+fn install(dir: &Path) {
+    let blob = miyu_store::blob::Blobs::new(dir.join("home/alice/blobs"))
+        .put(b"\x89PNG not really a picture")
+        .expect("存得进");
+    let package = dir.join("home/alice/packages/memes");
+    std::fs::create_dir_all(package.join("bin")).expect("建得了包的目录");
+    let program = package
+        .join("bin")
+        .join(format!("memes-ext{}", std::env::consts::EXE_SUFFIX));
+    std::fs::copy(extension(), &program).expect("拷得了扩展的程序");
+    let manifest = format!(
+        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Memes\" }}\n\n[command]\nname = \"memes\"\nprogram = \"memes-ext\"\nabout = {{ en = \"M\" }}\n\n[process]\nargs = [{:?}]\nstart = \"always\"\n",
+        format!("sticker:{}", blob.as_str()),
+    );
+    std::fs::write(package.join("package.toml"), manifest).expect("写得进去");
+    std::fs::write(
+        dir.join("system/extensions.json"),
+        r#"{"version":1,"on":{"memes":true},"approved":{}}"#,
+    )
+    .expect("写得进去");
+}
+
+#[test]
+fn a_sticker_she_sends_is_written_after_its_step_when_pictures_cannot_be_shown() {
+    let script = Script::new([
+        Play::Calls(vec![("sticker".into(), "{}".into())]),
+        Play::Says("好。"),
+    ]);
+    let home = Home::prepared(script, "", install);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    // 扩展登记成了（核心写下登记缓存）才说话：不然她调到的时候还没有这件工具。
+    let cache = home.root().join("state/providers/memes.json");
+    let end = Instant::now() + support::WAIT;
+    while !cache.exists() {
+        assert!(Instant::now() < end, "扩展一直没登记工具");
+        tui.pump(Duration::from_millis(50));
+    }
+    tui.say("发个表情");
+    tui.wait_for("好。");
+    tui.wait_for("[表情包] 招手的猫");
+    let lines = tui.lines();
+    let at = |text: &str| {
+        lines
+            .iter()
+            .position(|l| l.contains(text))
+            .unwrap_or_else(|| panic!("屏上没有「{text}」：\n{}", lines.join("\n")))
+    };
+    assert!(
+        at("Used 1 tool") < at("[表情包] 招手的猫") && at("[表情包] 招手的猫") < at("好。"),
+        "那一步收进时间线，图排在它后面、回答前面：\n{}",
+        lines.join("\n")
+    );
+}

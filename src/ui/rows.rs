@@ -165,6 +165,7 @@ pub fn entry_rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         (None, Kind::Undo) => super::undo_rows::rows(i, entry, ctx),
         (None, Kind::Job) => job_rows::rows(i, entry, ctx),
         (None, Kind::Reply) => reply_rows(i, entry, ctx),
+        (None, Kind::Media) => super::media_rows::rows(entry, ctx),
         (None, Kind::User) => super::user_rows::rows(i, entry, ctx),
         (None, _) if entry.progress.is_some() => super::compaction_rows::rows(entry, ctx),
         (None, _) => text_rows(entry, ctx),
@@ -177,7 +178,9 @@ pub fn shown(entry: &Entry) -> bool {
         && !entry.queued
         && match &entry.segment {
             Some(segment) => !segment.steps.is_empty(),
-            None => entry.kind == Kind::Undo || !entry.text.trim().is_empty(),
+            None => {
+                entry.kind == Kind::Undo || entry.media.is_some() || !entry.text.trim().is_empty()
+            }
         }
 }
 
@@ -292,7 +295,7 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         ),
         Kind::Recap => (ctx.blank_slot(), theme::dim()),
         Kind::Error | Kind::Cut => (ctx.blank_slot(), theme::error()),
-        Kind::User | Kind::Reply | Kind::Steps | Kind::Undo | Kind::Job => {
+        Kind::User | Kind::Reply | Kind::Steps | Kind::Undo | Kind::Job | Kind::Media => {
             (ctx.blank_slot(), Style::new())
         }
     };

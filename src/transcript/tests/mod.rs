@@ -18,6 +18,7 @@ mod foreign;
 mod goal;
 mod level;
 mod link;
+mod media;
 mod model;
 mod notes;
 mod queue;

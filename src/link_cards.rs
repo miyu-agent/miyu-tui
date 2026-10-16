@@ -4,7 +4,7 @@
 //! 要到的卡片记进缓存目录里的 `cards-v2.json`（最近的 [`KEEP`] 个网址），图照内容的哈希存成文件（`core/links.rs`）：重启
 //! 以后照记着的直接画，不先显示成链接再换（2026-10-02 项目主人报）。
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::core::Card;
@@ -27,6 +27,8 @@ pub struct LinkCards {
     cards: HashMap<String, Asked>,
     /// 读回来存成的文件；要了还没回来、读不成的是 `None`。
     blobs: HashMap<String, Option<PathBuf>>,
+    /// 回来了、读不成的 blob：和还没回来的分开，她发的图照它写那一行字、不再等（「她发的图」）。
+    unreadable: HashSet<String>,
     /// 还没发的：要卡片的网址。
     ask_cards: Vec<String>,
     /// 还没发的：要读的 blob。
@@ -144,7 +146,15 @@ impl LinkCards {
 
     /// 一个 blob 存成了文件（`None` 是读不成）。
     pub fn saved(&mut self, blob: String, path: Option<PathBuf>) {
+        if path.is_none() {
+            self.unreadable.insert(blob.clone());
+        }
         self.blobs.insert(blob, path);
+    }
+
+    /// 这个 blob 回来了、读不成。
+    pub fn unreadable(&self, blob: &str) -> bool {
+        self.unreadable.contains(blob)
     }
 
     /// 核心断开了（review B5，2026-10-11）：要了还没回来的不会回来了，忘掉，下次排到时再要；还没发的单子扔掉，重排时
@@ -153,6 +163,7 @@ impl LinkCards {
         self.cards
             .retain(|_, asked| !matches!(asked, Asked::Waiting));
         self.blobs.retain(|_, path| path.is_some());
+        self.unreadable.clear();
         self.ask_cards.clear();
         self.ask_blobs.clear();
     }

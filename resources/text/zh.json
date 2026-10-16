@@ -138,6 +138,10 @@
   "no_clear_running": "回答进行中，无法清屏",
   "icons_changed": "图标：{name}",
   "figure_pending": "⋯ 正在渲染图片",
+  "sent": {
+    "sticker": "[表情包]",
+    "image": "[图片]"
+  },
   "mascot_failed": "吉祥物包无法读取，已使用内置吉祥物",
   "figure_zoom": "查看大图",
   "markdown": {

@@ -18,6 +18,7 @@ mod fresh;
 mod goal;
 mod gone;
 mod jobs;
+mod media;
 mod model;
 mod pages;
 mod queue;
@@ -385,6 +386,7 @@ impl Transcript {
                     }
                 }
             }
+            Push::Media(images) => self.sent(images),
             Push::ToolImages { call_id, blobs } => {
                 let at = self.calls.get(&call_id).copied();
                 if let Some(step) = at.and_then(|at| self.step_mut(at)) {

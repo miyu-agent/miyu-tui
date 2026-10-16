@@ -30,6 +30,7 @@ mod link_card;
 mod margins;
 mod mascot_view;
 mod md_cache;
+mod media_rows;
 pub mod model_list;
 mod oobe;
 pub use oobe::idle_look as oobe_idle_look;

@@ -14,6 +14,8 @@ pub struct FigureLook {
     pub picture_room: Room,
     /// 工具结果里的图（`read` 读的）最多多大（「时间线」第 8 条：长宽各是 `picture_room` 的一半）。
     pub preview_room: Room,
+    /// 她发出去的表情包最多多大（「她发的图」）：聊天里的表情包那么大，不照回答里的图铺开。
+    pub sticker_room: Room,
     /// mermaid 图里的字体，照先后找；都没有的由 resvg 从系统里找。
     pub fonts: Vec<String>,
     /// 本机的图片文件最大读多少字节；超了的、不是普通文件的不读（review A4）。

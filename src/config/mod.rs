@@ -191,6 +191,8 @@ pub struct Texts {
     pub error_classes: HashMap<String, String>,
     /// 图还在做时那一行占位。
     pub figure_pending: String,
+    /// 她发出去的图画不成时那一行打头的（蓝图「她发的图」）。
+    pub sent: SentTexts,
     /// 吉祥物包读不成、查不过，换回内置的（蓝图「吉祥物包」第 3 条）。
     pub mascot_failed: String,
     /// mermaid 图下面那一行，点了开大图。
@@ -358,6 +360,16 @@ impl Config {
 
 fn parse<T: for<'de> Deserialize<'de>>(name: &str, json: &str) -> Result<T, String> {
     serde_json::from_str(json).map_err(|e| format!("resources/{name} 读不懂：{e}"))
+}
+
+/// 她发出去的图画不成时（终端显示不了图、读不成）那一行打头的，后面跟 `alt`（蓝图「她发的图」）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SentTexts {
+    /// 表情包：`[表情包]`。
+    pub sticker: String,
+    /// 别的图：`[图片]`。
+    pub image: String,
 }
 
 #[cfg(test)]
