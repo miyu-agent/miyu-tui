@@ -56,6 +56,8 @@ pub struct Screen {
     pub wallpaper_wanted: bool,
     /// 引导「主题」那一步选着的配色、明暗，盖在配置项上（「第一次打开的引导」第 23a 条）；不在选的是 `None`。
     pub theme_preview: Option<crate::oobe::theme::Preview>,
+    /// 引导挑过的主色：关引导以后、人格列表重读回来以前照它（`theme/seed_hold.rs`）。
+    pub seed_hold: crate::theme::seed_hold::SeedHold,
     /// 程序启动的时刻：转圈照它算第几帧。
     pub started: Instant,
     /// 压缩那一行的进度条一顿一顿地追，停多久、追几格要的随机数。
@@ -93,6 +95,7 @@ impl Screen {
             wallpaper_seen: false,
             wallpaper_wanted: false,
             theme_preview: None,
+            seed_hold: Default::default(),
             draw_now: false,
             started: Instant::now(),
             rng: crate::rng::Rng::from_clock(),

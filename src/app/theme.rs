@@ -45,6 +45,12 @@ impl App {
     pub(super) fn follow_theme(&mut self) {
         self.follow_wallpaper();
         let preview = self.boxes.oobe.as_ref().and_then(Oobe::theme_preview);
+        // 引导刚关：挑过的主色拿住，人格列表重读回来以前不闪回旧的（`theme/seed_hold.rs`）。
+        if preview.is_none()
+            && let Some(before) = &self.screen.theme_preview
+        {
+            self.screen.seed_hold.closed(before.seed);
+        }
         let changed = preview != self.screen.theme_preview;
         self.screen.theme_preview = preview;
         let seed = self.wanted_seed();
@@ -173,14 +179,19 @@ impl App {
     /// （后台取，一张只取一次）。别的配色、都没有的、还没取好的是空的。
     fn wanted(&mut self) -> (Vec<u32>, Option<u32>) {
         let (seeds, seed) = self.wanted_by_config();
-        // 引导「主题」那一步挑过的主色在候选里的，照它（当场换样子）。
+        // 引导「主题」那一步挑过的主色在候选里的，照它（当场换样子）；关了引导、人格列表还没回来的照拿住的。
         let picked = self
             .screen
             .theme_preview
             .as_ref()
             .and_then(|p| p.seed)
             .filter(|s| seeds.contains(s));
-        (seeds, picked.or(seed))
+        let following = self.following();
+        let seed = self
+            .screen
+            .seed_hold
+            .seed((picked, seed), &seeds, following);
+        (seeds, seed)
     }
 
     /// 同 [`App::wanted`]，不看引导里挑的：照配置项、人格的。

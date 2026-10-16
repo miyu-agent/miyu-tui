@@ -10,6 +10,7 @@ mod ground;
 mod motion;
 mod palette;
 pub mod persona;
+pub mod seed_hold;
 pub mod seeds;
 mod shimmer;
 pub mod terminal_colors;
