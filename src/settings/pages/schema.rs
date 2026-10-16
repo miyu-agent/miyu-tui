@@ -95,6 +95,8 @@ pub const MODELS: &str = "models";
 pub const GENERAL: &str = "general";
 /// 「外观」那一页的编号：终端自己加的一页，核心不知道，主菜单排在通用后面（2026-10-14 项目主人照推荐定）。
 pub const APPEARANCE: &str = "appearance";
+/// 「用户」页（核心 P-9 再补）：主菜单紧跟「通用」（「配置页」第 46 条）。
+pub const USER: &str = "user";
 /// 终端自己的配置项的键打头的那一截（终端软件包的编号）。
 const OWN: &str = "tui.";
 
