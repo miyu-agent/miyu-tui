@@ -254,6 +254,8 @@ impl Settings {
                 self.refresh();
                 self.save(false, texts);
             }
+            "combo" => self.open_combo(&item, &value, texts),
+            "textarea" => self.open_textarea(&item, &value),
             "number" | "text" => {
                 let number = item.control == "number";
                 self.popup = Some(Popup::Line(LineEdit::open(
@@ -404,6 +406,7 @@ impl Settings {
                 }
                 self.popup = Some(Popup::Line(edit));
             }
+            Popup::Sheet(edit) => self.sheet_key(edit, key, texts),
             // 人格的窗（第 36 条）、示范对话列表和两格窗（第 41 条）。
             Popup::Persona(view) => self.persona_key(view, key, texts),
             Popup::Dialogs(view) => self.dialogs_key(view, key),
@@ -423,16 +426,17 @@ impl Settings {
             return;
         }
         if !self.model_or_write(&target, key, &value)
+            && !self.combo_write(&target, key, &value)
             && !self.preset_write(target.clone(), key, value.clone())
             && !self.avatar_write(target.clone(), &value)
             && !self.persona_write(target, key, value.clone())
         {
-            self.write(key, value, texts);
+            self.write_setting(key, value, texts);
         }
     }
 
     /// 写一项进个人设置（只有系统配置这一层的写系统配置），当场存（关窗；没存成的原因写在状态行）。
-    fn write(&mut self, key: &str, value: Value, texts: &Texts) {
+    pub(in crate::settings) fn write_setting(&mut self, key: &str, value: Value, texts: &Texts) {
         self.draft.system = self.system_only(key);
         let Some(data) = self.data.as_ref() else {
             return;

@@ -198,11 +198,18 @@ impl Settings {
         if !std::mem::take(&mut self.editing) {
             return None;
         }
-        self.prompt.as_ref().map(|p| p.original.clone())
+        // 多行编辑窗交出去的（「配置页」第 45 条）先认。
+        self.sheet_text()
+            .or_else(|| self.prompt.as_ref().map(|p| p.original.clone()))
     }
 
     /// 编辑器退出了，读回来的是 `text`（读不了的是 `None`）：一个字没改的不存；改了的整份交、带版本；清空了的存成空的。
     pub fn prompt_edited(&mut self, text: Option<String>) {
+        // 多行编辑窗交出去的（「配置页」第 45 条）：回到它。
+        if self.sheet_out.is_some() {
+            self.sheet_back(text);
+            return;
+        }
         let Some(edit) = self.prompt.take() else {
             return;
         };

@@ -38,6 +38,8 @@ pub enum Target {
     Avatar(Box<PersonaView>),
     /// `model_or` 那种项（语义模型）：选了「填一个模型…」开编辑窗，别的照旧写个人设置（「配置页」第 21 条）。
     ModelOr,
+    /// 下拉加「其他」手写（`combo`）：选了「其他…」开编辑窗，别的照旧写个人设置（「配置页」第 44 条）。
+    Combo,
     /// 跟随头像的「主色」：写这个人格的主题色（`persona.set` 的 `seed`，存在人格上，两个头看到的是同一个；2026-10-14）。
     PersonaSeed(String),
 }

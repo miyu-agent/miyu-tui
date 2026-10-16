@@ -1287,7 +1287,9 @@
       "appearance": "外観",
       "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}},
       "unavailable": "未インストール",
-      "custom_model": "モデルを入力…"
+      "custom_model": "モデルを入力…",
+      "combo": ["設定しない", "その他…"],
+      "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]]
     }
   },
   "oobe": {
@@ -1454,9 +1456,10 @@
     },
     "profile": {
       "title": "AI にあなたのことを伝える",
-      "sub": "新しいセッションから反映されます。あとで設定で変更できます。どちらも空欄で構いません",
-      "fields": ["AI からの呼び名", "その他の説明（任意）"],
-      "hints": ["例：たろう", "何をしているか、AI にどう接してほしいか"],
+      "sub": "新しいセッションから反映されます。あとで設定で変更できます。どれも空欄で構いません",
+      "fields": ["AI からの呼び名", "その他の説明（任意）", "返信の言語"],
+      "hints": ["例：たろう", "何をしているか、AI にどう接してほしいか", "設定しない"],
+      "other": "その他…",
       "next": "次へ",
       "saving": "保存中…"
     },

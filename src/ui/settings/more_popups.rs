@@ -10,6 +10,7 @@ use super::popup::{Body, Lines};
 use crate::features;
 use crate::settings::pages::choose::{LineEdit, PersonaView, PresetView};
 use crate::settings::pages::preset_edit::{Field, fields};
+use crate::settings::pages::textarea::SheetEdit;
 use crate::settings::{Settings, Texts};
 use crate::theme;
 
@@ -33,6 +34,45 @@ pub(super) fn line(lines: &mut Lines, edit: &LineEdit, texts: &Texts) {
     });
     lines.error = edit.error.clone();
     lines.hints = texts.more.hints[3].clone();
+}
+
+/// 几行字的编辑窗（「配置页」第 45 条）：照宽折行、照光标滚（同引导的大编辑浮窗，`ui/oobe/persona.rs` 的 `sheet_body`），
+/// `room` 是字能占几列、几行。
+pub(super) fn sheet(
+    lines: &mut Lines,
+    edit: &mut SheetEdit,
+    texts: &Texts,
+    (width, height): (u16, u16),
+) {
+    lines.title(edit.title.clone(), String::new());
+    let width = usize::from(width.max(1));
+    let height = usize::from(height.max(1));
+    edit.sheet.width = width;
+    let text = edit.sheet.text().to_string();
+    let (rows, (row, col)) =
+        crate::oobe::wrap::wrap(&text, edit.sheet.field.editor.cursor(), width);
+    if row < edit.sheet.top {
+        edit.sheet.top = row;
+    } else if row >= edit.sheet.top + height {
+        edit.sheet.top = row + 1 - height;
+    }
+    let top = edit.sheet.top;
+    for piece in rows.iter().skip(top).take(height) {
+        lines.body.push(Body {
+            line: Line::from(vec![Span::raw("  "), Span::raw(piece.clone())]),
+            focused: true,
+            hit: None,
+        });
+    }
+    if lines.body.is_empty() {
+        lines.body.push(Body {
+            line: Line::raw("  "),
+            focused: true,
+            hit: None,
+        });
+    }
+    lines.caret = Some((row - top, 2 + u16::try_from(col).unwrap_or(0)));
+    lines.hints = texts.more.sheet_hints.clone();
 }
 
 /// 人格、预设的窗的标题：读回来的详情里的名字，没读回来的照列表里那一行；都没有的才写编号。新建的窗开在列表重读回来

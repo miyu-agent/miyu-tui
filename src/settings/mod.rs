@@ -169,6 +169,8 @@ pub struct Settings {
     prompt: Option<pages::persona_edit::PromptEdit>,
     /// 刚读到、要交给编辑器的：`App` 拿走一次（[`Settings::take_prompt`]）。
     editing: bool,
+    /// 交给编辑器的多行编辑窗（`pages/textarea.rs`）：编辑器退出以后回到它。
+    sheet_out: Option<pages::textarea::SheetEdit>,
     /// 改了人格（主色）：`App` 拿走一次，重读人格列表、照新的换颜色。
     pub personas_changed: bool,
 }
@@ -428,7 +430,7 @@ impl Settings {
         let popup = match &self.popup {
             Some(Popup::Form(form)) => form.editing.is_some(),
             Some(Popup::Pick(pick)) => pick.typing,
-            Some(Popup::Line(_) | Popup::Pair(_)) => true,
+            Some(Popup::Line(_) | Popup::Pair(_) | Popup::Sheet(_)) => true,
             _ => false,
         };
         popup || self.nav.search.as_ref().is_some_and(|s| s.typing)

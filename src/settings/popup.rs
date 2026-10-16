@@ -17,6 +17,8 @@ pub enum Popup {
     Choose(super::pages::choose::Choose),
     /// 填一行字的编辑窗（通用这类的页）。
     Line(super::pages::choose::LineEdit),
+    /// 几行字的编辑窗（`textarea`，「配置页」第 45 条）。
+    Sheet(super::pages::textarea::SheetEdit),
     /// 人格的详情窗。
     Persona(super::pages::choose::PersonaView),
     /// 预设的详情窗。

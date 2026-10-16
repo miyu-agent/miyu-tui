@@ -9,15 +9,23 @@ use super::{asks, find, fresh, key, texts, typed};
 use crate::oobe::profile::Slot;
 use crate::oobe::{Move, Oobe, Step, Texts};
 
-/// 走到这一步，读到的两项是 `items`。
+/// 走到这一步，读到的三项是 `items`；配置清单里回复语言的建议值是简体中文、English。
 fn at_profile(t0: Instant, texts: &Texts, items: serde_json::Value) -> Oobe {
     let mut oobe = fresh(t0);
     oobe.step = Step::Theme;
     oobe.moved(Move::Next, t0);
     assert_eq!(oobe.step, Step::Profile, "主题后面是 AI 怎么认识你");
-    let (tag, params) = find(&asks(&mut oobe), "config.get");
-    assert_eq!(params, json!({"keys": ["profile.name", "profile.about"]}));
+    let sent = asks(&mut oobe);
+    let (tag, params) = find(&sent, "config.get");
+    assert_eq!(
+        params,
+        json!({"keys": ["profile.name", "profile.about", "profile.preferred_reply_language"]})
+    );
     oobe.answer(tag, Ok(json!({"items": items})), t0, texts);
+    let (tag, _) = find(&sent, "config.schema");
+    let schema = json!({"items": [{"key": "profile.preferred_reply_language", "control": "combo",
+        "suggestions": ["简体中文", "English"]}]});
+    oobe.answer(tag, Ok(schema), t0, texts);
     oobe
 }
 
@@ -58,6 +66,7 @@ fn what_is_typed_is_written_to_personal_settings_and_a_cleared_one_is_unset() {
     }
     oobe.key(key(KeyCode::Esc), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let (tag, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
@@ -70,4 +79,40 @@ fn what_is_typed_is_written_to_personal_settings_and_a_cleared_one_is_unset() {
     assert_eq!(oobe.step, Step::Profile, "写成了才往下走");
     oobe.answer(tag, Ok(json!({})), t0, &texts);
     assert_eq!(oobe.step, Step::Preset);
+}
+
+#[test]
+fn the_reply_language_is_picked_from_the_suggestions_or_typed_after_other() {
+    // 核心 P-9 补（2026-10-16）：回复语言是下拉加「其他」手写，第一行「不设」（项目主人照推荐定）。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = at_profile(t0, &texts, json!({}));
+    oobe.profile.focus = Slot::Language;
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let choose = oobe.profile.picking.as_ref().expect("开选择窗");
+    let labels: Vec<&str> = choose.choices.iter().map(|c| c.label.as_str()).collect();
+    assert_eq!(labels, ["不设", "简体中文", "English", "其他…"]);
+    assert_eq!(choose.sel, 0, "没设的停在「不设」");
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(oobe.profile.picking.is_none(), "选了关窗");
+    assert_eq!(oobe.profile.language.text(), "English");
+    // 「其他…」：在这一格里手写，原来选的建议值不留。
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(oobe.profile.language.editing(), "「其他…」在格子里写");
+    assert_eq!(oobe.profile.language.text(), "");
+    typed(&mut oobe, "粤语", t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.profile.focus = Slot::Next;
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (_, params) = find(&asks(&mut oobe), "config.set");
+    assert_eq!(
+        params,
+        json!({"layer": "personal", "changes": [
+            {"key": "profile.preferred_reply_language", "value": "粤语"}
+        ]})
+    );
 }

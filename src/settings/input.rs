@@ -14,9 +14,12 @@ type Uses = Box<dyn Fn(&str) -> bool>;
 impl Settings {
     /// 按了一个键。
     pub fn key(&mut self, key: KeyEvent, texts: &Texts) -> Outcome {
-        // 带 Ctrl 的配置页不管，只有预设的窗认 Ctrl+A（全开、全关，「配置页」第 38 条）。
+        // 带 Ctrl 的配置页不管，只有预设的窗认 Ctrl+A（全开、全关，「配置页」第 38 条），几行字的窗认 Ctrl+G（交给外部
+        // 编辑器，第 45 条）。
         let all = key.code == KeyCode::Char('a') && matches!(self.popup, Some(Popup::Preset(_)));
-        if key.modifiers.contains(KeyModifiers::CONTROL) && !all {
+        let external =
+            key.code == KeyCode::Char('g') && matches!(self.popup, Some(Popup::Sheet(_)));
+        if key.modifiers.contains(KeyModifiers::CONTROL) && !all && !external {
             return Outcome::Stay;
         }
         if self.popup.is_some() {
@@ -53,6 +56,8 @@ impl Settings {
                 }
             }
             Some(Popup::Line(edit)) => edit.editor.insert(clean),
+            // 几行字的窗留着换行（「配置页」第 45 条）。
+            Some(Popup::Sheet(edit)) => Settings::sheet_paste(edit, text),
             Some(Popup::Pair(edit)) => Settings::pair_paste(edit, clean),
             Some(Popup::Pick(pick)) if pick.typing => {
                 pick.search.push_str(clean);

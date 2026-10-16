@@ -52,7 +52,9 @@ impl Oobe {
                 self.theme
                     .answer(&waiting, result, (follow, &mut self.asker))
             }
-            Waiting::ProfileRead | Waiting::ProfileSave => self.profile.answer(&waiting, result),
+            Waiting::ProfileRead | Waiting::ProfileSave | Waiting::ProfileSchema => {
+                self.profile.answer(&waiting, result)
+            }
             Waiting::SandboxRead | Waiting::SandboxSave => {
                 self.sandbox.answer(&waiting, result, texts)
             }

@@ -23,6 +23,8 @@ pub struct Item {
     pub key: String,
     /// 控件：`select`、`toggle`、`number`、`text`、`list`、`secret`、`custom:…`。
     pub control: String,
+    /// 下拉加「其他」手写的建议值（`combo`，核心 P-9 补：字表照连接的语言给，照先后）；别的控件是空的。
+    pub suggestions: Vec<String>,
     /// 下拉的选项。
     pub options: Vec<Opt>,
     /// 能写在哪几层。
@@ -160,6 +162,12 @@ impl Schema {
             .map(|i| Item {
                 key: text(&i["key"]),
                 control: text(&i["control"]),
+                suggestions: i["suggestions"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|s| s.as_str().map(str::to_string))
+                    .collect(),
                 options: i["options"]
                     .as_array()
                     .into_iter()

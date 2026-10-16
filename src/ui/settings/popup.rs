@@ -29,7 +29,7 @@ pub fn draw(
     look: &Look,
     caret: &mut Caret,
 ) {
-    let Some(popup) = page.popup.take() else {
+    let Some(mut popup) = page.popup.take() else {
         return;
     };
     let wide = !matches!(
@@ -49,7 +49,7 @@ pub fn draw(
         .max(6)
         .min(area.height);
     let mut lines = Lines::default();
-    match &popup {
+    match &mut popup {
         Popup::Form(form) => form_lines(&mut lines, form, page, texts, width),
         Popup::Pick(pick) => pick_lines(&mut lines, pick, page, texts, width),
         Popup::Confirm(confirm) => {
@@ -73,6 +73,10 @@ pub fn draw(
             floating::choose(&mut lines, choose, hints, width, Hit::PickRow);
         }
         Popup::Line(edit) => super::more_popups::line(&mut lines, edit, texts),
+        Popup::Sheet(edit) => {
+            let room = (width.saturating_sub(6), max_height.saturating_sub(6));
+            super::more_popups::sheet(&mut lines, edit, texts, room);
+        }
         Popup::Persona(view) => super::more_popups::persona(&mut lines, view, page, texts),
         Popup::Preset(view) => super::more_popups::preset(&mut lines, view, page, texts),
         Popup::Dialogs(view) => super::dialog_popups::dialogs(&mut lines, view, texts, width),

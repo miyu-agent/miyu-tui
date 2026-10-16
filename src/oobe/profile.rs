@@ -1,6 +1,7 @@
-//! 「AI 怎么认识你」那一步（蓝图 `tui.md`「第一次打开的引导」第 23b 条，2026-10-13 项目主人定，核心 P-9）：两项，
-//! 「AI 怎么称呼你」写 `profile.name`，「更多描述（可选）」写 `profile.about`（长文，在大编辑浮窗里写，`sheet.rs`）。都写
-//! 个人设置、新会话生效，都可以不填：一个字没改的不写，清空了原来有的去掉。
+//! 「AI 怎么认识你」那一步（蓝图 `tui.md`「第一次打开的引导」第 23b 条，2026-10-13 项目主人定，核心 P-9）：三项，
+//! 「AI 怎么称呼你」写 `profile.name`，「更多描述（可选）」写 `profile.about`（长文，在大编辑浮窗里写，`sheet.rs`），
+//! 「回复语言」写 `profile.preferred_reply_language`（核心 P-9 补：下拉加「其他」手写，同配置页，`settings/pages/combo.rs`）。
+//! 都写个人设置，都可以不填：一个字没改的不写，清空了原来有的去掉。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
@@ -11,9 +12,15 @@ use super::nav::{self, Nav};
 use super::sheet::{Sheet, SheetKey};
 use super::{Effect, Move};
 use crate::core::Refusal;
+use crate::settings::pages::choose::{Choose, Pressed};
+use crate::settings::pages::combo;
 
-/// 两项的键，照画的先后。
-pub const KEYS: [&str; 2] = ["profile.name", "profile.about"];
+/// 三项的键，照画的先后。
+pub const KEYS: [&str; 3] = [
+    "profile.name",
+    "profile.about",
+    "profile.preferred_reply_language",
+];
 
 /// 光标停的几格。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -23,12 +30,14 @@ pub enum Slot {
     Name,
     /// 更多描述。
     About,
+    /// 回复语言。
+    Language,
     /// 「下一步」。
     Next,
 }
 
 /// 照画的先后。
-pub const SLOTS: [Slot; 3] = [Slot::Name, Slot::About, Slot::Next];
+pub const SLOTS: [Slot; 4] = [Slot::Name, Slot::About, Slot::Language, Slot::Next];
 
 /// 这一步。
 #[derive(Debug)]
@@ -37,6 +46,12 @@ pub struct ProfileStep {
     pub name: Field,
     /// 更多描述。
     pub about: Field,
+    /// 回复语言：选了建议值的是它，「其他…」手写的在这一格里写。
+    pub language: Field,
+    /// 回复语言的建议值（`config.schema` 这一项的 `suggestions`）。
+    pub suggestions: Vec<String>,
+    /// 回复语言的选择窗开着。
+    pub picking: Option<Choose>,
     /// 大编辑浮窗开着（写更多描述）。
     pub writing: Option<Sheet>,
     /// 光标在哪一格。
@@ -45,8 +60,8 @@ pub struct ProfileStep {
     pub busy: bool,
     /// 存不成：核心的原话。
     pub error: Option<String>,
-    /// 进这一步时读到的两项：存的时候比，没改的不写。
-    read: [Option<String>; 2],
+    /// 进这一步时读到的三项：存的时候比，没改的不写。
+    read: [Option<String>; 3],
     entered: bool,
     in_editor: bool,
 }
@@ -56,11 +71,14 @@ impl Default for ProfileStep {
         Self {
             name: Field::line(),
             about: Field::lines(),
+            language: Field::line(),
+            suggestions: Vec::new(),
+            picking: None,
             writing: None,
             focus: Slot::Name,
             busy: false,
             error: None,
-            read: [None, None],
+            read: [None, None, None],
             entered: false,
             in_editor: false,
         }
@@ -76,10 +94,26 @@ impl ProfileStep {
         self.entered = true;
         self.busy = true;
         asker.ask("config.get", json!({"keys": KEYS}), Waiting::ProfileRead);
+        // 回复语言的建议值照配置清单（字表照连接的语言给）。
+        asker.ask("config.schema", json!({}), Waiting::ProfileSchema);
     }
 
-    /// 按了一个键。
-    pub fn key(&mut self, key: KeyEvent, asker: &mut Asker, effects: &mut Vec<Effect>) -> Move {
+    /// 按了一个键；`words` 是回复语言选择窗的「不设」「其他…」。
+    pub fn key(
+        &mut self,
+        key: KeyEvent,
+        asker: &mut Asker,
+        effects: &mut Vec<Effect>,
+        words: [&str; 2],
+    ) -> Move {
+        if let Some(mut choose) = self.picking.take() {
+            match choose.press(key) {
+                Pressed::Picked(value) => self.picked(&value),
+                Pressed::Cancelled => {}
+                Pressed::Moved | Pressed::Ignored => self.picking = Some(choose),
+            }
+            return Move::Stay;
+        }
         if let Some(mut sheet) = self.writing.take() {
             match sheet.key(key) {
                 SheetKey::Close => {
@@ -109,6 +143,11 @@ impl ProfileStep {
             }
             return Move::Stay;
         }
+        // 「其他…」手写回复语言：同称呼那一格。
+        if self.language.editing() {
+            self.language.edit(key);
+            return Move::Stay;
+        }
         let at = SLOTS.iter().position(|s| *s == self.focus).unwrap_or(0);
         let moved = nav::plain(key);
         match key.code {
@@ -118,6 +157,12 @@ impl ProfileStep {
             KeyCode::Enter => match self.focus {
                 Slot::Name => self.name.begin(),
                 Slot::About => self.writing = Some(Sheet::open(self.about.text())),
+                Slot::Language => {
+                    let now = self.language_value();
+                    let rows = combo::rows(&self.suggestions, words);
+                    let at = combo::landing(&self.suggestions, &now);
+                    self.picking = Some(Choose::open(KEYS[2], "", rows, &at));
+                }
                 Slot::Next => return self.save(asker),
             },
             _ => {}
@@ -125,9 +170,35 @@ impl ProfileStep {
         Move::Stay
     }
 
+    /// 回复语言现在写的；空的是没设。
+    fn language_value(&self) -> Value {
+        let text = self.language.trimmed();
+        if text.is_empty() {
+            Value::Null
+        } else {
+            Value::String(text)
+        }
+    }
+
+    /// 选择窗选好了：建议值、「不设」当场换上；「其他…」在这一格里手写（原来写的不在建议里的留着）。
+    fn picked(&mut self, value: &Value) {
+        if *value == combo::other() {
+            if self.suggestions.contains(&self.language.trimmed()) {
+                self.language = Field::line();
+            }
+            self.language.begin();
+            return;
+        }
+        self.language = Field::line().with(value.as_str().unwrap_or_default());
+    }
+
     /// 「下一步」：改了的写进个人设置（清空了原来有的去掉），一个字没改的直接下一步。
     fn save(&mut self, asker: &mut Asker) -> Move {
-        let fields = [self.name.trimmed(), self.about.text().trim().to_string()];
+        let fields = [
+            self.name.trimmed(),
+            self.about.text().trim().to_string(),
+            self.language.trimmed(),
+        ];
         let changes: Vec<Value> = KEYS
             .iter()
             .zip(fields)
@@ -166,7 +237,8 @@ impl ProfileStep {
                     if let Some(text) = &value {
                         match i {
                             0 => self.name = Field::line().with(text),
-                            _ => self.about = Field::lines().with(text),
+                            1 => self.about = Field::lines().with(text),
+                            _ => self.language = Field::line().with(text),
                         }
                     }
                     self.read[i] = value;
@@ -178,6 +250,7 @@ impl ProfileStep {
                     self.read = [
                         Some(self.name.trimmed()).filter(|t| !t.is_empty()),
                         Some(self.about.text().trim().to_string()).filter(|t| !t.is_empty()),
+                        Some(self.language.trimmed()).filter(|t| !t.is_empty()),
                     ];
                     Move::Next
                 }
@@ -186,6 +259,20 @@ impl ProfileStep {
                     Move::Stay
                 }
             },
+            Waiting::ProfileSchema => {
+                let got = result.ok().unwrap_or_default();
+                self.suggestions = got["items"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .find(|i| i["key"] == KEYS[2])
+                    .and_then(|i| i["suggestions"].as_array())
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|s| s.as_str().map(str::to_string))
+                    .collect();
+                Move::Stay
+            }
             _ => Move::Stay,
         }
     }
@@ -194,6 +281,8 @@ impl ProfileStep {
     pub fn paste(&mut self, text: &str) {
         if let Some(sheet) = self.writing.as_mut() {
             sheet.paste(text);
+        } else if self.language.editing() {
+            self.language.paste(text);
         } else if self.focus == Slot::Name {
             if !self.name.editing() {
                 self.name.begin();

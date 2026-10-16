@@ -104,10 +104,12 @@ pub struct Profile {
     /// 标题、说明。
     #[serde(flatten)]
     pub head: Heading,
-    /// 两格的名字：AI 怎么称呼你、更多描述（可选）。
-    pub fields: [String; 2],
-    /// 两格空着时暗色写的。
-    pub hints: [String; 2],
+    /// 三格的名字：AI 怎么称呼你、更多描述（可选）、回复语言。
+    pub fields: [String; 3],
+    /// 三格空着时暗色写的（回复语言的是「不设」，也是它选择窗的第一行）。
+    pub hints: [String; 3],
+    /// 回复语言选择窗的最后一行「其他…」。
+    pub other: String,
     /// 「下一步」。
     pub next: String,
     /// 「正在保存…」。

@@ -4,6 +4,7 @@
 
 mod avatar;
 pub mod choose;
+pub mod combo;
 pub mod dialogs;
 mod keys;
 pub mod mascots;
@@ -15,6 +16,7 @@ pub mod preset_edit;
 pub mod presets;
 pub mod schema;
 pub mod target;
+pub mod textarea;
 
 use std::collections::HashMap;
 
@@ -268,6 +270,10 @@ pub struct Texts {
     pub dialogs: dialogs::DialogTexts,
     /// `model_or` 那种项的选择窗最后一行：自己填一个模型（「配置页」第 21 条）。
     pub custom_model: String,
+    /// 下拉加「其他」手写（`combo`，「配置页」第 44 条）的两个字：第一行「不设」、最后一行「其他…」。
+    pub combo: [String; 2],
+    /// 几行字的编辑窗（`textarea`，第 45 条）下面的按键提示，同引导的大编辑浮窗。
+    pub sheet_hints: Vec<[String; 2]>,
 }
 
 /// 一项现在的值：读来的最终值和来自哪一层；哪一层都没写的照清单的默认，来自「默认」。
@@ -314,7 +320,13 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
         (_, Value::Null) if item.key == DEFAULT_PERSONA => texts.no_persona.clone(),
         // 吉祥物没设：就是内置的。
         (_, Value::Null) if item.key == MASCOT => texts.builtin_mascot.clone(),
+        // 下拉加「其他」手写没设：写「不设」（「配置页」第 44 条）。
+        ("combo", Value::Null) => texts.combo[0].clone(),
         (_, Value::Null) => "—".to_string(),
+        // 几行字：只写第一行，多行的末尾 `…`（第 45 条）。
+        ("textarea", Value::String(s)) if s.trim_end().contains('\n') => {
+            format!("{}…", s.lines().next().unwrap_or_default())
+        }
         ("toggle", Value::Bool(on)) => texts.toggle[usize::from(!*on)].clone(),
         ("secret", v) => texts.secret[usize::from(v.is_null())].clone(),
         (_, Value::String(s)) => s.clone(),

@@ -66,8 +66,10 @@ pub enum Waiting {
     Welcomed,
     /// AI 怎么称呼你、更多描述（`config.get profile.name profile.about`）。
     ProfileRead,
-    /// 写这两项（`config.set`）。
+    /// 写这几项（`config.set`）。
     ProfileSave,
+    /// 回复语言的建议值（`config.schema`，核心 P-9 补）。
+    ProfileSchema,
     /// 主题的配色、明暗（`config.get tui.theme tui.theme_mode`）。
     ThemeRead,
     /// 写这两项（`config.set`）。
@@ -99,6 +101,7 @@ impl Waiting {
                 | Self::SandboxRead
                 | Self::ThemeRead
                 | Self::ProfileRead
+                | Self::ProfileSchema
         )
     }
 }
