@@ -22,6 +22,7 @@ pub(super) async fn connect() -> Result<Rpc, Update> {
     root.prepare().map_err(|e| Update::Failed(e.to_string()))?;
     let connected = match std::env::var_os("MIYU_CORE_BIN") {
         Some(bin) => {
+            let bin = crate::local::expand_home(bin, std::env::home_dir().as_deref());
             let path = Path::new(&bin).to_path_buf();
             miyu_client::connect::connect_or_start(&root, move || {
                 let mut core = Process::new(bin);

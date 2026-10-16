@@ -17,6 +17,15 @@ pub fn home_short(value: &str) -> String {
     }
 }
 
+/// 环境变量里写的程序路径：开头的 `~/` 换成家目录（`home`），别的原样。fish 只在词开头展开 `~`，`env MIYU_CORE_BIN=~/…`
+/// 交来的是字面的 `~/…`（2026-10-16 项目主人照验收清单起终端，报「找不到核心程序：~/…」）。
+pub fn expand_home(value: std::ffi::OsString, home: Option<&Path>) -> PathBuf {
+    match (value.to_str().and_then(|v| v.strip_prefix("~/")), home) {
+        (Some(rest), Some(home)) => home.join(rest),
+        _ => PathBuf::from(value),
+    }
+}
+
 /// 照给定的家目录、工作目录认。
 pub fn path(url: &str, home: Option<&Path>, cwd: &Path) -> PathBuf {
     let url = url.strip_prefix("file://").unwrap_or(url);
@@ -43,6 +52,23 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use super::path;
+
+    #[test]
+    fn a_program_path_starting_with_a_tilde_is_under_home() {
+        let home = std::path::Path::new("/home/me");
+        let expand = |v: &str| super::expand_home(v.into(), Some(home));
+        assert_eq!(expand("~/bin/miyu"), home.join("bin/miyu"));
+        assert_eq!(expand("/opt/miyu"), std::path::PathBuf::from("/opt/miyu"));
+        assert_eq!(
+            expand("bin/~/miyu"),
+            std::path::PathBuf::from("bin/~/miyu"),
+            "只认开头的"
+        );
+        assert_eq!(
+            super::expand_home("~/miyu".into(), None),
+            std::path::PathBuf::from("~/miyu")
+        );
+    }
 
     #[test]
     fn addresses_resolve_to_files() {
