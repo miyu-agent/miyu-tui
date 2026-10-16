@@ -1,4 +1,4 @@
-//! 「AI 怎么认识你」那一步（「第一次打开的引导」第 23b 条）：三格和「下一步」；更多描述的大编辑浮窗浮在上面（同建人格），
+//! 「AI 怎么认识你」那一步（「第一次打开的引导」第 23b 条）：三格（回复语言、称呼、更多描述）和「下一步」；更多描述的大编辑浮窗浮在上面（同建人格），
 //! 回复语言的选择窗在格子下面（同主题那一步，`theme_step::picker`）。
 
 use unicode_width::UnicodeWidthStr;
@@ -6,7 +6,7 @@ use unicode_width::UnicodeWidthStr;
 use super::content::Content;
 use super::persona::{first_line, sheet_body};
 use crate::oobe::Texts;
-use crate::oobe::profile::{ProfileStep, Slot};
+use crate::oobe::profile::{ABOUT, LANGUAGE, NAME, ProfileStep, Slot};
 use crate::theme;
 
 /// 三格和「下一步」。
@@ -19,30 +19,30 @@ pub fn content(step: &ProfileStep, texts: &Texts, width: u16) -> Content {
     // 浮窗开着时光标在浮窗里，这一屏不亮哪一格。
     let quiet = step.busy || step.writing.is_some() || step.picking.is_some();
     let on = |slot| !quiet && step.focus == slot;
+    // 回复语言（核心 P-9 补，2026-10-16 项目主人定排第一）：没设的暗色「不设」；「其他…」手写时在这一格里打字。
     c.field(
-        &words.fields[0],
+        &words.fields[LANGUAGE],
         label_w,
-        &step.name,
-        &words.hints[0],
-        on(Slot::Name),
+        &step.language,
+        &words.hints[LANGUAGE],
+        on(Slot::Language),
     );
     // 格子之间空一行（同第 21 条）。
     c.blank();
-    c.chip(
-        &words.fields[1],
+    c.field(
+        &words.fields[NAME],
         label_w,
-        &first_line(step.about.text()),
-        &words.hints[1],
-        on(Slot::About),
+        &step.name,
+        &words.hints[NAME],
+        on(Slot::Name),
     );
     c.blank();
-    // 回复语言（核心 P-9 补）：没设的暗色「不设」；「其他…」手写时在这一格里打字。
-    c.field(
-        &words.fields[2],
+    c.chip(
+        &words.fields[ABOUT],
         label_w,
-        &step.language,
-        &words.hints[2],
-        on(Slot::Language),
+        &first_line(step.about.text()),
+        &words.hints[ABOUT],
+        on(Slot::About),
     );
     c.blank();
     c.action(on(Slot::Next), &format!("{} →", words.next));
@@ -65,6 +65,10 @@ pub fn popup(
 ) -> Option<(String, Content, String)> {
     let words = &texts.profile;
     let sheet = step.writing.as_mut()?;
-    let body = sheet_body(sheet, &words.hints[1], size);
-    Some((words.fields[1].clone(), body, texts.keys.writing.clone()))
+    let body = sheet_body(sheet, &words.hints[ABOUT], size);
+    Some((
+        words.fields[ABOUT].clone(),
+        body,
+        texts.keys.writing.clone(),
+    ))
 }

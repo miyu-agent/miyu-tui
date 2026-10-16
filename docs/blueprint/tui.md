@@ -1215,7 +1215,7 @@ macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 
 
 **AI 怎么认识你**（2026-10-13 项目主人定，核心 P-9）
 
-23b. 标题「AI 怎么认识你」，说明「新会话生效，以后可以在设置里改。都可以不填」。两格，格子之间空一行（同第 21 条）：「AI 怎么称呼你」（暗色例子「例如：小林」，`Enter` 编辑）；「更多描述（可选）」（暗色「你是做什么的、希望 AI 怎么待你」，`Enter` 开大编辑浮窗写，同第 21a 条，`Ctrl+G` 交给外部编辑器）；「回复语言」（核心 P-9 补，2026-10-16：`profile.preferred_reply_language`，`Enter` 开选择窗，同「配置页」第 44 条：「不设」、字表的建议值、「其他…」手写；没设的暗色「不设」），最后一行「下一步 →」。进这一步先 `config.get profile.name profile.about profile.preferred_reply_language` 照现在写的填好，回复语言的建议值照 `config.schema` 里这一项的 `suggestions`。「下一步」：改了的 `config.set` 写个人设置（`profile.name` 最多 64 个字、`profile.about` 最多 2000 个字、`profile.preferred_reply_language` 最多 64 个字），清空了原来有的写 `unset`，一个字没改的不写、直接下一步；写成了下一步，写不成的红字写核心的原话。都可以不填（项目主人照推荐定）。配置页「通用」里照核心的 `config.schema` 多一组「关于你」，两项照文字项改。
+23b. 标题「AI 怎么认识你」，说明「新会话生效，以后可以在设置里改。都可以不填」。三格，格子之间空一行（同第 21 条）：「AI 用什么语言回复」（核心 P-9 补，2026-10-16：`profile.preferred_reply_language`，`Enter` 开选择窗，同「配置页」第 44 条：「不设」、字表的建议值、「其他…」手写；没设的暗色「不设」；同一天项目主人定：原来叫「回复语言」、排最后，改成这个名字、排第一，进这一步光标停在它上）；「AI 怎么称呼你」（暗色例子「例如：小林」，`Enter` 编辑）；「更多描述（可选）」（暗色「你是做什么的、希望 AI 怎么待你」，`Enter` 开大编辑浮窗写，同第 21a 条，`Ctrl+G` 交给外部编辑器），最后一行「下一步 →」。进这一步先 `config.get profile.preferred_reply_language profile.name profile.about` 照现在写的填好，回复语言的建议值照 `config.schema` 里这一项的 `suggestions`。「下一步」：改了的 `config.set` 写个人设置（`profile.name` 最多 64 个字、`profile.about` 最多 2000 个字、`profile.preferred_reply_language` 最多 64 个字），清空了原来有的写 `unset`，一个字没改的不写、直接下一步；写成了下一步，写不成的红字写核心的原话。都可以不填（项目主人照推荐定）。配置页「通用」里照核心的 `config.schema` 多一组「关于你」，两项照文字项改。
 
 **选预设**
 

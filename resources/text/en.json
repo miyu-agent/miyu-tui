@@ -1457,8 +1457,8 @@
     "profile": {
       "title": "How the AI knows you",
       "sub": "Applies to new sessions. You can change this in settings later. All are optional",
-      "fields": ["What should the AI call you", "More about you (optional)", "Reply language"],
-      "hints": ["e.g. Alex", "What you do and how you'd like the AI to treat you", "Not set"],
+      "fields": ["What language should the AI reply in", "What should the AI call you", "More about you (optional)"],
+      "hints": ["Not set", "e.g. Alex", "What you do and how you'd like the AI to treat you"],
       "other": "Other…",
       "next": "Next",
       "saving": "Saving…"

@@ -104,7 +104,7 @@ pub struct Profile {
     /// 标题、说明。
     #[serde(flatten)]
     pub head: Heading,
-    /// 三格的名字：AI 怎么称呼你、更多描述（可选）、回复语言。
+    /// 三格的名字：AI 用什么语言回复、AI 怎么称呼你、更多描述（可选），照 `profile::KEYS` 的先后。
     pub fields: [String; 3],
     /// 三格空着时暗色写的（回复语言的是「不设」，也是它选择窗的第一行）。
     pub hints: [String; 3],
