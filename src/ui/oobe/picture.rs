@@ -24,12 +24,13 @@ pub fn draw(
     if !figures.shows() {
         return;
     }
-    let look = figures.look(
+    // 换成另一张、新的还在做时先照旧画上一张，不空一帧（2026-10-16 项目主人报：换头像闪一下）。
+    let look = figures.look_held(
+        "oobe-preview",
         FigureKind::Preview,
         &picture.path,
         (None, None),
-        picture.cols,
-        picture.rows,
+        (picture.cols, picture.rows),
     );
     let Look::Ready { key, .. } = look else {
         return;
