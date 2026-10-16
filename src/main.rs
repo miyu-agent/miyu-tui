@@ -21,6 +21,7 @@ mod figures;
 mod focus;
 mod frame_log;
 mod frame_output;
+mod glyph_guard;
 mod history;
 mod human;
 mod ime;
@@ -77,9 +78,10 @@ use app::App;
 use config::Config;
 use core::Update;
 
-/// 全屏终端：每一帧的输出由 frame_output 暂存到准备完成。
-type Screen =
-    ratatui::Terminal<ratatui::backend::CrosstermBackend<frame_output::Output<io::Stdout>>>;
+/// 全屏终端：每一帧的输出由 frame_output 暂存到准备完成；宽度认不准的字照 glyph_guard 送。
+type Screen = ratatui::Terminal<
+    glyph_guard::Guarded<ratatui::backend::CrosstermBackend<frame_output::Output<io::Stdout>>>,
+>;
 
 fn main() -> io::Result<()> {
     let launch = startup::launch(std::env::args().skip(1))?;
@@ -147,8 +149,8 @@ fn main() -> io::Result<()> {
 
 /// 换一块新画布；帧外的输出不暂存。
 fn screen() -> io::Result<Screen> {
-    ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(
-        frame_output::Output::new(stdout()),
+    ratatui::Terminal::new(glyph_guard::Guarded::new(
+        ratatui::backend::CrosstermBackend::new(frame_output::Output::new(stdout())),
     ))
 }
 
@@ -401,7 +403,7 @@ fn frame(
     let started = log.on().then(Instant::now);
     log.begin();
     let mut prep = Duration::ZERO;
-    terminal.backend_mut().writer_mut().begin()?;
+    terminal.backend_mut().inner_mut().writer_mut().begin()?;
     let drawn = terminal.draw(|frame| {
         let at = started.map(|_| Instant::now());
         ui::draw(frame, app);
@@ -418,12 +420,12 @@ fn frame(
     // 藏着的光标也挪到插入点：不留在这一帧最后写的格子（kitty 开了 `cursor_trail` 会拖尾）；显示着的
     // 那一下 ratatui 已经挪过、显示过了。
     let drawn = drawn.map(|_| ()).and_then(|()| {
-        let out = terminal.backend_mut().writer_mut();
+        let out = terminal.backend_mut().inner_mut().writer_mut();
         caret::park(app.screen.caret, out)?;
         pointer.set(app.pointing(), out)
     });
     // 画面、图片和光标都准备好了才送出；画失败了也带上同步结尾。
-    terminal.backend_mut().writer_mut().finish()?;
+    terminal.backend_mut().inner_mut().writer_mut().finish()?;
     // 系统通知的转义序列（kitty 的 OSC 99、OSC 9）：画完一帧再写，一条一次写完，不被别的输出劈开（「系统通知」第 4 条）。
     let mut out = stdout();
     for sequence in app.notifier.outbox() {

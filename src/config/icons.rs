@@ -136,21 +136,26 @@ mod tests {
     }
 
     #[test]
-    fn every_icon_stays_in_the_basic_plane() {
-        // 2026-10-16 项目主人经 ssh 在手机上用：思考的图标原来是 md-atom（U+F0768，第 15 平面的私用区），那边的终端
-        // 认不准它占几格，转圈那一行往上推时在时间线左边留下半个字形。BMP 的私用区它照一格画；出厂的每个图标都只用
-        // BMP 的字（Nerd Font 的 fa、cod、oct 几套都在 BMP 里）。
+    fn every_icon_outside_the_basic_plane_goes_through_the_glyph_guard() {
+        // 2026-10-16 项目主人经 ssh 在手机上用：思考的图标 md-atom（U+F0768，第 15 平面的私用区）那边的终端认不准它占
+        // 几格，转圈那一行往上推时在时间线左边留下半个字形。先换成 BMP 里的字，项目主人看了还是要原来那个：换回来，
+        // 画的时候走 `glyph_guard`（宽度认不准的字单独写、相邻那一格跟着重写）。别的图标照旧只用 BMP 的；BMP 以外的
+        // 只许是 `glyph_guard` 管得着的那几个平面，管不着的（比如第 1 平面的 emoji，有自己的宽度）当场红。
         for set in builtin().unwrap() {
             let mut all = every_icon(&set);
             all.extend([set.pin.as_str(), set.stash.as_str()]);
             for icon in all {
+                let guarded = icon
+                    .chars()
+                    .all(|c| u32::from(c) <= 0xFFFF || crate::glyph_guard::shaky(&c.to_string()));
                 assert!(
-                    icon.chars().all(|c| u32::from(c) <= 0xFFFF),
-                    "{} 这一套的 {icon:?} 不在 BMP 里",
+                    guarded,
+                    "{} 这一套的 {icon:?} 不在 BMP 里，也不归 glyph_guard 管",
                     set.name
                 );
             }
         }
+        assert_eq!(builtin().unwrap()[0].think, "\u{f0768}", "思考的是 md-atom");
     }
 
     #[test]
