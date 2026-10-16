@@ -44,7 +44,7 @@
 |---|---|
 | `MIYU_HOME` | 数据根，照 `store.md` |
 | `MIYU_RESOURCES` | 资源目录：读工具的显示名（`resources/software/basesystem/human/zh.json`） |
-| `MIYU_CORE_BIN` | 核心没在跑时，拿它拉起来（加上 `core`）。只认它，不去 `PATH` 里找 `miyu`：装着旧版的机器上那是旧版 |
+| `MIYU_CORE_BIN` | 核心没在跑时，拿它拉起来（加上 `core`）。只认它，不去 `PATH` 里找 `miyu`：装着旧版的机器上那是旧版。开头的 `~/` 换成家目录（fish 只在词开头展开 `~`，`env MIYU_CORE_BIN=~/…` 交来的是字面的，2026-10-16 项目主人照验收清单起终端时报「找不到核心程序：~/…」） |
 | `DEEPSEEK_API_KEY` | 拉起来的核心继承它 |
 | `MIYU_COLOR` | 手动压色深：`truecolor`、`256`、`16`、`none`（见「主题」第 8 条） |
 | `NO_COLOR` | 有值就不上色，只留加粗、斜体这些修饰（跨工具的约定，比 `MIYU_COLOR` 优先） |
