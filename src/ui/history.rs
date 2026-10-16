@@ -31,7 +31,7 @@ pub fn lines(
     now: SystemTime,
     max: usize,
 ) -> (Chrome, Vec<Row>) {
-    let words = &config.text.history;
+    let words = words(history, config);
     // 边框上的字和框线一个颜色，只有打的字原色（写明：不写的话照框线的颜色）。
     let mut meta = vec![Span::styled(
         words.count.replace("{count}", &matches.len().to_string()),
@@ -62,6 +62,15 @@ pub fn lines(
         out.push((Some(i), panel::item(picked, content, Some(ago), width)));
     }
     (chrome, panel::fit(out, Some(history.selected), max))
+}
+
+/// 列表上的字：输入历史的，或者 `/jump` 的（「跳到说过的话」第 1 条）。
+fn words<'a>(history: &History, config: &'a Config) -> &'a HistoryTexts {
+    if history.jump {
+        &config.text.jump
+    } else {
+        &config.text.history
+    }
 }
 
 /// 多久以前发的：一分钟以内「刚才」，再往后几分钟、几小时、几天（重启以后还在，第 8 条）。

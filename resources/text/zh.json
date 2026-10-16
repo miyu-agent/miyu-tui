@@ -264,6 +264,20 @@
     "days": "{n} 天前",
     "none": "暂无历史记录"
   },
+  "jump": {
+    "title": "跳到",
+    "count": "  {count} 条",
+    "query": " · 搜索：",
+    "empty": "无匹配项",
+    "lines": " · +{count} 行",
+    "more": "⋮ 还有 {count} 行",
+    "hints": "↑/↓ 选择 · Tab 查看全文 · Enter 跳过去 · Esc 关闭",
+    "now": "刚才",
+    "minutes": "{n} 分钟前",
+    "hours": "{n} 小时前",
+    "days": "{n} 天前",
+    "none": "还没有说过的话"
+  },
   "usage": {
     "title": "用量",
     "tabs": [

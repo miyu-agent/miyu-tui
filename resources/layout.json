@@ -55,6 +55,7 @@
   "prompt": "❯ ",
   "menu_rows": 5,
   "history_rows": 8,
+  "jump_flash_ms": 1000,
   "session_rows": 10,
   "session_cwd_width": 24,
   "session_title_width": 36,

@@ -16,6 +16,7 @@ mod effort;
 mod frame;
 mod goal;
 mod jobs;
+mod jump;
 mod widget_page;
 mod widgets;
 

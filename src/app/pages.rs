@@ -61,12 +61,16 @@ impl App {
         }
     }
 
-    /// 每一帧：正在看的会话最上面那一行露进了视口（上一帧画过、第一行就是它），要更早的一页。
+    /// 每一帧：正在看的会话最上面那一行露进了视口（上一帧画过、第一行就是它），要更早的一页；`/jump` 开着时不等露出来
+    /// 就要，整个会话都列（「跳到说过的话」第 2 条）。
     pub(super) fn ask_older(&mut self) {
         let Some(session) = self.talk.transcript.session.clone() else {
             return;
         };
-        if older_due(&self.screen.view, &self.talk.transcript) {
+        let listing = self.typing.history.open && self.typing.history.jump;
+        let due = older_due(&self.screen.view, &self.talk.transcript)
+            || (listing && self.talk.transcript.wants_older());
+        if due {
             self.talk.transcript.asked_older();
             self.link.core.send(Command::Older(session));
         }

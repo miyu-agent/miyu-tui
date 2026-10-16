@@ -47,6 +47,8 @@ pub struct BodyView {
     pub hover_link: Option<String>,
     /// 上一帧第一行露出的是第几行。
     pub first: usize,
+    /// `/jump` 跳到的那一条（条目编号）和亮到几时：它的竖线亮一下（「跳到说过的话」第 3 条）。
+    pub flash: Option<(u64, std::time::Instant)>,
     /// 上一帧画出来的第一行就是正文最上面那一行「正在读更早的…」（[`BodyView::older_on_top`]）：露进视口了，该要更早的一页。
     pub older_shown: bool,
     /// 按过 Ctrl+L：清屏那一刻一共有几行。最底下至少滚到这里，所以清过的视口是空的，往回滚内容还在。
@@ -217,6 +219,13 @@ impl BodyView {
     pub fn follow(&mut self) {
         self.top = None;
         self.auto = false;
+    }
+
+    /// `/jump`：第 `row` 行顶到视口第一行，停在那里不跟着新的字走（和 `PgUp` 翻上去一样）；条目 `id` 的竖线亮到
+    /// `until`（「跳到说过的话」第 3 条）。
+    pub fn jump_to(&mut self, row: usize, id: u64, until: std::time::Instant) {
+        self.scroll_to(row);
+        self.flash = Some((id, until));
     }
 
     /// 她开始下一步（思考、调工具）：长正文替人停着的，回到最底下接着跟；人自己滚上去的不动（`tui.md`「正文」第 1 条）。

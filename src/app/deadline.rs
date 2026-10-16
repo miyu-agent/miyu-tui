@@ -39,6 +39,8 @@ impl App {
             .chain(self.talk.board.todos_until())
             // 核心的清单在建：到点再问（「`@` 文件列表」第 2 条）。
             .chain(self.typing.mention.deadline())
+            // `/jump` 跳到的那一条亮着：到点醒来，画回原来的颜色（「跳到说过的话」第 3 条）。
+            .chain(self.screen.view.flash.map(|(_, until)| until))
             // 链接卡片、mermaid 图的单子上有没发的：马上醒来发（`cards.rs`、`diagrams.rs`）。
             .chain((self.card_asks_pending() || self.diagram_asks_pending()).then(Instant::now))
             // 整份重排没排完的：下一帧接着排（蓝图「正文」第 8 条）。头像的主色在后台取、壁纸在后台找的，好了自己叫醒主循环

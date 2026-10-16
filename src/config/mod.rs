@@ -183,6 +183,8 @@ pub struct Texts {
     pub goal: GoalTexts,
     /// 输入历史列表上的字（蓝图「输入历史列表」）。
     pub history: HistoryTexts,
+    /// `/jump` 的列表上的字，和输入历史列表一样的几格（蓝图「跳到说过的话」）。
+    pub jump: HistoryTexts,
     /// 斜杠命令列表上的字（蓝图「斜杠命令列表」）。
     pub menu: MenuTexts,
     /// 压缩那几行（蓝图「正文」第 9 条）。

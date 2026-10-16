@@ -264,6 +264,20 @@
     "days": "{n}d ago",
     "none": "Nothing sent yet"
   },
+  "jump": {
+    "title": "Jump",
+    "count": "  {count}",
+    "query": " · search: ",
+    "empty": "No matches",
+    "lines": " · +{count} line(s)",
+    "more": "⋮ {count} more line(s)",
+    "hints": "↑/↓ select · Tab full text · Enter jump · Esc close",
+    "now": "just now",
+    "minutes": "{n} min ago",
+    "hours": "{n} h ago",
+    "days": "{n}d ago",
+    "none": "Nothing said in this session yet"
+  },
   "usage": {
     "title": "Usage",
     "tabs": [
