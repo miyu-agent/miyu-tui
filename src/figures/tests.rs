@@ -272,3 +272,59 @@ fn a_kitty_picture_tells_the_terminal_how_many_cells_it_spans() {
     assert!(sent.contains("U=1"), "是 kitty 的虚拟放置");
     assert!(sent.contains("c=4,r=3"), "带占几列几行");
 }
+
+#[test]
+fn a_place_keeps_its_last_picture_until_the_next_one_is_ready() {
+    // 2026-10-16 项目主人报：引导里换头像闪一下。旧图不画、新图还没做好，那一帧整块是空的。
+    let (mut figures, jobs) = figures(8);
+    let look = |f: &mut Figures, source: &str| {
+        f.look_held(
+            "avatar",
+            FigureKind::Preview,
+            source,
+            (None, None),
+            (30, 15),
+        )
+    };
+    look(&mut figures, "a.png");
+    let first = jobs.try_recv().unwrap();
+    figures.done(Done {
+        key: first.key,
+        result: Outcome::Drawn(drawn(4)),
+    });
+    let old = Look::Ready {
+        key: first.key,
+        rows: 4,
+    };
+    assert_eq!(look(&mut figures, "a.png"), old);
+    assert_eq!(look(&mut figures, "b.png"), old, "新的还在做：照旧画上一张");
+    assert_eq!(
+        figures.look(FigureKind::Preview, "b.png", (None, None), 30, 15),
+        Look::Pending,
+        "别处照常：没有这一处的记法"
+    );
+    let second = jobs.try_recv().unwrap();
+    figures.done(Done {
+        key: second.key,
+        result: Outcome::Drawn(drawn(5)),
+    });
+    assert_eq!(
+        look(&mut figures, "b.png"),
+        Look::Ready {
+            key: second.key,
+            rows: 5
+        },
+        "做好了换上"
+    );
+    look(&mut figures, "broken.png");
+    let third = jobs.try_recv().unwrap();
+    figures.done(Done {
+        key: third.key,
+        result: Outcome::Failed,
+    });
+    assert_eq!(
+        look(&mut figures, "broken.png"),
+        Look::Failed,
+        "读不出来的照实交回"
+    );
+}

@@ -87,6 +87,9 @@ pub struct Figures {
     revision: u64,
     /// 画到第几帧：扔图时认哪些这一帧露着。
     frame: u64,
+    /// 画在固定位置的图（头像那一块、引导里的小图），每一处上一张做好的是哪一份：换成另一张、新的还在做时先拿它顶着
+    /// （[`Figures::look_held`]）。
+    held: HashMap<&'static str, u64>,
 }
 
 impl Figures {
@@ -110,6 +113,7 @@ impl Figures {
             keep: keep.max(1),
             revision: 0,
             frame: 0,
+            held: HashMap::new(),
         }
     }
 
@@ -150,6 +154,37 @@ impl Figures {
         }
         self.slots.insert(key, Slot::Pending(job));
         self.stale(same)
+    }
+
+    /// 同 [`Figures::look`]，给画在固定位置 `place` 的图：换成另一张、新的还在做时，交回这一处上一张做好的，不空一帧
+    /// （2026-10-16 项目主人报：引导里换头像闪一下。旧图不画、新图还没做好，那一帧整块是空的）。读不出来的照实交回。
+    pub fn look_held(
+        &mut self,
+        place: &'static str,
+        kind: FigureKind,
+        source: &str,
+        size: Size,
+        (cols, rows): (u16, u16),
+    ) -> Look {
+        let look = self.look(kind, source, size, cols, rows);
+        match look {
+            Look::Ready { key, .. } => {
+                self.held.insert(place, key);
+                look
+            }
+            Look::Pending => self
+                .held
+                .get(place)
+                .and_then(|key| match self.slots.get(key) {
+                    Some(Slot::Ready { rows, .. }) => Some(Look::Ready {
+                        key: *key,
+                        rows: *rows,
+                    }),
+                    _ => None,
+                })
+                .unwrap_or(Look::Pending),
+            _ => look,
+        }
     }
 
     /// 这张图新的尺寸还在做：有做好过的先拿它顶着（不闪「正在画图」），没有的是在做。
@@ -221,6 +256,7 @@ impl Figures {
     pub fn forget(&mut self) {
         self.slots.clear();
         self.latest.clear();
+        self.held.clear();
         self.revision += 1;
     }
 

@@ -45,7 +45,13 @@ pub fn draw(
     far: bool,
 ) {
     let shown = match seen.avatar(place) {
-        Avatar::File(path) => picture(frame, &seen.media.figures, rect, &path, 1.0),
+        Avatar::File(path) => {
+            let at = match place {
+                Place::Home => "home",
+                Place::Sidebar => "sidebar",
+            };
+            picture(frame, (&seen.media.figures, at), rect, &path, 1.0)
+        }
         Avatar::Waiting => Shown::Waiting,
         Avatar::None => Shown::Unable,
     };
@@ -63,7 +69,10 @@ pub fn draw_file(
     path: &Path,
     shown: f64,
 ) -> bool {
-    !matches!(picture(frame, figures, rect, path, shown), Shown::Unable)
+    !matches!(
+        picture(frame, (figures, "oobe"), rect, path, shown),
+        Shown::Unable
+    )
 }
 
 /// 露出几行：一共 `rows` 行露 `shown` 成，往上取整（刚开始就露一行，到 1 整张）。
@@ -71,22 +80,23 @@ fn revealed(rows: u16, shown: f64) -> u16 {
     ((f64::from(rows) * shown.clamp(0.0, 1.0)).ceil() as u16).min(rows)
 }
 
-/// 把图照比例放进 `rect`、居中画，从上往下露出 `shown` 成（首页、侧边栏整张：1）。
+/// 把图照比例放进 `rect`、居中画，从上往下露出 `shown` 成（首页、侧边栏整张：1）。`at` 是画在哪一处：换成另一张、新的
+/// 还在做时先照旧画这一处上一张（[`Figures::look_held`]）。
 fn picture(
     frame: &mut Frame,
-    figures: &RefCell<Figures>,
+    (figures, at): (&RefCell<Figures>, &'static str),
     rect: Rect,
     path: &Path,
     shown: f64,
 ) -> Shown {
     let mut figures = figures.borrow_mut();
     let source = path.display().to_string();
-    let look = figures.look(
+    let look = figures.look_held(
+        at,
         FigureKind::Preview,
         &source,
         (None, None),
-        rect.width,
-        rect.height,
+        (rect.width, rect.height),
     );
     let (key, rows) = match look {
         Look::Ready { key, rows } => (key, rows.min(rect.height)),
