@@ -209,8 +209,6 @@ pub enum Push {
     Todos {
         /// 现在的待办。
         todos: Vec<super::TodoItem>,
-        /// 刚做完的。
-        done: Vec<super::TodoItem>,
     },
     /// 一次请求的用量（`model.called` 的 `usage`，供应商没报的没有这一条）。
     Usage(Usage),
@@ -421,10 +419,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
             out.push(Push::Calls(calls));
         }
         "goal.changed" => out.push(Push::Goal(goal::read(&body["goal"]))),
-        "todos.changed" => out.extend(super::todos::read(body).map(|todos| Push::Todos {
-            todos,
-            done: super::todos::done(body),
-        })),
+        "todos.changed" => out.extend(super::todos::read(body).map(|todos| Push::Todos { todos })),
         kind @ ("question.asked"
         | "tool.approval_requested"
         | "question.answered"

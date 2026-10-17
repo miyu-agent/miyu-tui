@@ -103,22 +103,18 @@ fn an_agent_reports_back_and_runs_again_after_a_message() {
 }
 
 #[test]
-fn a_finished_list_stays_ticked_for_a_while_before_it_folds() {
-    // 2026-10-07 项目主人：todo 做完之后可以保留一会。核心 D-3 补：清空时带着刚做完的（`done`）。
+fn a_finished_list_goes_away_at_once() {
+    // 2026-10-17 项目主人：全部完成之后不要全打勾留一会再消失，直接消失（原来 10-07 定的留 5 秒）。
     use crate::core::TodoItem;
-    let item = |s: &str| TodoItem {
+    let item = |s: &str, status: &str| TodoItem {
         content: s.into(),
-        status: "completed".into(),
+        status: status.into(),
     };
     let mut board = Board::default();
-    let t0 = Instant::now();
-    let linger = Duration::from_secs(5);
-    board.set_todos(&[], &[item("读代码"), item("跑测试")], t0, linger);
-    assert_eq!(board.todo_shown(t0), Some((2, 2)), "全打勾先露着");
-    assert_eq!(board.todos_until(), Some(t0 + linger), "到点醒来收");
-    board.expire_todos(t0 + linger);
-    assert_eq!(board.todo_shown(t0 + linger), None, "到点收掉");
-    // 撤销回到以前、她自己写空的：没有 `done`，当场收。
-    board.set_todos(&[], &[], t0, linger);
-    assert_eq!(board.todo_shown(t0), None);
+    board.set_todos(&[item("读代码", "completed"), item("跑测试", "in_progress")]);
+    assert_eq!(board.todo_shown(), Some((1, 2)), "还有没做完的：露着");
+    board.set_todos(&[item("读代码", "completed"), item("跑测试", "completed")]);
+    assert_eq!(board.todo_shown(), None, "全做完了：当场收");
+    board.set_todos(&[]);
+    assert_eq!(board.todo_shown(), None, "清空了：收");
 }

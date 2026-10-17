@@ -102,10 +102,7 @@ pub(super) fn replayed(
     }
     // 现在的待办（核心 D-3）：订阅回应里带着，补发的事件里没有（`todos.changed` 是瞬时的）。
     if let Some(todos) = super::todos::read(&message["result"])
-        && !notify(wrap(Update::Push(Push::Todos {
-            todos,
-            done: Vec::new(),
-        })))
+        && !notify(wrap(Update::Push(Push::Todos { todos })))
     {
         return false;
     }
