@@ -50,10 +50,14 @@ pub fn count(config: &Config, width: u16) -> usize {
 fn rows(config: &Config, width: u16) -> Vec<Line<'static>> {
     let texts = &config.text.help;
     // 终端自己的在前，核心认的（命令模板、扩展声明的）接在后面；写了参数提示的跟在名字后面。
+    // 核心给了几种写法的（`usage`，O-6 四补：`/goal` 五种）一行一种（2026-10-17 项目主人定）。
     let commands: Vec<(String, String)> = config
         .commands
         .all()
-        .map(|c| {
+        .flat_map(|c| {
+            if !c.usage.is_empty() {
+                return c.usage.clone();
+            }
             let mut names: Vec<String> = std::iter::once(&c.name)
                 .chain(&c.aliases)
                 .map(|n| format!("/{n}"))
@@ -62,7 +66,7 @@ fn rows(config: &Config, width: u16) -> Vec<Line<'static>> {
                 first.push(' ');
                 first.push_str(argument);
             }
-            (names.join(" · "), c.summary.clone())
+            vec![(names.join(" · "), c.summary.clone())]
         })
         .collect();
     let keys: Vec<(String, String)> = texts
@@ -164,5 +168,44 @@ mod tests {
             end.last().unwrap().to_string(),
             rows.last().unwrap().to_string()
         );
+    }
+
+    #[test]
+    fn a_command_with_several_forms_lists_one_per_line() {
+        // 核心 O-6 四补的 usage：/help 一行一种（2026-10-17 项目主人定），命令列表照旧一条一行。
+        let mut config = Config::builtin().unwrap();
+        let goal = crate::core::CoreCommand {
+            name: "goal".into(),
+            aliases: Vec::new(),
+            summary: String::new(),
+            argument: Some("[<目标> | pause | resume | clear]".into()),
+            opens: None,
+            usage: vec![
+                ("/goal".into(), "看进度".into()),
+                (
+                    "/goal <目标>".into(),
+                    "设定长期目标；已经有一个就改它".into(),
+                ),
+                ("/goal pause".into(), "暂停".into()),
+            ],
+        };
+        config.commands.take_core(std::slice::from_ref(&goal));
+        let (_, rows) = lines(&config, 90, 0, usize::MAX);
+        let text: Vec<String> = rows
+            .iter()
+            .map(|l| l.to_string().trim_end().to_string())
+            .collect();
+        for (form, said) in [
+            ("/goal", "看进度"),
+            ("/goal <目标>", "设定长期目标"),
+            ("/goal pause", "暂停"),
+        ] {
+            assert!(
+                text.iter()
+                    .any(|l| l.trim_start().starts_with(&format!("{form} ")) && l.contains(said)),
+                "少了「{form}」：\n{}",
+                text.join("\n")
+            );
+        }
     }
 }

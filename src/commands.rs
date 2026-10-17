@@ -39,6 +39,9 @@ pub struct Spec {
     /// 扩展的整页带的命令：打了就开这一页（核心清单的 `opens`，蓝图「界面块」第 10 条）。
     #[serde(skip)]
     pub opens: Option<crate::widgets::PageRef>,
+    /// 几种写法（核心清单的 `usage`，O-6 四补）：`/help` 一行一种；命令列表照旧一条一行（2026-10-17 项目主人定）。
+    #[serde(skip)]
+    pub usage: Vec<(String, String)>,
 }
 
 /// 回车时输入框里那一行是什么（蓝图「斜杠命令列表」第 4、5 条）。
@@ -142,8 +145,14 @@ impl Commands {
         self.commands.iter().chain(&self.core)
     }
 
-    /// 照核心认的那一份换上（`command.catalog` 的回应）：终端自己有的名字、别名不要，能接参数。
+    /// 照核心认的那一份换上（`command.catalog` 的回应）：终端自己有的名字、别名不要，能接参数。终端自己有、又交给核心办
+    /// 的同名命令（`/goal`），参数提示、几种写法照核心的（2026-10-17 项目主人：菜单照 shell 的语法提要，两个头别各拼各的）。
     pub fn take_core(&mut self, listed: &[crate::core::CoreCommand]) {
+        for spec in &mut self.commands {
+            let same = listed.iter().find(|c| c.name == spec.name);
+            spec.argument = same.and_then(|c| c.argument.clone());
+            spec.usage = same.map(|c| c.usage.clone()).unwrap_or_default();
+        }
         let own = |name: &str| {
             self.commands
                 .iter()
@@ -160,6 +169,7 @@ impl Commands {
                 args: true,
                 argument: c.argument.clone(),
                 opens: c.opens.clone(),
+                usage: c.usage.clone(),
             })
             .collect();
         self.core = core;
@@ -331,6 +341,7 @@ mod tests {
             summary: format!("{name} 的说明"),
             argument: (name == "review").then(|| "<路径>".to_string()),
             opens: None,
+            usage: Vec::new(),
         };
         c.take_core(&[
             core("clear", &[]),
@@ -357,5 +368,35 @@ mod tests {
             at("review") > at("restore"),
             "接在终端自己的后面：{filtered:?}"
         );
+    }
+
+    #[test]
+    fn our_own_goal_takes_the_argument_and_usage_from_the_core() {
+        // 2026-10-17 项目主人：菜单照 shell 的语法提要，两个头别各拼各的；终端自己有的 /goal 照核心那条的参数提示、几种写法。
+        let mut c = commands();
+        let goal = crate::core::CoreCommand {
+            name: "goal".into(),
+            aliases: Vec::new(),
+            summary: "核心的说明".into(),
+            argument: Some("[<目标> | pause | resume | clear]".into()),
+            opens: None,
+            usage: vec![
+                ("/goal".into(), "看进度".into()),
+                ("/goal pause".into(), "暂停".into()),
+            ],
+        };
+        c.take_core(std::slice::from_ref(&goal));
+        let ours = c.find("goal").expect("终端自己的");
+        assert_eq!(ours.run, super::Run::Goal, "还是终端自己的");
+        assert_eq!(ours.summary, "长期目标", "说明照终端的");
+        assert_eq!(
+            ours.argument.as_deref(),
+            Some("[<目标> | pause | resume | clear]")
+        );
+        assert_eq!(ours.usage.len(), 2);
+        assert!(c.core.is_empty(), "核心那条不另列");
+        // 核心不再给（旧核心）：拿掉借来的。
+        c.take_core(&[]);
+        assert!(c.find("goal").unwrap().argument.is_none());
     }
 }

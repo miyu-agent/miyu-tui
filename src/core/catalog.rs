@@ -17,6 +17,9 @@ pub struct CoreCommand {
     pub argument: Option<String>,
     /// 扩展的整页带的命令：打了就开这一页（核心 X-15 下）；别的是 `None`。
     pub opens: Option<crate::widgets::PageRef>,
+    /// 有几种写法的（核心 O-6 四补，`/goal` 有五种）：一种写法、一句说明，照连接的语言；`/help` 一行一种（蓝图
+    /// 「帮助」）。没有的是空的。
+    pub usage: Vec<(String, String)>,
 }
 
 /// 读回应的 `commands`；读不懂的那一条不要。
@@ -38,6 +41,17 @@ pub fn read(result: &Value) -> Vec<CoreCommand> {
                 summary: text(&c["summary"]).unwrap_or_default(),
                 argument: text(&c["argument"]).filter(|a| !a.is_empty()),
                 opens: crate::widgets::PageRef::read(&c["opens"]),
+                usage: c["usage"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|u| {
+                        Some((
+                            text(&u["form"]).filter(|f| !f.is_empty())?,
+                            text(&u["summary"]).unwrap_or_default(),
+                        ))
+                    })
+                    .collect(),
             })
         })
         .collect()
@@ -66,6 +80,7 @@ mod tests {
                     summary: "清空上下文".into(),
                     argument: None,
                     opens: None,
+                    usage: Vec::new(),
                 },
                 CoreCommand {
                     name: "review".into(),
@@ -73,6 +88,7 @@ mod tests {
                     summary: "审一遍代码".into(),
                     argument: Some("<路径>".into()),
                     opens: None,
+                    usage: Vec::new(),
                 },
                 CoreCommand {
                     name: "ci".into(),
@@ -83,7 +99,24 @@ mod tests {
                         package: "ciw".into(),
                         widget: "all".into(),
                     }),
+                    usage: Vec::new(),
                 },
+            ]
+        );
+    }
+
+    #[test]
+    fn several_forms_are_read_in_order() {
+        // 核心 O-6 四补：`usage` 一种写法一句说明，没写写法的不要。
+        let got = read(&json!({"commands": [{"name": "goal", "summary": "长期目标",
+            "argument": "[<目标> | pause]",
+            "usage": [{"form": "/goal", "summary": "看进度"}, {"form": "", "summary": "坏的"},
+                {"form": "/goal pause", "summary": "暂停"}]}]}));
+        assert_eq!(
+            got[0].usage,
+            [
+                ("/goal".to_string(), "看进度".to_string()),
+                ("/goal pause".to_string(), "暂停".to_string())
             ]
         );
     }
