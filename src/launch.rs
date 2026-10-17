@@ -35,7 +35,8 @@ pub struct Env {
     pub path: Option<std::ffi::OsString>,
     /// `$BROWSER`；`None` 是没设。
     pub browser: Option<String>,
-    /// 找桌面文件的几个目录（各自下面的 `applications/`）；`None` 照 `XDG_DATA_HOME`、`XDG_DATA_DIRS`（Linux）。
+    /// 找桌面文件的几个目录（各自下面的 `applications/`）；`None` 照 `XDG_DATA_HOME`、`XDG_DATA_DIRS`。只有 Linux 用。
+    #[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
     pub data_dirs: Option<Vec<std::path::PathBuf>>,
 }
 
