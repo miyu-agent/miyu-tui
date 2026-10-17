@@ -82,9 +82,10 @@ pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
         warn: near(b.warn),
         good: near(b.good),
         md_heading: near(b.md_heading),
-        md_bold: like(neutral, b.md_bold),
+        // 加粗取 primary、文中代码取 tertiary（2026-10-17 项目主人：原来都是中性色，和正文一个颜色）。
+        md_bold: like(primary, b.md_bold),
         md_italic: like(variant, b.md_italic),
-        md_code: like(neutral, b.md_code),
+        md_code: like(third, b.md_code),
         md_link: like(primary, b.md_link),
         md_url: like(primary, b.md_url),
         md_image: like(third, b.md_image),
@@ -176,6 +177,35 @@ mod tests {
                 .min(360.0 - (error.0 - before.0).abs());
             assert!(turned <= 15.5, "{name} 出错的红只偏一点：{turned}");
             assert!((error.2 - before.2).abs() < 1.0, "{name} 出错的红亮度不变");
+        }
+    }
+
+    #[test]
+    fn bold_takes_the_primary_and_inline_code_the_tertiary() {
+        // 2026-10-17 项目主人：跟随头像、跟随壁纸时加粗和文中代码和正文一个颜色；加粗用 primary，文中代码用 tertiary。
+        let near = |a: f64, b: f64| (a - b).abs().min(360.0 - (a - b).abs()) < 10.0;
+        let themes = builtin().unwrap();
+        for name in ["tokyonight-night", "tokyonight-day"] {
+            let (_, base) = themes.iter().find(|(n, _)| n == name).unwrap();
+            let green = overlay(base, 0x2fab34, name.ends_with("night"));
+            let (bold, code, text) = (hct(green.md_bold), hct(green.md_code), hct(green.text));
+            assert!(
+                bold.1 > text.1 + 10.0,
+                "{name} 加粗有颜色：{bold:?}，正文 {text:?}"
+            );
+            assert!(
+                code.1 > text.1 + 10.0,
+                "{name} 文中代码有颜色：{code:?}，正文 {text:?}"
+            );
+            assert!(
+                near(bold.0, hct(green.accent).0),
+                "{name} 加粗是 primary 的色相"
+            );
+            assert!(
+                near(code.0, hct(green.picked).0),
+                "{name} 文中代码是 tertiary 的色相"
+            );
+            assert!(!near(bold.0, code.0), "{name} 两个分得开");
         }
     }
 }
