@@ -33,6 +33,10 @@ pub struct Summary {
     pub agents: [String; 2],
     /// 留言（不打头时）。
     pub messages: [String; 2],
+    /// 记住过（`remember`）：打头的那一格（2026-10-17 项目主人：记住单算一类，搜记忆不用）。
+    pub remembered: [String; 2],
+    /// 记住（不打头时）。
+    pub memories: [String; 2],
     /// 只想过：`{elapsed}` 是想了多久。
     pub thought_for: String,
 }
@@ -65,6 +69,22 @@ pub struct Timeline {
     pub fold: bool,
     /// 哪几样默认铺开全文。
     pub expand: Expand,
+    /// 点开一步画什么，没写的画结果的原文（蓝图「时间线」第 8 条；2026-10-17 项目主人：记忆、知识库的结果是给模型看的
+    /// 英文，点开要画给人看的）。
+    #[serde(default)]
+    pub bodies: HashMap<String, Body>,
+}
+
+/// 点开一步画的东西（`timeline.json` 的 `bodies`）。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Body {
+    /// 点不开：标题那一句就够了。
+    None,
+    /// 这个参数的字。
+    Arg(String),
+    /// 这两个参数（改前、改后）排出来的差异。
+    Diff([String; 2]),
 }
 
 impl Timeline {
@@ -117,6 +137,8 @@ pub enum ToolKind {
     Agent,
     /// 给子代理留言：画法和别的工具一样，收起那一行单算一类（`Messaged 1 agent`）。
     Message,
+    /// 记住（`remember`）：收起那一行单算一类（`Remembered 1 memory`，2026-10-17 项目主人）。
+    Remember,
 }
 
 /// 时间线里哪几样默认铺开全文（`timeline.json` 的 `expand`，蓝图「时间线」第 18 条）。

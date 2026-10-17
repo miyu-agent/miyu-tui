@@ -43,7 +43,7 @@ pub use notes::CompactionTexts;
 pub use notify::{NotifyLook, NotifyTexts};
 pub use open::OpenTexts;
 pub use panels::{HistoryTexts, MenuTexts};
-pub use timeline::{Summary, Timeline, ToolKind};
+pub use timeline::{Body, Summary, Timeline, ToolKind};
 pub use widgets::{WidgetLayout, WidgetMarks};
 pub use words::{JobTexts, ModelTexts, RecapTexts, RenameTexts, UndoFileTexts};
 

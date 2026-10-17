@@ -132,7 +132,7 @@ impl Step {
                 StepKind::Tool { name, .. } => match timeline.kinds.get(name) {
                     Some(ToolKind::Command) => expand.command,
                     Some(ToolKind::Edit) => expand.edit,
-                    Some(ToolKind::Agent | ToolKind::Message) | None => false,
+                    Some(ToolKind::Agent | ToolKind::Message | ToolKind::Remember) | None => false,
                 },
             }
         })
@@ -216,6 +216,8 @@ pub struct Tally {
     pub messages: usize,
     /// 给别的会话留言（`to` 是会话编号，核心 C-5）。
     pub session_messages: usize,
+    /// 记住（`remember`）。
+    pub remembered: usize,
     /// 思考。
     pub thoughts: usize,
     /// 出错。
@@ -258,6 +260,7 @@ impl Tally {
                         tally.session_messages += 1;
                     }
                     Some(ToolKind::Message) => tally.messages += 1,
+                    Some(ToolKind::Remember) => tally.remembered += 1,
                     None => tally.tools += 1,
                 },
             }
@@ -273,7 +276,8 @@ impl Tally {
             + tally.tools
             + tally.agents
             + tally.messages
-            + tally.session_messages;
+            + tally.session_messages
+            + tally.remembered;
         tally.lone = doers == 1;
         // 一段里只有一条命令、它有短标题就写它：和编辑、别的工具同段也写（2026-10-02 项目主人定）。
         // 同段别的工具也可能带 `description`（派子代理），要认准命令那一步。

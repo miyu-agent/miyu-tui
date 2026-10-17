@@ -116,7 +116,9 @@
     "messaged": ["Messaged 1 agent", "Messaged {count} agents"],
     "messaged_sessions": ["Messaged 1 session", "Messaged {count} sessions"],
     "agents": ["1 agent", "{count} agents"],
-    "messages": ["1 message", "{count} messages"]
+    "messages": ["1 message", "{count} messages"],
+    "remembered": ["Remembered 1 memory", "Remembered {count} memories"],
+    "memories": ["1 memory", "{count} memories"]
   },
   "levels": {
     "workspace": "Workspace",

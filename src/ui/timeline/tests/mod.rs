@@ -16,6 +16,7 @@ mod images;
 mod language;
 mod live_tail;
 mod mcp;
+mod memory;
 mod tabs;
 
 /// 一步：从 `start` 秒开始，用了 `took` 秒。

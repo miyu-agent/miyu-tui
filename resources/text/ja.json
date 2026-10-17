@@ -116,7 +116,9 @@
     "messaged": ["サブエージェント 1 件にメッセージ", "サブエージェント {count} 件にメッセージ"],
     "messaged_sessions": ["セッション 1 件にメッセージ", "セッション {count} 件にメッセージ"],
     "agents": ["サブエージェント 1 件", "サブエージェント {count} 件"],
-    "messages": ["メッセージ 1 件", "メッセージ {count} 件"]
+    "messages": ["メッセージ 1 件", "メッセージ {count} 件"],
+    "remembered": ["記憶を 1 件保存", "記憶を {count} 件保存"],
+    "memories": ["記憶 1 件", "記憶 {count} 件"]
   },
   "levels": {
     "workspace": "ワークスペース",

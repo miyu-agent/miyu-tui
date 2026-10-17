@@ -43,8 +43,11 @@ pub fn rows(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
         if !segment.expanded(fold) {
             return out;
         }
-        // 只有一步、人点开了的：直接铺开这一步的内容，连收起那一行一起铺底色（`tui.md`「时间线」第 15 条）。
-        if let [only] = segment.steps.as_slice() {
+        // 只有一步、人点开了的：直接铺开这一步的内容，连收起那一行一起铺底色（`tui.md`「时间线」第 15 条）。这一步点不开的
+        // （忘掉、删文档）没有内容可铺：照下面露出它的标题那一行。
+        if let [only] = segment.steps.as_slice()
+            && openable(only, ctx)
+        {
             out.extend(opened(only, step::style(only, false), ctx));
             for row in &mut out {
                 row.shade = true;
@@ -164,10 +167,21 @@ fn step_rows(target: Target, step: &Step, spinning: bool, ctx: &Ctx) -> Vec<Row>
             out.extend(super::figure_rows::rows(lead, &figure, ctx));
         }
     }
+    // 点不开的：不当成能点的，悬停不变亮、指针不变手。
+    let openable = openable(step, ctx);
     for row in &mut out {
-        row.target = Some(target);
+        row.target = openable.then_some(target);
     }
     out
+}
+
+/// 这一步点得开：`timeline.json` 的 `bodies` 写 `none` 的（忘掉、删文档）点不开，标题那一句就够了。
+fn openable(step: &Step, ctx: &Ctx) -> bool {
+    !matches!(
+        &step.kind,
+        crate::transcript::StepKind::Tool { name, .. }
+            if ctx.config.timeline.bodies.get(name) == Some(&crate::config::Body::None)
+    )
 }
 
 /// 转圈那一格：照帧数取一个，后面空一格。

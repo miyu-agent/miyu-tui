@@ -116,7 +116,9 @@
     "messaged": ["给 1 个子代理留言", "给 {count} 个子代理留言"],
     "messaged_sessions": ["给 1 个会话留言", "给 {count} 个会话留言"],
     "agents": ["1 个子代理", "{count} 个子代理"],
-    "messages": ["1 条留言", "{count} 条留言"]
+    "messages": ["1 条留言", "{count} 条留言"],
+    "remembered": ["记住了 1 条", "记住了 {count} 条"],
+    "memories": ["1 条记忆", "{count} 条记忆"]
   },
   "levels": {
     "workspace": "工作区",
