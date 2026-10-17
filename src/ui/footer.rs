@@ -59,8 +59,11 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
         .map(|p| p.spans.iter().map(Span::width).sum())
         .collect();
     let (left, right, kept) = split(
-        left(seen, false),
-        left(seen, true),
+        [
+            left(seen, false, true),
+            left(seen, true, true),
+            left(seen, true, false),
+        ],
         cells,
         button_w,
         area.width,
@@ -140,20 +143,29 @@ fn button_style(screen: &Screen, at: Rect, focused: bool) -> ratatui::style::Sty
     }
 }
 
-/// 一行怎么分：右边的格子全放得下就照左边全的（`full`）写，不然左边换短的（`short`：模型编号只写最后一段），空出的
-/// 地方给右边；还不够再照 [`choose`] 挑格子（2026-10-11 项目主人定：原来模型编号一长，速度、累计先丢了，中间空着一大截）。
+/// 一行怎么分：左边从全的到窄的三种（`lefts`：全的；模型编号只写最后一段的；再把权限级别的字收掉、只留图标的），右边的
+/// 格子全放得下就用最宽的那种，空出的地方给右边；最窄的也放不下右边全部时再照 [`choose`] 挑格子（2026-10-11 项目主人定：
+/// 原来模型编号一长，速度、累计先丢了，中间空着一大截；2026-10-18 项目主人：窄了「开放权限」这些字可以收，图标留着）。
 /// `button` 是后台按钮连两边的空占几列。交回左边、右边。
 fn split(
-    full: Vec<Span<'_>>,
-    short: Vec<Span<'_>>,
+    lefts: [Vec<Span<'_>>; 3],
     cells: Vec<Part>,
     button: usize,
     width: u16,
 ) -> (Line<'static>, Line<'static>, Vec<bool>) {
     let need = joined_width(&cells);
-    let full_w: usize = full.iter().map(Span::width).sum();
-    let roomy = full_w + GAP + button + need <= usize::from(width);
-    let left = left_line(if roomy { full } else { short }, width);
+    let fits = |spans: &Vec<Span<'_>>| {
+        spans.iter().map(Span::width).sum::<usize>() + GAP + button + need <= usize::from(width)
+    };
+    let [full, short, bare] = lefts;
+    let chosen = if fits(&full) {
+        full
+    } else if fits(&short) {
+        short
+    } else {
+        bare
+    };
+    let left = left_line(chosen, width);
     let room = usize::from(width).saturating_sub(left.width() + GAP + button);
     let kept = choose(&cells, room);
     let right = Line::from(join(cells, &kept));
@@ -236,8 +248,8 @@ fn left_line(spans: Vec<Span<'_>>, width: u16) -> Line<'static> {
 }
 
 /// 左边那一段：权限级别、模型和端点、思考强度。`short`：模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash`
-/// 写 `deepseek-v4.1-flash`），一行放不下时用（[`split`]）。
-fn left<'a>(seen: &Seen<'a>, short: bool) -> Vec<Span<'a>> {
+/// 写 `deepseek-v4.1-flash`）；`named`：权限级别写字，不写的只留图标。一行放不下时用窄的（[`split`]）。
+fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
     let text = &seen.config.text;
     let t = &seen.talk.transcript;
     match &t.link {
@@ -248,7 +260,12 @@ fn left<'a>(seen: &Seen<'a>, short: bool) -> Vec<Span<'a>> {
             let level = t.level;
             let name = text.levels.get(&level).map_or("", String::as_str);
             let icon = seen.config.layout.level_icons.get(&level);
-            let label = format!("{}{name}", icon.map_or("", String::as_str));
+            let label = if named || icon.is_none() {
+                format!("{}{name}", icon.map_or("", String::as_str))
+            } else {
+                // 图标后面带着空格：只留图标的去掉，后面接「 · 模型」。
+                icon.map_or("", String::as_str).trim_end().to_string()
+            };
             let mut spans = vec![Span::styled(label, theme::level(level))];
             // 都在冷却：模型那一格变黄写原因，到点了变回原样（「配置与模型」第 7 条）。
             let now = jiff::Timestamp::now();

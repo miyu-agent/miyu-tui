@@ -111,14 +111,28 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
             part(1, "Σ27.5M(C97.3%)"),
         ]
     };
-    let (left, right, _) = split(full(), short(), cells(), 0, 95);
+    let bare = || {
+        vec![
+            Span::raw("▣"),
+            Span::raw(" · deepseek-v4.1-flash dev · max"),
+        ]
+    };
+    let lefts = || [full(), short(), bare()];
+    let (left, right, _) = split(lefts(), cells(), 0, 95);
     assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
     assert_eq!(
         right.to_string(),
         "41 tok/s · 342.6k/1M(32.7%) · Σ27.5M(C97.3%)"
     );
-    let (left, _, _) = split(full(), short(), cells(), 0, 140);
+    let (left, _, _) = split(lefts(), cells(), 0, 140);
     assert!(left.to_string().contains("clinepass/"), "宽的照旧写全");
+    // 再窄：权限级别的字收掉、只留图标，右边的格子照旧都在（2026-10-18 项目主人）。
+    let (left, right, _) = split(lefts(), cells(), 0, 82);
+    assert_eq!(left.to_string(), "▣ · deepseek-v4.1-flash dev · max");
+    assert_eq!(
+        right.to_string(),
+        "41 tok/s · 342.6k/1M(32.7%) · Σ27.5M(C97.3%)"
+    );
 }
 
 #[test]
