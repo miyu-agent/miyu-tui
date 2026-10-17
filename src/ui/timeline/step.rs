@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 use super::super::diff_rows;
 use super::super::rows::{Ctx, clip};
 use super::lit;
-use crate::config::ToolKind;
+use crate::config::{Body, ToolKind};
 use crate::diff;
 use crate::input::{pieces, tail_pieces};
 use crate::markdown::{Figure, FigureKind};
@@ -100,7 +100,7 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                     label.push_str(&text.on_session.replace("{id}", &id));
                 }
                 // 别的工具后面跟结果那一句（「读取 · src · 12 项」）；命令有预览，编辑有加减的行数，不写。
-                if matches!(kind, None | Some(ToolKind::Message))
+                if matches!(kind, None | Some(ToolKind::Message | ToolKind::Remember))
                     && let Some(said) = said
                     && let Some(text) = ctx.human.say(said)
                 {
@@ -247,7 +247,37 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
         StepKind::Tool { .. } if !step.answers.is_empty() => {
             step.answers.iter().flat_map(|a| each(a, style)).collect()
         }
-        StepKind::Tool { output, parsed, .. } => {
+        StepKind::Tool {
+            output,
+            parsed,
+            name,
+            ..
+        } => {
+            // 照 `timeline.json` 的 `bodies` 画给人看的（记忆、知识库：结果是给模型看的英文）；出错的照下面画为什么。
+            if !step.failed()
+                && let Some(body) = ctx.config.timeline.bodies.get(name)
+            {
+                let rows = |diff: &diff::Diff| {
+                    diff_rows::lines(diff, width, tab)
+                        .into_iter()
+                        .map(|(gutter, content)| Piece {
+                            lead: Some(gutter),
+                            content: vec![content],
+                            joined: false,
+                        })
+                        .collect()
+                };
+                return match body {
+                    Body::None => Vec::new(),
+                    Body::Arg(key) => {
+                        each(step.arg(key).unwrap_or_default().trim(), style).collect()
+                    }
+                    Body::Diff([old, new]) => rows(&diff::compare(
+                        step.arg(old).unwrap_or_default(),
+                        step.arg(new).unwrap_or_default(),
+                    )),
+                };
+            }
             // 出错、被拒的编辑没改成：点开写为什么（结果的字，红），不画差异——绿的 `+` 行看着像写进去了（第 12 条，
             // 2026-10-13 验收 T-101）。没给字的照旧画差异。
             let refused = step.failed() && !output.trim().is_empty();

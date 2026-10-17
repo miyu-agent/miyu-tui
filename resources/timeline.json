@@ -4,7 +4,15 @@
     "edit": "edit",
     "write": "edit",
     "subagent": "agent",
-    "send_message": "message"
+    "send_message": "message",
+    "remember": "remember"
+  },
+  "bodies": {
+    "remember": {"arg": "text"},
+    "forget": "none",
+    "kb_save": {"arg": "text"},
+    "kb_edit": {"diff": ["old", "new"]},
+    "kb_delete": "none"
   },
   "spinner": [
     "⠋",
