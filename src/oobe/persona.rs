@@ -1,4 +1,4 @@
-//! 建人格那一步（「第一次打开的引导」第 21–23 条）：名字、头像、人格提示词、示范对话、人设提醒短语五格，名字必填；「下一步」
+//! 建人格那一步（「第一次打开的引导」第 21–23 条）：名字、简单描述、头像、具体人格提示词、示范对话、人设提醒短语六格，名字必填；「下一步」
 //! 一次 `persona.set` 建好、写成默认人格。已经有默认人格的照它填好，改了的带版本存。人格提示词、人设提醒短语在大编辑浮窗
 //! 里写（`sheet.rs`），示范对话的列表、两格窗也浮在这一步上面（第 21a 条，2026-10-09 项目主人）。
 
@@ -20,6 +20,8 @@ pub enum Slot {
     /// 名字。
     #[default]
     Name,
+    /// 简单描述（`persona.summary`，2026-10-17 项目主人定）：一行字。
+    Summary,
     /// 头像：图片的路径（2026-10-10 项目主人）。
     Avatar,
     /// 人格提示词（2026-10-09 项目主人从「人设」改名）。
@@ -33,8 +35,9 @@ pub enum Slot {
 }
 
 /// 照画的先后。
-pub const SLOTS: [Slot; 6] = [
+pub const SLOTS: [Slot; 7] = [
     Slot::Name,
+    Slot::Summary,
     Slot::Avatar,
     Slot::Prompt,
     Slot::Examples,
@@ -63,6 +66,8 @@ pub struct PairDraft {
 struct Existing {
     id: String,
     name: String,
+    /// 简单描述；没写的是空的。
+    summary: String,
     texts: [Option<String>; 2],
     pairs: Option<Vec<Pair>>,
     versions: [Option<String>; 3],
@@ -80,6 +85,8 @@ struct Existing {
 pub struct PersonaStep {
     /// 名字。
     pub name: Field,
+    /// 简单描述。
+    pub summary: Field,
     /// 头像的路径。
     pub avatar: Field,
     /// 传上去了的头像（`blob.put` 的 `blob`）：路径改了就作废。
@@ -123,6 +130,7 @@ impl Default for PersonaStep {
     fn default() -> Self {
         Self {
             name: Field::line(),
+            summary: Field::line(),
             avatar: Field::line(),
             avatar_blob: None,
             prompt: Field::lines(),
@@ -174,6 +182,7 @@ impl PersonaStep {
     fn field(&mut self, slot: Slot) -> Option<&mut Field> {
         match slot {
             Slot::Name => Some(&mut self.name),
+            Slot::Summary => Some(&mut self.summary),
             Slot::Avatar => Some(&mut self.avatar),
             Slot::Prompt => Some(&mut self.prompt),
             Slot::Reminders => Some(&mut self.reminders),
@@ -244,11 +253,15 @@ impl PersonaStep {
             };
         }
         let at = SLOTS.iter().position(|s| *s == self.focus).unwrap_or(0);
-        // 名称、头像那一格 `Enter` 才开始编辑，编辑时 `Enter` 写好、`Esc` 不改；别的时候都认 vim 的键（第 7 条）。
+        // 名称、简单描述、头像那一格 `Enter` 才开始编辑，编辑时 `Enter` 写好、`Esc` 不改；别的时候都认 vim 的键（第 7 条）。
         if self.name.editing() {
             if self.name.edit(key) == Edit::Done {
                 self.error = None;
             }
+            return Move::Stay;
+        }
+        if self.summary.editing() {
+            self.summary.edit(key);
             return Move::Stay;
         }
         if self.avatar.editing() {
@@ -277,6 +290,7 @@ impl PersonaStep {
                 }
                 Slot::Next => self.save(asker, texts),
                 Slot::Name => self.name.begin(),
+                Slot::Summary => self.summary.begin(),
                 Slot::Avatar => self.avatar.begin(),
             },
             _ => {}
@@ -295,6 +309,11 @@ impl PersonaStep {
                 self.name.begin();
             }
             self.name.paste(text);
+        } else if !self.listing && self.focus == Slot::Summary {
+            if !self.summary.editing() {
+                self.summary.begin();
+            }
+            self.summary.paste(text);
         } else if !self.listing && self.focus == Slot::Avatar {
             // 拖进来的路径：去掉两头的引号（kitty 不加，别的终端多半加）。
             if !self.avatar.editing() {

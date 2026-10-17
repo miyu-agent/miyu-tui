@@ -1409,10 +1409,12 @@
       "sub": "A persona decides how the AI talks and what it remembers. You can change it later in settings",
       "fields": [
         "Name",
-        "Character",
+        "Detailed persona prompt",
         "Example dialogs",
         "Roleplay reminder"
       ],
+      "summary": "Short description",
+      "summary_hint": "One line about this persona",
       "hints": [
         "Give it a name",
         "Who it is, how it talks, how it treats you",
