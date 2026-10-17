@@ -141,3 +141,25 @@ fn a_goal_that_cannot_be_used_says_why() {
     tui.wait_for("长期目标未安装");
     assert!(!tui.shows("核心拒绝"), "{}", tui.lines().join("\n"));
 }
+
+/// 改目标的用法（2026-10-17 项目主人：打 /goal 按 `↑` 调出之前那句改了回车，核心 X-8 再补起再发就是改）：命令列表开着时
+/// `↑` 也照打的字开头翻输入历史，别的话跳过；`Ctrl+K` 照旧在列表里挪。
+#[test]
+fn typing_goal_then_up_brings_back_the_last_goal_with_its_words() {
+    let home = Home::with_tools(Script::new([Play::Holds]), "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("/goal 把测试写完");
+    tui.wait_for("已设定长期目标");
+    tui.type_text("/goal");
+    tui.wait_for("命令 1 条");
+    tui.key(b"\x1b[A");
+    tui.wait_for("❯ /goal 把测试写完");
+    assert!(
+        !tui.shows("命令 1 条"),
+        "翻出来的不弹命令列表：\n{}",
+        tui.lines().join("\n")
+    );
+    tui.key(b"\x1b[B");
+    tui.wait_for("命令 1 条");
+}
