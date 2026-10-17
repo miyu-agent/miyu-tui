@@ -49,16 +49,9 @@ impl More {
 
     /// 对得上搜索的几家，照名字排。
     pub fn matches(&self) -> Vec<&Provider> {
-        let query = self.filter.text().trim().to_lowercase();
-        self.all
-            .iter()
-            .flatten()
-            .filter(|p| {
-                query.is_empty()
-                    || p.name.to_lowercase().contains(&query)
-                    || p.catalog.to_lowercase().contains(&query)
-            })
-            .collect()
+        let query = self.filter.text();
+        let all = self.all.iter().flatten().collect();
+        crate::fuzzy::rank(query, all, |p| vec![p.name.as_str(), p.catalog.as_str()])
     }
 
     /// 按了一个键：上下挪（跳过接不上的），`Enter` 选，`Esc` 关，别的照打字筛。

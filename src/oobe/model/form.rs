@@ -147,10 +147,8 @@ pub struct Models {
 impl Models {
     /// 照搜索的字对得上的，照原来的先后。
     pub fn matches(&self) -> Vec<&String> {
-        let query = self.filter.text().to_lowercase();
-        self.names
-            .iter()
-            .filter(|n| query.is_empty() || n.to_lowercase().contains(&query))
-            .collect()
+        crate::fuzzy::rank(self.filter.text(), self.names.iter().collect(), |n| {
+            vec![n.as_str()]
+        })
     }
 }

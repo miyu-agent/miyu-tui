@@ -144,9 +144,9 @@ impl Nav {
         view.providers
             .iter()
             .filter(|p| {
-                filter.as_ref().is_none_or(|f| {
-                    p.id.to_lowercase().contains(f) || p.shown().to_lowercase().contains(f)
-                })
+                filter
+                    .as_ref()
+                    .is_none_or(|f| crate::fuzzy::hit(f, [p.id.as_str(), p.shown()]))
             })
             .collect()
     }
@@ -180,7 +180,7 @@ impl Nav {
             .filter(|m| {
                 filter
                     .as_ref()
-                    .is_none_or(|f| m.name.to_lowercase().contains(f))
+                    .is_none_or(|f| crate::fuzzy::hit(f, [m.name.as_str()]))
             })
             .collect()
     }
@@ -203,7 +203,7 @@ impl Nav {
             .filter(|p| {
                 filter
                     .as_ref()
-                    .is_none_or(|f| p.name.to_lowercase().contains(f))
+                    .is_none_or(|f| crate::fuzzy::hit(f, [p.name.as_str()]))
             })
             .collect()
     }

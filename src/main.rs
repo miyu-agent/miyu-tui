@@ -21,6 +21,7 @@ mod figures;
 mod focus;
 mod frame_log;
 mod frame_output;
+mod fuzzy;
 mod glyph_guard;
 mod history;
 mod human;
