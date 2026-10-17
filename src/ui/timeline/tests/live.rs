@@ -143,3 +143,26 @@ fn steps_in_a_limited_running_segment_cannot_be_opened() {
         "关掉封顶：照常点"
     );
 }
+
+#[test]
+fn a_step_still_being_prepared_cannot_be_opened() {
+    // 2026-10-18 项目主人：「准备 xx」那一行不能点开，参数还在流、没什么可看的。
+    let mut f = Fixture::new();
+    f.config.timeline.limit_live = false;
+    let t0 = Instant::now();
+    let mut seg = segment(
+        vec![
+            command(t0, 0, ToolStatus::Ok),
+            super::pending(crate::transcript::ToolState::Preparing),
+        ],
+        None,
+    );
+    seg.finished = false;
+    let got = rows(0, &seg, &f.ctx());
+    let step = |j| {
+        got.iter()
+            .any(|r| r.target == Some(crate::ui::rows::Target::Step(0, j)))
+    };
+    assert!(step(0), "做完的照常能点");
+    assert!(!step(1), "准备中的点不开");
+}

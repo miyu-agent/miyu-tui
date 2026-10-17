@@ -182,12 +182,16 @@ fn step_rows(target: Target, step: &Step, spinning: bool, ctx: &Ctx) -> Vec<Row>
     out
 }
 
-/// 这一步点得开：`timeline.json` 的 `bodies` 写 `none` 的（忘掉、删文档）点不开，标题那一句就够了；`detail` 是空的
+/// 这一步点得开：「准备 xx」的点不开；`timeline.json` 的 `bodies` 写 `none` 的（忘掉、删文档）点不开，标题那一句就够了；`detail` 是空的
 /// （翻记忆、查知识库没找到，核心给空列表）也点不开，标题已经写了「没找到」。
 fn openable(step: &Step, ctx: &Ctx) -> bool {
-    let crate::transcript::StepKind::Tool { name, .. } = &step.kind else {
+    let crate::transcript::StepKind::Tool { name, state, .. } = &step.kind else {
         return true;
     };
+    // 「准备 xx」：参数还在流，没什么可看的（2026-10-18 项目主人）。
+    if *state == crate::transcript::ToolState::Preparing {
+        return false;
+    }
     match ctx.config.timeline.bodies.get(name) {
         Some(crate::config::Body::None) => false,
         Some(body) => !step.detail.as_ref().is_some_and(|d| detail::empty(body, d)),
