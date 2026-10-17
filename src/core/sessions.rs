@@ -94,6 +94,33 @@ pub fn change(params: &Value) -> Option<Change> {
     Some(entry(&params["entry"]).map_or(Change::Removed(session), Change::Entry))
 }
 
+/// 发了删除、核心还没推来「删掉了」的会话（蓝图「会话列表」第 2 条，2026-10-18 项目主人报多选删除时列表跳动）：核心一个
+/// 一个推「删掉了」，每推一个界面照手上那一份整份换上列表；手上那一份没拿掉、或者删完以前推来了它们的整项，删了的又回到
+/// 列表里，列表一会儿长一会儿短。
+#[derive(Debug, Default)]
+pub struct Deleting(std::collections::HashSet<String>);
+
+impl Deleting {
+    /// 删这几个：手上那一份当场拿掉，记着。
+    pub fn start(&mut self, seen: Option<&mut Vec<SessionInfo>>, gone: &[String]) {
+        if let Some(seen) = seen {
+            seen.retain(|s| !gone.contains(&s.session));
+        }
+        self.0.extend(gone.iter().cloned());
+    }
+
+    /// 推来的变化要不要：删着的整项不要；它的「删掉了」到了就不再算删着的。
+    pub fn admits(&mut self, change: &Change) -> bool {
+        match change {
+            Change::Entry(info) => !self.0.contains(&info.session),
+            Change::Removed(session) => {
+                self.0.remove(session);
+                true
+            }
+        }
+    }
+}
+
 /// 照一条变化改列表。
 pub fn apply(list: &mut Vec<SessionInfo>, change: Change) {
     match change {
@@ -107,6 +134,36 @@ pub fn apply(list: &mut Vec<SessionInfo>, change: Change) {
 
 #[cfg(test)]
 mod tests {
+    use super::{Change, Deleting, SessionInfo, apply};
+
+    fn info(session: &str) -> SessionInfo {
+        SessionInfo {
+            session: session.into(),
+            ..SessionInfo::default()
+        }
+    }
+
+    #[test]
+    fn deleted_sessions_do_not_come_back_while_the_core_reports_them_one_by_one() {
+        // 2026-10-18 项目主人报多选删除时列表跳动。
+        let mut seen: Vec<SessionInfo> = ["a", "b", "c", "d"].iter().map(|s| info(s)).collect();
+        let ids = |seen: &[SessionInfo]| seen.iter().map(|s| s.session.clone()).collect::<Vec<_>>();
+        let mut deleting = Deleting::default();
+        deleting.start(Some(&mut seen), &["b".into(), "c".into()]);
+        assert_eq!(ids(&seen), ["a", "d"], "当场拿掉");
+        // 核心先推 b 删掉了：c 不回来。
+        let b = Change::Removed("b".into());
+        assert!(deleting.admits(&b));
+        apply(&mut seen, b);
+        assert_eq!(ids(&seen), ["a", "d"]);
+        // c 删完以前推来它的整项：不要。
+        assert!(!deleting.admits(&Change::Entry(info("c"))));
+        // c 删掉了以后，同一个编号再来的照常收（不会再有，防它记一辈子）。
+        assert!(deleting.admits(&Change::Removed("c".into())));
+        assert!(deleting.admits(&Change::Entry(info("c"))));
+        assert!(deleting.admits(&Change::Entry(info("a"))), "别的照常");
+    }
+
     use serde_json::json;
 
     use super::read;
