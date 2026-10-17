@@ -83,9 +83,9 @@
     {
       "name": "goal",
       "summary": {
-        "zh": "长期目标：/goal <目标> 设定，只打 /goal 看进度",
-        "en": "Long-running goal: /goal <goal> sets one, /goal alone shows progress",
-        "ja": "長期目標：/goal <目標> で設定、/goal だけで進み具合を表示"
+        "zh": "长期目标",
+        "en": "Long-running goal",
+        "ja": "長期目標"
       },
       "run": "goal",
       "args": true
