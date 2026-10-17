@@ -117,8 +117,8 @@ fn a_long_list_shows_only_what_is_in_progress() {
 }
 
 #[test]
-fn a_short_list_folds_what_is_done_as_soon_as_one_is_done() {
-    // 2026-10-17 项目主人：做完的四项一直划着线挂着，只剩一项没做；做完一项就收进「已完成」，不等放不下。
+fn a_short_list_folds_what_is_done_once_two_are_done() {
+    // 2026-10-17 项目主人：做完的四项一直划着线挂着，只剩一项没做；做完两项就收进「已完成」，不等放不下。
     let config = Config::builtin().unwrap();
     let lines = |board: &Board| -> Vec<String> {
         todo_lines(board, &config, 30, 5, false)
@@ -126,10 +126,14 @@ fn a_short_list_folds_what_is_done_as_soon_as_one_is_done() {
             .map(|l| l.to_string())
             .collect()
     };
+    let text = lines(&long_board(2, 2));
+    assert_eq!(text[1], "☑ 已完成 2 项", "{text:?}");
+    assert!(text[2].starts_with("■ 第 2 项"), "{text:?}");
+    assert_eq!(text.len(), 5, "标题、已完成、没做完的三项");
+    // 只做完一项：不收，照原样一行打勾（同一天项目主人补）。
     let text = lines(&long_board(1, 3));
-    assert_eq!(text[1], "☑ 已完成 1 项", "{text:?}");
-    assert!(text[2].starts_with("■ 第 1 项"), "{text:?}");
-    assert_eq!(text.len(), 6, "标题、已完成、没做完的四项");
+    assert!(text[1].starts_with("☑ 第 0 项"), "{text:?}");
+    assert_eq!(text.len(), 6, "标题和五项");
     // 一项都没做完：放得下的一项一行。
     let text = lines(&long_board(0, 4));
     assert_eq!(text.len(), 6, "标题和五项");
