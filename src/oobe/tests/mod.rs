@@ -253,3 +253,23 @@ fn the_semantic_step_shows_only_with_the_package() {
     oobe.answer(tag, Ok(json!({})), t0, &texts);
     assert_eq!(oobe.step, Step::Done);
 }
+
+#[test]
+fn keeping_the_semantic_setting_as_it_is_writes_nothing() {
+    // 同网页（2026-10-18 shorin-ee）：选的和现在的一样不写个人设置；没写过的算「是」。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    oobe.semantic.installed = Some(true);
+    oobe.step = Step::Sandbox;
+    oobe.moved(super::Move::Next, t0);
+    assert_eq!(oobe.step, Step::Semantic);
+    let (read, _) = find(&asks(&mut oobe), "config.get");
+    oobe.answer(read, Ok(json!({"items": {}})), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(
+        asks(&mut oobe).iter().all(|(_, m, _)| *m != "config.set"),
+        "没改的不写"
+    );
+    assert_eq!(oobe.step, Step::Done);
+}

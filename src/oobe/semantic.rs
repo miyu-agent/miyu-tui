@@ -27,6 +27,8 @@ pub struct SemanticStep {
     pub error: Option<String>,
     /// 装没装：问到以前是 `None`。
     pub installed: Option<bool>,
+    /// 现在写的是哪一行（没写过的是「是」）：选的和它一样不写（同网页）。
+    current: usize,
     asked: bool,
     entered: bool,
 }
@@ -38,6 +40,7 @@ impl Default for SemanticStep {
             busy: false,
             error: None,
             installed: None,
+            current: 0,
             asked: false,
             entered: false,
         }
@@ -84,6 +87,9 @@ impl SemanticStep {
             return Move::Stay;
         }
         if key.code == KeyCode::Enter {
+            if self.pick.selected == self.current {
+                return Move::Next;
+            }
             let value = VALUES[self.pick.selected.min(VALUES.len() - 1)];
             let params = json!({"layer": "personal", "changes": [{"key": KEY, "value": value}]});
             self.error = None;
@@ -116,13 +122,17 @@ impl SemanticStep {
                     .and_then(|g| g["items"][KEY]["value"].as_str().map(str::to_string));
                 if let Some(at) = value.and_then(|v| VALUES.iter().position(|x| *x == v)) {
                     self.pick.selected = at;
+                    self.current = at;
                 }
                 Move::Stay
             }
             Waiting::SemanticSave => {
                 self.busy = false;
                 match result {
-                    Ok(_) => Move::Next,
+                    Ok(_) => {
+                        self.current = self.pick.selected;
+                        Move::Next
+                    }
                     Err(refusal) => {
                         self.error = Some(crate::settings::pages::target::said(&refusal));
                         Move::Stay
