@@ -339,6 +339,8 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
         }
         ("toggle", Value::Bool(on)) => texts.toggle[usize::from(!*on)].clone(),
         (_, Value::String(s)) => s.clone(),
+        // 空列表同没设（「配置页」第 47 条：删光了写的是空列表）。
+        (_, Value::Array(list)) if list.is_empty() => "—".to_string(),
         (_, Value::Array(list)) => list
             .iter()
             .map(|v| v.as_str().map_or_else(|| v.to_string(), str::to_string))

@@ -138,3 +138,19 @@ fn closing_untouched_saves_nothing_and_text_elements_stay_text() {
     press(&mut page, KeyCode::Enter);
     assert_eq!(items(&page), [json!("早"), json!("42")], "字的列表照字存");
 }
+
+#[test]
+fn an_empty_list_reads_like_an_unset_one() {
+    let words = texts().more;
+    let page = opened("text", json!([]));
+    let item = page.more.schema.as_ref().unwrap().items[0].clone();
+    assert_eq!(
+        crate::settings::pages::shown(&item, &json!([]), None, &words),
+        "—",
+        "删光了的那一行不是空白"
+    );
+    assert_eq!(
+        crate::settings::pages::shown(&item, &json!(["早", "晚"]), None, &words),
+        "早、晚"
+    );
+}
