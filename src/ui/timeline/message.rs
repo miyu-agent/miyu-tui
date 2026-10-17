@@ -1,6 +1,5 @@
-//! 点开一条留言（`send_message`，蓝图「时间线」第 8 条，2026-10-18 项目主人：原来只有「Message sent to 35106d22.」）：先一行
-//! 暗的「→ 发给谁」——别的会话写它的标题和短编号，子代理写它的名字和任务编号，父会话写「父会话」——下面接完整的消息，带了
-//! 附件的再一行写文件名。
+//! 留言（`send_message`，蓝图「时间线」第 8 条，2026-10-18 项目主人）：标题写「留言 · 发给谁 · 消息开头」，点开是完整的
+//! 消息和附件。原来标题是「留言 · 会话 xxxx · 送到了：xxxx」，点开只有「Message sent to 35106d22.」。
 
 use ratatui::style::Style;
 
@@ -10,18 +9,14 @@ use crate::session_list::{looks_like_session, short};
 use crate::theme;
 use crate::transcript::Step;
 
-/// 排成一行行；`each` 把一段字照宽度折成行。
-pub fn pieces(
-    step: &Step,
-    style: Style,
-    ctx: &Ctx,
-    each: &dyn Fn(&str, Style) -> Vec<Piece>,
-) -> Vec<Piece> {
+/// 发给谁：别的会话「会话 短编号 · 标题」，子代理「任务编号 · 名字」，父会话「父会话」。
+fn target(step: &Step, ctx: &Ctx) -> String {
     let texts = &ctx.config.text;
     let to = step.arg("to").unwrap_or_default().trim();
-    let target = if to == "parent" {
-        texts.to_parent.clone()
-    } else if looks_like_session(to) {
+    if to == "parent" {
+        return texts.to_parent.clone();
+    }
+    if looks_like_session(to) {
         let id = texts.on_session.replace("{id}", &short(to));
         let title = ctx
             .sessions
@@ -29,18 +24,35 @@ pub fn pieces(
             .find(|s| s.session == to)
             .and_then(|s| s.title.as_deref())
             .filter(|t| !t.trim().is_empty());
-        title.map_or(id.clone(), |t| format!("{} · {id}", t.trim()))
-    } else {
-        let name = ctx
-            .board
-            .and_then(|b| b.jobs.iter().find(|j| j.job == to))
-            .map(|j| j.title.clone());
-        name.map_or(to.to_string(), |n| {
-            format!("{} · {to}", texts.drawer.agent.replace("{name}", &n))
-        })
-    };
-    let mut out = each(&format!("→ {target}"), theme::dim());
-    out.extend(each(step.arg("message").unwrap_or_default().trim(), style));
+        return title.map_or(id.clone(), |t| format!("{id} · {}", t.trim()));
+    }
+    let name = ctx
+        .board
+        .and_then(|b| b.jobs.iter().find(|j| j.job == to))
+        .map(|j| j.title.clone());
+    name.map_or(to.to_string(), |n| format!("{to} · {n}"))
+}
+
+/// 标题里名字后面那一截（2026-10-18 项目主人：「留言 · 会话 xxxx · 会话名称 · 消息开头」）：发给谁，再接消息的第一行，
+/// 太长的由那一行截掉加 `…`。不再接结果那一句（「送到了：xxxx」和前面重了）。
+pub fn title(step: &Step, ctx: &Ctx) -> String {
+    let message = step.arg("message").unwrap_or_default();
+    let first = message.lines().map(str::trim).find(|l| !l.is_empty());
+    match first {
+        Some(line) => format!("{} · {line}", target(step, ctx)),
+        None => target(step, ctx),
+    }
+}
+
+/// 点开：完整的消息，带了附件的再一行写文件名；`each` 把一段字照宽度折成行。
+pub fn pieces(
+    step: &Step,
+    style: Style,
+    ctx: &Ctx,
+    each: &dyn Fn(&str, Style) -> Vec<Piece>,
+) -> Vec<Piece> {
+    let texts = &ctx.config.text;
+    let mut out = each(step.arg("message").unwrap_or_default().trim(), style);
     let files: Vec<String> = step_files(step);
     if !files.is_empty() {
         let names = files.join("、");
