@@ -140,7 +140,10 @@ fn pinning_moves_it_to_the_top() {
     tui.key(CTRL_P);
     tui.wait_for("已置顶");
     let shown = rows(&tui);
-    assert!(shown[0].contains("第 3 号的话"), "正在用的排第一：{shown:?}");
+    assert!(
+        shown[0].contains("第 3 号的话"),
+        "正在用的排第一：{shown:?}"
+    );
     assert!(
         shown[1].contains("第 1 号的话"),
         "置顶的旧会话接着：{shown:?}"
