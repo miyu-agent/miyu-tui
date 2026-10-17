@@ -260,6 +260,8 @@ impl Tally {
                         tally.session_messages += 1;
                     }
                     Some(ToolKind::Message) => tally.messages += 1,
+                    // 出错、被拒的没记成：算工具（同编辑；和核心视图的 group summary 同一个算法，9-8 十补）。
+                    Some(ToolKind::Remember) if step.failed() => tally.tools += 1,
                     Some(ToolKind::Remember) => tally.remembered += 1,
                     None => tally.tools += 1,
                 },
