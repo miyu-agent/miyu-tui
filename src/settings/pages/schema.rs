@@ -23,6 +23,8 @@ pub struct Item {
     pub key: String,
     /// 控件：`select`、`toggle`、`number`、`text`、`list`、`secret`、`custom:…`。
     pub control: String,
+    /// 类型（`config.schema` 的 `type`）：`text`、`int`、`secret`、`list` 这些（密钥照它认，「配置页」第 48 条）。
+    pub kind: String,
     /// 列表的元素的类型（`list`，「配置页」第 47 条）：`text`、`int`、`secret` 这些；别的控件是空的。
     pub element: String,
     /// 下拉加「其他」手写的建议值（`combo`，核心 P-9 补：字表照连接的语言给，照先后）；别的控件是空的。
@@ -166,6 +168,7 @@ impl Schema {
             .map(|i| Item {
                 key: text(&i["key"]),
                 control: text(&i["control"]),
+                kind: text(&i["type"]),
                 element: text(&i["element"]),
                 suggestions: i["suggestions"]
                     .as_array()

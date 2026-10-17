@@ -16,6 +16,7 @@ pub mod personas;
 pub mod preset_edit;
 pub mod presets;
 pub mod schema;
+pub mod secret;
 pub mod target;
 pub mod textarea;
 
@@ -319,6 +320,10 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
     {
         return name.clone();
     }
+    // 密钥：只写设了没设，不露引用（第 48 条）。
+    if secret::is_secret(item) {
+        return texts.secret[usize::from(value.is_null())].clone();
+    }
     match (item.control.as_str(), value) {
         // 默认人格没设：就是无人格。
         (_, Value::Null) if item.key == DEFAULT_PERSONA => texts.no_persona.clone(),
@@ -332,7 +337,6 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
             format!("{}…", s.lines().next().unwrap_or_default())
         }
         ("toggle", Value::Bool(on)) => texts.toggle[usize::from(!*on)].clone(),
-        ("secret", v) => texts.secret[usize::from(v.is_null())].clone(),
         (_, Value::String(s)) => s.clone(),
         (_, Value::Array(list)) => list
             .iter()

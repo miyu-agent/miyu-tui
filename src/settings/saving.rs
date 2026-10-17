@@ -29,7 +29,11 @@ impl Settings {
         {
             return;
         }
-        let secrets = self.draft.secrets(data);
+        // 密钥的名字带这一刻的毫秒数（「配置页」第 48 条，同网页）。
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX));
+        let secrets = self.draft.secrets(data, now);
         self.close_after_save = close;
         self.named.clear();
         self.say(texts.status("saving"), Tone::Busy);
@@ -37,9 +41,9 @@ impl Settings {
             self.send_config();
         } else {
             self.secrets_left = secrets.len();
-            for (provider, name, value) in secrets {
+            for (key, name, value) in secrets {
                 let params = json!({"name": name, "value": value});
-                self.ask("secret.set", params, Waiting::Secret(provider, name));
+                self.ask("secret.set", params, Waiting::Secret(key, name));
             }
         }
     }
@@ -68,7 +72,7 @@ impl Settings {
 
     pub(super) fn secret_saved(
         &mut self,
-        provider: String,
+        key: String,
         name: String,
         result: Result<Value, Refusal>,
     ) {
@@ -77,7 +81,7 @@ impl Settings {
             // 2026-10-11）。存进去的 key 留在密钥库里，下次存照样用得上。
             Ok(_) if self.secrets_left == 0 => {}
             Ok(_) => {
-                self.named.push((provider, name));
+                self.named.push((key, name));
                 self.secrets_left -= 1;
                 if self.secrets_left == 0 && !self.draft.is_empty() {
                     self.send_config();

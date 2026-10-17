@@ -1,4 +1,4 @@
-//! 新几页的悬浮窗（蓝图「配置页」第 33、34、36、38 条）：下拉的选择窗（现在的值前面一个点，选不了的暗着、后面黄字写
+//! 新几页的悬浮窗（蓝图「配置页」第 33、34、36、38、48 条）：下拉的选择窗（现在的值前面一个点，选不了的暗着、后面黄字写
 //! 原因，画法在 `ui/floating.rs`，引导的主题那一步也用它）、填一行字的编辑窗、人格的窗、预设的窗。和别的悬浮窗一个底、一个
 //! 排法（`ui/floating.rs` 的 `Lines`）。
 
@@ -10,6 +10,8 @@ use super::popup::{Body, Lines};
 use crate::features;
 use crate::settings::pages::choose::{LineEdit, PersonaView, PresetView};
 use crate::settings::pages::preset_edit::{Field, fields};
+use crate::settings::pages::secret::masked;
+use crate::settings::pages::target::Target;
 use crate::settings::pages::textarea::SheetEdit;
 use crate::settings::{Settings, Texts};
 use crate::theme;
@@ -19,16 +21,19 @@ pub(super) fn line(lines: &mut Lines, edit: &LineEdit, texts: &Texts) {
     lines.title(edit.title.clone(), String::new());
     let typed = edit.editor.text();
     let before = &typed[..edit.editor.cursor().min(typed.len())];
+    // 密钥（「配置页」第 48 条）：一个字一个 `•`。
+    let (typed, before) = if edit.target == Target::Secret {
+        (masked(typed), masked(before))
+    } else {
+        (typed.to_string(), before.to_string())
+    };
     let style = Style::new().add_modifier(Modifier::UNDERLINED);
     lines.caret = Some((
         lines.body.len(),
         2 + u16::try_from(before.width()).unwrap_or(0),
     ));
     lines.body.push(Body {
-        line: Line::from(vec![
-            Span::raw("  "),
-            Span::styled(typed.to_string(), style),
-        ]),
+        line: Line::from(vec![Span::raw("  "), Span::styled(typed, style)]),
         focused: true,
         hit: None,
     });

@@ -239,6 +239,9 @@ impl Settings {
         } else {
             item.control.as_str()
         };
+        if super::secret::is_secret(&item) {
+            return self.open_secret(&item);
+        }
         match control {
             "select" => {
                 let list = choices(&item, self.more.named(&item.key), &texts.more);
@@ -442,6 +445,7 @@ impl Settings {
         }
         if !self.model_or_write(&target, key, &value)
             && !self.list_write(&target, &value, texts)
+            && !self.secret_write(&target, key, &value, texts)
             && !self.combo_write(&target, key, &value)
             && !self.preset_write(target.clone(), key, value.clone())
             && !self.avatar_write(target.clone(), &value)

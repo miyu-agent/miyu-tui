@@ -42,6 +42,8 @@ pub enum Target {
     Combo,
     /// 列表的一条（「配置页」第 47 条）：改第几条，`None` 是新加；写好、`Esc` 回到列表窗。
     ListItem(Box<super::list::ListEdit>, Option<usize>),
+    /// 密钥项（「配置页」第 48 条）：编辑窗里的字遮住，存的时候先存进密钥库、再写引用。
+    Secret,
     /// 跟随头像的「主色」：写这个人格的主题色（`persona.set` 的 `seed`，存在人格上，两个头看到的是同一个；2026-10-14）。
     PersonaSeed(String),
 }
