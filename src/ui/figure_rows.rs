@@ -203,6 +203,8 @@ mod tests {
             level: Level::Workspace,
             screen_rows: 40,
             replaced: Default::default(),
+            sessions: &[],
+            board: None,
         };
         let math = figure(&config, "$$\\frac{a+1}{b}$$");
         // 终端显示不了图：写成 Unicode，分式上下摞。
@@ -279,6 +281,8 @@ mod tests {
             level: Level::Workspace,
             screen_rows: 40,
             replaced: Default::default(),
+            sessions: &[],
+            board: None,
         };
         let graph = figure(&config, "```mermaid\ngraph TD\nA-->B\n```");
         // 没回来：一行占位，单子上有这份源码，只问一次。
@@ -366,6 +370,8 @@ mod tests {
             level: Level::Workspace,
             screen_rows: 45,
             replaced: Default::default(),
+            sessions: &[],
+            board: None,
         };
         let dir = std::env::temp_dir().join(format!("miyu-room-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
@@ -429,6 +435,8 @@ mod tests {
             level: Level::Workspace,
             screen_rows: 45,
             replaced: Default::default(),
+            sessions: &[],
+            board: None,
         };
         let dir = std::env::temp_dir().join(format!("miyu-spill-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();

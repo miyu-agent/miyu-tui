@@ -113,6 +113,10 @@ pub struct Ctx<'a> {
     pub screen_rows: u16,
     /// 后来同一个路径又展示过的那几条（编号）：缩成一行「已更新」（蓝图「展示」第 5 条）。
     pub replaced: std::collections::HashSet<u64>,
+    /// 会话列表（核心推来的那一份）：发给别的会话的那一步点开写它的标题。
+    pub sessions: &'a [crate::core::SessionInfo],
+    /// 这个会话的后台任务：发给子代理的那一步点开写它的名字。
+    pub board: Option<&'a crate::jobs::Board>,
 }
 
 impl Ctx<'_> {

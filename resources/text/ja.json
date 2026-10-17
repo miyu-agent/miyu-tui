@@ -82,6 +82,8 @@
   "prepare": "{name}を準備中",
   "on_session": "セッション {id}",
   "on_page": "{page} ページ",
+  "to_parent": "親セッション",
+  "attached": "添付：{names}",
   "omitted": "{count} 行を省略しました",
   "summary": {
     "ran": [

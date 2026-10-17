@@ -35,6 +35,8 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
         diagrams: &seen.media.diagrams,
         writing: seen.talk.transcript.writing().map(|e| e.id),
         replaced: seen.talk.transcript.replaced_shown(),
+        sessions: seen.talk.sessions_seen.as_deref().unwrap_or(&[]),
+        board: Some(&seen.talk.board),
         frame: usize::try_from(screen.started.elapsed().as_millis() / u128::from(spinner_ms))
             .unwrap_or(0),
     };

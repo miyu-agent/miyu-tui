@@ -4,7 +4,7 @@
 use serde_json::Value;
 
 /// 列表里的一个会话。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SessionInfo {
     /// 整个编号。
     pub session: String,

@@ -278,6 +278,10 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                             step.arg(new).unwrap_or_default(),
                         ));
                     }
+                    Body::Message => {
+                        let wrap = |text: &str, style: Style| each(text, style).collect();
+                        return super::message::pieces(step, style, ctx, &wrap);
+                    }
                     // 照 `detail` 画；老日志没有、形状不对的，照下面画结果的原文。
                     Body::Memories | Body::Hits | Body::Page => {
                         let wrap = |text: &str, style: Style| each(text, style).collect();

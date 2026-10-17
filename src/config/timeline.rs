@@ -91,6 +91,8 @@ pub enum Body {
     Hits,
     /// `detail` 的一页文档，照 Markdown 画（`kb_read`）。
     Page,
+    /// 留言（`send_message`）：发给谁（会话的标题、子代理的名字）、完整的消息、附件。
+    Message,
 }
 
 impl Timeline {

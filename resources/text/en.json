@@ -82,6 +82,8 @@
   "prepare": "Preparing {name}",
   "on_session": "session {id}",
   "on_page": "page {page}",
+  "to_parent": "parent session",
+  "attached": "Attached: {names}",
   "omitted": "{count} line(s) omitted",
   "summary": {
     "ran": [
