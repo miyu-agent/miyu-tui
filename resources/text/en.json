@@ -84,6 +84,7 @@
   "on_page": "page {page}",
   "to_parent": "parent session",
   "attached": "Attached: {names}",
+  "to_bottom": "Jump to bottom (Ctrl+End) ↓",
   "omitted": "{count} line(s) omitted",
   "summary": {
     "ran": [
