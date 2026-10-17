@@ -176,13 +176,17 @@ fn step_rows(target: Target, step: &Step, spinning: bool, ctx: &Ctx) -> Vec<Row>
     out
 }
 
-/// 这一步点得开：`timeline.json` 的 `bodies` 写 `none` 的（忘掉、删文档）点不开，标题那一句就够了。
+/// 这一步点得开：`timeline.json` 的 `bodies` 写 `none` 的（忘掉、删文档）点不开，标题那一句就够了；`detail` 是空的
+/// （翻记忆、查知识库没找到，核心给空列表）也点不开，标题已经写了「没找到」。
 fn openable(step: &Step, ctx: &Ctx) -> bool {
-    !matches!(
-        &step.kind,
-        crate::transcript::StepKind::Tool { name, .. }
-            if ctx.config.timeline.bodies.get(name) == Some(&crate::config::Body::None)
-    )
+    let crate::transcript::StepKind::Tool { name, .. } = &step.kind else {
+        return true;
+    };
+    match ctx.config.timeline.bodies.get(name) {
+        Some(crate::config::Body::None) => false,
+        Some(body) => !step.detail.as_ref().is_some_and(|d| detail::empty(body, d)),
+        None => true,
+    }
 }
 
 /// 转圈那一格：照帧数取一个，后面空一格。

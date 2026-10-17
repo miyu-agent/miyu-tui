@@ -12,6 +12,16 @@ use super::step::Piece;
 use crate::config::Body;
 use crate::{markdown, theme};
 
+/// `detail` 什么都没有（没找到：核心给空列表）。
+pub fn empty(body: &Body, detail: &Value) -> bool {
+    let none = |key: &str| detail[key].as_array().is_some_and(Vec::is_empty);
+    match body {
+        Body::Memories => none("memories") && none("turns"),
+        Body::Hits => none("hits"),
+        _ => false,
+    }
+}
+
 /// 照 `body` 把 `detail` 排成一行行；不是这几样的、`detail` 形状不对的交回 `None`（照结果的原文画）。`each` 把一段字
 /// 照宽度折成行。
 pub fn pieces(

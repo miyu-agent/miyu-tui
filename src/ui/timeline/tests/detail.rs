@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 use super::{rows, segment, step, text};
 use crate::core::ToolStatus;
 use crate::transcript::{Step, StepKind, ToolState};
+use crate::ui::rows::Target;
 use crate::ui::test_support::Fixture;
 
 fn tool(name: &str, output: &str, detail: Option<Value>) -> Step {
@@ -129,5 +130,42 @@ fn without_a_detail_the_result_text_is_drawn_as_before() {
     assert!(
         shown.iter().any(|l| l.contains("Nothing found.")),
         "{shown:?}"
+    );
+}
+
+#[test]
+fn nothing_found_cannot_be_opened() {
+    // 没找到：核心给空列表，标题已经写了「没找到」，点开只是一块空的底色。
+    let f = Fixture::new();
+    let search = |name: &str, detail: Value| {
+        let mut s = tool(name, "Nothing found.", Some(detail));
+        s.open = None;
+        s
+    };
+    let read = tool("read", "a", None);
+    for (name, detail) in [
+        ("memory_search", json!({"memories": [], "turns": []})),
+        ("kb_search", json!({"hits": []})),
+    ] {
+        let mut other = read.clone();
+        other.open = None;
+        let seg = segment(vec![search(name, detail), other], Some(true));
+        let got = rows(0, &seg, &f.ctx());
+        assert!(
+            got.iter().all(|r| r.target != Some(Target::Step(0, 0))),
+            "{name} 没找到：点不开"
+        );
+        assert!(got.iter().any(|r| r.target == Some(Target::Step(0, 1))));
+    }
+    // 找到了的照常能点。
+    let found = search(
+        "kb_search",
+        json!({"hits": [{"kb": "n", "path": "a.md", "snippet": "x"}]}),
+    );
+    let seg = segment(vec![found, read], Some(true));
+    assert!(
+        rows(0, &seg, &f.ctx())
+            .iter()
+            .any(|r| r.target == Some(Target::Step(0, 0)))
     );
 }
