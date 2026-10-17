@@ -49,7 +49,13 @@ pub fn rows(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
         if let [only] = segment.steps.as_slice()
             && openable(only, ctx)
         {
-            out.extend(opened(only, step::style(only, false), ctx));
+            // 工具照常画它的标题行（「记住 · 内容 · 记成 m9」）再接内容：只有收起那一行看不出是哪件、结果是什么（2026-10-17
+            // 项目主人看网页时说，10-18 定终端一样）。思考的标题就是收起那一行说的，不重复。
+            let style = step::style(only, false);
+            if matches!(only.kind, crate::transcript::StepKind::Tool { .. }) {
+                out.push(ctx.row(ctx.blank_slot(), step::title(only, style, ctx.width, ctx)));
+            }
+            out.extend(opened(only, style, ctx));
             for row in &mut out {
                 row.shade = true;
                 row.target = Some(target);
