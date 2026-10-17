@@ -38,10 +38,13 @@ fn a_second_view_opened_mid_turn_keeps_the_turn_open_and_keeps_up() {
         "那一句插在正在跑的这一轮上面：\n{}",
         lines.join("\n")
     );
+    // 接进来以前她已经说出来的（核心 9-8 八补：订阅时补推正在流的块）：后开的也有，那一段照她开口收起，和先开的一样。
+    second.wait_for_line("…");
     assert!(
-        !second.shows("Used 1 tool") && second.shows("读取"),
-        "正在跑的那一段不收起：\n{}",
-        lines.join("\n")
+        first.shows("Used 1 tool") && second.shows("Used 1 tool"),
+        "两边一样：\n{}\n---\n{}",
+        first.lines().join("\n"),
+        second.lines().join("\n")
     );
     // 之后照样跟得上：先开的打断、再说一句。
     first.key(b"\x1b");
