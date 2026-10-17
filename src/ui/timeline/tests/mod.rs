@@ -16,6 +16,7 @@ mod empty;
 mod images;
 mod language;
 mod live_tail;
+mod lone;
 mod mcp;
 mod memory;
 mod tabs;
@@ -259,27 +260,6 @@ fn every_line_of_a_command_preview_has_the_rail() {
     let seg = segment(vec![thought(t0, 0), two], Some(true));
     let lines = text(&rows(0, &seg, &f.ctx()));
     assert_eq!(&lines[lines.len() - 2..], ["  │ cd src", "  │ ls"]);
-}
-
-#[test]
-fn a_one_step_segment_opens_straight_into_its_content() {
-    let f = Fixture::new();
-    let t0 = Instant::now();
-    let seg = segment(vec![thought(t0, 0)], Some(true));
-    let rows = rows(0, &seg, &f.ctx());
-    assert_eq!(text(&rows), ["  Thought for 1s", "", "    先看看目录", ""]);
-    assert!(rows.iter().all(|r| r.shade), "连收起那一行一起铺底色");
-    // 工具照常画标题行再接内容（2026-10-18 项目主人：只有收起那一行看不出是哪件、结果是什么）。
-    let seg = segment(vec![command(t0, 0, ToolStatus::Ok)], Some(true));
-    let rows = super::rows(0, &seg, &f.ctx());
-    let lines = text(&rows);
-    assert_eq!(lines[0], "  列目录 · 1s");
-    assert!(lines[1].contains("shell · 列目录"), "{lines:?}");
-    assert!(lines.iter().any(|l| l.contains("a.txt")), "{lines:?}");
-    assert!(
-        rows.iter()
-            .all(|r| r.shade && r.target == Some(crate::ui::rows::Target::Segment(0)))
-    );
 }
 
 #[test]
