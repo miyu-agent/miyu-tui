@@ -147,3 +147,43 @@ fn an_owed_notification_pops_only_when_settled_and_not_after_being_forgiven() {
     n.settle();
     assert!(n.outbox().is_empty(), "只弹一次");
 }
+
+#[test]
+fn the_title_is_the_sessions_and_kitty_gets_an_icon() {
+    // 2026-10-17 项目主人定：标题是会话标题，正文只写为什么，图标照人格头像，没有的用 Miyu 的。
+    use base64::Engine;
+    use base64::engine::general_purpose::STANDARD;
+    let config = Config::builtin().unwrap();
+    let cache = std::env::temp_dir().join(format!("miyu-notify-about-{}", std::process::id()));
+    let mut n = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        env(&[("TERM", "xterm-kitty")]),
+        Some(cache.join("tui").join("sounds")),
+    );
+    n.about(Some("修登录页".into()), None);
+    n.tell(Event::Replied);
+    let out = n.outbox().join("");
+    assert!(
+        out.contains(&format!("p=title;{}", STANDARD.encode("修登录页"))),
+        "{out:?}"
+    );
+    assert!(
+        out.contains(&format!("p=body;{}", STANDARD.encode("回答完了"))),
+        "{out:?}"
+    );
+    assert!(out.contains(":p=icon;"), "没有头像用 Miyu 的图标：{out:?}");
+    // 没起名的会话：标题写 Miyu。
+    n.about(None, None);
+    n.tell(Event::Asking);
+    let out = n.outbox().join("");
+    assert!(
+        out.contains(&format!("p=title;{}", STANDARD.encode("Miyu"))),
+        "{out:?}"
+    );
+    assert!(
+        out.contains(&format!("p=body;{}", STANDARD.encode("等你回答"))),
+        "{out:?}"
+    );
+    drop(std::fs::remove_dir_all(&cache));
+}

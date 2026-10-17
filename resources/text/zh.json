@@ -39,10 +39,10 @@
   "crash_saved": "调用栈已保存到 {path}",
   "notify": {
     "title": "Miyu",
-    "replied": "已完成",
+    "replied": "回答完了",
     "failed": "出错",
-    "approving": "等待确认",
-    "asking": "等待回答"
+    "approving": "等你确认",
+    "asking": "等你回答"
   },
   "refused": "核心拒绝：{reason}",
   "interrupted": "已中断",

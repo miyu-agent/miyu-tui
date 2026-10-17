@@ -5,6 +5,7 @@
 //! 序列攒在 [`Notifier::outbox`]，主循环画完一帧再写出去。
 
 pub mod herdr;
+mod icon;
 mod osc;
 mod sound;
 mod system;
@@ -96,6 +97,11 @@ pub struct Notifier {
     outbox: Vec<String>,
     /// 欠着的通知：一轮做完了、长期目标还在跑（蓝图「系统通知」第 1 条）。
     owed: Option<Event>,
+    /// 通知的图标写到哪个目录（缓存目录下 `tui/notify`）；找不到缓存目录的不带图标。
+    icons: Option<PathBuf>,
+    /// 这一条通知是哪个会话的：标题（没有的写 `texts.title`）、人格的头像（第 3 条，2026-10-17）。
+    title: Option<String>,
+    avatar: Option<PathBuf>,
 }
 
 impl Notifier {
@@ -106,6 +112,10 @@ impl Notifier {
         var: impl Fn(&str) -> Option<String>,
         sounds: Option<PathBuf>,
     ) -> Self {
+        let icons = sounds
+            .as_deref()
+            .and_then(std::path::Path::parent)
+            .map(|tui| tui.join("notify"));
         let route = Route::detect(&var, &look.osc9_programs);
         Self {
             route,
@@ -115,6 +125,9 @@ impl Notifier {
             id: format!("miyu-{}", std::process::id()),
             outbox: Vec::new(),
             owed: None,
+            icons,
+            title: None,
+            avatar: None,
             look,
             texts,
         }
@@ -139,7 +152,13 @@ impl Notifier {
         }
     }
 
-    /// 出了一件要通知的事。
+    /// 接下来的通知是哪个会话的：会话标题、人格头像的文件（没有的是 `None`，标题写 Miyu、图标用 Miyu 的）。
+    pub fn about(&mut self, title: Option<String>, avatar: Option<PathBuf>) {
+        self.title = title.filter(|t| !t.trim().is_empty());
+        self.avatar = avatar;
+    }
+
+    /// 出了一件要通知的事：标题是会话标题，正文只写为什么，图标照人格头像（第 3 条）。
     pub fn tell(&mut self, event: Event) {
         let plan = plan(&self.look, self.route, self.focused, self.herdr.is_some());
         let body = match event {
@@ -148,15 +167,23 @@ impl Notifier {
             Event::Approving => self.texts.approving.clone(),
             Event::Asking => self.texts.asking.clone(),
         };
-        let title = &self.texts.title;
+        let title = self.title.as_deref().unwrap_or(&self.texts.title);
+        let icon = || {
+            self.icons
+                .as_deref()
+                .and_then(|dir| icon::pick(self.avatar.as_deref(), dir))
+        };
         match plan.route {
             Some(Route::Kitty) => {
-                let seq = osc::kitty(&self.id, &self.look.app, title, &body);
+                let picture = icon().and_then(|p| std::fs::read(p).ok());
+                let seq = osc::kitty(&self.id, &self.look.app, title, &body, picture.as_deref());
                 self.outbox.push(seq);
             }
             Some(Route::Osc9) => self.outbox.push(osc::osc9(title, &body)),
             Some(Route::System) => {
-                let (program, args) = system::command(&self.look.app, title, &body);
+                let picture = icon();
+                let (program, args) =
+                    system::command(&self.look.app, title, &body, picture.as_deref());
                 system::spawn(&program, &args);
             }
             None => {}

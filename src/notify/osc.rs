@@ -6,10 +6,21 @@ use base64::engine::general_purpose::STANDARD;
 /// kitty 的 OSC 99：`a=focus` 点一下跳回这个窗口，`o=unfocused` 窗口在前台时 kitty 不弹，标题、正文、程序名都
 /// base64（`e=1`），`s=silent` 音由界面自己放（kitty 的 `s=` 只认声音主题里的名字）。标题、正文两段用同一个 `id`，
 /// 同一个界面的新通知顶掉旧的；两段要一次写完，不能被别的输出劈开。照旧版 09-18 验过的写法。
-pub fn kitty(id: &str, app: &str, title: &str, body: &str) -> String {
+/// 有图标（PNG 的内容，第 3 条）的，标题和正文中间多一段 `p=icon`，`g=` 照内容算，kitty 照它缓存。
+pub fn kitty(id: &str, app: &str, title: &str, body: &str, icon: Option<&[u8]>) -> String {
     let b = |text: &str| STANDARD.encode(text);
+    let picture = icon.map_or_else(String::new, |data| {
+        use std::hash::{DefaultHasher, Hash, Hasher};
+        let mut h = DefaultHasher::new();
+        data.hash(&mut h);
+        format!(
+            "\x1b]99;i={id}:e=1:d=0:g=miyu-{:016x}:p=icon;{}\x1b\\",
+            h.finish(),
+            STANDARD.encode(data)
+        )
+    });
     format!(
-        "\x1b]99;i={id}:e=1:d=0:a=focus:o=unfocused:u=1:f={}:s={}:p=title;{}\x1b\\\x1b]99;i={id}:e=1:d=1:p=body;{}\x1b\\",
+        "\x1b]99;i={id}:e=1:d=0:a=focus:o=unfocused:u=1:f={}:s={}:p=title;{}\x1b\\{picture}\x1b]99;i={id}:e=1:d=1:p=body;{}\x1b\\",
         b(app),
         b("silent"),
         b(title),
@@ -35,7 +46,7 @@ mod tests {
 
     #[test]
     fn kitty_gets_two_base64_parts_that_jump_back_and_stay_quiet() {
-        let seq = kitty("miyu-42", "Miyu", "Miyu", "回答好了 · 3.2s");
+        let seq = kitty("miyu-42", "Miyu", "Miyu", "回答好了 · 3.2s", None);
         let parts: Vec<&str> = seq.split("\x1b\\").filter(|p| !p.is_empty()).collect();
         assert_eq!(parts.len(), 2, "标题、正文两段：{seq:?}");
         let head = parts[0].strip_prefix("\x1b]99;").unwrap();

@@ -21,6 +21,7 @@ impl App {
         }
         let seen = self.talk.transcript.running.is_some();
         let manual = self.talk.transcript.manual_turn();
+        self.introduce();
         match update {
             // 一轮开始：有抽屉开着的照旧在等（别处来的话可以在抽屉开着时开一轮）。
             Update::Push(Push::TurnStarted(..)) => {
@@ -63,6 +64,10 @@ impl App {
 
     /// 抽屉开了一个（新开的、了结一个轮到下一个的）：弹「在等你确认」「在等你回答」，报在等。
     pub(super) fn notify_drawer(&mut self) {
+        if self.talk.drawers.current.is_none() {
+            return;
+        }
+        self.introduce();
         let Some(drawer) = self.talk.drawers.current.as_ref() else {
             return;
         };
@@ -82,6 +87,19 @@ impl App {
             self.talk.transcript.running.is_some(),
         );
         self.notifier.state(state);
+    }
+}
+
+impl App {
+    /// 接下来的通知是这个会话的（「系统通知」第 3 条，2026-10-17 项目主人定）：标题是会话标题，图标是这个会话的人格头像
+    /// （存下来了的；终端显示不了图也照样用）。
+    fn introduce(&mut self) {
+        let title = self.talk.transcript.title.clone();
+        let avatar = self
+            .seen()
+            .wanted(super::avatars::Place::Sidebar)
+            .and_then(|(_, version)| self.media.avatars.file(version));
+        self.notifier.about(title, avatar);
     }
 }
 
