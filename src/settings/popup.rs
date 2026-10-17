@@ -99,8 +99,8 @@ impl Pick {
 
     /// 一行行：池在上，再按供应商分段列模型；视觉的只列能看图的，池要每个成员都能看图。
     pub fn items(&self, view: &Data) -> Vec<Item> {
-        let needle = self.search.to_lowercase();
-        let hit = |s: &str| needle.is_empty() || s.to_lowercase().contains(&needle);
+        // 分组列的：模糊搜索只筛不排（`fuzzy.rs`）。
+        let hit = |s: &str| crate::fuzzy::hit(&self.search, [s]);
         let vision = self.usage == Use::Vision;
         let mut items = Vec::new();
         let pools: Vec<_> = view.pools.iter().filter(|p| hit(&p.name)).collect();

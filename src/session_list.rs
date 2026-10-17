@@ -27,20 +27,7 @@ pub struct SessionList {
 impl SessionList {
     /// 对得上的，照先后：正在用的最上面，置顶的接着，别的照最近动静，新的在前；没有最近动静的照核心交回的先后（第 3 条）。
     pub fn matches(&self) -> Vec<&SessionInfo> {
-        let query = self.query.to_lowercase();
-        let mut found: Vec<(usize, &SessionInfo)> = self
-            .all
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| {
-                query.is_empty()
-                    || s.title
-                        .as_deref()
-                        .or(s.preview.as_deref())
-                        .is_some_and(|t| t.to_lowercase().contains(&query))
-                    || short(&s.session).contains(&query)
-            })
-            .collect();
+        let mut found: Vec<(usize, &SessionInfo)> = self.all.iter().enumerate().collect();
         let current = |s: &SessionInfo| self.current.as_deref() == Some(s.session.as_str());
         found.sort_by(|(i, a), (j, b)| {
             current(b)
@@ -49,7 +36,22 @@ impl SessionList {
                 .then(b.last_active.cmp(&a.last_active))
                 .then(i.cmp(j))
         });
-        found.into_iter().map(|(_, s)| s).collect()
+        // 打了字的：模糊搜索标题（没标题的照预览）、短编号，越像的越前，一样像的照上面的先后（`fuzzy.rs`）。
+        let shorts: Vec<String> = found.iter().map(|(_, s)| short(&s.session)).collect();
+        let found: Vec<(&SessionInfo, &String)> =
+            found.into_iter().map(|(_, s)| s).zip(&shorts).collect();
+        crate::fuzzy::rank(&self.query, found, |(s, id)| {
+            vec![
+                s.title
+                    .as_deref()
+                    .or(s.preview.as_deref())
+                    .unwrap_or_default(),
+                id.as_str(),
+            ]
+        })
+        .into_iter()
+        .map(|(s, _)| s)
+        .collect()
     }
 
     /// 选中的那一个。

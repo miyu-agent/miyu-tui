@@ -1,0 +1,108 @@
+//! 菜单里打字筛的模糊搜索（2026-10-18 项目主人：模型列表搜不到，原来各处都是整串包含）：不分大小写；打的字照先后出现就算
+//! 对上，不必挨着（`opus4` 对得上 `claude-opus-4`）；有空格的拆成几段，每段都要对上，可以落在不同的字段里（`cl op`）。
+//! 越挨着、越落在词头、越靠前的分越高，照 fzf 的意思。
+
+/// 打的字照空格拆成的几段；全是空白的是空的（什么都对得上）。
+fn terms(query: &str) -> Vec<Vec<char>> {
+    query
+        .split_whitespace()
+        .map(|t| t.chars().flat_map(char::to_lowercase).collect())
+        .collect()
+}
+
+/// `c` 是不是一个词的开头：最前面，或者前一个是分隔的符号、从小写到大写、从中文到别的。
+fn boundary(prev: Option<char>, c: char) -> bool {
+    match prev {
+        None => true,
+        Some(p) => {
+            matches!(
+                p,
+                ' ' | '-' | '_' | '/' | '.' | ':' | '·' | '(' | '[' | '@' | '#'
+            ) || (p.is_lowercase() && c.is_uppercase())
+                || (p.is_ascii() != c.is_ascii())
+        }
+    }
+}
+
+/// 一段在一个字段里的分：对不上是 `None`。从每一个能起头的地方往后贪心地找，取最好的。
+fn term_score(term: &[char], text: &[char], lower: &[char]) -> Option<i64> {
+    let first = *term.first()?;
+    let mut best: Option<i64> = None;
+    for start in (0..lower.len()).filter(|&i| lower[i] == first) {
+        let mut at = start;
+        let mut score = 0i64;
+        let mut last: Option<usize> = None;
+        let mut ok = true;
+        for &want in term {
+            let Some(found) = (at..lower.len()).find(|&i| lower[i] == want) else {
+                ok = false;
+                break;
+            };
+            score += 1;
+            if boundary(found.checked_sub(1).map(|i| text[i]), text[found]) {
+                score += 8;
+            }
+            match last {
+                Some(l) if found == l + 1 => score += 12,
+                Some(l) => score -= i64::try_from(found - l - 1).unwrap_or(i64::MAX).min(8),
+                None => {}
+            }
+            last = Some(found);
+            at = found + 1;
+        }
+        if !ok {
+            break;
+        }
+        // 越靠前越好：起头每晚一格扣一点，最多扣 10。
+        score -= i64::try_from(start).unwrap_or(i64::MAX).min(10);
+        best = Some(best.map_or(score, |b| b.max(score)));
+    }
+    best
+}
+
+/// `query` 和这几个字段的分：每一段取它最对得上的那个字段，加起来；有一段哪个字段都对不上是 `None`。空的 `query` 是 0。
+pub fn score<'a>(query: &str, fields: impl IntoIterator<Item = &'a str>) -> Option<i64> {
+    let fields: Vec<(Vec<char>, Vec<char>)> = fields
+        .into_iter()
+        .map(|f| {
+            let text: Vec<char> = f.chars().collect();
+            let lower = text
+                .iter()
+                .map(|c| c.to_lowercase().next().unwrap_or(*c))
+                .collect();
+            (text, lower)
+        })
+        .collect();
+    terms(query).iter().try_fold(0i64, |sum, term| {
+        let best = fields
+            .iter()
+            .filter_map(|(text, lower)| term_score(term, text, lower))
+            .max()?;
+        Some(sum + best)
+    })
+}
+
+/// 筛并排：对不上的拿掉，照分数从高到低，同分的照原来的先后。空的 `query` 原样交回。
+pub fn rank<'a, T>(query: &str, items: Vec<T>, fields: impl Fn(&T) -> Vec<&'a str>) -> Vec<T>
+where
+    T: 'a,
+{
+    if query.trim().is_empty() {
+        return items;
+    }
+    let mut scored: Vec<(i64, usize, T)> = items
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, item)| score(query, fields(&item)).map(|s| (s, i, item)))
+        .collect();
+    scored.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+    scored.into_iter().map(|(_, _, item)| item).collect()
+}
+
+/// 对不对得上（分组的列表只筛不排时用）。
+pub fn hit<'a>(query: &str, fields: impl IntoIterator<Item = &'a str>) -> bool {
+    score(query, fields).is_some()
+}
+
+#[cfg(test)]
+mod tests;

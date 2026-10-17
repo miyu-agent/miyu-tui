@@ -118,19 +118,27 @@ pub enum Run {
 }
 
 impl Commands {
-    /// 照打的字筛：名字（或别名）以它开头的排前面，含着它的排后面，各自照清单的先后。
+    /// 照打的字筛：名字（或别名）以它开头的排前面，照清单的先后；别的模糊对得上的（`fuzzy.rs`，2026-10-18）排后面，越像越前。
     pub fn filter(&self, typed: &str) -> Vec<&Spec> {
         let typed = typed.to_lowercase();
-        let (mut starts, mut contains) = (Vec::new(), Vec::new());
+        let (mut starts, mut rest) = (Vec::new(), Vec::new());
         for spec in self.all() {
-            let mut names = std::iter::once(&spec.name).chain(&spec.aliases);
+            let names = std::iter::once(&spec.name).chain(&spec.aliases);
             if names.clone().any(|n| n.starts_with(&typed)) {
                 starts.push(spec);
-            } else if names.any(|n| n.contains(&typed)) {
-                contains.push(spec);
+            } else {
+                rest.push(spec);
             }
         }
-        starts.extend(contains);
+        let fuzzy = crate::fuzzy::rank(&typed, rest, |spec| {
+            std::iter::once(spec.name.as_str())
+                .chain(spec.aliases.iter().map(String::as_str))
+                .collect()
+        });
+        if typed.is_empty() {
+            return starts;
+        }
+        starts.extend(fuzzy);
         starts
     }
 

@@ -64,18 +64,18 @@ impl History {
         self.open = false;
     }
 
-    /// 对得上的几条，最新的在前：包含搜索的字（不分大小写）；一样的字只留最新的那一次（`/jump` 的每条都留：位置不一样）。
+    /// 对得上的几条：模糊搜索（`fuzzy.rs`），越像的越前，一样像的最新的在前；没打字的最新的在前。一样的字只留最新的那一次
+    /// （`/jump` 的每条都留：位置不一样）。
     pub fn matches<'a>(&self, sent: &'a [Sent]) -> Vec<&'a Sent> {
-        let query = self.query.to_lowercase();
         let mut seen: Vec<&Sent> = Vec::new();
         for one in sent.iter().rev() {
             let text = &one.draft.text;
             let again = !self.jump && seen.iter().any(|s| s.draft.text == *text);
-            if text.to_lowercase().contains(&query) && !again {
+            if !again {
                 seen.push(one);
             }
         }
-        seen
+        crate::fuzzy::rank(&self.query, seen, |s| vec![s.draft.text.as_str()])
     }
 
     /// 往更早的走（`↑`、再按 `Ctrl+R`），到头就停。`count` 是对得上的条数。

@@ -19,17 +19,11 @@ pub struct ModelList {
 }
 
 impl ModelList {
-    /// 对得上的，照原来的先后。
+    /// 对得上的：模糊搜索名字和引用（`fuzzy.rs`），越像的越前，没打字的照原来的先后。
     pub fn matches(&self) -> Vec<&Choice> {
-        let query = self.query.to_lowercase();
-        self.all
-            .iter()
-            .filter(|c| {
-                query.is_empty()
-                    || c.name.to_lowercase().contains(&query)
-                    || c.reference.to_lowercase().contains(&query)
-            })
-            .collect()
+        crate::fuzzy::rank(&self.query, self.all.iter().collect(), |c| {
+            vec![c.name.as_str(), c.reference.as_str()]
+        })
     }
 
     /// 选中的那一个。
