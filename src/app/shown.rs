@@ -82,6 +82,9 @@ impl App {
             return;
         };
         let Some(path) = path else {
+            // 核心那边读不出这份内容（第 6 条，2026-10-17 项目主人定）。
+            let note = self.config.text.shown.missing.clone();
+            self.hint(note, false);
             return;
         };
         for id in ids {
@@ -101,6 +104,12 @@ impl App {
     /// 拷成带文件名的副本、交给程序开；都开不了的卡片记下副本的路径（最后一行换成黄字），图弹一句（第 7 条）。
     fn launch_shown(&mut self, id: u64, file: &Shown, saved: &Path) {
         let copy = crate::shown_files::copy(&file.blob, &file.name, saved);
+        // 副本拷不出来（读回来的那份没了、临时目录写不进去）：弹「已失效」（第 6 条，2026-10-17 项目主人定）。
+        if copy.is_none() {
+            let note = self.config.text.shown.expired.clone();
+            self.hint(note, false);
+            return;
+        }
         let opened = copy
             .as_deref()
             .map(|copy| launch(copy, &file.media_type, &Env::current()));

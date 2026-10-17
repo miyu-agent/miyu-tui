@@ -120,7 +120,11 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     screen.view.older_shown =
         crate::body_view::BodyView::older_on_top(&rows, first, &seen.talk.transcript.entries);
     // 悬停在链接上：这个链接露出来的每一截都加下划线。
-    if let Some(url) = &screen.view.hover_link {
+    // 展示的卡片、图和 mermaid 大图挂的地址只是点的地方，不画下划线（2026-10-17 项目主人：卡片、图右边拖着横线）。
+    let internal = |url: &str| {
+        url.starts_with(crate::shown_files::SCHEME) || url.starts_with(crate::shown_files::ZOOM)
+    };
+    if let Some(url) = screen.view.hover_link.as_ref().filter(|u| !internal(u)) {
         for (i, row) in rows.window(first, height) {
             let y = area.y + u16::try_from(i - first).unwrap_or(0);
             for (from, to, _) in row.links.iter().filter(|(_, _, u)| u == url) {

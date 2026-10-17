@@ -30,14 +30,23 @@ fn texts(entry: &Entry, f: &Fixture, replaced: bool) -> Vec<String> {
         .collect()
 }
 
+/// 这一套里这种文件的图标，后面空一格。
+fn icon(f: &Fixture, key: &str) -> String {
+    format!("{} ", f.config.icons.files[key])
+}
+
 #[test]
-fn a_file_is_a_card_with_its_kind_size_and_lines() {
+fn a_file_is_a_card_with_its_icon_kind_size_and_lines() {
     let f = Fixture::new();
     // 读回来以前不写几行。
     let page = shown(1, "index.html", "text/html", 4300, Some("首页"));
     assert_eq!(
         texts(&page, &f, false),
-        ["首页  index.html", "HTML · 4.2 KB", "点击打开"]
+        [
+            format!("{}首页  index.html", icon(&f, "html")),
+            "HTML · 4.2 KB".into(),
+            "点击打开".into()
+        ]
     );
     // 读回来以后数几行。
     let dir = std::env::temp_dir().join(format!("miyu-shown-rows-{}", std::process::id()));
@@ -50,12 +59,16 @@ fn a_file_is_a_card_with_its_kind_size_and_lines() {
         .saved("sha256:02".into(), Some(saved.clone()));
     assert_eq!(
         texts(&note, &f, false),
-        ["notes.md", "Markdown · 20 B · 3 行", "点击打开"]
+        [
+            format!("{}notes.md", icon(&f, "markdown")),
+            "Markdown · 20 B · 3 行".into(),
+            "点击打开".into()
+        ]
     );
     let same = shown(4, "page.html", "text/html", 10, Some("page.html"));
     assert_eq!(
         texts(&same, &f, false)[0],
-        "page.html",
+        format!("{}page.html", icon(&f, "html")),
         "标题就是文件名的不重复"
     );
     let pdf = shown(3, "a.pdf", "application/pdf", 2 * 1024 * 1024, None);
@@ -64,10 +77,36 @@ fn a_file_is_a_card_with_its_kind_size_and_lines() {
 }
 
 #[test]
-fn an_earlier_showing_of_the_same_path_is_one_dim_line() {
+fn an_earlier_showing_of_the_same_path_keeps_its_card_and_says_updated() {
+    // 2026-10-17 项目主人：不缩成一行，照常三行，最后一行换成「已更新」。
     let f = Fixture::new();
     let page = shown(1, "index.html", "text/html", 4300, None);
-    assert_eq!(texts(&page, &f, true), ["index.html · 已更新"]);
+    assert_eq!(
+        texts(&page, &f, true),
+        [
+            format!("{}index.html", icon(&f, "html")),
+            "HTML · 4.2 KB".into(),
+            "已更新".into()
+        ]
+    );
+}
+
+#[test]
+fn every_kind_of_file_has_its_icon() {
+    let f = Fixture::new();
+    for (name, media, language, key) in [
+        ("a.html", "text/html", None, "html"),
+        ("a.md", "text/markdown", None, "markdown"),
+        ("a.rs", "text/plain", Some("rust"), "code"),
+        ("a.txt", "text/plain", None, "text"),
+        ("a.pdf", "application/pdf", None, "pdf"),
+        ("a.bin", "application/octet-stream", None, "file"),
+    ] {
+        let mut entry = shown(9, name, media, 1, None);
+        entry.shown.as_mut().unwrap().language = language.map(Into::into);
+        let first = texts(&entry, &f, false)[0].clone();
+        assert!(first.starts_with(&icon(&f, key)), "{name}：{first}");
+    }
 }
 
 #[test]
