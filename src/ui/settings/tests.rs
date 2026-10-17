@@ -242,3 +242,19 @@ fn a_new_preset_or_persona_window_is_titled_by_its_name_before_the_list_is_read_
     let (text, _) = screen(&mut p, &config, 100, 30);
     assert!(!text.contains("persona-1"), "编号不出现：\n{text}");
 }
+
+#[test]
+fn a_secret_being_typed_is_drawn_as_dots() {
+    // 「配置页」第 48 条：密钥的编辑窗里一个字一个 `•`，明文不上屏。
+    use crate::settings::pages::choose::LineEdit;
+    use crate::settings::pages::target::Target;
+    use crate::settings::popup::Popup;
+    let config = Config::builtin().unwrap();
+    let mut p = page(&config);
+    let mut edit = LineEdit::open("miyu-onebot.token", "令牌", false, &serde_json::Value::Null);
+    edit.editor.set("t0ken");
+    p.popup = Some(Popup::Line(edit.to(Target::Secret)));
+    let (text, _) = screen(&mut p, &config, 120, 30);
+    assert!(text.contains("令牌") && text.contains("•••••"), "{text}");
+    assert!(!text.contains("t0ken"), "明文不上屏：\n{text}");
+}

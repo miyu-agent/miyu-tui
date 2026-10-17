@@ -1,5 +1,5 @@
 //! 草稿（蓝图「配置页」第 16、24 条）：悬浮窗「确定」记进这里，`s` 一起存。草稿就是要发的那条 `config.set`：键 → 改成什么
-//! 或删掉；另记要存进密钥库的明文 key（照供应商记，存的时候才起名字）。平常写个人设置；只有系统配置这一层的项（运行日志
+//! 或删掉；另记要存进密钥库的明文（照要写引用的那一项记：供应商的 key、包的密钥项，存的时候才起名字）。平常写个人设置；只有系统配置这一层的项（运行日志
 //! 级别这类，第 33 条）当场存，那一次写系统配置。
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -22,7 +22,8 @@ pub enum Change {
 #[derive(Debug, Default)]
 pub struct Draft {
     changes: BTreeMap<String, Change>,
-    /// 供应商编号 → 新贴的 key（明文，只在这里和发 `secret.set` 那一刻）。
+    /// 要写引用的那一项的键 → 新贴的明文（只在这里和发 `secret.set` 那一刻）：供应商的 `providers.<编号>.key`，别的密钥项
+    /// （「配置页」第 48 条）照它自己的键。
     secrets: BTreeMap<String, String>,
     /// 新加的供应商（编号），照加的先后。
     pub new_providers: Vec<String>,
@@ -72,7 +73,7 @@ impl Draft {
             .strip_prefix("providers.")
             .filter(|r| !r.contains('.'))
         {
-            self.secrets.remove(id);
+            self.secrets.remove(&provider_key(id));
             self.new_providers.retain(|p| p != id);
             self.new_models.retain(|(p, _)| p != id);
         }
@@ -83,9 +84,13 @@ impl Draft {
 
     /// 新贴了一家供应商的 key：存的时候先 `secret.set`，再把引用写进 `key`（一家一个，核心 8-25）。
     pub fn set_secret(&mut self, provider: &str, value: String) {
-        self.changes
-            .remove(&format!("{}.key", keys::provider(provider)));
-        self.secrets.insert(provider.to_string(), value);
+        self.set_secret_at(&provider_key(provider), value);
+    }
+
+    /// 新贴了一个密钥，引用写进 `key` 这一项（「配置页」第 48 条）：存的时候先 `secret.set`。
+    pub fn set_secret_at(&mut self, key: &str, value: String) {
+        self.changes.remove(key);
+        self.secrets.insert(key.to_string(), value);
     }
 
     /// 草稿里这一项是什么：写了的值，删了的 `None`，没改的照那一层。
@@ -138,13 +143,17 @@ impl Draft {
 
     /// 这一家贴了新的 key、还没存。
     pub fn has_secret(&self, provider: &str) -> bool {
-        self.secrets.contains_key(provider)
+        self.secrets.contains_key(&provider_key(provider))
     }
 
     /// 存下以后要重新取模型列表的供应商：新加的、换了地址、接口、key 的；删掉的不算。
     pub fn reconnects(&self, data: &Data) -> Vec<String> {
         let mut ids: Vec<String> = self.new_providers.clone();
-        ids.extend(self.secrets.keys().cloned());
+        ids.extend(self.secrets.keys().filter_map(|key| {
+            let parts = split(key);
+            (parts.len() == 3 && parts[0] == "providers" && parts[2] == "key")
+                .then(|| parts[1].trim_matches('"').to_string())
+        }));
         for (key, change) in &self.changes {
             let parts = split(key);
             if matches!(change, Change::Set(_))
@@ -161,26 +170,25 @@ impl Draft {
         ids
     }
 
-    /// 要存进密钥库的：供应商、起好的名字（不撞已有的、不互相撞）、明文。
-    pub fn secrets(&self, data: &Data) -> Vec<(String, String, String)> {
+    /// 要存进密钥库的：写引用的那一项、起好的名字（不撞已有的、不互相撞）、明文。`now` 是起名用的时刻（毫秒）。
+    pub fn secrets(&self, data: &Data, now: u64) -> Vec<(String, String, String)> {
         let mut taken = data.secrets.clone();
         self.secrets
             .iter()
-            .map(|(provider, value)| {
-                let name = secret_name(provider, &taken);
+            .map(|(key, value)| {
+                let name = secret_name(key, now, &taken);
                 taken.insert(name.clone());
-                (provider.clone(), name, value.clone())
+                (key.clone(), name, value.clone())
             })
             .collect()
     }
 
-    /// 要发的 `config.set` 参数：个人层（或系统配置），每项带 `expect`（那一层原来写的什么）；`named` 是存好了的 key
-    /// （供应商、名字），引用写进这一家的 `key`。
+    /// 要发的 `config.set` 参数：个人层（或系统配置），每项带 `expect`（那一层原来写的什么）；`named` 是存好了的密钥
+    /// （写引用的那一项、名字），引用写进那一项。
     pub fn request(&self, data: &Data, named: &[(String, String)]) -> Value {
         let mut all = self.changes.clone();
-        for (provider, name) in named {
-            let key = format!("{}.key", keys::provider(provider));
-            all.insert(key, Change::Set(json!({"secret": name})));
+        for (key, name) in named {
+            all.insert(key.clone(), Change::Set(json!({"secret": name})));
         }
         let changes: Vec<Value> = all
             .iter()
@@ -227,9 +235,23 @@ fn split(key: &str) -> Vec<String> {
     parts
 }
 
-/// 密钥的名字：`<编号>-key`，撞了接 `-2`、`-3`；名字最长 64 个字符（`config.md`「名字的写法」）。
-fn secret_name(provider: &str, taken: &BTreeSet<String>) -> String {
-    let base: String = format!("{provider}-key").chars().take(56).collect();
+/// 一家供应商的 key 那一项：`providers.<编号>.key`。
+fn provider_key(provider: &str) -> String {
+    format!("{}.key", keys::provider(provider))
+}
+
+/// 密钥的名字（名字最长 64 个字符，`config.md`「名字的写法」）：供应商的 key 照旧 `<编号>-key`；别的密钥项照网页设置页的
+/// 起法（`miyu-web` 的 `secretName`）：键转小写、不是字母数字的换成 `-`，接 `-` 和这一刻毫秒数的 36 进制。撞了接 `-2`、`-3`。
+fn secret_name(key: &str, now: u64, taken: &BTreeSet<String>) -> String {
+    let parts = split(key);
+    let base: String = if parts.len() == 3 && parts[0] == "providers" && parts[2] == "key" {
+        format!("{}-key", parts[1].trim_matches('"'))
+    } else {
+        format!("{}-{}", slug(key), base36(now))
+    }
+    .chars()
+    .take(56)
+    .collect();
     if !taken.contains(&base) {
         return base;
     }
@@ -237,6 +259,37 @@ fn secret_name(provider: &str, taken: &BTreeSet<String>) -> String {
         .map(|n| format!("{base}-{n}"))
         .find(|name| !taken.contains(name))
         .expect("总有一个没用过的")
+}
+
+/// 键转小写，连着的不是字母数字的换成一个 `-`（同网页的 `replace(/[^a-z0-9]+/g, '-')`）。
+fn slug(key: &str) -> String {
+    let mut out = String::new();
+    let mut gap = false;
+    for c in key.to_lowercase().chars() {
+        if c.is_ascii_alphanumeric() {
+            out.push(c);
+            gap = false;
+        } else if !gap {
+            out.push('-');
+            gap = true;
+        }
+    }
+    out
+}
+
+/// 十进制换成 36 进制（小写，同 JavaScript 的 `toString(36)`）。
+fn base36(mut n: u64) -> String {
+    let digits = b"0123456789abcdefghijklmnopqrstuvwxyz";
+    let mut out = Vec::new();
+    loop {
+        out.push(digits[(n % 36) as usize]);
+        n /= 36;
+        if n == 0 {
+            break;
+        }
+    }
+    out.reverse();
+    String::from_utf8(out).unwrap_or_default()
 }
 
 #[cfg(test)]

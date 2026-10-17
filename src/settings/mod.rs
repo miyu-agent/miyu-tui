@@ -75,7 +75,7 @@ pub enum Outcome {
 enum Waiting {
     /// 读：`model.list`、`config.get`、`secret.list`。
     Load(Load),
-    /// 存一个 key：供应商、起的名字。
+    /// 存一个密钥：写引用的那一项、起的名字。
     Secret(String, String),
     /// 存配置。
     Save,

@@ -64,16 +64,24 @@ fn a_new_key_gets_a_fresh_secret_name_and_the_reference_goes_into_key() {
     let mut draft = Draft::default();
     draft.set_secret("relay", "sk-relay".into());
     draft.set_secret("dev", "sk-dev".into());
-    let secrets = draft.secrets(&data);
+    let secrets = draft.secrets(&data, 0);
     assert_eq!(
         secrets,
         vec![
-            ("dev".into(), "dev-key".into(), "sk-dev".into()),
-            ("relay".into(), "relay-key-2".into(), "sk-relay".into())
+            (
+                "providers.dev.key".into(),
+                "dev-key".into(),
+                "sk-dev".into()
+            ),
+            (
+                "providers.relay.key".into(),
+                "relay-key-2".into(),
+                "sk-relay".into()
+            )
         ],
         "已有的 relay-key 不覆盖"
     );
-    let named = [("relay".to_string(), "relay-key-2".to_string())];
+    let named = [("providers.relay.key".to_string(), "relay-key-2".to_string())];
     let sent = draft.request(&data, &named);
     assert_eq!(sent["layer"], "personal");
     assert_eq!(
@@ -84,5 +92,36 @@ fn a_new_key_gets_a_fresh_secret_name_and_the_reference_goes_into_key() {
     assert!(
         !sent.to_string().contains("sk-relay"),
         "明文不进 config.set"
+    );
+}
+
+#[test]
+fn a_package_secret_is_named_like_the_web_head_names_it() {
+    // 「配置页」第 48 条：别的密钥项照网页设置页起名（键转小写、非字母数字换 `-`、接毫秒数的 36 进制），引用写进那一项。
+    let data = sample();
+    let mut draft = Draft::default();
+    draft.set_secret_at("miyu-onebot.token", "t0ken".into());
+    let secrets = draft.secrets(&data, 1_760_000_000_000);
+    assert_eq!(
+        secrets,
+        vec![(
+            "miyu-onebot.token".into(),
+            "miyu-onebot-token-mgj6k3cw".into(),
+            "t0ken".into()
+        )]
+    );
+    let named = [(
+        "miyu-onebot.token".to_string(),
+        "miyu-onebot-token-mgj6k3cw".to_string(),
+    )];
+    let sent = draft.request(&data, &named);
+    assert_eq!(
+        sent["changes"],
+        json!([{"key": "miyu-onebot.token", "value": {"secret": "miyu-onebot-token-mgj6k3cw"},
+                "expect": {}}])
+    );
+    assert!(
+        draft.reconnects(&data).is_empty(),
+        "包的密钥不当成供应商去重取模型"
     );
 }
