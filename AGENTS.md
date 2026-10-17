@@ -7,6 +7,7 @@ Miyu 的终端界面（头）：一个程序 `miyu-tui`，经本机套接字说 
 - 只经 `miyu-client` 用核心的代码（设计 32 第二节）；缺的告诉核心的主会话加进门面，不直接依赖核心里别的 crate。
 - 协议、事件的形状以核心仓库的 `docs/blueprint/protocol.md`、`docs/designs/samples/` 为准；改到协议的事先找核心。
 - 升级核心：改 `Cargo.toml` 里钉住的提交，过三台 CI。
+- 合进 main：本机测试（`--all-targets`）、clippy、fmt、文档全过就合，三台 CI 在 main 上跑，红了当场修（2026-10-17 项目主人：「改个 tui 而已为什么要 ci」，同核心 10-16 定的）。先过三台再合的只有：升级核心；碰路径、文件系统、子进程、终端输入输出、`cfg` 分平台的写法。
 - 每个 `.rs` 文件不超过 500 行，测试也算；clippy `-D warnings`；不吞错误（不写 `let _ =`、`.ok()` 扔错误）。
 - 给人看的字照三种语言（`resources/text/`）；界面上只放人要的，说法照通用软件的短句。
 - 图纸在 `docs/blueprint/tui.md`；改了界面先改图纸。
