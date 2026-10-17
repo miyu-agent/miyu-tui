@@ -245,6 +245,8 @@ pub struct Texts {
     pub to_parent: String,
     /// 留言带的附件，`{names}` 是文件名。
     pub attached: String,
+    /// 正文不在底部时右下角浮着的那一段（`ui/bottom_button.rs`）。
+    pub to_bottom: String,
     /// 预览放不下时最后一行，`{count}` 是省略了几行。
     pub omitted: String,
     /// 时间线收起那一行的字：界面语言是自动时换成语言表 `auto_summary` 那一种（英文），手动选了哪种照哪种（蓝图「时间线」第 17 条）。

@@ -131,8 +131,6 @@ pub struct Layout {
     pub title_max: usize,
     /// 撤销那一行前面的符号，连同它后面的空格。
     pub undo_icon: String,
-    /// 回到底部的按钮（2026-10-02）。
-    pub bottom_mark: String,
     /// 链接卡片的封面图几行高（蓝图「链接卡片」第 3 条）。
     pub link_cover_rows: u16,
     /// 链接卡片的网站图标几列宽。

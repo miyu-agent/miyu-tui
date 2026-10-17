@@ -84,6 +84,7 @@
   "on_page": "{page} ページ",
   "to_parent": "親セッション",
   "attached": "添付：{names}",
+  "to_bottom": "最下部へ（Ctrl+End）↓",
   "omitted": "{count} 行を省略しました",
   "summary": {
     "ran": [

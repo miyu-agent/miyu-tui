@@ -84,6 +84,7 @@
   "on_page": "第 {page} 页",
   "to_parent": "父会话",
   "attached": "附件：{names}",
+  "to_bottom": "跳转到底部（Ctrl+End）↓",
   "omitted": "已省略 {count} 行",
   "summary": {
     "ran": [

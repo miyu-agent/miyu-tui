@@ -268,8 +268,9 @@ fn ctrl_enter_interrupts_and_sends_what_is_queued_now() {
 }
 
 #[test]
-fn a_down_arrow_beside_the_box_brings_the_view_back_to_the_bottom() {
-    // 2026-10-02 项目主人要：不在底部时输入框右边框外面那两列空白里一个 ↓，点了回到底部。
+fn a_jump_to_bottom_hint_floats_over_the_body_and_brings_the_view_back() {
+    // 2026-10-18 项目主人照 Claude Code 改：原来是输入框右边框外面一个 ↓，不容易注意到；改成正文区最底下那一行右边浮着
+    // 「跳转到底部（Ctrl+End）↓」，点了回到底部。
     let long: &'static str = Box::leak(
         (1..=80)
             .map(|i| format!("第 {i} 行"))
@@ -282,22 +283,29 @@ fn a_down_arrow_beside_the_box_brings_the_view_back_to_the_bottom() {
     tui.wait_for("工作区");
     tui.say("说长一点");
     wait_for_done_at_bottom(&mut tui);
-    let arrow = |tui: &support::Tui| {
-        tui.lines()
-            .iter()
-            .enumerate()
-            .find_map(|(y, l)| l.trim_end().ends_with("│ ↓").then_some(y))
+    let hint = |tui: &support::Tui| {
+        tui.lines().iter().enumerate().find_map(|(y, l)| {
+            l.find("跳转到底部（Ctrl+End）↓")
+                .map(|at| (y, l[..at].to_string()))
+        })
     };
     assert!(
-        arrow(&tui).is_none(),
+        hint(&tui).is_none(),
         "在底部时没有：\n{}",
         tui.lines().join("\n")
     );
     tui.key(b"\x1b[5~");
     tui.pump(Duration::from_millis(300));
-    let y = arrow(&tui).unwrap_or_else(|| panic!("翻上去以后有：\n{}", tui.lines().join("\n")));
-    let line = &tui.lines()[y];
-    let x = unicode_width::UnicodeWidthStr::width(line.trim_end()) - 1;
+    let (y, before) =
+        hint(&tui).unwrap_or_else(|| panic!("翻上去以后有：\n{}", tui.lines().join("\n")));
+    // 正文区最底下那一行：下面空一行就是输入框。
+    let lines = tui.lines();
+    assert!(
+        lines[y + 1].trim().is_empty() && lines[y + 2].contains('╭'),
+        "浮在正文区最底下那一行：\n{}",
+        lines.join("\n")
+    );
+    let x = unicode_width::UnicodeWidthStr::width(before.as_str()) + 2;
     tui.key(format!("\x1b[<0;{};{}M", x + 1, y + 1).as_bytes());
     tui.key(format!("\x1b[<0;{};{}m", x + 1, y + 1).as_bytes());
     tui.pump(Duration::from_millis(300));
@@ -306,7 +314,7 @@ fn a_down_arrow_beside_the_box_brings_the_view_back_to_the_bottom() {
         "回到底部：\n{}",
         tui.lines().join("\n")
     );
-    assert!(arrow(&tui).is_none());
+    assert!(hint(&tui).is_none());
 }
 
 #[test]

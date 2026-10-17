@@ -356,8 +356,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     app.screen.areas.bottom = if home {
         Rect::default()
     } else {
-        // 只用正文那一边（有侧边栏时不碰它的竖线）。
-        bottom_button::draw(frame, &app.seen(), &app.screen, main)
+        bottom_button::draw(frame, &app.seen(), &app.screen)
     };
     section("agents", || {
         agents::draw(frame, areas.agents, &app.seen(), &app.screen)
