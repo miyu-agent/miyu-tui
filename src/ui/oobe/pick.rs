@@ -63,12 +63,37 @@ pub fn icons(oobe: &Oobe, texts: &Texts, nerd: Option<&Icons>, width: u16) -> Co
 
 /// 沙盒：两行，「开」「关」，后面暗色一句是什么意思；写不成的红字。
 pub fn sandbox(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
-    let words = &texts.sandbox;
+    two(
+        &texts.sandbox,
+        oobe.sandbox.pick.selected,
+        oobe.sandbox.error.as_deref(),
+        width,
+    )
+}
+
+/// 开不开内置的语义模型（`oobe/semantic.rs`，2026-10-18 项目主人定）：同沙盒，一个标题、一段说明、「是」「否」两行。
+pub fn semantic(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
+    let step = &oobe.semantic;
+    two(
+        &texts.semantic,
+        step.pick.selected,
+        step.error.as_deref(),
+        width,
+    )
+}
+
+/// 标题、说明、两行（字后面跟暗色的一句）、写不成的原话。
+fn two(
+    words: &crate::oobe::TwoChoices,
+    selected: usize,
+    error: Option<&str>,
+    width: u16,
+) -> Content {
     let mut c = Content::new(width);
     c.heading(&words.head.title, &words.head.sub);
     for (i, [label, note]) in [&words.on, &words.off].into_iter().enumerate() {
         c.row(
-            i == oobe.sandbox.pick.selected,
+            i == selected,
             vec![
                 Span::raw(label.clone()),
                 Span::raw("  "),
@@ -77,7 +102,7 @@ pub fn sandbox(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
             None,
         );
     }
-    if let Some(error) = &oobe.sandbox.error {
+    if let Some(error) = error {
         c.blank();
         c.note(error, theme::error());
     }

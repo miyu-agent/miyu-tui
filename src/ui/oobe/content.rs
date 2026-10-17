@@ -86,8 +86,9 @@ impl Content {
             title.to_string(),
             Style::new().add_modifier(Modifier::BOLD),
         ));
+        // 说明长了照块宽折行（内置语义模型那一步的说明一行放不下，2026-10-18）。
         if !sub.is_empty() {
-            self.lines.push(Line::styled(sub.to_string(), theme::dim()));
+            self.note(sub, theme::dim());
         }
         self.blank();
     }

@@ -1481,6 +1481,12 @@
       "on": ["On", "Commands run in a sandbox; changes outside the workspace need approval"],
       "off": ["Off", "Full access, no approvals"]
     },
+    "semantic": {
+      "title": "Turn on the built-in semantic model?",
+      "sub": "Much better search in memories, knowledge bases, stickers and more, at about 160 MB of extra memory (freed after 10 idle minutes) and about 10 ms of CPU per search",
+      "on": ["Yes", "Recommended"],
+      "off": ["No", "Keyword search only"]
+    },
     "done": {
       "title": "All set",
       "summary": "Model {model} · Persona {persona} · Preset {preset}",

@@ -365,6 +365,8 @@ pub struct Texts {
     pub preset: Preset,
     /// 沙盒。
     pub sandbox: Sandbox,
+    /// 开不开内置的语义模型（2026-10-18）：和沙盒一个样子，`on` 是「是」、`off` 是「否」。
+    pub semantic: Sandbox,
     /// 好了。
     pub done: Done,
     /// 没连上核心。
