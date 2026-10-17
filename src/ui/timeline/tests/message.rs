@@ -1,5 +1,4 @@
-//! 点开一条留言（`send_message`，2026-10-18 项目主人：原来只有「Message sent to 35106d22.」）：发给谁（会话的标题、子代理的
-//! 名字、父会话）、完整的消息、附件。
+//! 留言（`send_message`，2026-10-18 项目主人）：标题「留言 · 发给谁 · 消息开头」，点开完整的消息、附件。
 
 use std::time::Instant;
 
@@ -35,13 +34,15 @@ fn opened(f: &Fixture, step: Step) -> Vec<String> {
 }
 
 #[test]
-fn a_message_to_another_session_shows_its_title_and_the_whole_message() {
+fn a_message_titles_whom_and_how_it_starts_and_opens_to_the_whole_text() {
+    // 2026-10-18 项目主人：「留言 · 会话 xxxx · 会话名称 · 消息开头」，点开是完整的消息；原来标题是「送到了：xxxx」。
     let mut f = Fixture::new();
     f.sessions = vec![crate::core::SessionInfo {
         session: SESSION.into(),
         title: Some("niri 会话".into()),
         ..Default::default()
     }];
+    let id = crate::session_list::short(SESSION);
     let got = opened(
         &f,
         message(
@@ -49,16 +50,20 @@ fn a_message_to_another_session_shows_its_title_and_the_whole_message() {
         ),
     );
     assert!(
-        got.iter().any(|l| l.contains("→ niri 会话 · 会话 ")),
+        got.iter()
+            .any(|l| l.contains(&format!("send_message · 会话 {id} · niri 会话 · 第一行"))),
         "{got:?}"
     );
-    assert!(got.iter().any(|l| l.contains("第一行")), "{got:?}");
     assert!(
-        got.iter().any(|l| l.contains("第二行")),
-        "完整的消息：{got:?}"
+        got.iter().any(|l| l.trim() == "第二行"),
+        "点开是完整的消息：{got:?}"
     );
     assert!(got.iter().any(|l| l.contains("附件：shot.png")), "{got:?}");
-    assert!(got.iter().all(|l| !l.contains("Message sent")), "{got:?}");
+    assert!(
+        got.iter()
+            .all(|l| !l.contains("Message sent") && !l.contains('→')),
+        "{got:?}"
+    );
 }
 
 #[test]
@@ -78,12 +83,17 @@ fn a_message_to_a_subagent_or_the_parent_names_it() {
     );
     let got = opened(&f, message(json!({"to": "j3", "message": "再看一遍"})));
     assert!(
-        got.iter().any(|l| l.contains("→ 子代理 查文档 · j3")),
+        got.iter().any(|l| l.contains("· j3 · 查文档 · 再看一遍")),
         "{got:?}"
     );
     let got = opened(&f, message(json!({"to": "parent", "message": "好了"})));
-    assert!(got.iter().any(|l| l.contains("→ 父会话")), "{got:?}");
+    assert!(got.iter().any(|l| l.contains("· 父会话 · 好了")), "{got:?}");
     // 不认识的会话：只写短编号。
+    let id = crate::session_list::short(SESSION);
     let got = opened(&f, message(json!({"to": SESSION, "message": "在吗"})));
-    assert!(got.iter().any(|l| l.contains("→ 会话 ")), "{got:?}");
+    assert!(
+        got.iter()
+            .any(|l| l.contains(&format!("· 会话 {id} · 在吗"))),
+        "{got:?}"
+    );
 }

@@ -68,6 +68,8 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                 let kind = kind(step, ctx);
                 let subject = match kind {
                     Some(ToolKind::Command) => step.arg("description"),
+                    // 留言的发给谁、消息开头另写（`message.rs`）。
+                    Some(ToolKind::Message) => None,
                     _ => face
                         .and_then(|f| f.subject.as_deref())
                         .and_then(|k| step.arg(k)),
@@ -82,6 +84,10 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                 if let Some(job) = job {
                     label.push_str(" · ");
                     label.push_str(&job);
+                }
+                if kind == Some(ToolKind::Message) {
+                    label.push_str(" · ");
+                    label.push_str(&super::message::title(step, ctx));
                 }
                 if let Some(subject) = subject {
                     label.push_str(" · ");
@@ -99,8 +105,10 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                     label.push_str(" · ");
                     label.push_str(&text.on_session.replace("{id}", &id));
                 }
-                // 别的工具后面跟结果那一句（「读取 · src · 12 项」）；命令有预览，编辑有加减的行数，不写。
-                if matches!(kind, None | Some(ToolKind::Message | ToolKind::Remember))
+                // 别的工具后面跟结果那一句（「读取 · src · 12 项」）；命令有预览，编辑有加减的行数，不写；留言只有没发出去的写为什么。
+                let says = matches!(kind, None | Some(ToolKind::Remember))
+                    || (kind == Some(ToolKind::Message) && step.failed());
+                if says
                     && let Some(said) = said
                     && let Some(text) = ctx.human.say(said)
                 {
