@@ -275,7 +275,19 @@ impl App {
         let folds = self.talk.transcript.folds();
         // 开轮以前按过两下 `Esc`：正文收了这一轮的开头再打断（`takeback.rs`）。
         let stop = super::takeback::stops_on_start(self.talk.transcript.starting, &update);
+        // 实时收到的 HTML、PDF：正文收下以后当场开一次（「展示」第 8 条）；补发的不开。
+        let opens = match &update {
+            Update::Push(Push::Shown(file))
+                if file.opens_at_once() && !self.talk.transcript.replaying() =>
+            {
+                Some(file.blob.clone())
+            }
+            _ => None,
+        };
         self.talk.transcript.update(update, &self.config.text);
+        if let Some(blob) = opens {
+            self.shown_arrived(&blob);
+        }
         if stop {
             self.stop_started_turn();
         }

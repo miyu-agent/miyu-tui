@@ -111,6 +111,8 @@ pub struct Ctx<'a> {
     pub level: Level,
     /// 窗口有几行高：图最多占它的几分之几（蓝图「图片、公式和 mermaid 图」第 3 条）。
     pub screen_rows: u16,
+    /// 后来同一个路径又展示过的那几条（编号）：缩成一行「已更新」（蓝图「展示」第 5 条）。
+    pub replaced: std::collections::HashSet<u64>,
 }
 
 impl Ctx<'_> {
@@ -166,6 +168,7 @@ pub fn entry_rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         (None, Kind::Job) => job_rows::rows(i, entry, ctx),
         (None, Kind::Reply) => reply_rows(i, entry, ctx),
         (None, Kind::Media) => super::media_rows::rows(entry, ctx),
+        (None, Kind::Shown) => super::shown_rows::rows(entry, ctx),
         (None, Kind::User) => super::user_rows::rows(i, entry, ctx),
         (None, _) if entry.progress.is_some() => super::compaction_rows::rows(entry, ctx),
         (None, _) => text_rows(entry, ctx),
@@ -179,7 +182,10 @@ pub fn shown(entry: &Entry) -> bool {
         && match &entry.segment {
             Some(segment) => !segment.steps.is_empty(),
             None => {
-                entry.kind == Kind::Undo || entry.media.is_some() || !entry.text.trim().is_empty()
+                entry.kind == Kind::Undo
+                    || entry.media.is_some()
+                    || entry.shown.is_some()
+                    || !entry.text.trim().is_empty()
             }
         }
 }
@@ -295,9 +301,13 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         ),
         Kind::Recap => (ctx.blank_slot(), theme::dim()),
         Kind::Error | Kind::Cut => (ctx.blank_slot(), theme::error()),
-        Kind::User | Kind::Reply | Kind::Steps | Kind::Undo | Kind::Job | Kind::Media => {
-            (ctx.blank_slot(), Style::new())
-        }
+        Kind::User
+        | Kind::Reply
+        | Kind::Steps
+        | Kind::Undo
+        | Kind::Job
+        | Kind::Media
+        | Kind::Shown => (ctx.blank_slot(), Style::new()),
     };
     // 前面带绿色记号的（压好了的 `● `）：记号是引子，折下来的行和字对齐（「正文」第 9 条）。回顾的 `※` 一样，暗色（「回顾」第 2 条）；
     // 长期目标开的一轮那一行的 `● ` 也暗（「长期目标」第 4 条）。

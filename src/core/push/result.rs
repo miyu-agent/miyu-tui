@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use serde_json::Value;
 
-use super::{Push, blocks, jobs, sent};
+use super::{Push, blocks, jobs, sent, shown};
 use crate::core::kinds::ToolStatus;
 
 /// 读一条 `tool.result`，照先后放进 `out`。
@@ -38,6 +38,8 @@ pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
     if !images.is_empty() {
         out.push(Push::Media(images));
     }
+    // 她给人看的文件（核心 D-5）：排在那一步后面，同她发的图（蓝图「展示」第 2 条）。
+    shown::read(body, out);
 }
 
 /// 调用那一刻的显示名（核心 9-8 六补）：语言到名字，空的、不是字的不要；没有这一格的（核心自带的工具、内核替它写的

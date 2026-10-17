@@ -26,6 +26,7 @@ mod queue;
 mod recap;
 mod redo;
 mod said_at;
+mod shown;
 mod tally;
 mod waiting;
 

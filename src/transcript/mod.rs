@@ -389,6 +389,7 @@ impl Transcript {
                 }
             }
             Push::Media(images) => self.sent(images),
+            Push::Shown(file) => self.shown(file),
             Push::ToolImages { call_id, blobs } => {
                 let at = self.calls.get(&call_id).copied();
                 if let Some(step) = at.and_then(|at| self.step_mut(at)) {

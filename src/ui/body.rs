@@ -34,6 +34,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
         cards: &seen.media.cards,
         diagrams: &seen.media.diagrams,
         writing: seen.talk.transcript.writing().map(|e| e.id),
+        replaced: seen.talk.transcript.replaced_shown(),
         frame: usize::try_from(screen.started.elapsed().as_millis() / u128::from(spinner_ms))
             .unwrap_or(0),
     };

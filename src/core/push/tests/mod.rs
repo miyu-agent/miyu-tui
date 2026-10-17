@@ -9,6 +9,7 @@ use super::{Block, CallError, Push};
 mod goal;
 mod jobs;
 mod sent;
+mod shown;
 
 #[test]
 fn a_new_title_comes_from_meta_changed() {

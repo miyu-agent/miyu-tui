@@ -103,6 +103,10 @@ impl App {
     /// 回答：Markdown」第 10 条）。
     pub(super) fn open_link(&mut self, url: &str) {
         use crate::open::OpenError;
+        // 她给人看的文件：照展示的退路开（「展示」第 6、7 条）。
+        if self.open_shown_link(url) {
+            return;
+        }
         // 本机的文本文件：在这个终端里用编辑器开，主循环让出终端（第 10 条）。
         if let Some(editor) = self.typing.editor.clone()
             && let Some(file) = crate::local::resolve(url).filter(|f| crate::editor::is_text(f))

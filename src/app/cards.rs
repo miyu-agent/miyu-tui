@@ -28,6 +28,8 @@ impl App {
                 self.media.cards.borrow_mut().got_card(url, card);
             }
             Some(Update::BlobSaved { blob, path }) => {
+                // 等着它开的展示（蓝图「展示」第 6 条）。
+                self.shown_saved(&blob, path.as_deref());
                 self.media.cards.borrow_mut().saved(blob, path);
             }
             other => {
