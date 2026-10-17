@@ -120,11 +120,13 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     screen.view.older_shown =
         crate::body_view::BodyView::older_on_top(&rows, first, &seen.talk.transcript.entries);
     // 悬停在链接上：这个链接露出来的每一截都加下划线。
-    // 展示的卡片、图和 mermaid 大图挂的地址只是点的地方，不画下划线（2026-10-17 项目主人：卡片、图右边拖着横线）。
+    // 展示的卡片、图和 mermaid 大图挂的地址整行都能点，下划线只画在字下面（2026-10-17 项目主人：原来右边拖着一整行横线；
+    // 同一天又要了悬停效果）。
     let internal = |url: &str| {
         url.starts_with(crate::shown_files::SCHEME) || url.starts_with(crate::shown_files::ZOOM)
     };
-    if let Some(url) = screen.view.hover_link.as_ref().filter(|u| !internal(u)) {
+    if let Some(url) = &screen.view.hover_link {
+        let only_text = internal(url);
         for (i, row) in rows.window(first, height) {
             let y = area.y + u16::try_from(i - first).unwrap_or(0);
             for (from, to, _) in row.links.iter().filter(|(_, _, u)| u == url) {
@@ -133,7 +135,24 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
                 let underline = Style::new().add_modifier(Modifier::UNDERLINED);
                 // 图占着的格子不画：下划线会叠在图上（链接卡片的封面图，2026-10-02 项目主人报）。
                 let buf = frame.buffer_mut();
-                for cx in cells.left()..cells.right() {
+                // 只画字下面：这一截里第一个字到最后一个字，中间的空格接上，右边空着的不画。
+                let (mut left, mut right) = (cells.left(), cells.right());
+                if only_text {
+                    let written = |cx: u16| {
+                        let cell = &buf[(cx, y)];
+                        !cell.symbol().trim().is_empty() && !super::figure_rows::is_picture(cell)
+                    };
+                    let mut text = (cells.left()..cells.right()).filter(|&cx| written(cx));
+                    let first = text.next();
+                    let last = text.next_back().or(first);
+                    let (Some(first), Some(last)) = (first, last) else {
+                        continue;
+                    };
+                    // 最后那个是宽字的占两格，后一格是空的：照样带上。
+                    let wide = buf[(last, y)].symbol().width() > 1;
+                    (left, right) = (first, (last + 1 + u16::from(wide)).min(cells.right()));
+                }
+                for cx in left..right {
                     let cell = &mut buf[(cx, y)];
                     if !super::figure_rows::is_picture(cell) {
                         cell.set_style(underline);
