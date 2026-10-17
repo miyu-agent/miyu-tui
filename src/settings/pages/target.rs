@@ -40,6 +40,8 @@ pub enum Target {
     ModelOr,
     /// 下拉加「其他」手写（`combo`）：选了「其他…」开编辑窗，别的照旧写个人设置（「配置页」第 44 条）。
     Combo,
+    /// 列表的一条（「配置页」第 47 条）：改第几条，`None` 是新加；写好、`Esc` 回到列表窗。
+    ListItem(Box<super::list::ListEdit>, Option<usize>),
     /// 跟随头像的「主色」：写这个人格的主题色（`persona.set` 的 `seed`，存在人格上，两个头看到的是同一个；2026-10-14）。
     PersonaSeed(String),
 }
@@ -50,6 +52,7 @@ impl Settings {
         self.popup = match target {
             Target::Preset(view) => Some(Popup::Preset(*view)),
             Target::Persona(view) | Target::Avatar(view) => Some(Popup::Persona(*view)),
+            Target::ListItem(list, _) => Some(Popup::List(*list)),
             _ => None,
         };
     }

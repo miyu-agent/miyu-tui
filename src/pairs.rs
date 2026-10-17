@@ -27,8 +27,9 @@ pub enum ListKey {
     Close,
 }
 
-/// 列表的按键：上下挪，`Enter` 改这一轮，`a` 加一轮，`d` 删，`J` `K`（`Shift+↓` `Shift+↑`）往下往上挪，`Esc` 关。
-pub fn list_key(pairs: &mut Vec<Pair>, sel: &mut usize, key: KeyEvent) -> ListKey {
+/// 列表的按键：上下挪，`Enter` 改这一条，`a` 加一条，`d` 删，`J` `K`（`Shift+↓` `Shift+↑`）往下往上挪，`Esc` 关。示范对话
+/// 和配置页的列表项（「配置页」第 47 条）共用。
+pub fn list_key<T>(pairs: &mut Vec<T>, sel: &mut usize, key: KeyEvent) -> ListKey {
     let shift = key.modifiers.contains(KeyModifiers::SHIFT);
     let last = pairs.len().saturating_sub(1);
     match key.code {

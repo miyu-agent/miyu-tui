@@ -1289,7 +1289,8 @@
       "unavailable": "Not installed",
       "custom_model": "Enter a model…",
       "combo": ["Not set", "Other…"],
-      "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]]
+      "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]],
+      "list": {"empty": "None yet", "whole": "Enter a whole number", "hints": [["Enter", "edit"], ["a", "add"], ["d", "delete"], ["J/K", "move"], ["Esc", "done"]]}
     }
   },
   "oobe": {

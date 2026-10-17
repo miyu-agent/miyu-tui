@@ -1289,7 +1289,8 @@
       "unavailable": "未インストール",
       "custom_model": "モデルを入力…",
       "combo": ["設定しない", "その他…"],
-      "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]]
+      "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]],
+      "list": {"empty": "まだありません", "whole": "整数を入力してください", "hints": [["Enter", "変更"], ["a", "追加"], ["d", "削除"], ["J/K", "移動"], ["Esc", "完了"]]}
     }
   },
   "oobe": {
