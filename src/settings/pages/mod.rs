@@ -7,6 +7,7 @@ pub mod choose;
 pub mod combo;
 pub mod dialogs;
 mod keys;
+pub mod list;
 pub mod mascots;
 pub mod model_or;
 pub mod packages;
@@ -275,6 +276,8 @@ pub struct Texts {
     pub combo: [String; 2],
     /// 几行字的编辑窗（`textarea`，第 45 条）下面的按键提示，同引导的大编辑浮窗。
     pub sheet_hints: Vec<[String; 2]>,
+    /// 列表窗（第 47 条）。
+    pub list: list::ListTexts,
 }
 
 /// 一项现在的值：读来的最终值和来自哪一层；哪一层都没写的照清单的默认，来自「默认」。

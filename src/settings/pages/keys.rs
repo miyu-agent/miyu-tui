@@ -256,6 +256,8 @@ impl Settings {
             }
             "combo" => self.open_combo(&item, &value, texts),
             "textarea" => self.open_textarea(&item, &value),
+            "list" if super::list::editable(&item) => self.open_list(&item, &value),
+            "list" => self.list_not_editable(texts),
             "number" | "text" => {
                 let number = item.control == "number";
                 self.popup = Some(Popup::Line(LineEdit::open(
@@ -387,10 +389,22 @@ impl Settings {
             Popup::Line(mut edit) => {
                 match key.code {
                     KeyCode::Esc => return self.edit_cancel(edit.target),
-                    KeyCode::Enter => match edit.value() {
-                        Some(value) => return self.write_to(edit.target, &edit.key, value, texts),
-                        None => edit.error = Some(texts.more.bad_number.clone()),
-                    },
+                    KeyCode::Enter => {
+                        // 列表的一条（第 47 条）：清空了是去掉这一条，整数的写了别的照整数说。
+                        let item = matches!(edit.target, super::target::Target::ListItem(..));
+                        let blank = edit.editor.text().trim().is_empty();
+                        match edit.value() {
+                            _ if item && blank => {
+                                let value = Value::String(String::new());
+                                return self.write_to(edit.target, &edit.key, value, texts);
+                            }
+                            Some(value) => {
+                                return self.write_to(edit.target, &edit.key, value, texts);
+                            }
+                            None if item => edit.error = Some(texts.more.list.whole.clone()),
+                            None => edit.error = Some(texts.more.bad_number.clone()),
+                        }
+                    }
                     _ => {}
                 }
                 let editor = &mut edit.editor;
@@ -407,6 +421,7 @@ impl Settings {
                 self.popup = Some(Popup::Line(edit));
             }
             Popup::Sheet(edit) => self.sheet_key(edit, key, texts),
+            Popup::List(edit) => self.list_key(edit, key, texts),
             // 人格的窗（第 36 条）、示范对话列表和两格窗（第 41 条）。
             Popup::Persona(view) => self.persona_key(view, key, texts),
             Popup::Dialogs(view) => self.dialogs_key(view, key),
@@ -426,6 +441,7 @@ impl Settings {
             return;
         }
         if !self.model_or_write(&target, key, &value)
+            && !self.list_write(&target, &value, texts)
             && !self.combo_write(&target, key, &value)
             && !self.preset_write(target.clone(), key, value.clone())
             && !self.avatar_write(target.clone(), &value)

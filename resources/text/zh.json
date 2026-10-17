@@ -1289,7 +1289,8 @@
       "unavailable": "未安装",
       "custom_model": "输入模型…",
       "combo": ["不设", "其他…"],
-      "sheet_hints": [["Enter", "换行"], ["Ctrl+G", "外部编辑器"], ["Esc", "完成"]]
+      "sheet_hints": [["Enter", "换行"], ["Ctrl+G", "外部编辑器"], ["Esc", "完成"]],
+      "list": {"empty": "还没有", "whole": "请输入整数", "hints": [["Enter", "编辑"], ["a", "添加"], ["d", "删除"], ["J/K", "移动"], ["Esc", "完成"]]}
     }
   },
   "oobe": {
