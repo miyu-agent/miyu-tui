@@ -76,6 +76,9 @@ pub struct InputBox {
     browsing: Option<usize>,
     /// 开始翻历史之前没发的那句：翻过最新一条回到它。
     draft: Draft,
+    /// 开始翻历史时框里的字：不空的只翻以它开头的（像 fish，2026-10-17 项目主人定：打「/goal」按 `↑` 调出上一句
+    /// 带参数的 `/goal`）。
+    prefix: String,
     /// 画的时候把光标滚进可见范围。滚轮滚过以后关掉，不然滚一下就被拽回光标那里。
     follow: bool,
     /// 撤销时放回来的那句：恢复时它还没动过的话收回去。
@@ -116,6 +119,7 @@ impl InputBox {
             history: Vec::new(),
             saved: Saved::default(),
             browsing: None,
+            prefix: String::new(),
             draft: Draft::default(),
             follow: false,
             put_back: None,
@@ -363,11 +367,32 @@ impl InputBox {
         {
             self.goal_col = None;
             self.editor.set_draft(draft);
+            // 它排在输入历史最前面：再按 `↑` 接着往旧的翻，不照它开头筛；`↓` 回到空的框。
+            self.browsing = Some(self.history.len());
+            self.prefix.clear();
+            self.draft = Draft::default();
             return;
+        }
+        if delta > 0 && self.browsing.is_none() {
+            return;
+        }
+        if self.browsing.is_none() {
+            self.prefix = self.editor.text().to_string();
         }
         let newest = self.history.len();
         let at = self.browsing.unwrap_or(newest);
-        let Some(next) = at.checked_add_signed(delta).filter(|&n| n <= newest) else {
+        // 框里原来有字的，只翻以它开头的那几条（和它一模一样的跳过）；翻过最新一条回到原来的字。
+        let prefix = &self.prefix;
+        let fits = |i: &usize| {
+            let text = &self.history[*i].draft.text;
+            prefix.is_empty() || (text.starts_with(prefix.as_str()) && text != prefix)
+        };
+        let next = if delta < 0 {
+            (0..at).rev().find(fits)
+        } else {
+            Some((at + 1..newest).find(fits).unwrap_or(newest))
+        };
+        let Some(next) = next else {
             return;
         };
         if self.browsing.is_none() {

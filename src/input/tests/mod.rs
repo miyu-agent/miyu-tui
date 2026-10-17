@@ -300,7 +300,7 @@ fn up_on_the_first_line_browses_history_and_down_returns_the_draft() {
     let mut i = input(20);
     i.remember("第一句".into());
     i.remember("第二句".into());
-    i.paste("没发的");
+    i.paste("第");
     press(&mut i, KeyCode::Up, KeyModifiers::NONE);
     assert_eq!(i.editor.text(), "第二句");
     press(&mut i, KeyCode::Up, KeyModifiers::NONE);
@@ -309,7 +309,39 @@ fn up_on_the_first_line_browses_history_and_down_returns_the_draft() {
     assert_eq!(i.editor.text(), "第一句", "最旧的再往上不动");
     press(&mut i, KeyCode::Down, KeyModifiers::NONE);
     press(&mut i, KeyCode::Down, KeyModifiers::NONE);
-    assert_eq!(i.editor.text(), "没发的", "翻过最新一条回到没发的那句");
+    assert_eq!(i.editor.text(), "第", "翻过最新一条回到没发的那句");
+}
+
+#[test]
+fn with_words_in_the_box_up_only_browses_what_starts_with_them() {
+    // 2026-10-17 项目主人定（像 fish）：打「/goal」按 `↑` 调出上一句带参数的 `/goal`，别的跳过、和它一样的跳过。
+    let mut i = input(40);
+    i.remember("/goal 把测试写完".into());
+    i.remember("随便说一句".into());
+    i.remember("/goal".into());
+    i.remember("/goal --rounds 5 写文档".into());
+    i.remember("再说一句".into());
+    i.paste("/goal");
+    press(&mut i, KeyCode::Up, KeyModifiers::NONE);
+    assert_eq!(i.editor.text(), "/goal --rounds 5 写文档");
+    press(&mut i, KeyCode::Up, KeyModifiers::NONE);
+    assert_eq!(
+        i.editor.text(),
+        "/goal 把测试写完",
+        "跳过「随便说一句」和一样的「/goal」"
+    );
+    press(&mut i, KeyCode::Up, KeyModifiers::NONE);
+    assert_eq!(i.editor.text(), "/goal 把测试写完", "到头不动");
+    press(&mut i, KeyCode::Down, KeyModifiers::NONE);
+    assert_eq!(i.editor.text(), "/goal --rounds 5 写文档");
+    press(&mut i, KeyCode::Down, KeyModifiers::NONE);
+    assert_eq!(i.editor.text(), "/goal", "翻过最新一条回到打的字");
+    // 没有以它开头的：不动。
+    let mut j = input(40);
+    j.remember("说一句".into());
+    j.paste("没发的");
+    press(&mut j, KeyCode::Up, KeyModifiers::NONE);
+    assert_eq!(j.editor.text(), "没发的");
 }
 
 #[test]
