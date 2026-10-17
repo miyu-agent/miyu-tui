@@ -49,6 +49,8 @@ pub struct Texts {
     pub deleted_many: String,
     /// 删了，`{title}`。
     pub deleted: String,
+    /// 有确认、提问在等你回答的会话，右边写的（「确认和提问的抽屉」第 10 条）。
+    pub asking: String,
     /// 正在用的不能删。
     pub delete_current: String,
     /// 置顶了、取消了。
@@ -57,11 +59,20 @@ pub struct Texts {
     pub unpinned: String,
 }
 
-/// 框（标题、提示）、排好的行、每一行是对得上的第几个；`current` 是正在用的会话，放不下 `max` 行时离选中的远的少露。
+/// 哪个会话是正在用的，哪几个有确认、提问在等你（「确认和提问的抽屉」第 10 条）。
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Marks<'a> {
+    /// 正在用的会话。
+    pub current: Option<&'a str>,
+    /// 在问你的会话。
+    pub asking: &'a [String],
+}
+
+/// 框（标题、提示）、排好的行、每一行是对得上的第几个；`marks.current` 是正在用的会话，放不下 `max` 行时离选中的远的少露。
 /// `frame` 是转圈转到第几帧。
 pub fn lines(
     list: &SessionList,
-    current: Option<&str>,
+    marks: Marks<'_>,
     here: &str,
     config: &Config,
     width: u16,
@@ -139,7 +150,13 @@ pub fn lines(
                 format!("  #{}", short(&info.session)),
                 theme::faint(),
             ));
-            let right = Span::styled(right(info, current, here, now, config), theme::faint());
+            let Marks { current, asking } = marks;
+            let right = if asking.contains(&info.session) {
+                // 这个会话在问你（「确认和提问的抽屉」第 10 条）：切过去就弹。
+                Span::styled(texts.asking.clone(), theme::accent())
+            } else {
+                Span::styled(right(info, current, here, now, config), theme::faint())
+            };
             let lead = marker(info, current, frame, config);
             let line = panel::item_with(i == list.selected, lead, content, Some(right), width);
             (Some(i), line)
@@ -303,7 +320,10 @@ mod tests {
         ]);
         let (_, rows, _) = lines(
             &list,
-            Some("0000-aaaaaaaa"),
+            super::Marks {
+                current: Some("0000-aaaaaaaa"),
+                asking: &[],
+            },
             "~/src/miyu",
             &config,
             90,
@@ -352,7 +372,10 @@ mod tests {
         let shown = |list: &SessionList| -> Vec<String> {
             let (_, rows, _) = lines(
                 list,
-                Some("0000-aaaaaaaa"),
+                super::Marks {
+                    current: Some("0000-aaaaaaaa"),
+                    asking: &[],
+                },
                 "~/src/miyu",
                 &config,
                 90,

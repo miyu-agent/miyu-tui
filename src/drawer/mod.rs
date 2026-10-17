@@ -272,12 +272,15 @@ impl Drawer {
     }
 }
 
-/// 排着的抽屉：一次开一个，了结一个开下一个（第 1 条）。
+/// 排着的抽屉：一次开一个，了结一个开下一个（第 1 条）。不是正在看的这棵会话树（主会话和它派出去的子代理）问的先搁着，
+/// 不弹；切过去时放回来（第 10 条，2026-10-18 项目主人）。
 #[derive(Debug, Default)]
 pub struct Drawers {
     /// 现在开着的这一个。
     pub current: Option<Drawer>,
     queue: VecDeque<Drawer>,
+    /// 别的会话问的，先搁着。
+    held: Vec<Drawer>,
 }
 
 impl Drawers {
@@ -300,10 +303,12 @@ impl Drawers {
         self.current.as_ref().is_some_and(|d| d.editing.is_some())
     }
 
-    /// 这一次调用了结了（别的头答了、打断了、补发里一问一答都在）：开着的收起、排着的拿掉；交回收起的是不是开着的那个。
+    /// 这一次调用了结了（别的头答了、打断了、补发里一问一答都在）：开着的收起、排着的、搁着的拿掉；交回收起的是不是开着的
+    /// 那个。
     pub fn settle(&mut self, owner: &str, call_id: &str) -> bool {
         let this = |d: &Drawer| d.owner == owner && d.call_id == call_id;
         self.queue.retain(|d| !this(d));
+        self.held.retain(|d| !this(d));
         if self.current.as_ref().is_some_and(this) {
             self.current = self.queue.pop_front();
             return true;
@@ -316,6 +321,38 @@ impl Drawers {
         if let Some(open) = self.current.replace(drawer) {
             self.queue.push_front(open);
         }
+    }
+
+    /// 别的会话问的：先搁着，不开。
+    pub fn hold(&mut self, drawer: Drawer) {
+        self.held.push(drawer);
+    }
+
+    /// 换了正在看的会话树：不在树里的（`ours` 说不是的）开着的、排着的搁起来，搁着的在树里的放回来排着。
+    pub fn regroup(&mut self, ours: &dyn Fn(&str) -> bool) {
+        let mut all: Vec<Drawer> = self.current.take().into_iter().collect();
+        all.extend(self.queue.drain(..));
+        all.append(&mut self.held);
+        for drawer in all {
+            if ours(&drawer.owner) {
+                self.push(drawer);
+            } else {
+                self.held.push(drawer);
+            }
+        }
+    }
+
+    /// 从头重读这个会话（补发会带回它还在问的）：搁着的它的不要了。
+    pub fn drop_held(&mut self, owner: &str) {
+        self.held.retain(|d| d.owner != owner);
+    }
+
+    /// 有搁着的提问、确认的会话（会话列表里标「在问」）。
+    pub fn held_owners(&self) -> Vec<String> {
+        let mut owners: Vec<String> = self.held.iter().map(|d| d.owner.clone()).collect();
+        owners.sort();
+        owners.dedup();
+        owners
     }
 
     /// 了结现在这一个，交回它；排着的下一个打开。

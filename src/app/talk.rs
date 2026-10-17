@@ -77,6 +77,33 @@ impl Talk {
         })
     }
 
+    /// 正在看的这棵会话树：主会话和它派出去的子代理（一层层往下，照任务表）。别的会话问的不弹（「确认和提问的抽屉」第 10 条）。
+    pub(super) fn family(&self) -> Vec<String> {
+        let Some(main) = self.main_session() else {
+            return Vec::new();
+        };
+        let board_of = |s: &str| {
+            if self.transcript.session.as_deref() == Some(s) {
+                Some(&self.board)
+            } else {
+                self.parked.get(s).map(|p| &p.board)
+            }
+        };
+        let mut family = vec![main];
+        let mut at = 0;
+        while at < family.len() {
+            if let Some(board) = board_of(&family[at].clone()) {
+                for child in board.jobs.iter().filter_map(|j| j.session.clone()) {
+                    if !family.contains(&child) {
+                        family.push(child);
+                    }
+                }
+            }
+            at += 1;
+        }
+        family
+    }
+
     /// 每一份任务表：正在看的、停放着的。
     pub(super) fn boards(&self) -> impl Iterator<Item = &Board> {
         std::iter::once(&self.board).chain(self.parked.values().map(|p| &p.board))
