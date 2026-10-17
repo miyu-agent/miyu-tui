@@ -24,19 +24,16 @@ fn a_second_view_opened_mid_turn_keeps_the_turn_open_and_keeps_up() {
     first.wait_for("工作区");
     first.say("看看笔记");
     first.wait_for_line("…");
-    // 后开的在别的目录（herdr 的窗格）：要写一句「工作区：…」。
+    // 后开的在别的目录（herdr 的窗格）：不写「工作区：…」那一句（2026-10-18 项目主人），正在跑的这一轮照样接上。
     let elsewhere = home.work.join("sub");
     std::fs::create_dir_all(&elsewhere).unwrap();
     let mut second = home.tui_wide_in("zh_CN.UTF-8", 100, &elsewhere);
-    second.wait_for("切换到当前目录");
+    second.wait_for("看看笔记");
     second.pump(Duration::from_millis(500));
-    let lines = second.lines();
-    let row = |word: &str| lines.iter().position(|l| l.contains(word));
-    let (note, said) = (row("切换到当前目录"), row("看看笔记"));
     assert!(
-        note.is_some() && note < said,
-        "那一句插在正在跑的这一轮上面：\n{}",
-        lines.join("\n")
+        !second.shows("切换到当前目录"),
+        "{}",
+        second.lines().join("\n")
     );
     // 接进来以前她已经说出来的（核心 9-8 八补：订阅时补推正在流的块）：后开的也有，那一段照她开口收起，和先开的一样。
     second.wait_for_line("…");

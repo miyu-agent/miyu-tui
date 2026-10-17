@@ -599,7 +599,6 @@
   "workspace": {
     "need_path": "请指定路径",
     "pending": "新会话的工作区：{path}",
-    "elsewhere": "工作区：{path} · /workspace . 切换到当前目录",
     "changed": "工作区已切换到 {path}"
   },
   "themes": {

@@ -165,8 +165,6 @@ pub struct Transcript {
     older: pages::Older,
     /// 会话在哪个目录干活（订阅回应、`session.workspace_changed`，核心 9-7 上）；还没开会话、核心旧的是 `None`。
     pub workspace: Option<String>,
-    /// 接上时已经说过她在哪干活了（`workspace.rs`）。
-    workspace_told: bool,
 }
 
 impl Transcript {

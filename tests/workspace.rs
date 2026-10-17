@@ -1,5 +1,5 @@
 //! 工作区是会话的属性（蓝图 `tui.md`「新会话：人格、工作区」第 5 条，核心 9-7 上）：接着老会话说话，她照会话记着的目录
-//! 干活；终端在别的目录接上时正文末尾写一行暗色的「她在 <目录> 干活」，侧边栏「工作目录」写会话的。
+//! 干活；终端在别的目录接上时不提示（2026-10-18 项目主人），侧边栏「工作目录」写会话的。
 
 mod support;
 
@@ -9,7 +9,8 @@ use miyu_session::testkit::{Play, Script};
 use support::Home;
 
 #[test]
-fn resuming_from_another_directory_says_where_she_works() {
+fn resuming_from_another_directory_keeps_her_workspace_and_says_nothing() {
+    // 2026-10-18 项目主人：resume 不换会话的工作区，也不用「工作区：… · /workspace . 切换到当前目录」那一句。
     let home = Home::with_settings(
         Script::new([Play::Says("在这。")]),
         "[ui]\nstartup = \"recent\"\n",
@@ -18,8 +19,6 @@ fn resuming_from_another_directory_says_where_she_works() {
     first.wait_for("工作区");
     first.say("开个会话");
     first.wait_for("在这。");
-    first.pump(Duration::from_millis(300));
-    assert!(!first.shows("切换到当前目录"), "在同一个目录不用说");
     drop(first);
     let elsewhere = std::env::temp_dir().join(format!("miyu-tui-elsewhere-{}", std::process::id()));
     std::fs::create_dir_all(&elsewhere).expect("建得了");
@@ -31,27 +30,16 @@ fn resuming_from_another_directory_says_where_she_works() {
         .into_owned();
     let mut tui = home.tui_wide_in("zh_CN.UTF-8", 140, &elsewhere);
     tui.wait_for("在这。");
-    tui.wait_for("切换到当前目录");
     // 等到侧边栏也画出来再看：读屏可能正赶上半帧（macOS CI 上截到过只画了上半截的一帧，2026-10-13）。
     let end = std::time::Instant::now() + support::WAIT;
-    while tui.lines().join("\n").matches(&work).count() < 2 && std::time::Instant::now() < end {
+    while !tui.shows(&work) && std::time::Instant::now() < end {
         tui.pump(Duration::from_millis(100));
     }
+    tui.pump(Duration::from_millis(300));
     let screen = tui.lines().join("\n");
-    // 那句通知从「工作区：」写到「切换到当前目录」，路径长了会折成几行（macOS 的临时目录很长）：取左边正文那一截拼起来再找。
-    let lines = tui.lines();
-    let from = lines.iter().position(|l| l.contains("工作区："));
-    let to = lines.iter().position(|l| l.contains("切换到当前目录"));
-    let notice: String = match (from, to) {
-        (Some(from), Some(to)) if from <= to => lines[from..=to]
-            .iter()
-            .map(|l| l.split('│').next().unwrap_or_default().trim())
-            .collect(),
-        _ => String::new(),
-    };
-    assert!(notice.contains(&work), "{screen}");
+    assert!(!screen.contains("切换到当前目录"), "{screen}");
     // 侧边栏的工作区是会话的，不是终端所在的。
-    assert!(screen.matches(&work).count() >= 2, "{screen}");
+    assert!(screen.contains(&work), "{screen}");
     assert!(!screen.contains("miyu-tui-elsewhere"), "{screen}");
     drop(std::fs::remove_dir_all(&elsewhere));
 }
