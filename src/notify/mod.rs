@@ -94,6 +94,8 @@ pub struct Notifier {
     /// kitty 通知的编号：同一个界面的新通知顶掉旧的。
     id: String,
     outbox: Vec<String>,
+    /// 欠着的通知：一轮做完了、长期目标还在跑（蓝图「系统通知」第 1 条）。
+    owed: Option<Event>,
 }
 
 impl Notifier {
@@ -112,6 +114,7 @@ impl Notifier {
             sounds,
             id: format!("miyu-{}", std::process::id()),
             outbox: Vec::new(),
+            owed: None,
             look,
             texts,
         }
@@ -162,6 +165,24 @@ impl Notifier {
             && let Some(file) = self.sounds.as_deref().and_then(sound::materialize)
         {
             sound::play(self.look.players.here(), &file);
+        }
+    }
+
+    /// 先欠着这一件（长期目标还在跑，后面多半还有续轮）：接着开了一轮的 [`Notifier::forgive`]，目标停下来的
+    /// [`Notifier::settle`]。
+    pub fn owe(&mut self, event: Event) {
+        self.owed = Some(event);
+    }
+
+    /// 欠着的不弹了（接着开了一轮、断开了）。
+    pub fn forgive(&mut self) {
+        self.owed = None;
+    }
+
+    /// 欠着的现在弹。
+    pub fn settle(&mut self) {
+        if let Some(event) = self.owed.take() {
+            self.tell(event);
         }
     }
 

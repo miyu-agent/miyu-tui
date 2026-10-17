@@ -1,8 +1,9 @@
 //! 界面这一边什么时候通知（蓝图 `tui.md`「系统通知」第 1、6 条）：一轮结束弹「回答好了」「出错了」，抽屉打开弹
-//! 「在等你确认」「在等你回答」；在 herdr 里报在做、在等、空闲。弹不弹、响不响由 `notify::plan` 定。
+//! 「在等你确认」「在等你回答」；在 herdr 里报在做、在等、空闲。弹不弹、响不响由 `notify::plan` 定。长期目标还在跑的，
+//! 「回答好了」先欠着，目标停下来才弹（2026-10-17）。
 
 use super::App;
-use crate::core::{EndReason, Push, Update};
+use crate::core::{EndReason, GoalState, Push, Update};
 use crate::notify::{Event, State};
 
 impl App {
@@ -23,12 +24,26 @@ impl App {
         match update {
             // 一轮开始：有抽屉开着的照旧在等（别处来的话可以在抽屉开着时开一轮）。
             Update::Push(Push::TurnStarted(..)) => {
+                // 接着开了一轮（续轮、人说的话）：欠着的「回答好了」不弹了。
+                self.notifier.forgive();
                 self.notifier
                     .state(herdr_state(self.talk.drawers.open(), true));
+            }
+            // 长期目标停下来了（等人开口、停着、卡住、做完、清掉）：欠着的现在弹。
+            Update::Push(Push::Goal(goal)) => {
+                if !goal.as_ref().is_some_and(running) {
+                    self.notifier.settle();
+                }
             }
             Update::Push(Push::TurnEnded(reason)) => {
                 if seen && !manual {
                     match reason {
+                        // 长期目标还在跑：后面多半接着开续轮，先欠着。
+                        EndReason::Completed
+                            if self.talk.transcript.goal.as_ref().is_some_and(running) =>
+                        {
+                            self.notifier.owe(Event::Replied);
+                        }
                         EndReason::Completed => self.notifier.tell(Event::Replied),
                         EndReason::Error => self.notifier.tell(Event::Failed),
                         EndReason::Interrupted | EndReason::Other(_) => {}
@@ -38,7 +53,10 @@ impl App {
                 self.notifier
                     .state(herdr_state(self.talk.drawers.open(), false));
             }
-            Update::Disconnected => self.notifier.state(State::Idle),
+            Update::Disconnected => {
+                self.notifier.forgive();
+                self.notifier.state(State::Idle);
+            }
             _ => {}
         }
     }
@@ -65,6 +83,11 @@ impl App {
         );
         self.notifier.state(state);
     }
+}
+
+/// 长期目标在跑：一轮结束以后核心会接着开续轮。
+fn running(goal: &crate::core::Goal) -> bool {
+    goal.state == GoalState::Running
 }
 
 /// 在 herdr 里报哪种（蓝图「系统通知」第 6 条）：有抽屉开着就是在等，在等你比在做要紧；不然一轮在跑是在做，都没有是空闲。

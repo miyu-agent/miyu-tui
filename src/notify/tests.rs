@@ -125,3 +125,25 @@ fn herdr_keeps_desktop_notifications_and_owns_only_sound() {
         );
     }
 }
+
+#[test]
+fn an_owed_notification_pops_only_when_settled_and_not_after_being_forgiven() {
+    // 2026-10-17 项目主人报：长期目标每开一轮续轮都弹一次「已完成」。目标还在跑的先欠着（「系统通知」第 1 条）。
+    let config = Config::builtin().unwrap();
+    let mut n = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        env(&[("TERM", "xterm-kitty")]),
+        None,
+    );
+    n.owe(Event::Replied);
+    assert!(n.outbox().is_empty(), "欠着不弹");
+    n.forgive();
+    n.settle();
+    assert!(n.outbox().is_empty(), "接着开了一轮：不弹了");
+    n.owe(Event::Replied);
+    n.settle();
+    assert_eq!(n.outbox().len(), 1, "目标停下来：弹一次");
+    n.settle();
+    assert!(n.outbox().is_empty(), "只弹一次");
+}
