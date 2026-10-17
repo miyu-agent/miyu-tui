@@ -79,7 +79,7 @@ mod tests {
         page.key(KeyEvent::new(code, KeyModifiers::NONE), &texts);
     }
 
-    /// 人格的窗开着，光标在头像那一行（名字下面）；原来有头像，版本 `v9`。
+    /// 人格的窗开着，光标在头像那一行；原来有头像，版本 `v9`。
     fn opened() -> Settings {
         let detail = Detail {
             id: "mine".into(),
@@ -92,7 +92,10 @@ mod tests {
                 id: "mine".into(),
                 detail: Some(detail),
                 error: None,
-                cursor: 1,
+                cursor: super::super::persona_edit::FIELDS
+                    .iter()
+                    .position(|f| *f == super::super::persona_edit::Field::Avatar)
+                    .unwrap(),
             })),
             ..Settings::default()
         }

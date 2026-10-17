@@ -1055,11 +1055,12 @@
       "package_items": "{n} settings",
       "detail": [
         "Name",
-        "Persona prompt",
+        "Detailed persona prompt",
         "Example dialog",
         "Persona reminders",
         "{n} rounds",
-        "Written"
+        "Written",
+        "Short description"
       ],
       "hints": [
         [
