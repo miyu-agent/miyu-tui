@@ -46,6 +46,8 @@ pub struct EditTexts {
 pub enum Field {
     /// 名字。
     Name,
+    /// 简单描述（`persona.summary`，「配置页」第 36 条，2026-10-17）：开编辑窗。
+    Summary,
     /// 头像：开编辑窗填图片路径（`avatar.rs`）。
     Avatar,
     /// 一份提示词（[`PROMPTS`] 里的第几个）：交给编辑器。
@@ -54,9 +56,10 @@ pub enum Field {
     Examples,
 }
 
-/// 人格的窗里的五行：名字、头像、人格提示词、示范对话、人设提醒短语。
-pub const FIELDS: [Field; 5] = [
+/// 人格的窗里的六行：名字、简单描述、头像、具体人格提示词、示范对话、人设提醒短语。
+pub const FIELDS: [Field; 6] = [
     Field::Name,
+    Field::Summary,
     Field::Avatar,
     Field::Prompt(0),
     Field::Examples,
@@ -117,6 +120,11 @@ impl Settings {
             Field::Name => {
                 let current = detail.name.map_or(Value::Null, Value::String);
                 let edit = LineEdit::open("persona.name", &words.detail[0], false, &current);
+                Popup::Line(edit.to(Target::Persona(Box::new(view))))
+            }
+            Field::Summary => {
+                let current = detail.summary.map_or(Value::Null, Value::String);
+                let edit = LineEdit::open("persona.summary", &words.detail[6], false, &current);
                 Popup::Line(edit.to(Target::Persona(Box::new(view))))
             }
             Field::Prompt(i) => {
@@ -431,6 +439,53 @@ mod tests {
         assert_eq!(
             asks[0].2["prompts"]["persona"],
             json!({"text": "", "expect": "v1"})
+        );
+    }
+
+    #[test]
+    fn the_short_description_sits_under_the_name_and_is_saved_as_the_summary() {
+        // 「配置页」第 36 条（2026-10-17 项目主人定）：简单描述就是 `persona.summary`，名字下面一行。
+        use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+        use super::{FIELDS, Field};
+        use crate::settings::pages::personas::Detail;
+        use crate::settings::popup::Popup;
+        assert_eq!(FIELDS[1], Field::Summary, "名字下面一行");
+        let texts = crate::config::Config::builtin().unwrap().text.settings;
+        let detail = Detail {
+            id: "mine".into(),
+            summary: Some("会写诗".into()),
+            ..Detail::default()
+        };
+        let mut page = Settings {
+            popup: Some(Popup::Persona(PersonaView {
+                id: "mine".into(),
+                detail: Some(detail),
+                error: None,
+                cursor: 1,
+            })),
+            ..Settings::default()
+        };
+        let press = |page: &mut Settings, code| {
+            page.key(KeyEvent::new(code, KeyModifiers::NONE), &texts);
+        };
+        press(&mut page, KeyCode::Enter);
+        let Some(Popup::Line(edit)) = &page.popup else {
+            panic!("开编辑窗：{:?}", page.popup);
+        };
+        assert_eq!(
+            (edit.key.as_str(), edit.editor.text()),
+            ("persona.summary", "会写诗")
+        );
+        for c in "写代码的".chars() {
+            press(&mut page, KeyCode::Char(c));
+        }
+        press(&mut page, KeyCode::Enter);
+        let asks = page.take_asks();
+        assert_eq!(asks[0].1, "persona.set");
+        assert_eq!(
+            asks[0].2,
+            json!({"persona": "mine", "changes": [{"key": "persona.summary", "value": "写代码的"}]})
         );
     }
 }

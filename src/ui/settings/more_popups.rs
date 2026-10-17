@@ -120,9 +120,13 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
     } else {
         none()
     };
-    // 照 `FIELDS` 的先后：名字、头像、人格提示词、示范对话、人设提醒短语。
+    // 照 `FIELDS` 的先后：名字、简单描述、头像、具体人格提示词、示范对话、人设提醒短语。
     let rows = [
         (&words.detail[0], detail.name.clone().unwrap_or_else(none)),
+        (
+            &words.detail[6],
+            detail.summary.clone().unwrap_or_else(none),
+        ),
         (&avatar.avatar, avatar_value),
         (&words.detail[1], written(detail.prompt)),
         (&words.detail[2], examples),
