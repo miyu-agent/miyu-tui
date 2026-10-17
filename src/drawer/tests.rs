@@ -394,3 +394,36 @@ fn a_path_outside_the_workspace_or_in_a_private_directory_is_marked() {
         [Some("私密目录".into()), Some("工作区外".into()), None]
     );
 }
+
+#[test]
+fn drawers_from_another_session_are_held_until_its_tree_is_viewed() {
+    // 「确认和提问的抽屉」第 10 条（2026-10-18 项目主人）：别的会话问的不弹，搁着；切过去放回来，切走的那棵搁起来。
+    let from = |owner: &str, call: &str| {
+        let mut d = Drawer::question(None, two());
+        d.owner = owner.into();
+        d.call_id = call.into();
+        d
+    };
+    let mut drawers = Drawers::default();
+    drawers.push(from("a", "c1"));
+    drawers.hold(from("b", "c2"));
+    assert_eq!(
+        drawers.current.as_ref().map(|d| d.owner.as_str()),
+        Some("a")
+    );
+    assert_eq!(drawers.held_owners(), ["b"]);
+    // 切到 b：a 的搁起来，b 的放回来开着。
+    drawers.regroup(&|owner: &str| owner == "b");
+    assert_eq!(
+        drawers.current.as_ref().map(|d| d.call_id.as_str()),
+        Some("c2")
+    );
+    assert_eq!(drawers.held_owners(), ["a"]);
+    // 别的头答了 a 的：搁着的也拿掉。
+    drawers.settle("a", "c1");
+    assert!(drawers.held_owners().is_empty());
+    // 从头重读 b：搁着的不要了（补发会带回来）。
+    drawers.regroup(&|_: &str| false);
+    drawers.drop_held("b");
+    assert!(!drawers.open() && drawers.held_owners().is_empty());
+}

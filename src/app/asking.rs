@@ -14,14 +14,20 @@ impl App {
                 let owner = self.talk.main_session().unwrap_or_default();
                 self.asking_push(&owner, None, push)
             }
-            // 推送一律带着会话编号来（`serve.rs`）：主会话的当主会话的，别的是子会话问的（第 8 条）。切过去还在补发的那个
-            // 也是主会话的：补完就换上来（review，2026-10-11：原来当成子代理问的，答案不写进正文）。
+            // 推送一律带着会话编号来（`serve.rs`）：主会话的当主会话的，主会话派出去的（一层层往下）是子会话问的（第 8 条），
+            // 别的会话（切走了停放着的）问的先搁着、不弹（第 10 条，2026-10-18 项目主人：原来当成子代理问的、弹在看着的
+            // 会话里）。切过去还在补发的那个也是主会话的：补完就换上来（review，2026-10-11）。
             Update::Elsewhere { session, update } => match update.as_ref() {
                 Update::Push(push) => {
                     let main = self.talk.main_session().as_deref() == Some(session.as_str())
                         || self.talk.opening(session);
-                    let asker = (!main).then(|| session.clone());
-                    self.asking_push(session, asker.as_ref(), push)
+                    if main {
+                        return self.asking_push(session, None, push);
+                    }
+                    if self.talk.family().contains(session) {
+                        return self.asking_push(session, Some(session), push);
+                    }
+                    self.asking_elsewhere(session, push)
                 }
                 _ => false,
             },

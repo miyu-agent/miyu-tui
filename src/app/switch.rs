@@ -267,8 +267,9 @@ impl App {
             keep,
         });
         if !self.talk.parked.contains_key(&session) {
-            // 从头重读：以前记下的它的提问忘掉，补发来的照新的认。
+            // 从头重读：以前记下的它的提问忘掉（搁着的也不要了），补发来的照新的认。
             self.talk.asks.forget(&session);
+            self.talk.drawers.drop_held(&session);
             let mut fresh = Transcript::default();
             fresh.session = Some(session.clone());
             fresh.link = self.talk.transcript.link.clone();
@@ -306,5 +307,14 @@ impl App {
             self.screen.draw_now = true;
         }
         self.prune();
+        // 换了会话树：这棵树里搁着的提问放回来弹，原来那棵的搁起来（「确认和提问的抽屉」第 10 条）。
+        let family = self.talk.family();
+        let was_open = self.talk.drawers.open();
+        self.talk
+            .drawers
+            .regroup(&|owner: &str| family.iter().any(|f| f == owner));
+        if !was_open && self.talk.drawers.open() {
+            self.notify_drawer();
+        }
     }
 }

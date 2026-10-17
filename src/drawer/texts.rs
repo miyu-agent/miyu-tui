@@ -16,6 +16,8 @@ pub struct Texts {
     pub preview: String,
     /// 子会话问的，`{who}` 怎么写：`子代理 {name}`。
     pub agent: String,
+    /// 别的会话（不是正在看的这棵树）问的：不弹，提示一句，`{title}` 是那个会话的标题（第 10 条）。
+    pub elsewhere: String,
     /// 答过的标签后面接的。
     pub answered_tab: String,
     /// 最后一个标签：「确认」页。

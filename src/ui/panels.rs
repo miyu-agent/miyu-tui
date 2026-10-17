@@ -38,7 +38,10 @@ pub(super) fn content(
         Some(crate::app::Panel::Sessions) => match &seen.boxes.session_list {
             Some(list) => session_list::lines(
                 list,
-                seen.talk.main_session().as_deref(),
+                session_list::Marks {
+                    current: seen.talk.main_session().as_deref(),
+                    asking: &seen.talk.drawers.held_owners(),
+                },
                 seen.cwd,
                 seen.config,
                 width,
