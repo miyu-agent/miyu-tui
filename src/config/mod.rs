@@ -241,6 +241,10 @@ pub struct Texts {
     pub on_session: String,
     /// 知识库命中、读到的文档是第几页，`{page}` 是页码（核心 D-6 `detail`）。
     pub on_page: String,
+    /// 留言发给父会话（`send_message` 的 `to` 是 `parent`）。
+    pub to_parent: String,
+    /// 留言带的附件，`{names}` 是文件名。
+    pub attached: String,
     /// 预览放不下时最后一行，`{count}` 是省略了几行。
     pub omitted: String,
     /// 时间线收起那一行的字：界面语言是自动时换成语言表 `auto_summary` 那一种（英文），手动选了哪种照哪种（蓝图「时间线」第 17 条）。

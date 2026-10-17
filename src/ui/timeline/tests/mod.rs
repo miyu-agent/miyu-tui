@@ -19,6 +19,7 @@ mod live_tail;
 mod lone;
 mod mcp;
 mod memory;
+mod message;
 mod tabs;
 
 /// 一步：从 `start` 秒开始，用了 `took` 秒。

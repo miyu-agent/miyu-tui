@@ -15,7 +15,8 @@
     "kb_delete": "none",
     "memory_search": "memories",
     "kb_search": "hits",
-    "kb_read": "page"
+    "kb_read": "page",
+    "send_message": "message"
   },
   "spinner": [
     "⠋",

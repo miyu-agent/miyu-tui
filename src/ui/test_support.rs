@@ -18,6 +18,10 @@ pub struct Fixture {
     /// 链接卡片的账：测试里直接往里放卡片。
     pub cards: RefCell<crate::link_cards::LinkCards>,
     pub diagrams: RefCell<crate::diagrams::Diagrams>,
+    /// 会话列表：发给别的会话的那一步点开写它的标题。
+    pub sessions: Vec<crate::core::SessionInfo>,
+    /// 后台任务：发给子代理的那一步点开写它的名字。
+    pub board: crate::jobs::Board,
 }
 
 impl Fixture {
@@ -32,6 +36,8 @@ impl Fixture {
             figures,
             cards: RefCell::default(),
             diagrams: RefCell::default(),
+            sessions: Vec::new(),
+            board: crate::jobs::Board::default(),
         }
     }
 
@@ -51,6 +57,8 @@ impl Fixture {
             level: Level::Workspace,
             screen_rows: self.config.figures.max_rows,
             replaced: Default::default(),
+            sessions: &self.sessions,
+            board: Some(&self.board),
         }
     }
 }

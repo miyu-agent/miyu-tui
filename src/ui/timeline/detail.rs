@@ -85,7 +85,7 @@ pub fn pieces(
             }
         }
         Body::Page => out.extend(markdown_pieces(detail["text"].as_str()?, width, ctx)),
-        Body::None | Body::Arg(_) | Body::Diff(_) => return None,
+        Body::None | Body::Arg(_) | Body::Diff(_) | Body::Message => return None,
     }
     Some(out)
 }
