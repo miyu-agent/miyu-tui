@@ -142,7 +142,7 @@
     "sticker": "[スタンプ]",
     "image": "[画像]"
   },
-  "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "テキスト", "file": "ファイル"}, "lines": "{n} 行", "open": "クリックで開く", "updated": "更新済み", "no_program": "開けるプログラムがありません：{path}"},
+  "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "テキスト", "file": "ファイル"}, "lines": "{n} 行", "open": "クリックで開く", "updated": "更新済み", "no_program": "開けるプログラムがありません：{path}", "expired": "無効になりました", "missing": "ファイルがありません"},
   "mascot_failed": "マスコットパッケージを読み込めないため、内蔵のマスコットを使用しています",
   "markdown": {
     "image": "[画像: ",

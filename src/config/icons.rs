@@ -31,6 +31,10 @@ pub struct Icons {
     pub stash: String,
     /// 视频卡片封面下的播放标记（蓝图「链接卡片」第 3 条）。
     pub video: String,
+    /// 展示的卡片前面的种类图标：`html`、`markdown`、`code`、`pdf`、`text`、`file`（蓝图「展示」第 4 条，2026-10-17 项目主人
+    /// 要的）；没写的这一套不画。
+    #[serde(default)]
+    pub files: HashMap<String, String>,
 }
 
 impl Icons {

@@ -1,5 +1,5 @@
-//! 她给人看的文件（核心 D-5 `show`，蓝图 `tui.md`「展示」第 3–5 条）：图片画出来（同她发的图），别的一张卡片（文件名、
-//! 「种类 · 大小 · 几行」、「点击打开」）；同一个路径后来又展示过的缩成暗色一行「文件名 · 已更新」。
+//! 她给人看的文件（核心 D-5 `show`，蓝图 `tui.md`「展示」第 3–5 条）：图片画出来（同她发的图），别的一张卡片（种类图标、
+//! 文件名、「种类 · 大小 · 几行」、「点击打开」）；同一个路径后来又展示过的照常画，最后一行换成「已更新」。
 
 use ratatui::style::Modifier;
 use ratatui::text::Span;
@@ -22,10 +22,14 @@ pub struct ShownTexts {
     pub lines: String,
     /// 卡片最下面那一行。
     pub open: String,
-    /// 后来又展示过的：`文件名 · 已更新` 的后半。
+    /// 后来又展示过的：卡片最后一行、图下面那一行（第 5 条）。
     pub updated: String,
     /// 没有能打开它的程序（第 7 条）：`{path}` 是副本的完整路径。
     pub no_program: String,
+    /// 点了开不了：副本拷不出来（第 6 条）。
+    pub expired: String,
+    /// 点了开不了：核心那边读不出这份内容（第 6 条）。
+    pub missing: String,
 }
 
 /// 正文里这一条排成的行。
@@ -34,13 +38,17 @@ pub fn rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         return Vec::new();
     };
     let words = &ctx.config.text.shown;
-    let mut rows = if ctx.replaced.contains(&entry.id) {
-        let text = clip(&format!("{} · {}", heading(file), words.updated), ctx.width);
-        vec![ctx.row(ctx.blank_slot(), vec![Span::styled(text, theme::dim())])]
-    } else if file.image() {
-        image(file, ctx)
+    let replaced = ctx.replaced.contains(&entry.id);
+    let mut rows = if file.image() {
+        let mut rows = image(file, ctx);
+        // 后来同一个路径又展示过的图：下面一行暗色「已更新」（第 5 条）。
+        if replaced {
+            let text = clip(&words.updated, ctx.width);
+            rows.push(ctx.row(ctx.blank_slot(), vec![Span::styled(text, theme::dim())]));
+        }
+        rows
     } else {
-        card(file, entry.unopened.as_deref(), ctx)
+        card(file, entry.unopened.as_deref(), replaced, ctx)
     };
     // 点哪一行都是开它（第 6 条）：挂上展示的地址，点链接那一套认得（`app/shown.rs`）。
     let link = format!("{}{}", crate::shown_files::SCHEME, entry.id);
@@ -90,12 +98,17 @@ fn image(file: &Shown, ctx: &Ctx) -> Vec<Row> {
 
 /// 卡片：标题（加粗）、暗色「种类 · 大小 · 几行」、暗色「点击打开」（第 4 条）；开不了的最后一行换成黄字「没有能打开它的
 /// 程序：<副本路径>」（第 7 条），放不下的折行，路径照常能复制。
-fn card(file: &Shown, unopened: Option<&str>, ctx: &Ctx) -> Vec<Row> {
+fn card(file: &Shown, unopened: Option<&str>, replaced: bool, ctx: &Ctx) -> Vec<Row> {
     let words = &ctx.config.text.shown;
-    let mut title = vec![Span::styled(
+    // 种类图标（这一套写了的才画，2026-10-17 项目主人要的）。
+    let mut title = Vec::new();
+    if let Some(icon) = ctx.config.icons.files.get(kind_key(file)) {
+        title.push(Span::styled(format!("{icon} "), theme::dim()));
+    }
+    title.push(Span::styled(
         clip(heading(file), ctx.width),
         theme::md_link().add_modifier(Modifier::BOLD),
-    )];
+    ));
     // 标题后面暗色写文件名；标题就是文件名的不重复（2026-10-17 真模型走查：她常把文件名当标题写）。
     if file.title.as_deref().is_some_and(|t| t.trim() != file.name) {
         title.push(Span::styled(format!("  {}", file.name), theme::dim()));
@@ -116,12 +129,32 @@ fn card(file: &Shown, unopened: Option<&str>, ctx: &Ctx) -> Vec<Row> {
                 rows.push(ctx.row(ctx.blank_slot(), vec![Span::styled(line, theme::warn())]));
             }
         }
-        None => rows.push(ctx.row(
-            ctx.blank_slot(),
-            vec![Span::styled(clip(&words.open, ctx.width), theme::dim())],
-        )),
+        None => {
+            // 后来又展示过的：最后一行写「已更新」，点它开的是最新那一版（第 5 条）。
+            let last = if replaced {
+                &words.updated
+            } else {
+                &words.open
+            };
+            rows.push(ctx.row(
+                ctx.blank_slot(),
+                vec![Span::styled(clip(last, ctx.width), theme::dim())],
+            ));
+        }
     }
     rows
+}
+
+/// 种类图标的键：`html`、`pdf`、`markdown`、`code`（认出了语言的文本）、`text`、`file`。
+fn kind_key(file: &Shown) -> &'static str {
+    match file.media_type.as_str() {
+        "text/html" => "html",
+        "application/pdf" => "pdf",
+        "text/markdown" => "markdown",
+        "text/plain" if file.language.is_some() => "code",
+        "text/plain" => "text",
+        _ => "file",
+    }
 }
 
 /// 种类写成人话：代码写语言名。

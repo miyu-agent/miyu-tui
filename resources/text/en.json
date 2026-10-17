@@ -142,7 +142,7 @@
     "sticker": "[Sticker]",
     "image": "[Image]"
   },
-  "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "Text", "file": "File"}, "lines": "{n} lines", "open": "Click to open", "updated": "updated", "no_program": "No program can open it: {path}"},
+  "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "Text", "file": "File"}, "lines": "{n} lines", "open": "Click to open", "updated": "updated", "no_program": "No program can open it: {path}", "expired": "No longer available", "missing": "File not found"},
   "mascot_failed": "Mascot package unreadable, using the built-in mascot",
   "markdown": {
     "image": "[image: ",

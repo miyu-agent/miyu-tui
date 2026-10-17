@@ -142,7 +142,7 @@ fn showing_the_same_path_again_folds_the_earlier_card() {
     std::fs::write(home.work.join("notes.md"), "一行\n两行\n").expect("改笔记");
     tui.say("再看看");
     tui.wait_for("第二版。");
-    tui.wait_for("notes.md · 已更新");
+    tui.wait_for("已更新");
     assert_eq!(
         tui.lines()
             .iter()

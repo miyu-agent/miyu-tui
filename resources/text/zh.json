@@ -142,7 +142,7 @@
     "sticker": "[表情包]",
     "image": "[图片]"
   },
-  "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "文本", "file": "文件"}, "lines": "{n} 行", "open": "点击打开", "updated": "已更新", "no_program": "没有能打开它的程序：{path}"},
+  "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "文本", "file": "文件"}, "lines": "{n} 行", "open": "点击打开", "updated": "已更新", "no_program": "没有能打开它的程序：{path}", "expired": "已失效", "missing": "文件不存在"},
   "mascot_failed": "吉祥物包无法读取，已使用内置吉祥物",
   "markdown": {
     "image": "[图片: ",
