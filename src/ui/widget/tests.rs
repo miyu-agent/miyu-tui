@@ -100,16 +100,16 @@ fn a_crowded_list_folds_like_the_todo_list() {
     assert_eq!(
         texts(&got.lines),
         [
-            "☑ 已完成 2 项",
             "■ #128 · main                         3m",
             "✗ #127 · pkg-approval                 1h",
-            "… 还有 2 项"
+            "… 还有 2 项",
+            "☑ 已完成 2 项"
         ],
-        "做完的收成一行，放不下的收成最后一行；按钮整段放不下不画"
+        "做完的收成最底下一行（2026-10-18 项目主人：同待办），放不下的收成它上面一行；按钮整段放不下不画"
     );
     assert!(got.cut);
     assert_eq!(got.hits.len(), 1, "收起来的那几行不能点");
-    assert_eq!(got.hits[0].row, 1);
+    assert_eq!(got.hits[0].row, 0, "能点的那一行跟着排到最上面");
 }
 
 #[test]

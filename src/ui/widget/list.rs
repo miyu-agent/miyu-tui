@@ -1,5 +1,6 @@
-//! 列表（蓝图「界面块」第 5、6 条）：一条一行，记号、标题、说明，右边的字贴右边不被挤掉；放不下照待办收——做完的收成
-//! 一行，接着没做完的，后面放不下的收成 `… 还有 N 项`（「后台命令、子代理和侧边栏」第 4 条）。能点的整行是点击区。
+//! 列表（蓝图「界面块」第 5、6 条）：一条一行，记号、标题、说明，右边的字贴右边不被挤掉；放不下照待办收——没做完的在前，
+//! 放不下的收成 `… 还有 N 项`，做完的收成最底下一行（「后台命令、子代理和侧边栏」第 4 条；2026-10-18 项目主人定和待办一样挪到
+//! 最底下）。能点的整行是点击区。
 
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
@@ -28,14 +29,6 @@ pub(super) fn lay(items: &[Item], look: &Look, left: Option<usize>) -> Drawn {
         .iter()
         .filter(|i| i.state != Some(State::Done))
         .collect();
-    if done > 0 {
-        let text = look.texts.folded.replace("{count}", &done.to_string());
-        let mark = look.marks.done.clone();
-        drawn.lines.push(Line::from(vec![
-            Span::styled(mark, theme::dim()),
-            Span::styled(text, theme::dim()),
-        ]));
-    }
     let room = rows.saturating_sub(usize::from(done > 0));
     let shown = if open.len() <= room {
         open.len()
@@ -51,6 +44,14 @@ pub(super) fn lay(items: &[Item], look: &Look, left: Option<usize>) -> Drawn {
             .more
             .replace("{count}", &(open.len() - shown).to_string());
         drawn.lines.push(Line::styled(more, theme::dim()));
+    }
+    if done > 0 {
+        let text = look.texts.folded.replace("{count}", &done.to_string());
+        let mark = look.marks.done.clone();
+        drawn.lines.push(Line::from(vec![
+            Span::styled(mark, theme::dim()),
+            Span::styled(text, theme::dim()),
+        ]));
     }
     drawn
 }
