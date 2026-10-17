@@ -84,6 +84,8 @@ pub struct Step {
     pub display: BTreeMap<String, String>,
     /// 这一步发出去了几张图（`tool.result` 的 `sent`，核心 X-19）：收起那一行照它认「只为发一张图」（「时间线」第 17 条）。
     pub sent: usize,
+    /// 给人看的结构化结果（`tool.result` 的 `detail`）：点开照 `timeline.json` 的 `bodies` 画（「时间线」第 8 条）。
+    pub detail: Option<Value>,
 }
 
 /// 一步的种类。
@@ -150,6 +152,7 @@ impl Step {
             answers: Vec::new(),
             display: BTreeMap::new(),
             sent: 0,
+            detail: None,
         }
     }
 

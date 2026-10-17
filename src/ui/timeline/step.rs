@@ -267,16 +267,29 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                         })
                         .collect()
                 };
-                return match body {
-                    Body::None => Vec::new(),
+                match body {
+                    Body::None => return Vec::new(),
                     Body::Arg(key) => {
-                        each(step.arg(key).unwrap_or_default().trim(), style).collect()
+                        return each(step.arg(key).unwrap_or_default().trim(), style).collect();
                     }
-                    Body::Diff([old, new]) => rows(&diff::compare(
-                        step.arg(old).unwrap_or_default(),
-                        step.arg(new).unwrap_or_default(),
-                    )),
-                };
+                    Body::Diff([old, new]) => {
+                        return rows(&diff::compare(
+                            step.arg(old).unwrap_or_default(),
+                            step.arg(new).unwrap_or_default(),
+                        ));
+                    }
+                    // 照 `detail` 画；老日志没有、形状不对的，照下面画结果的原文。
+                    Body::Memories | Body::Hits | Body::Page => {
+                        let wrap = |text: &str, style: Style| each(text, style).collect();
+                        if let Some(pieces) = step
+                            .detail
+                            .as_ref()
+                            .and_then(|d| super::detail::pieces(body, d, style, width, ctx, &wrap))
+                        {
+                            return pieces;
+                        }
+                    }
+                }
             }
             // 出错、被拒的编辑没改成：点开写为什么（结果的字，红），不画差异——绿的 `+` 行看着像写进去了（第 12 条，
             // 2026-10-13 验收 T-101）。没给字的照旧画差异。

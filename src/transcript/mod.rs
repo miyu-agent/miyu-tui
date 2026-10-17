@@ -368,6 +368,7 @@ impl Transcript {
                 said: result_said,
                 display,
                 sent,
+                detail,
             } => {
                 let at = self.calls.get(&call_id).copied();
                 let now = self.clock.now();
@@ -375,6 +376,7 @@ impl Transcript {
                     step.stop_at(now);
                     step.display = display;
                     step.sent = sent;
+                    step.detail = detail;
                     if let StepKind::Tool {
                         state,
                         output,

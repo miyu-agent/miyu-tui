@@ -81,6 +81,7 @@
   "thought": "思考済み",
   "prepare": "{name}を準備中",
   "on_session": "セッション {id}",
+  "on_page": "{page} ページ",
   "omitted": "{count} 行を省略しました",
   "summary": {
     "ran": [

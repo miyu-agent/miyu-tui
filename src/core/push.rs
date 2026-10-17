@@ -190,6 +190,8 @@ pub enum Push {
         display: std::collections::BTreeMap<String, String>,
         /// 发出去了几张（`sent` 有几格，核心 X-19）：收起那一行照它认「只为发一张图」（核心 X-24）。
         sent: usize,
+        /// 给人看的结构化结果（`detail`，形状由那件工具定：翻记忆、查知识库、读文档）；没有的（老日志、出错的）是 `None`。
+        detail: Option<serde_json::Value>,
     },
     /// 结果里的图（读了图片文件的 `read`）：这一次调用、每张图的内容哈希（蓝图「时间线」第 8 条）。
     ToolImages {

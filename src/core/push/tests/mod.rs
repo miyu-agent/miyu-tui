@@ -6,6 +6,7 @@ use super::ToolStatus;
 
 use super::{Block, CallError, Push};
 
+mod detail;
 mod goal;
 mod jobs;
 mod sent;
@@ -275,6 +276,7 @@ fn tool_calls_and_results_carry_their_ids() {
             said: None,
             display: Default::default(),
             sent: 0,
+            detail: None,
         }]
     );
     let end =

@@ -81,6 +81,7 @@
   "thought": "Thought",
   "prepare": "Preparing {name}",
   "on_session": "session {id}",
+  "on_page": "page {page}",
   "omitted": "{count} line(s) omitted",
   "summary": {
     "ran": [
