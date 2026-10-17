@@ -20,7 +20,10 @@ impl App {
             return;
         }
         // 这次启动里开过的：先照上次交回的画，交回新的再换（第 2 条：核心每列一次都把日志整份读一遍，会话多了慢）。
-        let mut list = SessionList::default();
+        let mut list = SessionList {
+            current: self.talk.transcript.session.clone(),
+            ..SessionList::default()
+        };
         if let Some(seen) = self.talk.sessions_seen.clone() {
             list.replace(seen);
         }
