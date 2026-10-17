@@ -4,7 +4,13 @@
 use std::process::{Command, Stdio};
 
 /// 这一条通知要跑的命令：程序和参数。
-pub fn command(app: &str, title: &str, body: &str) -> (String, Vec<String>) {
+/// 有图标文件的（第 3 条），`notify-send` 用 `-i` 带上；`osascript` 带不了图标。
+pub fn command(
+    app: &str,
+    title: &str,
+    body: &str,
+    icon: Option<&std::path::Path>,
+) -> (String, Vec<String>) {
     if cfg!(target_os = "macos") {
         let script = format!(
             "display notification \"{}\" with title \"{}\"",
@@ -13,13 +19,12 @@ pub fn command(app: &str, title: &str, body: &str) -> (String, Vec<String>) {
         );
         ("osascript".into(), vec!["-e".into(), script])
     } else {
-        let args = vec![
-            "-a".into(),
-            app.to_string(),
-            "--".into(),
-            title.to_string(),
-            body.to_string(),
-        ];
+        let mut args = vec!["-a".into(), app.to_string()];
+        if let Some(icon) = icon {
+            args.push("-i".into());
+            args.push(icon.display().to_string());
+        }
+        args.extend(["--".into(), title.to_string(), body.to_string()]);
         ("notify-send".into(), args)
     }
 }
@@ -52,7 +57,7 @@ mod tests {
 
     #[test]
     fn the_system_gets_the_title_and_the_body() {
-        let (program, args) = command("Miyu", "Miyu", "出错");
+        let (program, args) = command("Miyu", "Miyu", "出错", None);
         if cfg!(target_os = "macos") {
             assert_eq!(program, "osascript");
             assert_eq!(args[1], "display notification \"出错\" with title \"Miyu\"");
@@ -65,5 +70,25 @@ mod tests {
     #[test]
     fn quotes_in_applescript_are_escaped() {
         assert_eq!(super::quoted(r#"说"好"\"#), r#"说\"好\"\\"#);
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    #[test]
+    fn notify_send_gets_the_icon_file() {
+        let icon = std::path::Path::new("/tmp/miyu.png");
+        let (program, args) = command("Miyu", "修登录页", "回答完了", Some(icon));
+        assert_eq!(program, "notify-send");
+        assert_eq!(
+            args,
+            [
+                "-a",
+                "Miyu",
+                "-i",
+                "/tmp/miyu.png",
+                "--",
+                "修登录页",
+                "回答完了"
+            ]
+        );
     }
 }

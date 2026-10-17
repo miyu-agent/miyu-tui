@@ -39,10 +39,10 @@
   "crash_saved": "スタックトレースを {path} に保存しました",
   "notify": {
     "title": "Miyu",
-    "replied": "完了しました",
+    "replied": "回答が終わりました",
     "failed": "エラーが発生しました",
-    "approving": "確認待ちです",
-    "asking": "回答待ちです"
+    "approving": "確認を待っています",
+    "asking": "回答を待っています"
   },
   "refused": "コアに拒否されました：{reason}",
   "interrupted": "中断しました",

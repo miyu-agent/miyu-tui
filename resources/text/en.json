@@ -39,9 +39,9 @@
   "crash_saved": "Stack trace saved to {path}",
   "notify": {
     "title": "Miyu",
-    "replied": "Done",
+    "replied": "Reply finished",
     "failed": "Something went wrong",
-    "approving": "Waiting for your approval",
+    "approving": "Waiting for you to confirm",
     "asking": "Waiting for your answer"
   },
   "refused": "The core refused: {reason}",
