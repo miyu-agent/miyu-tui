@@ -117,16 +117,23 @@ fn a_long_list_shows_only_what_is_in_progress() {
 }
 
 #[test]
-fn a_short_list_shows_every_item() {
+fn a_short_list_folds_what_is_done_as_soon_as_one_is_done() {
+    // 2026-10-17 项目主人：做完的四项一直划着线挂着，只剩一项没做；做完一项就收进「已完成」，不等放不下。
     let config = Config::builtin().unwrap();
-    let board = long_board(1, 3);
-    let text: Vec<String> = todo_lines(&board, &config, 30, 5, false)
-        .iter()
-        .map(|l| l.to_string())
-        .collect();
-    assert_eq!(text.len(), 6, "5 项放得下：一项一行");
-    assert!(text[1].starts_with("☑ 第 0 项"));
-    assert!(text[2].starts_with("■ 第 1 项"));
+    let lines = |board: &Board| -> Vec<String> {
+        todo_lines(board, &config, 30, 5, false)
+            .iter()
+            .map(|l| l.to_string())
+            .collect()
+    };
+    let text = lines(&long_board(1, 3));
+    assert_eq!(text[1], "☑ 已完成 1 项", "{text:?}");
+    assert!(text[2].starts_with("■ 第 1 项"), "{text:?}");
+    assert_eq!(text.len(), 6, "标题、已完成、没做完的四项");
+    // 一项都没做完：放得下的一项一行。
+    let text = lines(&long_board(0, 4));
+    assert_eq!(text.len(), 6, "标题和五项");
+    assert!(text[1].starts_with("■ 第 0 项"));
 }
 
 #[test]
