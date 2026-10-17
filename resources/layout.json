@@ -62,7 +62,6 @@
   "tick_mark": "✓ ",
   "history_preview_rows": 12,
   "history_keep": 1000,
-  "todo_linger_ms": 5000,
   "level_icons": {
     "workspace": "▣ ",
     "full": "⏵⏵ ",

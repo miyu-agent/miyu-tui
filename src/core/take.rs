@@ -238,10 +238,7 @@ pub(super) async fn take(
                 }
             }
             if let Some(todos) = super::todos::read(&message["result"]) {
-                let update = Box::new(Update::Push(Push::Todos {
-                    todos,
-                    done: Vec::new(),
-                }));
+                let update = Box::new(Update::Push(Push::Todos { todos }));
                 let session = session.clone();
                 if !notify(Update::Elsewhere { session, update }) {
                     return false;

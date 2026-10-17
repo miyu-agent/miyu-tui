@@ -26,6 +26,14 @@ fn todowrite_shows_up_as_the_todo_list() {
     tui.wait_for("待办 1/3");
     tui.wait_for("改掉那个错");
     tui.wait_for("跑测试");
+    // 做完的排到末尾（2026-10-17 项目主人）：待办那一块在输入框上面，照最后出现的那一处找。
+    let lines = tui.lines();
+    let row = |word: &str| lines.iter().rposition(|l| l.contains(word));
+    assert!(
+        row("改掉那个错") < row("跑测试") && row("跑测试") < row("读一遍代码"),
+        "{}",
+        lines.join("\n")
+    );
 }
 
 #[test]
@@ -50,8 +58,8 @@ fn coming_back_to_the_session_brings_the_todos_from_the_subscribe_reply() {
 }
 
 #[test]
-fn a_finished_list_stays_ticked_a_moment_then_folds() {
-    // 2026-10-07 项目主人：todo 做完之后可以保留一会。核心 D-3 补：清空时带 `done`。
+fn a_finished_list_goes_away_at_once() {
+    // 2026-10-17 项目主人：全部完成之后直接消失，不全打勾留一会（原来 10-07 定的留 5 秒）。
     let start = serde_json::json!({"todos": [
         {"content": "读代码", "status": "in_progress"},
         {"content": "跑测试", "status": "pending"}
@@ -64,6 +72,7 @@ fn a_finished_list_stays_ticked_a_moment_then_folds() {
     .to_string();
     let script = Script::new([
         Play::Calls(vec![("todowrite".into(), start)]),
+        Play::Says("开始了。"),
         Play::Calls(vec![("todowrite".into(), finish)]),
         Play::Says("都做完了。"),
     ]);
@@ -71,18 +80,24 @@ fn a_finished_list_stays_ticked_a_moment_then_folds() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("开工");
-    tui.wait_for("都做完了。");
-    tui.wait_for("待办 2/2");
-    let shown = std::time::Instant::now();
-    let end = shown + support::WAIT;
-    while tui.shows("待办 2/2") {
-        assert!(std::time::Instant::now() < end, "一直不收");
-        tui.pump(std::time::Duration::from_millis(100));
+    tui.wait_for("开始了。");
+    tui.wait_for("待办 0/2");
+    tui.say("继续");
+    let end = std::time::Instant::now() + support::WAIT;
+    while !tui.shows("都做完了。") {
+        assert!(
+            !tui.shows("待办 2/2"),
+            "不全打勾露着：\n{}",
+            tui.lines().join("\n")
+        );
+        assert!(std::time::Instant::now() < end, "等不到回答");
+        tui.pump(std::time::Duration::from_millis(20));
     }
+    tui.pump(std::time::Duration::from_millis(300));
     assert!(
-        shown.elapsed() >= std::time::Duration::from_secs(3),
-        "留了一会才收：{:?}",
-        shown.elapsed()
+        !tui.shows("待办 2/2") && !tui.shows("待办 0/2"),
+        "当场收掉：\n{}",
+        tui.lines().join("\n")
     );
 }
 

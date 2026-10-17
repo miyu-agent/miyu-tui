@@ -293,8 +293,6 @@ impl App {
         self.oobe_tick();
         // 附件照模型收：收不了的那几种交给输入框，刚改成文件块的提示一句（`attachments.rs`）。
         self.sync_refused();
-        // 做完的待办全打勾露够了：收掉（「后台命令、子代理和侧边栏」第 4 条）。
-        self.talk.board.expire_todos(Instant::now());
         // 配置页、引导里不在打字的时候输入法关成英文，打字时开回来；对话里的输入框一直算在打字（`ime.rs`）。
         let typing = match (&self.boxes.oobe, &self.boxes.settings) {
             (Some(oobe), _) => oobe.editing(),

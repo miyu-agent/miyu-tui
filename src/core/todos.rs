@@ -18,13 +18,6 @@ pub fn read(body: &Value) -> Option<Vec<TodoItem>> {
 }
 
 /// 做完最后一项清空时带的刚做完的那几项（`done`，核心 D-3 补）；没有的是空的。
-pub fn done(body: &Value) -> Vec<TodoItem> {
-    body["done"]
-        .as_array()
-        .map(|l| items(l))
-        .unwrap_or_default()
-}
-
 fn items(list: &[Value]) -> Vec<TodoItem> {
     list.iter()
         .map(|t| TodoItem {

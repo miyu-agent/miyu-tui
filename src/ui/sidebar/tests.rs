@@ -51,9 +51,13 @@ fn the_full_list_marks_each_state_and_wraps_under_the_text() {
     let lines = todo_lines(&board, &config, 12, 5, true);
     let text: Vec<String> = lines.iter().map(|l| l.to_string()).collect();
     assert_eq!(text[0], format!("待办 1/{}", ITEMS.len()));
-    assert!(text[1].starts_with("☑ 读蓝图"));
+    let last = text.len() - 1;
     assert!(
-        lines[1].spans[1]
+        text[last].starts_with("☑ 读蓝图"),
+        "做完的排到末尾（2026-10-17 项目主人）：{text:?}"
+    );
+    assert!(
+        lines[last].spans[1]
             .style
             .add_modifier
             .contains(Modifier::CROSSED_OUT),
@@ -132,7 +136,8 @@ fn a_short_list_folds_what_is_done_once_two_are_done() {
     assert_eq!(text.len(), 5, "标题、已完成、没做完的三项");
     // 只做完一项：不收，照原样一行打勾（同一天项目主人补）。
     let text = lines(&long_board(1, 3));
-    assert!(text[1].starts_with("☑ 第 0 项"), "{text:?}");
+    assert!(text[1].starts_with("■ 第 1 项"), "{text:?}");
+    assert!(text[5].starts_with("☑ 第 0 项"), "排到末尾：{text:?}");
     assert_eq!(text.len(), 6, "标题和五项");
     // 一项都没做完：放得下的一项一行。
     let text = lines(&long_board(0, 4));

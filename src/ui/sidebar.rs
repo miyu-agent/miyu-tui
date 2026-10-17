@@ -28,11 +28,10 @@ pub fn split(area: Rect, layout: &Layout) -> (Rect, Rect) {
     (main, sidebar)
 }
 
-/// 待办那一段：`待办 2/5`，每一项一个记号。没有待办、全做完了是空的。
-/// `full` 时全部列出、长的折行；不然项目最多 `rows` 行：做完了两项及以上、又还有没做完的，先是没做完的，
-/// 放不下的收成一行，长的截掉加 `…`，做完的收成最底下一行「已完成 N 项」（2026-10-17 项目主人定：不等放不下才收，只做完
-/// 一项的不收；同一天又定挪到底下）；
-/// 做完的不到两项、或者全做完了（停留那 5 秒）放得下的一项一行（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
+/// 待办那一段：`待办 2/5`，每一项一个记号。没有待办、全做完了是空的。没做完的照她写的先后排在前面，做完的排到末尾
+/// （2026-10-17 项目主人）。`full` 时全部列出、长的折行；不然项目最多 `rows` 行：做完了两项及以上的，先是没做完的，放不下的
+/// 收成一行，长的截掉加 `…`，做完的收成最底下一行「已完成 N 项」（同一天项目主人定：不等放不下才收，只做完一项的不收）；
+/// 只做完一项的放得下就一项一行（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
 pub fn todo_lines(
     board: &Board,
     config: &Config,
@@ -42,7 +41,7 @@ pub fn todo_lines(
 ) -> Vec<Line<'static>> {
     let words = &config.text.jobs;
     let marks = &config.layout.todo_marks;
-    let Some((done, total)) = board.todo_shown(std::time::Instant::now()) else {
+    let Some((done, total)) = board.todo_shown() else {
         return Vec::new();
     };
     let title = words
@@ -50,24 +49,15 @@ pub fn todo_lines(
         .replace("{done}", &done.to_string())
         .replace("{total}", &total.to_string());
     let mut out = vec![Line::styled(title, theme::dim())];
-    if full {
-        for todo in &board.todos {
-            out.extend(item(todo, marks, width, true));
-        }
-        return out;
-    }
-    if board.todos.len() <= rows && (done <= 1 || done == total) {
-        for todo in &board.todos {
-            out.extend(item(todo, marks, width, false));
+    let (open, finished): (Vec<&Todo>, Vec<&Todo>) =
+        board.todos.iter().partition(|t| t.state != TodoState::Done);
+    if full || (board.todos.len() <= rows && done <= 1) {
+        for todo in open.iter().chain(&finished) {
+            out.extend(item(todo, marks, width, full));
         }
         return out;
     }
     // 没做完的在前，放不下的收成一行，做完的收成最后一行。
-    let open: Vec<&Todo> = board
-        .todos
-        .iter()
-        .filter(|t| t.state != TodoState::Done)
-        .collect();
     let folded = usize::from(done > 0);
     let room = rows.saturating_sub(folded);
     let shown = if open.len() <= room {

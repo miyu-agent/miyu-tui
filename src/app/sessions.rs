@@ -112,10 +112,9 @@ impl App {
             // 以前的待办不算：现在的照订阅的回应。
             Push::Todos { .. } if !live => {}
             // 待办换了（核心 D-3）：整份换上，空的是清空了。
-            Push::Todos { todos, done } => {
-                let linger = std::time::Duration::from_millis(self.config.layout.todo_linger_ms);
+            Push::Todos { todos } => {
                 if let Some((_, board)) = self.slot(session) {
-                    board.set_todos(todos, done, now, linger);
+                    board.set_todos(todos);
                 }
             }
             Push::JobEnded(end) => {
