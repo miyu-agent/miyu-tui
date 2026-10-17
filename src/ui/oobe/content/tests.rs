@@ -117,3 +117,13 @@ fn the_model_search_says_slash_and_is_focused_only_while_searching() {
     assert!(plain(&c)[0].starts_with('❯') && c.caret.is_some());
     assert!(!plain(&c)[0].contains("/ 搜索"));
 }
+
+#[test]
+fn a_long_subtitle_wraps_to_the_block_width() {
+    // 2026-10-18：内置语义模型那一步的说明一行放不下，原来整行塞进去、后半截看不到。
+    let mut c = Content::new(20);
+    c.heading("标题", "一二三四五六七八九十一二三四五");
+    let shown = plain(&c);
+    assert_eq!(shown[1], "一二三四五六七八九十", "{shown:?}");
+    assert_eq!(shown[2], "一二三四五", "{shown:?}");
+}

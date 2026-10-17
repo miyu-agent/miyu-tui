@@ -37,6 +37,7 @@ impl Oobe {
         self.persona.lost();
         self.preset.lost();
         self.sandbox.lost();
+        self.semantic.lost();
         self.theme.lost();
         self.profile.lost();
     }

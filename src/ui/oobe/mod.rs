@@ -79,6 +79,7 @@ fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> 
         Step::Profile => profile::content(&oobe.profile, texts, width),
         Step::Preset => preset::content(&oobe.preset, texts, width),
         Step::Sandbox => pick::sandbox(oobe, texts, width),
+        Step::Semantic => pick::semantic(oobe, texts, width),
         Step::Welcome | Step::Done => Content::new(width),
     }
 }

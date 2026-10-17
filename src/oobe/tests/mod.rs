@@ -46,6 +46,8 @@ pub(super) fn fresh(now: Instant) -> Oobe {
     ];
     let mut oobe = Oobe::new(now, look, Pick::new(rows, 0), "nerd", true);
     oobe.intro.skip();
+    // 没装语义模型的包：那一步跨过去（装了的走法见 `the_semantic_step_shows_only_with_the_package`）。
+    oobe.semantic.installed = Some(false);
     oobe
 }
 
@@ -220,4 +222,34 @@ fn enter_after_the_intro_has_played_out_starts_right_away() {
     );
     oobe.key(key(KeyCode::Enter), later, &texts);
     assert_eq!(oobe.step, Step::Language, "播完了第一下回车就开始");
+}
+
+#[test]
+fn the_semantic_step_shows_only_with_the_package() {
+    // 2026-10-18 项目主人：引导最后一步问开不开内置的语义模型，只在装了它的包时出现。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    oobe.semantic.installed = None;
+    oobe.step = Step::Preset;
+    oobe.moved(super::Move::Next, t0);
+    assert_eq!(oobe.step, Step::Sandbox);
+    let sent = asks(&mut oobe);
+    let (schema, _) = find(&sent, "config.schema");
+    let local = json!({"items": [{"key": "models.embedding", "options": [{"value": "local"}, {"value": "off"}]}]});
+    oobe.answer(schema, Ok(local), t0, &texts);
+    oobe.moved(super::Move::Next, t0);
+    assert_eq!(oobe.step, Step::Semantic, "装了的出现在沙盒后面");
+    let (read, _) = find(&asks(&mut oobe), "config.get");
+    oobe.answer(read, Ok(json!({"items": {}})), t0, &texts);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, params) = find(&asks(&mut oobe), "config.set");
+    assert_eq!(
+        params,
+        json!({"layer": "personal", "changes": [{"key": "models.embedding", "value": "off"}]}),
+        "「否」只用关键词"
+    );
+    oobe.answer(tag, Ok(json!({})), t0, &texts);
+    assert_eq!(oobe.step, Step::Done);
 }

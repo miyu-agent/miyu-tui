@@ -58,6 +58,10 @@ impl Oobe {
             Waiting::SandboxRead | Waiting::SandboxSave => {
                 self.sandbox.answer(&waiting, result, texts)
             }
+            Waiting::SemanticSchema | Waiting::SemanticRead | Waiting::SemanticSave => {
+                let here = self.step == super::Step::Semantic;
+                self.semantic.answer(&waiting, result, here)
+            }
             Waiting::Presets
             | Waiting::PresetDefault
             | Waiting::PresetGet(_)

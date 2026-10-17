@@ -80,6 +80,12 @@ pub enum Waiting {
     SandboxRead,
     /// 写开局的那一档（`config.set permission.level`）。
     SandboxSave,
+    /// 装没装语义模型的包（`config.schema` 里 `models.embedding` 的 `local`）。
+    SemanticSchema,
+    /// 现在开着还是关着（`config.get models.embedding`）。
+    SemanticRead,
+    /// 写开还是关（`config.set models.embedding`）。
+    SemanticSave,
 }
 
 impl Waiting {
@@ -99,6 +105,8 @@ impl Waiting {
                 | Self::PresetDefault
                 | Self::PresetGet(_)
                 | Self::SandboxRead
+                | Self::SemanticSchema
+                | Self::SemanticRead
                 | Self::ThemeRead
                 | Self::ProfileRead
                 | Self::ProfileSchema

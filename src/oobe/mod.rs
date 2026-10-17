@@ -18,7 +18,9 @@ pub mod preset;
 pub mod profile;
 mod replies;
 pub mod sandbox;
+pub mod semantic;
 pub mod sheet;
+mod step;
 mod texts;
 pub mod theme;
 pub mod wrap;
@@ -28,82 +30,13 @@ use std::time::{Duration, Instant};
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
 
-pub use texts::Texts;
+pub use texts::{Sandbox as TwoChoices, Texts};
 
 use crate::core::Refusal;
 use asker::{Ask, Asker, Waiting};
 use motion::{Intro, React, Slide, Stars};
 use pick::Pick;
-
-/// 第几步，照先后。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Step {
-    /// 欢迎页。
-    Welcome,
-    /// 界面语言。
-    Language,
-    /// 图标。
-    Icons,
-    /// 接模型。
-    Model,
-    /// 建人格。
-    Persona,
-    /// 主题：明暗、配色（2026-10-13 项目主人定，放在人格后面：配色跟着头像）。
-    Theme,
-    /// AI 怎么认识你（2026-10-13 项目主人定）。
-    Profile,
-    /// 选预设。
-    Preset,
-    /// 沙盒：新会话怎么开局（2026-10-13 项目主人定）。
-    Sandbox,
-    /// 好了。
-    Done,
-}
-
-const ORDER: [Step; 10] = [
-    Step::Welcome,
-    Step::Language,
-    Step::Icons,
-    Step::Model,
-    Step::Persona,
-    Step::Theme,
-    Step::Profile,
-    Step::Preset,
-    Step::Sandbox,
-    Step::Done,
-];
-
-impl Step {
-    fn at(self) -> usize {
-        ORDER.iter().position(|s| *s == self).unwrap_or(0)
-    }
-
-    /// 下一步（好了以后没有）。
-    pub fn next(self) -> Self {
-        ORDER.get(self.at() + 1).copied().unwrap_or(self)
-    }
-
-    /// 上一步（欢迎页前面没有）。
-    pub fn previous(self) -> Self {
-        ORDER[self.at().saturating_sub(1)]
-    }
-
-    /// 在进度那一行里是第几个；欢迎、好了不画进度（第 6 条）。
-    pub fn bar(self) -> Option<usize> {
-        matches!(
-            self,
-            Step::Language
-                | Step::Icons
-                | Step::Model
-                | Step::Persona
-                | Step::Theme
-                | Step::Profile
-                | Step::Preset
-                | Step::Sandbox
-        )
-        .then(|| self.at() - 1)
-    }
-}
+pub use step::Step;
 
 /// 一步按了键、收到回应以后往哪走。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -190,6 +123,7 @@ pub struct Oobe {
     pub preset: preset::PresetStep,
     /// 沙盒。
     pub sandbox: sandbox::SandboxStep,
+    pub semantic: semantic::SemanticStep,
     /// 连着核心。
     pub online: bool,
     /// 数值（`oobe.json`）。
@@ -231,6 +165,7 @@ impl Oobe {
             profile: profile::ProfileStep::default(),
             preset: preset::PresetStep::default(),
             sandbox: sandbox::SandboxStep::default(),
+            semantic: semantic::SemanticStep::default(),
             online,
             look,
             born: now,
@@ -281,6 +216,7 @@ impl Oobe {
             }
             Step::Preset => self.preset.key(key, &mut self.asker, &texts.preset),
             Step::Sandbox => self.sandbox.key(key, &mut self.asker),
+            Step::Semantic => self.semantic.key(key, &mut self.asker),
             Step::Done => {
                 if !self.finale(now, texts).ready {
                     self.done_at = now.checked_sub(Duration::from_secs(3600));
@@ -379,6 +315,8 @@ impl Oobe {
             Move::Next => self.step.next(),
             Move::Back => self.step.previous(),
         };
+        // 没装语义模型的包：那一步跨过去（`semantic.rs`）。
+        let to = self.semantic.skip(to, moved == Move::Back);
         if to == self.step {
             return;
         }
@@ -402,7 +340,11 @@ impl Oobe {
             }
             Step::Profile => self.profile.enter(&mut self.asker),
             Step::Preset => self.preset.enter(&mut self.asker),
-            Step::Sandbox => self.sandbox.enter(&mut self.asker),
+            Step::Sandbox => {
+                self.sandbox.enter(&mut self.asker);
+                self.semantic.probe(&mut self.asker);
+            }
+            Step::Semantic => self.semantic.enter(&mut self.asker),
             Step::Done => {
                 self.done_at = Some(now);
                 self.stars = Stars::gather(now, self.seed.wrapping_add(1));
