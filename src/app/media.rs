@@ -23,6 +23,8 @@ pub struct Media {
     pub avatars: crate::avatars::Avatars,
     /// 换吉祥物：配置选的吉祥物包、本机试画的（`mascot_pick.rs`）。
     pub mascot_pick: super::mascot_pick::MascotPick,
+    /// 要开、还在等 `blob.get` 回来的展示：blob 到条目编号（蓝图「展示」第 6 条，`shown.rs`）。
+    pub opening: std::collections::HashMap<String, Vec<u64>>,
 }
 
 impl Media {
@@ -36,6 +38,7 @@ impl Media {
             diagrams: RefCell::default(),
             avatars: crate::avatars::Avatars::cached(),
             mascot_pick: Default::default(),
+            opening: Default::default(),
         }
     }
 }

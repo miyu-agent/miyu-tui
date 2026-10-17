@@ -12,17 +12,21 @@ use super::kinds::{EndReason, Level, ToolStatus};
 mod asking;
 mod attached;
 mod called;
+mod compaction;
 mod goal;
 mod jobs;
 mod result;
 mod sent;
+mod shown;
 
 pub use asking::Asking;
 pub use attached::Attached;
 pub(crate) use attached::read as read_attached;
+pub use compaction::Compaction;
 pub(crate) use goal::read as read_goal;
 pub use goal::{Goal, GoalState};
 pub use sent::Sent;
+pub use shown::Shown;
 
 pub use jobs::{JobEnd, JobReason, JobStart, Said as Foreign, Sender};
 
@@ -79,42 +83,6 @@ impl Usage {
     pub fn input(&self) -> u64 {
         self.uncached + self.cache_read + self.cache_write
     }
-}
-
-/// 压缩的几样：进度、压好了、摘要请求出错、暂停了自动压缩。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Compaction {
-    /// 摘要写到哪了（瞬时的 `compaction.progress`）：收到多少字。
-    Progress {
-        /// 收到的正文字数。
-        written: u64,
-        /// 核心估计要写多少字（压前的用量夹在 2 万到 8 万之间）；以前的核心不给。
-        expected: Option<u64>,
-        /// 手动压缩（`trigger` 是 `manual`）、自动的（`auto`）；以前的核心不给。
-        manual: Option<bool>,
-    },
-    /// 提前在后台开始压了（瞬时的 `compaction.started`，核心 6-11 再补）。
-    Started,
-    /// 压好了（瞬时的 `compaction.done`）：压之前、压完的用量，都是估算。
-    Done {
-        /// 压之前的用量。
-        before: u64,
-        /// 压完的用量。
-        after: u64,
-        /// 换上的是提前在后台压好的那一份（`prepared: true`）。
-        prepared: bool,
-    },
-    /// 摘要请求出错（`model.called` 带 `compaction`、`result` 是 `error`）。
-    Failed(CallError),
-    /// 暂停了自动压缩（`context.compaction_paused`，施工 6-6 上）。
-    Paused {
-        /// `failures`、`too_large`，认不得的照原样。
-        reason: String,
-        /// 连着失败了几次。
-        failures: Option<u64>,
-        /// 估得最大的那一条的序号。
-        entry: Option<u64>,
-    },
 }
 
 /// 界面关心的一件事。
@@ -232,6 +200,8 @@ pub enum Push {
     },
     /// 她发出去的图（`tool.result` 的 `sent`，核心 X-19），照先后。
     Media(Vec<Sent>),
+    /// 她给人看了一个文件（`tool.result` 的效果 `file.shown`，核心 D-5）。
+    Shown(Shown),
     /// 确认、提问（核心 D-1、D-2）：开、收抽屉，写结果。
     Asking(Asking),
     /// 待办换了（`todos.changed`，订阅回应里的也照它交，核心 D-3）：整份，空的是清空了；做完最后一项清空时 `done`

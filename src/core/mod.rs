@@ -64,7 +64,7 @@ pub use output::JobOutput;
 pub use personas::{Persona, Preset, read_personas, read_presets};
 pub use push::{
     Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobReason, JobStart,
-    Push, Sender, Sent, Usage,
+    Push, Sender, Sent, Shown, Usage,
 };
 use rpc::Rpc;
 pub use sessions::{

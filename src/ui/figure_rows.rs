@@ -42,19 +42,20 @@ pub fn rows(lead: Vec<Span<'static>>, figure: &Figure, ctx: &Ctx) -> Vec<Row> {
             .collect(),
         Look::Pending => vec![pending(lead, ctx)],
         Look::Ready { key, rows } => {
-            let mut out: Vec<Row> = (0..rows)
+            // mermaid 图：点图本身用程序开大图（2026-10-17 项目主人定，去掉了图下面那一行「点开看大图」）。
+            let zoom = ctx.figures.borrow().get(key).and_then(|d| d.zoom.clone());
+            let link = zoom.map(|file| format!("{}{}", crate::shown_files::ZOOM, file.display()));
+            (0..rows)
                 .map(|i| {
                     let mut row = ctx.led_row(ctx.blank_slot(), lead.clone(), Vec::new());
                     row.copy = false;
                     row.figure = Some(FigureCell { key, row: i, x: 0 });
+                    if let Some(link) = &link {
+                        row.links = vec![(0, cols, link.clone())];
+                    }
                     row
                 })
-                .collect();
-            let zoom = ctx.figures.borrow().get(key).and_then(|d| d.zoom.clone());
-            if let Some(file) = zoom {
-                out.push(zoom_row(lead, &file, ctx));
-            }
-            out
+                .collect()
         }
     }
 }
@@ -82,20 +83,6 @@ fn diagram(source: &str, ctx: &Ctx, cols: u16, rows: u16) -> Look {
     ctx.figures
         .borrow_mut()
         .look(FigureKind::Mermaid, &svg, (None, None), cols, rows)
-}
-
-/// 图下面那一行暗色的「点开看大图」，整行是一个链接，复制时不带（蓝图第 4 条）。
-fn zoom_row(lead: Vec<Span<'static>>, file: &std::path::Path, ctx: &Ctx) -> Row {
-    let text = ctx.config.text.figure_zoom.clone();
-    let width = u16::try_from(Span::raw(text.as_str()).width()).unwrap_or(u16::MAX);
-    let mut row = ctx.led_row(
-        ctx.blank_slot(),
-        lead,
-        vec![Span::styled(text, theme::dim())],
-    );
-    row.links = vec![(0, width, file.display().to_string())];
-    row.copy = false;
-    row
 }
 
 /// 这一格是图占着的：kitty 的占位符，或者别的协议照原样留着不比对的格子。
@@ -215,6 +202,7 @@ mod tests {
             writing: None,
             level: Level::Workspace,
             screen_rows: 40,
+            replaced: Default::default(),
         };
         let math = figure(&config, "$$\\frac{a+1}{b}$$");
         // 终端显示不了图：写成 Unicode，分式上下摞。
@@ -290,6 +278,7 @@ mod tests {
             writing: None,
             level: Level::Workspace,
             screen_rows: 40,
+            replaced: Default::default(),
         };
         let graph = figure(&config, "```mermaid\ngraph TD\nA-->B\n```");
         // 没回来：一行占位，单子上有这份源码，只问一次。
@@ -376,6 +365,7 @@ mod tests {
             writing: None,
             level: Level::Workspace,
             screen_rows: 45,
+            replaced: Default::default(),
         };
         let dir = std::env::temp_dir().join(format!("miyu-room-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
@@ -438,6 +428,7 @@ mod tests {
             writing: None,
             level: Level::Workspace,
             screen_rows: 45,
+            replaced: Default::default(),
         };
         let dir = std::env::temp_dir().join(format!("miyu-spill-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();

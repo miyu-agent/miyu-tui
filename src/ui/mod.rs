@@ -33,6 +33,7 @@ mod md_cache;
 mod media_rows;
 pub mod model_list;
 mod oobe;
+pub mod shown_rows;
 pub use oobe::idle_look as oobe_idle_look;
 mod panel;
 mod panels;

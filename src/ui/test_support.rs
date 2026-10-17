@@ -50,6 +50,7 @@ impl Fixture {
             writing: None,
             level: Level::Workspace,
             screen_rows: self.config.figures.max_rows,
+            replaced: Default::default(),
         }
     }
 }

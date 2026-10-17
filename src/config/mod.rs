@@ -195,10 +195,10 @@ pub struct Texts {
     pub figure_pending: String,
     /// 她发出去的图画不成时那一行打头的（蓝图「她发的图」）。
     pub sent: SentTexts,
+    /// 她给人看的文件：卡片、缩成的一行、打不开（蓝图「展示」）。
+    pub shown: crate::ui::shown_rows::ShownTexts,
     /// 吉祥物包读不成、查不过，换回内置的（蓝图「吉祥物包」第 3 条）。
     pub mascot_failed: String,
-    /// mermaid 图下面那一行，点了开大图。
-    pub figure_zoom: String,
     /// 换了图标，`{name}` 是那一套的名字。
     pub icons_changed: String,
     /// 撤销那一行打头的：`已撤销`（不写几轮：撤销只能一轮一轮撤）。

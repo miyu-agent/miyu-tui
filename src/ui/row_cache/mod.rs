@@ -266,6 +266,11 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
         }
     }
     entry.undo.is_some().hash(&mut h);
+    // 展示的文件：换了一份、后来同一个路径又展示过（缩成一行，蓝图「展示」第 5 条）。
+    if let Some(file) = &entry.shown {
+        (&file.blob, &file.title, ctx.replaced.contains(&entry.id)).hash(&mut h);
+        entry.unopened.hash(&mut h);
+    }
     if let Some(job) = &entry.job {
         (discriminant(&job.mark), job.detail.len()).hash(&mut h);
     }

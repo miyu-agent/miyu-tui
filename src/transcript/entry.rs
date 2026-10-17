@@ -35,6 +35,8 @@ pub enum Kind {
     Goal,
     /// 她发出去的一张图（核心 X-19）：和回答一样画在正文里（蓝图「她发的图」）。
     Media,
+    /// 她给人看的一个文件（核心 D-5 `show`）：图画出来，别的一张卡片（蓝图「展示」）。
+    Shown,
 }
 
 /// 后台任务结束的通知：成败决定记号的颜色（蓝图「后台命令、子代理和侧边栏」第 5 条）。
@@ -100,6 +102,10 @@ pub struct Entry {
     pub mark: Option<String>,
     /// 她发出去的那张图。别的条是 `None`。
     pub media: Option<Sent>,
+    /// 她给人看的那个文件（蓝图「展示」）。别的条是 `None`。
+    pub shown: Option<crate::core::Shown>,
+    /// 用程序开不了：副本的完整路径，卡片最后一行写它（蓝图「展示」第 7 条）。别的是 `None`。
+    pub unopened: Option<String>,
     /// 你说的话什么时候说的：看着发的是发的那一刻，补发来的是事件的时刻（`/jump` 的列表右边写它）。别的条是 `None`。
     pub at: Option<jiff::Timestamp>,
 }
@@ -127,6 +133,8 @@ impl Entry {
             progress: None,
             mark: None,
             media: None,
+            shown: None,
+            unopened: None,
             at: None,
         }
     }
