@@ -26,8 +26,9 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState
         .word(start, beat, now, &seen.config.pulse)
         .to_string();
     let layout = &seen.config.layout;
-    // 流光照底栏模式字的颜色（现在的权限级别，2026-10-14 项目主人定：原来写死的强调色，终端配色时和模式字对不上）。
-    let base = theme::level_color(seen.talk.transcript.level);
+    // 流光一直照工作区那一档的颜色，不跟着权限级别变（2026-10-17 项目主人：开放权限时整行变红不对）；照级别的颜色算、
+    // 不写死强调色，终端配色时和模式字对得上（2026-10-14 项目主人定）。
+    let base = theme::level_color(crate::core::Level::Workspace);
     // 换了词，亮光从头扫（`tui.md`「运行状态行和排队的消息」第 1 条）。
     let t = mascot
         .pulse
