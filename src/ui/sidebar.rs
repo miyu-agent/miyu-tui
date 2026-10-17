@@ -29,8 +29,9 @@ pub fn split(area: Rect, layout: &Layout) -> (Rect, Rect) {
 }
 
 /// 待办那一段：`待办 2/5`，每一项一个记号。没有待办、全做完了是空的。
-/// `full` 时全部列出、长的折行；不然项目最多 `rows` 行：放得下的一项一行，放不下的只露正在做的那几项，
-/// 做完的收成一行、后面放不下的收成一行，长的截掉加 `…`（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
+/// `full` 时全部列出、长的折行；不然项目最多 `rows` 行：做完了一项、又还有没做完的，做完的收成一行「已完成 N 项」
+/// （2026-10-17 项目主人定：不等放不下才收），接着没做完的，后面放不下的收成一行，长的截掉加 `…`；一项都没做完、或者
+/// 全做完了（停留那 5 秒）放得下的一项一行（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
 pub fn todo_lines(
     board: &Board,
     config: &Config,
@@ -54,13 +55,13 @@ pub fn todo_lines(
         }
         return out;
     }
-    if board.todos.len() <= rows {
+    if board.todos.len() <= rows && (done == 0 || done == total) {
         for todo in &board.todos {
             out.extend(item(todo, marks, width, false));
         }
         return out;
     }
-    // 放不下：做完的收成一行，接着没做完的，放不下的收成最后一行。
+    // 做完的收成一行，接着没做完的，放不下的收成最后一行。
     let open: Vec<&Todo> = board
         .todos
         .iter()
