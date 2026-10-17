@@ -1060,7 +1060,8 @@
         "Persona reminders",
         "{n} rounds",
         "Written",
-        "Short description"
+        "Short description",
+        "Selectable for subagents"
       ],
       "hints": [
         [

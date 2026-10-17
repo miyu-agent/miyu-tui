@@ -48,6 +48,8 @@ pub enum Field {
     Name,
     /// 简单描述（`persona.summary`，「配置页」第 36 条，2026-10-17）：开编辑窗。
     Summary,
+    /// 子代理可选（`persona.subagent`，核心 P-10 补，2026-10-17）：回车切开、关，当场存。
+    Subagent,
     /// 头像：开编辑窗填图片路径（`avatar.rs`）。
     Avatar,
     /// 一份提示词（[`PROMPTS`] 里的第几个）：交给编辑器。
@@ -56,10 +58,11 @@ pub enum Field {
     Examples,
 }
 
-/// 人格的窗里的六行：名字、简单描述、头像、具体人格提示词、示范对话、人设提醒短语。
-pub const FIELDS: [Field; 6] = [
+/// 人格的窗里的七行：名字、简单描述、子代理可选、头像、具体人格提示词、示范对话、人设提醒短语。
+pub const FIELDS: [Field; 7] = [
     Field::Name,
     Field::Summary,
+    Field::Subagent,
     Field::Avatar,
     Field::Prompt(0),
     Field::Examples,
@@ -121,6 +124,11 @@ impl Settings {
                 let current = detail.name.map_or(Value::Null, Value::String);
                 let edit = LineEdit::open("persona.name", &words.detail[0], false, &current);
                 Popup::Line(edit.to(Target::Persona(Box::new(view))))
+            }
+            Field::Subagent => {
+                let change = change("persona.subagent", json!(!detail.subagent));
+                self.set_persona(&view.id, json!({"changes": [change]}), false);
+                Popup::Persona(view)
             }
             Field::Summary => {
                 let current = detail.summary.map_or(Value::Null, Value::String);
@@ -373,119 +381,4 @@ fn change(key: &str, value: Value) -> Value {
 }
 
 #[cfg(test)]
-mod tests {
-    use serde_json::json;
-
-    use super::PromptEdit;
-    use crate::settings::Settings;
-    use crate::settings::pages::choose::PersonaView;
-
-    /// 一个交给了编辑器的人设：原文 `你是她。`，你那一层的版本 `v1`。
-    fn editing() -> Settings {
-        Settings {
-            prompt: Some(PromptEdit {
-                persona: "mine".into(),
-                prompt: "persona".into(),
-                original: "你是她。".into(),
-                version: Some("v1".into()),
-                view: PersonaView {
-                    id: "mine".into(),
-                    detail: None,
-                    error: None,
-                    cursor: 3,
-                },
-            }),
-            ..Settings::default()
-        }
-    }
-
-    #[test]
-    fn an_unchanged_prompt_is_not_saved_and_a_changed_one_carries_its_version() {
-        let mut page = editing();
-        page.prompt_edited(Some("你是她。\n".into()));
-        assert!(page.take_asks().is_empty(), "编辑器补的换行不算改了");
-        let mut page = editing();
-        page.prompt_edited(None);
-        assert!(page.take_asks().is_empty(), "读不回来的不存");
-        let mut page = editing();
-        page.prompt_edited(Some("你是另一个她。\n".into()));
-        let asks = page.take_asks();
-        assert_eq!(asks[0].1, "persona.set");
-        assert_eq!(
-            asks[0].2,
-            json!({"persona": "mine", "prompts": {"persona": {"text": "你是另一个她。\n", "expect": "v1"}}})
-        );
-    }
-
-    #[test]
-    fn a_saved_prompt_says_so() {
-        // 2026-10-13 验收 T-189：存成了状态行没有一句话，还写着别处的「已获取 5 个模型」。
-        let texts = crate::config::Config::builtin().unwrap().text.settings;
-        let mut page = editing();
-        page.prompt_edited(Some("你是另一个她。".into()));
-        let (tag, _, _) = page.take_asks().remove(0);
-        page.answer(tag, Ok(json!({"persona": {"id": "mine"}})), &texts);
-        let (said, tone) = page.status.clone().unwrap();
-        assert_eq!(said, "已保存");
-        assert_eq!(tone, crate::settings::Tone::Good);
-    }
-
-    #[test]
-    fn an_emptied_prompt_is_saved_empty_not_put_back() {
-        // 核心 P-3 补：`unset` 是回到出厂的字，清空了要的是空的。
-        let mut page = editing();
-        page.prompt_edited(Some("\n".into()));
-        let asks = page.take_asks();
-        assert_eq!(
-            asks[0].2["prompts"]["persona"],
-            json!({"text": "", "expect": "v1"})
-        );
-    }
-
-    #[test]
-    fn the_short_description_sits_under_the_name_and_is_saved_as_the_summary() {
-        // 「配置页」第 36 条（2026-10-17 项目主人定）：简单描述就是 `persona.summary`，名字下面一行。
-        use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-
-        use super::{FIELDS, Field};
-        use crate::settings::pages::personas::Detail;
-        use crate::settings::popup::Popup;
-        assert_eq!(FIELDS[1], Field::Summary, "名字下面一行");
-        let texts = crate::config::Config::builtin().unwrap().text.settings;
-        let detail = Detail {
-            id: "mine".into(),
-            summary: Some("会写诗".into()),
-            ..Detail::default()
-        };
-        let mut page = Settings {
-            popup: Some(Popup::Persona(PersonaView {
-                id: "mine".into(),
-                detail: Some(detail),
-                error: None,
-                cursor: 1,
-            })),
-            ..Settings::default()
-        };
-        let press = |page: &mut Settings, code| {
-            page.key(KeyEvent::new(code, KeyModifiers::NONE), &texts);
-        };
-        press(&mut page, KeyCode::Enter);
-        let Some(Popup::Line(edit)) = &page.popup else {
-            panic!("开编辑窗：{:?}", page.popup);
-        };
-        assert_eq!(
-            (edit.key.as_str(), edit.editor.text()),
-            ("persona.summary", "会写诗")
-        );
-        for c in "写代码的".chars() {
-            press(&mut page, KeyCode::Char(c));
-        }
-        press(&mut page, KeyCode::Enter);
-        let asks = page.take_asks();
-        assert_eq!(asks[0].1, "persona.set");
-        assert_eq!(
-            asks[0].2,
-            json!({"persona": "mine", "changes": [{"key": "persona.summary", "value": "写代码的"}]})
-        );
-    }
-}
+mod tests;

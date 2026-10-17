@@ -24,6 +24,8 @@ pub struct Detail {
     pub remove: Option<String>,
     /// 头像的版本（核心 P-5）；没有头像的是 `None`。
     pub avatar: Option<String>,
+    /// 子代理可选（核心 P-10 补，2026-10-17 项目主人定）：开了的才出现在派子代理的可选人格里；没写的是关。
+    pub subagent: bool,
 }
 
 /// 读 `persona.get` 的回应。`prompts` 里的两样是写没写（核心 P-3 补）；以前给的是来处（写了的是字），一样认成写了。
@@ -39,6 +41,7 @@ pub fn detail(got: &Value) -> Detail {
         examples: got["examples"].as_u64().unwrap_or_default(),
         remove: text(&got["remove"]),
         avatar: text(&got["avatar"]),
+        subagent: got["subagent"] == true,
     }
 }
 
