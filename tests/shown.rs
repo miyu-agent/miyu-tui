@@ -27,7 +27,32 @@ fn fakes(home: &Home, programs: &[&str], mime: &str) -> (PathBuf, PathBuf) {
         std::fs::write(&file, body).expect("假程序");
         std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o755)).expect("可执行");
     }
+    // `mime` 不空的另放一份它的桌面文件（不要终端），界面照 `XDG_DATA_HOME`、`XDG_DATA_DIRS` 找到它。
+    let apps = home.root().join("fake-share/applications");
+    std::fs::create_dir_all(&apps).expect("桌面文件目录");
+    if !mime.is_empty() {
+        std::fs::write(
+            apps.join(mime),
+            "[Desktop Entry]\nName=Viewer\nExec=viewer %U\n",
+        )
+        .expect("桌面文件");
+    }
     (dir, log)
+}
+
+/// 起界面：`PATH` 只给假程序，桌面文件照假的那一份找。
+fn tui(home: &Home, bin: &Path) -> Tui {
+    let path = bin.display().to_string();
+    let share = home.root().join("fake-share").display().to_string();
+    home.tui_with(
+        "zh_CN.UTF-8",
+        &[
+            ("PATH", &path),
+            ("BROWSER", ""),
+            ("XDG_DATA_HOME", &share),
+            ("XDG_DATA_DIRS", &share),
+        ],
+    )
 }
 
 fn show(path: &str) -> Play {
@@ -66,25 +91,26 @@ fn a_page_opens_at_once_and_its_card_opens_it_again() {
         "",
     );
     std::fs::write(home.work.join("index.html"), "<h1>你好</h1>\n<p>一段</p>\n").expect("页面");
-    let (bin, log) = fakes(&home, &["xdg-mime", "xdg-open"], "firefox.desktop");
-    let path = bin.display().to_string();
-    let mut tui = home.tui_with("zh_CN.UTF-8", &[("PATH", &path), ("BROWSER", "")]);
+    let (bin, log) = fakes(&home, &["xdg-mime", "gio"], "viewer.desktop");
+    let mut tui = tui(&home, &bin);
     tui.wait_for("工作区");
     tui.say("给我看看页面");
     tui.wait_for("页面给你看了。");
     tui.wait_for("HTML · 30 B · 2 行");
     assert!(tui.shows("点击打开"), "{}", tui.lines().join("\n"));
-    // 当场开了一次：交给默认程序的是带文件名的副本（第 6、8 条）。
+    // 当场开了一次：照默认程序的桌面文件启动，交的是带文件名的副本（第 6、7、8 条）。
     let opened = logged(&log);
+    let desktop = home.root().join("fake-share/applications/viewer.desktop");
+    let head = format!("gio launch {} ", desktop.display());
     assert!(
-        opened.starts_with("xdg-open ")
+        opened.starts_with(&head)
             && opened.trim_end().ends_with("/index.html")
             && opened.contains("miyu-shown"),
         "{opened}"
     );
     let copy = opened
         .trim_end()
-        .trim_start_matches("xdg-open ")
+        .trim_start_matches(head.as_str())
         .to_string();
     assert_eq!(
         std::fs::read_to_string(&copy).expect("副本"),
@@ -93,7 +119,7 @@ fn a_page_opens_at_once_and_its_card_opens_it_again() {
     // 点卡片再开一次。
     std::fs::write(&log, "").expect("清日志");
     click(&mut tui, "index.html");
-    assert_eq!(logged(&log).trim_end(), format!("xdg-open {copy}"));
+    assert_eq!(logged(&log).trim_end(), format!("{head}{copy}"));
 }
 
 #[test]
@@ -104,8 +130,7 @@ fn markdown_is_a_card_and_with_nothing_to_open_it_the_card_says_where_the_copy_i
     );
     std::fs::write(home.work.join("notes.md"), "# 笔记\n第一行\n").expect("笔记");
     let (bin, log) = fakes(&home, &["xdg-mime"], "");
-    let path = bin.display().to_string();
-    let mut tui = home.tui_with("zh_CN.UTF-8", &[("PATH", &path), ("BROWSER", "")]);
+    let mut tui = tui(&home, &bin);
     tui.wait_for("工作区");
     tui.say("给我看看笔记");
     tui.wait_for("笔记给你看了。");
@@ -134,8 +159,7 @@ fn showing_the_same_path_again_folds_the_earlier_card() {
     );
     std::fs::write(home.work.join("notes.md"), "一行\n").expect("笔记");
     let (bin, _) = fakes(&home, &["xdg-mime"], "");
-    let path = bin.display().to_string();
-    let mut tui = home.tui_with("zh_CN.UTF-8", &[("PATH", &path), ("BROWSER", "")]);
+    let mut tui = tui(&home, &bin);
     tui.wait_for("工作区");
     tui.say("看看");
     tui.wait_for("第一版。");

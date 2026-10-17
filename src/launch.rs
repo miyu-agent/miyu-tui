@@ -35,6 +35,8 @@ pub struct Env {
     pub path: Option<std::ffi::OsString>,
     /// `$BROWSER`；`None` 是没设。
     pub browser: Option<String>,
+    /// 找桌面文件的几个目录（各自下面的 `applications/`）；`None` 照 `XDG_DATA_HOME`、`XDG_DATA_DIRS`（Linux）。
+    pub data_dirs: Option<Vec<std::path::PathBuf>>,
 }
 
 impl Env {
@@ -43,6 +45,7 @@ impl Env {
         Env {
             path: None,
             browser: std::env::var("BROWSER").ok(),
+            data_dirs: None,
         }
     }
 
@@ -114,24 +117,9 @@ fn from_env(path: &Path, env: &Env) -> bool {
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
-fn default_program(path: &Path, media_type: &str, env: &Env) -> bool {
-    // 先问这种文件有没有默认程序：`xdg-open` 没有也照样退出 0 以外的码，不等它就分不出来。
-    let known = env
-        .command("xdg-mime")
-        .args(["query", "default", media_type])
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
-        .is_ok_and(|out| {
-            out.status.success() && !String::from_utf8_lossy(&out.stdout).trim().is_empty()
-        });
-    if !known {
-        return false;
-    }
-    let mut command = env.command("xdg-open");
-    command.arg(path);
-    spawn(command)
-}
+mod linux;
+#[cfg(all(unix, not(target_os = "macos")))]
+use linux::default_program;
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn browser(path: &Path, env: &Env) -> bool {
