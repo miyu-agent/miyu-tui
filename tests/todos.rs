@@ -142,3 +142,28 @@ fn what_is_done_folds_into_the_bottom_line() {
         lines.join("\n")
     );
 }
+
+#[test]
+fn todo_clear_folds_the_list_at_once() {
+    // 核心 D-3 再补：`/todo clear` 清掉待办，推来空清单，这一块当场收（2026-10-17 项目主人：全做完、清掉都直接消失）。
+    let args = serde_json::json!({"todos": [
+        {"content": "读代码", "status": "in_progress"},
+        {"content": "跑测试", "status": "pending"}
+    ]})
+    .to_string();
+    let script = Script::new([
+        Play::Calls(vec![("todowrite".into(), args)]),
+        Play::Says("列好了。"),
+    ]);
+    let home = Home::with_tools(script, "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("排一下");
+    tui.wait_for("列好了。");
+    tui.wait_for("待办 0/2");
+    tui.say("/todo clear");
+    // 回执照提示画，末尾的句号去掉。
+    tui.wait_for("已清空待办");
+    tui.pump(std::time::Duration::from_millis(300));
+    assert!(!tui.shows("待办 0/2"), "{}", tui.lines().join("\n"));
+}
