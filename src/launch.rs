@@ -17,6 +17,7 @@ pub enum Launched {
 }
 
 /// Linux 上没设 `$BROWSER` 时挨个试的浏览器。
+#[cfg(all(unix, not(target_os = "macos")))]
 const BROWSERS: [&str; 7] = [
     "firefox",
     "chromium",

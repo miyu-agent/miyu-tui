@@ -61,7 +61,7 @@ fn local(file: &Shown, ctx: &Ctx) -> Option<std::path::PathBuf> {
     crate::shown_files::copy(&file.blob, &file.name, &saved)
 }
 
-/// 图：同她发的图，没回来是「正在渲染图片」那一行，显示不了、读不成、画不成的写一行图片色的「[图片] 标题」（第 3 条）。
+/// 图：同她发的图，没回来是「正在渲染图片」那一行，显示不了、读不成、画不成的写一行图片色的「\[图片\] 标题」（第 3 条）。
 fn image(file: &Shown, ctx: &Ctx) -> Vec<Row> {
     let label = || {
         let text = format!("{} {}", ctx.config.text.sent.image, heading(file));
