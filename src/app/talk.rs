@@ -24,6 +24,8 @@ pub struct Talk {
     pub opening: Option<(String, bool)>,
     /// 上次交回的会话列表：再开框先照它画（`switch.rs`）。
     pub sessions_seen: Option<Vec<crate::core::SessionInfo>>,
+    /// 发了删除、核心还没推来「删掉了」的会话：这之间推来的它们的变化不要（会把删了的又加回列表，「会话列表」第 2 条）。
+    pub(super) deleting: crate::core::DeletingSessions,
     /// 最近发出去的一句：没发出去时撤回来（`redo.rs`）。
     pub(super) unsent: Option<Unsent>,
     /// Ctrl+C 打断时要退回排着的话，走到哪一步了（`takeback.rs`）。

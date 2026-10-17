@@ -70,6 +70,7 @@ impl App {
                 left: Vec::new(),
                 opening: None,
                 sessions_seen: None,
+                deleting: Default::default(),
                 unsent: None,
                 takeback: None,
                 asks: Default::default(),

@@ -38,6 +38,10 @@ impl App {
 
     /// 会话列表推来一条变化（核心 9-5）。
     pub(super) fn session_changed(&mut self, change: crate::core::SessionChange) {
+        // 删着的：「删掉了」来了才算完，这之前推来的整项不要（`core/sessions.rs` 的 `Deleting`）。
+        if !self.talk.deleting.admits(&change) {
+            return;
+        }
         let Some(seen) = self.talk.sessions_seen.as_mut() else {
             return;
         };
@@ -236,6 +240,10 @@ impl App {
             return;
         }
         list.remove(&doomed);
+        // 手上那一份会话列表也当场拿掉，记着删着的（`core/sessions.rs` 的 `Deleting`）。
+        self.talk
+            .deleting
+            .start(self.talk.sessions_seen.as_mut(), &doomed);
         for session in doomed {
             // 切走时还忙着、停放着的：不再订阅。
             if let Some(parked) = self.talk.parked.remove(&session) {

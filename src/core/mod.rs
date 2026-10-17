@@ -68,7 +68,8 @@ pub use push::{
 };
 use rpc::Rpc;
 pub use sessions::{
-    Change as SessionChange, SessionInfo, apply as apply_session_change, latest as latest_session,
+    Change as SessionChange, Deleting as DeletingSessions, SessionInfo,
+    apply as apply_session_change, latest as latest_session,
 };
 pub use snapshot::{Snapshot, Spent};
 pub use spawn::spawn;
