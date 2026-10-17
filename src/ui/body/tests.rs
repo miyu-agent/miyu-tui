@@ -430,3 +430,28 @@ fn clearing_right_after_a_reply_that_fit_does_not_stop_at_its_start() {
         "一下就清干净，不停在回答的开头"
     );
 }
+
+#[test]
+fn the_gap_after_a_turn_stays_when_scrolling_away_and_back_or_opening_and_closing() {
+    // 2026-10-17 项目主人：一轮结束时间线收起留的空档，展开再收起、滚上去再滚回来就没了，不符合直觉。
+    let area = Rect::new(0, 0, 10, 10);
+    let mut view = BodyView::default();
+    assert_eq!(first_row(&rows(30), area, &mut view, true), 20);
+    // 时间线收起，少了 6 行：顶上去的不掉下来，底下空 6 行。
+    assert_eq!(first_row(&rows(24), area, &mut view, true), 20);
+    // 往上滚三行：从空着的那一处往上数，不是从内容的末尾。
+    view.top = Some(17);
+    assert_eq!(first_row(&rows(24), area, &mut view, true), 17);
+    // 滚回来：滚过头的停在原来那一处，接着跟着最新的，空档还在。
+    view.top = Some(30);
+    assert_eq!(first_row(&rows(24), area, &mut view, true), 20);
+    assert!(view.top.is_none());
+    assert_eq!(first_row(&rows(24), area, &mut view, true), 20);
+    // 点开一步（钉在被点的那一行，展开 5 行），再收起：回到原来那一处。
+    view.top = Some(20);
+    assert_eq!(first_row(&rows(29), area, &mut view, true), 20);
+    assert_eq!(first_row(&rows(24), area, &mut view, true), 20);
+    assert!(view.top.is_none(), "收起以后接着跟着最新的");
+    // 她接着说的字把空档填上。
+    assert_eq!(first_row(&rows(32), area, &mut view, true), 22);
+}

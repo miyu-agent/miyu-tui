@@ -274,29 +274,29 @@ fn first_row(
     let lowest = view
         .cleared_at
         .map_or(bottom, |at| bottom.max(at.min(rows.len())));
-    let first = match view.top {
-        Some(top) => top.min(lowest),
-        // 跟着最新的：不比上一帧靠上（蓝图 tui.md「正文」第 1 条），但总要露出至少一行；清过屏的可以一行都不露。
-        None => {
-            let cap = if view.cleared_at.is_some() {
-                rows.len()
-            } else {
-                rows.len().saturating_sub(1)
-            };
-            let follow = lowest.max(view.floor_end.saturating_sub(height)).min(cap);
-            // 她正在写的一段正文长过视口：第一行顶到最上面就停住，一段只停一次（`tui.md`「正文」第 1 条）。
-            match view.reading {
-                Some((id, start)) if follow > start && view.paused != Some(id) => {
-                    view.paused = Some(id);
-                    view.top = Some(start);
-                    view.auto = true;
-                    start
-                }
-                _ => follow,
-            }
-        }
+    // 跟着最新的时停在哪：不比上一帧靠上（蓝图 tui.md「正文」第 1 条），但总要露出至少一行；清过屏的可以一行都不露。
+    // 滚上去、点开一样东西时也照它算最底下：滚回来、收起来回到同一个地方，底下空着的那一截还在（2026-10-17 项目主人：
+    // 一轮结束时间线收起留的空档，展开再收起、滚上去再滚回来就没了，不符合直觉）。
+    let cap = if view.cleared_at.is_some() {
+        rows.len()
+    } else {
+        rows.len().saturating_sub(1)
     };
-    if first >= lowest {
+    let rest = lowest.max(view.floor_end.saturating_sub(height)).min(cap);
+    let first = match view.top {
+        Some(top) => top.min(rest),
+        // 她正在写的一段正文长过视口：第一行顶到最上面就停住，一段只停一次（`tui.md`「正文」第 1 条）。
+        None => match view.reading {
+            Some((id, start)) if rest > start && view.paused != Some(id) => {
+                view.paused = Some(id);
+                view.top = Some(start);
+                view.auto = true;
+                start
+            }
+            _ => rest,
+        },
+    };
+    if first >= rest {
         view.top = None;
         view.auto = false;
     }
@@ -305,8 +305,13 @@ fn first_row(
     }
     // 内容还放得下（从第一行露起；清过屏的，从清屏那一行露起）时不记：视口变矮时不把开头的行挤出去
     // （`tui.md`「正文」第 1 条、「按键」Ctrl+L）。
+    // 滚上去、点开着的：底边照旧记着跟着最新时的那一处，不跟着滚到的地方改。
     let top = view.cleared_at.map_or(0, |at| at.min(rows.len()));
-    view.floor_end = if first == top || !settled {
+    view.floor_end = if !settled {
+        0
+    } else if view.top.is_some() {
+        view.floor_end
+    } else if first == top {
         0
     } else {
         first + height
