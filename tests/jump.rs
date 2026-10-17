@@ -46,24 +46,31 @@ fn jump_lists_what_was_said_and_puts_the_picked_one_at_the_top() {
     tui.type_text("beta");
     tui.pump(Duration::from_millis(300));
     tui.key(b"\r");
-    tui.pump(Duration::from_millis(500));
+    // 一画出来就取颜色（竖线只亮 1 秒：原来固定等 0.5 秒再取，macOS 的 CI 慢时取到的已经是亮过以后的颜色）。
+    let start = std::time::Instant::now();
+    let at = loop {
+        tui.pump(Duration::from_millis(20));
+        let lines = tui.lines();
+        let found = lines.iter().position(|l| l.contains("第二问 beta"));
+        if let Some(at) = found.filter(|&at| at <= 2 && !tui.shows("跳到")) {
+            break at;
+        }
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "没跳过去、没顶到视口最上面（竖线那一行之下）、列表没关：\n{}",
+            lines.join("\n")
+        );
+    };
     let lines = tui.lines();
-    let at = lines
-        .iter()
-        .position(|l| l.contains("第二问 beta"))
-        .unwrap_or_else(|| panic!("没跳过去：\n{}", lines.join("\n")));
-    assert!(
-        at <= 2,
-        "那一句顶到视口最上面（竖线那一行之下）：\n{}",
-        lines.join("\n")
-    );
-    assert!(!tui.shows("跳到"), "列表关了");
     // 竖线亮一下（第 3 条）：刚跳过去和过了一秒多颜色不一样。
     let col = lines[at].chars().take_while(|&c| c != '┃').count();
     let (row, col) = (u16::try_from(at).unwrap(), u16::try_from(col).unwrap());
     assert_eq!(tui.cell(row, col), "┃");
     let lit = tui.foreground(row, col);
-    tui.pump(Duration::from_millis(1500));
+    let start = std::time::Instant::now();
+    while tui.foreground(row, col) == lit && start.elapsed() < Duration::from_secs(5) {
+        tui.pump(Duration::from_millis(100));
+    }
     assert_ne!(tui.foreground(row, col), lit, "亮过以后画回原来的颜色");
 }
 
