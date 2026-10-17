@@ -33,6 +33,7 @@ fn a_sent_picture_comes_after_its_step_and_folds_the_segment_like_a_reply() {
                 said: None,
                 display: Default::default(),
                 sent: 2,
+                detail: None,
             },
             Push::Media(vec![sent("摊手"), sent("比心")]),
         ],

@@ -130,6 +130,7 @@ fn a_tool_goes_from_preparing_to_its_result() {
             said: None,
             display: Default::default(),
             sent: 0,
+            detail: None,
         }],
     );
     assert!(tool(&t).failed() && !tool(&t).busy());

@@ -45,6 +45,7 @@ fn only_the_wait_for_the_first_word_counts() {
             said: None,
             display: Default::default(),
             sent: 0,
+            detail: None,
         }],
     );
     assert!(!t.waiting(), "步与步之间等她：不算");

@@ -81,6 +81,7 @@
   "thought": "已思考",
   "prepare": "准备{name}",
   "on_session": "会话 {id}",
+  "on_page": "第 {page} 页",
   "omitted": "已省略 {count} 行",
   "summary": {
     "ran": [

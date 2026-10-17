@@ -11,6 +11,7 @@ use crate::transcript::{Segment, Step, StepKind, ToolState};
 use crate::ui::rows::Row;
 use crate::ui::test_support::Fixture;
 
+mod detail;
 mod empty;
 mod images;
 mod language;

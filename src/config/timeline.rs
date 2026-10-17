@@ -85,6 +85,12 @@ pub enum Body {
     Arg(String),
     /// 这两个参数（改前、改后）排出来的差异。
     Diff([String; 2]),
+    /// `detail` 的记忆、对话片段（`memory_search`）；没有 `detail` 的照结果的原文。
+    Memories,
+    /// `detail` 的知识库命中（`kb_search`）。
+    Hits,
+    /// `detail` 的一页文档，照 Markdown 画（`kb_read`）。
+    Page,
 }
 
 impl Timeline {

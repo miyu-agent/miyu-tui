@@ -21,6 +21,7 @@ pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
         said: serde_json::from_value(body["human"].clone()).ok(),
         display: display(&body["display_name"]),
         sent: body["sent"].as_array().map_or(0, Vec::len),
+        detail: body.get("detail").filter(|d| d.is_object()).cloned(),
     });
     // 结果里的图（读了图片文件的 `read`）另交一条：时间线把图接在这一步下面（蓝图「时间线」第 8 条）。
     let blobs: Vec<String> = blocks(body)

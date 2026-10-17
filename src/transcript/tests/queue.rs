@@ -151,6 +151,7 @@ fn what_she_said_before_hearing_it_stays_above_it() {
             said: None,
             display: Default::default(),
             sent: 0,
+            detail: None,
         }],
     );
     let kinds: Vec<(Kind, String)> = shown(&t)
