@@ -238,7 +238,7 @@ pub(super) async fn serve(
                                     || joined.persona.is_some_and(|p| !notify(Update::SessionPersona(p)))
                                     || joined.preset.is_some_and(|p| !notify(Update::SessionPreset(p)))
                                     || joined.workspace.is_some_and(|cwd| {
-                                        !notify(Update::Workspace { cwd, joined: false })
+                                        !notify(Update::Workspace { cwd })
                                     })
                                     || joined.snapshot.is_some_and(|s| !notify(Update::Snapshot(s)))
                                 {

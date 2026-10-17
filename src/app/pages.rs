@@ -26,8 +26,8 @@ impl App {
                     self.paged(&session, more);
                     None
                 }
-                Update::Workspace { cwd, joined } => {
-                    self.workspace(&session, cwd, joined);
+                Update::Workspace { cwd } => {
+                    self.workspace(&session, cwd);
                     None
                 }
                 Update::Older {
@@ -44,9 +44,9 @@ impl App {
                 }),
             },
             // 开会话、重连时订阅主会话的回应（`core/serve.rs`、`core/spawn.rs`）：工作区。
-            Update::Workspace { cwd, joined } => {
+            Update::Workspace { cwd } => {
                 if let Some(main) = self.talk.main_session() {
-                    self.workspace(&main, cwd, joined);
+                    self.workspace(&main, cwd);
                 }
                 None
             }
@@ -107,9 +107,7 @@ impl App {
     }
 
     /// 订阅回应里会话的工作区（核心 9-7 上）：记下，接上老会话时终端在别的目录的写一句（`transcript/workspace.rs`）。
-    fn workspace(&mut self, session: &str, cwd: String, joined: bool) {
-        let texts = &self.config.text;
-        let here = &self.cwd;
+    fn workspace(&mut self, session: &str, cwd: String) {
         let found = place(
             &mut self.talk.transcript,
             &mut self.talk.board,
@@ -118,7 +116,7 @@ impl App {
             session,
         );
         if let Some((transcript, ..)) = found {
-            transcript.joined_workspace(cwd, joined, here, texts);
+            transcript.workspace = Some(cwd);
         }
     }
 

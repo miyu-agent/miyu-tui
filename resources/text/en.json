@@ -599,7 +599,6 @@
   "workspace": {
     "need_path": "Specify a path",
     "pending": "New session will open in {path}",
-    "elsewhere": "Workspace: {path} · /workspace . to switch here",
     "changed": "Workspace changed to {path}"
   },
   "themes": {

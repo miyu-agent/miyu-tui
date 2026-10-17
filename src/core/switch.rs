@@ -69,13 +69,11 @@ pub(super) fn recent(list: &Value) -> Option<String> {
 }
 
 /// 带 `after` 的订阅回应到了：补完了，还记着的读出来、钟回到现在，再交模型、人格、预设、待办、累计用量、限额和工作区
-/// （从 `take.rs` 挪来，2026-10-11）。`joined`：切过去、启动时接上一个老会话的那一次，终端在别的目录时正文末尾写一句；重连
-/// 以后重订的不算。交回界面还在不在。
+/// （从 `take.rs` 挪来，2026-10-11）。交回界面还在不在。
 pub(super) fn replayed(
     link: &mut Link,
     session: String,
     message: &Value,
-    joined: bool,
     notify: &impl Fn(Update) -> bool,
 ) -> bool {
     let wrap = |update: Update| Update::Elsewhere {
@@ -117,9 +115,9 @@ pub(super) fn replayed(
     {
         return false;
     }
-    // 会话的工作区（核心 9-7 上）：补完、换上来以后再交，终端在别的目录时正文末尾写一句。
+    // 会话的工作区（核心 9-7 上）：补完、换上来以后再交。
     let workspace =
-        super::connect::workspace(&message["result"]).map(|cwd| Update::Workspace { cwd, joined });
+        super::connect::workspace(&message["result"]).map(|cwd| Update::Workspace { cwd });
     pushes.into_iter().all(|p| notify(wrap(Update::Push(p))))
         && Limits::of(message).is_none_or(|limits| notify(wrap(Update::Limits(limits))))
         && workspace.is_none_or(|w| notify(wrap(w)))

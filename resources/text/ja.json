@@ -599,7 +599,6 @@
   "workspace": {
     "need_path": "パスを指定してください",
     "pending": "新しいセッションは {path} で開きます",
-    "elsewhere": "{path} で作業しています · /workspace . でここに移る",
     "changed": "作業場所を {path} に変更しました"
   },
   "themes": {

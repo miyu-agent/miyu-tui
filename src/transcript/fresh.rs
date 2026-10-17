@@ -46,7 +46,6 @@ impl Default for Transcript {
             next_id: 0,
             older: pages::Older::default(),
             workspace: None,
-            workspace_told: false,
             returned: Vec::new(),
             opened_by: Vec::new(),
         }

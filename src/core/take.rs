@@ -212,11 +212,8 @@ pub(super) async fn take(
             return super::page::take_older(link, session, Ok(&message["result"]), notify);
         }
         // 补完了：还记着的读出来、钟回到现在，再交限额（「会话列表」第 5 条）；重连以后重订的一样（`switch.rs`）。
-        Some(Awaiting::Replay(session)) => {
-            return switch::replayed(link, session, message, true, notify);
-        }
-        Some(Awaiting::Rejoin(session)) => {
-            return switch::replayed(link, session, message, false, notify);
+        Some(Awaiting::Replay(session) | Awaiting::Rejoin(session)) => {
+            return switch::replayed(link, session, message, notify);
         }
         Some(Awaiting::Watch(session)) => {
             let reply = &message["result"];
@@ -254,7 +251,7 @@ pub(super) async fn take(
                 return false;
             }
             if let Some(cwd) = super::connect::workspace(reply) {
-                let update = Box::new(Update::Workspace { cwd, joined: false });
+                let update = Box::new(Update::Workspace { cwd });
                 let session = session.clone();
                 if !notify(Update::Elsewhere { session, update }) {
                     return false;
