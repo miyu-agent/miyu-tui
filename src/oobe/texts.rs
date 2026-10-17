@@ -278,8 +278,12 @@ pub struct Persona {
     /// 标题、说明。
     #[serde(flatten)]
     pub head: Heading,
-    /// 四格的名字：名字、人格提示词、示范对话、人设提醒短语。
+    /// 四格的名字：名字、具体人格提示词、示范对话、人设提醒短语。
     pub fields: Vec<String>,
+    /// 简单描述那一格的名字（2026-10-17 加，在名字下面）。
+    pub summary: String,
+    /// 简单描述空着时暗色写的。
+    pub summary_hint: String,
     /// 四格空着时暗色写的。
     pub hints: Vec<String>,
     /// 示范对话有几轮，`{n}`。

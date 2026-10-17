@@ -1,4 +1,4 @@
-//! 建人格那一步（「第一次打开的引导」第 21–23 条）：四格和「下一步」；人格提示词、人设提醒短语的大编辑浮窗，示范对话的
+//! 建人格那一步（「第一次打开的引导」第 21–23 条）：六格和「下一步」；具体人格提示词、人设提醒短语的大编辑浮窗，示范对话的
 //! 列表、两格窗都浮在上面（第 21a 条），示范对话照配置页的字（「配置页」第 41 条）。
 
 use ratatui::text::Span;
@@ -24,7 +24,7 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
     let label_w = words
         .fields
         .iter()
-        .chain([&words.avatar])
+        .chain([&words.avatar, &words.summary])
         .map(|f| f.width())
         .max()
         .unwrap_or(0);
@@ -35,6 +35,15 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
     let on = |slot| !quiet && step.focus == slot;
     c.field(&label(0), label_w, &step.name, &hint(0), on(Slot::Name));
     // 格子之间空一行（第 21 条，同第 18 条）。
+    c.blank();
+    // 简单描述（2026-10-17 项目主人定）：名字下面一行字。
+    c.field(
+        &words.summary,
+        label_w,
+        &step.summary,
+        &words.summary_hint,
+        on(Slot::Summary),
+    );
     c.blank();
     // 头像：已有的人格有头像、格子空着的写「已设置」；指着一个文件的，下面画一张小图（第 21 条）。
     let avatar_hint = if step.has_avatar() {

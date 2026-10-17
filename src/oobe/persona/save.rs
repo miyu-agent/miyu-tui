@@ -41,16 +41,23 @@ impl PersonaStep {
             self.prompt.text().trim_end().to_string(),
             self.reminders.text().trim_end().to_string(),
         ];
+        let summary = self.summary.trimmed();
         let mut params = Map::new();
         let mut prompts = Map::new();
+        let mut changes = Vec::new();
         match &self.existing {
             Some(old) => {
                 params.insert("persona".into(), json!(old.id));
                 if old.name != name {
-                    params.insert(
-                        "changes".into(),
-                        json!([{"key": "persona.name", "value": name}]),
-                    );
+                    changes.push(json!({"key": "persona.name", "value": name}));
+                }
+                // 简单描述（2026-10-17）：改了的写，清空了原来有的去掉。
+                match (summary.is_empty(), old.summary == summary) {
+                    (_, true) => {}
+                    (true, false) => changes.push(json!({"key": "persona.summary", "unset": true})),
+                    (false, false) => {
+                        changes.push(json!({"key": "persona.summary", "value": summary}));
+                    }
                 }
                 for (i, now) in texts_now.iter().enumerate() {
                     let before = old.texts[i].as_deref().unwrap_or_default().trim_end();
@@ -69,10 +76,10 @@ impl PersonaStep {
                 }
             }
             None => {
-                params.insert(
-                    "changes".into(),
-                    json!([{"key": "persona.name", "value": name}]),
-                );
+                changes.push(json!({"key": "persona.name", "value": name}));
+                if !summary.is_empty() {
+                    changes.push(json!({"key": "persona.summary", "value": summary}));
+                }
                 for (i, now) in texts_now.iter().enumerate() {
                     if !now.is_empty() {
                         prompts.insert(PROMPTS[i].into(), json!({"text": now}));
@@ -82,6 +89,9 @@ impl PersonaStep {
                     prompts.insert("examples".into(), json!({"pairs": pairs}));
                 }
             }
+        }
+        if !changes.is_empty() {
+            params.insert("changes".into(), Value::Array(changes));
         }
         if !prompts.is_empty() {
             params.insert("prompts".into(), Value::Object(prompts));
@@ -135,6 +145,7 @@ impl PersonaStep {
                     self.existing = Some(Existing {
                         id: id.clone(),
                         name: got["name"].as_str().unwrap_or_default().to_string(),
+                        summary: got["summary"].as_str().unwrap_or_default().to_string(),
                         avatar: got["avatar"].as_str().map(str::to_string),
                         seed: got["seed"].as_str().map(str::to_string),
                         seeds: got["seeds"].as_array().map(|list| {
@@ -238,6 +249,7 @@ impl PersonaStep {
         }
         let old = old.clone();
         self.name = Field::line().with(&old.name);
+        self.summary = Field::line().with(&old.summary);
         self.prompt = Field::lines().with(old.texts[0].as_deref().unwrap_or_default().trim_end());
         self.reminders =
             Field::lines().with(old.texts[1].as_deref().unwrap_or_default().trim_end());

@@ -101,12 +101,17 @@ fn a_home_that_never_walked_the_guide_opens_it_and_one_that_did_does_not() {
 fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     let home = Home::unwelcomed(Script::new([Play::Says("好。")]), CONFIGURED);
     let mut tui = to_persona(&home);
-    // 四格：名字（回车编辑、回车写好）、人格提示词（回车开大编辑浮窗，Esc 收起）、示范对话（回车开浮窗，a 加一轮）、
-    // 人设提醒短语（第 7、21a 条）。
+    // 名字（回车编辑、回车写好）、简单描述（同名字，2026-10-17）、具体人格提示词（回车开大编辑浮窗，Esc 收起）、示范对话
+    // （回车开浮窗，a 加一轮）、人设提醒短语（第 7、21a 条）。
     tui.key(b"\r");
     tui.wait_for("Enter 完成");
     tui.type_text("小助手");
     tui.key(b"\r");
+    tui.key(b"j");
+    tui.key(b"\r");
+    tui.type_text("会写诗");
+    tui.key(b"\r");
+    tui.wait_for("会写诗");
     tui.key(b"j");
     tui.key(b"j");
     tui.key(b"\r");
@@ -190,6 +195,10 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     through_profile(&mut tui);
     tui.wait_for("选择预设");
     assert!(read(&persona_file(&home, "persona.toml")).contains("小助手"));
+    assert!(
+        read(&persona_file(&home, "persona.toml")).contains("会写诗"),
+        "简单描述写进 summary"
+    );
     assert!(read(&persona_file(&home, "prompts/persona.md")).contains("你是小助手。"));
     assert!(read(&persona_file(&home, "prompts/examples.md")).contains("在吗"));
     assert!(read(&persona_file(&home, "prompts/reminders.md")).contains("说话简短。"));
@@ -240,8 +249,8 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
 fn a_name_is_required_and_esc_walks_back_a_step() {
     let home = Home::with_settings(Script::new([]), CONFIGURED);
     let mut tui = to_persona(&home);
-    // 名称、头像、人格提示词、示范对话、人设提醒短语，下面是「下一步」。
-    for _ in 0..5 {
+    // 名称、简单描述、头像、具体人格提示词、示范对话、人设提醒短语，下面是「下一步」。
+    for _ in 0..6 {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
@@ -280,8 +289,8 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
     tui.key(b"\r");
     tui.type_text("小助手");
     tui.key(b"\r");
-    // 名称、头像、人格提示词、示范对话、人设提醒短语，下面是「下一步」。
-    for _ in 0..5 {
+    // 名称、简单描述、头像、具体人格提示词、示范对话、人设提醒短语，下面是「下一步」。
+    for _ in 0..6 {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
@@ -338,8 +347,8 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     tui.key(b"\r");
     tui.type_text("小助手");
     tui.key(b"\r");
-    // 名称、头像、人格提示词、示范对话、人设提醒短语，下面是「下一步」。
-    for _ in 0..5 {
+    // 名称、简单描述、头像、具体人格提示词、示范对话、人设提醒短语，下面是「下一步」。
+    for _ in 0..6 {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
@@ -382,7 +391,7 @@ fn to_theme_wide(home: &Home) -> Tui {
     }
     tui.type_text("小助手");
     tui.key(b"\r");
-    for _ in 0..5 {
+    for _ in 0..6 {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");

@@ -36,7 +36,12 @@ fn a_new_persona_is_created_in_one_go_and_becomes_the_default() {
     typed(&mut oobe, "小助手", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert!(!oobe.persona.name.editing());
-    // 人格提示词（头像下面）：回车开大编辑浮窗，写完 Esc 收起（第 21a 条）。
+    // 简单描述（名字下面，2026-10-17）：同名称，回车编辑、回车写好。
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    typed(&mut oobe, "会写诗", t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    // 具体人格提示词（头像下面）：回车开大编辑浮窗，写完 Esc 收起（第 21a 条）。
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -70,7 +75,8 @@ fn a_new_persona_is_created_in_one_go_and_becomes_the_default() {
     let (tag, params) = find(&sent, "persona.set");
     assert_eq!(
         params,
-        json!({"changes": [{"key": "persona.name", "value": "小助手"}],
+        json!({"changes": [{"key": "persona.name", "value": "小助手"},
+                           {"key": "persona.summary", "value": "会写诗"}],
                "prompts": {"persona": {"text": "你是小助手。"},
                            "examples": {"pairs": [{"user": "在吗", "assistant": "在"}]}}}),
         "不写编号、空的不带"
@@ -107,9 +113,10 @@ fn a_name_is_needed_and_the_sheet_writes_lines_and_hands_over_to_the_editor() {
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = at_persona(t0, &texts, None);
-    // 人格提示词（名字、头像下面）：大编辑浮窗里 Enter 换行（第 21a 条，2026-10-09 项目主人：复杂的提示词要能写）。
-    oobe.key(key(KeyCode::Down), t0, &texts);
-    oobe.key(key(KeyCode::Down), t0, &texts);
+    // 具体人格提示词（名字、简单描述、头像下面）：大编辑浮窗里 Enter 换行（第 21a 条，2026-10-09 项目主人：复杂的提示词要能写）。
+    for _ in 0..3 {
+        oobe.key(key(KeyCode::Down), t0, &texts);
+    }
     oobe.key(key(KeyCode::Enter), t0, &texts);
     typed(&mut oobe, "一", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -154,7 +161,7 @@ fn an_existing_default_is_filled_in_and_only_changes_are_saved_with_versions() {
     let (tag, _) = find(&sent, "persona.get");
     oobe.answer(
         tag,
-        Ok(json!({"persona": "persona-1", "name": "小助手"})),
+        Ok(json!({"persona": "persona-1", "name": "小助手", "summary": "会写诗"})),
         t0,
         &texts,
     );
@@ -172,10 +179,11 @@ fn an_existing_default_is_filled_in_and_only_changes_are_saved_with_versions() {
         oobe.answer(tag, Ok(reply), t0, &texts);
     }
     assert_eq!(oobe.persona.name.text(), "小助手");
+    assert_eq!(oobe.persona.summary.text(), "会写诗", "简单描述也填好");
     assert_eq!(oobe.persona.prompt.text(), "你是小助手。");
     assert!(oobe.persona.existing_name.is_some());
     // 没改：直接写默认人格。
-    for _ in 0..5 {
+    for _ in 0..6 {
         oobe.key(key(KeyCode::Down), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -188,7 +196,7 @@ fn an_existing_default_is_filled_in_and_only_changes_are_saved_with_versions() {
     let (tag, _) = find(&sent, "persona.get");
     oobe.answer(
         tag,
-        Ok(json!({"persona": "persona-1", "name": "小助手"})),
+        Ok(json!({"persona": "persona-1", "name": "小助手", "summary": "会写诗"})),
         t0,
         &texts,
     );
@@ -199,8 +207,9 @@ fn an_existing_default_is_filled_in_and_only_changes_are_saved_with_versions() {
         };
         oobe.answer(tag, Ok(reply), t0, &texts);
     }
-    oobe.key(key(KeyCode::Down), t0, &texts);
-    oobe.key(key(KeyCode::Down), t0, &texts);
+    for _ in 0..3 {
+        oobe.key(key(KeyCode::Down), t0, &texts);
+    }
     oobe.key(key(KeyCode::Enter), t0, &texts);
     typed(&mut oobe, "很开朗。", t0, &texts);
     oobe.key(key(KeyCode::Esc), t0, &texts);
@@ -237,7 +246,8 @@ fn an_avatar_path_is_uploaded_then_set_on_the_new_persona() {
     oobe.key(key(KeyCode::Enter), t0, &texts);
     typed(&mut oobe, "小助手", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    // 头像在名字下面：拖进来的路径带引号的去掉引号。
+    // 头像在名字、简单描述下面：拖进来的路径带引号的去掉引号。
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     assert_eq!(oobe.persona.focus, crate::oobe::persona::Slot::Avatar);
     // 照这台机器的写法拼一个绝对路径（`/tmp/...` 在 Windows 上会被补上盘符）；文件不在，原样交。
@@ -279,6 +289,7 @@ fn an_avatar_that_cannot_be_uploaded_says_why_and_goes_back_to_it() {
     typed(&mut oobe, "小助手", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.paste("/tmp/没有这个文件.png");
     oobe.key(key(KeyCode::Enter), t0, &texts);
     for _ in 0..4 {
@@ -319,4 +330,39 @@ fn the_last_screen_shows_the_avatar_that_was_set_and_otherwise_the_mascot() {
         crate::oobe::field::Field::line().with(&dir.join("没有这张.png").display().to_string());
     assert_eq!(step.finale_avatar(none), None, "填的文件不在：吉祥物");
     std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn clearing_the_short_description_of_an_existing_default_removes_it() {
+    // 2026-10-17：简单描述是 `persona.summary`；清空了原来有的去掉，别的没改不带。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = at_persona(t0, &texts, Some("persona-1"));
+    let (tag, _) = find(&asks(&mut oobe), "persona.get");
+    oobe.answer(
+        tag,
+        Ok(json!({"persona": "persona-1", "name": "小助手", "summary": "会写诗"})),
+        t0,
+        &texts,
+    );
+    for (tag, _, _) in asks(&mut oobe) {
+        let reply = json!({"text": null, "version": null, "pairs": []});
+        oobe.answer(tag, Ok(reply), t0, &texts);
+    }
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    assert_eq!(oobe.persona.focus, crate::oobe::persona::Slot::Summary);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    for _ in 0.."会写诗".chars().count() {
+        oobe.key(key(KeyCode::Backspace), t0, &texts);
+    }
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    for _ in 0..5 {
+        oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    }
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (_, params) = find(&asks(&mut oobe), "persona.set");
+    assert_eq!(
+        params,
+        json!({"persona": "persona-1", "changes": [{"key": "persona.summary", "unset": true}]})
+    );
 }
