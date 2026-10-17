@@ -80,33 +80,35 @@ pub fn pieces(
                     head = format!("{head} · {place}");
                 }
                 out.extend(each(&head, theme::dim()));
-                out.extend(each(&field(hit, "snippet"), style));
+                // 片段是文档里的原文：和读文档一样照 Markdown 画，不露 `**`。
+                out.extend(markdown_pieces(&field(hit, "snippet"), width, ctx));
             }
         }
-        Body::Page => {
-            let text = detail["text"].as_str()?;
-            let kit = markdown::Kit {
-                languages: &ctx.config.languages,
-                math: &ctx.config.math,
-                labels: &ctx.config.text.markdown,
-                tab: ctx.config.layout.output.tab,
-            };
-            out.extend(
-                markdown::render(text.trim(), width, &kit, &[])
-                    .into_iter()
-                    .filter(|line| line.figure.is_none())
-                    .map(|line| Piece {
-                        lead: None,
-                        content: line
-                            .lead
-                            .into_iter()
-                            .chain(line.folded.spans)
-                            .collect::<Vec<Span>>(),
-                        joined: line.folded.joined,
-                    }),
-            );
-        }
+        Body::Page => out.extend(markdown_pieces(detail["text"].as_str()?, width, ctx)),
         Body::None | Body::Arg(_) | Body::Diff(_) => return None,
     }
     Some(out)
+}
+
+/// 照 Markdown 排成一行行（图不画）。
+fn markdown_pieces(text: &str, width: u16, ctx: &Ctx) -> Vec<Piece> {
+    let kit = markdown::Kit {
+        languages: &ctx.config.languages,
+        math: &ctx.config.math,
+        labels: &ctx.config.text.markdown,
+        tab: ctx.config.layout.output.tab,
+    };
+    markdown::render(text.trim(), width, &kit, &[])
+        .into_iter()
+        .filter(|line| line.figure.is_none())
+        .map(|line| Piece {
+            lead: None,
+            content: line
+                .lead
+                .into_iter()
+                .chain(line.folded.spans)
+                .collect::<Vec<Span>>(),
+            joined: line.folded.joined,
+        })
+        .collect()
 }

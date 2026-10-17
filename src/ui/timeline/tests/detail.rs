@@ -76,7 +76,7 @@ fn memory_search_lists_memories_by_date_and_strikes_the_forgotten_ones() {
 #[test]
 fn kb_search_shows_each_hit_under_its_place() {
     let detail = json!({"hits": [
-        {"kb": "notes", "path": "fruit.md", "heading": "芒果", "snippet": "芒果是热带水果"},
+        {"kb": "notes", "path": "fruit.md", "heading": "芒果", "snippet": "**芒果**是热带水果"},
         {"kb": "notes", "path": "book.pdf", "page": 2, "snippet": "第二页讲荔枝"}
     ]});
     let (shown, _) = opened(tool("kb_search", "[notes] fruit.md: 芒果", Some(detail)));
@@ -85,7 +85,9 @@ fn kb_search_shows_each_hit_under_its_place() {
         "{shown:?}"
     );
     assert!(
-        shown.iter().any(|l| l.contains("芒果是热带水果")),
+        shown
+            .iter()
+            .any(|l| l.contains("芒果是热带水果") && !l.contains("**")),
         "{shown:?}"
     );
     assert!(
