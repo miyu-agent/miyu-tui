@@ -29,8 +29,9 @@ pub fn split(area: Rect, layout: &Layout) -> (Rect, Rect) {
 }
 
 /// 待办那一段：`待办 2/5`，每一项一个记号。没有待办、全做完了是空的。
-/// `full` 时全部列出、长的折行；不然项目最多 `rows` 行：做完了两项及以上、又还有没做完的，做完的收成一行「已完成 N 项」
-/// （2026-10-17 项目主人定：不等放不下才收，只做完一项的不收），接着没做完的，后面放不下的收成一行，长的截掉加 `…`；
+/// `full` 时全部列出、长的折行；不然项目最多 `rows` 行：做完了两项及以上、又还有没做完的，先是没做完的，
+/// 放不下的收成一行，长的截掉加 `…`，做完的收成最底下一行「已完成 N 项」（2026-10-17 项目主人定：不等放不下才收，只做完
+/// 一项的不收；同一天又定挪到底下）；
 /// 做完的不到两项、或者全做完了（停留那 5 秒）放得下的一项一行（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
 pub fn todo_lines(
     board: &Board,
@@ -61,20 +62,13 @@ pub fn todo_lines(
         }
         return out;
     }
-    // 做完的收成一行，接着没做完的，放不下的收成最后一行。
+    // 没做完的在前，放不下的收成一行，做完的收成最后一行。
     let open: Vec<&Todo> = board
         .todos
         .iter()
         .filter(|t| t.state != TodoState::Done)
         .collect();
     let folded = usize::from(done > 0);
-    if done > 0 {
-        let text = words.todo_folded.replace("{count}", &done.to_string());
-        out.push(Line::from(vec![
-            Span::styled(marks.done.clone(), theme::dim()),
-            Span::styled(text, theme::dim()),
-        ]));
-    }
     let room = rows.saturating_sub(folded);
     let shown = if open.len() <= room {
         open.len()
@@ -89,6 +83,13 @@ pub fn todo_lines(
             .todo_more
             .replace("{count}", &(open.len() - shown).to_string());
         out.push(Line::styled(more, theme::dim()));
+    }
+    if done > 0 {
+        let text = words.todo_folded.replace("{count}", &done.to_string());
+        out.push(Line::from(vec![
+            Span::styled(marks.done.clone(), theme::dim()),
+            Span::styled(text, theme::dim()),
+        ]));
     }
     out
 }

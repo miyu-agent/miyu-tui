@@ -105,12 +105,12 @@ fn a_long_list_shows_only_what_is_in_progress() {
     let text: Vec<String> = lines.iter().map(|l| l.to_string()).collect();
     assert_eq!(text.len(), 6, "标题加 5 行：{text:?}");
     assert_eq!(text[0], "待办 12/20");
-    assert_eq!(text[1], "☑ 已完成 12 项", "做完的收成一行");
-    assert!(text[2].starts_with("■ 第 12 项"), "接着是在做的那项");
-    assert!(text[2].ends_with('…'), "长的截掉加 …");
-    assert!(text[3].starts_with("☐ 第 13 项"));
-    assert!(text[4].starts_with("☐ 第 14 项"));
-    assert_eq!(text[5], "… 还有 5 项");
+    assert!(text[1].starts_with("■ 第 12 项"), "先是在做的那项");
+    assert!(text[1].ends_with('…'), "长的截掉加 …");
+    assert!(text[2].starts_with("☐ 第 13 项"));
+    assert!(text[3].starts_with("☐ 第 14 项"));
+    assert_eq!(text[4], "… 还有 5 项");
+    assert_eq!(text[5], "☑ 已完成 12 项", "做完的收成最底下一行");
     // 点开：全部，长的折行。
     let full = todo_lines(&board, &config, 30, 5, true);
     assert!(full.len() > 21, "全部 20 项、还折行");
@@ -127,8 +127,8 @@ fn a_short_list_folds_what_is_done_once_two_are_done() {
             .collect()
     };
     let text = lines(&long_board(2, 2));
-    assert_eq!(text[1], "☑ 已完成 2 项", "{text:?}");
-    assert!(text[2].starts_with("■ 第 2 项"), "{text:?}");
+    assert!(text[1].starts_with("■ 第 2 项"), "{text:?}");
+    assert_eq!(text[4], "☑ 已完成 2 项", "同一天又定挪到最底下：{text:?}");
     assert_eq!(text.len(), 5, "标题、已完成、没做完的三项");
     // 只做完一项：不收，照原样一行打勾（同一天项目主人补）。
     let text = lines(&long_board(1, 3));
