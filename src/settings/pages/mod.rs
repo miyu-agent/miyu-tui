@@ -12,6 +12,7 @@ pub mod mascots;
 pub mod model_or;
 pub mod packages;
 pub mod persona_edit;
+mod persona_seed;
 pub mod personas;
 pub mod preset_edit;
 pub mod presets;
