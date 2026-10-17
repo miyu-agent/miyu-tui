@@ -20,10 +20,12 @@ pub struct SessionList {
     pub loaded: bool,
     /// 鼠标钉住的露出的那一段（悬停不挪列表，滚轮挪），按键放开（照输入历史列表，`menu::top`）。
     pub pinned: Option<usize>,
+    /// 正在用的会话：永远排在最上面（2026-10-18 项目主人：都在跑的时候看不出哪个是当前的）。
+    pub current: Option<String>,
 }
 
 impl SessionList {
-    /// 对得上的，照先后：置顶的在前，别的照最近动静，新的在前；没有最近动静的照核心交回的先后（第 3 条）。
+    /// 对得上的，照先后：正在用的最上面，置顶的接着，别的照最近动静，新的在前；没有最近动静的照核心交回的先后（第 3 条）。
     pub fn matches(&self) -> Vec<&SessionInfo> {
         let query = self.query.to_lowercase();
         let mut found: Vec<(usize, &SessionInfo)> = self
@@ -39,9 +41,11 @@ impl SessionList {
                     || short(&s.session).contains(&query)
             })
             .collect();
+        let current = |s: &SessionInfo| self.current.as_deref() == Some(s.session.as_str());
         found.sort_by(|(i, a), (j, b)| {
-            b.pinned
-                .cmp(&a.pinned)
+            current(b)
+                .cmp(&current(a))
+                .then(b.pinned.cmp(&a.pinned))
                 .then(b.last_active.cmp(&a.last_active))
                 .then(i.cmp(j))
         });
@@ -203,6 +207,17 @@ mod tests {
             order(&list),
             ["0000-bbbbbbbb", "0000-aaaaaaaa"],
             "C-3 以后照最近动静"
+        );
+        // 正在用的永远最上面，置顶的、最近动静的都排在它后面（2026-10-18 项目主人）。
+        list.current = Some("0000-aaaaaaaa".into());
+        list.replace(vec![
+            info("0000-aaaaaaaa", None, false, Some("2026-10-01T08:00:00Z")),
+            info("0000-bbbbbbbb", None, false, Some("2026-10-01T09:00:00Z")),
+            info("0000-cccccccc", None, true, None),
+        ]);
+        assert_eq!(
+            order(&list),
+            ["0000-aaaaaaaa", "0000-cccccccc", "0000-bbbbbbbb"]
         );
     }
 

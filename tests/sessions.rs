@@ -101,9 +101,10 @@ fn switching_draws_the_other_ones_past_without_flashing_an_empty_session() {
     );
     assert!(tui.shows("┃ 第 1 号的话"), "{}", tui.lines().join("\n"));
     assert!(!tui.shows("第 2 号的回答。"), "{}", tui.lines().join("\n"));
-    // 切回来：列表照造的先后，新的（2 号）在第一行。
+    // 切回来：正在用的 1 号排第一行（2026-10-18 项目主人），2 号在它下面。
     tui.say("/sessions");
     tui.wait_for("2 个");
+    tui.key(DOWN);
     tui.key(b"\r");
     tui.wait_for("第 2 号的回答。");
     assert!(!tui.shows("第 1 号的回答。"), "{}", tui.lines().join("\n"));
@@ -130,18 +131,21 @@ fn a_long_list_shows_ten_rows_and_scrolls_with_the_pick() {
 
 #[test]
 fn pinning_moves_it_to_the_top() {
-    let (_home, mut tui) = sessions(2);
+    // 置顶的排在最前面，只在正在用的那个后面（2026-10-18 项目主人：正在用的永远最上面）。
+    let (_home, mut tui) = sessions(3);
     tui.say("/sessions");
-    tui.wait_for("2 个");
+    tui.wait_for("3 个");
+    tui.key(DOWN);
     tui.key(DOWN);
     tui.key(CTRL_P);
     tui.wait_for("已置顶");
     let shown = rows(&tui);
+    assert!(shown[0].contains("第 3 号的话"), "正在用的排第一：{shown:?}");
     assert!(
-        shown[0].contains("第 1 号的话"),
-        "置顶的旧会话排第一：{shown:?}"
+        shown[1].contains("第 1 号的话"),
+        "置顶的旧会话接着：{shown:?}"
     );
-    assert!(shown[1].contains("第 2 号的话"), "{shown:?}");
+    assert!(shown[2].contains("第 2 号的话"), "{shown:?}");
 }
 
 #[test]
