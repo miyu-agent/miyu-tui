@@ -16,6 +16,7 @@ mod failure;
 mod folds;
 mod foreign;
 mod goal;
+mod joined;
 mod level;
 mod link;
 mod media;

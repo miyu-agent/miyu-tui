@@ -31,16 +31,52 @@ impl Transcript {
     }
 
     /// 订阅回应里的工作区：记下。`joined` 是切过去、启动时接上老会话的那一次：终端所在的目录（`here`）和它不一样的，
-    /// 正文末尾写一句「她在 <目录> 干活」，一个会话只写一次（掉了队重新订阅不再写）。
+    /// 正文末尾写一句「她在 <目录> 干活」（有一轮正在跑的写在这一轮上面），一个会话只写一次（掉了队重新订阅不再写）。
     pub fn joined_workspace(&mut self, cwd: String, joined: bool, here: &str, texts: &AllTexts) {
         if joined && !self.workspace_told && cwd != here {
             let line = texts
                 .workspace
                 .elsewhere
                 .replace("{path}", &home_short(&cwd));
-            self.note(Kind::Note, line);
+            // 接进来时有一轮正在跑（2026-10-17 项目主人定）：插在开这一轮的那句话上面，这一轮不被收起，和先开的那个头
+            // 长得一样；没在跑的照旧写在末尾。
+            match self.running.and(self.turn_start()) {
+                Some(at) => self.note_before(at, line),
+                None => self.note(Kind::Note, line),
+            }
         }
         self.workspace_told |= joined;
         self.workspace = Some(cwd);
+    }
+
+    /// 正在跑的这一轮从哪一条起：最后一句你说的话；没有的是 `None`。
+    fn turn_start(&self) -> Option<usize> {
+        self.entries.iter().rposition(|e| e.kind == Kind::User)
+    }
+
+    /// 在第 `at` 条前面插一行暗色的旁白：不收起正在进行的那一段；记着下标的（块、没起名的步、调用、压缩那一行）往后挪一格。
+    fn note_before(&mut self, at: usize, text: String) {
+        let id = self.fresh_id();
+        self.entries
+            .insert(at, super::Entry::new(id, Kind::Note, text));
+        let shift = |i: &mut usize| {
+            if *i >= at {
+                *i += 1;
+            }
+        };
+        for slot in self.blocks.values_mut() {
+            match slot {
+                super::Slot::Reply(i) | super::Slot::Step(i, _) => shift(i),
+            }
+        }
+        for (i, _) in &mut self.unnamed {
+            shift(i);
+        }
+        for (i, _) in self.calls.values_mut() {
+            shift(i);
+        }
+        if let Some(i) = self.compacting.as_mut() {
+            shift(i);
+        }
     }
 }
