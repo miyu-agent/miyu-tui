@@ -99,7 +99,7 @@ impl App {
         self.boxes.model_list = None;
     }
 
-    /// 换成选中的那个：没有 key 的不换，提示为什么；别的（冷却着的也是，[`ChoiceState::pickable`]）交给核心，关框。
+    /// 换成选中的那个：没有 key 的不换，提示为什么；别的（冷却着的也是，[`crate::core::ChoiceState::pickable`]）交给核心，关框。
     fn choose_model(&mut self, choice: &Choice) {
         if !choice.state.pickable() {
             let note = self.config.text.model_panel.refuse_no_key.clone();
