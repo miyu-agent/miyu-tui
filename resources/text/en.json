@@ -664,7 +664,6 @@
     "cooling": "cooling {n}m",
     "cooling_bare": "cooling",
     "no_key": "no key",
-    "refuse_cooling": "This model is cooling down, usable in {n} min",
     "refuse_no_key": "This model has no key"
   },
   "settings": {

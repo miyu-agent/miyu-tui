@@ -664,7 +664,6 @@
     "cooling": "冷却 {n}m",
     "cooling_bare": "冷却中",
     "no_key": "未设置 key",
-    "refuse_cooling": "模型冷却中，{n} 分钟后可用",
     "refuse_no_key": "该模型未设置 key"
   },
   "settings": {

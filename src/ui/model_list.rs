@@ -36,8 +36,6 @@ pub struct Texts {
     pub cooling_bare: String,
     /// 没有 key。
     pub no_key: String,
-    /// 选了在冷却的，`{n}`。
-    pub refuse_cooling: String,
     /// 选了没有 key 的。
     pub refuse_no_key: String,
 }
