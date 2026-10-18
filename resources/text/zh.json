@@ -82,6 +82,7 @@
   "prepare": "准备{name}",
   "on_session": "会话 {id}",
   "on_page": "第 {page} 页",
+  "via": "{name}（{via}）",
   "images": ["图片显示已关闭，/images on 恢复", "图片已打开", "这个终端显示不了图", "用法：/images on 或 /images off"],
   "to_parent": "父会话",
   "attached": "附件：{names}",
