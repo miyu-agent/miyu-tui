@@ -60,6 +60,7 @@ mod tabs;
 mod theme;
 mod tips;
 mod transcript;
+mod trim;
 mod ui;
 mod usage;
 mod widgets;

@@ -87,6 +87,10 @@ pub struct Layout {
     pub slow_frame_ms: u64,
     /// 整份重排时一帧最多花多少毫秒，没排完的下几帧接着排（蓝图「正文」第 8 条）。
     pub relayout_budget_ms: u64,
+    /// 正文比最多时少了这么多行（收起大块、换会话、清空），过 `trim_after_ms` 把堆里空着的还给系统（`trim.rs`）。
+    pub trim_rows: usize,
+    /// 少了以后过多少毫秒还。
+    pub trim_after_ms: u64,
     /// 连不上核心时隔多久再试，`[最短, 最长]` 毫秒，每次翻倍（蓝图「连核心」第 7 条）。
     pub reconnect_ms: [u64; 2],
     /// 运行状态行词后面的三个点：一直在，和词一起被流光扫（`tui.md`「运行状态行和排队的消息」第 2 条）。
