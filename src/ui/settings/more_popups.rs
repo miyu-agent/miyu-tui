@@ -27,7 +27,8 @@ pub(super) fn line(lines: &mut Lines, edit: &LineEdit, texts: &Texts) {
     } else {
         (typed.to_string(), before.to_string())
     };
-    let style = Style::new().add_modifier(Modifier::UNDERLINED);
+    // 打着的字照普通字画，光标指出位置（2026-10-19 项目主人：打字时有下划线）。
+    let style = Style::new();
     lines.caret = Some((
         lines.body.len(),
         2 + u16::try_from(before.width()).unwrap_or(0),

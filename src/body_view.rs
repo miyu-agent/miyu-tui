@@ -131,7 +131,7 @@ impl BodyView {
                 if let Some(url) = press.and_then(|p| self.link_at(p)) {
                     return BodyAction::Open(url);
                 }
-                let target = press.and_then(|(r, _)| self.rows.get(r)?.target);
+                let target = press.and_then(|(r, c)| self.target_at(r, c));
                 if let Some(target) = target {
                     // 这一样的第一行在屏幕上的位置；滚出上边的，算在第一行。
                     let above = self.first_row_of(target).saturating_sub(self.first);
@@ -333,6 +333,17 @@ impl BodyView {
         self.auto = false;
     }
 
+    /// 点在第 `r` 行第 `col` 列开关什么：字右边的空白（没有字的行整行）照 `blank`，别的照 `target`（「时间线」第 17a 条）。
+    fn target_at(&self, r: usize, col: u16) -> Option<Target> {
+        let row = self.rows.get(r)?;
+        let text = u16::try_from(UnicodeWidthStr::width(row.plain.trim_end())).unwrap_or(u16::MAX);
+        let blank = row.plain.trim().is_empty() || col >= row.content_x.saturating_add(text);
+        match row.blank {
+            Some(target) if blank => Some(target),
+            _ => row.target,
+        }
+    }
+
     /// 这一格上的链接。
     fn link_at(&self, (r, col): Point) -> Option<String> {
         let row = self.rows.get(r)?;
@@ -387,85 +398,4 @@ pub(crate) fn slice(text: &str, from: u16, to: u16) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{BodyView, slice};
-    use crate::ui::rows::Row;
-    use ratatui::layout::Rect;
-    use ratatui::text::Line;
-
-    fn row(plain: &str) -> Row {
-        Row {
-            line: Line::default(),
-            target: None,
-            shade: false,
-            plain: plain.into(),
-            copy_blocks: Vec::new(),
-            content_x: 4,
-            joined: false,
-            links: Vec::new(),
-            copy: true,
-            figure: None,
-            icon: None,
-            figure_pending: false,
-        }
-    }
-
-    fn view_of(rows: Vec<Row>) -> BodyView {
-        BodyView {
-            rows: rows.into(),
-            area: Rect::new(0, 0, 40, 10),
-            ..BodyView::default()
-        }
-    }
-
-    fn view() -> BodyView {
-        view_of(vec![row("你好世界"), row("second line")])
-    }
-
-    #[test]
-    fn slicing_counts_display_columns() {
-        assert_eq!(slice("你好世界", 2, 6), "好世");
-        assert_eq!(slice("abc", 1, 99), "bc");
-        // review C2（2026-10-11）：排版、画面照字素簇算宽，`⚠️`（U+26A0 加 FE0F）两列；原来逐字符算成一列，后面的全错位。
-        assert_eq!(slice("⚠️ Note: foo", 9, 12), "foo");
-        assert_eq!(slice("👩‍💻 ok", 3, 5), "ok", "带 ZWJ 的一个字两列");
-    }
-
-    #[test]
-    fn copying_skips_the_gutter_and_spans_rows() {
-        let mut v = view();
-        // 从第 0 行的第 6 列（「好」）拖到第 1 行的第 9 列（"second"）。
-        v.select = Some(((0, 6), (1, 9)));
-        assert_eq!(v.selected_text(), "好世界\nsecond");
-        // 从槽里开始选的，也不带槽：末列算在里面，选到内容的第 1 列。
-        v.select = Some(((1, 0), (1, 5)));
-        assert_eq!(v.selected_text(), "se");
-    }
-
-    #[test]
-    fn releasing_a_drag_copies_and_keeps_the_selection() {
-        use ratatui::crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
-        let mut v = view();
-        let at = |kind, column| MouseEvent {
-            kind,
-            column,
-            row: 0,
-            modifiers: KeyModifiers::NONE,
-        };
-        v.mouse(at(MouseEventKind::Down(MouseButton::Left), 4));
-        v.mouse(at(MouseEventKind::Drag(MouseButton::Left), 7));
-        let up = v.mouse(at(MouseEventKind::Up(MouseButton::Left), 7));
-        assert_eq!(up, super::BodyAction::Copy("你好".into()));
-        assert_eq!(v.selected_text(), "你好");
-    }
-
-    #[test]
-    fn folded_rows_copy_back_as_one_line() {
-        // 第二行是第一行折下来的：复制出来是一行，折行处的空格留着。
-        let mut folded = row("world");
-        folded.joined = true;
-        let mut v = view_of(vec![row("hello "), folded]);
-        v.select = Some(((0, 4), (1, 20)));
-        assert_eq!(v.selected_text(), "hello world");
-    }
-}
+mod tests;

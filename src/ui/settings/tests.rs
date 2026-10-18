@@ -258,3 +258,67 @@ fn a_secret_being_typed_is_drawn_as_dots() {
     assert!(text.contains("令牌") && text.contains("•••••"), "{text}");
     assert!(!text.contains("t0ken"), "明文不上屏：\n{text}");
 }
+
+#[test]
+fn the_model_form_sets_the_prices_apart_and_drops_their_default_tags() {
+    // 2026-10-19 项目主人：价格那几行右边的「默认」都去掉；「价格 · 每百万 token」和上面「温度」之间空一行。
+    let config = Config::builtin().unwrap();
+    let mut p = page(&config);
+    press(&mut p, &config, KeyCode::Enter);
+    press(&mut p, &config, KeyCode::Right);
+    press(&mut p, &config, KeyCode::Enter);
+    let (text, _) = screen(&mut p, &config, 120, 40);
+    let lines: Vec<&str> = text.lines().collect();
+    let at = |s: &str| {
+        lines
+            .iter()
+            .position(|l| l.contains(s))
+            .unwrap_or_else(|| panic!("{s}：\n{text}"))
+    };
+    let price = at("价格 · 每百万 token");
+    assert!(
+        lines[price - 1].trim().is_empty(),
+        "价格上面空一行：\n{text}"
+    );
+    assert!(lines[price - 2].contains("温度"), "{text}");
+    for name in ["输入", "输出", "缓存读", "缓存写", "币种", "倍率"] {
+        let row = lines[price..]
+            .iter()
+            .find(|l| l.trim_start().starts_with(name))
+            .unwrap_or_else(|| panic!("{name}：\n{text}"));
+        assert!(!row.contains("默认"), "{name} 不写默认：\n{text}");
+    }
+    assert!(
+        lines[at("默认思考")].trim_end().ends_with("默认"),
+        "别的照旧写来源：\n{text}"
+    );
+}
+
+#[test]
+fn typing_in_a_form_field_is_not_underlined() {
+    // 2026-10-19 项目主人：模型、供应商的编辑框里打字有下划线。
+    use ratatui::style::Modifier;
+    let config = Config::builtin().unwrap();
+    let mut p = page(&config);
+    press(&mut p, &config, KeyCode::Enter);
+    press(&mut p, &config, KeyCode::Down);
+    press(&mut p, &config, KeyCode::Enter);
+    // 开窗停在显示名称：回车开始改，打几个字。
+    press(&mut p, &config, KeyCode::Enter);
+    for c in "QWZ".chars() {
+        press(&mut p, &config, KeyCode::Char(c));
+    }
+    let mut term = Terminal::new(TestBackend::new(120, 34)).unwrap();
+    let mut caret = Caret::default();
+    term.draw(|frame| draw(frame, &mut p, &config, &mut caret))
+        .unwrap();
+    let buf = term.backend().buffer();
+    let typed: Vec<_> = buf.content().iter().filter(|c| c.symbol() == "Q").collect();
+    assert!(!typed.is_empty(), "打的字画出来了");
+    assert!(
+        typed
+            .iter()
+            .all(|c| !c.modifier.contains(Modifier::UNDERLINED)),
+        "不加下划线"
+    );
+}

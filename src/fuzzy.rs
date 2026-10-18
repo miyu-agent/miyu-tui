@@ -1,6 +1,8 @@
 //! 菜单里打字筛的模糊搜索（2026-10-18 项目主人：模型列表搜不到，原来各处都是整串包含）：不分大小写；打的字照先后出现就算
 //! 对上，不必挨着（`opus4` 对得上 `claude-opus-4`）；有空格的拆成几段，每段都要对上，可以落在不同的字段里（`cl op`）。
-//! 越挨着、越落在词头、越靠前的分越高，照 fzf 的意思。
+//! 越挨着、越落在词头、越靠前的分越高，照 fzf 的意思。照先后对不上的一段，还可以切成几截、每截至少两个字、各自原样出现，先后
+//! 不限（2026-10-19 项目主人：`clinedeepseek` 搜得到 `clinepass/deepseek-v4.1-flash`，`deepseekcline` 搜不到），分数比照先后
+//! 对上的低。
 
 /// 打的字照空格拆成的几段；全是空白的是空的（什么都对得上）。
 fn terms(query: &str) -> Vec<Vec<char>> {
@@ -77,9 +79,37 @@ pub fn score<'a>(query: &str, fields: impl IntoIterator<Item = &'a str>) -> Opti
         let best = fields
             .iter()
             .filter_map(|(text, lower)| term_score(term, text, lower))
-            .max()?;
+            .max()
+            .or_else(|| pieces(term, &fields))?;
         Some(sum + best)
     })
+}
+
+/// 切开的一截至少几个字：一个字的不算，不然随便几个字母乱序都对得上。
+const PIECE: usize = 2;
+/// 每多切一刀扣的分：切开的总排在照先后对上的后面。
+const SPLIT: i64 = 20;
+
+/// 一段照先后对不上时：切成几截，每截至少 [`PIECE`] 个字、原样出现在某个字段里（先后不限），交回切法里分最高的；切不成是
+/// `None`。
+fn pieces(term: &[char], fields: &[(Vec<char>, Vec<char>)]) -> Option<i64> {
+    let piece = |from: usize, to: usize| -> Option<i64> {
+        let part = &term[from..to];
+        fields
+            .iter()
+            .filter(|(_, lower)| lower.windows(part.len()).any(|w| w == part))
+            .filter_map(|(text, lower)| term_score(part, text, lower))
+            .max()
+    };
+    // best[i]：前 i 个字切好的最高分。
+    let mut best: Vec<Option<i64>> = vec![None; term.len() + 1];
+    best[0] = Some(0);
+    for to in PIECE..=term.len() {
+        best[to] = (0..=to - PIECE)
+            .filter_map(|from| Some(best[from]? + piece(from, to)? - SPLIT))
+            .max();
+    }
+    best[term.len()]
 }
 
 /// 筛并排：对不上的拿掉，照分数从高到低，同分的照原来的先后。空的 `query` 原样交回。

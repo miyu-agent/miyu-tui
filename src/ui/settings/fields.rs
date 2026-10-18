@@ -33,8 +33,8 @@ pub(super) fn value(
                 } else {
                     before.width()
                 };
-                let style = Style::new().add_modifier(Modifier::UNDERLINED);
-                return (vec![Span::styled(shown, style)], at as u16);
+                // 打着的字照普通字画，光标指出位置（2026-10-19 项目主人：打字时有下划线）。
+                return (vec![Span::raw(shown)], at as u16);
             }
             if !text.is_empty() {
                 let shown = if *secret {
@@ -131,7 +131,18 @@ pub(super) fn source(row: &Row, texts: &Texts) -> (String, Style) {
     if row.own() && row.source.is_some() {
         return (texts.source("personal").to_string(), theme::warn());
     }
+    // 价格那几行没人改过的不写「默认」（2026-10-19 项目主人）：一列「默认」没有信息。
+    let priced = matches!(
+        row.field,
+        Field::Input
+            | Field::Output
+            | Field::CacheRead
+            | Field::CacheWrite
+            | Field::Currency
+            | Field::Multiplier
+    );
     match &row.source {
+        Some(from) if priced && from == "default" => (String::new(), Style::new()),
         Some(from) => (texts.source(from).to_string(), theme::dim()),
         None => (String::new(), Style::new()),
     }

@@ -30,6 +30,7 @@ impl Rows {
             figure: None,
             icon: None,
             figure_pending: false,
+            blank: None,
         };
         Rows::of_chunks(chunks, &row)
     }

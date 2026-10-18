@@ -121,6 +121,10 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
     for (i, row) in form.rows.iter().enumerate() {
         let focused = form.focus == Focus::Row(i);
         if matches!(row.val, Val::Section) {
+            // 一节和上面的格子之间空一行（2026-10-19 项目主人：「价格」和「温度」挤在一起）。
+            if i > 0 {
+                lines.plain(Line::raw(""));
+            }
             lines.plain(Line::styled(
                 format!(" {}", texts.field(row.field.name())),
                 theme::md_heading(),
