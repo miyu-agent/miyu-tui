@@ -50,7 +50,7 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
     if let Some(amounts) = seen.spent() {
         cells.push(Part {
-            keep: 3,
+            keep: 2,
             spans: vec![Span::styled(amounts, theme::dim())],
         });
     }
@@ -154,13 +154,17 @@ fn split(
     width: u16,
 ) -> (Line<'static>, Line<'static>, Vec<bool>) {
     let need = joined_width(&cells);
-    let fits = |spans: &Vec<Span<'_>>| {
+    // 界面块、速度、花费这几格（`keep` 不过 [`EARLY`]）比权限级别的字先丢（2026-10-19 项目主人）：丢了它们放得下的，
+    // 照旧写字。
+    let late: Vec<&Part> = cells.iter().filter(|p| p.keep > EARLY).collect();
+    let need_late = joined_width_of(&late);
+    let fits = |spans: &Vec<Span<'_>>, need: usize| {
         spans.iter().map(Span::width).sum::<usize>() + GAP + button + need <= usize::from(width)
     };
     let [full, short, bare] = lefts;
-    let chosen = if fits(&full) {
+    let chosen = if fits(&full, need) {
         full
-    } else if fits(&short) {
+    } else if fits(&short, need_late) {
         short
     } else {
         bare
@@ -174,6 +178,11 @@ fn split(
 
 /// 这几格照 ` · ` 连起来有几列。
 fn joined_width(parts: &[Part]) -> usize {
+    joined_width_of(&parts.iter().collect::<Vec<_>>())
+}
+
+/// 同 [`joined_width`]，给挑出来的几格。
+fn joined_width_of(parts: &[&Part]) -> usize {
     let dots = parts.len().saturating_sub(1) * 3;
     dots + parts
         .iter()
@@ -181,6 +190,9 @@ fn joined_width(parts: &[Part]) -> usize {
         .map(Span::width)
         .sum::<usize>()
 }
+
+/// `keep` 不过它的格子（界面块、速度、花费）比权限级别的字先丢。
+const EARLY: u8 = 2;
 
 /// 按钮从第几列起：左右两段之间的空当（两边各留 `GAP`）正中；放不下是 `None`。
 fn middle(left: usize, right: usize, button: usize, width: usize) -> Option<usize> {
@@ -317,7 +329,8 @@ fn cooling_word(
     Some(texts.cooling_until.replace("{n}", &minutes.to_string()))
 }
 
-/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢速度，再丢累计，上下文留到最后。还是 0 的格子不写
+/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢速度（1）、花费（2，接在累计后面，见调用处），
+/// 这几样比权限级别的字先丢（[`EARLY`]，2026-10-19 项目主人）；再丢累计（3），上下文留到最后（4）。还是 0 的格子不写
 /// （`tui.md`「框下面那一行」）。
 fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
     let text = &config.text;
@@ -338,7 +351,7 @@ fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
     }
     if let Some(total) = total_text(total, config) {
         parts.push(Part {
-            keep: 2,
+            keep: 3,
             spans: vec![Span::styled(total, theme::dim())],
         });
     }
