@@ -320,6 +320,15 @@ impl App {
             &mut self.screen.rng,
         );
         self.drawer_tick();
+        // 正文少了一大截（收起大块、换会话、清空）：过一会儿把堆里空着的还给系统（`trim.rs`）。
+        let now = Instant::now();
+        let layout = &self.config.layout;
+        let after = Duration::from_millis(layout.trim_after_ms);
+        let rows = self.screen.view.rows.len();
+        self.media.trim.rows(rows, now, layout.trim_rows, after);
+        if self.media.trim.take(now) {
+            crate::trim::release();
+        }
         // 配色框没定下就关了：换回打开以前的（`theme_box.rs`）。
         self.theme_box_closed();
         // 界面块照屏上这一刻有的位置订阅，变了才再订（`widgets.rs`）。

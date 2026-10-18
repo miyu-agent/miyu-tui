@@ -44,6 +44,8 @@ impl App {
             // 整份重排没排完的：下一帧接着排（蓝图「正文」第 8 条）。头像的主色在后台取、壁纸在后台找的，好了自己叫醒主循环
             // （`theme/seeds.rs`、`theme/wallpaper.rs`），不每一拍醒来看。
             .chain((self.media.row_cache.borrow().stale > 0).then(Instant::now))
+            // 正文少了一大截：到点把堆里空着的还给系统（`trim.rs`）。
+            .chain(self.media.trim.deadline())
             .min()
     }
 }
