@@ -84,7 +84,7 @@ fn list_markers_are_accented_and_quotes_are_dim_italic() {
 }
 
 #[test]
-fn links_are_dark_blue_bold_is_dark_orange_and_code_matches_math() {
+fn links_are_dark_blue_and_bold_is_dark_orange() {
     use ratatui::style::{Color, Modifier};
     // 2026-09-29 项目主人：链接原来是高亮的蓝，标题、地址、裸地址一律换成暗蓝。
     let _theme = theme::hold();
@@ -92,10 +92,16 @@ fn links_are_dark_blue_bold_is_dark_orange_and_code_matches_math() {
     assert_eq!(theme::md_link().fg, dark_blue);
     assert_eq!(theme::md_url().fg, dark_blue);
     assert!(theme::md_link().add_modifier.contains(Modifier::BOLD));
-    // 2026-09-30 项目主人：粗体换成原来行内代码的暗橙，行内代码和行内公式一个颜色。
+    // 2026-09-30 项目主人：粗体换成原来行内代码的暗橙。
     assert_eq!(theme::md_bold().fg, Some(Color::Rgb(0xe5, 0xa0, 0x7a)));
     assert!(theme::md_bold().add_modifier.contains(Modifier::BOLD));
-    assert_eq!(theme::md_code().fg, theme::md_math().fg);
+    // 2026-10-18 项目主人：行内代码原来是公式色、和正文一个颜色，分不开；换成 tokyonight 的 cyan。
+    assert_eq!(theme::md_code().fg, Some(Color::Rgb(0x7d, 0xcf, 0xff)));
+    assert_ne!(
+        theme::md_code().fg,
+        theme::md_math().fg,
+        "行内代码和行内公式分得开"
+    );
 }
 
 #[test]
