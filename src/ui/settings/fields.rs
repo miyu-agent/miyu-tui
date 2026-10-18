@@ -128,10 +128,7 @@ pub(super) fn source(row: &Row, texts: &Texts) -> (String, Style) {
     if let Val::Member { sees: true, .. } = row.val {
         return (texts.tags[0].clone(), theme::dim());
     }
-    if row.own() && row.source.is_some() {
-        return (texts.source("personal").to_string(), theme::warn());
-    }
-    // 价格那几行没人改过的不写「默认」（2026-10-19 项目主人）：一列「默认」没有信息。
+    // 价格那几行不写「默认」也不写「个人」（2026-10-19 项目主人）：一列一样的字没有信息。
     let priced = matches!(
         row.field,
         Field::Input
@@ -141,6 +138,12 @@ pub(super) fn source(row: &Row, texts: &Texts) -> (String, Style) {
             | Field::Currency
             | Field::Multiplier
     );
+    if row.own() && row.source.is_some() {
+        if priced {
+            return (String::new(), Style::new());
+        }
+        return (texts.source("personal").to_string(), theme::warn());
+    }
     match &row.source {
         Some(from) if priced && from == "default" => (String::new(), Style::new()),
         Some(from) => (texts.source(from).to_string(), theme::dim()),
