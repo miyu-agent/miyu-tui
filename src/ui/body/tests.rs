@@ -1,27 +1,12 @@
 //! 正文区：视口第一行露哪一行、点开的一块铺底色的范围。
 use ratatui::layout::Rect;
-use ratatui::text::Line;
 
 use super::first_row;
 use crate::body_view::BodyView;
 use crate::ui::rows::Row;
 
 fn rows(n: usize) -> crate::ui::row_cache::Rows {
-    let row = Row {
-        line: Line::default(),
-        target: None,
-        shade: false,
-        plain: String::new(),
-        copy_blocks: Vec::new(),
-        content_x: 0,
-        joined: false,
-        links: Vec::new(),
-        copy: true,
-        figure: None,
-        icon: None,
-        figure_pending: false,
-    };
-    vec![row; n].into()
+    crate::ui::row_cache::Rows::of_blank(&[(n, None)])
 }
 
 #[test]

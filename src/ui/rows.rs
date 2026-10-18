@@ -59,6 +59,9 @@ pub struct Row {
     pub icon: Option<FigureCell>,
     /// 这一行是「正在画图」：图做好了要重排（按条记着的行认它，「正文」第 8 条）。
     pub figure_pending: bool,
+    /// 点在字右边的空白（没有字的行整行）时开关的东西；`None` 的照 `target`。展开的时间线一段：没铺底色的空白收起整段，
+    /// 点开的一步铺了底色的照旧是那一步（蓝图「时间线」第 17a 条，2026-10-19 项目主人）。
+    pub blank: Option<Target>,
 }
 
 /// 收起的块的一截：显示列映射到整块原文；同一条目的同一块只复制一次。
@@ -155,6 +158,7 @@ impl Ctx<'_> {
             figure: None,
             icon: None,
             figure_pending: false,
+            blank: None,
         }
     }
 

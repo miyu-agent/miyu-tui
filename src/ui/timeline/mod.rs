@@ -30,8 +30,21 @@ pub fn tail_rows(ctx: &Ctx) -> Vec<Row> {
     ]
 }
 
-/// 一段排成的行。`entry` 是它在正文里是第几条。
+/// 一段排成的行。`entry` 是它在正文里是第几条。展开着、有收起那一行的：没铺底色的空白（步与步之间的竖线、字右边）点了收起
+/// 整段，点开的一步铺了底色的空白照旧开关那一步（「时间线」第 17a 条，2026-10-19 项目主人）。
 pub fn rows(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
+    let target = Target::Segment(entry);
+    let mut out = build(entry, segment, ctx);
+    if out.len() > 1 && out.first().and_then(|r| r.target) == Some(target) {
+        for row in &mut out {
+            row.blank = if row.shade { row.target } else { Some(target) };
+        }
+    }
+    out
+}
+
+/// 一段排成的行（[`rows`] 再标空白点了开关什么）。
+fn build(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
     let target = Target::Segment(entry);
     let mut out = Vec::new();
     let fold = ctx.config.timeline.fold;

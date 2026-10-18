@@ -277,10 +277,11 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     let menu = tui.lines();
     let at = |word: &str| menu.iter().position(|l| l.contains(word));
     assert!(at("通用") < at("供应商和模型"), "通用排第一行");
-    // 2026-10-14 照推荐定：终端自己的「外观」排在通用后面，底下照组名写。
+    // 2026-10-14 照推荐定：终端自己的「外观」排在通用后面，底下照组名写；2026-10-19 项目主人：供应商和模型挪到通用后面、
+    // 用户、外观前面。
     assert!(
-        at("通用") < at("外观") && at("外观") < at("供应商和模型"),
-        "外观在通用后面：\n{}",
+        at("通用") < at("供应商和模型") && at("供应商和模型") < at("外观"),
+        "供应商和模型紧跟通用：\n{}",
         menu.join("\n")
     );
     assert!(

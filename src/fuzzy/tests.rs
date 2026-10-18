@@ -24,7 +24,10 @@ fn spaced_terms_must_all_match_and_may_land_in_different_fields() {
 #[test]
 fn chinese_matches_character_by_character() {
     assert!(hit("英伟达崩溃", ["英伟达驱动崩溃搜索"]));
-    assert!(!hit("崩溃英伟达", ["英伟达驱动崩溃搜索"]));
+    assert!(
+        hit("崩溃英伟达", ["英伟达驱动崩溃搜索"]),
+        "整截出现的先后不限（2026-10-19）"
+    );
 }
 
 #[test]
@@ -47,4 +50,22 @@ fn closer_and_word_start_matches_rank_first_and_ties_keep_their_order() {
         score("flash", ["deepseek-v4.1-flash"]) > score("flash", ["f-l-a-s-h"]),
         "挨着的比散着的分高"
     );
+}
+
+#[test]
+fn whole_pieces_match_in_any_order_but_rank_after_ordered_matches() {
+    // 2026-10-19 项目主人：`clinedeepseek` 搜得到，`deepseekcline` 搜不到。
+    let model = "clinepass/deepseek-v4.1-flash";
+    assert!(hit("deepseekcline", [model]));
+    assert!(hit("flashcline", [model]));
+    assert!(
+        score("clinedeepseek", [model]) > score("deepseekcline", [model]),
+        "照先后对上的分高"
+    );
+    assert!(!hit("deepseekcline", ["deepseek-v4.1-flash"]), "每截都要有");
+    assert!(!hit("kees", ["deepseek"]), "一个字一个字乱序的不算");
+    let ranked = rank("deepseekcline", vec!["deepseek-v4.1-flash", model], |s| {
+        vec![*s]
+    });
+    assert_eq!(ranked, [model]);
 }
