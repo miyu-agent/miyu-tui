@@ -208,5 +208,29 @@ fn site_and_date_stay_dim_when_the_step_is_lit() {
             .map(|span| span.style)
     };
     assert_eq!(style_of("a.example"), Some(theme::dim()), "站点暗字");
-    assert_eq!(style_of("摘要"), Some(lit), "摘要跟着这一步亮");
+    assert!(style_of("摘要").is_some(), "摘要也在");
+}
+
+#[test]
+fn a_snippet_is_drawn_as_markdown_in_full() {
+    // 2026-10-19 项目主人：网络搜索的摘要是整页正文，带着 `#`、列表；照 Markdown 画，不截（她拿到的照旧是全文）。
+    let tail = "最后一句在这里。";
+    let page = format!(
+        "# Rust 1.90.0\n\n- **Tag**: 1.90.0\n\n{}{tail}",
+        "Split up the lint into four finer-grained lints. ".repeat(20)
+    );
+    let detail = json!({"kind": "links", "links": [
+        {"title": "Rust 1.90.0 发布", "url": "https://github.com/rust-lang/rust/releases", "snippet": page}
+    ]});
+    let f = Fixture::new();
+    let shown = text(&opened(&f, tool(ToolStatus::Ok, detail)));
+    assert!(
+        shown.iter().all(|l| !l.contains('#') && !l.contains("**")),
+        "不露记号：{shown:?}"
+    );
+    assert!(
+        shown.iter().any(|l| l.contains("Tag: 1.90.0")),
+        "列表照列表画：{shown:?}"
+    );
+    assert!(shown.iter().any(|l| l.contains(tail)), "不截：{shown:?}");
 }

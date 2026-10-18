@@ -1,6 +1,6 @@
 //! 扩展工具交的三种通用形状的 `detail`（核心 W-11 补，`extensions.md`「`detail` 的三种形状」）点开时怎么画（蓝图
 //! 「时间线」第 8 条，2026-10-18 和网页对齐）：`links` 一条一块，标题（链接色，能点，交给系统开）、暗的一行「站点 ·
-//! 日期」、摘要；`table` 拼成 Markdown 表格，照回答里的表格画；`images` 的图和结果里的图一样画在这一步下面，说明暗字
+//! 日期」、摘要（照 Markdown）；`table` 拼成 Markdown 表格，照回答里的表格画；`images` 的图和结果里的图一样画在这一步下面，说明暗字
 //! 写在图下面。形状不认得的、列表是空的，照结果的原文画。
 
 use ratatui::style::Style;
@@ -21,7 +21,7 @@ pub fn pieces(
 ) -> Option<Vec<Piece>> {
     let list = |key: &str| detail[key].as_array().filter(|a| !a.is_empty());
     match detail["kind"].as_str()? {
-        "links" => Some(links(list("links")?, style, each)),
+        "links" => Some(links(list("links")?, style, (width, ctx), each)),
         "table" => {
             list("rows")?;
             let table = markdown_table(detail)?;
@@ -53,8 +53,14 @@ pub fn images(detail: Option<&Value>) -> Vec<(String, Option<String>)> {
         .collect()
 }
 
-/// 一条一块，块之间空一行：标题整行能点，下面暗的「站点 · 日期」（有哪个写哪个），再下面摘要。
-fn links(items: &[Value], style: Style, each: &dyn Fn(&str, Style) -> Vec<Piece>) -> Vec<Piece> {
+/// 一条一块，块之间空一行：标题整行能点，下面暗的「站点 · 日期」（有哪个写哪个），再下面摘要。摘要照 Markdown 画
+/// （2026-10-19 项目主人：网络搜索的摘要是整页正文，带着 `#`、列表；不截，全文都在）。
+fn links(
+    items: &[Value],
+    style: Style,
+    (width, ctx): (u16, &Ctx),
+    each: &dyn Fn(&str, Style) -> Vec<Piece>,
+) -> Vec<Piece> {
     let field = |v: &Value, key: &str| v[key].as_str().unwrap_or_default().trim().to_string();
     let mut out: Vec<Piece> = Vec::new();
     for item in items {
@@ -81,7 +87,7 @@ fn links(items: &[Value], style: Style, each: &dyn Fn(&str, Style) -> Vec<Piece>
         }
         let snippet = field(item, "snippet");
         if !snippet.is_empty() {
-            out.extend(each(&snippet, style));
+            out.extend(super::detail::markdown_pieces(&snippet, width, ctx));
         }
     }
     out
