@@ -322,3 +322,27 @@ fn typing_in_a_form_field_is_not_underlined() {
         "不加下划线"
     );
 }
+
+#[test]
+fn price_rows_written_by_hand_do_not_say_personal_but_other_rows_still_do() {
+    // 2026-10-19 项目主人：价格那几行右边的「个人」也去掉。
+    use crate::settings::forms::{Field, Row, Val};
+    let config = Config::builtin().unwrap();
+    let texts = &config.text.settings;
+    let own = |field| Row {
+        field,
+        val: Val::Text {
+            text: "1.0".into(),
+            secret: false,
+        },
+        inherit: Some("2.0".into()),
+        source: Some("catalog".into()),
+    };
+    for field in [Field::Input, Field::Currency, Field::Multiplier] {
+        assert_eq!(super::fields::source(&own(field), texts).0, "", "{field:?}");
+    }
+    assert_eq!(
+        super::fields::source(&own(Field::Window), texts).0,
+        texts.source("personal")
+    );
+}
