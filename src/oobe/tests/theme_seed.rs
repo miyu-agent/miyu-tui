@@ -1,4 +1,4 @@
-//! 主题那一步的主色、铺底色（2026-10-15 项目主人：配色方案和主色，铺底色也缺了）：主色只在跟随头像、跟随壁纸、有候选时
+//! 主题那一步的主色、铺底色（2026-10-15 项目主人：配色方案和主色，铺底色也缺了）：主色只在跟随头像、跟随壁纸、终端配色、有候选时
 //! 列，挑了当场换，跟随壁纸的写 `tui.theme_seed`，跟随头像的写完配置再写回这个人格；铺底色关了当场换、写进设置。
 
 use std::time::Instant;
@@ -148,5 +148,36 @@ fn terminal_colors_hide_the_background_row_and_keep_its_value() {
     assert!(
         oobe.theme_preview().is_some_and(|p| !p.ground),
         "值照原来的"
+    );
+}
+
+#[test]
+fn terminal_colors_with_candidates_list_the_seed_row_and_write_the_pick() {
+    // 2026-10-19 项目主人定：终端配色照终端 16 色里的主色生成 MD3，主色能换，写个人设置的 tui.theme_seed。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    let mut items = defaults();
+    items["tui.theme"] = json!({"value": "terminal", "origin": {"layer": "personal"}});
+    at_theme(&mut oobe, t0, &texts, items);
+    assert!(
+        !oobe.theme.slots().contains(&Slot::Seed),
+        "没候选（不是真彩色）不列"
+    );
+    oobe.theme.seeds = vec![0x1e_5afa, 0xe6_2828];
+    oobe.theme.seed = Some(0x1e_5afa);
+    assert!(oobe.theme.slots().contains(&Slot::Seed));
+    go(&mut oobe, Slot::Seed, &texts, t0);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    go(&mut oobe, Slot::Next, &texts, t0);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (_, params) = find(&asks(&mut oobe), "config.set");
+    assert!(
+        params["changes"]
+            .as_array()
+            .is_some_and(|c| c.contains(&json!({"key": "tui.theme_seed", "value": "#e62828"}))),
+        "{params}"
     );
 }
