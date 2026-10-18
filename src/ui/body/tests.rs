@@ -455,3 +455,46 @@ fn the_gap_after_a_turn_stays_when_scrolling_away_and_back_or_opening_and_closin
     // 她接着说的字把空档填上。
     assert_eq!(first_row(&rows(32), area, &mut view, true), 22);
 }
+
+#[test]
+fn folding_a_long_timeline_above_does_not_leave_its_rows_as_a_gap() {
+    // 2026-10-19 项目主人：长时间线收着、她开了另一段在跑；把上面那段展开、滚上去、再收起，底下空出一大截，Ctrl+End
+    // 也只露一点点，再展开才正常。底边记的是展开时的行号：上面那段收起少掉的几百行，不该算成空档。
+    let area = Rect::new(0, 0, 10, 10);
+    let mut view = BodyView::default();
+    let rows = |timeline: usize| {
+        crate::ui::row_cache::Rows::of_blank(&[(5, Some(0)), (timeline, Some(1)), (8, Some(2))])
+    };
+    let frame = |view: &mut BodyView, rows: crate::ui::row_cache::Rows| {
+        let first = first_row(&rows, area, view, true);
+        view.rows = rows;
+        first
+    };
+    assert_eq!(frame(&mut view, rows(1)), 4, "上面那段收着，跟着最新的");
+    assert_eq!(frame(&mut view, rows(300)), 303, "展开：跟着最新的");
+    view.top = Some(50);
+    assert_eq!(frame(&mut view, rows(300)), 50, "滚上去");
+    // 收起：上面少了 299 行，底边跟着它下面那一条上移，不留空档。
+    assert_eq!(frame(&mut view, rows(1)), 4, "收起以后不空出一大截");
+    view.top = None;
+    assert_eq!(
+        frame(&mut view, rows(1)),
+        4,
+        "Ctrl+End 到底，在跑的那段整个露着"
+    );
+}
+
+#[test]
+fn the_last_entry_folding_still_leaves_its_gap() {
+    // 10-17 那条照旧：最底下那段自己收起（一轮结束）空出的几行留着，等接下来的字填上。
+    let area = Rect::new(0, 0, 10, 10);
+    let mut view = BodyView::default();
+    let rows = |live: usize| crate::ui::row_cache::Rows::of_blank(&[(5, Some(0)), (live, Some(1))]);
+    assert_eq!(first_row(&rows(12), area, &mut view, true), 7);
+    view.rows = rows(12);
+    assert_eq!(
+        first_row(&rows(8), area, &mut view, true),
+        7,
+        "顶上去的不掉下来"
+    );
+}

@@ -1,6 +1,6 @@
 use ratatui::text::Span;
 
-use super::{Part, fit, left_line, middle, right, split};
+use super::{Part, fit, left_line, level_label, middle, right, split};
 
 #[test]
 fn a_narrow_left_side_is_clipped_with_an_ellipsis() {
@@ -111,12 +111,7 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
             part(1, "Σ27.5M(C97.3%)"),
         ]
     };
-    let bare = || {
-        vec![
-            Span::raw("▣"),
-            Span::raw(" · deepseek-v4.1-flash dev · max"),
-        ]
-    };
+    let bare = || vec![Span::raw("▣"), Span::raw(" deepseek-v4.1-flash dev · max")];
     let lefts = || [full(), short(), bare()];
     let (left, right, _) = split(lefts(), cells(), 0, 95);
     assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
@@ -128,7 +123,7 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
     assert!(left.to_string().contains("clinepass/"), "宽的照旧写全");
     // 再窄：权限级别的字收掉、只留图标，右边的格子照旧都在（2026-10-18 项目主人）。
     let (left, right, _) = split(lefts(), cells(), 0, 82);
-    assert_eq!(left.to_string(), "▣ · deepseek-v4.1-flash dev · max");
+    assert_eq!(left.to_string(), "▣ deepseek-v4.1-flash dev · max");
     assert_eq!(
         right.to_string(),
         "41 tok/s · 342.6k/1M(32.7%) · Σ27.5M(C97.3%)"
@@ -154,5 +149,23 @@ fn cooling_says_how_long_until_it_is_back_and_goes_away_on_time() {
         super::cooling_word(at("2026-10-01T07:59:00Z"), now, &texts),
         None,
         "到点了变回原样"
+    );
+}
+
+#[test]
+fn an_icon_only_level_drops_the_dot_too() {
+    // 2026-10-19 项目主人：窄了收掉「开放权限」这几个字以后，后面那个「·」也收掉。
+    assert_eq!(
+        level_label(Some("⏵⏵ "), "开放权限", true),
+        ("⏵⏵ 开放权限".to_string(), " · ")
+    );
+    assert_eq!(
+        level_label(Some("⏵⏵ "), "开放权限", false),
+        ("⏵⏵".to_string(), " ")
+    );
+    assert_eq!(
+        level_label(None, "开放权限", false),
+        ("开放权限".to_string(), " · "),
+        "没有图标的照旧写字"
     );
 }

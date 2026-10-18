@@ -217,6 +217,23 @@ fn remap(before: &Rows, now: &Rows, row: usize) -> usize {
     }
 }
 
+/// 底边照「它落在哪一条、从那一条开头往下第几行」跟着走：那一条上面的变短（收起一段长时间线）时底边一起上移，不把上面
+/// 少掉的几百行留成底下的空档；那一条自己变短（一轮结束时间线收起）留的空档照旧留着（2026-10-19 项目主人报：展开上面那段、
+/// 滚上去、再收起，底下空出一大截，Ctrl+End 也只露一点点）。
+fn shift_floor(before: &Rows, now: &Rows, floor_end: usize) -> usize {
+    if floor_end == 0 {
+        return 0;
+    }
+    let last = (floor_end - 1).min(before.len().saturating_sub(1));
+    let Some(entry) = before.entry_at(last) else {
+        return floor_end;
+    };
+    match (before.start_of(entry), now.start_of(entry)) {
+        (Some(was), Some(is)) if was <= floor_end => is + (floor_end - was),
+        _ => floor_end,
+    }
+}
+
 /// 第一行露出的是第几行：有锚点的照锚点，滚过的照滚到的，别的跟着最新的、只往下走。滚到底了就回到跟着最新的。
 /// 顺手记下这一帧的区域（`view.area`），下一帧照它看窗口宽度变没变。
 fn first_row(
@@ -253,6 +270,9 @@ fn first_row(
     // 清屏那一行、滚到的地方也是照行号记的：换成「在哪一条的第几行」，照这一帧的行找回来，不然变宽以后落在内容
     // 后面，正文全空（同一天项目主人报）。
     if !view.rows.is_empty() {
+        if !relaid {
+            view.floor_end = shift_floor(&view.rows, rows, view.floor_end);
+        }
         if let Some(at) = view.cleared_at.filter(|&at| at > 0) {
             let moved = view.rows.entry_at(at - 1).and_then(|e| rows.end_of(e));
             view.cleared_at = Some(moved.unwrap_or(at).min(rows.len()));
