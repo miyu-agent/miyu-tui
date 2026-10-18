@@ -9,6 +9,7 @@
 
 mod detail;
 mod message;
+mod shapes;
 mod step;
 mod summary;
 
@@ -170,9 +171,10 @@ fn step_rows(target: Target, step: &Step, spinning: bool, ctx: &Ctx) -> Vec<Row>
         );
         // 结果里带图的：图接在预览下面，左边接这一步的竖线（「时间线」第 8 条）。
         let rail = if step.failed() { style } else { theme::dim() };
-        for figure in step::figures(step, ctx) {
-            let lead = vec![Span::styled(format!("{} ", ctx.config.timeline.line), rail)];
-            out.extend(super::figure_rows::rows(lead, &figure, ctx));
+        for (figure, caption) in step::figures(step, ctx) {
+            let lead = || vec![Span::styled(format!("{} ", ctx.config.timeline.line), rail)];
+            out.extend(super::figure_rows::rows(lead(), &figure, ctx));
+            out.extend(captions(caption.as_deref(), &lead, ctx));
         }
     }
     // 点不开的：不当成能点的，悬停不变亮、指针不变手。
@@ -218,12 +220,10 @@ fn opened(step: &Step, style: Style, ctx: &Ctx) -> Vec<Row> {
     }
     let mut out = block(pieces, ctx);
     let end = out.pop();
-    for figure in &figures {
-        out.extend(super::figure_rows::rows(
-            vec![Span::raw(INDENT)],
-            figure,
-            ctx,
-        ));
+    for (figure, caption) in &figures {
+        let lead = || vec![Span::raw(INDENT)];
+        out.extend(super::figure_rows::rows(lead(), figure, ctx));
+        out.extend(captions(caption.as_deref(), &lead, ctx));
     }
     out.extend(end);
     for row in &mut out {
@@ -238,6 +238,7 @@ fn block(pieces: Vec<Piece>, ctx: &Ctx) -> Vec<Row> {
         lead: None,
         content: Vec::new(),
         joined: false,
+        links: Vec::new(),
     };
     std::iter::once(blank())
         .chain(pieces)
@@ -247,6 +248,31 @@ fn block(pieces: Vec<Piece>, ctx: &Ctx) -> Vec<Row> {
             lead.extend(piece.lead);
             let mut row = ctx.led_row(ctx.blank_slot(), lead, piece.content);
             row.joined = piece.joined;
+            row.links = piece.links;
+            row
+        })
+        .collect()
+}
+
+/// 图下面的说明（扩展工具 `detail` 的 `images`）：暗字，照宽度折行，左边接 `lead`。
+fn captions(caption: Option<&str>, lead: &dyn Fn() -> Vec<Span<'static>>, ctx: &Ctx) -> Vec<Row> {
+    let Some(caption) = caption else {
+        return Vec::new();
+    };
+    let width: usize = lead().iter().map(Span::width).sum();
+    let width = ctx
+        .width
+        .saturating_sub(u16::try_from(width).unwrap_or(0))
+        .max(1);
+    crate::input::pieces(caption, width)
+        .into_iter()
+        .map(|(text, joined)| {
+            let mut row = ctx.led_row(
+                ctx.blank_slot(),
+                lead(),
+                vec![Span::styled(text, theme::dim())],
+            );
+            row.joined = joined;
             row
         })
         .collect()
@@ -268,6 +294,7 @@ fn line(piece: Piece, ctx: &Ctx) -> Row {
         piece.content,
     );
     row.joined = piece.joined;
+    row.links = piece.links;
     row
 }
 

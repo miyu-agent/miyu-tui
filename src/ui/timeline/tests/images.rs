@@ -41,11 +41,11 @@ fn images_already_read_back_become_figures_and_the_rest_are_asked_for() {
     let got = figures(&read_image(), &f.ctx());
     assert_eq!(got.len(), 1, "读回来的那张才画");
     assert_eq!(
-        got[0].kind,
+        got[0].0.kind,
         FigureKind::Preview,
         "工具结果里的图照预览的大小画（2026-10-10）"
     );
-    assert_eq!(got[0].source, "/cache/blobs/aa.png");
+    assert_eq!(got[0].0.source, "/cache/blobs/aa.png");
     let (_, blobs) = f.cards.borrow_mut().take();
     assert_eq!(blobs, ["sha256:bb"], "没读回来的记进单子");
 }
