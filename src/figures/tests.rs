@@ -328,3 +328,34 @@ fn a_place_keeps_its_last_picture_until_the_next_one_is_ready() {
         "读不出来的照实交回"
     );
 }
+
+#[test]
+fn turning_images_off_draws_source_and_on_asks_again() {
+    // 2026-10-18 项目主人：herdr 把图转给手机上的 Termius，贴图的指令印成了字。`/images off` 这次运行一张都不贴。
+    let (mut figures, jobs) = figures(8);
+    assert!(figures.supported() && !figures.off());
+    assert_eq!(
+        figures.look(FigureKind::Image, "a.png", (None, None), 40, 20),
+        Look::Pending
+    );
+    let before = figures.revision();
+    figures.set_off(true);
+    assert!(figures.revision() > before, "关了整份重排");
+    assert_eq!(
+        figures.look(FigureKind::Image, "a.png", (None, None), 40, 20),
+        Look::Unsupported,
+        "关了的照显示不了图写源码"
+    );
+    figures.set_off(false);
+    assert_eq!(
+        figures.look(FigureKind::Image, "a.png", (None, None), 40, 20),
+        Look::Pending,
+        "开了的重新做"
+    );
+    assert_eq!(
+        jobs.try_iter().count(),
+        2,
+        "开着时做了两次，关着时一次都没送"
+    );
+    assert!(!Figures::with_jobs(None, 8).supported());
+}

@@ -90,6 +90,9 @@ pub struct Figures {
     /// 画在固定位置的图（头像那一块、引导里的小图），每一处上一张做好的是哪一份：换成另一张、新的还在做时先拿它顶着
     /// （[`Figures::look_held`]）。
     held: HashMap<&'static str, u64>,
+    /// 人用 `/images off` 关了：这次运行一张图都不贴，照终端显示不了图办（2026-10-18 项目主人：herdr 把图转给手机上的
+    /// Termius，它不认，贴图的指令印成了字）。
+    off: bool,
 }
 
 impl Figures {
@@ -114,7 +117,24 @@ impl Figures {
             revision: 0,
             frame: 0,
             held: HashMap::new(),
+            off: false,
         }
+    }
+
+    /// 这个终端本来就能显示图（启动时问到的）。
+    pub fn supported(&self) -> bool {
+        self.jobs.is_some()
+    }
+
+    /// 人关了：这次运行不贴图。
+    pub fn off(&self) -> bool {
+        self.off
+    }
+
+    /// 关、开（`/images`）：做好的都忘掉，正文整份重排，关了的照显示不了图写源码，开了的重新做。
+    pub fn set_off(&mut self, off: bool) {
+        self.off = off;
+        self.forget();
     }
 
     /// 这一张现在怎样；没做过的交给后台去做。`size` 是 `<img>` 写的宽高，`cols`、`rows` 是最多几列宽、几行高。
@@ -127,7 +147,7 @@ impl Figures {
         cols: u16,
         rows: u16,
     ) -> Look {
-        let Some(jobs) = &self.jobs else {
+        let Some(jobs) = self.jobs.as_ref().filter(|_| !self.off) else {
             return Look::Unsupported;
         };
         let key = key(kind, source, size, (cols, rows));

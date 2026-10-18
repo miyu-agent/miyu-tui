@@ -345,6 +345,7 @@ impl App {
             }
             Run::Theme => self.open_themes(),
             Run::Icons => self.next_icons(),
+            Run::Images => self.images_command(words),
             Run::Quit => self.quit = true,
             Run::Help => self.open_help(),
             Run::Language => self.open_languages(),

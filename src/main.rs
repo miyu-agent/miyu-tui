@@ -317,6 +317,11 @@ fn run(
         if std::mem::take(&mut app.screen.ask_colors) {
             app.ask_colors_again(&reader);
         }
+        // `/images off`：贴上去的图删掉、整屏重画（蓝图「图片、公式和 mermaid 图」第 10 条）。
+        if std::mem::take(&mut app.screen.wipe) {
+            wipe(terminal)?;
+            pointer = pointer::Pointer::default();
+        }
         if std::mem::take(&mut app.suspend) {
             suspend(terminal, keyboard)?;
             app.media.figures.borrow_mut().forget();
@@ -364,6 +369,16 @@ fn reenter(screen: &mut Screen, keyboard: bool) -> io::Result<()> {
         terminal::Clear(terminal::ClearType::All)
     )?;
     modes_on(keyboard)?;
+    *screen = self::screen()?;
+    Ok(())
+}
+
+/// 整屏擦一遍：kitty 的图全删掉（认不得的终端这一句可能印成字，紧接着就清屏了），清屏，换一块新画布，下一帧整屏重画。
+fn wipe(screen: &mut Screen) -> io::Result<()> {
+    use std::io::Write;
+    let mut out = stdout();
+    out.write_all(b"\x1b_Ga=d,d=A,q=2\x1b\\")?;
+    execute!(out, terminal::Clear(terminal::ClearType::All))?;
     *screen = self::screen()?;
     Ok(())
 }

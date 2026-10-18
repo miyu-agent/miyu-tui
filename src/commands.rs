@@ -107,6 +107,8 @@ pub enum Run {
     Theme,
     /// 换下一套图标（蓝图「图标」）。
     Icons,
+    /// 这次运行贴不贴图（`/images on|off`，蓝图「图片、公式和 mermaid 图」第 10 条）。
+    Images,
     /// 退出程序。
     Quit,
     /// 帮助：输入框上面开一个框，列命令和按键（蓝图「帮助 `/help`」）。

@@ -31,6 +31,7 @@ pub use seen::Seen;
 pub use usage::UsageData;
 mod head_settings;
 mod help;
+mod images;
 mod keys;
 mod language;
 mod link;

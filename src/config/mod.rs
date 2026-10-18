@@ -241,6 +241,8 @@ pub struct Texts {
     pub on_session: String,
     /// 知识库命中、读到的文档是第几页，`{page}` 是页码（核心 D-6 `detail`）。
     pub on_page: String,
+    /// `/images` 的几句：关了、开了、终端本来就显示不了图、参数不认得。
+    pub images: [String; 4],
     /// 留言发给父会话（`send_message` 的 `to` 是 `parent`）。
     pub to_parent: String,
     /// 留言带的附件，`{names}` 是文件名。

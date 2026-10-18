@@ -119,6 +119,16 @@
       "run": "icons"
     },
     {
+      "name": "images",
+      "summary": {
+        "zh": "这次运行贴不贴图：off 写成源码，on 恢复",
+        "en": "Images for this run: off shows source, on brings them back",
+        "ja": "この実行中の画像表示：off でソース表示、on で戻す"
+      },
+      "run": "images",
+      "args": true
+    },
+    {
       "name": "new",
       "summary": {
         "zh": "开一个新会话",
