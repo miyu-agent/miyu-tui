@@ -17,7 +17,6 @@ pub mod pick;
 pub mod preset;
 pub mod profile;
 mod replies;
-pub mod sandbox;
 pub mod semantic;
 pub mod sheet;
 mod step;
@@ -30,7 +29,7 @@ use std::time::{Duration, Instant};
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
 
-pub use texts::{Sandbox as TwoChoices, Texts};
+pub use texts::{Texts, TwoChoices};
 
 use crate::core::Refusal;
 use asker::{Ask, Asker, Waiting};
@@ -121,8 +120,6 @@ pub struct Oobe {
     pub profile: profile::ProfileStep,
     /// 选预设。
     pub preset: preset::PresetStep,
-    /// 沙盒。
-    pub sandbox: sandbox::SandboxStep,
     pub semantic: semantic::SemanticStep,
     /// 连着核心。
     pub online: bool,
@@ -164,7 +161,6 @@ impl Oobe {
             theme: theme::ThemeStep::default(),
             profile: profile::ProfileStep::default(),
             preset: preset::PresetStep::default(),
-            sandbox: sandbox::SandboxStep::default(),
             semantic: semantic::SemanticStep::default(),
             online,
             look,
@@ -215,7 +211,6 @@ impl Oobe {
                 self.profile.key(key, &mut self.asker, &mut effects, combo)
             }
             Step::Preset => self.preset.key(key, &mut self.asker, &texts.preset),
-            Step::Sandbox => self.sandbox.key(key, &mut self.asker),
             Step::Semantic => self.semantic.key(key, &mut self.asker),
             Step::Done => {
                 if !self.finale(now, texts).ready {
@@ -315,8 +310,7 @@ impl Oobe {
             Move::Next => self.step.next(),
             Move::Back => self.step.previous(),
         };
-        // 没装语义模型的包：那一步跨过去（`semantic.rs`）。
-        let to = self.semantic.skip(to, moved == Move::Back);
+        let to = self.skip(to, moved == Move::Back);
         if to == self.step {
             return;
         }
@@ -339,9 +333,9 @@ impl Oobe {
                 self.theme.enter(&mut self.asker, (follow, avatar), persona);
             }
             Step::Profile => self.profile.enter(&mut self.asker),
-            Step::Preset => self.preset.enter(&mut self.asker),
-            Step::Sandbox => {
-                self.sandbox.enter(&mut self.asker);
+            Step::Preset => {
+                self.preset.enter(&mut self.asker);
+                // 下一步装没装语义模型的包：先问，到那一步多半已经知道了。
                 self.semantic.probe(&mut self.asker);
             }
             Step::Semantic => self.semantic.enter(&mut self.asker),
@@ -352,6 +346,16 @@ impl Oobe {
             }
             Step::Language | Step::Icons => {}
         }
+    }
+
+    /// 要去 `to`：不用停的跨过去，照走的方向再走：没装语义模型的包跨过那一步（`semantic.rs`）；人格那一步跳过了的跨过
+    /// 主题（配色跟着人格的头像，2026-10-19 项目主人）。
+    fn skip(&self, to: Step, back: bool) -> Step {
+        let mut to = self.semantic.skip(to, back);
+        if to == Step::Theme && self.persona.chosen_id.is_none() {
+            to = if back { to.previous() } else { to.next() };
+        }
+        to
     }
 
     /// 好了那一屏回车：写标记，星点散开。

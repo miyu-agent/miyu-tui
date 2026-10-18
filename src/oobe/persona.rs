@@ -288,6 +288,11 @@ impl PersonaStep {
                     self.listing = true;
                     self.sel = 0;
                 }
+                // 什么都没填的「下一步」写成「跳过」：不建，主题那一步跟着跳过（2026-10-19 项目主人）。
+                Slot::Next if self.blank() => {
+                    self.error = None;
+                    return Move::Next;
+                }
                 Slot::Next => self.save(asker, texts),
                 Slot::Name => self.name.begin(),
                 Slot::Summary => self.summary.begin(),
@@ -321,6 +326,21 @@ impl PersonaStep {
             }
             self.avatar.paste(text.trim().trim_matches(['\'', '"']));
         }
+    }
+
+    /// 什么都没填：没有已有的人格、这一回也没建过，六格都空着（「下一步」写成「跳过」，点了不建）。
+    pub fn blank(&self) -> bool {
+        let fields = [
+            &self.name,
+            &self.summary,
+            &self.avatar,
+            &self.prompt,
+            &self.reminders,
+        ];
+        self.existing.is_none()
+            && self.chosen_id.is_none()
+            && self.pairs.is_empty()
+            && fields.iter().all(|f| f.text().trim().is_empty())
     }
 
     /// 头像的路径写好了：和传上去的不是同一个的，传上去的作废，存的时候重传。

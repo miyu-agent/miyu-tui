@@ -7,6 +7,7 @@ mod blocks;
 mod cards;
 pub use cards::lone_url;
 mod code;
+mod dollars;
 mod html;
 mod inline;
 mod kit;
@@ -51,8 +52,9 @@ pub struct MdLine {
 /// 把一段 Markdown 排成 `width` 列宽的行，照 `kit` 着色、转写公式、写字。`flipped` 是这一条回答里点过的
 /// `<details>`（第几个），和它写的 `open` 反过来。
 pub fn render(text: &str, width: u16, kit: &Kit, flipped: &[usize]) -> Vec<MdLine> {
-    // 制表符画不出来：先展开成空格（review C1）。
-    let text = &*crate::tabs::expand(text, kit.tab);
+    // 制表符画不出来：先展开成空格（review C1）；`\[…\]`、`\(…\)` 换成 `$`（`dollars.rs`）。
+    let expanded = crate::tabs::expand(text, kit.tab);
+    let text = &*dollars::dollars(&expanded);
     let options = Options::ENABLE_TABLES
         | Options::ENABLE_STRIKETHROUGH
         | Options::ENABLE_TASKLISTS

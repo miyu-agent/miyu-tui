@@ -55,9 +55,6 @@ impl Oobe {
             Waiting::ProfileRead | Waiting::ProfileSave | Waiting::ProfileSchema => {
                 self.profile.answer(&waiting, result)
             }
-            Waiting::SandboxRead | Waiting::SandboxSave => {
-                self.sandbox.answer(&waiting, result, texts)
-            }
             Waiting::SemanticSchema | Waiting::SemanticRead | Waiting::SemanticSave => {
                 let here = self.step == super::Step::Semantic;
                 self.semantic.answer(&waiting, result, here)

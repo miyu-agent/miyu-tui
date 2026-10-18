@@ -59,12 +59,15 @@ pub(super) fn closed(block: &str) -> bool {
 
 impl Renderer<'_> {
     /// 代码块：上下两条框线，代码按语言着色，太长的折行。语言写 `mermaid` 的、收完了的另排成一张图，
-    /// 这个代码块当它画不成图时的样子；没收完的（回答还在流）照代码写，不去画半截的图。
+    /// 这个代码块当它画不成图时的样子；语言写 `math` 的（GitHub 的写法）、收完了的照块级公式画（2026-10-19 项目主人，
+    /// `latex`、`tex` 的照代码）；没收完的（回答还在流）照代码写，不去画半截的图。
     pub(super) fn code_block(&mut self) {
         let Some((lang, body)) = self.code.take() else {
             return;
         };
-        if lang.eq_ignore_ascii_case("mermaid") && self.code_closed {
+        if lang.eq_ignore_ascii_case("math") && self.code_closed {
+            self.display_math(&body);
+        } else if lang.eq_ignore_ascii_case("mermaid") && self.code_closed {
             let fallback = self.aside(|r| r.code_lines(&lang, &body));
             self.figure(FigureKind::Mermaid, body, fallback, (None, None));
         } else {

@@ -208,8 +208,17 @@ impl ProfileStep {
         now
     }
 
+    /// 三项都空着：「下一步」写成「跳过」，点了不存。
+    pub fn blank(&self) -> bool {
+        self.now().iter().all(String::is_empty)
+    }
+
     /// 「下一步」：改了的写进个人设置（清空了原来有的去掉），一个字没改的直接下一步。
     fn save(&mut self, asker: &mut Asker) -> Move {
+        // 三项都空着的是「跳过」：什么都不写（原来有的也不去掉，2026-10-19 项目主人）。
+        if self.blank() {
+            return Move::Next;
+        }
         let fields = self.now();
         let changes: Vec<Value> = KEYS
             .iter()

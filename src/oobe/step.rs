@@ -19,15 +19,13 @@ pub enum Step {
     Profile,
     /// 选预设。
     Preset,
-    /// 沙盒：新会话怎么开局（2026-10-13 项目主人定）。
-    Sandbox,
     /// 开不开内置的语义模型，只在装了它的包时出现（2026-10-18 项目主人定）。
     Semantic,
     /// 好了。
     Done,
 }
 
-const ORDER: [Step; 11] = [
+const ORDER: [Step; 10] = [
     Step::Welcome,
     Step::Language,
     Step::Icons,
@@ -36,7 +34,6 @@ const ORDER: [Step; 11] = [
     Step::Theme,
     Step::Profile,
     Step::Preset,
-    Step::Sandbox,
     Step::Semantic,
     Step::Done,
 ];
@@ -67,7 +64,6 @@ impl Step {
                 | Step::Theme
                 | Step::Profile
                 | Step::Preset
-                | Step::Sandbox
         )
         .then(|| self.at() - 1)
     }
