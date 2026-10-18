@@ -237,6 +237,8 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
         // 语言连同是不是自动：自动的中文和手动的中文代码一样，收起那一行却一个英文一个中文。
         (ctx.config.language.code(), ctx.config.auto),
         figures,
+        // `/images off` 关着时带图的也排成源码、记成不带图：开关换了每一条都重排，不然开回来图出不来（2026-10-19）。
+        ctx.figures.borrow().off(),
         // 图占几行照屏高算（三分之一屏）：只改窗口高度时带图的也要重排（review C4，2026-10-11）。
         figures.map(|_| ctx.screen_rows),
     )

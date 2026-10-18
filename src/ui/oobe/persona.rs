@@ -96,7 +96,12 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
         on(Slot::Reminders),
     );
     c.blank();
-    c.action(on(Slot::Next), &format!("{} →", words.next));
+    let next = if step.blank() {
+        &words.skip
+    } else {
+        &words.next
+    };
+    c.action(on(Slot::Next), &format!("{next} →"));
     if step.busy {
         c.blank();
         c.note(&words.saving, theme::dim());

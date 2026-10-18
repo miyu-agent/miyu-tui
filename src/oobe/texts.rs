@@ -112,6 +112,8 @@ pub struct Profile {
     pub other: String,
     /// 「下一步」。
     pub next: String,
+    /// 什么都没填时「下一步」写成的「跳过」（2026-10-19 项目主人）。
+    pub skip: String,
     /// 「正在保存…」。
     pub saving: String,
 }
@@ -155,10 +157,10 @@ pub struct Theme {
     pub saving: String,
 }
 
-/// 沙盒那一步。
+/// 两行选一行的一步（语义模型）：标题、说明，「是」「否」。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Sandbox {
+pub struct TwoChoices {
     /// 标题、说明。
     #[serde(flatten)]
     pub head: Heading,
@@ -290,6 +292,8 @@ pub struct Persona {
     pub examples_some: String,
     /// 「下一步」。
     pub next: String,
+    /// 什么都没填时「下一步」写成的「跳过」（2026-10-19 项目主人）。
+    pub skip: String,
     /// 名字空着。
     pub name_needed: String,
     /// 已经有默认人格的。
@@ -363,10 +367,8 @@ pub struct Texts {
     pub profile: Profile,
     /// 选预设。
     pub preset: Preset,
-    /// 沙盒。
-    pub sandbox: Sandbox,
-    /// 开不开内置的语义模型（2026-10-18）：和沙盒一个样子，`on` 是「是」、`off` 是「否」。
-    pub semantic: Sandbox,
+    /// 开不开内置的语义模型（2026-10-18）：`on` 是「是」、`off` 是「否」。
+    pub semantic: TwoChoices,
     /// 好了。
     pub done: Done,
     /// 没连上核心。

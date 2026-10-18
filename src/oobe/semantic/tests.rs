@@ -48,8 +48,8 @@ fn without_the_package_the_step_is_skipped_both_ways() {
     assert_eq!(step.skip(Step::Semantic, false), Step::Done, "往前跨到好了");
     assert_eq!(
         step.skip(Step::Semantic, true),
-        Step::Sandbox,
-        "往回跨到沙盒"
+        Step::Preset,
+        "往回跨到预设"
     );
     assert_eq!(step.skip(Step::Preset, false), Step::Preset, "别的步不管");
     let mut step = SemanticStep::default();

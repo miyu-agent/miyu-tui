@@ -59,3 +59,43 @@ fn files_arriving_for_the_undo_line_rebuild_it() {
     build(&t.entries, &ctx, &cache, Plan::all());
     assert_eq!(cache.borrow().rebuilt, 1);
 }
+
+#[test]
+fn turning_images_back_on_draws_the_figures_again() {
+    // 2026-10-19 项目主人：`/images off` 写成源码以后 `/images on` 图没回来——关着时排的那份没图，按条缓存记成「不带图」，
+    // 不跟着图的状态重排。
+    let f = Fixture::new();
+    let mut t = Transcript::default();
+    t.note(Kind::Reply, "$$\nx^2 + y^2\n$$".into());
+    let mut picker = ratatui_image::picker::Picker::halfblocks();
+    picker.set_protocol_type(ratatui_image::picker::ProtocolType::Kitty);
+    let graphics = Some(crate::figures::Graphics { picker });
+    let kitty = RefCell::new(crate::figures::Figures::start(
+        graphics,
+        &f.config.figures,
+        None,
+        |_| true,
+    ));
+    let mut ctx = f.ctx();
+    ctx.figures = &kitty;
+    let cache = RefCell::new(RowCache::default());
+    let drawn = |rows: super::super::Rows| {
+        (0..rows.len())
+            .filter_map(|i| rows.get(i))
+            .any(|r| r.figure.is_some() || r.figure_pending)
+    };
+    assert!(
+        drawn(build(&t.entries, &ctx, &cache, Plan::all())),
+        "开着时是图"
+    );
+    kitty.borrow_mut().set_off(true);
+    assert!(
+        !drawn(build(&t.entries, &ctx, &cache, Plan::all())),
+        "关了写源码"
+    );
+    kitty.borrow_mut().set_off(false);
+    assert!(
+        drawn(build(&t.entries, &ctx, &cache, Plan::all())),
+        "再开回来又是图"
+    );
+}

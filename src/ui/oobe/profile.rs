@@ -45,7 +45,12 @@ pub fn content(step: &ProfileStep, texts: &Texts, width: u16) -> Content {
         on(Slot::About),
     );
     c.blank();
-    c.action(on(Slot::Next), &format!("{} →", words.next));
+    let next = if step.blank() {
+        &words.skip
+    } else {
+        &words.next
+    };
+    c.action(on(Slot::Next), &format!("{next} →"));
     if step.busy {
         c.blank();
         c.note(&words.saving, theme::dim());

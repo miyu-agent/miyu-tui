@@ -61,7 +61,7 @@ fn the_default_is_chosen_first_and_enter_makes_it_the_default() {
         json!([{"key": "preset.default", "value": "dev"}])
     );
     oobe.answer(tag, Ok(json!({})), t0, &texts);
-    assert_eq!(oobe.step, Step::Sandbox, "预设后面是沙盒");
+    assert_eq!(oobe.step, Step::Done, "预设后面是好了（没装语义模型的包）");
     assert_eq!(oobe.summary().preset, "基础功能");
     assert_eq!(
         oobe.picks().1.as_deref(),
@@ -139,7 +139,7 @@ fn a_custom_preset_is_named_toggled_created_and_made_the_default() {
         json!([{"key": "preset.default", "value": "preset-1"}])
     );
     oobe.answer(tag, Ok(json!({})), t0, &texts);
-    assert_eq!(oobe.step, Step::Sandbox, "预设后面是沙盒");
+    assert_eq!(oobe.step, Step::Done, "预设后面是好了（没装语义模型的包）");
     assert_eq!(oobe.summary().preset, "写代码");
     assert_eq!(oobe.picks().1.as_deref(), Some("preset-1"));
 }

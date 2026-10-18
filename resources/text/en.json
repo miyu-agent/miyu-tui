@@ -82,7 +82,7 @@
   "prepare": "Preparing {name}",
   "on_session": "session {id}",
   "on_page": "page {page}",
-  "images": ["Images are off for this run and shown as source; /images on brings them back", "Images are on", "This terminal cannot show images", "Usage: /images on or /images off"],
+  "images": ["Image display is off, /images on to restore", "Images are on", "This terminal cannot show images", "Usage: /images on or /images off"],
   "to_parent": "parent session",
   "attached": "Attached: {names}",
   "to_bottom": "Jump to bottom (Ctrl+End) ↓",
@@ -1316,8 +1316,7 @@
       "Persona",
       "Theme",
       "About you",
-      "Preset",
-      "Sandbox"
+      "Preset"
     ],
     "keys": {
       "searching": "Type to search · Ctrl+J/K select · Enter done · Esc cancel",
@@ -1432,6 +1431,7 @@
       ],
       "examples_some": "{n} rounds",
       "next": "Next",
+      "skip": "Skip",
       "name_needed": "A name is needed",
       "existing": "Already created, you can keep editing",
       "saving": "Saving…",
@@ -1474,17 +1474,12 @@
       "hints": ["Not set", "e.g. Alex", "What you do and how you'd like the AI to treat you"],
       "other": "Other…",
       "next": "Next",
+      "skip": "Skip",
       "saving": "Saving…"
-    },
-    "sandbox": {
-      "title": "Sandbox",
-      "sub": "Default permissions for new sessions. You can change this in settings later",
-      "on": ["On", "Commands run in a sandbox; changes outside the workspace need approval"],
-      "off": ["Off", "Full access, no approvals"]
     },
     "semantic": {
       "title": "Turn on the built-in semantic model?",
-      "sub": "Much better search in memories, knowledge bases, stickers and more, at about 170 MB of extra memory (freed after 10 idle minutes) and about 10 ms of CPU per search",
+      "sub": "Much better search in memories, knowledge bases, stickers and more, at a much higher memory use and extra CPU on each search",
       "on": ["Yes", "Recommended"],
       "off": ["No", "Keyword search only"]
     },

@@ -76,10 +76,6 @@ pub enum Waiting {
     ThemeSave,
     /// 写人格的主色（`persona.set`，跟随头像挑了主色的）。
     ThemeSeed,
-    /// 新会话从哪一档开局（`config.get permission.level`）。
-    SandboxRead,
-    /// 写开局的那一档（`config.set permission.level`）。
-    SandboxSave,
     /// 装没装语义模型的包（`config.schema` 里 `models.embedding` 的 `local`）。
     SemanticSchema,
     /// 现在开着还是关着（`config.get models.embedding`）。
@@ -104,7 +100,6 @@ impl Waiting {
                 | Self::Presets
                 | Self::PresetDefault
                 | Self::PresetGet(_)
-                | Self::SandboxRead
                 | Self::SemanticSchema
                 | Self::SemanticRead
                 | Self::ThemeRead

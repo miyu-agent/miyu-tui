@@ -16,8 +16,11 @@ pub(super) fn shown(oobe: &Oobe) -> Option<(String, Mode)> {
     oobe.theme_preview().map(|p| (p.colors, p.mode))
 }
 
-/// 从人格那一步走进来，读到的两项是 `items`。
+/// 建好人格以后从人格那一步走进来，读到的两项是 `items`。
 pub(super) fn at_theme(oobe: &mut Oobe, t0: Instant, texts: &Texts, items: serde_json::Value) {
+    if oobe.persona.chosen_id.is_none() {
+        oobe.persona.chosen_id = Some("p1".into());
+    }
     oobe.step = Step::Persona;
     oobe.moved(Move::Next, t0);
     assert_eq!(oobe.step, Step::Theme);

@@ -78,7 +78,6 @@ fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> 
         Step::Theme => theme_step::content(oobe, texts, width),
         Step::Profile => profile::content(&oobe.profile, texts, width),
         Step::Preset => preset::content(&oobe.preset, texts, width),
-        Step::Sandbox => pick::sandbox(oobe, texts, width),
         Step::Semantic => pick::semantic(oobe, texts, width),
         Step::Welcome | Step::Done => Content::new(width),
     }
@@ -371,3 +370,6 @@ fn place(frame: &mut Frame, rect: Rect, built: &Content, shift: i32) -> u16 {
     );
     scroll
 }
+
+#[cfg(test)]
+mod tests;

@@ -178,17 +178,36 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         text_y,
         Line::styled(title, Style::new().add_modifier(Modifier::BOLD)),
     );
-    let line = words
-        .summary
-        .replace("{model}", &summary.model)
-        .replace("{persona}", &summary.persona)
-        .replace("{preset}", &summary.preset);
+    let line = summary_line(&words.summary, &summary);
     if let Some(line) = faded(&line, fin.sub) {
         centered(frame, area, text_y + 2, line);
     }
     if fin.ready {
         centered(frame, area, text_y + 4, shimmer(&words.start, t, p));
     }
+}
+
+/// 好了那一屏的那一行：照 ` · ` 分的几段，值是空的那一段整段不写（人格那一步跳过了，2026-10-19 项目主人）。
+pub(super) fn summary_line(template: &str, summary: &crate::oobe::Summary) -> String {
+    let values = [
+        ("{model}", &summary.model),
+        ("{persona}", &summary.persona),
+        ("{preset}", &summary.preset),
+    ];
+    template
+        .split(" · ")
+        .filter(|part| {
+            !values
+                .iter()
+                .any(|(key, value)| part.contains(key) && value.is_empty())
+        })
+        .map(|part| {
+            values.iter().fold(part.to_string(), |text, (key, value)| {
+                text.replace(key, value)
+            })
+        })
+        .collect::<Vec<_>>()
+        .join(" · ")
 }
 
 /// 两块之间走了 `p` 成。

@@ -61,17 +61,7 @@ pub fn icons(oobe: &Oobe, texts: &Texts, nerd: Option<&Icons>, width: u16) -> Co
     c
 }
 
-/// 沙盒：两行，「开」「关」，后面暗色一句是什么意思；写不成的红字。
-pub fn sandbox(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
-    two(
-        &texts.sandbox,
-        oobe.sandbox.pick.selected,
-        oobe.sandbox.error.as_deref(),
-        width,
-    )
-}
-
-/// 开不开内置的语义模型（`oobe/semantic.rs`，2026-10-18 项目主人定）：同沙盒，一个标题、一段说明、「是」「否」两行。
+/// 开不开内置的语义模型（`oobe/semantic.rs`，2026-10-18 项目主人定）：一个标题、一段说明、「是」「否」两行。
 pub fn semantic(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
     let step = &oobe.semantic;
     two(

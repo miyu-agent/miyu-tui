@@ -39,7 +39,7 @@ fn slash_images_turns_images_off_for_this_run_and_says_why_it_cannot_turn_them_o
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("/images off");
-    tui.wait_for("这次运行不再贴图");
+    tui.wait_for("图片显示已关闭");
     tui.say("/images on");
     tui.wait_for("这个终端显示不了图");
     tui.say("/images 乱写");

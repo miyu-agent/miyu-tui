@@ -394,3 +394,29 @@ fn a_tab_indented_code_block_keeps_its_indent() {
     assert!(shown.iter().all(|l| !l.contains('\t')), "{shown:?}");
     assert!(shown.iter().any(|l| l.contains("    g()")), "{shown:?}");
 }
+
+#[test]
+fn other_ways_of_writing_display_math_are_figures_too() {
+    // 2026-10-19 项目主人：她写 ```math、\[…\] 的原来照字写；```latex 照旧是代码。
+    use super::FigureKind;
+    let math = |text: &str| -> Vec<String> {
+        draw(text, 40)
+            .into_iter()
+            .filter_map(|l| l.figure)
+            .filter(|f| f.kind == FigureKind::Math)
+            .map(|f| f.source)
+            .collect()
+    };
+    assert_eq!(math("```math\nx^2\n```"), ["x^2"]);
+    assert_eq!(math("看：\n\\[\n\\frac{a}{b}\n\\]\n完"), ["\\frac{a}{b}"]);
+    assert!(math("```latex\nx^2\n```").is_empty(), "latex 代码块照代码");
+    assert!(math("```math\nx^2").is_empty(), "没收完的照代码");
+    let inline: String = draw("面积 \\(\\pi r^2\\)", 40)
+        .iter()
+        .flat_map(|l| l.folded.spans.iter().map(|s| s.content.to_string()))
+        .collect();
+    assert!(
+        inline.contains("πr²") || inline.contains("π r²"),
+        "{inline}"
+    );
+}
