@@ -33,13 +33,15 @@ impl Mode {
 
 /// 配色：配置里的写法，列表照这个先后。
 pub const COLORS: [&str; 4] = ["persona", "wallpaper", "tokyonight", "terminal"];
-/// 照一个主色生成一套的配色：跟随头像、跟随壁纸（2026-10-14 项目主人定，同一套算法）。
-const SEEDED: [&str; 2] = ["persona", "wallpaper"];
+/// 照一个主色生成一套的配色：跟随头像、跟随壁纸（2026-10-14 项目主人定，同一套算法）；终端配色真彩色、问到了终端颜色的
+/// 也是（2026-10-19 项目主人定，主色从终端 16 色里挑）。
+pub const SEEDED: [&str; 3] = ["persona", "wallpaper", "terminal"];
 
 /// 铺底色那一项的键：配色是终端配色时引导、配置页都不列它（2026-10-15 项目主人定）。
 pub const GROUND_KEY: &str = "tui.theme_background";
 
-/// 跟随壁纸自选的主色（2026-10-14 项目主人定：能从几个候选里挑；跟随头像的存在人格上）：`#rrggbb`，没写的照打分最高的。
+/// 跟随壁纸、终端配色自选的主色（2026-10-14 项目主人定：能从几个候选里挑；跟随头像的存在人格上；终端配色 2026-10-19
+/// 共这一项）：`#rrggbb`，没写的、不在候选里的照打分最高的。
 pub const SEED_KEY: &str = "tui.theme_seed";
 
 /// `config.get` 回应里自选的主色；没写的、写错的是 `None`。
@@ -132,34 +134,62 @@ pub struct Picked {
     pub ground: Option<(Color, Color)>,
 }
 
-/// 终端配色照问到的终端颜色生成（「终端配色」，H15）；别的配色、没问到的照主题文件。
-fn terminal_or(base: &Palette, colors: &str) -> Palette {
-    if colors == "terminal" {
-        super::derived::terminal(base, super::terminal_colors::seen())
-    } else {
-        base.clone()
-    }
+/// 终端配色的主色候选（「主色」第 4a 条）：照起来时、拿回焦点时问到的终端颜色挑；不是真彩色、没问到的是空的。
+pub fn terminal_seeds() -> Vec<u32> {
+    super::derived::seeds(super::terminal_colors::seen())
 }
 
-/// 照配置项、终端的底色挑：出厂的那一份找不到的是 `None`。跟随头像的、有主色（`seed`）的照它生成一套盖在 tokyonight
-/// 上（第 5 条）；还没有主色的（没头像、头像还没要到）照 tokyonight。终端配色的、起来时问到了终端颜色的，底色照它推
-/// （「终端配色」）。
+/// 照配置项、终端的底色挑：出厂的那一份找不到的是 `None`。跟随头像、跟随壁纸的、有主色（`seed`）的照它生成一套盖在
+/// tokyonight 上（第 5 条）；还没有主色的（没头像、头像还没要到）照 tokyonight。终端配色的照问到的终端颜色：真彩色的拿
+/// 打分最高的那个当默认主色同样生成、底换成终端的底；问不到、不是真彩色的照主题文件，底色照问到的推（「终端配色」）。
 pub fn pick(
     choice: &Choice,
     terminal_dark: Option<bool>,
     themes: &[(String, Palette)],
     seed: Option<u32>,
 ) -> Option<Picked> {
+    pick_in(
+        choice,
+        terminal_dark,
+        themes,
+        seed,
+        super::terminal_colors::seen(),
+    )
+}
+
+fn pick_in(
+    choice: &Choice,
+    terminal_dark: Option<bool>,
+    themes: &[(String, Palette)],
+    seed: Option<u32>,
+    seen: super::terminal_colors::Seen,
+) -> Option<Picked> {
     let dark = choice.dark(terminal_dark);
-    let name = choice.base(dark);
+    let terminal = choice.colors == "terminal";
+    // 终端配色照现在问到的候选挑：还没挑过主色的（刚起来、候选还没交下来）也照打分最高的生成，不先闪一帧 16 色那一套；
+    // 没有候选的（不是真彩色、没问到）照主题文件。
+    let seed = if terminal {
+        pick_seed(&super::derived::seeds(seen), seed)
+    } else {
+        seed.filter(|_| SEEDED.contains(&choice.colors.as_str()))
+    };
+    let name = match (seed, dark) {
+        (Some(_), true) => "tokyonight-night",
+        (Some(_), false) => "tokyonight-day",
+        (None, _) => choice.base(dark),
+    };
     let (_, base) = themes.iter().find(|(n, _)| n == name)?;
-    let (name, palette) = match seed.filter(|_| SEEDED.contains(&choice.colors.as_str())) {
+    let (name, palette) = match seed {
         Some(seed) => {
             let shade = if dark { "night" } else { "day" };
-            let palette = super::persona::overlay(base, seed, dark);
+            let mut palette = super::persona::overlay(base, seed, dark);
+            if terminal {
+                palette = super::derived::seeded(palette, seen);
+            }
             (format!("{}-{shade}", choice.colors), palette)
         }
-        None => (name.to_string(), terminal_or(base, &choice.colors)),
+        None if terminal => (name.to_string(), super::derived::terminal(base, seen)),
+        None => (name.to_string(), base.clone()),
     };
     let ground = choice
         .grounded()
@@ -210,6 +240,63 @@ mod tests {
         assert_eq!(wallpaper.palette.thought, persona.palette.thought);
         let missing = pick(&choice("wallpaper"), None, &themes, None).unwrap();
         assert_eq!(missing.name, "tokyonight-night");
+    }
+
+    #[test]
+    fn terminal_colors_generate_md3_from_the_terminals_main_color_on_truecolor() {
+        // 2026-10-19 项目主人：跟随终端时用终端 16 色里的主色生成 MD3，不直接用 16 色；不是真彩色才回退。底照旧用终端的。
+        use crate::theme::terminal_colors::{Ground, Seen};
+        let themes = builtin().unwrap();
+        let terminal = Choice {
+            colors: "terminal".into(),
+            mode: Mode::Dark,
+            ground: true,
+        };
+        let mut sixteen = [(128, 128, 128); 16];
+        sixteen[4] = (30, 90, 250);
+        sixteen[1] = (230, 40, 40);
+        let seen = |truecolor| Seen {
+            sixteen: Some(sixteen),
+            ground: Some(Ground {
+                fg: (200, 200, 200),
+                bg: (20, 20, 20),
+                dark: true,
+            }),
+            truecolor,
+        };
+        let first = crate::theme::derived::seeds(seen(true));
+        assert!(first.len() >= 2, "{first:x?}");
+        let picked = super::pick_in(&terminal, None, &themes, None, seen(true)).unwrap();
+        assert_eq!(picked.name, "terminal-night");
+        assert!(picked.ground.is_none(), "不铺底色");
+        let md3 = pick(&choice_of("wallpaper"), None, &themes, Some(first[0])).unwrap();
+        assert_eq!(
+            picked.palette.accent, md3.palette.accent,
+            "没挑过：打分最高的"
+        );
+        assert!(
+            matches!(picked.palette.text.0, Color::Rgb(..)),
+            "字是生成的真颜色：{:?}",
+            picked.palette.text
+        );
+        assert_eq!(picked.palette.diagram_backdrop.0, Color::Rgb(20, 20, 20));
+        // 挑过的在候选里照它；不在的照打分最高的。
+        let other = super::pick_in(&terminal, None, &themes, Some(first[1]), seen(true)).unwrap();
+        assert_ne!(other.palette.accent, picked.palette.accent);
+        let stale = super::pick_in(&terminal, None, &themes, Some(0x12_3456), seen(true)).unwrap();
+        assert_eq!(stale.palette.accent, picked.palette.accent);
+        // 不是真彩色：照主题文件（字写终端 16 色的名字）。
+        let plain = super::pick_in(&terminal, None, &themes, Some(first[0]), seen(false)).unwrap();
+        assert_eq!(plain.name, "terminal");
+        assert_eq!(plain.palette.accent.0, Color::Blue);
+    }
+
+    fn choice_of(colors: &str) -> Choice {
+        Choice {
+            colors: colors.into(),
+            mode: Mode::Dark,
+            ground: true,
+        }
     }
 
     #[test]

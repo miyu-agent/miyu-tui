@@ -16,7 +16,7 @@ use super::nav::{self, Nav};
 use super::texts::Theme as Words;
 use crate::core::Refusal;
 use crate::settings::pages::choose::{Choice, Choose, Pressed};
-use crate::theme::choice::{COLORS, GROUND_KEY, Mode, SEED_KEY};
+use crate::theme::choice::{COLORS, GROUND_KEY, Mode, SEED_KEY, SEEDED};
 
 /// 明暗三档，选择窗照这个先后列；配置里的写法同下标。
 pub const MODES: [Mode; 3] = [Mode::Auto, Mode::Dark, Mode::Light];
@@ -208,9 +208,9 @@ impl ThemeStep {
         Move::Stay
     }
 
-    /// 配色是跟随头像、跟随壁纸，有主色的候选：列「主色」那一格。
+    /// 配色是跟随头像、跟随壁纸、终端配色，有主色的候选：列「主色」那一格。
     pub fn seeding(&self) -> bool {
-        matches!(COLORS.get(self.colors), Some(&"persona" | &"wallpaper")) && !self.seeds.is_empty()
+        COLORS.get(self.colors).is_some_and(|c| SEEDED.contains(c)) && !self.seeds.is_empty()
     }
 
     /// 从上往下有哪几行：没候选的没有主色那一格，配色是终端配色的没有铺底色那一格（2026-10-15 项目主人定：永远露出终端
@@ -394,9 +394,9 @@ impl ThemeStep {
         if !self.avatar {
             changes.extend(MASCOT_KEYS.map(|key| json!({"key": key, "value": !self.mascot_off})));
         }
-        // 挑过主色的：跟随壁纸的写个人设置，跟随头像的写完配置再写人格（`seed_pending`）。
+        // 挑过主色的：跟随壁纸、终端配色的写个人设置，跟随头像的写完配置再写人格（`seed_pending`）。
         let pick = self.seed_pick.filter(|_| self.seeding());
-        if let (Some(seed), "wallpaper") = (pick, colors) {
+        if let (Some(seed), "wallpaper" | "terminal") = (pick, colors) {
             changes.push(json!({"key": SEED_KEY, "value": format!("#{seed:06x}")}));
         }
         self.seed_pending = pick.is_some() && colors == "persona" && self.persona.is_some();

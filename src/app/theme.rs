@@ -143,7 +143,9 @@ impl App {
         if let Some(settings) = &mut self.boxes.settings {
             settings.more.seeds.clone_from(&self.screen.theme_seeds);
             settings.more.seed = self.screen.theme_seed;
-            settings.more.following = matches!(colors.as_str(), "persona" | "wallpaper");
+            // 终端配色有候选（真彩色、问到了终端的颜色）才列「主色」（2026-10-19 项目主人定）。
+            settings.more.following = matches!(colors.as_str(), "persona" | "wallpaper")
+                || (colors == "terminal" && !self.screen.theme_seeds.is_empty());
             settings.more.terminal_colors = colors == "terminal";
             settings.more.seed_persona = persona;
             // 配置页里改了人格的主色：重读人格列表，照新的换颜色。
@@ -174,7 +176,8 @@ impl App {
         self.choice().colors == "persona"
     }
 
-    /// 能当主色的几个候选（好的在前）、正在用的那个：跟随壁纸的照找到的，自选的（`tui.theme_seed`）在候选里照它；跟随头像的
+    /// 能当主色的几个候选（好的在前）、正在用的那个：跟随壁纸的照找到的、终端配色的照终端 16 色挑的，自选的
+    /// （`tui.theme_seed`）在候选里照它；跟随头像的
     /// 候选由核心给（2026-10-14 项目主人定），人格写了主题色的照它，没写的照打分最高的；引导里刚选、还没存的头像照门面现取
     /// （后台取，一张只取一次）。别的配色、都没有的、还没取好的是空的。
     fn wanted(&mut self) -> (Vec<u32>, Option<u32>) {
@@ -196,8 +199,12 @@ impl App {
 
     /// 同 [`App::wanted`]，不看引导里挑的：照配置项、人格的。
     fn wanted_by_config(&mut self) -> (Vec<u32>, Option<u32>) {
-        if self.choice().colors == "wallpaper" {
-            let seeds = self.screen.wallpaper.seeds().to_vec();
+        let colors = self.choice().colors;
+        if colors == "wallpaper" || colors == "terminal" {
+            let seeds = match colors.as_str() {
+                "wallpaper" => self.screen.wallpaper.seeds().to_vec(),
+                _ => choice::terminal_seeds(),
+            };
             let seed = choice::pick_seed(&seeds, self.screen.theme_pick);
             return (seeds, seed);
         }
