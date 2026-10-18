@@ -101,7 +101,13 @@ impl Content {
     /// 一段字，照块宽折行（核心的原话常常很长）。
     pub fn note(&mut self, text: &str, style: Style) {
         let (rows, _) = wrap(text, 0, usize::from(self.width).max(1));
-        for row in rows {
+        // 折在空格处的，下一行开头那个空格不要（「…提高大约\n 170 MB」，2026-10-18 真 kitty 看到）。
+        for (i, row) in rows.into_iter().enumerate() {
+            let row = if i > 0 {
+                row.trim_start().to_string()
+            } else {
+                row
+            };
             self.lines.push(Line::styled(row, style));
         }
     }
