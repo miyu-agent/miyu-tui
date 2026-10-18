@@ -127,3 +127,15 @@ fn a_long_subtitle_wraps_to_the_block_width() {
     assert_eq!(shown[1], "一二三四五六七八九十", "{shown:?}");
     assert_eq!(shown[2], "一二三四五", "{shown:?}");
 }
+
+#[test]
+fn a_wrapped_line_does_not_start_with_the_space_it_broke_at() {
+    // 2026-10-18 真 kitty 看到内置语义模型那一步的说明第二行开头空一格（「 170 MB」）。
+    let mut c = Content::new(10);
+    c.note("一二三四五 170 MB", ratatui::style::Style::new());
+    let shown = plain(&c);
+    assert!(
+        shown.iter().skip(1).all(|l| !l.starts_with(' ')),
+        "{shown:?}"
+    );
+}
