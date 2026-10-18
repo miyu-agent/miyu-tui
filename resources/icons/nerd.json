@@ -32,7 +32,9 @@
     "mute": "\uf131",
     "poke": "\uf0a6",
     "skip_reply": "\uf05e",
-    "load_tools": "\uf019"
+    "load_tools": "\uf019",
+    "web_search": "\uf0ac",
+    "web_fetch": "\uf0c1"
   },
   "lucide": {
     "face-slightly-smiling": "\uf118",
