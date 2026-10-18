@@ -31,8 +31,15 @@ pub fn line(segment: &Segment, ctx: &Ctx, base: Style) -> Vec<Span<'static>> {
     // 用时：四舍五入到整秒，不到一秒的写 1s，照运行状态行的读秒写。
     let took = meter::clock(((tally.span.as_millis() + 500) / 1000).max(1) as u64);
     let messages = tally.messages + tally.session_messages;
-    if tally.commands + tally.tools + tally.edits + tally.agents + messages + tally.remembered == 0
-    {
+    let doers = tally.commands
+        + tally.tools
+        + tally.edits
+        + tally.agents
+        + messages
+        + tally.remembered
+        + tally.searched
+        + tally.fetched;
+    if doers == 0 {
         let secs = format!("{}s", tally.thinking.as_secs().max(1));
         return vec![Span::styled(
             words.thought_for.replace("{elapsed}", &secs),
@@ -89,6 +96,10 @@ fn cells(tally: &Tally, words: &Summary) -> (Vec<(String, bool)>, bool) {
         Lead::SessionMessages
     } else if tally.remembered > 0 {
         Lead::Remembered
+    } else if tally.searched > 0 {
+        Lead::Searched
+    } else if tally.fetched > 0 {
+        Lead::Fetched
     } else if tally.tools > 0 {
         Lead::Tools
     } else {
@@ -104,6 +115,8 @@ fn cells(tally: &Tally, words: &Summary) -> (Vec<(String, bool)>, bool) {
             false,
         ),
         Lead::Remembered => (count(tally.remembered, &words.remembered), false),
+        Lead::Searched => (count(tally.searched, &words.searched), false),
+        Lead::Fetched => (count(tally.fetched, &words.fetched), false),
         Lead::Tools => (count(tally.tools, &words.used), false),
         Lead::Edits => (count(tally.edits, &words.made), true),
     });
@@ -125,6 +138,12 @@ fn cells(tally: &Tally, words: &Summary) -> (Vec<(String, bool)>, bool) {
     }
     if lead != Lead::Remembered && tally.remembered > 0 {
         parts.push((count(tally.remembered, &words.memories), false));
+    }
+    if lead != Lead::Searched && tally.searched > 0 {
+        parts.push((count(tally.searched, &words.searches), false));
+    }
+    if lead != Lead::Fetched && tally.fetched > 0 {
+        parts.push((count(tally.fetched, &words.pages), false));
     }
     if lead != Lead::Tools && tally.tools > 0 {
         parts.push((count(tally.tools, &words.tools), false));
@@ -252,6 +271,8 @@ enum Lead {
     Messages,
     SessionMessages,
     Remembered,
+    Searched,
+    Fetched,
     Tools,
     Edits,
 }

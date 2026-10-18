@@ -123,7 +123,11 @@
     "agents": ["サブエージェント 1 件", "サブエージェント {count} 件"],
     "messages": ["メッセージ 1 件", "メッセージ {count} 件"],
     "remembered": ["記憶を 1 件保存", "記憶を {count} 件保存"],
-    "memories": ["記憶 1 件", "記憶 {count} 件"]
+    "memories": ["記憶 1 件", "記憶 {count} 件"],
+    "searched": ["ウェブを 1 回検索", "ウェブを {count} 回検索"],
+    "searches": ["検索 1 回", "検索 {count} 回"],
+    "fetched": ["ページを 1 件取得", "ページを {count} 件取得"],
+    "pages": ["ページ 1 件", "ページ {count} 件"]
   },
   "levels": {
     "workspace": "ワークスペース",

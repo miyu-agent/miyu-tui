@@ -123,7 +123,11 @@
     "agents": ["1 agent", "{count} agents"],
     "messages": ["1 message", "{count} messages"],
     "remembered": ["Remembered 1 memory", "Remembered {count} memories"],
-    "memories": ["1 memory", "{count} memories"]
+    "memories": ["1 memory", "{count} memories"],
+    "searched": ["Searched the web 1 time", "Searched the web {count} times"],
+    "searches": ["1 search", "{count} searches"],
+    "fetched": ["Fetched 1 page", "Fetched {count} pages"],
+    "pages": ["1 page", "{count} pages"]
   },
   "levels": {
     "workspace": "Workspace",

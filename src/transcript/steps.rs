@@ -134,7 +134,14 @@ impl Step {
                 StepKind::Tool { name, .. } => match timeline.kinds.get(name) {
                     Some(ToolKind::Command) => expand.command,
                     Some(ToolKind::Edit) => expand.edit,
-                    Some(ToolKind::Agent | ToolKind::Message | ToolKind::Remember) | None => false,
+                    Some(
+                        ToolKind::Agent
+                        | ToolKind::Message
+                        | ToolKind::Remember
+                        | ToolKind::Search
+                        | ToolKind::Fetch,
+                    )
+                    | None => false,
                 },
             }
         })
@@ -221,6 +228,10 @@ pub struct Tally {
     pub session_messages: usize,
     /// 记住（`remember`）。
     pub remembered: usize,
+    /// 网络搜索（`web_search`）。
+    pub searched: usize,
+    /// 抓取网页（`web_fetch`）。
+    pub fetched: usize,
     /// 思考。
     pub thoughts: usize,
     /// 出错。
@@ -266,6 +277,10 @@ impl Tally {
                     // 出错、被拒的没记成：算工具（同编辑；和核心视图的 group summary 同一个算法，9-8 十补）。
                     Some(ToolKind::Remember) if step.failed() => tally.tools += 1,
                     Some(ToolKind::Remember) => tally.remembered += 1,
+                    // 网络搜索、抓取网页（2026-10-19 项目主人：原来算进 Used 2 tools）；出错的照旧算工具。
+                    Some(ToolKind::Search | ToolKind::Fetch) if step.failed() => tally.tools += 1,
+                    Some(ToolKind::Search) => tally.searched += 1,
+                    Some(ToolKind::Fetch) => tally.fetched += 1,
                     None => tally.tools += 1,
                 },
             }
@@ -282,7 +297,9 @@ impl Tally {
             + tally.agents
             + tally.messages
             + tally.session_messages
-            + tally.remembered;
+            + tally.remembered
+            + tally.searched
+            + tally.fetched;
         tally.lone = doers == 1;
         // 一段里只有一条命令、它有短标题就写它：和编辑、别的工具同段也写（2026-10-02 项目主人定）。
         // 同段别的工具也可能带 `description`（派子代理），要认准命令那一步。
