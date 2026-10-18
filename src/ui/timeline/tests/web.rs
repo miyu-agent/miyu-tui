@@ -56,14 +56,14 @@ fn a_folded_segment_counts_searches_and_fetched_pages_on_their_own() {
 
 #[test]
 fn the_search_title_keeps_its_result_line() {
-    // 单算一类以后，标题照旧接结果那一句（「网络搜索 · rust · 8 条（Exa）」）。
+    // 单算一类以后，标题照旧接结果那一句；来源接在名字后面（「网络搜索（Exa） · rust · 8 条」）。
     let mut f = Fixture::new();
     f.human = crate::human::Human::from_resources("zh");
     let mut search = tool("web_search", ToolStatus::Ok, 0);
     if let StepKind::Tool { said, .. } = &mut search.kind {
         *said = Some(miyu_client::protocol::Said {
             key: "software/net/web_search/found".into(),
-            fields: [("hits", "8"), ("source", "Exa")]
+            fields: [("hits", "8"), ("via", "Exa")]
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect(),
@@ -75,5 +75,10 @@ fn the_search_title_keeps_its_result_line() {
         &segment(vec![search, fetch], Some(true)),
         &f.ctx(),
     ));
-    assert!(got.iter().any(|l| l.contains("rust · 8 条")), "{got:?}");
+    assert!(
+        got.iter()
+            .any(|l| l.contains("网络搜索（Exa） · rust · 8 条")),
+        "来源接在名字后面（2026-10-19 项目主人）：{got:?}"
+    );
+    assert!(got.iter().all(|l| !l.contains("条（Exa）")), "{got:?}");
 }

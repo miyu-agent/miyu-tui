@@ -82,6 +82,7 @@
   "prepare": "{name}を準備中",
   "on_session": "セッション {id}",
   "on_page": "{page} ページ",
+  "via": "{name}（{via}）",
   "images": ["画像表示をオフにしました。/images on で戻す", "画像を表示します", "この端末は画像を表示できません", "使い方：/images on または /images off"],
   "to_parent": "親セッション",
   "attached": "添付：{names}",

@@ -64,6 +64,16 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
             let shown = ctx
                 .human
                 .step_name(name, &step.display, ctx.config.language.code());
+            // 结果那一句带了来源（`human.fields.via`，核心 2026-10-19）：接在名字后面「网络搜索（Exa）」。
+            let via = said
+                .as_ref()
+                .and_then(|s| s.fields.iter().find(|(f, _)| f.as_str() == "via"))
+                .map(|(_, v)| v.trim())
+                .filter(|v| !v.is_empty());
+            let shown = match via {
+                Some(via) => text.via.replace("{name}", &shown).replace("{via}", via),
+                None => shown,
+            };
             if *state == ToolState::Preparing {
                 (text.prepare.replace("{name}", &shown), Vec::new())
             } else {
