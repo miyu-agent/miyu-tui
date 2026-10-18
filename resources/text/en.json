@@ -82,6 +82,7 @@
   "prepare": "Preparing {name}",
   "on_session": "session {id}",
   "on_page": "page {page}",
+  "images": ["Images are off for this run and shown as source; /images on brings them back", "Images are on", "This terminal cannot show images", "Usage: /images on or /images off"],
   "to_parent": "parent session",
   "attached": "Attached: {names}",
   "to_bottom": "Jump to bottom (Ctrl+End) ↓",

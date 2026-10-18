@@ -16,6 +16,8 @@ pub struct Screen {
     pub areas: Areas,
     /// 这一帧当急的画，不等下一拍（会话补完换上来；`main.rs` 取走）。
     pub draw_now: bool,
+    /// 把终端整屏擦一遍：删掉贴上去的图、清屏、下一帧整屏重画（`/images off`；`main.rs` 取走）。
+    pub wipe: bool,
     /// 正文区：滚到哪、悬在哪、选了哪。
     pub view: BodyView,
     /// 这一帧的光标停在哪、显不显示；画的时候填，画完 `main` 写出去（蓝图「每一帧」）。
@@ -97,6 +99,7 @@ impl Screen {
             theme_preview: None,
             seed_hold: Default::default(),
             draw_now: false,
+            wipe: false,
             started: Instant::now(),
             rng: crate::rng::Rng::from_clock(),
             widget_spots: Vec::new(),
