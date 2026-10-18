@@ -6,7 +6,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, Mou
 use ratatui::layout::Position;
 
 use super::{App, Panel};
-use crate::core::{Choice, ChoiceState, Command};
+use crate::core::{Choice, Command};
 use crate::model_list::ModelList;
 
 impl App {
@@ -99,35 +99,24 @@ impl App {
         self.boxes.model_list = None;
     }
 
-    /// 换成选中的那个：冷却中的、没有 key 的不换，提示为什么；别的交给核心，关框。
+    /// 换成选中的那个：没有 key 的不换，提示为什么；别的（冷却着的也是，[`ChoiceState::pickable`]）交给核心，关框。
     fn choose_model(&mut self, choice: &Choice) {
-        let texts = self.config.text.model_panel.clone();
-        match choice.state {
-            ChoiceState::Cooling(until) => {
-                let left = crate::ui::model_list::cooling(until, jiff::Timestamp::now(), &texts);
-                let minutes: String = left.chars().filter(char::is_ascii_digit).collect();
-                let note = if minutes.is_empty() {
-                    left
-                } else {
-                    texts.refuse_cooling.replace("{n}", &minutes)
-                };
-                self.hint(note, false);
-            }
-            ChoiceState::NoKey => self.hint(texts.refuse_no_key, false),
-            ChoiceState::Ok => {
-                self.close_models();
-                if self.talk.transcript.model_ref() == Some(choice.reference.as_str()) {
-                    return;
-                }
-                // 不弹提示：底栏当场就写成选的那个（2026-10-01 项目主人：改模型、思考强度不要通知）。核心答应了再照新的
-                // 模型刷新思考强度（`updates.rs`）。手动换的也记成新会话的默认（2026-10-02 项目主人定）。
-                self.link
-                    .core
-                    .send(Command::Configure(choice.reference.clone()));
-                self.link
-                    .core
-                    .send(Command::SetChat(choice.reference.clone()));
-            }
+        if !choice.state.pickable() {
+            let note = self.config.text.model_panel.refuse_no_key.clone();
+            self.hint(note, false);
+            return;
         }
+        self.close_models();
+        if self.talk.transcript.model_ref() == Some(choice.reference.as_str()) {
+            return;
+        }
+        // 不弹提示：底栏当场就写成选的那个（2026-10-01 项目主人：改模型、思考强度不要通知）。核心答应了再照新的
+        // 模型刷新思考强度（`updates.rs`）。手动换的也记成新会话的默认（2026-10-02 项目主人定）。
+        self.link
+            .core
+            .send(Command::Configure(choice.reference.clone()));
+        self.link
+            .core
+            .send(Command::SetChat(choice.reference.clone()));
     }
 }

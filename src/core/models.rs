@@ -39,6 +39,14 @@ pub enum ChoiceState {
     NoKey,
 }
 
+impl ChoiceState {
+    /// 选了能不能换过去：没有 key 的不能（发出去也是错）；冷却着的照换（2026-10-19 项目主人：「这是我主动操作啊」，
+    /// 手动选的不该被冷却挡），列表里照旧写「冷却 10m」。
+    pub fn pickable(self) -> bool {
+        self != Self::NoKey
+    }
+}
+
 /// 照 `model.list` 排出 `/model` 的一行行：池、模型，照这个先后。没有挡位（核心 8-8 补）；用不了的池不列（核心 8-23 的
 /// `usable` 是假的，旧核心没有这一格的照成员是空的认）：选了核心也只会拒。
 pub fn choices(result: &Value) -> Vec<Choice> {
@@ -116,6 +124,15 @@ pub fn current(result: &Value) -> Option<Current> {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
+
+    #[test]
+    fn a_cooling_model_can_still_be_picked_by_hand() {
+        // 2026-10-19 项目主人：「这是我主动操作啊，不应该这样！」只有没 key 的挡。
+        use super::ChoiceState;
+        assert!(ChoiceState::Ok.pickable());
+        assert!(ChoiceState::Cooling(None).pickable());
+        assert!(!ChoiceState::NoKey.pickable());
+    }
 
     use super::{ChoiceState, choices, earliest_cooling};
 

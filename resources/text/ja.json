@@ -664,7 +664,6 @@
     "cooling": "クールダウン {n}m",
     "cooling_bare": "クールダウン中",
     "no_key": "キーなし",
-    "refuse_cooling": "このモデルはクールダウン中です。{n} 分後に使えます",
     "refuse_no_key": "このモデルにはキーがありません"
   },
   "settings": {
