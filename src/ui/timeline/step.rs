@@ -24,6 +24,8 @@ pub struct Piece {
     pub content: Vec<Span<'static>>,
     /// 上一行折下来的。
     pub joined: bool,
+    /// 链接：从内容开头算的起列、止列（不含）、地址。
+    pub links: Vec<(u16, u16, String)>,
 }
 
 /// 这一步的字的样子：出错的整行红（竖线不跟着红，见 `rail`）；别的暗，悬停时变亮。
@@ -185,6 +187,7 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
                 // 字用主题的 thought（青），和命令的预览分开；悬停时和别的步一起亮一档（第 5 条）。
                 content: vec![Span::styled(l, thought_text(style))],
                 joined,
+                links: Vec::new(),
             })
             .collect()
         }
@@ -203,6 +206,7 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
                     lead: bar(rail),
                     content: vec![Span::styled(l.clone(), style)],
                     joined: *joined,
+                    links: Vec::new(),
                 })
                 .collect();
             let more = lines.len().saturating_sub(tl.preview_rows);
@@ -217,6 +221,7 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
                     lead: Some(mark),
                     content: vec![Span::styled(note, style)],
                     joined: false,
+                    links: Vec::new(),
                 });
             }
             out
@@ -230,6 +235,7 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
                 lead: bar(rail),
                 content: vec![Span::styled(l, style)],
                 joined,
+                links: Vec::new(),
             })
             .collect(),
         _ => Vec::new(),
@@ -247,6 +253,7 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                 lead: None,
                 content: vec![Span::styled(l, style)],
                 joined,
+                links: Vec::new(),
             })
     };
     match &step.kind {
@@ -272,6 +279,7 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                             lead: Some(gutter),
                             content: vec![content],
                             joined: false,
+                            links: Vec::new(),
                         })
                         .collect()
                 };
@@ -303,6 +311,15 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                     }
                 }
             }
+            // 扩展工具交的三种通用形状（`shapes.rs`）：换掉结果的原文；出错的照下面画为什么。
+            if !step.failed()
+                && let Some(pieces) = step.detail.as_ref().and_then(|d| {
+                    let wrap = |text: &str, style: Style| each(text, style).collect();
+                    super::shapes::pieces(d, style, width, ctx, &wrap)
+                })
+            {
+                return pieces;
+            }
             // 出错、被拒的编辑没改成：点开写为什么（结果的字，红），不画差异——绿的 `+` 行看着像写进去了（第 12 条，
             // 2026-10-13 验收 T-101）。没给字的照旧画差异。
             let refused = step.failed() && !output.trim().is_empty();
@@ -316,6 +333,7 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                         lead: Some(gutter),
                         content: vec![content],
                         joined: false,
+                        links: Vec::new(),
                     })
                     .collect();
             }
@@ -330,6 +348,7 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                     lead: None,
                     content: Vec::new(),
                     joined: false,
+                    links: Vec::new(),
                 });
             }
             out.extend(each(output.trim_end(), style));
@@ -358,18 +377,24 @@ fn thought_text(style: Style) -> Style {
 }
 
 /// 结果里带的图（「时间线」第 8 条）：照内容的哈希读回来存成的文件交给画图的那一套；还没读回来的记进单子（和链接卡片
-/// 的图同一份账，读回来就重排），读不成的不画。
-pub fn figures(step: &Step, ctx: &Ctx) -> Vec<Figure> {
+/// 的图同一份账，读回来就重排），读不成的不画。扩展工具 `detail` 的 `images` 接在后面，带着说明（`shapes.rs`）。
+pub fn figures(step: &Step, ctx: &Ctx) -> Vec<(Figure, Option<String>)> {
     let mut cards = ctx.cards.borrow_mut();
+    let detail = super::shapes::images(step.detail.as_ref());
     step.images
         .iter()
-        .filter_map(|blob| cards.file(blob).map(|p| p.display().to_string()))
-        .map(|source| Figure {
-            kind: FigureKind::Preview,
-            source,
-            fallback: Vec::new(),
-            width: None,
-            height: None,
+        .map(|blob| (blob.clone(), None))
+        .chain(detail)
+        .filter_map(|(blob, caption)| {
+            let source = cards.file(&blob)?.display().to_string();
+            let figure = Figure {
+                kind: FigureKind::Preview,
+                source,
+                fallback: Vec::new(),
+                width: None,
+                height: None,
+            };
+            Some((figure, caption))
         })
         .collect()
 }

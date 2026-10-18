@@ -478,5 +478,6 @@ mod live;
 mod narrow;
 mod sent;
 mod session_arg;
+mod shapes;
 mod unfolded;
 mod waiting;

@@ -37,6 +37,7 @@ pub fn pieces(
         lead: None,
         content: Vec::new(),
         joined: false,
+        links: Vec::new(),
     };
     let mut out: Vec<Piece> = Vec::new();
     match body {
@@ -91,7 +92,7 @@ pub fn pieces(
 }
 
 /// 照 Markdown 排成一行行（图不画）。
-fn markdown_pieces(text: &str, width: u16, ctx: &Ctx) -> Vec<Piece> {
+pub(super) fn markdown_pieces(text: &str, width: u16, ctx: &Ctx) -> Vec<Piece> {
     let kit = markdown::Kit {
         languages: &ctx.config.languages,
         math: &ctx.config.math,
@@ -101,14 +102,25 @@ fn markdown_pieces(text: &str, width: u16, ctx: &Ctx) -> Vec<Piece> {
     markdown::render(text.trim(), width, &kit, &[])
         .into_iter()
         .filter(|line| line.figure.is_none())
-        .map(|line| Piece {
-            lead: None,
-            content: line
-                .lead
-                .into_iter()
-                .chain(line.folded.spans)
-                .collect::<Vec<Span>>(),
-            joined: line.folded.joined,
+        .map(|line| {
+            // 引子（列表记号、引用竖线）放进内容里，链接的列照它往后挪。
+            let shift =
+                u16::try_from(line.lead.iter().map(Span::width).sum::<usize>()).unwrap_or(0);
+            Piece {
+                lead: None,
+                content: line
+                    .lead
+                    .into_iter()
+                    .chain(line.folded.spans)
+                    .collect::<Vec<Span>>(),
+                joined: line.folded.joined,
+                links: line
+                    .folded
+                    .links
+                    .into_iter()
+                    .map(|(from, to, url)| (from + shift, to + shift, url))
+                    .collect(),
+            }
         })
         .collect()
 }
