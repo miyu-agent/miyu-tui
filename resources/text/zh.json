@@ -123,7 +123,11 @@
     "agents": ["1 个子代理", "{count} 个子代理"],
     "messages": ["1 条留言", "{count} 条留言"],
     "remembered": ["记住了 1 条", "记住了 {count} 条"],
-    "memories": ["1 条记忆", "{count} 条记忆"]
+    "memories": ["1 条记忆", "{count} 条记忆"],
+    "searched": ["搜索了 1 次网络", "搜索了 {count} 次网络"],
+    "searches": ["1 次搜索", "{count} 次搜索"],
+    "fetched": ["抓取了 1 个网页", "抓取了 {count} 个网页"],
+    "pages": ["1 个网页", "{count} 个网页"]
   },
   "levels": {
     "workspace": "工作区",

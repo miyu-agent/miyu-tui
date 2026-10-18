@@ -21,6 +21,7 @@ mod mcp;
 mod memory;
 mod message;
 mod tabs;
+mod web;
 
 /// 一步：从 `start` 秒开始，用了 `took` 秒。
 fn step(kind: StepKind, t0: Instant, start: u64, took: u64) -> Step {

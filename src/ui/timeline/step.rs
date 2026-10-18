@@ -108,8 +108,10 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                     label.push_str(&text.on_session.replace("{id}", &id));
                 }
                 // 别的工具后面跟结果那一句（「读取 · src · 12 项」）；命令有预览，编辑有加减的行数，不写；留言只有没发出去的写为什么。
-                let says = matches!(kind, None | Some(ToolKind::Remember))
-                    || (kind == Some(ToolKind::Message) && step.failed());
+                let says = matches!(
+                    kind,
+                    None | Some(ToolKind::Remember | ToolKind::Search | ToolKind::Fetch)
+                ) || (kind == Some(ToolKind::Message) && step.failed());
                 if says
                     && let Some(said) = said
                     && let Some(text) = ctx.human.say(said)

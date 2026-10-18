@@ -37,6 +37,14 @@ pub struct Summary {
     pub remembered: [String; 2],
     /// 记住（不打头时）。
     pub memories: [String; 2],
+    /// 打头的「Searched the web 1 time」「… {count} times」。
+    pub searched: [String; 2],
+    /// 不打头的「1 search」「{count} searches」。
+    pub searches: [String; 2],
+    /// 打头的「Fetched 1 page」「Fetched {count} pages」。
+    pub fetched: [String; 2],
+    /// 不打头的「1 page」「{count} pages」。
+    pub pages: [String; 2],
     /// 只想过：`{elapsed}` 是想了多久。
     pub thought_for: String,
 }
@@ -147,6 +155,10 @@ pub enum ToolKind {
     Message,
     /// 记住（`remember`）：收起那一行单算一类（`Remembered 1 memory`，2026-10-17 项目主人）。
     Remember,
+    /// 网络搜索（`web_search`）：收起那一行单算一类（`Searched the web 1 time`，2026-10-19 项目主人）。
+    Search,
+    /// 抓取网页（`web_fetch`）：收起那一行单算一类（`Fetched 1 page`，同一天）。
+    Fetch,
 }
 
 /// 时间线里哪几样默认铺开全文（`timeline.json` 的 `expand`，蓝图「时间线」第 18 条）。
