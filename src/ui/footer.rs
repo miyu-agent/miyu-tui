@@ -260,12 +260,7 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
             let level = t.level;
             let name = text.levels.get(&level).map_or("", String::as_str);
             let icon = seen.config.layout.level_icons.get(&level);
-            let label = if named || icon.is_none() {
-                format!("{}{name}", icon.map_or("", String::as_str))
-            } else {
-                // 图标后面带着空格：只留图标的去掉，后面接「 · 模型」。
-                icon.map_or("", String::as_str).trim_end().to_string()
-            };
+            let (label, sep) = level_label(icon.map(String::as_str), name, named);
             let mut spans = vec![Span::styled(label, theme::level(level))];
             // 都在冷却：模型那一格变黄写原因，到点了变回原样（「配置与模型」第 7 条）。
             let now = jiff::Timestamp::now();
@@ -273,10 +268,10 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
                 .cooling()
                 .and_then(|until| cooling_word(until, now, &text.models));
             if let Some(word) = cooling {
-                spans.push(Span::styled(" · ", theme::dim()));
+                spans.push(Span::styled(sep, theme::dim()));
                 spans.push(Span::styled(word, theme::warn()));
             } else if let Some((model, endpoint)) = t.shown_model() {
-                spans.push(Span::styled(" · ", theme::dim()));
+                spans.push(Span::styled(sep, theme::dim()));
                 let model = if short {
                     model.rsplit('/').next().unwrap_or(&model).to_string()
                 } else {
@@ -293,6 +288,15 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
             }
             spans
         }
+    }
+}
+
+/// 权限级别那一格写什么、后面接模型那一格用什么隔开：写字的是「⏵⏵ 开放权限」接 ` · `；窄了只留图标的是「⏵⏵」接一个空格，
+/// 不留 ` · `（2026-10-19 项目主人：字收掉了，那个点也收掉）。没有图标的照旧写字。
+fn level_label(icon: Option<&str>, name: &str, named: bool) -> (String, &'static str) {
+    match icon {
+        Some(icon) if !named => (icon.trim_end().to_string(), " "),
+        _ => (format!("{}{name}", icon.unwrap_or("")), " · "),
     }
 }
 
