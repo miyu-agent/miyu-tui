@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use super::Update;
 use super::rpc::Rpc;
-use crate::dream::{Change, Retire};
+use crate::dream::{Change, Landed, Retire};
 
 /// 一间至多列这么多条（核心的上限）。
 const LIST_LIMIT: u64 = 500;
@@ -69,13 +69,16 @@ pub(super) fn pushed(message: &Value) -> Option<Option<Update>> {
     }))
 }
 
-/// 日志里的一行：开始合、合完、没合成。
+/// 日志里的一行：开始合、合完、没合成；记忆模块存下的改、删、摘要（回执点开列它们）。
 fn event(event: &Value) -> Option<Change> {
     let body = &event["body"];
-    let upto = body["upto"].as_u64()?;
+    let upto = || body["upto"].as_u64();
+    let text = |key: &str| body[key].as_str().map(str::to_string);
+    // 改、删、摘要只认记忆模块写的：同一时刻她在会话里记的、人改的不算这次整理（`memory.md`「进度和做了什么」）。
+    let merger = event["by"]["kind"] == "module" && event["by"]["id"] == "memory";
     match event["kind"].as_str()? {
         "ext.memory.merging" => Some(Change::Merging {
-            upto,
+            upto: upto()?,
             fresh: body["fresh"].as_u64().unwrap_or(0),
             left: body["left"].as_u64().unwrap_or(0),
             given: body["given"]
@@ -85,8 +88,16 @@ fn event(event: &Value) -> Option<Change> {
                 .filter_map(|id| id.as_str().map(str::to_string))
                 .collect(),
         }),
-        "ext.memory.merged" => Some(Change::Merged { upto }),
-        "ext.memory.merge_failed" => Some(Change::Failed { upto }),
+        "ext.memory.merged" => Some(Change::Merged { upto: upto()? }),
+        "ext.memory.merge_failed" => Some(Change::Failed { upto: upto()? }),
+        "ext.memory.saved" if merger && body["replaces"].is_string() => {
+            Some(Change::Landed(Landed::Revised(text("text")?)))
+        }
+        "ext.memory.retired" if merger => Some(Change::Landed(Landed::Retired(
+            text("id")?,
+            Retire::read(body["kind"].as_str().unwrap_or_default()),
+        ))),
+        "ext.memory.summary" if merger => Some(Change::Landed(Landed::Summary(text("text")?))),
         _ => None,
     }
 }

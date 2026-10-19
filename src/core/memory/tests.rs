@@ -94,3 +94,54 @@ fn other_methods_are_not_ours_and_the_list_reads_ids_to_texts() {
     assert_eq!(texts.len(), 1);
     assert_eq!(texts["m1"], "黑咖啡");
 }
+
+#[test]
+fn what_the_memory_module_kept_reads_for_the_receipt_and_others_do_not() {
+    let line = |kind: &str, by: Value, body: Value| {
+        json!({"method": "memory.event", "params": {"session": "s1",
+            "event": {"seq": 9, "kind": kind, "by": by, "body": body}}})
+    };
+    let module = json!({"kind": "module", "id": "memory"});
+    assert_eq!(
+        change(line(
+            "ext.memory.saved",
+            module.clone(),
+            json!({"text": "橘猫", "replaces": "m2"})
+        )),
+        Some(Change::Landed(Landed::Revised("橘猫".into())))
+    );
+    assert_eq!(
+        change(line(
+            "ext.memory.retired",
+            module.clone(),
+            json!({"id": "m1", "kind": "outdated", "why": "x"})
+        )),
+        Some(Change::Landed(Landed::Retired(
+            "m1".into(),
+            Retire::Outdated
+        )))
+    );
+    assert_eq!(
+        change(line(
+            "ext.memory.summary",
+            module.clone(),
+            json!({"text": "用户养猫。"})
+        )),
+        Some(Change::Landed(Landed::Summary("用户养猫。".into())))
+    );
+    // 抽出来的新记的（没有 `replaces`）、她在会话里记的、人删的都不算这次整理。
+    let fresh = line("ext.memory.saved", module, json!({"text": "新记的"}));
+    assert!(matches!(pushed(&fresh), Some(None)));
+    let by_tool = line(
+        "ext.memory.saved",
+        json!({"kind": "tool"}),
+        json!({"text": "x", "replaces": "m2"}),
+    );
+    assert!(matches!(pushed(&by_tool), Some(None)));
+    let by_person = line(
+        "ext.memory.retired",
+        json!({"kind": "person"}),
+        json!({"id": "m1"}),
+    );
+    assert!(matches!(pushed(&by_person), Some(None)));
+}

@@ -78,13 +78,18 @@ impl App {
             return;
         };
         let here = self.talk.transcript.session.as_ref() == Some(&dream.session);
+        let kept = dream.kept().to_vec();
         self.talk.dream = None;
         let said = said.trim_end().trim_end_matches(['。', '.']).to_string();
         if said.is_empty() {
             return;
         }
+        // 正文里留回执那一行，能点开看真正存下的改、删、摘要（第 6 条）；看着别的会话的照旧弹提示。
         if here {
-            self.talk.transcript.note(Kind::Note, said);
+            self.talk.transcript.note(Kind::Dreamt, said);
+            if let Some(entry) = self.talk.transcript.entries.last_mut() {
+                entry.kept = kept;
+            }
         } else {
             self.hint(said, false);
         }

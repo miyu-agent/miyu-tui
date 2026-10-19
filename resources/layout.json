@@ -189,7 +189,9 @@
     "twinkle_every": 3,
     "twinkle_ms": 2800,
     "twinkle_lift": 0.6,
-    "seed": 7
+    "seed": 7,
+    "breathe_ms": 2400,
+    "receipt": "✦ "
   },
   "compaction": {
     "pause_ms": [

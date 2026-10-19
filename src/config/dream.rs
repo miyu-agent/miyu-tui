@@ -22,6 +22,12 @@ pub struct DreamTexts {
     pub writing: String,
     /// 夜空右下角，`{merged}`、`{total}`。
     pub tally: String,
+    /// 第一行末尾整理了多久，`{thinking}`（还没写出东西时是 [`DreamTexts::thinking`]，写出了是空的）、`{time}`。
+    pub clock: String,
+    /// 她还一个字都没写出来（第 3 条）：吉祥物在睡觉，照睡觉说（2026-10-20 项目主人：「在想」不合适）。
+    pub thinking: String,
+    /// 回执点开列的摘要打头的词。
+    pub summary_full: String,
 }
 
 /// 整理时那一块的样子。
@@ -74,6 +80,10 @@ pub struct DreamLook {
     pub twinkle_ms: u64,
     /// 闪最亮时往白里偏多少，0 到 1。
     pub twinkle_lift: f64,
+    /// 这一批的星明暗呼吸一个来回多久，毫秒（一批之内不装进度，第 5 条）。
+    pub breathe_ms: u64,
+    /// 回执打头的记号，连同后面的空格：暗色（第 6 条）。
+    pub receipt: String,
     /// 星星的位置照它定。
     pub seed: u64,
 }

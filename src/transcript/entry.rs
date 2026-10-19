@@ -37,6 +37,8 @@ pub enum Kind {
     Media,
     /// 她给人看的一个文件（核心 D-5 `show`）：图画出来，别的一张卡片（蓝图「展示」）。
     Shown,
+    /// 人打的 `/dream` 整理完的回执：暗色 `✦` 打头一行，点开列日志里真正存下的改、删、摘要（蓝图「整理记忆」第 6 条）。
+    Dreamt,
 }
 
 /// 后台任务结束的通知：成败决定记号的颜色（蓝图「后台命令、子代理和侧边栏」第 5 条）。
@@ -108,6 +110,8 @@ pub struct Entry {
     pub unopened: Option<String>,
     /// 你说的话什么时候说的：看着发的是发的那一刻，补发来的是事件的时刻（`/jump` 的列表右边写它）。别的条是 `None`。
     pub at: Option<jiff::Timestamp>,
+    /// 整理回执点开列的：日志里真正存下的改、删、摘要。别的条是空的。
+    pub kept: Vec<crate::dream::Kept>,
 }
 
 impl Entry {
@@ -136,6 +140,7 @@ impl Entry {
             shown: None,
             unopened: None,
             at: None,
+            kept: Vec::new(),
         }
     }
 }
