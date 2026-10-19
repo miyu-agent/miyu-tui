@@ -168,7 +168,13 @@ fn paint(frame: &mut Frame, body: Rect, lines: &[Painted]) {
 }
 
 /// 照清单画的一页：组名一行，下面一项一行（名字、值）。两层都写不了的整行暗着。
-fn page_lines(page: &Settings, id: &str, at: usize, texts: &Texts, width: u16) -> Vec<Painted> {
+pub(super) fn page_lines(
+    page: &Settings,
+    id: &str,
+    at: usize,
+    texts: &Texts,
+    width: u16,
+) -> Vec<Painted> {
     let (Some(schema), Some(data)) = (page.more.schema.as_ref(), page.data.as_ref()) else {
         return vec![(
             Line::styled(texts.more.loading.clone(), theme::dim()),
@@ -204,6 +210,8 @@ fn page_lines(page: &Settings, id: &str, at: usize, texts: &Texts, width: u16) -
                 let item = &schema.items[i];
                 // 值后面不写来自哪一层（2026-10-08 项目主人：「所有的这种默认文字都去掉」）。
                 let (value, _) = current(item, data);
+                // 没设的密钥「未设置」暗着写、不加粗（2026-10-19 项目主人），设了的照常。
+                let unset = crate::settings::pages::secret::is_secret(item) && value.is_null();
                 let value = shown(item, value, page.more.named(&item.key), &texts.more);
                 let style = if item.writable() {
                     Style::new()
@@ -224,6 +232,7 @@ fn page_lines(page: &Settings, id: &str, at: usize, texts: &Texts, width: u16) -
                         let hex = format!(" #{seed:06x}");
                         spans.push(Span::styled(hex, style.add_modifier(Modifier::BOLD)));
                     }
+                    None if unset => spans.push(Span::styled(fit(&value, room), theme::dim())),
                     None => spans.push(Span::styled(
                         fit(&value, room),
                         style.add_modifier(Modifier::BOLD),

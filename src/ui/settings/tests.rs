@@ -346,3 +346,48 @@ fn price_rows_written_by_hand_do_not_say_personal_but_other_rows_still_do() {
         texts.source("personal")
     );
 }
+
+#[test]
+fn an_unset_secret_reads_dim_and_a_set_one_stays_bold() {
+    // 2026-10-19 项目主人：联网搜索页几行 key 都是「未设置」，暗着写。
+    use ratatui::style::Modifier;
+    let config = Config::builtin().unwrap();
+    let texts = &config.text.settings;
+    let opened = |value: serde_json::Value| {
+        let schema = json!({"pages": [{"id": "general", "name": "通用"}],
+            "groups": [{"id": "net", "name": "联网搜索", "page": "general"}],
+            "items": [{"key": "net.search.tavily.key", "type": "secret", "control": "text",
+                "layers": ["personal"], "name": "Tavily", "page": "general", "group": "net"}]});
+        let layers = if value.is_null() {
+            json!([])
+        } else {
+            json!([{"origin": {"layer": "personal", "line": 1}, "value": value, "used": true}])
+        };
+        let data = json!({"items": {"net.search.tavily.key": {"value": value, "layers": layers}}});
+        let mut page = Settings::open(false, true);
+        for (tag, method, _) in page.take_asks() {
+            let got = match method {
+                "config.schema" => schema.clone(),
+                "config.get" => data.clone(),
+                _ => json!({}),
+            };
+            page.answer(tag, Ok(got), texts);
+        }
+        page
+    };
+    let value_span = |page: &Settings, word: &str| {
+        super::pages::page_lines(page, "general", 0, texts, 60)
+            .into_iter()
+            .flat_map(|(line, _)| line.spans)
+            .find(|s| s.content.contains(word))
+            .unwrap_or_else(|| panic!("没写 {word}"))
+    };
+    let unset = value_span(&opened(serde_json::Value::Null), "未设置");
+    assert_eq!(unset.style.fg, crate::theme::dim().fg, "暗色");
+    assert!(!unset.style.add_modifier.contains(Modifier::BOLD), "不加粗");
+    let set = value_span(&opened(json!({"secret": "tavily-key"})), "已设置");
+    assert!(
+        set.style.add_modifier.contains(Modifier::BOLD),
+        "设了的照常加粗"
+    );
+}
