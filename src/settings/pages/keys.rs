@@ -40,6 +40,7 @@ impl Settings {
             }
             (Waiting::Mascots, Ok(got)) => {
                 self.more.summaries = super::packages::summaries(&got);
+                self.more.origins = super::packages::origins(&got);
                 self.more.mascots = Some(super::mascots::read(&got));
             }
             (Waiting::PresetDetail(id), result) => {

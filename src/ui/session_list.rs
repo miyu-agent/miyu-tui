@@ -141,6 +141,19 @@ pub fn lines(
             .tokens
             .replace("{tokens}", &crate::meter::short(info.tokens))
     };
+    // 总计左边一列上下文用量（2026-10-19 项目主人挑的：只写百分比）：没有窗口的写用量，没说过话的空着。
+    let context = |info: &SessionInfo| match info.context {
+        Some((used, Some(window))) => format!("{:.1}%", used as f64 * 100.0 / window as f64),
+        Some((used, None)) => crate::meter::short(used),
+        None => String::new(),
+    };
+    let context_width = found
+        .iter()
+        .skip(top)
+        .take(shown)
+        .map(|info| context(info).width())
+        .max()
+        .unwrap_or(0);
     let tokens_width = found
         .iter()
         .skip(top)
@@ -170,7 +183,12 @@ pub fn lines(
         0
     };
     // 选中的记号两列、右边那一格前面空一列、编号「  #」加 8 个字符、总 token 前面空两列。
-    let fixed = 2 + widest_right + 1 + tick_width + 3 + 8 + 2 + tokens_width;
+    let context_room = if context_width > 0 {
+        context_width + 2
+    } else {
+        0
+    };
+    let fixed = 2 + widest_right + 1 + tick_width + 3 + 8 + 2 + tokens_width + context_room;
     let column = column.min(
         usize::from(width)
             .saturating_sub(fixed)
@@ -206,6 +224,12 @@ pub fn lines(
                 format!("  #{}", short(&info.session)),
                 theme::faint(),
             ));
+            if context_width > 0 {
+                content.push(Span::styled(
+                    format!("  {:>context_width$}", context(info)),
+                    theme::faint(),
+                ));
+            }
             content.push(Span::styled(
                 format!("  {:>tokens_width$}", tokens(info)),
                 theme::faint(),

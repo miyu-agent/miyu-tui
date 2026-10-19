@@ -36,6 +36,63 @@ pub struct Listed {
     pub count: usize,
 }
 
+/// 一个包的作者、从哪来、上游（核心 F-12；清单没写的没有）。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Origin {
+    /// 作者。
+    pub author: Option<String>,
+    /// 从哪来：`shipped`、`official`、`local`。
+    pub from: Option<String>,
+    /// 上游源码仓库的网址。
+    pub upstream: Option<String>,
+}
+
+/// 读 `package.list` 的回应：每个包的作者、从哪来、上游。
+pub fn origins(got: &Value) -> HashMap<String, Origin> {
+    let text = |v: &Value| v.as_str().filter(|s| !s.is_empty()).map(str::to_string);
+    got["packages"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|p| {
+            let id = p["package"].as_str()?;
+            let origin = Origin {
+                author: text(&p["author"]),
+                from: text(&p["from"]),
+                upstream: text(&p["upstream"]),
+            };
+            Some((id.to_string(), origin))
+        })
+        .collect()
+}
+
+impl More {
+    /// 包页面包屑下面那一行（第 43a 条，2026-10-19 项目主人挑的样子）：「作者 · 从哪来 · 上游」，没有的那样不写，三样都没有
+    /// 的是 `None`。上游去掉 `https://` 写。
+    pub fn origin_line(
+        &self,
+        id: &str,
+        from_words: &std::collections::BTreeMap<String, String>,
+    ) -> Option<String> {
+        let origin = self.origins.get(id)?;
+        let parts: Vec<String> = [
+            origin.author.clone(),
+            origin
+                .from
+                .as_ref()
+                .map(|f| from_words.get(f).cloned().unwrap_or_else(|| f.clone())),
+            origin
+                .upstream
+                .as_ref()
+                .map(|u| u.trim_start_matches("https://").to_string()),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        (!parts.is_empty()).then(|| parts.join(" · "))
+    }
+}
+
 /// 读 `package.list` 的回应：每个包的一句说明。
 pub fn summaries(got: &Value) -> HashMap<String, String> {
     got["packages"]

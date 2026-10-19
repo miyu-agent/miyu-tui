@@ -28,6 +28,9 @@ pub struct SessionInfo {
     pub preset: Option<String>,
     /// 连同它派的、分叉出来的子会话一共用了多少 token（核心 d98f5e03，口径同底栏的累计）；没有这一格的当 0。
     pub tokens: u64,
+    /// 最近一次请求的上下文 token 数、模型窗口（核心 f3f30d85 的 `context: {used, window?}`）；没说过话的是 `None`，
+    /// 窗口查不到的窗口是 `None`。
+    pub context: Option<(u64, Option<u64>)>,
 }
 
 /// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话不要，照核心交回的先后（新的在前）。
@@ -58,6 +61,9 @@ fn entry(s: &Value) -> Option<SessionInfo> {
         persona: text(&s["persona"]),
         preset: text(&s["preset"]),
         tokens: s["tokens"].as_u64().unwrap_or(0),
+        context: s["context"]["used"]
+            .as_u64()
+            .map(|used| (used, s["context"]["window"].as_u64().filter(|w| *w > 0))),
     })
 }
 
@@ -178,7 +184,7 @@ mod tests {
             {"session":"b","parent":"a","oneshot":false},
             {"session":"c","parent":null,"oneshot":true},
             {"session":"d","parent":null,"oneshot":false,"title":"","cwd":"/src","busy":true,
-             "last_active":"2026-10-01T08:00:00Z","tokens":5120},
+             "last_active":"2026-10-01T08:00:00Z","tokens":5120,"context":{"used":4400,"window":1000000}},
         ]});
         let list = read(&result);
         assert_eq!(
@@ -194,6 +200,11 @@ mod tests {
             (list[0].tokens, list[1].tokens),
             (0, 5120),
             "没有 tokens 的当 0（核心 d98f5e03）"
+        );
+        assert_eq!(
+            (list[0].context, list[1].context),
+            (None, Some((4400, Some(1_000_000)))),
+            "上下文用量（核心 f3f30d85）"
         );
         assert!(list[1].last_active.is_some());
     }

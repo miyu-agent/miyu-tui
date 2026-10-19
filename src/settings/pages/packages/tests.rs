@@ -147,3 +147,32 @@ fn a_package_with_two_groups_is_one_row_and_its_page_titles_the_second_group() {
         "和包同编号的那一组不写组名，第二组写"
     );
 }
+
+#[test]
+fn a_package_page_names_its_author_origin_and_upstream() {
+    // 2026-10-19 项目主人：作者和来源只在包页里写，面包屑下面一行「作者 · 从哪来 · 上游」（核心 F-12）。
+    let config = Config::builtin().unwrap();
+    let words = &config.text.settings.more.package_from;
+    let got = json!({"packages": [
+        {"package": "memes", "author": "shorin", "from": "official",
+         "upstream": "https://github.com/miyu-agent/miyu-memes"},
+        {"package": "net", "from": "shipped"},
+        {"package": "bare"}]});
+    let mut page = Settings::open(false, true);
+    page.more.origins = super::super::packages::origins(&got);
+    assert_eq!(
+        page.more.origin_line("memes", words).as_deref(),
+        Some("shorin · 官方软件源 · github.com/miyu-agent/miyu-memes")
+    );
+    assert_eq!(
+        page.more.origin_line("net", words).as_deref(),
+        Some("出厂自带"),
+        "没有的那样不写"
+    );
+    assert_eq!(
+        page.more.origin_line("bare", words),
+        None,
+        "三样都没有的不写这一行"
+    );
+    assert_eq!(page.more.origin_line("nope", words), None);
+}
