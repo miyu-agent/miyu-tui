@@ -155,7 +155,8 @@ mod tests {
                 );
             }
         }
-        assert_eq!(builtin().unwrap()[0].think, "\u{e27f}", "思考的是 fae-atom");
+        // 2026-10-19 项目主人：fae-atom 线条太细，换实心的 fa-atom。
+        assert_eq!(builtin().unwrap()[0].think, "\u{ee99}", "思考的是 fa-atom");
     }
 
     #[test]
