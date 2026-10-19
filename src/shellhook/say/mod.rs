@@ -125,6 +125,14 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         };
         painter.frame(&settled, &live)?;
     }
+    // 收工以前敲进来的、读按键的线程已经读走还没处理的字也收下：先让它停下，再把排着的拿完（真机实测：答得快时最后
+    // 那几个字会丢）。
+    reader.pause();
+    for event in incoming.try_iter() {
+        if let Incoming::Key(event) = event {
+            turn.keep_typed(&event);
+        }
+    }
     // 定下来：整段照最后的样子印一遍（做完收起的照配置收起），留在滚动区。
     let (width, height) = ratatui::crossterm::terminal::size().unwrap_or((80, 24));
     let view = View {

@@ -50,6 +50,10 @@ pub struct Turn {
     pending: Option<String>,
     /// 这一句在哪个目录说。
     cwd: Option<String>,
+    /// 接上了终端会话、在等它最新的一页读回来：读完再发，补发的那一页里同样的话不会认成这一句。
+    paging: bool,
+    /// 那句话发出去了：这以后推回来的 `said` 才认。
+    sent: bool,
     /// 你说的那句：核心落了盘推回来（`Said`）照它认序号。
     said: String,
     /// 你说的那句落盘的序号。
@@ -78,6 +82,8 @@ impl Turn {
             human: Human::default(),
             pending: Some(text.clone()),
             cwd,
+            paging: false,
+            sent: false,
             said: text,
             said_seq: None,
             ours: None,
@@ -100,6 +106,7 @@ impl Turn {
     /// 那句话发出去：接上了终端会话的说进它，没问到的（核心旧）照新会话开。
     fn send(&mut self, core: &Core) {
         if let Some(text) = self.pending.take() {
+            self.sent = true;
             core.send(Command::Send {
                 text,
                 files: Vec::new(),
@@ -137,7 +144,15 @@ impl Turn {
                         session: found.session,
                         keep: false,
                     });
+                    // 最新一页读回来（`Paged`、读不成的 `Older`）再发。
+                    self.paging = true;
+                } else {
+                    self.send(core);
                 }
+            }
+            update @ (Update::Paged(_) | Update::Older { .. }) if self.paging => {
+                self.paging = false;
+                self.transcript.update(update, &config.text);
                 self.send(core);
             }
             Update::HeadConfig(head) => {
@@ -177,8 +192,17 @@ impl Turn {
 
     /// 认出你说的那句落盘的序号、它开的那一轮。
     fn watch(&mut self, update: &Update) {
+        if !self.sent {
+            return;
+        }
         match update {
-            Update::Push(Push::Said { seq, text, .. }) if *text == self.said => {
+            // 这条连接自己发的话推回来是 `user_message`（只带序号），别处看到的是 `said`（带字）：两种都认，认第一个。
+            Update::Push(Push::UserMessage(seq)) if self.said_seq.is_none() => {
+                self.said_seq = Some(*seq);
+            }
+            Update::Push(Push::Said { seq, text, .. })
+                if *text == self.said && self.said_seq.is_none() =>
+            {
                 self.said_seq = Some(*seq);
             }
             Update::Push(Push::TurnStarted(turn, Some(trigger)))
@@ -186,6 +210,26 @@ impl Turn {
             {
                 self.ours = Some(*turn);
             }
+            _ => {}
+        }
+    }
+
+    /// 收工以后才处理到的按键：只记字，不再打断、不再答抽屉。
+    pub fn keep_typed(&mut self, event: &Event) {
+        match event {
+            Event::Key(key) if key.kind != KeyEventKind::Release => {
+                let plain = !key
+                    .modifiers
+                    .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT);
+                match key.code {
+                    KeyCode::Char(c) if plain => self.typed.push(c),
+                    KeyCode::Backspace => {
+                        self.typed.pop();
+                    }
+                    _ => {}
+                }
+            }
+            Event::Paste(text) => self.typed.push_str(text),
             _ => {}
         }
     }
