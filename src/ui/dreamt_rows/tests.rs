@@ -48,7 +48,7 @@ fn the_receipt_is_one_dim_line_with_a_dim_star_and_nothing_to_open_without_chang
 fn opening_lists_what_was_kept_in_the_dream_style_and_wraps_long_text() {
     let f = Fixture::new();
     let mut t = receipt(vec![
-        Kept::Retired("住在上海".into(), Retire::Outdated),
+        Kept::Retired("住在上海".into(), Retire::Outdated, "m1".into()),
         Kept::Revised("搬到杭州了".into()),
         Kept::Summary("用户住在杭州，喜欢黑咖啡。".repeat(8)),
     ]);

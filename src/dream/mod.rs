@@ -76,8 +76,8 @@ pub enum Landed {
 pub enum Kept {
     /// 改写后的正文。
     Revised(String),
-    /// 删的原文（取不到的是空的）、种类。
-    Retired(String, Retire),
+    /// 删的原文（正文还没取回来的先空着，回来了照编号补上）、种类、编号。
+    Retired(String, Retire, String),
     /// 新的摘要全文。
     Summary(String),
 }
@@ -109,8 +109,8 @@ impl Retire {
 pub enum Line {
     /// 这一批交给模型的一条，浮过去：它的正文。
     Float(String),
-    /// 删了一条：原文（取不到的是空的）、种类。
-    Retired(String, Retire),
+    /// 删了一条：原文（正文还没取回来的先空着，回来了照编号补上）、种类、编号。
+    Retired(String, Retire, String),
     /// 改了一条：改写后的正文。
     Revised(String),
     /// 摘要写到几个字、写完没有。
@@ -209,7 +209,7 @@ impl Dream {
             Change::Revised { text } => self.wrote(Line::Revised(text)),
             Change::Retired { id, why } => {
                 let text = self.texts.get(&id).cloned().unwrap_or_default();
-                self.wrote(Line::Retired(text, why));
+                self.wrote(Line::Retired(text, why, id));
             }
             // 每多 20 个字推一次：就地改同一行，不另起（第 4 条）。
             Change::Summary { chars, done } => {
@@ -227,13 +227,14 @@ impl Dream {
             Change::Texts(texts) => {
                 self.texts.extend(texts);
                 self.texts_fresh = true;
+                self.fill_retired();
             }
             // 开始合以前的（会话里先抽的那几条）不算这次整理的。
             Change::Landed(landed) if self.index > 0 => {
                 let kept = match landed {
                     Landed::Revised(text) => Kept::Revised(text),
                     Landed::Retired(id, why) => {
-                        Kept::Retired(self.texts.get(&id).cloned().unwrap_or_default(), why)
+                        Kept::Retired(self.texts.get(&id).cloned().unwrap_or_default(), why, id)
                     }
                     Landed::Summary(text) => Kept::Summary(text),
                 };
@@ -285,6 +286,26 @@ impl Dream {
         self.next_float = None;
         if let Some(batch) = &mut self.batch {
             batch.heard = true;
+        }
+    }
+
+    /// 正文回来了：删的那几条原文先空着的照编号补上（她写得比正文取回来快，2026-10-20 端到端测试抓到）。
+    fn fill_retired(&mut self) {
+        let texts = &self.texts;
+        let rows = self.rows.iter_mut().filter_map(|l| match l {
+            Line::Retired(text, _, id) => Some((text, id)),
+            _ => None,
+        });
+        let kept = self.kept.iter_mut().filter_map(|k| match k {
+            Kept::Retired(text, _, id) => Some((text, id)),
+            _ => None,
+        });
+        for (text, id) in rows.chain(kept) {
+            if text.is_empty()
+                && let Some(found) = texts.get(id.as_str())
+            {
+                text.clone_from(found);
+            }
         }
     }
 

@@ -92,7 +92,7 @@ fn what_landed_after_merging_began_is_kept_with_retired_texts_filled_in() {
     assert_eq!(
         d.kept(),
         [
-            Kept::Retired("住在上海".into(), Retire::Outdated),
+            Kept::Retired("住在上海".into(), Retire::Outdated, "m1".into()),
             Kept::Revised("搬到杭州了".into()),
             Kept::Summary("用户住杭州。".into()),
         ]
@@ -153,7 +153,7 @@ fn the_first_thing_she_writes_stops_the_floating() {
         rows,
         [
             Line::Float("一".into()),
-            Line::Retired("二".into(), Retire::Repeat)
+            Line::Retired("二".into(), Retire::Repeat, "m2".into())
         ]
     );
 }
@@ -252,4 +252,32 @@ fn floating_waits_for_the_texts_that_are_still_on_the_way() {
     d.apply(texts(&[("m9", "早上不吃早饭")]), now + every * 9);
     d.tick(now + every * 9, every);
     assert_eq!(d.rows().last(), Some(&Line::Float("早上不吃早饭".into())));
+}
+
+#[test]
+fn a_retired_line_and_record_get_their_text_when_the_texts_come_late() {
+    let (mut d, now) = dream();
+    d.apply(merging(3, 3, 3, &["m1"]), now);
+    d.apply(
+        Change::Retired {
+            id: "m1".into(),
+            why: Retire::Outdated,
+        },
+        now,
+    );
+    d.apply(
+        Change::Landed(Landed::Retired("m1".into(), Retire::Outdated)),
+        now,
+    );
+    d.apply(texts(&[("m1", "住在上海")]), now);
+    let line = Line::Retired("住在上海".into(), Retire::Outdated, "m1".into());
+    assert_eq!(d.rows().last(), Some(&line));
+    assert_eq!(
+        d.kept(),
+        [Kept::Retired(
+            "住在上海".into(),
+            Retire::Outdated,
+            "m1".into()
+        )]
+    );
 }

@@ -68,7 +68,7 @@ fn kept_rows(kept: &Kept, ctx: &Ctx) -> Vec<Row> {
             Style::new(),
             String::new(),
         ),
-        Kept::Retired(text, why) => {
+        Kept::Retired(text, why, _) => {
             let why = match why {
                 Retire::Outdated => &texts.outdated,
                 Retire::Repeat => &texts.repeat,

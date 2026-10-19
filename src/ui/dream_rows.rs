@@ -75,7 +75,7 @@ fn line_spans(
             let text = format!("{}{text}", look.float);
             vec![Span::styled(crate::cells::clip(&text, width), theme::dim())]
         }
-        Line::Retired(text, why) => {
+        Line::Retired(text, why, _) => {
             let why = match why {
                 Retire::Outdated => &texts.outdated,
                 Retire::Repeat => &texts.repeat,
