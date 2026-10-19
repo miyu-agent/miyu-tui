@@ -189,6 +189,33 @@ mod tests {
     }
 
     #[test]
+    fn the_eyes_are_one_column_each_and_stay_clear_of_the_mouth() {
+        // 2026-10-19 项目主人：眼睛和嘴挤在一起；挑了眼睛往上、只占一列，嘴往下。
+        let picture = draw(&Config::builtin().unwrap().mascot);
+        let cell = |x: u32, y: u32| picture.get_pixel(x * SCALE, y * SCALE).0;
+        let side = picture.width() / SCALE;
+        let eye = [MORNING.eye[0], MORNING.eye[1], MORNING.eye[2], 255];
+        let line = super::mix(MORNING.head_shade, MORNING.outline, super::LINE_SHADE);
+        let line = [line[0], line[1], line[2], 255];
+        let mut columns = std::collections::BTreeSet::new();
+        for y in 0..side {
+            for x in 0..side {
+                if cell(x, y) != eye {
+                    continue;
+                }
+                columns.insert(x);
+                for (dx, dy) in [(0i32, 1i32), (1, 1), (-1, 1), (0, 2)] {
+                    let (nx, ny) = (x as i32 + dx, y as i32 + dy);
+                    if nx >= 0 && ny >= 0 && (nx as u32) < side && (ny as u32) < side {
+                        assert_ne!(cell(nx as u32, ny as u32), line, "眼睛下面隔一行才是嘴");
+                    }
+                }
+            }
+        }
+        assert_eq!(columns.len(), 2, "两只眼睛各一列：{columns:?}");
+    }
+
+    #[test]
     fn one_look_is_drawn_once() {
         let look = Config::builtin().unwrap().mascot;
         let dir = std::env::temp_dir().join(format!("miyu-mascot-icon-{}", std::process::id()));
