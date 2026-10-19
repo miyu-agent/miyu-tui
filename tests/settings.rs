@@ -202,6 +202,8 @@ fn a_new_provider_keeps_its_key_in_the_secret_store_and_an_added_model_can_be_de
     tui.pump(Duration::from_millis(200));
     tui.key(b"\r");
     wait_settings(&home, &mut tui, "[providers.zen.models.big]");
+    // 模型的窗关上了再切栏：不然 `l` 落在窗里，`d` 删的是供应商（10-19 Ubuntu CI 见过）。
+    gone(&mut tui, "[ 保存 ]");
     tui.key(b"l");
     tui.wait_for("big");
     tui.key(b"d");
