@@ -182,3 +182,36 @@ fn choosing_no_persona_opens_a_session_without_one_even_when_a_default_is_set() 
     let sent = format!("{:?}", script.requests().last());
     assert!(!sent.contains("X1Y2"), "无人格不带默认人格的人设：{sent}");
 }
+
+#[test]
+fn a_persona_switched_midway_compacts_first_then_speaks_as_the_new_one() {
+    // 2026-10-19 项目主人放开中途换（核心 P-13）：先压缩，再照新的人格接着聊；正文记一行「已换成」。
+    // 会话很短：核心压缩时不用请求模型，只剩两段回话。
+    let script = Script::new([Play::Says("好。"), Play::Says("啊哈。")]);
+    let home = Home::new(script.clone());
+    home.persona(
+        "pirate",
+        "[persona]\nname = { zh = \"海盗\", en = \"Pirate\" }\n",
+        Some("你是海盗，暗号 X1Y2。"),
+    );
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("在吗");
+    tui.wait_for("好。");
+    tui.say("/persona");
+    tui.wait_for("切换前会先压缩会话");
+    for _ in 0..8 {
+        if picked(&tui).contains("海盗") {
+            break;
+        }
+        tui.key(b"j");
+        tui.pump(std::time::Duration::from_millis(50));
+    }
+    assert!(picked(&tui).contains("海盗"), "{}", tui.lines().join("\n"));
+    tui.key(b"\r");
+    tui.wait_for("人格已换成「海盗」");
+    tui.say("你是谁");
+    tui.wait_for("啊哈。");
+    let sent = format!("{:?}", script.requests().last());
+    assert!(sent.contains("X1Y2"), "换了以后照海盗说：{sent}");
+}
