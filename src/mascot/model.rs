@@ -201,6 +201,10 @@ pub struct Look {
     /// 吉祥物包写的颜色（蓝图「吉祥物包」第 4 条）：写了的盖过主题的 `mascot_*`；内置的不写。
     #[serde(default)]
     pub colors: Colors,
+    /// 画成像素图（通知的图标，`notify/mascot_icon.rs`）时用的脸：格子少，眼睛、锯齿线、肚子上的圈要另调（照网页
+    /// `packages/mascot` 那一份）；没写的照 `face`。
+    #[serde(default)]
+    pub pixel_face: Option<Face>,
 }
 
 /// 吉祥物各块的颜色：写法同主题文件。
