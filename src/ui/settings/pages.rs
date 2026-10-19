@@ -113,11 +113,31 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         Section::Presets(_) => (texts.more.presets[0].clone(), &texts.more.hints[5]),
     };
     crumb(frame, stage, texts, Some(&title));
+    // 包自己那一页：面包屑下面一行暗色写作者、从哪来、上游（第 43a 条），项往下挪一行。
+    let origin = match &section {
+        Section::Page(id, _) => {
+            package_of(id).and_then(|pkg| page.more.origin_line(pkg, &texts.more.package_from))
+        }
+        _ => None,
+    };
+    let shift = u16::from(origin.is_some());
+    if let Some(origin) = origin {
+        let row = stage.y + 1;
+        frame.buffer_mut().set_line(
+            stage.x + 2,
+            row,
+            &Line::styled(
+                fit(&origin, usize::from(stage.width.saturating_sub(2))),
+                theme::dim(),
+            ),
+            stage.width.saturating_sub(2),
+        );
+    }
     let body = Rect::new(
         stage.x,
-        stage.y + 2,
+        stage.y + 2 + shift,
         stage.width,
-        stage.height.saturating_sub(6),
+        stage.height.saturating_sub(6 + shift),
     );
     let (lines, at, count) = match &section {
         Section::Page(id, at) => (

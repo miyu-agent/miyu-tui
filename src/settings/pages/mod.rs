@@ -84,6 +84,8 @@ pub struct More {
     pub menu_at: usize,
     /// 每个包的一句说明（`package.list` 的 `summary`）：「软件包」的列表照它写。
     pub summaries: HashMap<String, String>,
+    /// 每个包的作者、从哪来、上游（`package.list` 的 `author`、`from`、`upstream`，核心 F-12）：包页面包屑下面那一行。
+    pub origins: HashMap<String, packages::Origin>,
     /// 进了哪一页。
     pub section: Option<Section>,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
@@ -283,6 +285,8 @@ pub struct Texts {
     pub sheet_hints: Vec<[String; 2]>,
     /// 列表窗（第 47 条）。
     pub list: list::ListTexts,
+    /// 包从哪来（第 43a 条，包页面包屑下面那一行）：出厂自带、官方软件源、本机安装（照 `package.list` 的 `from`）。
+    pub package_from: std::collections::BTreeMap<String, String>,
 }
 
 /// 一项现在的值：读来的最终值和来自哪一层；哪一层都没写的照清单的默认，来自「默认」。

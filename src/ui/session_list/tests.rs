@@ -32,6 +32,7 @@ fn info(session: &str, title: Option<&str>, cwd: &str) -> SessionInfo {
         persona: None,
         preset: None,
         tokens: 0,
+        context: None,
     }
 }
 
@@ -288,4 +289,46 @@ fn sessions_are_grouped_by_age_under_plain_headings_unless_searching() {
     list.query = "天".into();
     let (_, _, map) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
     assert!(map.iter().all(Option::is_some), "{map:?}");
+}
+
+#[test]
+fn the_context_share_sits_left_of_the_total_as_a_percent() {
+    // 2026-10-19 项目主人：会话的上下文用量只写百分比，放在总计左边；没窗口的写用量，没说过话的空着。
+    let config = Config::builtin().unwrap();
+    let mut list = SessionList::default();
+    let with = |id: &str, context: Option<(u64, Option<u64>)>| SessionInfo {
+        context,
+        tokens: 4_600,
+        ..info(id, Some("标题"), "~/src/miyu")
+    };
+    list.replace(vec![
+        with("0000-aaaaaaaa", Some((4_400, Some(1_000_000)))),
+        with("0000-bbbbbbbb", Some((318_000, Some(1_000_000)))),
+        with("0000-cccccccc", Some((4_400, None))),
+        with("0000-dddddddd", None),
+    ]);
+    let marks = super::Marks {
+        current: None,
+        asking: &[],
+    };
+    let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
+    let rows: Vec<String> = sessions_only(rows, &map)
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    let after_id = |l: &str| {
+        let at = l.find(" #").expect("有编号") + " #".len() + 8;
+        l[at..].to_string()
+    };
+    let cells: Vec<String> = rows.iter().map(|l| after_id(l)).collect();
+    assert!(cells[0].starts_with("   0.4%  Σ4.6k"), "{cells:#?}");
+    assert!(cells[1].starts_with("  31.8%  Σ4.6k"), "{cells:#?}");
+    assert!(
+        cells[2].starts_with("   4.4k  Σ4.6k"),
+        "没窗口的写用量：{cells:#?}"
+    );
+    assert!(
+        cells[3].starts_with("         Σ4.6k"),
+        "没说过话的空着：{cells:#?}"
+    );
 }
