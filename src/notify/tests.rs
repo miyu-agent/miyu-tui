@@ -162,6 +162,13 @@ fn the_title_is_the_sessions_and_kitty_gets_an_icon() {
         Some(cache.join("tui").join("sounds")),
     );
     n.about(Some("修登录页".into()), None);
+    // 没有吉祥物（还没交下来）的不带图标；交下来了照它画（2026-10-19）。
+    n.tell(Event::Replied);
+    assert!(
+        !n.outbox().join("").contains(":p=icon;"),
+        "没交吉祥物的不带图标"
+    );
+    n.mascot(config.mascot.clone(), [(200, 200, 200); 4]);
     n.tell(Event::Replied);
     let out = n.outbox().join("");
     assert!(
@@ -172,7 +179,10 @@ fn the_title_is_the_sessions_and_kitty_gets_an_icon() {
         out.contains(&format!("p=body;{}", STANDARD.encode("回答完了"))),
         "{out:?}"
     );
-    assert!(out.contains(":p=icon;"), "没有头像用 Miyu 的图标：{out:?}");
+    assert!(
+        out.contains(":p=icon;"),
+        "没有头像用吉祥物画成的图标：{out:?}"
+    );
     // 没起名的会话：标题写 Miyu。
     n.about(None, None);
     n.tell(Event::Asking);

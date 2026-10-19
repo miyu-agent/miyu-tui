@@ -6,6 +6,7 @@
 
 pub mod herdr;
 mod icon;
+mod mascot_icon;
 mod osc;
 mod sound;
 mod system;
@@ -102,6 +103,8 @@ pub struct Notifier {
     /// 这一条通知是哪个会话的：标题（没有的写 `texts.title`）、人格的头像（第 3 条，2026-10-17）。
     title: Option<String>,
     avatar: Option<PathBuf>,
+    /// 没有头像时画成图标的吉祥物和它的颜色（第 3 条，2026-10-19）。
+    mascot: Option<icon::Mascot>,
 }
 
 impl Notifier {
@@ -128,6 +131,7 @@ impl Notifier {
             icons,
             title: None,
             avatar: None,
+            mascot: None,
             look,
             texts,
         }
@@ -158,6 +162,11 @@ impl Notifier {
         self.avatar = avatar;
     }
 
+    /// 没有头像时画成图标的吉祥物：现在的样子和四块的颜色（头、耳朵、眼睛、鳍）。
+    pub fn mascot(&mut self, look: crate::mascot::Look, colors: [(u8, u8, u8); 4]) {
+        self.mascot = Some((look, colors));
+    }
+
     /// 出了一件要通知的事：标题是会话标题，正文只写为什么，图标照人格头像（第 3 条）。
     pub fn tell(&mut self, event: Event) {
         let plan = plan(&self.look, self.route, self.focused, self.herdr.is_some());
@@ -171,7 +180,7 @@ impl Notifier {
         let icon = || {
             self.icons
                 .as_deref()
-                .and_then(|dir| icon::pick(self.avatar.as_deref(), dir))
+                .and_then(|dir| icon::pick(self.avatar.as_deref(), self.mascot.as_ref(), dir))
         };
         match plan.route {
             Some(Route::Kitty) => {
