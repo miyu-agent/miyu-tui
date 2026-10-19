@@ -641,6 +641,7 @@
     "pinned": "已置顶",
     "unpinned": "已取消置顶",
     "tokens": "Σ{tokens}",
+    "groups": ["最近", "近 7 天", "近 30 天", "30 天前"],
     "ticked": " · 已选 {count}",
     "delete_many": "再按一次 Ctrl+D 删除 {count} 个会话",
     "deleted_many": "已删除 {count} 个会话"

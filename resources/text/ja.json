@@ -641,6 +641,7 @@
     "pinned": "ピン留めしました",
     "unpinned": "ピン留めを外しました",
     "tokens": "Σ{tokens}",
+    "groups": ["最近", "過去 7 日", "過去 30 日", "30 日より前"],
     "ticked": " · {count} 件選択",
     "delete_many": "もう一度 Ctrl+D で {count} 件のセッションを削除",
     "deleted_many": "{count} 件のセッションを削除しました"
