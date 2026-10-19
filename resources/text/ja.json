@@ -604,7 +604,7 @@
     "preset_locked": "始まったセッションのプリセットは変えられません。/new のあとで選んでください",
     "preset_chosen": "プリセット {name}",
     "none": "人格なし",
-    "none_note": "人物設定なし、記憶は無効"
+    "none_note": "人物設定なし"
   },
   "workspace": {
     "need_path": "パスを指定してください",

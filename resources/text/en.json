@@ -604,7 +604,7 @@
     "preset_locked": "The preset can't change once the session has started; pick one after /new",
     "preset_chosen": "Preset {name}",
     "none": "No persona",
-    "none_note": "No persona prompt; memory is off"
+    "none_note": "No persona prompt"
   },
   "workspace": {
     "need_path": "Specify a path",
