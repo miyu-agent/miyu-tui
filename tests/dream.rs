@@ -7,7 +7,7 @@ mod support;
 
 use std::time::Duration;
 
-use miyu_session::testkit::{Play, Script};
+use miyu_session::testkit::{Once, Play, Script};
 use support::Home;
 
 /// 被拒：弹核心的原话，那一块收掉、不留在正文末尾（第 1 条）。
@@ -89,4 +89,61 @@ fn dream_stop_without_a_dream_says_there_is_none() {
     // 状态不对的拒绝不把打的那一行放回输入框（2026-10-20 项目主人报）。
     tui.pump(Duration::from_millis(300));
     assert!(!tui.shows("❯ /dream stop"), "{}", tui.lines().join("\n"));
+}
+
+/// 先记一条、回到首页打 `/dream`，模型一直不答（`Once::Holds`）：在做梦。
+fn dreaming_forever(tui: &mut support::Tui) {
+    tui.wait_for("工作区");
+    tui.say("你好");
+    tui.wait_for("好的。");
+    tui.say("/remember 用户住在杭州");
+    tui.wait_for("记下了：用户住在杭州");
+    tui.say("/new");
+    tui.pump(Duration::from_millis(500));
+    tui.say("/dream");
+    tui.wait_for("做梦中…");
+}
+
+/// 一直不答的剧本：首页新开的会话不抽，第一问就是合并（同「首页打的」那条）；说话照 plays 答。
+fn holding() -> Script {
+    Script::new([Play::Says("好的。"), Play::Says("在的。")]).once([Once::Holds])
+}
+
+/// 做梦中两下 `Esc` 叫停（第 7 条，核心 R-22）：第一下提示，第二下叫停，醒来收成「整理已中断」的回执。
+#[test]
+fn two_escapes_while_dreaming_stop_the_dream() {
+    let home = Home::with_settings(holding(), "[persona]\ndefault = \"pirate\"\n");
+    home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    dreaming_forever(&mut tui);
+    tui.key(b"\x1b");
+    tui.wait_for("再按一次 Esc 停止整理");
+    tui.key(b"\x1b");
+    tui.wait_for("✦ 整理已中断，下次再整理");
+    assert!(!tui.shows("✦ 整理记忆"), "{}", tui.lines().join("\n"));
+}
+
+/// 做梦中打 `/dream stop`：同两下 `Esc`，打的那一行不留在输入框。
+#[test]
+fn dream_stop_while_dreaming_stops_it() {
+    let home = Home::with_settings(holding(), "[persona]\ndefault = \"pirate\"\n");
+    home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    dreaming_forever(&mut tui);
+    tui.say("/dream stop");
+    tui.wait_for("✦ 整理已中断，下次再整理");
+    assert!(!tui.shows("❯ /dream stop"), "{}", tui.lines().join("\n"));
+}
+
+/// 做梦中说话把她叫醒（第 7 条）：那一块收起，弹「整理转到后台继续」，她照常回。
+#[test]
+fn speaking_while_dreaming_wakes_her_and_moves_the_dream_to_the_background() {
+    let home = Home::with_settings(holding(), "[persona]\ndefault = \"pirate\"\n");
+    home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    dreaming_forever(&mut tui);
+    tui.say("在吗");
+    tui.wait_for("整理转到后台继续");
+    tui.wait_for("在的。");
+    assert!(!tui.shows("✦ 整理记忆"), "{}", tui.lines().join("\n"));
 }
