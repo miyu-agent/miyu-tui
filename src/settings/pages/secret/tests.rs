@@ -12,18 +12,18 @@ fn texts() -> Texts {
     Config::builtin().unwrap().text.settings
 }
 
-/// 一个包一项密钥（只能写系统配置，同接入QQ 的令牌），系统配置里写的是 `value`。
+/// 一个包一项密钥（只能写系统配置，同接入通讯平台 的令牌），系统配置里写的是 `value`。
 fn opened(value: Value) -> Settings {
     let schema = json!({"pages": [{"id": "packages", "name": "软件包"}],
-        "groups": [{"id": "miyu-onebot", "name": "接入QQ", "page": "packages"}],
-        "items": [{"key": "miyu-onebot.token", "type": "secret", "control": "text",
-            "layers": ["system"], "name": "令牌", "page": "packages", "group": "miyu-onebot"}]});
+        "groups": [{"id": "im", "name": "接入通讯平台", "page": "packages"}],
+        "items": [{"key": "im.token", "type": "secret", "control": "text",
+            "layers": ["system"], "name": "令牌", "page": "packages", "group": "im"}]});
     let layers = if value.is_null() {
         json!([])
     } else {
         json!([{"origin": {"layer": "system", "line": 1}, "value": value, "used": true}])
     };
-    let config = json!({"items": {"miyu-onebot.token": {"value": value, "layers": layers}}});
+    let config = json!({"items": {"im.token": {"value": value, "layers": layers}}});
     let mut page = Settings::open(false, true);
     for (tag, method, _) in page.take_asks() {
         let got = match method {
@@ -50,7 +50,7 @@ fn the_row_only_says_whether_it_is_set() {
     let page = opened(Value::Null);
     let shown = crate::settings::pages::shown(&item(&page), &Value::Null, None, &words);
     assert_eq!(shown, words.secret[1], "没设写「未设置」");
-    let set = json!({"secret": "miyu-onebot-token-abc"});
+    let set = json!({"secret": "im-token-abc"});
     let shown = crate::settings::pages::shown(&item(&page), &set, None, &words);
     assert_eq!(shown, words.secret[0], "设了写「已设置」，不露引用");
 }
@@ -76,10 +76,7 @@ fn enter_stores_the_secret_first_then_writes_the_reference() {
         .find(|(_, m, _)| *m == "secret.set")
         .expect("先存进密钥库");
     let name = params["name"].as_str().unwrap().to_string();
-    assert!(
-        name.starts_with("miyu-onebot-token-"),
-        "照网页的起法：{name}"
-    );
+    assert!(name.starts_with("im-token-"), "照网页的起法：{name}");
     assert_eq!(params["value"], "t0ken");
     assert!(
         asks.iter().all(|(_, m, _)| *m != "config.set"),
@@ -94,7 +91,7 @@ fn enter_stores_the_secret_first_then_writes_the_reference() {
     assert_eq!(sent["layer"], "system", "只有系统配置这一层的写系统配置");
     assert_eq!(
         sent["changes"][0],
-        json!({"key": "miyu-onebot.token", "value": {"secret": name},
+        json!({"key": "im.token", "value": {"secret": name},
                "expect": {"value": {"secret": "old"}}})
     );
     assert!(!sent.to_string().contains("t0ken"), "明文不进 config.set");

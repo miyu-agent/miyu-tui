@@ -16,11 +16,11 @@ fn schema() -> Value {
     };
     json!({"pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
         "groups": [{"id": "memory", "name": "人格记忆", "page": "packages"},
-                   {"id": "onebot", "name": "接入QQ", "page": "packages"},
+                   {"id": "im", "name": "接入通讯平台", "page": "packages"},
                    {"id": "empty", "name": "空的", "page": "packages"}],
         "items": [item("memory.wait", "整理记忆前等多久", "memory"),
                   item("memory.rounds", "攒几轮再整理", "memory"),
-                  item("onebot.port", "端口", "onebot")]})
+                  item("im.listen", "端口", "im")]})
 }
 
 fn opened() -> (Settings, Config) {
@@ -33,7 +33,7 @@ fn opened() -> (Settings, Config) {
             "config.schema" => schema(),
             "package.list" => json!({"packages": [
                 {"package": "memory", "name": "人格记忆", "summary": "让 AI 记住你"},
-                {"package": "onebot", "name": "接入QQ", "summary": "在 QQ 里和 AI 聊天"}]}),
+                {"package": "im", "name": "接入通讯平台", "summary": "在通讯平台里和 AI 聊天"}]}),
             _ => json!({"secrets": []}),
         };
         page.answer(tag, Ok(got), &config.text.settings);
@@ -60,7 +60,7 @@ fn packages_are_listed_first_and_each_opens_its_own_page() {
         rows,
         [
             ("人格记忆", Some("让 AI 记住你"), 2),
-            ("接入QQ", Some("在 QQ 里和 AI 聊天"), 1)
+            ("接入通讯平台", Some("在通讯平台里和 AI 聊天"), 1)
         ],
         "没有项的组不列"
     );
@@ -76,10 +76,10 @@ fn packages_are_listed_first_and_each_opens_its_own_page() {
     press(&mut page, &config, KeyCode::Enter);
     assert_eq!(
         page.more.section,
-        Some(Section::Page("packages/onebot".into(), 0)),
+        Some(Section::Page("packages/im".into(), 0)),
         "进去是这个包自己的一页"
     );
-    let items = page.page_items("packages/onebot");
+    let items = page.page_items("packages/im");
     assert_eq!(items.len(), 1, "只有这个包的项");
     press(&mut page, &config, KeyCode::Esc);
     assert_eq!(

@@ -364,16 +364,16 @@ mod tests {
         let s = Schema::read(&json!({
             "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
             "groups": [{"id": "display", "name": "显示", "page": "general"},
-                       {"id": "onebot", "name": "接入QQ", "page": "packages"},
+                       {"id": "im", "name": "接入通讯平台", "page": "packages"},
                        {"id": "tui", "name": "终端界面", "page": "packages"}],
             "items": [
                 {"key": "ui.language", "control": "select", "layers": ["personal"], "name": "界面语言", "page": "general", "group": "display"},
-                {"key": "onebot.port", "control": "number", "layers": ["system"], "name": "端口", "page": "packages", "group": "onebot"},
+                {"key": "im.listen", "control": "number", "layers": ["system"], "name": "端口", "page": "packages", "group": "im"},
                 {"key": "tui.timeline_fold", "control": "toggle", "layers": ["system", "personal"], "name": "做完收起", "page": "packages", "group": "tui"}
             ]
         }));
         assert_eq!(s.group_names("general"), ["显示", "终端界面"]);
-        assert_eq!(s.group_names("packages"), ["接入QQ"]);
+        assert_eq!(s.group_names("packages"), ["接入通讯平台"]);
     }
 
     #[test]

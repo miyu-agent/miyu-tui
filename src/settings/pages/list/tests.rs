@@ -14,15 +14,15 @@ fn texts() -> Texts {
 /// 一个包一项列表（元素是 `element`），个人设置里写的是 `value`。
 fn opened(element: &str, value: Value) -> Settings {
     let schema = json!({"pages": [{"id": "packages", "name": "软件包"}],
-        "groups": [{"id": "onebot", "name": "接入QQ", "page": "packages"}],
-        "items": [{"key": "onebot.groups", "type": "list", "control": "list", "element": element,
-            "layers": ["personal"], "name": "群白名单", "page": "packages", "group": "onebot"}]});
+        "groups": [{"id": "im", "name": "接入通讯平台", "page": "packages"}],
+        "items": [{"key": "im.whitelist", "type": "list", "control": "list", "element": element,
+            "layers": ["personal"], "name": "群白名单", "page": "packages", "group": "im"}]});
     let layers = if value.is_null() {
         json!([])
     } else {
         json!([{"origin": {"layer": "personal", "line": 1}, "value": value, "used": true}])
     };
-    let config = json!({"items": {"onebot.groups": {"value": value, "layers": layers}}});
+    let config = json!({"items": {"im.whitelist": {"value": value, "layers": layers}}});
     let mut page = Settings::open(false, true);
     for (tag, method, _) in page.take_asks() {
         let got = match method {
@@ -88,7 +88,7 @@ fn add_edit_delete_and_esc_saves_the_whole_list_once() {
     assert!(page.popup.is_none(), "Esc 收起");
     let sent = saved(&mut page);
     assert!(
-        sent.contains("onebot.groups") && sent.contains("[222,333]"),
+        sent.contains("im.whitelist") && sent.contains("[222,333]"),
         "整份存成整数列表：{sent}"
     );
 }
