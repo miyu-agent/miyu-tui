@@ -58,6 +58,14 @@ pub enum Event {
     Asking,
 }
 
+/// 没有头像时画哪一张：过程中的（等你确认、等你回答）抱着电脑，完成的（回答完了、出错了）站着（2026-10-19 项目主人）。
+fn pose(event: Event) -> mascot_icon::Icon {
+    match event {
+        Event::Approving | Event::Asking => mascot_icon::Icon::Working,
+        Event::Replied | Event::Failed => mascot_icon::Icon::Standing,
+    }
+}
+
 /// 这一次怎么做。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Plan {
@@ -177,10 +185,12 @@ impl Notifier {
             Event::Asking => self.texts.asking.clone(),
         };
         let title = self.title.as_deref().unwrap_or(&self.texts.title);
+        let pose = pose(event);
         let icon = || {
+            let mascot = self.mascot.as_ref().map(|look| (look, pose));
             self.icons
                 .as_deref()
-                .and_then(|dir| icon::pick(self.avatar.as_deref(), self.mascot.as_ref(), dir))
+                .and_then(|dir| icon::pick(self.avatar.as_deref(), mascot, dir))
         };
         match plan.route {
             Some(Route::Kitty) => {
