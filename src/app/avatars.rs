@@ -41,10 +41,13 @@ pub(super) fn home_persona<'a>(
     pick: &'a Pick,
     session: Option<&'a str>,
 ) -> Option<&'a str> {
+    // 最近那个会话没带人格的（`Some(None)`）当选了「无人格」：编号空着，下面滤掉。
+    let last = pick.last.as_ref().map(|l| l.as_deref().unwrap_or(""));
     under
         .or(pick.chosen.as_deref())
         .or(pick.env.as_deref())
         .or(session)
+        .or(last)
         .or(pick.default.as_deref())
         .filter(|id| !id.is_empty())
 }
@@ -160,6 +163,17 @@ mod tests {
             home_persona(None, &pick(None, None), Some("dog")),
             Some("dog")
         );
+        // 起来时会话列表还没到：照记下的最近那个会话用的，不先照默认的（2026-10-19：无人格也闪一帧头像）。
+        let after_none = Pick {
+            last: Some(None),
+            ..pick(None, Some("miyu"))
+        };
+        assert_eq!(home_persona(None, &after_none, None), None, "上次无人格");
+        let after_cat = Pick {
+            last: Some(Some("cat".into())),
+            ..pick(None, Some("miyu"))
+        };
+        assert_eq!(home_persona(None, &after_cat, None), Some("cat"));
     }
 
     #[test]

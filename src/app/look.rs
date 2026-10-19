@@ -31,9 +31,19 @@ pub struct Look {
     personas: Option<Vec<Persona>>,
     /// 壁纸的候选主色（跟随壁纸的，找到以前先照它）。
     wallpaper: Vec<u32>,
+    /// 最近那个会话用的人格、预设：会话列表到以前首页照它画、框照它停（2026-10-19：无人格也先闪一帧默认人格的头像）。
+    #[serde(default)]
+    last: Option<Last>,
     /// 上一次写下的：一样的不再写。
     #[serde(skip)]
     written: Vec<u8>,
+}
+
+/// 最近那个会话用的人格、预设；没带人格的 `persona` 是 `None`。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Last {
+    persona: Option<String>,
+    preset: Option<String>,
 }
 
 /// 记在哪：机器的缓存目录下的 `tui/look/<这个数据根的路径算的一串>.json`。
@@ -75,6 +85,10 @@ impl App {
         // 人格、壁纸先摆好：主题照它们挑主色（跟随头像、跟随壁纸的），不然第一帧照 tokyonight、下一帧才换。
         self.talk.persona.default.clone_from(&look.persona);
         self.talk.persona.list.clone_from(&look.personas);
+        if let Some(last) = &look.last {
+            self.talk.persona.last = Some(last.persona.clone());
+            self.talk.preset.last = Some(last.preset.clone());
+        }
         self.screen.wallpaper.restore(&look.wallpaper);
         if let Some(language) = &look.language {
             self.language_from_config(language);
@@ -118,6 +132,28 @@ impl App {
         self.boxes.personas_known = true;
         self.link.look.personas = Some(list.to_vec());
         self.save_look();
+    }
+
+    /// 会话列表到了：记下最近那个会话用的（变了才写）。
+    pub(super) fn note_last(&mut self) {
+        let Some(latest) = self
+            .talk
+            .sessions_seen
+            .as_deref()
+            .and_then(crate::core::latest_session)
+        else {
+            return;
+        };
+        let last = Last {
+            persona: latest.persona.clone(),
+            preset: latest.preset.clone(),
+        };
+        self.talk.persona.last = Some(last.persona.clone());
+        self.talk.preset.last = Some(last.preset.clone());
+        if self.link.look.last.as_ref() != Some(&last) {
+            self.link.look.last = Some(last);
+            self.save_look();
+        }
     }
 
     /// 壁纸找好了：记下候选主色。

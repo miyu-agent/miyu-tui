@@ -35,6 +35,9 @@ pub struct Pick {
     pub env: Option<String>,
     /// 框开着时光标起初停的那一行：会话列表晚到了，人还没挪过的照它改停的地方。
     pub opened: Option<usize>,
+    /// 最近那个会话用的（`Some(None)` 是它没带）：起来时先照记下的（`look.rs`），会话列表到了照它换。会话列表还没到时
+    /// 首页照它画、框照它停，不先闪默认人格的头像（2026-10-19 项目主人报：无人格也闪一帧头像）。
+    pub last: Option<Option<String>>,
 }
 
 impl Pick {
@@ -152,7 +155,11 @@ impl App {
 
     /// 上一次选的：最近那个会话用的（`Some(None)` 是它没带）；会话列表还没到、一个会话都没有的是 `None`。
     fn last_pick(&self, kind: Kind) -> Option<Option<&str>> {
-        let latest = crate::core::latest_session(self.talk.sessions_seen.as_deref()?)?;
+        let Some(seen) = self.talk.sessions_seen.as_deref() else {
+            // 会话列表还没到：照起来时记下的。
+            return self.pick(kind).last.as_ref().map(Option::as_deref);
+        };
+        let latest = crate::core::latest_session(seen)?;
         Some(match kind {
             Kind::Persona => latest.persona.as_deref(),
             Kind::Preset => latest.preset.as_deref(),
