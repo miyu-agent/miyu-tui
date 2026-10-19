@@ -447,5 +447,18 @@ fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
     assert_eq!(
         page.link.as_deref(),
         Some("https://github.com/miyu-agent/miyu-im")
+    ); // 指针停上去：下划线、指针变手（2026-10-20 项目主人：没有悬浮效果、光标不会变手）。
+    assert!(!page.over_link());
+    let rect = link.0;
+    page.hover = Some(Position::new(rect.x + 1, rect.y));
+    assert!(page.over_link(), "停在上游上");
+    let mut term = Terminal::new(TestBackend::new(80, 20)).unwrap();
+    let mut caret = Caret::default();
+    term.draw(|frame| draw(frame, &mut page, &config, &mut caret))
+        .unwrap();
+    let cell = &term.backend().buffer()[(rect.x + 1, rect.y)];
+    assert!(
+        cell.modifier.contains(ratatui::style::Modifier::UNDERLINED),
+        "悬停加下划线"
     );
 }

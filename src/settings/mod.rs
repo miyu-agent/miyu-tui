@@ -135,6 +135,8 @@ pub struct Settings {
     pub standalone: bool,
     /// 这一帧包页面上画着的上游网址（[`Hit::Link`]）。
     pub link: Option<String>,
+    /// 指针停在哪：上游悬停加下划线、指针变手（第 43a 条）。
+    pub hover: Option<ratatui::layout::Position>,
     /// 在主菜单上。
     pub on_menu: bool,
     /// 照 `/connect` 直接进的「供应商和模型」：`Esc` 从这一页直接回对话，不经过主菜单。
@@ -185,6 +187,7 @@ impl Settings {
         let mut page = Self {
             standalone,
             link: None,
+            hover: None,
             on_menu: true,
             online,
             ..Self::default()

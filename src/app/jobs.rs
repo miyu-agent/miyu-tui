@@ -341,6 +341,8 @@ impl App {
         // 正文里能点的（收起那一行、一步、撤销那一行、能点开的通知）也算（`tui.md`「鼠标」）。
         self.screen.view.hover_link.is_some()
             || self.screen.view.hover.is_some()
+            // 配置页包页面那一行的上游（`settings/mouse.rs`）。
+            || self.boxes.settings.as_ref().is_some_and(crate::settings::Settings::over_link)
             || self.typing.input.hovered_attachment().is_some()
             || over(self.screen.areas.button)
             || over(self.screen.areas.session_id)

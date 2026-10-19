@@ -350,17 +350,24 @@ fn origin_row(
     };
     let x = stage.x + 2;
     let row = stage.y + 2;
+    let start = x + u16::try_from(lead.width()).unwrap_or(0);
+    let area = Rect::new(start, row, u16::try_from(tail.width()).unwrap_or(0), 1);
+    // 悬停加下划线，同正文里的链接（2026-10-20 项目主人：没有悬浮效果）。
+    let hovered = page.hover.is_some_and(|at| area.contains(at));
+    let url_style = if hovered {
+        theme::md_url().add_modifier(Modifier::UNDERLINED)
+    } else {
+        theme::md_url()
+    };
     let line = Line::from(vec![
         Span::styled(lead.to_string(), theme::dim()),
-        Span::styled(tail.to_string(), theme::md_url()),
+        Span::styled(tail.to_string(), url_style),
     ]);
     frame
         .buffer_mut()
         .set_line(x, row, &line, stage.width.saturating_sub(2));
     if !tail.is_empty() {
-        let start = x + u16::try_from(lead.width()).unwrap_or(0);
-        let width = u16::try_from(tail.width()).unwrap_or(0);
-        page.hits.push((Rect::new(start, row, width, 1), Hit::Link));
+        page.hits.push((area, Hit::Link));
         page.link = link;
     }
 }

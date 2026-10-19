@@ -11,6 +11,15 @@ use super::popup::Popup;
 use super::{Hit, Outcome, Settings, Texts};
 
 impl Settings {
+    /// 指针停在包页面那一行的上游上（[`Hit::Link`]）：画下划线、指针变手。
+    pub fn over_link(&self) -> bool {
+        self.hover.is_some_and(|at| {
+            self.hits
+                .iter()
+                .any(|(r, h)| *h == Hit::Link && r.contains(at))
+        })
+    }
+
     /// 左键点了 `at`；`window` 以内又点同一处的算双击。
     pub fn click(&mut self, at: Position, window: Duration, texts: &Texts) -> Outcome {
         let now = Instant::now();
