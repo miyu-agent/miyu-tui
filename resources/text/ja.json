@@ -640,6 +640,7 @@
     "delete_current": "使用中のセッションは削除できません。先に切り替えてください",
     "pinned": "ピン留めしました",
     "unpinned": "ピン留めを外しました",
+    "tokens": "Σ{tokens}",
     "ticked": " · {count} 件選択",
     "delete_many": "もう一度 Ctrl+D で {count} 件のセッションを削除",
     "deleted_many": "{count} 件のセッションを削除しました"

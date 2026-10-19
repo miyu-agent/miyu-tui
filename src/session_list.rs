@@ -182,6 +182,7 @@ mod tests {
             preview: None,
             persona: None,
             preset: None,
+            tokens: 0,
         }
     }
 
