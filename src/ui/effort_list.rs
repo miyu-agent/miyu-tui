@@ -56,14 +56,6 @@ pub fn lines(
         return note(&title, &texts.none);
     }
     let chrome = Chrome::new(&title, Vec::new()).hint(&texts.hint);
-    // 配置的默认那一级前面一个强调色的 `●`，别的空两格（照会话列表，2026-10-02 项目主人）。
-    let mark = |on: bool| {
-        if on {
-            Span::styled(format!("{} ", config.layout.current_mark), theme::accent())
-        } else {
-            Span::raw("  ")
-        }
-    };
     let rows: Vec<Row> = std::iter::once((texts.default.clone(), target.current.is_none()))
         .chain(
             target
@@ -75,7 +67,14 @@ pub fn lines(
         .map(|(i, (name, on))| {
             (
                 Some(i),
-                panel::item(i == selected, vec![mark(on), Span::raw(name)], None, width),
+                // 配置的默认那一级行首写 `●`，选中了也照旧（2026-10-19 项目主人：原来另占一列）。
+                panel::item_with(
+                    i == selected,
+                    panel::current_lead(&config.layout.current_mark, on),
+                    vec![Span::raw(name)],
+                    None,
+                    width,
+                ),
             )
         })
         .collect();

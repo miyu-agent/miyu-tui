@@ -85,8 +85,8 @@ fn switching_draws_the_other_ones_past_without_flashing_an_empty_session() {
     let (_home, mut tui) = sessions(2);
     tui.say("/sessions");
     tui.wait_for("2 个");
-    // 打开时选中的是正在用的那个（`❯` 那一列，2026-10-16 起 `●` 不另占一列，选中的写 `❯`）。
-    tui.wait_for("❯ 第 2 号的话");
+    // 打开时选中的是正在用的那个：`❯` 那一列写 `●`，选中了也不让给 `❯`（2026-10-19 项目主人定各个框统一）。
+    tui.wait_for("● 第 2 号的话");
     tui.key(CTRL_D);
     tui.wait_for("无法删除当前会话");
     tui.key(DOWN);

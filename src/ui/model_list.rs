@@ -28,8 +28,6 @@ pub struct Texts {
     pub loading: String,
     /// 一个都对不上。
     pub empty: String,
-    /// 正在用的这个右边写的。
-    pub current: String,
     /// 在冷却，`{n}` 分钟后能用。
     pub cooling: String,
     /// 在冷却，不知道几时能用。
@@ -103,10 +101,13 @@ pub fn lines(
                     if off { theme::faint() } else { theme::dim() },
                 ),
             ];
-            let right = right(choice, current, now, texts);
+            let right = right(choice, now, texts);
+            // 会话现在用的那一个行首写 `●`，选中了也照旧（2026-10-19 项目主人）。
+            let on = current == Some(choice.reference.as_str());
+            let lead = panel::current_lead(&config.layout.current_mark, on);
             (
                 Some(i),
-                panel::item(i == list.selected, content, right, width),
+                panel::item_with(i == list.selected, lead, content, right, width),
             )
         })
         .collect();
@@ -115,21 +116,13 @@ pub fn lines(
     (chrome, lines, map)
 }
 
-/// 右边那一格：正在用的写「当前」，冷却中的写还要几分钟（黄），没有 key 的暗着写。
-fn right(
-    choice: &Choice,
-    current: Option<&str>,
-    now: jiff::Timestamp,
-    texts: &Texts,
-) -> Option<Span<'static>> {
+/// 右边那一格：冷却中的写还要几分钟（黄），没有 key 的暗着写；正在用的不写（行首写 `●`）。
+fn right(choice: &Choice, now: jiff::Timestamp, texts: &Texts) -> Option<Span<'static>> {
     match choice.state {
         ChoiceState::Cooling(until) => {
             Some(Span::styled(cooling(until, now, texts), theme::warn()))
         }
         ChoiceState::NoKey => Some(Span::styled(texts.no_key.clone(), theme::faint())),
-        ChoiceState::Ok if current == Some(choice.reference.as_str()) => {
-            Some(Span::styled(texts.current.clone(), theme::faint()))
-        }
         ChoiceState::Ok => None,
     }
 }
@@ -178,10 +171,9 @@ mod tests {
         );
         let (_, rows, _) = lines(&list, Some("dev/m1"), &config, 80, 20);
         let text: Vec<String> = rows.iter().map(ToString::to_string).collect();
-        assert!(
-            text[0].contains("Flash") && text[0].trim_end().ends_with("当前"),
-            "{text:#?}"
-        );
+        // 正在用的行首写 `●`、右边不写（2026-10-19 项目主人）。
+        assert!(text[0].starts_with("● Flash"), "{text:#?}");
+        assert!(!text.iter().any(|l| l.contains("当前")), "{text:#?}");
         assert!(text[1].trim_end().ends_with("冷却 2m"), "{text:#?}");
         assert!(text[2].trim_end().ends_with("未设置 key"), "{text:#?}");
         assert!(text.iter().all(|l| l.contains("dev · 300k")));

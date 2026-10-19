@@ -604,7 +604,6 @@
     "none": "无人格",
     "none_note": "不使用人格",
     "switch_note": "切换前会先压缩会话避免缓存断裂导致的全量重放",
-    "current_mark": "当前",
     "busy": "回答进行中：先打断，或者等它做完",
     "switched": "人格已换成「{name}」",
     "preset_switched": "预设已换成「{name}」"
@@ -616,13 +615,11 @@
   },
   "themes": {
     "title": "配色",
-    "hint": "↑/↓ 选择 · Enter 确定 · Esc 取消",
-    "current": "当前"
+    "hint": "↑/↓ 选择 · Enter 确定 · Esc 取消"
   },
   "languages": {
     "title": "界面语言",
     "hint": "↑/↓ 选择 · Enter 切换 · Esc 关闭",
-    "current": "当前",
     "auto": "自动（跟随系统：{name}）",
     "auto_switched": "界面语言：自动（跟随系统：{name}）"
   },
@@ -665,7 +662,6 @@
     "hint": "↑/↓ 选择 · Enter 切换 · Esc 关闭",
     "loading": "正在加载模型…",
     "empty": "无匹配的模型",
-    "current": "当前",
     "cooling": "冷却 {n}m",
     "cooling_bare": "冷却中",
     "no_key": "未设置 key",

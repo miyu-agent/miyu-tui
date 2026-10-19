@@ -127,7 +127,11 @@ fn the_current_one_gets_a_dot_and_a_busy_one_a_spinner_in_the_mark_column() {
     );
     list.selected = 0;
     let text = shown(&list);
-    assert!(text[0].starts_with("❯ 正在用的"), "选中的写 ❯：{text:#?}");
+    // 2026-10-19 项目主人：正在用的选中了也照旧写 `●`、不让给 `❯`。
+    assert!(
+        text[0].starts_with("● 正在用的"),
+        "正在用的选中了也写 ●：{text:#?}"
+    );
     list.selected = 1;
     let text = shown(&list);
     assert!(

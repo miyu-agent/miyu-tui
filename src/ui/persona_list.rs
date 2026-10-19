@@ -25,8 +25,6 @@ pub struct Texts {
     pub none_note: String,
     /// 开了会话再打 `/persona`、`/preset`：框最上面暗色写的（第 2a 条，项目主人原话）。
     pub switch_note: String,
-    /// 开了会话再开框：现在用的那一个右边写的。
-    pub current_mark: String,
     /// 在回答时打 `/persona`、`/preset`。
     pub busy: String,
     /// 正文里换了人格那一行，`{name}`。
@@ -44,13 +42,14 @@ pub struct Texts {
 }
 
 /// 框（标题照是人格还是预设、提示）、排好的行、每一行是第几个。`current` 是开着的会话现在用的那一个（中途换，「新会话：
-/// 人格、工作区」第 2a 条；无人格是空的编号）：最上面一行暗色写切换前先压缩，它右边写「当前」不写「默认」；还没开会话的是
-/// `None`。
+/// 人格、工作区」第 2a 条；无人格是空的编号）：最上面一行暗色写切换前先压缩，它行首写 `dot`（选中了也照旧），不写「默认」；
+/// 还没开会话的是 `None`。
 #[allow(clippy::too_many_arguments)]
 pub fn lines(
     list: &[Persona],
     default: Option<&str>,
     current: Option<&str>,
+    dot: &str,
     kind: Kind,
     selected: usize,
     texts: &Texts,
@@ -79,12 +78,9 @@ pub fn lines(
                     None,
                 ),
                 None => {
-                    let (marked, word) = match current {
-                        Some(current) => (current, &texts.current_mark),
-                        None => (default.unwrap_or("\u{0}"), &texts.default_mark),
-                    };
-                    let mark =
-                        (marked == p.id.as_str()).then(|| Span::styled(word.clone(), theme::dim()));
+                    // 中途换的：现在用的那一个行首写 `●`（下面），右边不写；还没开会话的：默认的右边写「默认」。
+                    let mark = (current.is_none() && default == Some(p.id.as_str()))
+                        .then(|| Span::styled(texts.default_mark.clone(), theme::dim()));
                     let mut content = vec![Span::raw(p.label().to_string())];
                     // 「无人格」那一行（编号空着）后面暗色写它意味着什么。
                     if p.id.is_empty() {
@@ -93,7 +89,12 @@ pub fn lines(
                     (content, mark)
                 }
             };
-            (Some(i), panel::item(i == selected, content, right, width))
+            let on = current == Some(p.id.as_str());
+            let lead = panel::current_lead(dot, on);
+            (
+                Some(i),
+                panel::item_with(i == selected, lead, content, right, width),
+            )
         })
         .collect();
     let mut rows = rows;

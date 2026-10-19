@@ -87,6 +87,7 @@ pub(super) fn content(
                 list,
                 default,
                 current,
+                &seen.config.layout.current_mark,
                 kind,
                 selected,
                 &seen.config.text.persona_box,

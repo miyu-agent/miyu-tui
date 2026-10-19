@@ -1,5 +1,5 @@
 //! `/theme` 的配色框（蓝图 `tui.md`「主题」第 6 条，2026-10-15 项目主人：出列表选，选好写进设置）：开框列几种配色、打开
-//! 时用着的那种标「当前」；挪到哪一种当场换样子；`Esc` 换回原来的、不写设置；`Enter` 定下写进个人设置的 `tui.theme`。
+//! 时用着的那种行首写 `●`；挪到哪一种当场换样子；`Esc` 换回原来的、不写设置；`Enter` 定下写进个人设置的 `tui.theme`。
 
 mod support;
 
@@ -20,16 +20,16 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     tui.pump(Duration::from_millis(800));
     assert_eq!(tui.background(0, 0), NIGHT, "起来是 tokyonight 深色");
     tui.say("/theme");
-    // 命令列表那一行的说明里也有这几种的名字：等框里的「当前」。
-    tui.wait_for("当前");
+    // 命令列表那一行的说明里也有这几种的名字：等框里用着的那种（行首 `●`，2026-10-19 起不写「当前」）。
+    tui.wait_for("● Tokyo Night");
     let current = tui
         .lines()
         .into_iter()
         .find(|l| l.contains("Tokyo Night"))
         .unwrap_or_default();
     assert!(
-        current.contains("当前"),
-        "用着的那种标当前：\n{}",
+        current.contains("● Tokyo Night"),
+        "用着的那种行首写 ●：\n{}",
         tui.lines().join("\n")
     );
     // 往下挪到终端配色：当场换样子（终端配色不铺底色）。
@@ -40,7 +40,7 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     tui.key(b"\x1b");
     tui.pump(Duration::from_millis(300));
     assert_eq!(tui.background(0, 0), NIGHT, "Esc 换回原来的");
-    assert!(!tui.shows("当前"), "框关了");
+    assert!(!tui.shows("● Tokyo Night"), "框关了");
     assert!(
         !home.settings().contains("theme = "),
         "没定下不写：{}",
@@ -48,7 +48,7 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     );
     // 再开，挪到终端配色按 Enter：写进个人设置，框关了，样子留着。
     tui.say("/theme");
-    tui.wait_for("当前");
+    tui.wait_for("● Tokyo Night");
     tui.key(b"\x1b[B");
     tui.key(b"\r");
     tui.pump(Duration::from_millis(800));
@@ -57,6 +57,6 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
         "定下的写进个人设置：{}",
         home.settings()
     );
-    assert!(!tui.shows("当前"), "框关了");
+    assert!(!tui.shows("● Tokyo Night"), "框关了");
     assert_ne!(tui.background(0, 0), NIGHT, "样子留着");
 }

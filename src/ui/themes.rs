@@ -6,7 +6,6 @@ use serde::Deserialize;
 
 use super::panel::{self, Chrome, Row};
 use crate::config::Config;
-use crate::theme;
 
 /// 框里的字。
 #[derive(Debug, Clone, Deserialize)]
@@ -16,8 +15,6 @@ pub struct Texts {
     pub title: String,
     /// 下边框的按键提示。
     pub hint: String,
-    /// 打开时用着的那一种右边写的。
-    pub current: String,
 }
 
 /// 框（标题、提示）、排好的行、每一行是第几种；`options` 是列出来的几种配色（配置项的值），`current` 是打开时用着的那种，
@@ -40,11 +37,10 @@ pub fn lines(
                 .and_then(|n| n.get(*value))
                 .cloned()
                 .unwrap_or_else(|| (*value).to_string());
-            let mark =
-                (*value == current).then(|| Span::styled(texts.current.clone(), theme::dim()));
+            let lead = panel::current_lead(&config.layout.current_mark, *value == current);
             (
                 Some(i),
-                panel::item(i == selected, vec![Span::raw(name)], mark, width),
+                panel::item_with(i == selected, lead, vec![Span::raw(name)], None, width),
             )
         })
         .collect();
@@ -68,10 +64,7 @@ mod tests {
             .map(|l| l.to_string().trim_end().to_string())
             .collect();
         assert_eq!(rows[0], "  跟随头像");
-        assert!(
-            rows[1].starts_with("  Tokyo Night") && rows[1].ends_with("当前"),
-            "{rows:?}"
-        );
+        assert_eq!(rows[1], "● Tokyo Night", "用着的那种行首写 ●：{rows:?}");
         assert_eq!(rows[2], "❯ 终端配色", "选中的写 ❯");
         assert_eq!(map, [Some(0), Some(1), Some(2)]);
     }
