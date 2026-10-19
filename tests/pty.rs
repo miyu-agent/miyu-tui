@@ -269,8 +269,8 @@ fn ctrl_enter_interrupts_and_sends_what_is_queued_now() {
 
 #[test]
 fn a_jump_to_bottom_hint_floats_over_the_body_and_brings_the_view_back() {
-    // 2026-10-18 项目主人照 Claude Code 改：原来是输入框右边框外面一个 ↓，不容易注意到；改成正文区最底下那一行右边浮着
-    // 「跳转到底部（Ctrl+End）↓」，点了回到底部。
+    // 2026-10-18 项目主人照 Claude Code 改：原来是输入框右边框外面一个 ↓，不容易注意到；改成浮着的
+    // 「跳转到底部（Ctrl+End）↓」，点了回到底部。2026-10-19 起在输入框上面紧挨着的那一行空行正中。
     let long: &'static str = Box::leak(
         (1..=80)
             .map(|i| format!("第 {i} 行"))
@@ -298,11 +298,24 @@ fn a_jump_to_bottom_hint_floats_over_the_body_and_brings_the_view_back() {
     tui.pump(Duration::from_millis(300));
     let (y, before) =
         hint(&tui).unwrap_or_else(|| panic!("翻上去以后有：\n{}", tui.lines().join("\n")));
-    // 正文区最底下那一行：下面空一行就是输入框。
+    // 输入框上面紧挨着的那一行，照框居中。
     let lines = tui.lines();
     assert!(
-        lines[y + 1].trim().is_empty() && lines[y + 2].contains('╭'),
-        "浮在正文区最底下那一行：\n{}",
+        lines[y + 1].contains('╭'),
+        "紧挨着输入框：\n{}",
+        lines.join("\n")
+    );
+    let width = unicode_width::UnicodeWidthStr::width;
+    let left = |l: &str, c: char| l.find(c).map(|at| width(&l[..at]));
+    let (Some(l), Some(r)) = (left(&lines[y + 1], '╭'), left(&lines[y + 1], '╮')) else {
+        panic!("{}", lines.join("\n"))
+    };
+    let text = " 跳转到底部（Ctrl+End）↓ ";
+    let start = width(before.as_str()).saturating_sub(1);
+    let middle = start * 2 + width(text);
+    assert!(
+        middle.abs_diff(l + r + 1) <= 2,
+        "照框居中：框 {l}..{r}，字从 {start} 起\n{}",
         lines.join("\n")
     );
     let x = unicode_width::UnicodeWidthStr::width(before.as_str()) + 2;
