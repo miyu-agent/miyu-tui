@@ -177,19 +177,6 @@ fn indexed_rgb(n: u8) -> (u8, u8, u8) {
     }
 }
 
-/// 一个颜色大概的真字节（画成图用，「系统通知」第 3 条）：真彩色的原样；终端 16 色、256 色的先照问到的终端真颜色，
-/// 问不到的照 VGA 那一套、256 色表；终端自己的前景色这类是 `None`。
-pub fn approx_rgb(color: Color) -> Option<(u8, u8, u8)> {
-    if let Some(rgb) = super::terminal_colors::rgb(color) {
-        return Some(rgb);
-    }
-    match color {
-        Color::Rgb(r, g, b) => Some((r, g, b)),
-        Color::Indexed(n) => Some(indexed_rgb(n)),
-        other => super::terminal_colors::index(other).map(|n| ANSI16[n]),
-    }
-}
-
 /// 16 色写成名字：`SGR 31` 这类，认不得 256 色写法的终端也认。
 fn named(n: u8) -> Color {
     const NAMES: [Color; 16] = [

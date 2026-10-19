@@ -168,7 +168,7 @@ fn the_title_is_the_sessions_and_kitty_gets_an_icon() {
         !n.outbox().join("").contains(":p=icon;"),
         "没交吉祥物的不带图标"
     );
-    n.mascot(config.mascot.clone(), [(200, 200, 200); 4]);
+    n.mascot(config.mascot.clone());
     n.tell(Event::Replied);
     let out = n.outbox().join("");
     assert!(
