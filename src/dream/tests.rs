@@ -26,17 +26,17 @@ fn dream() -> (Dream, Instant) {
 }
 
 #[test]
-fn batches_count_from_the_first_left_and_move_by_what_she_wrote_up_to_nine_tenths() {
+fn batches_count_from_the_first_left_and_a_batch_counts_only_once_it_is_merged() {
     let (mut d, now) = dream();
     assert_eq!(d.batch(), None);
     d.apply(merging(12, 12, 48, &["m1", "m2"]), now);
     assert_eq!(d.batch(), Some((1, 4)));
     assert_eq!(d.progress(), (0, 12, 48));
+    // 一批之内不装进度（2026-10-20 项目主人：她想完一口气写完，按写出的条数挪是假的）。
     for _ in 0..20 {
         d.apply(Change::Revised { text: "改".into() }, now);
     }
-    // 一批 12 条，写得再多也只挪到九成。
-    assert_eq!(d.progress(), (10, 12, 48));
+    assert_eq!(d.progress(), (0, 12, 48));
     d.apply(Change::Merged { upto: 12 }, now);
     assert_eq!(d.progress(), (12, 12, 48));
     d.apply(merging(24, 12, 36, &[]), now);
@@ -45,16 +45,58 @@ fn batches_count_from_the_first_left_and_move_by_what_she_wrote_up_to_nine_tenth
 }
 
 #[test]
-fn a_failed_try_starts_the_batch_over_and_a_stray_merged_is_ignored() {
+fn she_is_thinking_until_she_writes_and_again_after_a_failed_try() {
     let (mut d, now) = dream();
+    assert!(d.thinking(), "还没开始合也算在想");
     d.apply(merging(12, 10, 10, &[]), now);
-    d.apply(Change::Revised { text: "a".into() }, now);
-    d.apply(Change::Revised { text: "b".into() }, now);
-    assert_eq!(d.progress(), (2, 10, 10));
+    assert!(d.thinking());
+    d.apply(
+        Change::Summary {
+            chars: 20,
+            done: false,
+        },
+        now,
+    );
+    assert!(!d.thinking(), "摘要也算写出来了");
     d.apply(Change::Merged { upto: 99 }, now);
-    assert_eq!(d.progress(), (2, 10, 10));
+    assert_eq!(d.progress(), (0, 10, 10), "别的批收尾不算");
+    let mut done = d.clone();
+    done.apply(Change::Merged { upto: 12 }, now);
+    assert!(!done.thinking(), "这一批合完、下一批还没来的不算在想");
     d.apply(Change::Failed { upto: 12 }, now);
-    assert_eq!(d.progress(), (0, 10, 10));
+    assert!(d.thinking(), "没合成，重来一次又要想");
+    d.apply(merging(20, 5, 5, &[]), now);
+    d.apply(
+        Change::Retired {
+            id: "m1".into(),
+            why: Retire::Repeat,
+        },
+        now,
+    );
+    assert!(!d.thinking());
+}
+
+#[test]
+fn what_landed_after_merging_began_is_kept_with_retired_texts_filled_in() {
+    let (mut d, now) = dream();
+    d.apply(texts(&[("m1", "住在上海")]), now);
+    // 开始合以前的（会话里先抽的）不算。
+    d.apply(Change::Landed(Landed::Revised("先抽的".into())), now);
+    d.apply(merging(3, 3, 3, &["m1"]), now);
+    d.apply(
+        Change::Landed(Landed::Retired("m1".into(), Retire::Outdated)),
+        now,
+    );
+    d.apply(Change::Landed(Landed::Revised("搬到杭州了".into())), now);
+    d.apply(Change::Landed(Landed::Summary("用户住杭州。".into())), now);
+    assert_eq!(
+        d.kept(),
+        [
+            Kept::Retired("住在上海".into(), Retire::Outdated, "m1".into()),
+            Kept::Revised("搬到杭州了".into()),
+            Kept::Summary("用户住杭州。".into()),
+        ]
+    );
 }
 
 #[test]
@@ -69,8 +111,8 @@ fn only_reviewing_old_ones_counts_what_was_given() {
 fn given_ones_float_by_once_then_stop_and_unknown_ones_are_skipped() {
     let (mut d, now) = dream();
     let every = Duration::from_millis(500);
-    d.apply(texts(&[("m1", "黑咖啡"), ("m3", "猫咖")]), now);
     d.apply(merging(3, 3, 3, &["m1", "m2", "m3"]), now);
+    d.apply(texts(&[("m1", "黑咖啡"), ("m3", "猫咖")]), now);
     d.tick(now, every);
     assert_eq!(
         d.rows().cloned().collect::<Vec<_>>(),
@@ -95,8 +137,8 @@ fn given_ones_float_by_once_then_stop_and_unknown_ones_are_skipped() {
 fn the_first_thing_she_writes_stops_the_floating() {
     let (mut d, now) = dream();
     let every = Duration::from_millis(500);
-    d.apply(texts(&[("m1", "一"), ("m2", "二")]), now);
     d.apply(merging(2, 2, 2, &["m1", "m2"]), now);
+    d.apply(texts(&[("m1", "一"), ("m2", "二")]), now);
     d.tick(now, every);
     d.apply(
         Change::Retired {
@@ -111,7 +153,7 @@ fn the_first_thing_she_writes_stops_the_floating() {
         rows,
         [
             Line::Float("一".into()),
-            Line::Retired("二".into(), Retire::Repeat)
+            Line::Retired("二".into(), Retire::Repeat, "m2".into())
         ]
     );
 }
@@ -188,4 +230,66 @@ fn stars_keep_a_gap_land_in_two_rows_and_light_in_a_shuffled_order() {
         }
     }
     assert!(place(0, 5, 5, 7).is_empty());
+}
+
+#[test]
+fn floating_waits_for_the_texts_that_are_still_on_the_way() {
+    let (mut d, now) = dream();
+    let every = Duration::from_millis(500);
+    d.apply(merging(3, 3, 3, &["m1", "m2"]), now);
+    d.tick(now + every * 4, every);
+    assert_eq!(d.rows().count(), 0, "正文没回来，先不浮也不跳过");
+    d.apply(texts(&[("m1", "黑咖啡"), ("m2", "猫咖")]), now + every * 4);
+    d.tick(now + every * 4, every);
+    assert_eq!(
+        d.rows().cloned().collect::<Vec<_>>(),
+        [Line::Float("黑咖啡".into())]
+    );
+    // 下一批开始：上一批取回的正文不算这一批的，照样等；这一批的正文到了再浮。
+    d.apply(merging(6, 3, 0, &["m9"]), now + every * 5);
+    d.tick(now + every * 9, every);
+    assert_eq!(d.rows().count(), 1);
+    d.apply(texts(&[("m9", "早上不吃早饭")]), now + every * 9);
+    d.tick(now + every * 9, every);
+    assert_eq!(d.rows().last(), Some(&Line::Float("早上不吃早饭".into())));
+}
+
+#[test]
+fn a_retired_line_and_record_get_their_text_when_the_texts_come_late() {
+    let (mut d, now) = dream();
+    d.apply(merging(3, 3, 3, &["m1"]), now);
+    d.apply(
+        Change::Retired {
+            id: "m1".into(),
+            why: Retire::Outdated,
+        },
+        now,
+    );
+    d.apply(
+        Change::Landed(Landed::Retired("m1".into(), Retire::Outdated)),
+        now,
+    );
+    d.apply(texts(&[("m1", "住在上海")]), now);
+    let line = Line::Retired("住在上海".into(), Retire::Outdated, "m1".into());
+    assert_eq!(d.rows().last(), Some(&line));
+    assert_eq!(
+        d.kept(),
+        [Kept::Retired(
+            "住在上海".into(),
+            Retire::Outdated,
+            "m1".into()
+        )]
+    );
+}
+
+#[test]
+fn the_block_shows_in_its_own_session_until_she_is_woken() {
+    let now = Instant::now();
+    let mut home = Dream::new(String::new(), now);
+    assert!(home.shown_in(None), "首页打的、编号还没到的照画");
+    home.session = "s1".into();
+    assert!(home.shown_in(Some("s1")));
+    assert!(!home.shown_in(Some("s2")), "看着别的会话不画");
+    home.awake = true;
+    assert!(!home.shown_in(Some("s1")), "叫醒了转到后台不画");
 }

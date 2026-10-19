@@ -232,7 +232,11 @@
     "worthless": "没价值",
     "summary": "摘要 {chars} 字",
     "writing": "…",
-    "tally": "{merged}/{total}"
+    "tally": "{merged}/{total}",
+    "clock": " · {thinking}{time}",
+    "thinking": "做梦中… ",
+    "summary_full": "摘要：",
+    "backgrounded": "整理转到后台继续"
   },
   "compaction": {
     "triggered": "已触发上下文压缩",

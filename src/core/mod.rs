@@ -230,8 +230,9 @@ pub enum Command {
     /// 订阅界面块（`subscribe {stream: widgets}`，核心 X-15）：屏上有哪几个位置、正在看的会话、开着的整页；`None` 是不再
     /// 订阅。记在连接上，重连、掉队时照它重新订阅（蓝图「界面块」第 8 条）。
     Widgets(Option<crate::widgets::View>),
-    /// 人打的 `/dream`：订阅这个会话那一间的记忆流（`memory.rs`）；`None` 是整理完了、退订。
-    Dream(Option<String>),
+    /// 人打的 `/dream`（`memory.rs`）：`true` 是下一条斜杠命令交出去以前，订阅它对着的会话那一间的记忆流（还没开会话的开了再订，
+    /// 开头那一批不漏）；`false` 是整理完了、退订。
+    Dream(bool),
     /// 点了界面块里调方法的动作（`package.call`）：回应不看，拒了的回 [`Update::PackageCallRefused`]。
     PackageCall {
         /// 哪个包。

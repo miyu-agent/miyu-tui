@@ -31,11 +31,26 @@ pub fn lifted(style: Style, amount: f64) -> Style {
     }
 }
 
+/// 两种字色之间的第 `k` 成（0 是 `from`，1 是 `to`）：整理时这一批的星明暗呼吸用（蓝图「整理记忆」第 5 条）。都是真彩色的照
+/// 比例混；不是的过半换成 `to`。
+pub fn between(from: Style, to: Style, k: f64) -> Style {
+    let k = k.clamp(0.0, 1.0);
+    match (from.fg, to.fg) {
+        (Some(Color::Rgb(r0, g0, b0)), Some(Color::Rgb(r1, g1, b1))) => {
+            let at =
+                |a: u8, b: u8| (f64::from(a) + (f64::from(b) - f64::from(a)) * k).round() as u8;
+            to.fg(Color::Rgb(at(r0, r1), at(g0, g1), at(b0, b1)))
+        }
+        _ if k > 0.5 => to,
+        _ => from,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use ratatui::style::{Color, Style};
 
-    use super::{frontier, lifted};
+    use super::{between, frontier, lifted};
 
     #[test]
     fn the_frontier_swings_between_dark_and_light_and_lifting_brightens() {
@@ -50,5 +65,16 @@ mod tests {
         assert_eq!(lifted(base, 0.0), base, "不呼吸不变");
         let named = Style::new().fg(Color::Blue);
         assert_eq!(lifted(named, 0.5), named, "不是真彩色的照旧");
+    }
+
+    #[test]
+    fn between_mixes_true_colours_and_flips_named_ones_halfway() {
+        let dark = Style::new().fg(Color::Rgb(0, 0, 0));
+        let warm = Style::new().fg(Color::Rgb(200, 100, 0));
+        assert_eq!(between(dark, warm, 0.5).fg, Some(Color::Rgb(100, 50, 0)));
+        assert_eq!(between(dark, warm, 0.0).fg, Some(Color::Rgb(0, 0, 0)));
+        let (a, b) = (Style::new().fg(Color::Gray), Style::new().fg(Color::Yellow));
+        assert_eq!(between(a, b, 0.4), a);
+        assert_eq!(between(a, b, 0.6), b);
     }
 }

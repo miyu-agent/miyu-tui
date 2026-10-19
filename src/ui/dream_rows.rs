@@ -30,6 +30,18 @@ pub fn rows(dream: &Dream, ctx: &Ctx, now: Instant) -> Vec<Row> {
             .replace("{total}", &total.to_string());
         head.push(Span::styled(batch, theme::dim()));
     }
+    // 整理了多久，每秒走一下；她还一个字都没写出来时写「做梦中…」（第 3 条）。醒了停在醒的那一刻。
+    let until = dream.woke.as_ref().map_or(now, |(at, _)| *at);
+    let thinking = if dream.thinking() && dream.woke.is_none() {
+        texts.thinking.as_str()
+    } else {
+        ""
+    };
+    let clock = texts.clock.replace("{thinking}", thinking).replace(
+        "{time}",
+        &crate::meter::clock(until.saturating_duration_since(dream.started).as_secs()),
+    );
+    head.push(Span::styled(clock, theme::dim()));
     // 和上面的正文空一行，同等第一个字时的转圈（「时间线」第 19 条）。
     let mut out = vec![
         ctx.row(ctx.blank_slot(), Vec::new()),
@@ -63,7 +75,7 @@ fn line_spans(
             let text = format!("{}{text}", look.float);
             vec![Span::styled(crate::cells::clip(&text, width), theme::dim())]
         }
-        Line::Retired(text, why) => {
+        Line::Retired(text, why, _) => {
             let why = match why {
                 Retire::Outdated => &texts.outdated,
                 Retire::Repeat => &texts.repeat,
@@ -189,7 +201,11 @@ fn sky(
                 };
                 Span::styled(glyph, theme::lifted(theme::warn(), lift))
             } else if spot.rank < soon {
-                Span::styled(look.soon.clone(), theme::warn().add_modifier(Modifier::DIM))
+                // 这一批的星：一批之内不装进度，慢慢明暗呼吸，看得出在整理（第 5 条）。
+                Span::styled(
+                    look.soon.clone(),
+                    theme::between(theme::faint(), theme::warn(), breathe(seconds, look)),
+                )
             } else {
                 Span::styled(look.unlit.clone(), theme::faint())
             });
@@ -206,6 +222,12 @@ fn sky(
 }
 
 /// 亮了的星闪一下往白里偏多少：大半时间不动，偶尔一亮（照 `twinkle_ms` 一个来回，各颗错开）。
+/// 这一批的星明暗到哪了：0 是最暗、1 是亮星的颜色，照 `breathe_ms` 一个来回。
+fn breathe(seconds: f64, look: &DreamLook) -> f64 {
+    let period = look.breathe_ms.max(1) as f64 / 1000.0;
+    0.5 - 0.5 * (seconds / period * TAU).cos()
+}
+
 fn twinkle(seconds: f64, i: usize, look: &DreamLook) -> f64 {
     let period = look.twinkle_ms.max(1) as f64 / 1000.0;
     let phase = seconds / period + i as f64 * 0.37;

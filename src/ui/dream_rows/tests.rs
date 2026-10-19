@@ -26,7 +26,6 @@ fn dreaming(now: Instant) -> Dream {
         .iter()
         .map(|(k, v)| (k.to_string(), v.to_string()))
         .collect();
-    d.apply(Change::Texts(texts), now);
     d.apply(
         Change::Merging {
             upto: 12,
@@ -36,6 +35,7 @@ fn dreaming(now: Instant) -> Dream {
         },
         now,
     );
+    d.apply(Change::Texts(texts), now);
     d.tick(now, Duration::from_millis(500));
     d.apply(
         Change::Retired {
@@ -69,7 +69,8 @@ fn the_block_is_a_head_five_lines_a_gap_and_two_sky_rows() {
         .map(text)
         .collect();
     assert_eq!(got.len(), 1 + ROWS + 1 + 2, "{got:#?}");
-    assert_eq!(got[0], "  ✦ 整理记忆 · 第 1 批 / 共 4 批");
+    // 她写出东西了：末尾只写整理了多久（第 3 条）。
+    assert_eq!(got[0], "  ✦ 整理记忆 · 第 1 批 / 共 4 批 · 0s");
     // 滚动区不够 5 行的上面空着，新的在下面。
     assert_eq!(got[1].trim(), "");
     assert_eq!(got[2], "  · 周末常去附近的猫咖");
@@ -82,8 +83,8 @@ fn the_block_is_a_head_five_lines_a_gap_and_two_sky_rows() {
         "{}",
         got[8]
     );
-    // 写了删、改两条（摘要不算）：一批之内照写出的条数挪，右下角写合了 2/48。
-    assert!(got[8].ends_with("2/48"), "{}", got[8]);
+    // 一批之内不装进度：这一批没收尾，右下角还是 0/48。
+    assert!(got[8].ends_with("0/48"), "{}", got[8]);
 }
 
 #[test]
@@ -200,4 +201,58 @@ fn a_twinkling_star_brightens_only_now_and_then() {
             .iter()
             .all(|v| (0.0..=look.twinkle_lift).contains(v))
     );
+}
+
+#[test]
+fn before_she_writes_the_head_says_dreaming_and_the_clock_runs() {
+    let f = Fixture::new();
+    let now = Instant::now();
+    let mut d = Dream::new("s1".into(), now);
+    d.apply(
+        Change::Merging {
+            upto: 9,
+            fresh: 0,
+            left: 0,
+            given: vec!["m1".into()],
+        },
+        now,
+    );
+    let later = now + Duration::from_secs(80);
+    assert_eq!(
+        text(&rows(&d, &f.ctx(), later)[0]),
+        "  ✦ 整理记忆 · 第 1 批 / 共 1 批 · 做梦中… 1m 20s"
+    );
+    // 醒了：停在醒的那一刻，不再写做梦中。
+    d.woke = Some((now + Duration::from_secs(90), "整理完成".into()));
+    let head = text(&rows(&d, &f.ctx(), now + Duration::from_secs(99))[0]);
+    assert!(head.ends_with("· 1m 30s"), "{head}");
+}
+
+#[test]
+fn the_batch_stars_breathe_while_she_dreams() {
+    let f = Fixture::new();
+    let now = Instant::now();
+    let look = &f.config.layout.dream;
+    let mut d = Dream::new("s1".into(), now);
+    d.apply(
+        Change::Merging {
+            upto: 9,
+            fresh: 9,
+            left: 9,
+            given: Vec::new(),
+        },
+        now,
+    );
+    let soon = |at: Instant| {
+        rows(&d, &f.ctx(), at)[ROWS + 2..]
+            .iter()
+            .flat_map(|r| r.line.spans.clone())
+            .find(|s| s.content == look.soon.as_str())
+            .map(|s| s.style)
+            .expect("这一批的星")
+    };
+    let half = Duration::from_millis(look.breathe_ms / 2);
+    assert_eq!(soon(now), theme::faint(), "一个来回从最暗起");
+    assert_ne!(soon(now + half), soon(now), "半个来回亮起来");
+    assert_eq!(breathe(look.breathe_ms as f64 / 2000.0, look), 1.0);
 }

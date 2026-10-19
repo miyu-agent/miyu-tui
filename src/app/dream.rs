@@ -9,16 +9,22 @@ use crate::dream::{Change, Dream};
 use crate::transcript::Kind;
 
 impl App {
-    /// 打的那一行交给核心以后：是 `/dream`、开着会话的，跟着看整理（第 1 条）。
+    /// 打的那一行交给核心以前：是 `/dream` 的，跟着看整理（第 1 条）。还没开会话的（首页）核心先开会话，会话编号到了再认上
+    /// （[`App::dream_ready`]）；连接那头开好会话、交命令以前先订阅，开头那一批不漏。
     pub(super) fn dream_start(&mut self, line: &str) {
         if line.split_whitespace().next() != Some("/dream") {
             return;
         }
-        let Some(session) = self.talk.transcript.session.clone() else {
-            return;
-        };
-        self.talk.dream = Some(Dream::new(session.clone(), Instant::now()));
-        self.link.core.send(Command::Dream(Some(session)));
+        let session = self.talk.transcript.session.clone().unwrap_or_default();
+        self.talk.dream = Some(Dream::new(session, Instant::now()));
+        self.link.core.send(Command::Dream(true));
+    }
+
+    /// 首页打的 `/dream`：核心替它开的会话到了，认上。
+    pub(super) fn dream_ready(&mut self, session: &str) {
+        if let Some(dream) = self.talk.dream.as_mut().filter(|d| d.session.is_empty()) {
+            dream.session = session.to_string();
+        }
     }
 
     /// 记忆流推来一样：醒了以后的不要。
@@ -39,8 +45,24 @@ impl App {
             return false;
         };
         dream.woke = Some((Instant::now(), said.to_string()));
-        self.link.core.send(Command::Dream(None));
+        self.link.core.send(Command::Dream(false));
         true
+    }
+
+    /// 整理时人说了话：把她叫醒，那一块收起，整理转到后台跑完（第 7 条，2026-10-20 项目主人：她在做梦还能回话不合设定）。
+    pub(super) fn dream_wake_up(&mut self) {
+        let here = self.talk.transcript.session.clone();
+        let Some(dream) = self
+            .talk
+            .dream
+            .as_mut()
+            .filter(|d| !d.awake && d.woke.is_none() && Some(&d.session) == here.as_ref())
+        else {
+            return;
+        };
+        dream.awake = true;
+        let note = self.config.text.dream.backgrounded.clone();
+        self.hint(note, false);
     }
 
     /// 交给核心的那一行被拒：整理还没开始的收掉、退订（被拒的多半就是 `/dream` 自己）。
@@ -52,7 +74,7 @@ impl App {
             .is_some_and(|d| d.batch().is_none())
         {
             self.talk.dream = None;
-            self.link.core.send(Command::Dream(None));
+            self.link.core.send(Command::Dream(false));
         }
     }
 
@@ -68,17 +90,24 @@ impl App {
         };
         let now = Instant::now();
         dream.tick(now, every);
+        // 叫醒过的不画，回执来了当场收（第 7 条）。
+        let wake = if dream.awake { Duration::ZERO } else { wake };
         let Some((_, said)) = dream.woke.clone().filter(|(at, _)| now >= *at + wake) else {
             return;
         };
         let here = self.talk.transcript.session.as_ref() == Some(&dream.session);
+        let kept = dream.kept().to_vec();
         self.talk.dream = None;
         let said = said.trim_end().trim_end_matches(['。', '.']).to_string();
         if said.is_empty() {
             return;
         }
+        // 正文里留回执那一行，能点开看真正存下的改、删、摘要（第 6 条）；看着别的会话的照旧弹提示。
         if here {
-            self.talk.transcript.note(Kind::Note, said);
+            self.talk.transcript.note(Kind::Dreamt, said);
+            if let Some(entry) = self.talk.transcript.entries.last_mut() {
+                entry.kept = kept;
+            }
         } else {
             self.hint(said, false);
         }
@@ -86,7 +115,12 @@ impl App {
 
     /// 下一次要醒来：整理着的照转圈的节拍（z 飘、星星闪），醒够了的到点收。
     pub(super) fn dream_deadline(&self) -> Option<Instant> {
-        let dream = self.talk.dream.as_ref()?;
+        // 还没认上会话的、叫醒了转到后台的不画，不用醒。
+        let dream = self
+            .talk
+            .dream
+            .as_ref()
+            .filter(|d| !d.session.is_empty() && !d.awake)?;
         let beat = Instant::now() + Duration::from_millis(self.config.timeline.spinner_ms);
         let wake = Duration::from_millis(self.config.layout.dream.wake_ms);
         let done = dream.woke.as_ref().map(|(at, _)| *at + wake);

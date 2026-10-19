@@ -232,7 +232,11 @@
     "worthless": "not useful",
     "summary": "summary {chars} chars",
     "writing": "…",
-    "tally": "{merged}/{total}"
+    "tally": "{merged}/{total}",
+    "clock": " · {thinking}{time}",
+    "thinking": "dreaming… ",
+    "summary_full": "Summary: ",
+    "backgrounded": "Tidying continues in the background"
   },
   "compaction": {
     "triggered": "Context compaction started",

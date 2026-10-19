@@ -141,14 +141,14 @@ pub(super) async fn serve(
                         }
                         continue;
                     }
-                    // 人打的 `/dream`：订阅、退订那一间的记忆流（`memory.rs`）。
-                    Command::Dream(session) => match super::memory::follow(rpc, session.as_deref()).await {
-                        Ok(id) => {
-                            awaiting.extend(id.map(|id| (id, Awaiting::Dream)));
-                            continue;
+                    // 人打的 `/dream`：记着下一条斜杠命令交出去以前先订阅；整理完了退订（`memory.rs`）。
+                    Command::Dream(follow) => {
+                        link.dream_next = follow;
+                        if !follow && super::memory::follow(rpc, None).await.is_err() {
+                            return Served::Lost;
                         }
-                        Err(_) => return Served::Lost,
-                    },
+                        continue;
+                    }
                     // 更早的一页：没按页读的（核心旧）不要，告诉界面没有了。
                     Command::Older(session) => {
                         match page::older(rpc, link, &session).await {
@@ -281,8 +281,9 @@ pub(super) async fn serve(
                             }
                             Err(Update::Disconnected) => return Served::Lost,
                             Err(update) => {
-                                // 没开成：选的模型留着，下一句照它开。
+                                // 没开成：选的模型留着，下一句照它开；`/dream` 的订阅不留。
                                 link.pending_model = chosen.model.clone();
+                                link.dream_next = false;
                                 if !notify(update) {
                                     return Served::Quit;
                                 }
@@ -294,6 +295,13 @@ pub(super) async fn serve(
                 }
                 // 还没开会话时别的命令没有对象：界面那头当场说了（`app/keys.rs`）。
                 let Some(session) = link.target() else { continue };
+                // 人打的 `/dream`：会话开好了、命令交出去以前先订阅它的记忆流，开头那一批不漏（`memory.rs`）。
+                if link.follows_dream(&command) {
+                    match super::memory::follow(rpc, Some(&session)).await {
+                        Ok(id) => awaiting.extend(id.map(|id| (id, Awaiting::Dream))),
+                        Err(_) => return Served::Lost,
+                    }
+                }
                 match send(rpc, command, &session, notify).await {
                     Sent::Lost => return Served::Lost,
                     Sent::Quit => return Served::Quit,

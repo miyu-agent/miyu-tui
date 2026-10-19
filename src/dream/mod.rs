@@ -1,5 +1,6 @@
 //! 人打的 `/dream` 正在整理（蓝图 `tui.md`「整理记忆」）：照记忆流推来的几样算第几批、合了多少、滚动区里那几行。只有
-//! 人打的才有；整理完由界面收成回执。推来的是她这一刻写的、不落盘，掉了不补：这里只管画，数以回执为准。
+//! 人打的才有；整理完由界面收成回执。推来的是她这一刻写的、不落盘，掉了不补：滚动区只管画；回执点开列的是日志里真正
+//! 存下的（[`Kept`]）。
 
 mod sky;
 #[cfg(test)]
@@ -55,6 +56,30 @@ pub enum Change {
     },
     /// 记忆的正文（`memory.list` 带作废的）：编号到正文。
     Texts(HashMap<String, String>),
+    /// 日志里记忆模块真正存下的一样（`ext.memory.saved` 带 `replaces` 的、`ext.memory.retired`、`ext.memory.summary`）：回执点开列它。
+    Landed(Landed),
+}
+
+/// 日志里记忆模块存下的一样，原样（删的还只有编号）。
+#[derive(Debug, Clone, PartialEq)]
+pub enum Landed {
+    /// 改写后的正文。
+    Revised(String),
+    /// 删的哪一条、为什么。
+    Retired(String, Retire),
+    /// 新的摘要全文。
+    Summary(String),
+}
+
+/// 回执点开列的一样：删的原文照编号取好了。
+#[derive(Debug, Clone, PartialEq)]
+pub enum Kept {
+    /// 改写后的正文。
+    Revised(String),
+    /// 删的原文（正文还没取回来的先空着，回来了照编号补上）、种类、编号。
+    Retired(String, Retire, String),
+    /// 新的摘要全文。
+    Summary(String),
 }
 
 /// 删的种类（核心的 `outdated`、`repeat`、`worthless`）：只写种类，不写原因（项目主人定）。
@@ -84,8 +109,8 @@ impl Retire {
 pub enum Line {
     /// 这一批交给模型的一条，浮过去：它的正文。
     Float(String),
-    /// 删了一条：原文（取不到的是空的）、种类。
-    Retired(String, Retire),
+    /// 删了一条：原文（正文还没取回来的先空着，回来了照编号补上）、种类、编号。
+    Retired(String, Retire, String),
     /// 改了一条：改写后的正文。
     Revised(String),
     /// 摘要写到几个字、写完没有。
@@ -98,8 +123,8 @@ struct Batch {
     upto: u64,
     /// 这一批算几条（新记的；整趟都没有新记的照交进去的条数）。
     size: u64,
-    /// 这一批写出了几条改的、删的。
-    written: u64,
+    /// 这一批她写出过东西（改、删、摘要）：没写出以前是在想（第 3 条的「做梦中…」）。
+    heard: bool,
 }
 
 /// 整理的样子。
@@ -127,8 +152,15 @@ pub struct Dream {
     /// 下一条什么时候浮。
     next_float: Option<Instant>,
     texts: HashMap<String, String>,
+    /// 这一批开始合以后正文取回来过：没回来以前先不浮，回来了还没有的才跳过（2026-10-20 项目主人验收截图：正文还在路上，
+    /// 交的编号全当没有正文跳过了，滚动区一条没浮）。
+    texts_fresh: bool,
+    /// 日志里真正存下的，照先后。
+    kept: Vec<Kept>,
     /// 整理完了：醒来的那一刻、核心的回执。
     pub woke: Option<(Instant, String)>,
+    /// 整理时人说了话，把她叫醒了：那一块不画，整理转到后台跑完，完了照样留回执（第 7 条）。
+    pub awake: bool,
 }
 
 /// 滚动区几行。
@@ -150,7 +182,10 @@ impl Dream {
             floats: VecDeque::new(),
             next_float: None,
             texts: HashMap::new(),
+            texts_fresh: false,
+            kept: Vec::new(),
             woke: None,
+            awake: false,
         }
     }
 
@@ -171,17 +206,17 @@ impl Dream {
             }
             Change::Failed { upto } => {
                 if let Some(batch) = self.batch.as_mut().filter(|b| b.upto == upto) {
-                    batch.written = 0;
+                    batch.heard = false;
                 }
             }
             Change::Revised { text } => self.wrote(Line::Revised(text)),
             Change::Retired { id, why } => {
                 let text = self.texts.get(&id).cloned().unwrap_or_default();
-                self.wrote(Line::Retired(text, why));
+                self.wrote(Line::Retired(text, why, id));
             }
             // 每多 20 个字推一次：就地改同一行，不另起（第 4 条）。
             Change::Summary { chars, done } => {
-                self.floats.clear();
+                self.heard();
                 match self
                     .rows
                     .iter_mut()
@@ -192,7 +227,23 @@ impl Dream {
                     None => self.push(Line::Summary(chars, done)),
                 }
             }
-            Change::Texts(texts) => self.texts.extend(texts),
+            Change::Texts(texts) => {
+                self.texts.extend(texts);
+                self.texts_fresh = true;
+                self.fill_retired();
+            }
+            // 开始合以前的（会话里先抽的那几条）不算这次整理的。
+            Change::Landed(landed) if self.index > 0 => {
+                let kept = match landed {
+                    Landed::Revised(text) => Kept::Revised(text),
+                    Landed::Retired(id, why) => {
+                        Kept::Retired(self.texts.get(&id).cloned().unwrap_or_default(), why, id)
+                    }
+                    Landed::Summary(text) => Kept::Summary(text),
+                };
+                self.kept.push(kept);
+            }
+            Change::Landed(_) => {}
         }
     }
 
@@ -217,22 +268,48 @@ impl Dream {
         self.batch = Some(Batch {
             upto,
             size,
-            written: 0,
+            heard: false,
         });
         // 摘要那一行是上一批的：新的一批重新数。
         self.rows.retain(|l| !matches!(l, Line::Summary(..)));
         self.floats = given.into();
         self.next_float = Some(now);
+        self.texts_fresh = false;
     }
 
-    /// 她写完一条改的、删的：不再浮，往上推一行，这一批往前挪一条。
+    /// 她写完一条改的、删的：往上推一行。
     fn wrote(&mut self, line: Line) {
+        self.heard();
+        self.push(line);
+    }
+
+    /// 她写出东西了：不再浮，不再算在想。
+    fn heard(&mut self) {
         self.floats.clear();
         self.next_float = None;
         if let Some(batch) = &mut self.batch {
-            batch.written += 1;
+            batch.heard = true;
         }
-        self.push(line);
+    }
+
+    /// 正文回来了：删的那几条原文先空着的照编号补上（她写得比正文取回来快，2026-10-20 端到端测试抓到）。
+    fn fill_retired(&mut self) {
+        let texts = &self.texts;
+        let rows = self.rows.iter_mut().filter_map(|l| match l {
+            Line::Retired(text, _, id) => Some((text, id)),
+            _ => None,
+        });
+        let kept = self.kept.iter_mut().filter_map(|k| match k {
+            Kept::Retired(text, _, id) => Some((text, id)),
+            _ => None,
+        });
+        for (text, id) in rows.chain(kept) {
+            if text.is_empty()
+                && let Some(found) = texts.get(id.as_str())
+            {
+                text.clone_from(found);
+            }
+        }
     }
 
     fn push(&mut self, line: Line) {
@@ -244,7 +321,7 @@ impl Dream {
 
     /// 到点浮下一条（半秒一条，放完一遍停住，第 4 条）：取不到正文的跳过。
     pub fn tick(&mut self, now: Instant, every: Duration) {
-        while self.next_float.is_some_and(|at| at <= now) {
+        while self.texts_fresh && self.next_float.is_some_and(|at| at <= now) {
             let Some(id) = self.floats.pop_front() else {
                 self.next_float = None;
                 return;
@@ -272,16 +349,28 @@ impl Dream {
         (self.index > 0).then_some((self.index, self.batches.max(self.index)))
     }
 
-    /// 合了多少、这一批合完到多少、一共多少（第 5 条）：一批之内照写出的条数挪，最多到这一批的九成，收了尾才走满。
+    /// 合了多少、这一批合完到多少、一共多少（第 5 条）：一批之内不装进度（她先想很久，想完一口气写完，2026-10-20 项目主人
+    /// 验收时说「进度条是假的」），收了尾这一批才一起算上。
     pub fn progress(&self) -> (u64, u64, u64) {
-        let Some(batch) = &self.batch else {
-            return (self.merged, self.merged, self.total);
-        };
-        let cap = batch.size * 9 / 10;
-        (
-            self.merged + batch.written.min(cap),
-            self.merged + batch.size,
-            self.total,
-        )
+        let size = self.batch.as_ref().map_or(0, |b| b.size);
+        (self.merged, self.merged + size, self.total)
+    }
+
+    /// 还在想：这一批她一个字都还没写出来，或者还没开始合。这一批合完、下一批还没来的不算。
+    pub fn thinking(&self) -> bool {
+        match &self.batch {
+            Some(batch) => !batch.heard,
+            None => self.index == 0,
+        }
+    }
+
+    /// 正在看 `viewing` 这个会话时画不画这一块：叫醒了的不画；首页打的、会话编号还没到的照画（第 1、7 条）。
+    pub fn shown_in(&self, viewing: Option<&str>) -> bool {
+        !self.awake && (self.session.is_empty() || viewing == Some(self.session.as_str()))
+    }
+
+    /// 日志里真正存下的，照先后：回执点开列它。
+    pub fn kept(&self) -> &[Kept] {
+        &self.kept
     }
 }

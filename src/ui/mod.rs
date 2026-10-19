@@ -13,6 +13,7 @@ mod diff_rows;
 mod done_row;
 mod drawer;
 mod dream_rows;
+mod dreamt_rows;
 pub use drawer::PreviewLook;
 pub mod effort_list;
 mod figure_rows;

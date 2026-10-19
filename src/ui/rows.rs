@@ -174,6 +174,7 @@ pub fn entry_rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         (Some(segment), _) => timeline::rows(i, segment, ctx),
         (None, Kind::Undo) => super::undo_rows::rows(i, entry, ctx),
         (None, Kind::Job) => job_rows::rows(i, entry, ctx),
+        (None, Kind::Dreamt) => super::dreamt_rows::rows(i, entry, ctx),
         (None, Kind::Reply) => reply_rows(i, entry, ctx),
         (None, Kind::Media) => super::media_rows::rows(entry, ctx),
         (None, Kind::Shown) => super::shown_rows::rows(entry, ctx),
@@ -315,7 +316,8 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         | Kind::Undo
         | Kind::Job
         | Kind::Media
-        | Kind::Shown => (ctx.blank_slot(), Style::new()),
+        | Kind::Shown
+        | Kind::Dreamt => (ctx.blank_slot(), Style::new()),
     };
     // 前面带绿色记号的（压好了的 `● `）：记号是引子，折下来的行和字对齐（「正文」第 9 条）。回顾的 `※` 一样，暗色（「回顾」第 2 条）；
     // 长期目标开的一轮那一行的 `● ` 也暗（「长期目标」第 4 条）。

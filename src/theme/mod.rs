@@ -24,7 +24,7 @@ use ratatui::style::{Color, Modifier, Style};
 
 pub use depth::{Depth, degrade};
 pub use ground::{paint, set_ground};
-pub use motion::{frontier, lifted};
+pub use motion::{between, frontier, lifted};
 pub use palette::{Palette, Tone, builtin};
 pub use shimmer::{shimmer, shimmer_on, shimmer_rest, shimmer_rest_on};
 

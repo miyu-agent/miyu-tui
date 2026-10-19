@@ -34,9 +34,16 @@ pub struct Link {
     pub replay_main: bool,
     /// 界面块照什么订阅着（「界面块」第 8 条）：重连、掉队时照它重新订阅；`None` 是没订阅。
     pub widgets: Option<crate::widgets::View>,
+    /// 下一条斜杠命令是人打的 `/dream`：交出去以前先订阅那个会话的记忆流（[`super::Command::Dream`]）。
+    pub dream_next: bool,
 }
 
 impl Link {
+    /// 这条命令交出去以前要不要先订阅记忆流：记着人打了 `/dream`、这是那一条斜杠命令（[`super::Command::Dream`]）。问过就不再记。
+    pub(super) fn follows_dream(&mut self, command: &super::Command) -> bool {
+        matches!(command, super::Command::Slash(_)) && std::mem::take(&mut self.dream_next)
+    }
+
     /// 命令对着的会话。
     pub(super) fn target(&self) -> Option<String> {
         self.viewing.clone().or_else(|| self.main.clone())
@@ -73,3 +80,6 @@ impl Link {
             || (self.replays.contains_key(main) && !self.seen.contains_key(main))
     }
 }
+
+#[cfg(test)]
+mod tests;
