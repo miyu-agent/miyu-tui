@@ -5,6 +5,7 @@ mod link;
 mod persona;
 mod preset;
 mod profile;
+mod semantic;
 mod skip;
 mod theme;
 mod theme_seed;
@@ -47,8 +48,10 @@ pub(super) fn fresh(now: Instant) -> Oobe {
     ];
     let mut oobe = Oobe::new(now, look, Pick::new(rows, 0), "nerd", true);
     oobe.intro.skip();
-    // 没装语义模型的包：那一步跨过去（装了的走法见 `the_semantic_step_shows_only_with_the_package`）。
+    // 没装语义模型的包、软件源里也没有这台机器能用的：那一步跨过去（装了的走法见
+    // `the_semantic_step_shows_only_with_the_package`，没装的当场下载见 `semantic/tests.rs`）。
     oobe.semantic.installed = Some(false);
+    oobe.semantic.offer = Some(crate::oobe::semantic::download::Offer::Unavailable);
     oobe
 }
 

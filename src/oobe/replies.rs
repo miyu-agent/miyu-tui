@@ -55,9 +55,14 @@ impl Oobe {
             Waiting::ProfileRead | Waiting::ProfileSave | Waiting::ProfileSchema => {
                 self.profile.answer(&waiting, result)
             }
-            Waiting::SemanticSchema | Waiting::SemanticRead | Waiting::SemanticSave => {
+            Waiting::SemanticSchema
+            | Waiting::SemanticRead
+            | Waiting::SemanticSave
+            | Waiting::SemanticPreview
+            | Waiting::SemanticInstall => {
                 let here = self.step == super::Step::Semantic;
-                self.semantic.answer(&waiting, result, here)
+                self.semantic
+                    .answer(&waiting, result, here, &mut self.asker)
             }
             Waiting::Presets
             | Waiting::PresetDefault

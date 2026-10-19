@@ -224,6 +224,7 @@ impl Transcript {
             | Update::HeadConfig(_)
             | Update::Human(_)
             | Update::ToolsChanged
+            | Update::PackageProgress(_)
             | Update::Older { .. }
             | Update::Workspace { .. }
             | Update::SessionGone(_)

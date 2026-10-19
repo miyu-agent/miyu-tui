@@ -23,7 +23,7 @@ mod mermaid;
 mod models;
 mod output;
 mod packages;
-pub use packages::PackageEntry;
+pub use packages::{PackageEntry, Progress};
 mod page;
 mod personas;
 mod push;
@@ -342,6 +342,8 @@ pub enum Update {
     Human(crate::human::Human),
     /// 工具目录变了（`package.changed`、`mcp.changed`）：界面照这种语言重取给人看的字。
     ToolsChanged,
+    /// 装包的下载进度（`package.progress`，核心 G-4 上）。
+    PackageProgress(Progress),
     /// 配置里头要的几项（界面语言、金额排最前的币种）：连上时读一次，别处改了再读（「界面语言」）。
     HeadConfig(HeadConfig),
     /// 会话列表（[`Command::ListSessions`] 的回应）：只有主会话，照核心交回的先后。

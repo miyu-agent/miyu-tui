@@ -4,6 +4,8 @@
 mod event;
 mod keys;
 mod package;
+/// 多少字节写成给人看的（引导下载语义模型也用，同软件包页）。
+pub use package::size;
 mod report;
 mod texts;
 

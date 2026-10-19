@@ -1485,7 +1485,8 @@
       "title": "Turn on the built-in semantic model?",
       "sub": "Much better search in memories, knowledge bases, stickers and more, at a much higher memory use and extra CPU on each search",
       "on": ["Yes", "Recommended"],
-      "off": ["No", "Keyword search only"]
+      "off": ["No", "Keyword search only"],
+      "download": {"size": "{size} to download", "preparing": "Preparing download…", "progress": "{percent}% · {done} / {total}", "retry": "Retry", "skip": "Skip"}
     },
     "done": {
       "title": "All set",

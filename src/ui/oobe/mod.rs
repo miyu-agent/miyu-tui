@@ -78,7 +78,7 @@ fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> 
         Step::Theme => theme_step::content(oobe, texts, width),
         Step::Profile => profile::content(&oobe.profile, texts, width),
         Step::Preset => preset::content(&oobe.preset, texts, width),
-        Step::Semantic => pick::semantic(oobe, texts, width),
+        Step::Semantic => pick::semantic(oobe, texts, &p.config.layout.bar, width),
         Step::Welcome | Step::Done => Content::new(width),
     }
 }
@@ -134,6 +134,8 @@ fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
             }
         }
         Step::Preset => keys.presets.clone(),
+        // 当场下语义模型的时候按键都不认：不写按键（第 26b 条）。
+        Step::Semantic if oobe.semantic.installing() => String::new(),
         _ => keys.pick.clone(),
     }
 }

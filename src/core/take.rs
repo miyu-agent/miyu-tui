@@ -292,6 +292,10 @@ pub(super) async fn take(
         }
         return true;
     }
+    // 装包的下载进度：交给界面画条（引导当场下语义模型，`packages.rs`）。
+    if let Some(update) = super::packages::progress(message) {
+        return notify(update);
+    }
     // 工具目录变了（装卸包、MCP 服务）：界面重取给人看的字；掉了队重新订（`packages.rs`）。
     if super::packages::tools_changed(message) {
         return notify(Update::ToolsChanged);
