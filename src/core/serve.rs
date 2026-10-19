@@ -187,16 +187,30 @@ pub(super) async fn serve(
                         }
                         continue;
                     }
-                    // 新会话的人格：记着，开会话时带上；会话开着时不能换，不管（「新会话：人格、工作区」第 2 条）。
+                    // 新会话的人格、预设：记着，开会话时带上；开着会话的中途换（「新会话：人格、工作区」第 2a 条，核心 P-13：
+                    // 无人格发 `null`；换成了照推来的 `session.policy_changed` 办，被拒的照一般的拒绝弹）。
                     Command::Persona(id) => {
-                        if link.target().is_none() {
-                            link.pending_persona = Some(id);
+                        match link.target() {
+                            None => link.pending_persona = Some(id),
+                            Some(session) => {
+                                let persona = (!id.is_empty()).then_some(id);
+                                let params = json!({"session": session, "persona": persona});
+                                if rpc.send("session.configure", params).await.is_err() {
+                                    return Served::Lost;
+                                }
+                            }
                         }
                         continue;
                     }
                     Command::Preset(id) => {
-                        if link.target().is_none() {
-                            link.pending_preset = Some(id);
+                        match link.target() {
+                            None => link.pending_preset = Some(id),
+                            Some(session) => {
+                                let params = json!({"session": session, "preset": id});
+                                if rpc.send("session.configure", params).await.is_err() {
+                                    return Served::Lost;
+                                }
+                            }
                         }
                         continue;
                     }

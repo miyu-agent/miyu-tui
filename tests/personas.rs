@@ -70,11 +70,16 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     tui.wait_for("好。");
     let sent = format!("{:?}", script.requests().last());
     assert!(sent.contains("X1Y2"), "开会话带上了选的人格：{sent}");
-    // 开了会话不能换。
+    // 开了会话能中途换（2026-10-19 项目主人放开，核心 P-13）：同一个框，最上面写切换前先压缩，现在用的写「当前」；Esc 关、不换。
     tui.say("/persona");
-    tui.wait_for("无法更换人格");
+    tui.wait_for("切换前会先压缩会话");
+    assert!(tui.shows("当前"), "{}", tui.lines().join("\n"));
+    tui.key(b"\x1b");
+    closed(&mut tui);
     tui.say("/preset");
-    tui.wait_for("无法更换预设");
+    tui.wait_for("切换前会先压缩会话");
+    tui.key(b"\x1b");
+    closed(&mut tui);
     // `/new` 以后又先问；`Esc` 照默认的。
     tui.say("/new");
     tui.wait_for("请选择人格");

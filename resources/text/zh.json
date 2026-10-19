@@ -597,14 +597,17 @@
     "title": "请选择人格",
     "hint": "↑/↓ 选择 · Enter 确定",
     "default_mark": "默认",
-    "locked": "会话已创建，无法更换人格：使用 /new 新建会话",
     "chosen": "人格 {name}",
     "preset_title": "请选择预设",
     "preset_need": "请先选择预设",
-    "preset_locked": "会话已创建，无法更换预设：使用 /new 新建会话",
     "preset_chosen": "预设 {name}",
     "none": "无人格",
-    "none_note": "不使用人格"
+    "none_note": "不使用人格",
+    "switch_note": "切换前会先压缩会话避免缓存断裂导致的全量重放",
+    "current_mark": "当前",
+    "busy": "回答进行中：先打断，或者等它做完",
+    "switched": "人格已换成「{name}」",
+    "preset_switched": "预设已换成「{name}」"
   },
   "workspace": {
     "need_path": "请指定路径",
