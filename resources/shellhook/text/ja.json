@@ -1,0 +1,15 @@
+{
+  "installed": "{path} にインストールしました。新しく開いた {shell} から有効です",
+  "updated": "{path} を更新しました。新しく開いた {shell} から有効です",
+  "foreign": "{path} は shellhook が書いたものではないため、変更していません。インストールするには先に移動してください",
+  "removed": "{path} から削除しました",
+  "not_installed": "{shell} にはインストールされていません",
+  "old_hook": "旧バージョンの {path} もあります。両方が Enter を引き受け、ひとことが二回送られます。旧バージョンを使わないなら削除してください",
+  "unknown_shell": "どのシェルか判別できません。--shell fish、--shell bash、--shell zsh で指定してください",
+  "status_installed": "{shell}：インストール済み（{path}）",
+  "status_missing": "{shell}：未インストール",
+  "status_foreign": "{shell}：{path} は shellhook が書いたものではありません",
+  "status_stale": "{shell}：インストール済み（{path}）ですが、呼び出すプログラム {program} がありません。もう一度インストールしてください",
+  "no_program": "スクリプトから呼び出すプログラムが見つかりません：{program}",
+  "say_not_ready": "shellhook はまだ作成中です。このバージョンではまだ会話できません"
+}

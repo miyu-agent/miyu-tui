@@ -1,0 +1,15 @@
+{
+  "installed": "Installed into {path}; takes effect in new {shell} sessions",
+  "updated": "Updated {path}; takes effect in new {shell} sessions",
+  "foreign": "{path} wasn't written by shellhook, so it was left alone; move it away to install",
+  "removed": "Removed from {path}",
+  "not_installed": "Not installed for {shell}",
+  "old_hook": "The old version's {path} is also there: both would take over Enter and send each message twice; delete it if you no longer use the old version",
+  "unknown_shell": "Can't tell which shell this is: pass --shell fish, --shell bash or --shell zsh",
+  "status_installed": "{shell}: installed ({path})",
+  "status_missing": "{shell}: not installed",
+  "status_foreign": "{shell}: {path} wasn't written by shellhook",
+  "status_stale": "{shell}: installed ({path}), but the program it calls, {program}, is gone; install again",
+  "no_program": "Can't find the program to call from the script: {program}",
+  "say_not_ready": "shellhook is still being built: this version can't talk yet"
+}

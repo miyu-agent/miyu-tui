@@ -1,0 +1,15 @@
+{
+  "installed": "已装进 {path}：新开的 {shell} 起生效",
+  "updated": "已更新 {path}：新开的 {shell} 起生效",
+  "foreign": "{path} 不是 shellhook 写的，没动它；要装请先把它挪走",
+  "removed": "已从 {path} 删掉",
+  "not_installed": "{shell} 没装",
+  "old_hook": "旧版的 {path} 也在：两份都会接管回车，一句话会交两遍；不用旧版了就删掉它",
+  "unknown_shell": "认不出是哪种 shell：用 --shell fish、--shell bash 或 --shell zsh 指定",
+  "status_installed": "{shell}：已装（{path}）",
+  "status_missing": "{shell}：没装",
+  "status_foreign": "{shell}：{path} 不是 shellhook 写的",
+  "status_stale": "{shell}：已装（{path}），但记的程序 {program} 不在了：重新装一次",
+  "no_program": "找不到要记进脚本的程序 {program}",
+  "say_not_ready": "shellhook 还在施工：这一版还不能对话"
+}

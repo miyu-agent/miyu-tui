@@ -57,6 +57,7 @@ mod scratch;
 mod session_list;
 mod settings;
 mod sheet;
+mod shellhook;
 mod shown_files;
 mod side_select;
 mod startup;
@@ -91,7 +92,17 @@ type Screen = ratatui::Terminal<
     glyph_guard::Guarded<ratatui::backend::CrosstermBackend<frame_output::Output<io::Stdout>>>,
 >;
 
-fn main() -> io::Result<()> {
+fn main() -> io::Result<std::process::ExitCode> {
+    // `miyu shellhook …`：核心转交成 `miyu-tui shellhook …`，不进全屏（图纸 `shellhook.md`）。
+    let mut args = std::env::args().skip(1).peekable();
+    if args.peek().is_some_and(|first| first == "shellhook") {
+        return Ok(shellhook::main(args.skip(1).collect()));
+    }
+    fullscreen().map(|()| std::process::ExitCode::SUCCESS)
+}
+
+/// 全屏的终端界面。
+fn fullscreen() -> io::Result<()> {
     // 堆的两个参数（glibc 上限 arena、定大块门槛）：还没起别的线程时定（蓝图「量尺」图片内存，2026-10-16 量过：23 张图画过
     // 以后 54 MiB，定了以后 23 MiB；解码大图的十几 MB 放掉以后留在 glibc 手里、还不回去）。别的平台什么都不做。
     miyu_client::heap::tune();

@@ -10,7 +10,8 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `src/main.rs` | 进出全屏；主循环：终端事件和核心的消息进同一个通道，空闲不重画 |
+| `src/main.rs` | 进出全屏；主循环：终端事件和核心的消息进同一个通道，空闲不重画；第一个参数是 `shellhook` 的交给 `src/shellhook/`，不进全屏 |
+| `src/shellhook/` | 终端无缝集成（`miyu shellhook`）：图纸另一页 `shellhook.md` |
 | `src/app/` | 程序状态：`mod.rs` 状态、事件分给各块、核心的消息；`keys.rs` 按键和斜杠命令的执行；`catalog.rs` 核心认的斜杠命令（问清单、交给核心、被拒放回）；`widgets.rs` 界面块（照屏上的位置订阅、收推送、点了做什么）；`mouse.rs` 鼠标；`drawer.rs` 抽屉接到程序上（按键、收起、了结） |
 | `src/core/` | 连核心：`mod.rs` 连上、握手、开会话、订阅、收发；`rpc.rs` 一行一条的 JSON-RPC；`push.rs` 把推送读成界面关心的几样；`kinds.rs` 有固定取值的几样（权限级别、工具结果的状态、一轮结束的原因）读成类型；`undo.rs` 撤销、恢复的回应；`catalog.rs` `command.catalog` 的回应；`widgets.rs` 界面块的流（订阅、重连和掉队重订、`widget.changed`）；`types.rs` 几个小类型 |
 | `src/transcript/` | 界面记着的会话：`mod.rs` 正文、在不在跑、用量、权限；`blocks.rs` 一块块流式的字接到哪里；`steps.rs` 时间线的一段和一步；`words.rs` 旁白的拼法；`beat.rs` 这一轮出过几件事（运行状态行照它换词）；`media.rs` 她发出去的图一张一条（「她发的图」） |
