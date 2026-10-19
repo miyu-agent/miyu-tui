@@ -81,6 +81,10 @@ pub fn draw(look: &Look) -> RgbaImage {
         cell_aspect: 1.0,
         ..look.clone()
     };
+    // 格子少，脸照另调的那一份（网页的像素吉祥物同一组数）。
+    if let Some(face) = &look.pixel_face {
+        grid.face = face.clone();
+    }
     grid.face.line_mark = LINE_MARK;
     let ramp: Vec<char> = grid.ramp.chars().collect();
     let top = ramp.len().saturating_sub(1).max(1) as f64;
@@ -170,6 +174,18 @@ mod tests {
                 assert_eq!(picture.get_pixel(x + SCALE - 1, y + SCALE - 1), first);
             }
         }
+    }
+
+    #[test]
+    fn the_pixel_face_is_used_when_the_mascot_has_one() {
+        // 2026-10-19 项目主人：照字符画那一份的脸画，肚子上的圈大成一个「H」，丑；像素图照 `pixel_face`。
+        let look = Config::builtin().unwrap().mascot;
+        assert!(look.pixel_face.is_some(), "内置的吉祥物写了像素图用的脸");
+        let without = crate::mascot::Look {
+            pixel_face: None,
+            ..look.clone()
+        };
+        assert_ne!(draw(&look), draw(&without), "照另调的那一份画");
     }
 
     #[test]
