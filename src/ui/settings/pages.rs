@@ -79,9 +79,15 @@ fn entry_words(page: &Settings, entry: &Entry, texts: &Texts) -> (String, String
                 .and_then(|s| s.page_name(id))
                 .unwrap_or(id)
                 .to_string();
-            let note = schema
-                .map(|s| s.group_names(id).join("、"))
-                .unwrap_or_default();
+            // 「软件包」照包列（一个包几组的只写一次，2026-10-20 项目主人验收：联网搜索的 key 那一组像是另一个包）。
+            let note = if id == PACKAGES {
+                let names: Vec<String> = page.more.packages().into_iter().map(|p| p.name).collect();
+                names.join("、")
+            } else {
+                schema
+                    .map(|s| s.group_names(id).join("、"))
+                    .unwrap_or_default()
+            };
             (name, note)
         }
     }
