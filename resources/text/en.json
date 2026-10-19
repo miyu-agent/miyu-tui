@@ -235,7 +235,8 @@
     "tally": "{merged}/{total}",
     "clock": " · {thinking}{time}",
     "thinking": "dreaming… ",
-    "summary_full": "Summary: "
+    "summary_full": "Summary: ",
+    "backgrounded": "Tidying continues in the background"
   },
   "compaction": {
     "triggered": "Context compaction started",

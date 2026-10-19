@@ -49,6 +49,22 @@ impl App {
         true
     }
 
+    /// 整理时人说了话：把她叫醒，那一块收起，整理转到后台跑完（第 7 条，2026-10-20 项目主人：她在做梦还能回话不合设定）。
+    pub(super) fn dream_wake_up(&mut self) {
+        let here = self.talk.transcript.session.clone();
+        let Some(dream) = self
+            .talk
+            .dream
+            .as_mut()
+            .filter(|d| !d.awake && d.woke.is_none() && Some(&d.session) == here.as_ref())
+        else {
+            return;
+        };
+        dream.awake = true;
+        let note = self.config.text.dream.backgrounded.clone();
+        self.hint(note, false);
+    }
+
     /// 交给核心的那一行被拒：整理还没开始的收掉、退订（被拒的多半就是 `/dream` 自己）。
     pub(super) fn dream_refused(&mut self) {
         if self
@@ -74,6 +90,8 @@ impl App {
         };
         let now = Instant::now();
         dream.tick(now, every);
+        // 叫醒过的不画，回执来了当场收（第 7 条）。
+        let wake = if dream.awake { Duration::ZERO } else { wake };
         let Some((_, said)) = dream.woke.clone().filter(|(at, _)| now >= *at + wake) else {
             return;
         };
@@ -97,8 +115,12 @@ impl App {
 
     /// 下一次要醒来：整理着的照转圈的节拍（z 飘、星星闪），醒够了的到点收。
     pub(super) fn dream_deadline(&self) -> Option<Instant> {
-        // 还没认上会话的不画，不用醒。
-        let dream = self.talk.dream.as_ref().filter(|d| !d.session.is_empty())?;
+        // 还没认上会话的、叫醒了转到后台的不画，不用醒。
+        let dream = self
+            .talk
+            .dream
+            .as_ref()
+            .filter(|d| !d.session.is_empty() && !d.awake)?;
         let beat = Instant::now() + Duration::from_millis(self.config.timeline.spinner_ms);
         let wake = Duration::from_millis(self.config.layout.dream.wake_ms);
         let done = dream.woke.as_ref().map(|(at, _)| *at + wake);

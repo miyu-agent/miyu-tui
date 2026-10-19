@@ -28,6 +28,8 @@ pub struct DreamTexts {
     pub thinking: String,
     /// 回执点开列的摘要打头的词。
     pub summary_full: String,
+    /// 整理时人说了话、把她叫醒了的提示（第 7 条）。
+    pub backgrounded: String,
 }
 
 /// 整理时那一块的样子。

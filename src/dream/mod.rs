@@ -159,6 +159,8 @@ pub struct Dream {
     kept: Vec<Kept>,
     /// 整理完了：醒来的那一刻、核心的回执。
     pub woke: Option<(Instant, String)>,
+    /// 整理时人说了话，把她叫醒了：那一块不画，整理转到后台跑完，完了照样留回执（第 7 条）。
+    pub awake: bool,
 }
 
 /// 滚动区几行。
@@ -183,6 +185,7 @@ impl Dream {
             texts_fresh: false,
             kept: Vec::new(),
             woke: None,
+            awake: false,
         }
     }
 
@@ -359,6 +362,11 @@ impl Dream {
             Some(batch) => !batch.heard,
             None => self.index == 0,
         }
+    }
+
+    /// 正在看 `viewing` 这个会话时画不画这一块：叫醒了的不画；首页打的、会话编号还没到的照画（第 1、7 条）。
+    pub fn shown_in(&self, viewing: Option<&str>) -> bool {
+        !self.awake && (self.session.is_empty() || viewing == Some(self.session.as_str()))
     }
 
     /// 日志里真正存下的，照先后：回执点开列它。

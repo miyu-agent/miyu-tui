@@ -269,6 +269,8 @@ impl App {
         });
         self.typing.input.remember(draft);
         self.typing.input.forget_cleared();
+        // 她在做梦：说话把她叫醒，整理转到后台（`dream.rs`）。
+        self.dream_wake_up();
         self.talk.transcript.user(text, chips);
         self.awaiting_turn();
         self.link.core.send(Command::Send { text: full, files });

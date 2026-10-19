@@ -281,3 +281,15 @@ fn a_retired_line_and_record_get_their_text_when_the_texts_come_late() {
         )]
     );
 }
+
+#[test]
+fn the_block_shows_in_its_own_session_until_she_is_woken() {
+    let now = Instant::now();
+    let mut home = Dream::new(String::new(), now);
+    assert!(home.shown_in(None), "首页打的、编号还没到的照画");
+    home.session = "s1".into();
+    assert!(home.shown_in(Some("s1")));
+    assert!(!home.shown_in(Some("s2")), "看着别的会话不画");
+    home.awake = true;
+    assert!(!home.shown_in(Some("s1")), "叫醒了转到后台不画");
+}
