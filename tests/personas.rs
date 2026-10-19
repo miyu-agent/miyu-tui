@@ -161,7 +161,11 @@ fn choosing_no_persona_opens_a_session_without_one_even_when_a_default_is_set() 
     );
     let mut tui = home.tui_with("zh_CN.UTF-8", &[ASK]);
     tui.wait_for("请选择人格");
-    tui.wait_for("不使用人格，记忆不生效");
+    tui.wait_for("不使用人格");
+    assert!(
+        !tui.shows("记忆不生效"),
+        "无人格也有记忆了（2026-10-19 项目主人）"
+    );
     // 光标停在默认的海盗上：挪到最上面的「无人格」。
     for _ in 0..5 {
         tui.key(UP);

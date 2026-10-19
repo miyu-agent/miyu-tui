@@ -604,7 +604,7 @@
     "preset_locked": "会话已创建，无法更换预设：使用 /new 新建会话",
     "preset_chosen": "预设 {name}",
     "none": "无人格",
-    "none_note": "不使用人格，记忆不生效"
+    "none_note": "不使用人格"
   },
   "workspace": {
     "need_path": "请指定路径",
