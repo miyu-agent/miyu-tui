@@ -63,6 +63,7 @@ impl App {
             talk: super::talk::Talk {
                 default_level: crate::core::Level::Workspace,
                 level_picked: false,
+                dream: None,
                 transcript: Transcript::default(),
                 board: Board::default(),
                 parked: Default::default(),

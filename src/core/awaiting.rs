@@ -71,6 +71,10 @@ pub(super) enum Awaiting {
     Catalog,
     /// 订阅界面块：回应交给界面。
     Widgets,
+    /// 订阅记忆流（`/dream`）：回应、拒绝都不用看。
+    Dream,
+    /// 整理时取记忆的正文：哪个会话。
+    DreamTexts(String),
     /// 调界面块的程序登记的方法：拒了的告诉界面。
     PackageCall,
     /// 回答确认、提问：问的会话、调用编号（拒了要告诉界面）。

@@ -69,6 +69,15 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     if seen.talk.transcript.waiting() {
         rows.push(timeline::tail_rows(&ctx).into());
     }
+    // 人打的 `/dream` 正在整理：接在最后（「整理记忆」第 2 条）。
+    if let Some(dream) = seen
+        .talk
+        .dream
+        .as_ref()
+        .filter(|d| seen.talk.transcript.session.as_ref() == Some(&d.session))
+    {
+        rows.push(super::dream_rows::rows(dream, &ctx, std::time::Instant::now()).into());
+    }
     // 还算在看的那段回答：长过视口时停在它的开头（`tui.md`「正文」第 1 条）。在写的那段一律算；写完了的（后面只有收尾
     // 那一行），上一帧开头还露着才算：后到的图、卡片把它撑高时停住，一口气整段到的、补发来的照旧跟着最新的。
     let latest = seen.talk.transcript.reading().and_then(|(i, writing)| {

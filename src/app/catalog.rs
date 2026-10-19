@@ -30,6 +30,7 @@ impl App {
         self.leave_gone();
         self.typing.slash_draft = Some(draft);
         self.link.core.send(Command::Slash(line.to_string()));
+        self.dream_start(line);
     }
 
     /// 交给核心的那一行办了（有回执的照常弹）：不用再放回去。

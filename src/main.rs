@@ -15,6 +15,7 @@ mod crash;
 mod diagrams;
 mod diff;
 mod drawer;
+mod dream;
 mod editor;
 mod features;
 mod figures;

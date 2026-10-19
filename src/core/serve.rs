@@ -141,6 +141,14 @@ pub(super) async fn serve(
                         }
                         continue;
                     }
+                    // 人打的 `/dream`：订阅、退订那一间的记忆流（`memory.rs`）。
+                    Command::Dream(session) => match super::memory::follow(rpc, session.as_deref()).await {
+                        Ok(id) => {
+                            awaiting.extend(id.map(|id| (id, Awaiting::Dream)));
+                            continue;
+                        }
+                        Err(_) => return Served::Lost,
+                    },
                     // 更早的一页：没按页读的（核心旧）不要，告诉界面没有了。
                     Command::Older(session) => {
                         match page::older(rpc, link, &session).await {
