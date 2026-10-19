@@ -26,6 +26,8 @@ pub struct SessionInfo {
     pub persona: Option<String>,
     /// 用的预设的编号。
     pub preset: Option<String>,
+    /// 连同它派的、分叉出来的子会话一共用了多少 token（核心 d98f5e03，口径同底栏的累计）；没有这一格的当 0。
+    pub tokens: u64,
 }
 
 /// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话不要，照核心交回的先后（新的在前）。
@@ -55,6 +57,7 @@ fn entry(s: &Value) -> Option<SessionInfo> {
         preview: text(&s["preview"]),
         persona: text(&s["persona"]),
         preset: text(&s["preset"]),
+        tokens: s["tokens"].as_u64().unwrap_or(0),
     })
 }
 
@@ -175,7 +178,7 @@ mod tests {
             {"session":"b","parent":"a","oneshot":false},
             {"session":"c","parent":null,"oneshot":true},
             {"session":"d","parent":null,"oneshot":false,"title":"","cwd":"/src","busy":true,
-             "last_active":"2026-10-01T08:00:00Z"},
+             "last_active":"2026-10-01T08:00:00Z","tokens":5120},
         ]});
         let list = read(&result);
         assert_eq!(
@@ -187,6 +190,11 @@ mod tests {
         assert_eq!(list[1].title, None, "空标题是没起名");
         assert!(list[1].busy);
         assert_eq!(list[1].cwd.as_deref(), Some("/src"));
+        assert_eq!(
+            (list[0].tokens, list[1].tokens),
+            (0, 5120),
+            "没有 tokens 的当 0（核心 d98f5e03）"
+        );
         assert!(list[1].last_active.is_some());
     }
 

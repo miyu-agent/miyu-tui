@@ -57,6 +57,8 @@ pub struct Texts {
     pub pinned: String,
     /// 取消置顶了。
     pub unpinned: String,
+    /// 编号后面那一列：一共用了多少 token，`{tokens}`。
+    pub tokens: String,
 }
 
 /// 哪个会话是正在用的，哪几个有确认、提问在等你（「确认和提问的抽屉」第 10 条）。
@@ -129,6 +131,19 @@ pub fn lines(
         .max()
         .unwrap_or(0)
         .min(config.layout.session_title_width);
+    // 编号后面的总 token 一列：靠右对齐，照露出来的里最宽的那个（2026-10-19 项目主人）。
+    let tokens = |info: &SessionInfo| {
+        texts
+            .tokens
+            .replace("{tokens}", &crate::meter::short(info.tokens))
+    };
+    let tokens_width = found
+        .iter()
+        .skip(top)
+        .take(shown)
+        .map(|info| tokens(info).width())
+        .max()
+        .unwrap_or(0);
     let rows: Vec<Row> = found
         .iter()
         .enumerate()
@@ -148,6 +163,10 @@ pub fn lines(
             content.extend(head(info, config, column));
             content.push(Span::styled(
                 format!("  #{}", short(&info.session)),
+                theme::faint(),
+            ));
+            content.push(Span::styled(
+                format!("  {:>tokens_width$}", tokens(info)),
                 theme::faint(),
             ));
             let Marks { current, asking } = marks;
@@ -305,6 +324,7 @@ mod tests {
             preview: None,
             persona: None,
             preset: None,
+            tokens: 0,
         }
     }
 
@@ -404,6 +424,40 @@ mod tests {
         assert!(
             text[1].starts_with(&format!("{spin} 在跑的")),
             "在跑的选中了也转：{text:#?}"
+        );
+    }
+
+    #[test]
+    fn the_total_tokens_sit_between_the_id_and_the_right_column_right_aligned() {
+        // 2026-10-19 项目主人：会话列表显示总 token，放在编号列和最右列中间。
+        let config = Config::builtin().unwrap();
+        let mut list = SessionList::default();
+        let with = |id: &str, tokens: u64| SessionInfo {
+            tokens,
+            ..info(id, Some("标题"), "~/src/app")
+        };
+        list.replace(vec![
+            with("0000-aaaaaaaa", 27_500_000),
+            with("0000-bbbbbbbb", 1_234),
+            with("0000-cccccccc", 0),
+        ]);
+        let marks = super::Marks {
+            current: None,
+            asking: &[],
+        };
+        let (_, rows, _) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
+        let text: Vec<String> = rows.iter().map(ToString::to_string).collect();
+        let after_id = |l: &str| {
+            let at = l.find(" #").expect("有编号") + " #".len() + 8;
+            l[at..].to_string()
+        };
+        let cells: Vec<String> = text.iter().map(|l| after_id(l)).collect();
+        assert!(cells[0].starts_with("  Σ27.5M"), "{cells:#?}");
+        assert!(cells[1].starts_with("   Σ1.2k"), "靠右对齐：{cells:#?}");
+        assert!(cells[2].starts_with("      Σ0"), "没有的当 0：{cells:#?}");
+        assert!(
+            text.iter().all(|l| l.find("~/src/app") > l.find('Σ')),
+            "在最右那一格的左边：{text:#?}"
         );
     }
 
