@@ -30,7 +30,11 @@ pub fn rows(dream: &Dream, ctx: &Ctx, now: Instant) -> Vec<Row> {
             .replace("{total}", &total.to_string());
         head.push(Span::styled(batch, theme::dim()));
     }
-    let mut out = vec![ctx.row(ctx.blank_slot(), head)];
+    // 和上面的正文空一行，同等第一个字时的转圈（「时间线」第 19 条）。
+    let mut out = vec![
+        ctx.row(ctx.blank_slot(), Vec::new()),
+        ctx.row(ctx.blank_slot(), head),
+    ];
     let lines: Vec<&Line> = dream.rows().collect();
     for _ in lines.len()..ROWS {
         out.push(ctx.row(ctx.blank_slot(), Vec::new()));

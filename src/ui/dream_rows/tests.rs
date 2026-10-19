@@ -5,6 +5,14 @@ use ratatui::style::Modifier;
 use unicode_width::UnicodeWidthStr;
 
 use super::*;
+
+/// 排成的行：头一行是和正文之间的空行，去掉它再数。
+fn rows(d: &Dream, ctx: &Ctx, now: Instant) -> Vec<Row> {
+    let mut got = super::rows(d, ctx, now);
+    assert_eq!(text(&got[0]).trim(), "", "和上面空一行");
+    got.remove(0);
+    got
+}
 use crate::dream::Change;
 use crate::ui::test_support::Fixture;
 
