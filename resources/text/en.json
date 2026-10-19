@@ -236,7 +236,8 @@
     "clock": " · {thinking}{time}",
     "thinking": "dreaming… ",
     "summary_full": "Summary: ",
-    "backgrounded": "Tidying continues in the background"
+    "backgrounded": "Tidying continues in the background",
+    "esc_hint": "Press Esc again to stop tidying"
   },
   "compaction": {
     "triggered": "Context compaction started",

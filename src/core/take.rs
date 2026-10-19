@@ -93,7 +93,7 @@ pub(super) async fn take(
             // 订阅不上界面块（核心旧、不认这个流）：什么都不画，不用说（「界面块」第 8 条）。
             Some(Awaiting::Widgets) => true,
             // 跟着看整理订不上、取不到正文（没装记忆、核心旧）：照旧等回执，不用说。
-            Some(Awaiting::Dream | Awaiting::DreamTexts(_)) => true,
+            Some(Awaiting::Dream | Awaiting::DreamTexts(_) | Awaiting::DreamStop) => true,
             Some(Awaiting::PackageCall) => notify(Update::PackageCallRefused { message }),
             // 读不了输出（任务没了、是子代理）：不用说，界面不再等它。
             Some(Awaiting::Output(session, job, after)) => notify(Update::Output {
@@ -122,7 +122,7 @@ pub(super) async fn take(
         }
         Some(Awaiting::Rename(title)) => return notify(Update::Renamed(title)),
         Some(Awaiting::Widgets) => return notify(super::widgets::listed(&message["result"])),
-        Some(Awaiting::Dream) => return true,
+        Some(Awaiting::Dream | Awaiting::DreamStop) => return true,
         Some(Awaiting::DreamTexts(session)) => {
             return notify(super::memory::texts(session, &message["result"]));
         }

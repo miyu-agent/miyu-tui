@@ -75,6 +75,8 @@ pub(super) enum Awaiting {
     Dream,
     /// 整理时取记忆的正文：哪个会话。
     DreamTexts(String),
+    /// 叫停整理：回应、拒绝都不用看（整理那条 `/dream` 自己回「整理已中断」）。
+    DreamStop,
     /// 调界面块的程序登记的方法：拒了的告诉界面。
     PackageCall,
     /// 回答确认、提问：问的会话、调用编号（拒了要告诉界面）。

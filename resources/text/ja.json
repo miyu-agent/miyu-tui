@@ -236,7 +236,8 @@
     "clock": " · {thinking}{time}",
     "thinking": "夢の中… ",
     "summary_full": "要約：",
-    "backgrounded": "整理はバックグラウンドで続けます"
+    "backgrounded": "整理はバックグラウンドで続けます",
+    "esc_hint": "もう一度 Esc で整理を止める"
   },
   "compaction": {
     "triggered": "コンテキストの圧縮を開始しました",

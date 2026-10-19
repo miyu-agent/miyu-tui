@@ -26,6 +26,9 @@ impl App {
                 }
                 if starting {
                     self.talk.transcript.starting = Starting::Stop;
+                } else if !running && self.typing.input.editor.is_empty() && self.dreaming_here() {
+                    // 她在做梦：叫停整理（`dream.rs`，「整理记忆」第 7 条）。
+                    self.dream_stop();
                 } else if running {
                     // 她还没开始做事、又没有排着的：打断以后撤掉这一轮，那一句放回输入框（「按键」`Esc`，2026-10-07
                     // 项目主人定；和 Ctrl+C 退回排着的走同一条路，`takeback.rs`）。
@@ -50,6 +53,9 @@ impl App {
                 let text = &self.config.text;
                 let hint = if running {
                     &text.esc_hint
+                } else if self.typing.input.editor.is_empty() && self.dreaming_here() {
+                    // 框里有字的照旧两下清空；空着的叫停整理（「整理记忆」第 7 条）。
+                    &text.dream.esc_hint
                 } else {
                     &text.esc_clear_hint
                 };

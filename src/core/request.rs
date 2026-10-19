@@ -51,6 +51,10 @@ pub(super) fn request(
         Command::Run(text) | Command::Slash(text) => {
             ("command.run", json!({"session": session, "text": text}))
         }
+        Command::DreamStop => (
+            "command.run",
+            json!({"session": session, "text": "/dream stop"}),
+        ),
         Command::Goal(words) => {
             let text = match words.as_str() {
                 "" => "/goal".to_string(),

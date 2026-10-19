@@ -169,7 +169,8 @@ fn sky(
     } else {
         total.max(1) as f64 / count as f64
     };
-    let lit = if woke {
+    // 整理完醒来全亮；叫停的照合了多少亮（「整理记忆」第 7 条）。
+    let lit = if woke && !dream.stopping {
         count
     } else {
         (merged as f64 / per).floor() as usize
@@ -193,7 +194,7 @@ fn sky(
             let spot = spots[i];
             spans.push(if spot.rank < lit {
                 let glyph = look.glyphs.get(spot.glyph).cloned().unwrap_or_default();
-                let twinkles = woke || i % look.twinkle_every.max(1) == 0;
+                let twinkles = (woke && !dream.stopping) || i % look.twinkle_every.max(1) == 0;
                 let lift = if twinkles {
                     twinkle(seconds, i, look)
                 } else {

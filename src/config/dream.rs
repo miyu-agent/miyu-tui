@@ -30,6 +30,8 @@ pub struct DreamTexts {
     pub summary_full: String,
     /// 整理时人说了话、把她叫醒了的提示（第 7 条）。
     pub backgrounded: String,
+    /// 前台整理时按了一下 `Esc`：再按一次叫停（第 7 条）。
+    pub esc_hint: String,
 }
 
 /// 整理时那一块的样子。

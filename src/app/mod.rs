@@ -217,7 +217,8 @@ impl App {
                     && self.esc_for_input(menu_open)
                     && (self.talk.transcript.running.is_some()
                         || self.talk.transcript.starting != crate::transcript::Starting::No
-                        || !self.typing.input.editor.is_empty()) =>
+                        || !self.typing.input.editor.is_empty()
+                        || self.dreaming_here()) =>
             {
                 self.esc();
                 Action::None

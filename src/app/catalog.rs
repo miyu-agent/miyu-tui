@@ -29,6 +29,11 @@ impl App {
         // 会话不在了（「连核心」第 7 条）：和说下一句话一样，开新会话。
         self.leave_gone();
         self.typing.slash_draft = Some(draft);
+        // 终端在看着的那一趟整理：`/dream stop` 照 Esc 叫停（`dream.rs`）；没在看的照常交给核心，由它停或者说为什么不行。
+        if crate::dream::asks_to_stop(line) && self.dream_stop() {
+            self.typing.slash_draft = None;
+            return;
+        }
         self.dream_start(line);
         self.link.core.send(Command::Slash(line.to_string()));
     }

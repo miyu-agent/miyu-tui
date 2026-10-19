@@ -12,7 +12,8 @@ impl App {
     /// 打的那一行交给核心以前：是 `/dream` 的，跟着看整理（第 1 条）。还没开会话的（首页）核心先开会话，会话编号到了再认上
     /// （[`App::dream_ready`]）；连接那头开好会话、交命令以前先订阅，开头那一批不漏。
     pub(super) fn dream_start(&mut self, line: &str) {
-        if line.split_whitespace().next() != Some("/dream") {
+        // 只认不带字的 `/dream`：`/dream stop` 是叫停（[`App::dream_stop`]），不是又一趟。
+        if !crate::dream::asks_to_dream(line) {
             return;
         }
         let session = self.talk.transcript.session.clone().unwrap_or_default();
@@ -63,6 +64,28 @@ impl App {
         dream.awake = true;
         let note = self.config.text.dream.backgrounded.clone();
         self.hint(note, false);
+    }
+
+    /// 前台、后台在整理的那一趟：叫停（第 7 条，核心 R-22）。合完的批留着，正在合的那一批放弃；整理那条 `/dream` 回「整理已中断」，
+    /// 照常收成回执。没在整理的交回 `false`。
+    pub(super) fn dream_stop(&mut self) -> bool {
+        if !self.talk.dream.as_ref().is_some_and(|d| d.woke.is_none()) {
+            return false;
+        }
+        if let Some(dream) = self.talk.dream.as_mut() {
+            dream.stopping = true;
+        }
+        self.link.core.send(Command::DreamStop);
+        true
+    }
+
+    /// 前台正在画那一块（叫醒了的、整理完了的不算）：`Esc` 照它叫停（第 7 条）。
+    pub(super) fn dreaming_here(&self) -> bool {
+        let viewing = self.talk.transcript.session.as_deref();
+        self.talk
+            .dream
+            .as_ref()
+            .is_some_and(|d| d.woke.is_none() && !d.session.is_empty() && d.shown_in(viewing))
     }
 
     /// 交给核心的那一行被拒：整理还没开始的收掉、退订（被拒的多半就是 `/dream` 自己）。

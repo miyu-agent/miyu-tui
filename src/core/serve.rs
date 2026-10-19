@@ -361,6 +361,7 @@ async fn send(
             Some(Awaiting::CommandRun)
         }
         Command::Slash(_) => Some(Awaiting::Slash),
+        Command::DreamStop => Some(Awaiting::DreamStop),
         _ => None,
     };
     let files = match &command {
