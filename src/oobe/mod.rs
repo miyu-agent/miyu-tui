@@ -29,7 +29,7 @@ use std::time::{Duration, Instant};
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
 
-pub use texts::{Texts, TwoChoices};
+pub use texts::{Semantic as SemanticTexts, Texts};
 
 use crate::core::Refusal;
 use asker::{Ask, Asker, Waiting};

@@ -52,11 +52,49 @@ pub(super) fn tools_changed(message: &Value) -> bool {
     )
 }
 
+/// 装包的下载进度：只推给发起装的那个连接，开始、结束各一次，中间最多 200 毫秒一次（核心 G-4 上）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Progress {
+    /// 哪个包。
+    pub package: String,
+    /// 下了多少字节。
+    pub done: u64,
+    /// 一共多少字节。
+    pub total: u64,
+}
+
+/// 读 `package.progress {"package", "done", "total"}`；别的推送是 `None`。
+pub(super) fn progress(message: &Value) -> Option<super::Update> {
+    if message["method"] != "package.progress" {
+        return None;
+    }
+    let params = &message["params"];
+    Some(super::Update::PackageProgress(Progress {
+        package: params["package"].as_str()?.to_string(),
+        done: params["done"].as_u64().unwrap_or(0),
+        total: params["total"].as_u64().unwrap_or(0),
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
 
-    use super::{PackageEntry, listed, tools_changed};
+    use super::{PackageEntry, listed, progress, tools_changed};
+    use crate::core::Update;
+
+    #[test]
+    fn download_progress_is_read_from_its_own_notification() {
+        let push = json!({"method": "package.progress",
+            "params": {"package": "embed", "done": 1024, "total": 4096}});
+        let want = super::Progress {
+            package: "embed".into(),
+            done: 1024,
+            total: 4096,
+        };
+        assert!(matches!(progress(&push), Some(Update::PackageProgress(got)) if got == want));
+        assert!(progress(&json!({"method": "package.changed", "params": {}})).is_none());
+    }
 
     #[test]
     fn the_list_gives_each_package_its_state_and_icon() {

@@ -190,6 +190,13 @@ impl App {
                 self.send_oobe_asks();
                 true
             }
+            // 装包的下载进度（核心 G-4 上）：引导当场下语义模型时画进度条（第 26b 条）。
+            Update::PackageProgress(p) => {
+                if let Some(oobe) = self.boxes.oobe.as_mut() {
+                    oobe.semantic.progress(&p.package, p.done, p.total);
+                }
+                true
+            }
             Update::HeadConfig(_) => {
                 if !std::mem::replace(&mut self.boxes.welcome_checked, true) {
                     self.ask_config(WELCOMED_TAG, &["ui.welcomed"]);

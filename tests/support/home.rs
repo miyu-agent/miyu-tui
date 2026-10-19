@@ -122,6 +122,15 @@ impl Home {
         let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
         root.prepare().expect("临时目录里建得了骨架");
         install_the_terminal(&dir, manifest);
+        // 软件源指到连不上的地方：测试不碰网，引导看一眼语义模型的包时是「连不上」（第 26b 条，2026-10-19 实测原来
+        // 照默认地址去了 GitHub）。
+        let system = dir.join("system/config.toml");
+        std::fs::create_dir_all(system.parent().expect("有上一层")).expect("建得了");
+        std::fs::write(
+            &system,
+            "[packages]\nsource = \"https://source.invalid/\"\n",
+        )
+        .expect("写得进去");
         if !settings.is_empty() {
             let file = dir.join("home/alice/settings.toml");
             std::fs::create_dir_all(file.parent().expect("有上一层")).expect("建得了");

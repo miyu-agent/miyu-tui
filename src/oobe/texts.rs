@@ -157,10 +157,10 @@ pub struct Theme {
     pub saving: String,
 }
 
-/// 两行选一行的一步（语义模型）：标题、说明，「是」「否」。
+/// 内置语义模型那一步（第 26b 条）：标题、说明、「是」「否」两行，没装的当场下载用的几句。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct TwoChoices {
+pub struct Semantic {
     /// 标题、说明。
     #[serde(flatten)]
     pub head: Heading,
@@ -168,6 +168,24 @@ pub struct TwoChoices {
     pub on: [String; 2],
     /// 「关」，后面暗色的一句。
     pub off: [String; 2],
+    /// 没装的当场下载。
+    pub download: SemanticDownload,
+}
+
+/// 没装语义模型时当场下载的几句（第 26b 条，2026-10-19）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SemanticDownload {
+    /// 「是」后面接着写要下多大，`{size}`。
+    pub size: String,
+    /// 还没推来进度时。
+    pub preparing: String,
+    /// 进度条后面，`{percent}`、`{done}`、`{total}`。
+    pub progress: String,
+    /// 装不上以后的两行：重试、跳过。
+    pub retry: String,
+    /// 跳过。
+    pub skip: String,
 }
 
 /// 接模型那一步。
@@ -368,7 +386,7 @@ pub struct Texts {
     /// 选预设。
     pub preset: Preset,
     /// 开不开内置的语义模型（2026-10-18）：`on` 是「是」、`off` 是「否」。
-    pub semantic: TwoChoices,
+    pub semantic: Semantic,
     /// 好了。
     pub done: Done,
     /// 没连上核心。

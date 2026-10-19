@@ -82,6 +82,10 @@ pub enum Waiting {
     SemanticRead,
     /// 写开还是关（`config.set models.embedding`）。
     SemanticSave,
+    /// 没装的看一眼软件源里的（`package.install {"source": "embed", "preview": true}`）。
+    SemanticPreview,
+    /// 当场下载、装上（`package.install {"source": "embed"}`）。
+    SemanticInstall,
 }
 
 impl Waiting {
@@ -102,6 +106,7 @@ impl Waiting {
                 | Self::PresetGet(_)
                 | Self::SemanticSchema
                 | Self::SemanticRead
+                | Self::SemanticPreview
                 | Self::ThemeRead
                 | Self::ProfileRead
                 | Self::ProfileSchema

@@ -227,7 +227,7 @@ fn folder(path: &str) -> String {
 }
 
 /// 多少字节写成给人看的：不到 1 KiB 的写字节数，再往上一位小数的 KiB、MiB、GiB（照 pacman，同 `miyu pkg`）。
-fn size(bytes: u64) -> String {
+pub fn size(bytes: u64) -> String {
     const UNITS: [&str; 3] = ["KiB", "MiB", "GiB"];
     if bytes < 1024 {
         return format!("{bytes} B");
