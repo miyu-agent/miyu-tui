@@ -86,4 +86,7 @@ fn dream_stop_without_a_dream_says_there_is_none() {
     tui.say("/dream stop");
     tui.wait_for("没有正在进行的整理");
     assert!(!tui.shows("✦ 整理记忆"), "{}", tui.lines().join("\n"));
+    // 状态不对的拒绝不把打的那一行放回输入框（2026-10-20 项目主人报）。
+    tui.pump(Duration::from_millis(300));
+    assert!(!tui.shows("❯ /dream stop"), "{}", tui.lines().join("\n"));
 }

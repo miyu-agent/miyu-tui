@@ -4,6 +4,10 @@
 //! 打的那一行放回输入框。
 
 use super::App;
+
+/// 被拒是因为当时的状态不对、不是打错了的原因码：打的那一行不放回输入框（2026-10-20 项目主人报：没在整理时打 `/dream stop`，
+/// 回车后又出现在输入框里）。
+const STATE_REFUSALS: &[&str] = &["not_dreaming"];
 use crate::core::{Command, CoreCommand};
 use crate::input::Draft;
 
@@ -43,13 +47,18 @@ impl App {
         self.typing.slash_draft = None;
     }
 
-    /// 交给核心的那一行被拒：弹核心的原话（去掉句末的句号；扩展的原话在下一行），输入框空着的放回打的那一行。
-    pub(super) fn slash_refused(&mut self, message: &str) {
+    /// 交给核心的那一行被拒：弹核心的原话（去掉句末的句号；扩展的原话在下一行），输入框空着的放回打的那一行；当时的状态不对
+    /// 的（[`STATE_REFUSALS`]）不放回，再发一遍也一样。
+    pub(super) fn slash_refused(&mut self, message: &str, reason: Option<&str>) {
         let said = message.trim_end().trim_end_matches(['。', '.']);
         if !said.is_empty() {
             self.hint(said.to_string(), false);
         }
-        if let Some(draft) = self.typing.slash_draft.take()
+        let draft = self.typing.slash_draft.take();
+        if reason.is_some_and(|r| STATE_REFUSALS.contains(&r)) {
+            return;
+        }
+        if let Some(draft) = draft
             && self.typing.input.editor.is_empty()
         {
             self.typing.input.editor.set_draft(draft);

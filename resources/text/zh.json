@@ -6,7 +6,6 @@
     "Shift+Enter 换行",
     "↑ 上一条输入",
     "Ctrl+S 暂存输入，再按一次取回",
-    "按两次 Esc 清空输入框",
     "拖选正文，Ctrl+C 复制",
     "PgUp、PgDn 滚动正文",
     "Ctrl+Z 挂起，fg 恢复",
@@ -146,7 +145,6 @@
   },
   "esc_hint": "再按一次 Esc 中断",
   "stashed": "> 暂存",
-  "esc_clear_hint": "再按一次 Esc 清空",
   "no_clear_running": "回答进行中，无法清屏",
   "icons_changed": "图标：{name}",
   "figure_pending": "⋯ 正在渲染图片",
@@ -418,7 +416,7 @@
       ],
       [
         "Esc Esc",
-        "回答时中断并发送排队的消息；否则清空输入框"
+        "回答时中断并发送排队的消息；整理记忆时停止整理"
       ],
       [
         "Ctrl+S",

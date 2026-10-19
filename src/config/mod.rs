@@ -164,8 +164,6 @@ pub struct Texts {
     pub open: OpenTexts,
     /// 在回答时按第一下 `Esc` 的提示。
     pub esc_hint: String,
-    /// 没在回答、输入框有字时按第一下 `Esc` 的提示。
-    pub esc_clear_hint: String,
     /// 回答进行中按 `Ctrl+L` 的提示。
     pub no_clear_running: String,
     /// 暂存着东西时，输入框第一行最右边的标记。

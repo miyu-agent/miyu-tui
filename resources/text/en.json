@@ -6,7 +6,6 @@
     "Shift+Enter starts a new line",
     "↑ brings back what you last sent",
     "Ctrl+S stashes this text, press again to get it back",
-    "Esc twice clears the input",
     "Drag to select text, Ctrl+C to copy",
     "PgUp and PgDn scroll the conversation",
     "Ctrl+Z suspends, fg brings it back",
@@ -146,7 +145,6 @@
   },
   "esc_hint": "Press Esc again to interrupt",
   "stashed": "> stashed",
-  "esc_clear_hint": "Press Esc again to clear",
   "no_clear_running": "Can't clear the screen while a reply is running",
   "icons_changed": "Icons: {name}",
   "figure_pending": "⋯ drawing",
@@ -418,7 +416,7 @@
       ],
       [
         "Esc Esc",
-        "Interrupt a running reply and send queued messages; otherwise clear the input"
+        "Interrupt a running reply and send queued messages; stop tidying memories while she dreams"
       ],
       [
         "Ctrl+S",
