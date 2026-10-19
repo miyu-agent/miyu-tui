@@ -252,7 +252,8 @@ fn marker(
     } else {
         theme::dim()
     };
-    Some((Span::styled(format!("{mark} "), style), info.busy))
+    // 正在用的选中了也照旧写 `●`、不让给 `❯`（2026-10-19 项目主人定各个框统一）；在跑的选中了也照样转。
+    Some((Span::styled(format!("{mark} "), style), true))
 }
 
 /// 标题那一列有多宽：置顶的记号加标题（没起名的写「未命名会话」）。

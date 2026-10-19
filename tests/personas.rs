@@ -70,10 +70,10 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     tui.wait_for("好。");
     let sent = format!("{:?}", script.requests().last());
     assert!(sent.contains("X1Y2"), "开会话带上了选的人格：{sent}");
-    // 开了会话能中途换（2026-10-19 项目主人放开，核心 P-13）：同一个框，最上面写切换前先压缩，现在用的写「当前」；Esc 关、不换。
+    // 开了会话能中途换（2026-10-19 项目主人放开，核心 P-13）：同一个框，最上面写切换前先压缩，现在用的行首写 `●`；Esc 关、不换。
     tui.say("/persona");
     tui.wait_for("切换前会先压缩会话");
-    assert!(tui.shows("当前"), "{}", tui.lines().join("\n"));
+    assert!(tui.shows("● 海盗"), "{}", tui.lines().join("\n"));
     tui.key(b"\x1b");
     closed(&mut tui);
     tui.say("/preset");

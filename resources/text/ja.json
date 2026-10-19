@@ -604,7 +604,6 @@
     "none": "人格なし",
     "none_note": "人物設定なし",
     "switch_note": "切り替える前に会話を圧縮し、キャッシュが切れて全文を再送するのを防ぎます",
-    "current_mark": "現在",
     "busy": "応答中です：中断するか、終わるまで待ってください",
     "switched": "ペルソナを「{name}」に切り替えました",
     "preset_switched": "プリセットを「{name}」に切り替えました"
@@ -616,13 +615,11 @@
   },
   "themes": {
     "title": "配色",
-    "hint": "↑/↓ 選択 · Enter 決定 · Esc キャンセル",
-    "current": "現在"
+    "hint": "↑/↓ 選択 · Enter 決定 · Esc キャンセル"
   },
   "languages": {
     "title": "表示言語",
     "hint": "↑/↓ 選択 · Enter 切り替え · Esc 閉じる",
-    "current": "現在",
     "auto": "自動（システムに合わせる：{name}）",
     "auto_switched": "表示言語：自動（システムに合わせる：{name}）"
   },
@@ -665,7 +662,6 @@
     "hint": "↑/↓ 選択 · Enter 切り替え · Esc 閉じる",
     "loading": "モデルを読み込み中…",
     "empty": "一致するモデルがありません",
-    "current": "使用中",
     "cooling": "クールダウン {n}m",
     "cooling_bare": "クールダウン中",
     "no_key": "キーなし",

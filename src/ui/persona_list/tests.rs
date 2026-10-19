@@ -18,7 +18,7 @@ fn persona(id: &str, name: &str) -> Persona {
 }
 
 #[test]
-fn switching_midway_shows_the_note_first_and_marks_the_current_one() {
+fn switching_midway_shows_the_note_first_and_dots_the_current_one() {
     let config = Config::builtin().unwrap();
     let texts = &config.text.persona_box;
     let list = [
@@ -31,6 +31,7 @@ fn switching_midway_shows_the_note_first_and_marks_the_current_one() {
             &list,
             Some("miyu"),
             current,
+            "●",
             Kind::Persona,
             2,
             texts,
@@ -50,7 +51,12 @@ fn switching_midway_shows_the_note_first_and_marks_the_current_one() {
         "{rows:#?}"
     );
     assert_eq!(map[0], None, "选不中");
-    assert!(rows[3].ends_with("当前"), "现在用的写当前：{rows:#?}");
+    // 2026-10-19 项目主人：现在用的行首写 `●`，光标停在它上面也不换成 `❯`，右边不写「当前」。
+    assert!(
+        rows[3].starts_with("● 小雪"),
+        "现在用的、选着的写 ●：{rows:#?}"
+    );
+    assert!(!rows.iter().any(|r| r.contains("当前")), "{rows:#?}");
     assert!(
         !rows.iter().any(|r| r.ends_with("默认")),
         "不写默认：{rows:#?}"

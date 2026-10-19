@@ -8,7 +8,6 @@ use serde::Deserialize;
 use super::panel::{self, Chrome, Row};
 use crate::config::Config;
 use crate::language::Language;
-use crate::theme;
 
 /// 框里的字。
 #[derive(Debug, Clone, Deserialize)]
@@ -18,8 +17,6 @@ pub struct Texts {
     pub title: String,
     /// 下边框的按键提示。
     pub hint: String,
-    /// 现在用的那种右边写的。
-    pub current: String,
     /// 第一行：自动，`{name}` 是系统认出来的那种。
     pub auto: String,
     /// 换回自动以后提示的一句，`{name}` 同上。
@@ -38,7 +35,6 @@ pub fn lines(
     let texts = &config.text.languages;
     let chrome = Chrome::new(&texts.title, Vec::new()).hint(&texts.hint);
     let table = &config.language_table;
-    let current = |on: bool| on.then(|| Span::styled(texts.current.clone(), theme::dim()));
     let auto = texts.auto.replace("{name}", table.name(system));
     let manual = table.languages.iter().map(|entry| {
         let on = !config.auto && entry.code == config.language.code();
@@ -49,9 +45,10 @@ pub fn lines(
         .enumerate()
         .map(|(i, (name, on))| {
             let content = vec![Span::raw(name)];
+            let lead = panel::current_lead(&config.layout.current_mark, on);
             (
                 Some(i),
-                panel::item(i == selected, content, current(on), width),
+                panel::item_with(i == selected, lead, content, None, width),
             )
         })
         .collect();
@@ -79,14 +76,11 @@ mod tests {
 
     #[test]
     fn auto_comes_first_and_says_which_language_the_system_picked() {
-        // 2026-10-01 项目主人：原来没有自动这一档。启动时是自动，「当前」标在第一行。
+        // 2026-10-01 项目主人：原来没有自动这一档。启动时是自动，第一行是现在用的（2026-10-19 起行首写 `●`）。
         let config = Config::builtin().unwrap();
         let (rows, map) = text(&config, 3, 10);
         assert_eq!(rows.len(), 4);
-        assert!(
-            rows[0].starts_with("  自动（跟随系统：中文）") && rows[0].ends_with("当前"),
-            "{rows:?}"
-        );
+        assert_eq!(rows[0], "● 自动（跟随系统：中文）", "{rows:?}");
         assert_eq!(rows[1], "  中文", "自动时手动那几行都不标当前");
         assert_eq!(rows[2], "  English");
         assert_eq!(rows[3], "❯ 日本語", "选中的写 ❯");
@@ -99,10 +93,10 @@ mod tests {
         let config = Config::load(&table.find("zh").unwrap(), false).unwrap();
         let (rows, _) = text(&config, 0, 10);
         assert_eq!(rows[0], "❯ 自动（跟随系统：中文）");
-        assert!(
-            rows[1].starts_with("  中文") && rows[1].ends_with("当前"),
-            "{rows:?}"
-        );
+        assert_eq!(rows[1], "● 中文", "{rows:?}");
+        // 光标停在现在用的上面也照旧写 `●`（2026-10-19 项目主人）。
+        let (rows, _) = text(&config, 1, 10);
+        assert_eq!(rows[1], "● 中文", "{rows:?}");
     }
 
     #[test]

@@ -155,6 +155,12 @@ pub fn item_with(
     bar(Line::from(spans), picked)
 }
 
+/// 现在用的那一项行首写的：强调色的 `mark`（`layout.json` 的 `current_mark`）接一个空格，选中了也照旧写它、不让给 `❯`
+/// （2026-10-19 项目主人定各个框统一：右边不再写「当前」）。交给 [`item_with`] 的 `lead`。
+pub fn current_lead(mark: &str, on: bool) -> Option<(Span<'static>, bool)> {
+    on.then(|| (Span::styled(format!("{mark} "), theme::accent()), true))
+}
+
 /// 放进 `width` 列：放不下的从前面截掉、打头写 `…`（路径的末段最有用，首页那一行、工作区框用）。
 pub fn tail(text: &str, width: usize) -> String {
     crate::cells::tail_marked(text, width)
