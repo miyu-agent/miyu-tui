@@ -27,6 +27,8 @@ mod redo;
 mod reply;
 mod spent;
 mod steps;
+mod switched;
+pub use switched::set_names;
 mod turn;
 mod undo;
 mod words;
@@ -335,6 +337,8 @@ impl Transcript {
                 reference,
                 replaced,
             } => self.model_set(reference, replaced, texts),
+            Push::PersonaSet(id) => self.persona_set(id, texts),
+            Push::PresetSet(id) => self.preset_set(id, texts),
             Push::Said {
                 seq,
                 text,

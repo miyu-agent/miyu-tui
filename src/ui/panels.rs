@@ -77,9 +77,16 @@ pub(super) fn content(
         }
         Some(crate::app::Panel::Pick { kind, selected }) => {
             let (list, default) = seen.pick_list(kind);
+            // 开着会话的是中途换（「新会话：人格、工作区」第 2a 条）：现在用的那一个。
+            let t = &seen.talk.transcript;
+            let current = t.session.as_ref().map(|_| match kind {
+                crate::app::new_session::Kind::Persona => t.persona.as_deref().unwrap_or(""),
+                crate::app::new_session::Kind::Preset => t.preset.as_deref().unwrap_or(""),
+            });
             persona_list::lines(
                 list,
                 default,
+                current,
                 kind,
                 selected,
                 &seen.config.text.persona_box,

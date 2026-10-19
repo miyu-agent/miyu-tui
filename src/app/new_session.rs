@@ -121,6 +121,13 @@ impl App {
                 },
             );
         }
+        // 正文里「已换成」照名字写（`transcript/switched.rs`）。
+        let names = list
+            .iter()
+            .filter(|p| !p.id.is_empty())
+            .map(|p| (p.id.clone(), p.label().to_string()))
+            .collect();
+        crate::transcript::set_names(kind == Kind::Persona, names);
         self.pick_mut(kind).list = Some(list);
         self.ask_next();
     }
@@ -209,10 +216,22 @@ impl App {
             KeyCode::Enter => {
                 if let Some(p) = list.get(selected).filter(|p| p.problem.is_none()) {
                     self.boxes.panel = None;
-                    self.choose(kind, p.id.clone());
-                    self.ask_next();
+                    match self.current_pick(kind) {
+                        // 开着的会话中途换：选的就是现在的不发，换成了照推来的办（第 2a 条）。
+                        Some(current) => {
+                            if current != p.id {
+                                self.switch_pick(kind, p.id.clone());
+                            }
+                        }
+                        None => {
+                            self.choose(kind, p.id.clone());
+                            self.ask_next();
+                        }
+                    }
                 }
             }
+            // 开着的会话中途换：`Esc` 关、不换。
+            KeyCode::Esc if !self.not_opened() => self.boxes.panel = None,
             // 照光标起初停的那一个（上一次选的、默认的）；人格都用不了的就是无人格（第一行），不卡住（2026-10-08 项目主人：
             // 人格允许为空）。
             KeyCode::Esc => {
@@ -231,6 +250,15 @@ impl App {
             }
             _ => {}
         }
+    }
+
+    /// 开着的会话中途换：交给核心（`session.configure`）。
+    fn switch_pick(&mut self, kind: Kind, id: String) {
+        let command = match kind {
+            Kind::Persona => Command::Persona(id),
+            Kind::Preset => Command::Preset(id),
+        };
+        self.link.core.send(command);
     }
 
     /// 选了：记着，告诉核心开会话时带上。
@@ -260,28 +288,39 @@ impl App {
         self.ask_next();
     }
 
-    /// `/persona`、`/preset`：还没开会话的再开框换；开了的弹一句不能换。
+    /// `/persona`、`/preset`：还没开会话的再开框换；开了的中途换（「新会话：人格、工作区」第 2a 条，核心 P-13），在回答时
+    /// 不开、弹一句先打断或者等它做完。
     pub(super) fn pick_command(&mut self, kind: Kind) {
-        if !self.not_opened() {
-            let texts = &self.config.text.persona_box;
-            let note = match kind {
-                Kind::Persona => texts.locked.clone(),
-                Kind::Preset => texts.preset_locked.clone(),
-            };
+        let opened = !self.not_opened();
+        if opened && self.talk.transcript.running.is_some() {
+            let note = self.config.text.persona_box.busy.clone();
             self.hint(note, false);
             return;
         }
+        let current = self.current_pick(kind);
         let pick = self.pick(kind);
         let Some(list) = pick.list.as_ref().filter(|l| !l.is_empty()) else {
             return;
         };
-        let at = pick
-            .chosen
+        let wanted = if opened { current } else { pick.chosen.clone() };
+        let at = wanted
             .as_deref()
             .and_then(|id| list.iter().position(|p| p.id == id))
             .or_else(|| pick.default_index())
             .unwrap_or(0);
         self.boxes.panel = Some(Panel::Pick { kind, selected: at });
+    }
+
+    /// 开着的会话现在用的那一个：无人格的是空的编号（列表第一行）；还没开会话的是 `None`。
+    pub(super) fn current_pick(&self, kind: Kind) -> Option<String> {
+        if self.not_opened() {
+            return None;
+        }
+        let t = &self.talk.transcript;
+        Some(match kind {
+            Kind::Persona => t.persona.clone().unwrap_or_default(),
+            Kind::Preset => t.preset.clone().unwrap_or_default(),
+        })
     }
 
     /// 新会话：选的都清掉，再问（`/new`）。

@@ -251,6 +251,10 @@ pub enum Push {
         /// 内核退回默认时原来的引用。
         replaced: Option<String>,
     },
+    /// 会话换了人格（`session.policy_changed` 的 `persona`，核心 P-13）：编号，空的是换成无人格。
+    PersonaSet(String),
+    /// 会话换了预设（`session.policy_changed` 的 `preset`，核心 P-13）：编号。
+    PresetSet(String),
     /// 订了「空了告诉我」的会话空下来了、等作废了、没了（`peer.idle`，核心 C-6）。
     PeerIdle {
         /// 被等的会话的整个编号。
@@ -326,6 +330,13 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
             if let Some(level) = Level::parse(&text(&body["permission"]["level"])) {
                 let read_only = body["permission"]["read_only"] == true;
                 out.push(Push::Policy { level, read_only });
+            }
+            // 中途换人格、预设（核心 P-13）：之后核心马上开一轮压缩，照手动压缩画。
+            if let Some(persona) = body["persona"].as_str() {
+                out.push(Push::PersonaSet(persona.to_string()));
+            }
+            if let Some(preset) = body["preset"].as_str() {
+                out.push(Push::PresetSet(preset.to_string()));
             }
             if let Some(reference) = body["model"].as_str() {
                 out.push(Push::ModelSet {

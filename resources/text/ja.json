@@ -597,14 +597,17 @@
     "title": "ペルソナを選んでください",
     "hint": "↑/↓ 選択 · Enter 決定 · Esc 既定のまま",
     "default_mark": "既定",
-    "locked": "始まったセッションのペルソナは変えられません。/new のあとで選んでください",
     "chosen": "ペルソナ {name}",
     "preset_title": "プリセットを選んでください",
     "preset_need": "先にプリセットを選んでください",
-    "preset_locked": "始まったセッションのプリセットは変えられません。/new のあとで選んでください",
     "preset_chosen": "プリセット {name}",
     "none": "人格なし",
-    "none_note": "人物設定なし"
+    "none_note": "人物設定なし",
+    "switch_note": "切り替える前に会話を圧縮し、キャッシュが切れて全文を再送するのを防ぎます",
+    "current_mark": "現在",
+    "busy": "応答中です：中断するか、終わるまで待ってください",
+    "switched": "ペルソナを「{name}」に切り替えました",
+    "preset_switched": "プリセットを「{name}」に切り替えました"
   },
   "workspace": {
     "need_path": "パスを指定してください",
