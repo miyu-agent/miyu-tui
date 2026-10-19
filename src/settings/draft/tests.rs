@@ -100,24 +100,21 @@ fn a_package_secret_is_named_like_the_web_head_names_it() {
     // 「配置页」第 48 条：别的密钥项照网页设置页起名（键转小写、非字母数字换 `-`、接毫秒数的 36 进制），引用写进那一项。
     let data = sample();
     let mut draft = Draft::default();
-    draft.set_secret_at("miyu-onebot.token", "t0ken".into());
+    draft.set_secret_at("im.token", "t0ken".into());
     let secrets = draft.secrets(&data, 1_760_000_000_000);
     assert_eq!(
         secrets,
         vec![(
-            "miyu-onebot.token".into(),
-            "miyu-onebot-token-mgj6k3cw".into(),
+            "im.token".into(),
+            "im-token-mgj6k3cw".into(),
             "t0ken".into()
         )]
     );
-    let named = [(
-        "miyu-onebot.token".to_string(),
-        "miyu-onebot-token-mgj6k3cw".to_string(),
-    )];
+    let named = [("im.token".to_string(), "im-token-mgj6k3cw".to_string())];
     let sent = draft.request(&data, &named);
     assert_eq!(
         sent["changes"],
-        json!([{"key": "miyu-onebot.token", "value": {"secret": "miyu-onebot-token-mgj6k3cw"},
+        json!([{"key": "im.token", "value": {"secret": "im-token-mgj6k3cw"},
                 "expect": {}}])
     );
     assert!(

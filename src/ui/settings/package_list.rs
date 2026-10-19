@@ -64,8 +64,8 @@ mod tests {
                 count: 5,
             },
             Listed {
-                id: "onebot".into(),
-                name: "接入QQ".into(),
+                id: "im".into(),
+                name: "接入通讯平台".into(),
                 summary: None,
                 count: 12,
             },
@@ -73,7 +73,11 @@ mod tests {
         let width = 60;
         let rows = lines(&list, 1, &config.text.settings, width);
         let text: Vec<String> = rows.iter().map(|(l, _)| l.to_string()).collect();
-        assert!(text[0].starts_with("人格记忆  记住你说过的事"), "{text:?}");
+        // 名字一列照最长的「接入通讯平台」对齐，再空两格写说明。
+        assert!(
+            text[0].starts_with("人格记忆      记住你说过的事"),
+            "{text:?}"
+        );
         for row in &text {
             assert_eq!(
                 unicode_width::UnicodeWidthStr::width(row.as_str()),

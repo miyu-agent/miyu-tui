@@ -251,7 +251,7 @@ fn a_secret_being_typed_is_drawn_as_dots() {
     use crate::settings::popup::Popup;
     let config = Config::builtin().unwrap();
     let mut p = page(&config);
-    let mut edit = LineEdit::open("miyu-onebot.token", "令牌", false, &serde_json::Value::Null);
+    let mut edit = LineEdit::open("im.token", "令牌", false, &serde_json::Value::Null);
     edit.editor.set("t0ken");
     p.popup = Some(Popup::Line(edit.to(Target::Secret)));
     let (text, _) = screen(&mut p, &config, 120, 30);
