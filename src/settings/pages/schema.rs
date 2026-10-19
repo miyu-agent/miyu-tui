@@ -41,6 +41,8 @@ pub struct Item {
     pub page: String,
     /// 哪一组。
     pub group: String,
+    /// 属于哪个包（核心给的 `package`）；没写的是空的，照组的编号算（「配置页」第 43a 条）。
+    pub package: String,
     /// 常用项：排在组里前面。
     pub common: bool,
 }
@@ -197,6 +199,7 @@ impl Schema {
                 name: text(&i["name"]),
                 page: text(&i["page"]),
                 group: text(&i["group"]),
+                package: text(&i["package"]),
                 common: i["common"] == true,
             })
             // 键里有人起的名字的归供应商和模型；别的头专有的不列（蓝图「配置页」第 5 条）。
