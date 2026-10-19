@@ -28,7 +28,7 @@ pub(super) fn content(
         Some(crate::app::Panel::Models) => match &seen.boxes.model_list {
             Some(list) => model_list::lines(
                 list,
-                seen.talk.transcript.model_ref(),
+                seen.talk.transcript.current_ref().as_deref(),
                 seen.config,
                 width,
                 max,

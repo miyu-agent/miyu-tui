@@ -124,6 +124,10 @@ pub fn draw(look: &Look, icon: Icon) -> RgbaImage {
                 .zip(usize::try_from(x).ok())
                 .and_then(|(r, c)| cells.get(r).and_then(|row| row.get(c)).copied().flatten());
             let rgb = match cell {
+                // 抱着电脑的不露嘴（2026-10-20 项目主人）：嘴那几格照脸画。
+                Some(cell) if icon == Icon::Working && cell.mark == LINE_MARK => {
+                    color(cell.part, ' ', LEVELS - 1)
+                }
                 Some(cell) => {
                     let found = ramp.iter().position(|c| *c == cell.mark).unwrap_or(0) as f64;
                     let level = ((found / top) * (LEVELS - 1) as f64).round() as usize;
@@ -270,5 +274,45 @@ mod tests {
             "不重画"
         );
         drop(std::fs::remove_dir_all(&dir));
+    }
+
+    /// 嘴的颜色在第几格（照没放大的格子数）。
+    fn mouth_cells(icon: Icon) -> Vec<(u32, u32)> {
+        let picture = draw(&Config::builtin().unwrap().mascot, icon);
+        let side = picture.width() / SCALE;
+        let line = super::mix(MORNING.head_shade, MORNING.outline, super::LINE_SHADE);
+        let line = [line[0], line[1], line[2], 255];
+        (0..side)
+            .flat_map(|y| (0..side).map(move |x| (x, y)))
+            .filter(|&(x, y)| picture.get_pixel(x * SCALE, y * SCALE).0 == line)
+            .collect()
+    }
+
+    #[test]
+    fn the_mouth_is_one_cell_thick_in_the_middle_and_the_laptop_one_shows_none() {
+        // 2026-10-20 项目主人：中间嘴巴的地方不需要加厚；玩电脑的不要漏嘴。
+        let mouth = mouth_cells(Icon::Standing);
+        assert!(!mouth.is_empty());
+        let side = u32::from(super::GRID) + 2;
+        for x in [side / 2 - 1, side / 2] {
+            // 肚子上的圈同一个颜色，从第 17 行起：只数上面那道锯齿线。
+            let thick = mouth.iter().filter(|(cx, cy)| *cx == x && *cy < 17).count();
+            assert_eq!(thick, 1, "正中第 {x} 列只一格：{mouth:?}");
+        }
+        assert!(mouth_cells(Icon::Working).is_empty(), "抱着电脑的不露嘴");
+    }
+
+    /// 画出来看（`ICON_OUT=<目录> cargo test dump_icons -- --ignored`）：调吉祥物的格子时用。
+    #[test]
+    #[ignore]
+    fn dump_icons() {
+        let look = Config::builtin().unwrap().mascot;
+        let out = std::path::PathBuf::from(std::env::var("ICON_OUT").unwrap());
+        draw(&look, Icon::Standing)
+            .save(out.join("standing.png"))
+            .unwrap();
+        draw(&look, Icon::Working)
+            .save(out.join("working.png"))
+            .unwrap();
     }
 }

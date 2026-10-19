@@ -57,6 +57,8 @@ pub enum Hit {
     PickRow(usize),
     /// 悬浮窗的第几个按钮。
     Button(usize),
+    /// 包页面那一行末尾的上游：点了照 [`Settings::link`] 打开。
+    Link,
 }
 
 /// 按了一个键以后界面要做的。
@@ -131,6 +133,8 @@ enum Load {
 pub struct Settings {
     /// 照 `--page config` 起来的：主菜单按 `Esc` 退出程序。
     pub standalone: bool,
+    /// 这一帧包页面上画着的上游网址（[`Hit::Link`]）。
+    pub link: Option<String>,
     /// 在主菜单上。
     pub on_menu: bool,
     /// 照 `/connect` 直接进的「供应商和模型」：`Esc` 从这一页直接回对话，不经过主菜单。
@@ -180,6 +184,7 @@ impl Settings {
     pub fn open(standalone: bool, online: bool) -> Self {
         let mut page = Self {
             standalone,
+            link: None,
             on_menu: true,
             online,
             ..Self::default()

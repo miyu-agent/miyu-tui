@@ -120,18 +120,16 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         }
         _ => None,
     };
-    let shift = u16::from(origin.is_some());
+    // 和面包屑之间空一行，下面照旧空一行再起项（2026-10-20 项目主人：贴着面包屑不好看）。
+    let shift = if origin.is_some() { 2 } else { 0 };
+    page.link = None;
     if let Some(origin) = origin {
-        let row = stage.y + 1;
-        frame.buffer_mut().set_line(
-            stage.x + 2,
-            row,
-            &Line::styled(
-                fit(&origin, usize::from(stage.width.saturating_sub(2))),
-                theme::dim(),
-            ),
-            stage.width.saturating_sub(2),
-        );
+        let link = match &section {
+            Section::Page(id, _) => package_of(id).and_then(|pkg| page.more.upstream(pkg)),
+            _ => None,
+        }
+        .map(str::to_string);
+        origin_row(frame, stage, &origin, link, page);
     }
     let body = Rect::new(
         stage.x,
@@ -326,4 +324,37 @@ fn list_lines(
             (Line::from(spans), i == at)
         })
         .collect()
+}
+
+/// 包页面面包屑下面那一行（第 43a 条）：作者、从哪来暗色；末尾的上游照链接的颜色画、能点，点了用浏览器打开
+/// （2026-10-20 项目主人：链接不可点击跳转）。
+fn origin_row(
+    frame: &mut Frame,
+    stage: Rect,
+    origin: &str,
+    link: Option<String>,
+    page: &mut Settings,
+) {
+    let room = usize::from(stage.width.saturating_sub(2));
+    let text = fit(origin, room);
+    let shown = link.as_deref().map(|l| l.trim_start_matches("https://"));
+    let (lead, tail) = match shown.filter(|s| text.ends_with(s)) {
+        Some(s) => text.split_at(text.len() - s.len()),
+        None => (text.as_str(), ""),
+    };
+    let x = stage.x + 2;
+    let row = stage.y + 2;
+    let line = Line::from(vec![
+        Span::styled(lead.to_string(), theme::dim()),
+        Span::styled(tail.to_string(), theme::md_url()),
+    ]);
+    frame
+        .buffer_mut()
+        .set_line(x, row, &line, stage.width.saturating_sub(2));
+    if !tail.is_empty() {
+        let start = x + u16::try_from(lead.width()).unwrap_or(0);
+        let width = u16::try_from(tail.width()).unwrap_or(0);
+        page.hits.push((Rect::new(start, row, width, 1), Hit::Link));
+        page.link = link;
+    }
 }

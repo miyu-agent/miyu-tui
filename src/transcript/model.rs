@@ -105,6 +105,16 @@ impl Transcript {
         self.models.reference.as_deref()
     }
 
+    /// `/model` 框里算「现在用的」那一个：会话用的；还没开会话的照底栏写的（默认的聊天模型、首页选过的），
+    /// 2026-10-20 项目主人报：空会话里 `/model` 没有圆点。
+    pub fn current_ref(&self) -> Option<String> {
+        self.model_ref().map(str::to_string).or_else(|| {
+            self.model
+                .as_ref()
+                .map(|(model, endpoint)| format!("{endpoint}/{model}"))
+        })
+    }
+
     /// 还没开会话：底栏照默认的聊天模型（`models.chat`）写模型和这一档；开了会话的不动（照推来的）。
     pub fn show_default(&mut self, reference: &str, effort: Option<String>) {
         if self.models.reference.is_some() {

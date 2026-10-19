@@ -28,6 +28,13 @@ impl Settings {
         };
         let enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
         match hit {
+            // 包页面那一行的上游：用浏览器打开（第 43a 条）。
+            Hit::Link => {
+                if let Some(url) = self.link.clone() {
+                    // 打不开的不用说：和正文里点链接一样，系统没有能开它的程序时什么都不做。
+                    if crate::open::open(&url).is_err() {}
+                }
+            }
             Hit::Menu(i) => {
                 self.more.menu_at = i;
                 return self.key(enter, texts);
