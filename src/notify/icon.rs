@@ -12,16 +12,16 @@ use image::imageops::FilterType;
 /// 缩到最长边几个像素。
 const SIDE: u32 = 128;
 
-/// 这一条通知用哪张：头像缩好的那份，没有头像、缩不成的用吉祥物画成的（`mascot` 是现在的吉祥物和它的颜色，没有的不带
+/// 这一条通知用哪张：头像缩好的那份，没有头像、缩不成的用吉祥物画成的（`mascot` 是现在的吉祥物，没有的不带
 /// 图标）；`dir` 是放它们的目录，写不进去的是 `None`。
 pub fn pick(avatar: Option<&Path>, mascot: Option<&Mascot>, dir: &Path) -> Option<PathBuf> {
     avatar
         .and_then(|a| small(a, dir))
-        .or_else(|| mascot.and_then(|(look, colors)| super::mascot_icon::file(look, colors, dir)))
+        .or_else(|| mascot.and_then(|look| super::mascot_icon::file(look, dir)))
 }
 
-/// 现在的吉祥物和它四块的颜色。
-pub type Mascot = (crate::mascot::Look, super::mascot_icon::Colors);
+/// 现在的吉祥物（换了吉祥物包的照包的样子画）。
+pub type Mascot = crate::mascot::Look;
 
 /// 头像缩好的那份：名字照原文件的路径、大小、改的时刻算，已经在的直接用。
 fn small(avatar: &Path, dir: &Path) -> Option<PathBuf> {
@@ -52,10 +52,7 @@ mod tests {
     fn an_avatar_is_shrunk_once_and_without_one_the_mascot_is_drawn() {
         let dir = std::env::temp_dir().join(format!("miyu-notify-icon-{}", std::process::id()));
         drop(std::fs::remove_dir_all(&dir));
-        let mascot: Mascot = (
-            crate::config::Config::builtin().unwrap().mascot,
-            [(9, 9, 9); 4],
-        );
+        let mascot: Mascot = crate::config::Config::builtin().unwrap().mascot;
         let mascot = Some(&mascot);
         let miyu = pick(None, mascot, &dir).expect("吉祥物画成的图");
         assert!(

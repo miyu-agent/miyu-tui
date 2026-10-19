@@ -103,7 +103,7 @@ pub struct Notifier {
     /// 这一条通知是哪个会话的：标题（没有的写 `texts.title`）、人格的头像（第 3 条，2026-10-17）。
     title: Option<String>,
     avatar: Option<PathBuf>,
-    /// 没有头像时画成图标的吉祥物和它的颜色（第 3 条，2026-10-19）。
+    /// 没有头像时画成图标的吉祥物（第 3 条，2026-10-19）。
     mascot: Option<icon::Mascot>,
 }
 
@@ -162,9 +162,9 @@ impl Notifier {
         self.avatar = avatar;
     }
 
-    /// 没有头像时画成图标的吉祥物：现在的样子和四块的颜色（头、耳朵、眼睛、鳍）。
-    pub fn mascot(&mut self, look: crate::mascot::Look, colors: [(u8, u8, u8); 4]) {
-        self.mascot = Some((look, colors));
+    /// 没有头像时画成图标的吉祥物：现在的样子（颜色固定照网页晨光那一套，`mascot_icon.rs`）。
+    pub fn mascot(&mut self, look: crate::mascot::Look) {
+        self.mascot = Some(look);
     }
 
     /// 出了一件要通知的事：标题是会话标题，正文只写为什么，图标照人格头像（第 3 条）。

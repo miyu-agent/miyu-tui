@@ -1,135 +1,190 @@
-//! 没有头像时通知的图标：终端的吉祥物画成的图（蓝图 `tui.md`「系统通知」第 3 条，2026-10-19 项目主人选「吉祥物画成图」）。
-//! 照首页画吉祥物的那一套逐点打光线（`mascot::render`），一个像素当一格、格子是方的：打中的照那一块的颜色、照亮度从暗到亮
-//! 涂，眼睛照眼睛的颜色涂满，没打中的透明。同一个样子、同一套颜色只画一次，存进缓存目录。
+//! 没有头像时通知的图标：终端的吉祥物画成的像素图（蓝图 `tui.md`「系统通知」第 3 条，2026-10-19 项目主人：先选「吉祥物画成图」，
+//! 看了嫌不够像素画、配色不好看，定照网页晨光主题那一只、符号化一些）。照网页 `packages/mascot/sprite.js` 的画法：24×24 格一格
+//! 一个像素，头、耳朵、鳍各两色（亮的和影子的），照那一格多亮在两个之间取四档；眼睛照原色；锯齿线和肚子上的圈是头的影子往轮廓色
+//! 靠一半；外面一圈一像素的轮廓；放大时不插值。颜色固定用晨光那一套，不跟着终端的配色走。
 
 use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 
+use image::imageops::{FilterType, resize};
 use image::{Rgba, RgbaImage};
 
 use crate::mascot::{Look, Part, Pose};
 
-/// 画多宽（像素）。
-const SIDE: u32 = 128;
-/// 最暗的地方还有原色的几成：照字的疏密涂，最稀的点也看得出是哪一块。
-const FLOOR: f64 = 0.45;
+/// 画多少格见方（同网页的 `cols`、`rows`）、头的半径、头的中心在第几行。
+const GRID: u16 = 24;
+const RADIUS: f64 = 8.0;
+const CENTER_ROW: f64 = 13.6;
+/// 亮暗分几档（同网页模型的 `levels`）。
+const LEVELS: usize = 4;
+/// 一格放大成几个像素：连轮廓 26 格，放大到 130 像素。
+const SCALE: u32 = 5;
+/// 锯齿线、肚子上的圈往轮廓色靠多少（同网页的 `line_shade`）。
+const LINE_SHADE: f64 = 0.5;
+/// 锯齿线画成的字：换成亮度那一串里没有的，好和最暗的那一档分开。
+const LINE_MARK: char = '\u{1}';
 
-/// 四块的颜色：头、耳朵、眼睛、鳍（照 [`Part`] 的先后）。
-pub type Colors = [(u8, u8, u8); 4];
-
-/// 这一块用哪个颜色。
-fn color_of(colors: &Colors, part: Part) -> (u8, u8, u8) {
-    match part {
-        Part::Head => colors[0],
-        Part::Ear => colors[1],
-        Part::Eye => colors[2],
-        Part::Fin => colors[3],
-    }
+/// 晨光那一套（网页 `theme-default` 的 `light_t_mascot_*`）。
+struct Palette {
+    head: [u8; 3],
+    head_shade: [u8; 3],
+    ear: [u8; 3],
+    ear_shade: [u8; 3],
+    fin: [u8; 3],
+    fin_shade: [u8; 3],
+    eye: [u8; 3],
+    outline: [u8; 3],
 }
 
-/// 画成图：`look` 照比例放大到 [`SIDE`] 像素宽，格子当成方的（`cell_aspect` 是 1），正面、睁着眼。
-pub fn draw(look: &Look, colors: &Colors) -> RgbaImage {
-    let k = f64::from(SIDE) / f64::from(look.cols.max(1));
-    let tall = f64::from(look.rows) * look.cell_aspect * k;
-    let square = Look {
-        cols: SIDE as u16,
-        rows: tall.round().clamp(1.0, f64::from(u16::MAX)) as u16,
-        radius: look.radius * k,
-        center_row: look.center_row * look.cell_aspect * k,
+const MORNING: Palette = Palette {
+    head: [0xfb, 0xf6, 0xef],
+    head_shade: [0xc9, 0xc3, 0xd9],
+    ear: [0xaa, 0xb2, 0xd6],
+    ear_shade: [0x73, 0x7b, 0xa3],
+    fin: [0xf4, 0x9a, 0xa8],
+    fin_shade: [0xc8, 0x64, 0x78],
+    eye: [0x3a, 0x63, 0xc9],
+    outline: [0x4a, 0x42, 0x60],
+};
+
+/// 两个颜色之间取 `k`（0 是 `a`）。
+fn mix(a: [u8; 3], b: [u8; 3], k: f64) -> [u8; 3] {
+    let step = |x: u8, y: u8| (f64::from(x) + (f64::from(y) - f64::from(x)) * k).round() as u8;
+    [step(a[0], b[0]), step(a[1], b[1]), step(a[2], b[2])]
+}
+
+/// 一格的颜色：眼睛照原色；锯齿线、肚子上的圈是头的影子往轮廓色靠一半；别的照第几档在影子和亮色之间取。
+fn color(part: Part, mark: char, level: usize) -> [u8; 3] {
+    let p = &MORNING;
+    if part == Part::Eye {
+        return p.eye;
+    }
+    if mark == LINE_MARK {
+        return mix(p.head_shade, p.outline, LINE_SHADE);
+    }
+    let (light, shade) = match part {
+        Part::Ear => (p.ear, p.ear_shade),
+        Part::Fin => (p.fin, p.fin_shade),
+        _ => (p.head, p.head_shade),
+    };
+    mix(shade, light, level as f64 / (LEVELS - 1) as f64)
+}
+
+/// 画成像素图：照 `look` 的形状（换了吉祥物包的照包），网页那一套的格子大小，正面、睁着眼。
+pub fn draw(look: &Look) -> RgbaImage {
+    let mut grid = Look {
+        cols: GRID,
+        rows: GRID,
+        radius: RADIUS,
+        center_row: CENTER_ROW,
         cell_aspect: 1.0,
         ..look.clone()
     };
-    let ramp: Vec<char> = square.ramp.chars().collect();
+    grid.face.line_mark = LINE_MARK;
+    let ramp: Vec<char> = grid.ramp.chars().collect();
     let top = ramp.len().saturating_sub(1).max(1) as f64;
-    let cells = crate::mascot::render(&square, &Pose::facing(0.0, 0.0));
-    let mut out = RgbaImage::new(u32::from(square.cols), u32::from(square.rows));
-    for (y, row) in cells.into_iter().enumerate() {
-        for (x, cell) in row.into_iter().enumerate() {
-            let Some(cell) = cell else { continue };
-            let (r, g, b) = color_of(colors, cell.part);
-            let lum = if cell.part == Part::Eye {
-                1.0
-            } else {
-                let level = ramp.iter().position(|c| *c == cell.mark).unwrap_or(0) as f64;
-                FLOOR + (1.0 - FLOOR) * (level / top)
+    let cells = crate::mascot::render(&grid, &Pose::facing(0.0, 0.0));
+    let solid = |x: i32, y: i32| {
+        usize::try_from(y)
+            .ok()
+            .and_then(|y| cells.get(y))
+            .zip(usize::try_from(x).ok())
+            .and_then(|(row, x)| row.get(x))
+            .is_some_and(Option::is_some)
+    };
+    // 四边各多一格给轮廓。
+    let side = u32::from(GRID) + 2;
+    let mut small = RgbaImage::new(side, side);
+    for y in -1..=i32::from(GRID) {
+        for x in -1..=i32::from(GRID) {
+            let at = (
+                u32::try_from(x + 1).unwrap_or(0),
+                u32::try_from(y + 1).unwrap_or(0),
+            );
+            let cell = usize::try_from(y)
+                .ok()
+                .zip(usize::try_from(x).ok())
+                .and_then(|(r, c)| cells.get(r).and_then(|row| row.get(c)).copied().flatten());
+            let rgb = match cell {
+                Some(cell) => {
+                    let found = ramp.iter().position(|c| *c == cell.mark).unwrap_or(0) as f64;
+                    let level = ((found / top) * (LEVELS - 1) as f64).round() as usize;
+                    color(cell.part, cell.mark, level)
+                }
+                None if solid(x - 1, y)
+                    || solid(x + 1, y)
+                    || solid(x, y - 1)
+                    || solid(x, y + 1) =>
+                {
+                    MORNING.outline
+                }
+                None => continue,
             };
-            let shade = |v: u8| (f64::from(v) * lum).round().clamp(0.0, 255.0) as u8;
-            if let (Ok(x), Ok(y)) = (u32::try_from(x), u32::try_from(y)) {
-                out.put_pixel(x, y, Rgba([shade(r), shade(g), shade(b), 255]));
-            }
+            small.put_pixel(at.0, at.1, Rgba([rgb[0], rgb[1], rgb[2], 255]));
         }
     }
-    out
+    resize(&small, side * SCALE, side * SCALE, FilterType::Nearest)
 }
 
-/// 画好的那一张放进 `dir`：名字照样子和颜色算，已经在的直接用；写不进去的是 `None`。
-pub fn file(look: &Look, colors: &Colors, dir: &Path) -> Option<PathBuf> {
+/// 画好的那一张放进 `dir`：名字照样子算，已经在的直接用；写不进去的是 `None`。
+pub fn file(look: &Look, dir: &Path) -> Option<PathBuf> {
     let mut h = DefaultHasher::new();
     format!("{look:?}").hash(&mut h);
-    colors.hash(&mut h);
     let path = dir.join(format!("mascot-{:016x}.png", h.finish()));
     if path.is_file() {
         return Some(path);
     }
     fs::create_dir_all(dir).ok()?;
-    draw(look, colors).save(&path).ok()?;
+    draw(look).save(&path).ok()?;
     Some(path)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Colors, draw, file};
+    use super::{MORNING, SCALE, draw, file};
     use crate::config::Config;
 
-    const COLORS: Colors = [(200, 200, 200), (100, 100, 100), (255, 0, 0), (0, 0, 255)];
-
     #[test]
-    fn the_mascot_is_drawn_square_with_its_parts_colored_and_a_clear_background() {
-        // 2026-10-19 项目主人：没有头像的通知用终端的吉祥物画成的图。
+    fn the_mascot_is_pixel_art_in_the_morning_colors_with_an_outline() {
+        // 2026-10-19 项目主人：照网页晨光主题那一只、符号化一些。
         let look = Config::builtin().unwrap().mascot;
-        let picture = draw(&look, &COLORS);
-        assert_eq!(picture.width(), 128);
-        let tall = f64::from(look.rows) * look.cell_aspect * 128.0 / f64::from(look.cols);
-        assert_eq!(
-            f64::from(picture.height()),
-            tall.round(),
-            "格子当方的，比例照终端里看到的"
-        );
-        let pixels: Vec<_> = picture.pixels().collect();
-        assert_eq!(pixels[0].0[3], 0, "角上没打中：透明");
-        assert!(
-            pixels.iter().any(|p| p.0 == [255, 0, 0, 255]),
-            "眼睛照眼睛的颜色涂满"
-        );
-        assert!(
-            pixels
-                .iter()
-                .any(|p| p.0[3] == 255 && p.0[2] > 0 && p.0[0] == 0),
-            "鳍是鳍的颜色"
-        );
-        let head = pixels
-            .iter()
-            .filter(|p| p.0[3] == 255 && p.0[0] == p.0[1] && p.0[1] == p.0[2] && p.0[0] > 150)
-            .count();
-        assert!(head > 1000, "头是头的颜色、占一大块：{head}");
+        let picture = draw(&look);
+        assert_eq!(picture.width(), 26 * SCALE, "24 格连轮廓，放大不插值");
+        let has = |rgb: [u8; 3]| {
+            picture
+                .pixels()
+                .any(|p| p.0 == [rgb[0], rgb[1], rgb[2], 255])
+        };
+        assert!(has(MORNING.outline), "一圈轮廓");
+        assert!(has(MORNING.eye), "眼睛照原色");
+        assert!(has(MORNING.head), "头最亮的那一档就是晨光的奶白");
+        assert!(has(MORNING.fin) || has(MORNING.fin_shade), "鳍是粉的");
+        assert_eq!(picture.get_pixel(0, 0).0[3], 0, "角上透明");
+        // 放大不插值：每个格子里的像素颜色都一样。
+        let colors: std::collections::BTreeSet<[u8; 4]> = picture.pixels().map(|p| p.0).collect();
+        assert!(colors.len() <= 20, "只有几种颜色，像素画：{}", colors.len());
+        for y in (0..picture.height()).step_by(SCALE as usize) {
+            for x in (0..picture.width()).step_by(SCALE as usize) {
+                let first = picture.get_pixel(x, y);
+                assert_eq!(picture.get_pixel(x + SCALE - 1, y + SCALE - 1), first);
+            }
+        }
     }
 
     #[test]
-    fn one_look_and_color_set_is_drawn_once() {
+    fn one_look_is_drawn_once() {
         let look = Config::builtin().unwrap().mascot;
         let dir = std::env::temp_dir().join(format!("miyu-mascot-icon-{}", std::process::id()));
         drop(std::fs::remove_dir_all(&dir));
-        let first = file(&look, &COLORS, &dir).expect("画得出来");
+        let first = file(&look, &dir).expect("画得出来");
         let stamp = std::fs::metadata(&first).unwrap().modified().unwrap();
-        assert_eq!(file(&look, &COLORS, &dir), Some(first.clone()));
+        assert_eq!(file(&look, &dir), Some(first.clone()));
         assert_eq!(
             std::fs::metadata(&first).unwrap().modified().unwrap(),
             stamp,
             "不重画"
         );
-        let other = file(&look, &[(1, 2, 3); 4], &dir).expect("换了颜色");
-        assert_ne!(other, first, "换了颜色另画一张");
         drop(std::fs::remove_dir_all(&dir));
     }
 }

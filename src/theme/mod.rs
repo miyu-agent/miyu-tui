@@ -22,7 +22,7 @@ use std::sync::{LazyLock, RwLock};
 
 use ratatui::style::{Color, Modifier, Style};
 
-pub use depth::{Depth, approx_rgb, degrade};
+pub use depth::{Depth, degrade};
 pub use ground::{paint, set_ground};
 pub use motion::{frontier, lifted};
 pub use palette::{Palette, Tone, builtin};
