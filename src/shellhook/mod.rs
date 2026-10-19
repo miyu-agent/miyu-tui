@@ -81,7 +81,24 @@ pub fn main(args: Vec<String>) -> ExitCode {
             )),
         },
         "classify" => return classify_stdin(options.shell.unwrap_or(Shell::Fish)),
-        "say" => return say(options.leftover, &words),
+        "say" => return say(options.leftover, options.shell_pid, &words),
+        "follow" => match &options.watch {
+            Some(path) => return say::follow::run(path),
+            None => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "follow needs --watch",
+            )),
+        },
+        "report" => match options.shell_pid {
+            Some(pid) => match say::report::run(pid, options.leftover.as_deref()) {
+                Ok(code) => return code,
+                Err(e) => Err(e),
+            },
+            None => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "report needs --shell-pid",
+            )),
+        },
         other => {
             eprintln!("unknown command: {other}\n\n{USAGE}");
             return ExitCode::from(BAD_USAGE);
@@ -103,6 +120,10 @@ struct Options {
     program: Option<PathBuf>,
     /// `say` 提前敲的字写在哪（脚本读了放回命令行）。
     leftover: Option<PathBuf>,
+    /// 哪个 shell（`$fish_pid`）：`say` 交给盯后台的、`report` 拿哪个信箱。
+    shell_pid: Option<u32>,
+    /// `follow` 读的那份。
+    watch: Option<PathBuf>,
 }
 
 impl Options {
@@ -119,6 +140,11 @@ impl Options {
                 }
                 "--program" => options.program = Some(args.next().ok_or_else(value)?.into()),
                 "--leftover" => options.leftover = Some(args.next().ok_or_else(value)?.into()),
+                "--watch" => options.watch = Some(args.next().ok_or_else(value)?.into()),
+                "--shell-pid" => {
+                    let pid = args.next().ok_or_else(value)?;
+                    options.shell_pid = Some(pid.parse().map_err(|_| format!("bad pid: {pid}"))?);
+                }
                 other => return Err(format!("unknown option: {other}")),
             }
         }
@@ -152,13 +178,20 @@ fn classify_stdin(shell: Shell) -> ExitCode {
 }
 
 /// 把标准输入的那句话交给她，这一轮印在 shell 里（`say/`）。
-fn say(leftover: Option<PathBuf>, words: &Words) -> ExitCode {
+fn say(leftover: Option<PathBuf>, shell: Option<u32>, words: &Words) -> ExitCode {
     let mut text = String::new();
     if let Err(e) = io::stdin().read_to_string(&mut text) {
         eprintln!("{e}");
         return ExitCode::FAILURE;
     }
-    match say::run(say::Ask { text, leftover }, words) {
+    match say::run(
+        say::Ask {
+            text,
+            leftover,
+            shell,
+        },
+        words,
+    ) {
         Ok(code) => code,
         Err(e) => {
             eprintln!("{e}");

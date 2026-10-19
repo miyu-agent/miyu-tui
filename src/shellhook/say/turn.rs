@@ -54,6 +54,10 @@ pub struct Turn {
     pub board: crate::jobs::Board,
     /// 这一轮待办变过：收尾时把最后的样子印出来。
     pub todos_changed: bool,
+    /// 这一轮派出去的后台任务（不算前台跑的子代理）：收工时还没结束的交给盯后台的进程（`follow.rs`）。
+    pub jobs: Vec<crate::core::JobStart>,
+    /// 其中结束了的任务编号。
+    pub ended_jobs: Vec<String>,
     /// 还没发出去的那句话：问到终端会话、接上以后发。
     pending: Option<String>,
     /// 这一句在哪个目录说。
@@ -83,9 +87,38 @@ pub struct Turn {
 impl Turn {
     /// 要说 `text`，在 `cwd` 说。
     pub fn new(text: String, cwd: Option<String>, look: super::look::Look) -> Self {
+        Self::blank(Some(text), cwd, look)
+    }
+
+    /// 接上一轮已经开了的（后台回报叫醒她的那一轮，`report.rs`）：不说话，照 `Open` 接上会话、补完最新一页以后画它。
+    pub fn attach(session: String, turn: u64, look: super::look::Look) -> Self {
+        let mut this = Self::blank(None, None, look);
+        this.transcript.starting = Starting::No;
+        this.transcript.session = Some(session);
+        this.transcript.link = Link::Ready;
+        this.sent = true;
+        this.paging = true;
+        this.ours = Some(turn);
+        this
+    }
+
+    /// 画完了：配色交给下一件（`report.rs`）。
+    pub fn into_look(self) -> super::look::Look {
+        self.look
+    }
+
+    /// 排哪几条（`view.rs`）。
+    pub fn scope(&self) -> super::view::Scope {
+        super::view::Scope::Turn(self.ours)
+    }
+
+    fn blank(text: Option<String>, cwd: Option<String>, look: super::look::Look) -> Self {
+        let text = text.unwrap_or_default();
         let mut transcript = Transcript::default();
-        transcript.user(text.clone(), Vec::new());
-        transcript.starting = Starting::Waiting;
+        if !text.is_empty() {
+            transcript.user(text.clone(), Vec::new());
+            transcript.starting = Starting::Waiting;
+        }
         Self {
             transcript,
             asking: super::asking::Asking::default(),
@@ -93,7 +126,9 @@ impl Turn {
             look,
             board: crate::jobs::Board::default(),
             todos_changed: false,
-            pending: Some(text.clone()),
+            jobs: Vec::new(),
+            ended_jobs: Vec::new(),
+            pending: (!text.is_empty()).then(|| text.clone()),
             cwd,
             paging: false,
             sent: false,
@@ -189,15 +224,32 @@ impl Turn {
                 }
             }
             Update::Answer { tag, result } if tag == THEME_TAG => {
-                if let Ok(got) = result {
-                    self.look.configured(&got);
-                }
+                self.look.configured(result.as_ref().ok());
             }
             Update::Personas(list) => self.look.personas(list),
             Update::SessionPersona(id) => {
                 self.look.persona(id.clone());
                 self.transcript
                     .update(Update::SessionPersona(id), &config.text);
+            }
+            // 这一轮派出去的后台任务：记进任务表；前台跑的子代理不是后台任务（同全屏）。
+            Update::Push(Push::JobStarted(start)) if self.live() && !start.foreground => {
+                self.board.start(&start, None, std::time::Instant::now());
+                self.jobs.push(start);
+            }
+            // 任务结束了：正文里照全屏写那一行（绿点、红叉）。
+            Update::Push(Push::JobEnded(end)) if self.live() => {
+                let now = std::time::Instant::now();
+                if let Some(id) = self.board.end(&end, now) {
+                    crate::jobs::announce(
+                        &self.board,
+                        &mut self.transcript,
+                        id,
+                        now,
+                        &config.text.jobs,
+                    );
+                    self.ended_jobs.push(end.job);
+                }
             }
             // 待办换了：发出去以后推来的才算（补发的那一页里的是以前的）。
             Update::Push(Push::Todos { todos }) if self.sent => {
@@ -220,15 +272,30 @@ impl Turn {
             }
             update => self.transcript.update(update, &config.text),
         }
-        // 这句话开的那一轮结束了：收工。
-        if self.ours.is_some() && self.transcript.running.is_none() {
+        // 这句话开的那一轮结束了：收工（接上的等最新一页补完再看）。
+        if self.ours.is_some() && !self.paging && self.transcript.running.is_none() {
             self.done = true;
         }
     }
 
+    /// 现在推来的是这一轮里的：发出去了、补发的那一页读完了。
+    fn live(&self) -> bool {
+        self.sent && !self.paging
+    }
+
+    /// 还没结束的后台任务。
+    pub fn running_jobs(&self) -> Vec<crate::core::JobStart> {
+        self.jobs
+            .iter()
+            .filter(|j| !self.ended_jobs.contains(&j.job))
+            .cloned()
+            .collect()
+    }
+
     /// 认出你说的那句落盘的序号、它开的那一轮。
     fn watch(&mut self, update: &Update) {
-        if !self.sent {
+        // 接上已开的那一轮的不认：没说话，这一轮是给定的。
+        if !self.sent || self.said.is_empty() {
             return;
         }
         match update {
@@ -246,7 +313,7 @@ impl Turn {
             {
                 self.ours = Some(*turn);
             }
-            Update::Push(Push::TurnEnded(reason)) if self.ours.is_some() => {
+            Update::Push(Push::TurnEnded(reason)) if self.ours.is_some() && !self.paging => {
                 self.ended = Some(reason.clone());
             }
             _ => {}

@@ -13,6 +13,15 @@ use crate::link_cards::LinkCards;
 use crate::transcript::Transcript;
 use crate::ui::rows::{Ctx, MdCache, Row, entry_rows, shown};
 
+/// 排哪几条。
+#[derive(Debug, Clone, Copy)]
+pub enum Scope {
+    /// 这一轮（还没开轮的是 `None`，什么都不排）起的。
+    Turn(Option<u64>),
+    /// 全部（后台回报印任务结束的那几行，正文里只有它们）。
+    All,
+}
+
 /// 排版要的几样：Markdown 的缓存、图、链接卡片、mermaid 图。shell 里不显示图（还没做），图那几样照空的。
 pub struct Media {
     md: RefCell<MdCache>,
@@ -49,19 +58,27 @@ pub struct View<'a> {
 }
 
 impl View<'_> {
-    /// 这一轮（`ours`，还没开轮的是 `None`）的几条排成行，一条之间空一行，和全屏一样；你说的那句 fish 已经重放过了，
-    /// 不排。还在等她的第一个字的，末尾转着。
-    pub fn rows(&self, transcript: &Transcript, ours: Option<u64>) -> Vec<Row> {
+    /// 照 `scope` 排的几条排成行，一条之间空一行，和全屏一样；你说的话 fish 已经重放过了，不排。还在等她的第一个字的，
+    /// 末尾转着。
+    pub fn rows(&self, transcript: &Transcript, scope: Scope) -> Vec<Row> {
         let ctx = self.ctx(transcript);
-        let mut rows = Vec::new();
-        let theirs = |e: &crate::transcript::Entry| {
-            e.kind != crate::transcript::Kind::User && e.turn.zip(ours).is_some_and(|(t, o)| t >= o)
+        let from = match scope {
+            Scope::All => 0,
+            // 这一轮的第一条起：任务结束的那几行这类不带回合号的，接在这一轮里的照样排。
+            Scope::Turn(ours) => transcript
+                .entries
+                .iter()
+                // 你说的那句在正文最前面（发之前先画上的），不算：从她这一轮的第一条起（实测：接上的会话补发的那一页排在它后面）。
+                .position(|e| {
+                    e.kind != crate::transcript::Kind::User
+                        && e.turn.zip(ours).is_some_and(|(t, o)| t >= o)
+                })
+                .unwrap_or(transcript.entries.len()),
         };
-        for (i, entry) in transcript
-            .entries
-            .iter()
-            .enumerate()
-            .filter(|(_, e)| theirs(e) && shown(e))
+        let mut rows = Vec::new();
+        let picked = transcript.entries.iter().enumerate().skip(from);
+        for (i, entry) in
+            picked.filter(|(_, e)| e.kind != crate::transcript::Kind::User && shown(e))
         {
             if !rows.is_empty() {
                 rows.push(ctx.row(ctx.blank_slot(), Vec::new()));
@@ -76,15 +93,10 @@ impl View<'_> {
 
     /// 排好的行只要画出来的样子，前面空一行和提示符那一行隔开（2026-10-20 项目主人验收）。展示的卡片在 shell 里点不开：
     /// 「点击打开」那一行换成文件的路径（同一天项目主人：点不开的不必印）。`todos` 时末尾接待办。
-    pub fn lines(
-        &self,
-        transcript: &Transcript,
-        ours: Option<u64>,
-        todos: bool,
-    ) -> Vec<Line<'static>> {
+    pub fn lines(&self, transcript: &Transcript, scope: Scope, todos: bool) -> Vec<Line<'static>> {
         let open = &self.config.text.shown.open;
         let mut lines: Vec<Line<'static>> = Vec::new();
-        for row in self.rows(transcript, ours) {
+        for row in self.rows(transcript, scope) {
             if row.plain.trim() == open.trim() {
                 if let Some(path) = shown_path(transcript, row.target) {
                     let indent = " ".repeat(usize::from(row.content_x));

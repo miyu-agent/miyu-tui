@@ -56,26 +56,57 @@ function __miyu_restore_cursor
 end
 
 function __miyu_on_prompt --on-event fish_prompt
-    set -q __miyu_pending_buffer; or return
+    set -l miyu_status 0
+    if set -q __miyu_pending_buffer
+        set -l buffer $__miyu_pending_buffer
+        set -e __miyu_pending_buffer
 
-    set -l buffer $__miyu_pending_buffer
-    set -e __miyu_pending_buffer
+        trap __miyu_restore_cursor INT TERM EXIT
+        __miyu_replay_buffer "$buffer"
+        # 清空输入行、重放都画完了：一次交给终端（开头在 __miyu_hand_to_ai）。
+        printf '\e[?2026l'
+        # 她答话的时候提前敲的字：程序写进这个文件，答完放回命令行。$fish_pid 告诉它是哪个 shell：后台回报交回这里。
+        set -l leftover (mktemp -t miyu-shellhook.XXXXXX)
+        printf '%s' "$buffer" | __miyu_shellhook say --shell fish --shell-pid $fish_pid --leftover $leftover
+        set miyu_status $status
+        trap - INT TERM EXIT
+        __miyu_restore_cursor
+        if test -s "$leftover"
+            commandline -r -- (string collect < $leftover)
+        end
+        rm -f -- $leftover
+    end
+    # 前台跑着命令的时候来的后台回报：回到提示符再印（提示符还没画，不用擦）。
+    set -q __miyu_report_pending; and __miyu_report
+    return $miyu_status
+end
 
-    trap __miyu_restore_cursor INT TERM EXIT
-    __miyu_replay_buffer "$buffer"
-    # 清空输入行、重放都画完了：一次交给终端（开头在 __miyu_hand_to_ai）。
-    printf '\e[?2026l'
-    # 她答话的时候提前敲的字：程序写进这个文件，答完放回命令行。
+# 后台回报（设计 22 第七节「后台任务和回报」）：盯后台的进程给这个 fish 发 SIGUSR1。停在提示符上的当场印；前台在跑
+# 命令的（vim、一行里的几条命令）先记着，回到提示符再印。
+function __miyu_report_signal --on-signal SIGUSR1
+    if test (status current-command) = fish
+        # 提示符已经画着：回到它的第一行、往下清掉，在那里印。fish 重画时从光标所在往上回「提示符行数 - 1」行：印完补上这么
+        # 多个换行，它才画在印的下面，不盖掉（实测）。敲到一半的字照旧在。
+        set -l rows (count (fish_prompt))
+        test $rows -gt 1; and printf '\e[%dA' (math $rows - 1)
+        printf '\r\e[J'
+        __miyu_report
+        test $rows -gt 1; and printf '%.0s\n' (seq (math $rows - 1))
+        commandline -f repaint
+    else
+        set -g __miyu_report_pending 1
+    end
+end
+
+function __miyu_report
+    set -e __miyu_report_pending
+    # 印的时候敲的字：接在命令行后面（原来敲到一半的 fish 自己留着）。
     set -l leftover (mktemp -t miyu-shellhook.XXXXXX)
-    printf '%s' "$buffer" | __miyu_shellhook say --shell fish --leftover $leftover
-    set -l miyu_status $status
-    trap - INT TERM EXIT
-    __miyu_restore_cursor
+    __miyu_shellhook report --shell fish --shell-pid $fish_pid --leftover $leftover
     if test -s "$leftover"
-        commandline -r -- (string collect < $leftover)
+        commandline -i -- (string collect < $leftover)
     end
     rm -f -- $leftover
-    return $miyu_status
 end
 
 function __miyu_execute_or_continue

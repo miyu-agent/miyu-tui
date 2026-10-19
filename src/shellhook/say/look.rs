@@ -22,6 +22,8 @@ pub struct Look {
     personas: Vec<Persona>,
     /// 上一次设上的：主色、名字，一样的不再设。
     applied: Option<(Option<u32>, String)>,
+    /// 配置项读回来过（读不到的也算：照出厂的）。
+    ready: bool,
 }
 
 impl Look {
@@ -38,6 +40,7 @@ impl Look {
             persona: None,
             personas: Vec::new(),
             applied: None,
+            ready: false,
         }
     }
 
@@ -49,13 +52,20 @@ impl Look {
     }
 
     /// 配置项读回来了：换上；选着跟随壁纸的去找壁纸（在后台找，找到了下一帧换）。
-    pub fn configured(&mut self, got: &Value) {
+    pub fn configured(&mut self, got: Option<&Value>) {
+        self.ready = true;
+        let Some(got) = got else { return };
         self.choice.apply(got);
         self.choice.ground = false;
         self.chosen = choice::chosen_seed(got);
         if self.choice.colors == "wallpaper" {
             self.wallpaper.look(self.choice.dark(self.dark), true);
         }
+    }
+
+    /// 配置项读回来过。
+    pub fn ready(&self) -> bool {
+        self.ready
     }
 
     /// 终端会话用的人格。

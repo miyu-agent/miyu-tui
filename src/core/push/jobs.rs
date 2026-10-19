@@ -33,7 +33,7 @@ pub enum Sender {
 }
 
 /// 派出去一个后台任务（`job.started`）。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct JobStart {
     /// 哪一步派的：照它的参数写命令本身、交代的活。
     pub call_id: String,
@@ -51,7 +51,7 @@ pub struct JobStart {
 }
 
 /// 为什么结束。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum JobReason {
     /// 命令自己退出了（被信号杀掉的也算）；子代理那一轮做完了（`done`）。
     Finished,
@@ -81,7 +81,7 @@ impl JobReason {
 }
 
 /// 一个后台任务结束了（`job.reported`、`child.reported`）。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct JobEnd {
     /// 任务编号。
     pub job: String,

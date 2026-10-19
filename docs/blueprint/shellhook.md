@@ -22,6 +22,11 @@
 | `src/shellhook/say/view.rs` | 这一轮排成哪几行（照 `ui/rows.rs` 的 `entry_rows`） |
 | `src/shellhook/say/paint.rs` | 印在 shell 里：画布收拾成带颜色的字、活动区原地刷新 |
 | `src/shellhook/say/asking.rs` | 确认和提问的抽屉（照 `drawer/`、`ui/drawer/`） |
+| `src/shellhook/say/session.rs` | 在 shell 里画一轮的那一套（`say`、`report` 共用）：连核心、原始模式、终端颜色、读按键、系统通知、主循环、收尾 |
+| `src/shellhook/say/look.rs` | 配色：照 `tui.theme*`、壁纸、人格的主题色挑 |
+| `src/shellhook/say/follow.rs` | 盯后台：订阅终端会话、等 shell 退出，任务结束和叫醒的那一轮记进信箱、给 shell 发信号 |
+| `src/shellhook/say/spool.rs` | 盯后台的和 shell 之间的信箱（一个 shell 一个文件） |
+| `src/shellhook/say/report.rs` | `report`：shell 回到提示符时印信箱里的 |
 | `resources/shellhook/hook.{fish,bash,zsh}` | 三种 shell 的脚本，`@PROGRAM@` 印的时候换成装的时候记下的程序 |
 | `resources/shellhook/text/<代码>.json` | 给人看的字，一种语言一份，和 `resources/text/` 一样多 |
 
@@ -34,7 +39,9 @@
 | `status` | 人 | 三种 shell 各一行：装没装、装在哪；记的程序不在了的说要重装；旧版那一份也在的说一声 |
 | `script --shell <名字> --program <路径>` | 装进去的那一行 | 印这种 shell 的脚本 |
 | `classify --shell <名字>` | 脚本 | 标准输入是多行的一段：是命令退出码 0，是话 1 |
-| `say --shell <名字> [--leftover <路径>]` | 脚本 | 标准输入是那句话：交给她、这一轮印在 shell 里（下面「say」）。退出码：正常 0，按了 Ctrl+C 3（同 `miyu ask`），连不上核心 1 |
+| `follow --watch <路径>` | `say` 起的 | 盯后台（下面「后台回报」） |
+| `report --shell-pid <编号> [--leftover <路径>]` | 脚本 | 印这个 shell 信箱里的后台回报 |
+| `say --shell <名字> [--shell-pid <编号>] [--leftover <路径>]` | 脚本 | 标准输入是那句话：交给她、这一轮印在 shell 里（下面「say」）。退出码：正常 0，按了 Ctrl+C 3（同 `miyu ask`），连不上核心 1 |
 
 1. 帮助（`-h`）只列给人用的三个。用法写错了退出码 2，别的出错 1，同核心命令行（设计 22 O1）。
 2. `--program`：脚本调哪个程序，没给的照这个程序旁边的 `miyu`（随 Miyu 装的界面放在它旁边，设计 32 第六节），没有的调自己。不按名字去 PATH 里找：并行期 PATH 上的 `miyu` 是旧版（设计 27）。临时部署用包装脚本的，装的时候写 `--program <包装脚本>`。
@@ -83,6 +90,16 @@
 3. 交了的经 `session.answer` 交给核心，结果等核心推回来再写进正文，挂到「提问」那一步下面；不允许的末尾一行红 ✗（同全屏第 6 条）。
 4. 编辑「其他答案」时还不显示光标。
 
+### 后台回报
+
+设计 22 第七节「后台任务和回报」（2026-10-20 项目主人定，核心 b3777b13）。
+
+1. **谁盯**：`say` 记下这一轮派出去的后台任务（`job.started`，前台跑的子代理不算）；收工时还有没结束的，写一份交接（终端会话、任务、`$fish_pid`）进信箱目录，起 `miyu-tui shellhook follow`：自己一个进程组、不接终端。
+2. **怎么盯**：订阅终端会话（`Open`，补发的那一页不算），只认交接来的任务编号：结束了（`job.reported`、`child.reported`）记一件「结束了」；结束了都会叫醒她（子代理、后台命令都是，真模型实测），接下来不是你说的话开的那一轮记一件「那一轮」；这一轮里又派出去的接着盯。都结束了、叫醒的那几轮也跑完了，收工。shell 退出了（Linux 上 `pidfd`，等事件不轮询；macOS 的 kqueue 还没做）当场收工，不再回报。
+3. **信箱**：缓存目录 `shellhook/<shell 的编号>.jsonl`，一件一行，追加；`report` 先换名再读，拿的时候追加的留给下一次。记一件给 shell 发 `SIGUSR1`。
+4. **fish 那边**：收到信号时停在提示符上的（`status current-command` 是 `fish`）当场印：回到提示符第一行往下清掉，跑 `report`，补「提示符行数 - 1」个换行再 `commandline -f repaint`（fish 照记着的位置往上回这么多行重画，不补会盖掉刚印的，实测）。前台在跑命令的（vim、一行里的几条）先记着，回到提示符（`fish_prompt` 事件）再印。敲到一半的字 fish 自己留着；印的时候敲的接在后面。
+5. **印什么**：「结束了」照全屏写那一行（`jobs::announce`，从全屏挪来共用：绿点、红叉）；「那一轮」照 `Open` 接上、补完最新一页后照 `say` 一样画，要确认、要回答的照常弹，画的时候按键归它。
+
 ### 还没做
 
-拿回焦点再问终端颜色；后台任务（子代理、后台命令、`/dream`）回来印在派它的那个 shell 的提示符上面、bash 和 zsh 也印；提前敲的字边答边显示；Ctrl+V 粘图；斜杠命令（`/models`、`/sessions`……，`set_terminal`）；图；`doctor`。
+拿回焦点再问终端颜色；bash、zsh 的后台回报；`/dream` 转后台；提前敲的字边答边显示；Ctrl+V 粘图；斜杠命令（`/models`、`/sessions`……，`set_terminal`）；图；`doctor`。
