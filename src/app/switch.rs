@@ -49,6 +49,7 @@ impl App {
         if let Some(list) = &mut self.boxes.session_list {
             list.replace(seen.clone());
         }
+        self.note_last();
         self.titles_from_list();
         self.repoint_pick();
     }
@@ -56,6 +57,7 @@ impl App {
     /// 核心交回了列表。
     pub(super) fn sessions_listed(&mut self, all: Vec<SessionInfo>) {
         self.talk.sessions_seen = Some(all.clone());
+        self.note_last();
         if let Some(list) = &mut self.boxes.session_list {
             list.replace(all);
         }
