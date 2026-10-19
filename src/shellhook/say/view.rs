@@ -106,7 +106,11 @@ impl View<'_> {
             }
             lines.push(row.line);
         }
-        while lines.first().is_some_and(|l| l.width() == 0) {
+        // 开头的空行（只有缩进、两格槽的也算）去掉，再空一行：不然等第一个字时空两行（2026-10-20 项目主人验收）。
+        while lines
+            .first()
+            .is_some_and(|l| l.spans.iter().all(|s| s.content.trim().is_empty()))
+        {
             lines.remove(0);
         }
         if todos {

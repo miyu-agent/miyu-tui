@@ -72,6 +72,8 @@ pub struct Turn {
     said_seq: Option<u64>,
     /// 这句话开的那一轮：只印这一轮的（接上的会话先补发最新一页，那些不印）。
     pub ours: Option<u64>,
+    /// 正在跑的那一轮（发出去以后推来的）：你说的话排着、被它听到了的，就是这一轮。
+    running: Option<u64>,
     /// 闲置久了核心换了新会话：旧会话最后一次动静的时刻，印一行就拿走。
     pub renewed: Option<jiff::Timestamp>,
     /// 这期间提前敲的字：交还给 shell 的命令行。
@@ -135,6 +137,7 @@ impl Turn {
             said: text,
             said_seq: None,
             ours: None,
+            running: None,
             renewed: None,
             typed: String::new(),
             interrupted: false,
@@ -294,6 +297,17 @@ impl Turn {
 
     /// 认出你说的那句落盘的序号、它开的那一轮。
     fn watch(&mut self, update: &Update) {
+        // 正在跑哪一轮：补发的那一页里开了还没结束的也算（说话时她正在跑它）。
+        match update {
+            Update::Push(Push::TurnStarted(turn, _)) => self.running = Some(*turn),
+            Update::Push(Push::TurnEnded(reason)) => {
+                if self.ours.is_some() && self.running == self.ours && !self.paging {
+                    self.ended = Some(reason.clone());
+                }
+                self.running = None;
+            }
+            _ => {}
+        }
         // 接上已开的那一轮的不认：没说话，这一轮是给定的。
         if !self.sent || self.said.is_empty() {
             return;
@@ -308,13 +322,17 @@ impl Turn {
             {
                 self.said_seq = Some(*seq);
             }
-            Update::Push(Push::TurnStarted(turn, Some(trigger)))
-                if Some(*trigger) == self.said_seq =>
+            Update::Push(Push::TurnStarted(turn, trigger))
+                if trigger.is_some() && *trigger == self.said_seq =>
             {
                 self.ours = Some(*turn);
             }
-            Update::Push(Push::TurnEnded(reason)) if self.ours.is_some() && !self.paging => {
-                self.ended = Some(reason.clone());
+            // 说的时候她正在跑别的一轮（回报叫醒的）：这句话排着，被那一轮听到了就算在那一轮里，不另开一轮（实测：原来一直
+            // 等不到自己开的那一轮，终端还不回来）。
+            Update::Push(Push::Heard(seen))
+                if self.ours.is_none() && self.said_seq.is_some_and(|s| s <= *seen) =>
+            {
+                self.ours = self.running;
             }
             _ => {}
         }
