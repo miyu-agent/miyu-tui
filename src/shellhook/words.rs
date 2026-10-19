@@ -26,7 +26,19 @@ pub struct Words {
     pub status_foreign: String,
     pub status_stale: String,
     pub no_program: String,
-    pub say_not_ready: String,
+    /// 闲置久了换了新会话（`{ago}` 是隔了多久）。
+    pub renewed: String,
+    /// 隔了多久的写法。
+    pub units: Units,
+}
+
+/// 分钟、小时、天的写法，`{n}` 换成数。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Units {
+    pub minutes: String,
+    pub hours: String,
+    pub days: String,
 }
 
 impl Words {

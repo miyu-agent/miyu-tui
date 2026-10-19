@@ -5,6 +5,7 @@
 
 mod classify;
 mod install;
+mod say;
 mod script;
 mod shells;
 mod words;
@@ -80,7 +81,7 @@ pub fn main(args: Vec<String>) -> ExitCode {
             )),
         },
         "classify" => return classify_stdin(options.shell.unwrap_or(Shell::Fish)),
-        "say" => say(&words),
+        "say" => return say(options.leftover, &words),
         other => {
             eprintln!("unknown command: {other}\n\n{USAGE}");
             return ExitCode::from(BAD_USAGE);
@@ -100,6 +101,8 @@ pub fn main(args: Vec<String>) -> ExitCode {
 struct Options {
     shell: Option<Shell>,
     program: Option<PathBuf>,
+    /// `say` 提前敲的字写在哪（脚本读了放回命令行）。
+    leftover: Option<PathBuf>,
 }
 
 impl Options {
@@ -115,6 +118,7 @@ impl Options {
                         Some(Shell::named(name).ok_or_else(|| format!("unknown shell: {name}"))?);
                 }
                 "--program" => options.program = Some(args.next().ok_or_else(value)?.into()),
+                "--leftover" => options.leftover = Some(args.next().ok_or_else(value)?.into()),
                 other => return Err(format!("unknown option: {other}")),
             }
         }
@@ -147,11 +151,20 @@ fn classify_stdin(shell: Shell) -> ExitCode {
     }
 }
 
-/// 把一句话交给她（还在施工：读完标准输入，说一声）。
-fn say(words: &Words) -> io::Result<()> {
+/// 把标准输入的那句话交给她，这一轮印在 shell 里（`say/`）。
+fn say(leftover: Option<PathBuf>, words: &Words) -> ExitCode {
     let mut text = String::new();
-    io::stdin().read_to_string(&mut text)?;
-    Err(io::Error::other(words.say_not_ready.clone()))
+    if let Err(e) = io::stdin().read_to_string(&mut text) {
+        eprintln!("{e}");
+        return ExitCode::FAILURE;
+    }
+    match say::run(say::Ask { text, leftover }, words) {
+        Ok(code) => code,
+        Err(e) => {
+            eprintln!("{e}");
+            ExitCode::FAILURE
+        }
+    }
 }
 
 #[cfg(test)]

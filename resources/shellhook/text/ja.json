@@ -11,5 +11,10 @@
   "status_foreign": "{shell}：{path} は shellhook が書いたものではありません",
   "status_stale": "{shell}：インストール済み（{path}）ですが、呼び出すプログラム {program} がありません。もう一度インストールしてください",
   "no_program": "スクリプトから呼び出すプログラムが見つかりません：{program}",
-  "say_not_ready": "shellhook はまだ作成中です。このバージョンではまだ会話できません"
+  "renewed": "前回の発言は {ago} 前のため、新しいセッションを開始しました",
+  "units": {
+    "minutes": "{n} 分",
+    "hours": "{n} 時間",
+    "days": "{n} 日"
+  }
 }

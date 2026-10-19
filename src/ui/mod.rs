@@ -15,6 +15,8 @@ mod drawer;
 mod dream_rows;
 mod dreamt_rows;
 pub use drawer::PreviewLook;
+// shellhook 把抽屉画在 shell 里，照同一套（图纸 `shellhook.md`「确认和提问」）。
+pub use drawer::{draw as draw_drawer, rows as drawer_rows};
 pub mod effort_list;
 mod figure_rows;
 mod floating;
@@ -59,6 +61,9 @@ pub mod status_box;
 mod timeline;
 mod undo_rows;
 pub use timeline::release_on_fold;
+// shellhook 照同一套画等第一个字的转圈、运行状态行（图纸 `shellhook.md`）。
+pub use status::pulse_line;
+pub use timeline::tail_rows;
 mod user_rows;
 pub mod wide;
 

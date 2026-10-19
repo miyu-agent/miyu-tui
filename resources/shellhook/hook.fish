@@ -65,10 +65,16 @@ function __miyu_on_prompt --on-event fish_prompt
     __miyu_replay_buffer "$buffer"
     # 清空输入行、重放都画完了：一次交给终端（开头在 __miyu_hand_to_ai）。
     printf '\e[?2026l'
-    printf '%s' "$buffer" | __miyu_shellhook say --shell fish
+    # 她答话的时候提前敲的字：程序写进这个文件，答完放回命令行。
+    set -l leftover (mktemp -t miyu-shellhook.XXXXXX)
+    printf '%s' "$buffer" | __miyu_shellhook say --shell fish --leftover $leftover
     set -l miyu_status $status
     trap - INT TERM EXIT
     __miyu_restore_cursor
+    if test -s "$leftover"
+        commandline -r -- (string collect < $leftover)
+    end
+    rm -f -- $leftover
     return $miyu_status
 end
 

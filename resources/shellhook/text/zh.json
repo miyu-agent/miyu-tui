@@ -11,5 +11,10 @@
   "status_foreign": "{shell}：{path} 不是 shellhook 写的",
   "status_stale": "{shell}：已装（{path}），但记的程序 {program} 不在了：重新装一次",
   "no_program": "找不到要记进脚本的程序 {program}",
-  "say_not_ready": "shellhook 还在施工：这一版还不能对话"
+  "renewed": "上次说话是 {ago} 前，开了新会话",
+  "units": {
+    "minutes": "{n} 分钟",
+    "hours": "{n} 小时",
+    "days": "{n} 天"
+  }
 }

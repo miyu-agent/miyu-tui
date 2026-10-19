@@ -11,5 +11,10 @@
   "status_foreign": "{shell}: {path} wasn't written by shellhook",
   "status_stale": "{shell}: installed ({path}), but the program it calls, {program}, is gone; install again",
   "no_program": "Can't find the program to call from the script: {program}",
-  "say_not_ready": "shellhook is still being built: this version can't talk yet"
+  "renewed": "Started a new session: the last message was {ago} ago",
+  "units": {
+    "minutes": "{n} min",
+    "hours": "{n} h",
+    "days": "{n} d"
+  }
 }
