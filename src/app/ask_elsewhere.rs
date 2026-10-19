@@ -70,6 +70,7 @@ impl App {
         self.hint(note, false);
         // 通知的标题写问的那个会话的（「系统通知」第 3 条）；下一次通知照正在看的重新写。
         self.notifier.about(Some(title), None);
+        self.notify_mascot();
         self.notifier.tell(if question {
             Event::Asking
         } else {

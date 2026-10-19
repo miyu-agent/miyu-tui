@@ -100,6 +100,22 @@ impl App {
             .wanted(super::avatars::Place::Sidebar)
             .and_then(|(_, version)| self.media.avatars.file(version));
         self.notifier.about(title, avatar);
+        self.notify_mascot();
+    }
+
+    /// 没有头像时通知的图标照现在的吉祥物画（「系统通知」第 3 条，2026-10-19）：吉祥物包写了颜色的照包，没写的照主题。
+    pub(super) fn notify_mascot(&mut self) {
+        use crate::mascot::Part;
+        let look = &self.config.mascot;
+        let rgb = |part: Part| {
+            look.colors
+                .of(part)
+                .or_else(|| crate::theme::mascot(part).fg)
+                .and_then(crate::theme::approx_rgb)
+                .unwrap_or((200, 200, 200))
+        };
+        let colors = [Part::Head, Part::Ear, Part::Eye, Part::Fin].map(rgb);
+        self.notifier.mascot(look.clone(), colors);
     }
 }
 

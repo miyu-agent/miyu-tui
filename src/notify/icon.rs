@@ -1,6 +1,6 @@
-//! 通知的图标（蓝图 `tui.md`「系统通知」第 3 条，2026-10-17 项目主人定）：这个会话的人格有头像的用头像，没有的用 Miyu 的
-//! 图标（`resources/notify/miyu.png`，网页同一张）。头像缩成最长边 128 像素的 PNG 存进缓存目录，同一张只缩一次；
-//! Miyu 的图标编进程序，用时写进缓存目录（`notify-send -i` 要的是文件）。
+//! 通知的图标（蓝图 `tui.md`「系统通知」第 3 条，2026-10-17 项目主人定）：这个会话的人格有头像的用头像，没有的用终端的吉祥物
+//! 画成的图（2026-10-19 项目主人：原来用一张二次元女孩的图 `miyu.png`，看着像「某个头像」，`mascot_icon.rs`）。头像缩成
+//! 最长边 128 像素的 PNG 存进缓存目录，同一张只缩一次（`notify-send -i` 要的是文件）。
 
 use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -9,27 +9,19 @@ use std::path::{Path, PathBuf};
 use image::ImageFormat;
 use image::imageops::FilterType;
 
-/// Miyu 的图标。
-const MIYU: &[u8] = include_bytes!("../../resources/notify/miyu.png");
-
 /// 缩到最长边几个像素。
 const SIDE: u32 = 128;
 
-/// 这一条通知用哪张：头像缩好的那份，没有头像、缩不成的用 Miyu 的；`dir` 是放它们的目录，写不进去的是 `None`。
-pub fn pick(avatar: Option<&Path>, dir: &Path) -> Option<PathBuf> {
-    avatar.and_then(|a| small(a, dir)).or_else(|| miyu(dir))
+/// 这一条通知用哪张：头像缩好的那份，没有头像、缩不成的用吉祥物画成的（`mascot` 是现在的吉祥物和它的颜色，没有的不带
+/// 图标）；`dir` 是放它们的目录，写不进去的是 `None`。
+pub fn pick(avatar: Option<&Path>, mascot: Option<&Mascot>, dir: &Path) -> Option<PathBuf> {
+    avatar
+        .and_then(|a| small(a, dir))
+        .or_else(|| mascot.and_then(|(look, colors)| super::mascot_icon::file(look, colors, dir)))
 }
 
-/// 把 Miyu 的图标写进 `dir`（已经在、大小对的不重写）。
-fn miyu(dir: &Path) -> Option<PathBuf> {
-    let file = dir.join("miyu.png");
-    let fresh = fs::metadata(&file).is_ok_and(|m| m.len() == MIYU.len() as u64);
-    if !fresh {
-        fs::create_dir_all(dir).ok()?;
-        fs::write(&file, MIYU).ok()?;
-    }
-    Some(file)
-}
+/// 现在的吉祥物和它四块的颜色。
+pub type Mascot = (crate::mascot::Look, super::mascot_icon::Colors);
 
 /// 头像缩好的那份：名字照原文件的路径、大小、改的时刻算，已经在的直接用。
 fn small(avatar: &Path, dir: &Path) -> Option<PathBuf> {
@@ -54,27 +46,41 @@ fn small(avatar: &Path, dir: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::{SIDE, pick};
+    use super::{Mascot, SIDE, pick};
 
     #[test]
-    fn an_avatar_is_shrunk_once_and_without_one_miyu_is_used() {
+    fn an_avatar_is_shrunk_once_and_without_one_the_mascot_is_drawn() {
         let dir = std::env::temp_dir().join(format!("miyu-notify-icon-{}", std::process::id()));
         drop(std::fs::remove_dir_all(&dir));
-        let miyu = pick(None, &dir).expect("Miyu 的图标");
-        assert!(miyu.ends_with("miyu.png"));
+        let mascot: Mascot = (
+            crate::config::Config::builtin().unwrap().mascot,
+            [(9, 9, 9); 4],
+        );
+        let mascot = Some(&mascot);
+        let miyu = pick(None, mascot, &dir).expect("吉祥物画成的图");
+        assert!(
+            miyu.file_name()
+                .is_some_and(|n| n.to_string_lossy().starts_with("mascot-")),
+            "{miyu:?}"
+        );
+        assert_eq!(pick(None, None, &dir), None, "没有吉祥物的不带图标");
         let big = dir.join("big.png");
         image::RgbImage::new(600, 300).save(&big).unwrap();
-        let small = pick(Some(&big), &dir).expect("缩好的头像");
+        let small = pick(Some(&big), mascot, &dir).expect("缩好的头像");
         assert_ne!(small, miyu);
         let (w, h) = image::image_dimensions(&small).unwrap();
         assert_eq!((w, h), (SIDE, SIDE / 2), "最长边 128，照比例");
-        assert_eq!(pick(Some(&big), &dir), Some(small), "同一张只缩一次");
+        assert_eq!(
+            pick(Some(&big), mascot, &dir),
+            Some(small),
+            "同一张只缩一次"
+        );
         let broken = dir.join("broken.png");
         std::fs::write(&broken, b"not a picture").unwrap();
         assert_eq!(
-            pick(Some(&broken), &dir),
+            pick(Some(&broken), mascot, &dir),
             Some(miyu),
-            "读不出来的用 Miyu 的"
+            "读不出来的用吉祥物画成的"
         );
         drop(std::fs::remove_dir_all(&dir));
     }
