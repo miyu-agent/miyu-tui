@@ -50,42 +50,77 @@ pub fn summaries(got: &Value) -> HashMap<String, String> {
         .collect()
 }
 
+/// 一项属于哪个包：核心写了 `package` 的照它，没写的照组的编号（原来一个包一组，组的编号就是包的编号）。
+fn owner(item: &super::schema::Item) -> &str {
+    if item.package.is_empty() {
+        &item.group
+    } else {
+        &item.package
+    }
+}
+
 impl More {
-    /// 有配置项的包，照核心交回的先后。
+    /// 有配置项的包，照核心交回的先后。一个包可以有几组（2026-10-19 核心把联网搜索的 key 分出「API Key 和地址」一组，
+    /// 项都还带 `package: "net"`）：照项的包合成一行，名字照和包同编号的那一组，项数连几组一起数。
     pub fn packages(&self) -> Vec<Listed> {
         let Some(schema) = self.schema.as_ref() else {
             return Vec::new();
         };
-        let rows = schema.rows(PACKAGES);
-        schema
-            .groups
-            .iter()
-            .filter(|g| g.page == PACKAGES)
-            .map(|g| {
-                let count = rows
-                    .iter()
-                    .filter(|r| matches!(r, Row::Item(i) if schema.items[*i].group == g.id))
-                    .count();
-                Listed {
-                    id: g.id.clone(),
-                    name: g.name.clone(),
-                    summary: self.summaries.get(&g.id).cloned(),
-                    count,
-                }
-            })
-            .filter(|l| l.count > 0)
-            .collect()
+        let mut out: Vec<Listed> = Vec::new();
+        for group in schema.groups.iter().filter(|g| g.page == PACKAGES) {
+            let Some(first) = schema
+                .items
+                .iter()
+                .find(|i| i.page == PACKAGES && i.group == group.id)
+            else {
+                continue;
+            };
+            let id = owner(first).to_string();
+            if out.iter().any(|l| l.id == id) {
+                continue;
+            }
+            let name = schema
+                .groups
+                .iter()
+                .find(|g| g.page == PACKAGES && g.id == id)
+                .unwrap_or(group)
+                .name
+                .clone();
+            let count = schema
+                .rows(PACKAGES)
+                .iter()
+                .filter(|r| matches!(r, Row::Item(i) if owner(&schema.items[*i]) == id))
+                .count();
+            out.push(Listed {
+                summary: self.summaries.get(&id).cloned(),
+                id,
+                name,
+                count,
+            });
+        }
+        out
     }
 
-    /// 包 `id` 那一页的行：这一组的项，不带组名（标题已经写了包名）。
+    /// 包 `id` 那一页的行：属于它的项；和包同编号的那一组不带组名（标题已经写了包名），别的组照画组名（上面空一行）。
     pub(super) fn package_rows(&self, id: &str) -> Vec<Row> {
         let Some(schema) = self.schema.as_ref() else {
             return Vec::new();
         };
+        let mine = |g: usize| {
+            let group = &schema.groups[g];
+            group.id != id
+                && schema
+                    .items
+                    .iter()
+                    .any(|i| i.page == PACKAGES && i.group == group.id && owner(i) == id)
+        };
         schema
             .rows(PACKAGES)
             .into_iter()
-            .filter(|r| matches!(r, Row::Item(i) if schema.items[*i].group == id))
+            .filter(|r| match r {
+                Row::Item(i) => owner(&schema.items[*i]) == id,
+                Row::Group(g) => mine(*g),
+            })
             .collect()
     }
 }
