@@ -12,6 +12,8 @@ use crate::transcript::{Link, Starting, Transcript};
 const TIMELINE_TAG: u64 = 1;
 /// 同上：终端会话。
 const TERMINAL_TAG: u64 = 2;
+/// 同上：配色那几项。
+const THEME_TAG: u64 = 3;
 
 /// 界面语言照 `ui.language`（同全屏 `app/language.rs`）：写了一种语言的换成它，`auto` 照系统的；界面上的字、运行状态行的
 /// 词、工具的显示名都换。
@@ -46,6 +48,12 @@ pub struct Turn {
     /// 确认和提问的抽屉。
     pub asking: super::asking::Asking,
     pub human: Human,
+    /// 配色（`look.rs`）。
+    pub look: super::look::Look,
+    /// 后台任务、待办（同全屏的任务表）。
+    pub board: crate::jobs::Board,
+    /// 这一轮待办变过：收尾时把最后的样子印出来。
+    pub todos_changed: bool,
     /// 还没发出去的那句话：问到终端会话、接上以后发。
     pending: Option<String>,
     /// 这一句在哪个目录说。
@@ -66,13 +74,15 @@ pub struct Turn {
     pub typed: String,
     /// 按过 Ctrl+C。
     pub interrupted: bool,
+    /// 这句话开的那一轮怎么结束的：收工时照它弹通知。
+    pub ended: Option<crate::core::EndReason>,
     /// 收尾了。
     pub done: bool,
 }
 
 impl Turn {
     /// 要说 `text`，在 `cwd` 说。
-    pub fn new(text: String, cwd: Option<String>) -> Self {
+    pub fn new(text: String, cwd: Option<String>, look: super::look::Look) -> Self {
         let mut transcript = Transcript::default();
         transcript.user(text.clone(), Vec::new());
         transcript.starting = Starting::Waiting;
@@ -80,6 +90,9 @@ impl Turn {
             transcript,
             asking: super::asking::Asking::default(),
             human: Human::default(),
+            look,
+            board: crate::jobs::Board::default(),
+            todos_changed: false,
             pending: Some(text.clone()),
             cwd,
             paging: false,
@@ -90,6 +103,7 @@ impl Turn {
             renewed: None,
             typed: String::new(),
             interrupted: false,
+            ended: None,
             done: false,
         }
     }
@@ -158,6 +172,12 @@ impl Turn {
             Update::HeadConfig(head) => {
                 language(&head.language, config, core);
                 core.send(Command::Ask {
+                    tag: THEME_TAG,
+                    method: "config.get",
+                    params: json!({ "keys": super::look::Look::keys() }),
+                });
+                core.send(Command::ListPersonas);
+                core.send(Command::Ask {
                     tag: TIMELINE_TAG,
                     method: "config.get",
                     params: json!({ "keys": crate::config::Timeline::KEYS }),
@@ -167,6 +187,22 @@ impl Turn {
                 if let Ok(got) = result {
                     config.timeline.apply(&got);
                 }
+            }
+            Update::Answer { tag, result } if tag == THEME_TAG => {
+                if let Ok(got) = result {
+                    self.look.configured(&got);
+                }
+            }
+            Update::Personas(list) => self.look.personas(list),
+            Update::SessionPersona(id) => {
+                self.look.persona(id.clone());
+                self.transcript
+                    .update(Update::SessionPersona(id), &config.text);
+            }
+            // 待办换了：发出去以后推来的才算（补发的那一页里的是以前的）。
+            Update::Push(Push::Todos { todos }) if self.sent => {
+                self.board.set_todos(&todos);
+                self.todos_changed = true;
             }
             Update::Human(human) => self.human = human,
             update @ (Update::NoCoreBin
@@ -209,6 +245,9 @@ impl Turn {
                 if Some(*trigger) == self.said_seq =>
             {
                 self.ours = Some(*turn);
+            }
+            Update::Push(Push::TurnEnded(reason)) if self.ours.is_some() => {
+                self.ended = Some(reason.clone());
             }
             _ => {}
         }

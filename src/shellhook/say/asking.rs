@@ -27,6 +27,14 @@ impl Asking {
         self.drawers.open()
     }
 
+    /// 开着的抽屉是谁、问的什么：`call_id` 和是不是提问（新开了一个时弹通知）。
+    pub fn current(&self) -> Option<(String, bool)> {
+        self.drawers
+            .current
+            .as_ref()
+            .map(|d| (d.call_id.clone(), d.is_question()))
+    }
+
     /// 终端会话 `owner` 推来的：确认、提问开抽屉（交回 `true`，不再交给正文）；落了盘的回答收起抽屉、写进正文；工具有了
     /// 结果的收起它的抽屉（照常交给正文）。
     pub fn push(

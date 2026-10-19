@@ -19,7 +19,6 @@ pub struct Media {
     figures: RefCell<Figures>,
     cards: RefCell<LinkCards>,
     diagrams: RefCell<Diagrams>,
-    board: crate::jobs::Board,
 }
 
 impl Media {
@@ -30,7 +29,6 @@ impl Media {
             figures: RefCell::new(Figures::start(None, &config.figures, None, |_| true)),
             cards: RefCell::default(),
             diagrams: RefCell::default(),
-            board: crate::jobs::Board::default(),
         }
     }
 }
@@ -40,6 +38,8 @@ pub struct View<'a> {
     pub config: &'a Config,
     pub human: &'a Human,
     pub media: &'a Media,
+    /// 后台任务、待办。
+    pub board: &'a crate::jobs::Board,
     /// 终端多宽。
     pub width: u16,
     /// 终端多高：图最多占几行照它。
@@ -74,12 +74,50 @@ impl View<'_> {
         rows
     }
 
-    /// 排好的行只要画出来的样子。
-    pub fn lines(&self, transcript: &Transcript, ours: Option<u64>) -> Vec<Line<'static>> {
-        self.rows(transcript, ours)
-            .into_iter()
-            .map(|r| r.line)
-            .collect()
+    /// 排好的行只要画出来的样子，前面空一行和提示符那一行隔开（2026-10-20 项目主人验收）。展示的卡片在 shell 里点不开：
+    /// 「点击打开」那一行换成文件的路径（同一天项目主人：点不开的不必印）。`todos` 时末尾接待办。
+    pub fn lines(
+        &self,
+        transcript: &Transcript,
+        ours: Option<u64>,
+        todos: bool,
+    ) -> Vec<Line<'static>> {
+        let open = &self.config.text.shown.open;
+        let mut lines: Vec<Line<'static>> = Vec::new();
+        for row in self.rows(transcript, ours) {
+            if row.plain.trim() == open.trim() {
+                if let Some(path) = shown_path(transcript, row.target) {
+                    let indent = " ".repeat(usize::from(row.content_x));
+                    lines.push(Line::styled(format!("{indent}{path}"), crate::theme::dim()));
+                }
+                continue;
+            }
+            lines.push(row.line);
+        }
+        while lines.first().is_some_and(|l| l.width() == 0) {
+            lines.remove(0);
+        }
+        if todos {
+            let list = crate::ui::todo_lines(
+                self.board,
+                self.config,
+                self.width.saturating_sub(2),
+                usize::from(self.height / 3),
+                false,
+            );
+            if !list.is_empty() {
+                lines.push(Line::default());
+                lines.extend(list.into_iter().map(|l| {
+                    let mut spans = vec![ratatui::text::Span::raw("  ")];
+                    spans.extend(l.spans);
+                    Line::from(spans)
+                }));
+            }
+        }
+        if !lines.is_empty() {
+            lines.insert(0, Line::default());
+        }
+        lines
     }
 
     fn ctx(&self, transcript: &Transcript) -> Ctx<'_> {
@@ -99,7 +137,16 @@ impl View<'_> {
             screen_rows: self.height,
             replaced: transcript.replaced_shown(),
             sessions: &[],
-            board: Some(&self.media.board),
+            board: Some(self.board),
         }
     }
+}
+
+/// 卡片那一行指着的展示的文件路径：找不到那一条的（行没带指向）照这一轮最后一张卡片。
+fn shown_path(transcript: &Transcript, target: Option<crate::ui::rows::Target>) -> Option<String> {
+    let at = match target {
+        Some(crate::ui::rows::Target::Entry(i)) => transcript.entries.get(i),
+        _ => transcript.entries.iter().rev().find(|e| e.shown.is_some()),
+    }?;
+    at.shown.as_ref().map(|s| s.path.clone())
 }

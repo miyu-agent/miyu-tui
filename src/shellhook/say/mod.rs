@@ -4,6 +4,7 @@
 //! 原地刷新（`paint.rs`），这一轮结束时整段定下来留在滚动区。说到哪个会话问核心（`session.terminal`，`terminal.rs`）。
 
 mod asking;
+mod look;
 mod paint;
 mod terminal;
 mod turn;
@@ -18,8 +19,11 @@ use std::time::{Duration, Instant};
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 
+use ratatui::crossterm::event::Event;
+
 use crate::config::Config;
 use crate::core::{Command, Start};
+use crate::notify;
 use crate::shellhook::words::Words;
 use crate::transcript::Link;
 use paint::Painter;
@@ -58,7 +62,11 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     });
     ratatui::crossterm::terminal::enable_raw_mode()?;
     let raw = RawMode;
-    theme(&config);
+    let look = look::Look::new(terminal_colors());
+    // 终端在不在前台：不在时回答好了、在等你确认弹通知（同全屏「系统通知」，2026-10-20 项目主人验收要的）。
+    ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::event::EnableFocusChange)?;
+    let mut notifier = notifier(&config);
+    let mut drawer_seen: Option<String> = None;
     let reader =
         crate::reader::Reader::spawn(move |event| sender.send(Incoming::Key(event)).is_ok());
     core.send(Command::FetchHuman(language.code().to_string()));
@@ -66,18 +74,22 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     let cwd = std::env::current_dir()
         .ok()
         .map(|d| d.to_string_lossy().into_owned());
-    let mut turn = Turn::new(text, cwd);
+    let mut turn = Turn::new(text, cwd, look);
     turn.ask_terminal(&core);
     let media = Media::new(&config);
     let depth = crate::theme::Depth::detect(|name| std::env::var(name).ok());
     let mut painter = Painter::new(io::stdout(), depth);
-    let mut pulse = crate::pulse::Pulse::new(seed());
     let started = Instant::now();
     let spinner = config.timeline.spinner_ms.max(16);
     while !turn.done {
         match incoming.recv_timeout(Duration::from_millis(spinner)) {
             Ok(Incoming::Core(update)) => turn.core(update, &mut config, &core),
             Ok(Incoming::Key(event)) => {
+                match event {
+                    Event::FocusGained => notifier.focus(true),
+                    Event::FocusLost => notifier.focus(false),
+                    _ => {}
+                }
                 if turn.key(&event, &core, &config) {
                     break;
                 }
@@ -85,6 +97,7 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
             Err(mpsc::RecvTimeoutError::Timeout) => {}
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         }
+        turn.look.apply(&config);
         let (width, height) = ratatui::crossterm::terminal::size().unwrap_or((80, 24));
         let frame =
             usize::try_from(started.elapsed().as_millis() / u128::from(spinner)).unwrap_or(0);
@@ -92,21 +105,13 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
             config: &config,
             human: &turn.human,
             media: &media,
+            board: &turn.board,
             width,
             height,
             frame,
         };
-        let mut lines = view.lines(&turn.transcript, turn.ours);
-        if let Some(run) = turn.transcript.running {
-            lines.push(Line::default());
-            lines.push(crate::ui::pulse_line(
-                run,
-                turn.transcript.beat(),
-                turn.transcript.retry.as_deref(),
-                &mut pulse,
-                &config,
-            ));
-        }
+        // 不印运行状态行（词、用时）：shell 里只要转圈（2026-10-20 项目主人验收：不要文字进度条）。
+        let lines = view.lines(&turn.transcript, turn.ours, true);
         // 开着的抽屉画在最下面，最多占一半高（图纸「确认和提问」）。
         let drawer = turn.asking.height(&config, width, height / 2).unwrap_or(0);
         // 活动区最多占终端高减一行：长过的只露最新的那一截，这一轮结束时整段印出来（图纸「怎么印」第 2 条）。
@@ -124,6 +129,19 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
             None => Vec::new(),
         };
         painter.frame(&settled, &live)?;
+        // 新开了一个抽屉：弹「在等你确认」「在等你回答」。
+        let current = turn.asking.current();
+        if let Some((call, question)) = &current
+            && drawer_seen.as_ref() != Some(call)
+        {
+            notifier.tell(if *question {
+                notify::Event::Asking
+            } else {
+                notify::Event::Approving
+            });
+        }
+        drawer_seen = current.map(|(call, _)| call);
+        send_out(&mut notifier)?;
     }
     // 收工以前敲进来的、读按键的线程已经读走还没处理的字也收下：先让它停下，再把排着的拿完（真机实测：答得快时最后
     // 那几个字会丢）。
@@ -139,13 +157,22 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         config: &config,
         human: &turn.human,
         media: &media,
+        board: &turn.board,
         width,
         height,
         frame: 0,
     };
-    let settled = painter.lines(width, &view.lines(&turn.transcript, turn.ours))?;
+    let lines = view.lines(&turn.transcript, turn.ours, turn.todos_changed);
+    let settled = painter.lines(width, &lines)?;
     painter.finish()?;
     painter.frame(&settled, &[])?;
+    match turn.ended {
+        Some(crate::core::EndReason::Completed) => notifier.tell(notify::Event::Replied),
+        Some(crate::core::EndReason::Error) => notifier.tell(notify::Event::Failed),
+        _ => {}
+    }
+    send_out(&mut notifier)?;
+    ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::event::DisableFocusChange)?;
     drop(reader);
     drop(raw);
     if let Some(path) = &ask.leftover
@@ -174,28 +201,34 @@ fn renewed_line(since: jiff::Timestamp, words: &Words) -> Line<'static> {
     ))
 }
 
-/// 先照出厂的设置挑一套颜色（跟随终端，问到的终端底色照它挑深浅）；shell 里不铺底色（滚动区里铺一块底很怪）。
-fn theme(config: &Config) {
+/// 问终端的字色、底色和 16 色（在开始读按键以前问，回话不让读按键读走），装上，交回底色深不深（明暗自动照它）。
+fn terminal_colors() -> Option<bool> {
     let ground = crate::theme::terminal_colors::probe_ground();
     let colors = crate::theme::terminal_colors::probe();
     let depth = crate::theme::Depth::detect(|name| std::env::var(name).ok());
     crate::theme::terminal_colors::install(colors, ground, depth);
-    let choice = crate::theme::choice::Choice {
-        ground: false,
-        ..Default::default()
-    };
-    if let Some(picked) =
-        crate::theme::choice::pick(&choice, ground.map(|g| g.dark), &config.themes, None)
-    {
-        crate::theme::set(picked.palette);
-    }
+    ground.map(|g| g.dark)
 }
 
-/// 运行状态行挑词的随机数：照这一刻定。
-fn seed() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(1, |d| u64::try_from(d.as_nanos()).unwrap_or(1))
+/// 系统通知：照全屏的做法、提示音放在同一个缓存目录。
+fn notifier(config: &Config) -> notify::Notifier {
+    let cache = miyu_client::places::cache_root(&miyu_client::places::Env::current()).ok();
+    let sounds = cache.map(|root| root.join("tui").join("sounds"));
+    notify::Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        |name| std::env::var(name).ok(),
+        sounds,
+    )
+}
+
+/// 攒着的通知（OSC 序列）写给终端。
+fn send_out(notifier: &mut notify::Notifier) -> io::Result<()> {
+    let mut out = io::stdout();
+    for sequence in notifier.outbox() {
+        out.write_all(sequence.as_bytes())?;
+    }
+    out.flush()
 }
 
 /// 原始模式：收工、出错都关上，不把 shell 留在原始模式里。
