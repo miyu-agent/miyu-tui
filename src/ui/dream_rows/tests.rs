@@ -26,7 +26,6 @@ fn dreaming(now: Instant) -> Dream {
         .iter()
         .map(|(k, v)| (k.to_string(), v.to_string()))
         .collect();
-    d.apply(Change::Texts(texts), now);
     d.apply(
         Change::Merging {
             upto: 12,
@@ -36,6 +35,7 @@ fn dreaming(now: Instant) -> Dream {
         },
         now,
     );
+    d.apply(Change::Texts(texts), now);
     d.tick(now, Duration::from_millis(500));
     d.apply(
         Change::Retired {

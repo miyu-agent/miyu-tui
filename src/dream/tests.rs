@@ -111,8 +111,8 @@ fn only_reviewing_old_ones_counts_what_was_given() {
 fn given_ones_float_by_once_then_stop_and_unknown_ones_are_skipped() {
     let (mut d, now) = dream();
     let every = Duration::from_millis(500);
-    d.apply(texts(&[("m1", "黑咖啡"), ("m3", "猫咖")]), now);
     d.apply(merging(3, 3, 3, &["m1", "m2", "m3"]), now);
+    d.apply(texts(&[("m1", "黑咖啡"), ("m3", "猫咖")]), now);
     d.tick(now, every);
     assert_eq!(
         d.rows().cloned().collect::<Vec<_>>(),
@@ -137,8 +137,8 @@ fn given_ones_float_by_once_then_stop_and_unknown_ones_are_skipped() {
 fn the_first_thing_she_writes_stops_the_floating() {
     let (mut d, now) = dream();
     let every = Duration::from_millis(500);
-    d.apply(texts(&[("m1", "一"), ("m2", "二")]), now);
     d.apply(merging(2, 2, 2, &["m1", "m2"]), now);
+    d.apply(texts(&[("m1", "一"), ("m2", "二")]), now);
     d.tick(now, every);
     d.apply(
         Change::Retired {
@@ -230,4 +230,26 @@ fn stars_keep_a_gap_land_in_two_rows_and_light_in_a_shuffled_order() {
         }
     }
     assert!(place(0, 5, 5, 7).is_empty());
+}
+
+#[test]
+fn floating_waits_for_the_texts_that_are_still_on_the_way() {
+    let (mut d, now) = dream();
+    let every = Duration::from_millis(500);
+    d.apply(merging(3, 3, 3, &["m1", "m2"]), now);
+    d.tick(now + every * 4, every);
+    assert_eq!(d.rows().count(), 0, "正文没回来，先不浮也不跳过");
+    d.apply(texts(&[("m1", "黑咖啡"), ("m2", "猫咖")]), now + every * 4);
+    d.tick(now + every * 4, every);
+    assert_eq!(
+        d.rows().cloned().collect::<Vec<_>>(),
+        [Line::Float("黑咖啡".into())]
+    );
+    // 下一批开始：上一批取回的正文不算这一批的，照样等；这一批的正文到了再浮。
+    d.apply(merging(6, 3, 0, &["m9"]), now + every * 5);
+    d.tick(now + every * 9, every);
+    assert_eq!(d.rows().count(), 1);
+    d.apply(texts(&[("m9", "早上不吃早饭")]), now + every * 9);
+    d.tick(now + every * 9, every);
+    assert_eq!(d.rows().last(), Some(&Line::Float("早上不吃早饭".into())));
 }

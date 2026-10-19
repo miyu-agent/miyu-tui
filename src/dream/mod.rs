@@ -152,6 +152,9 @@ pub struct Dream {
     /// 下一条什么时候浮。
     next_float: Option<Instant>,
     texts: HashMap<String, String>,
+    /// 这一批开始合以后正文取回来过：没回来以前先不浮，回来了还没有的才跳过（2026-10-20 项目主人验收截图：正文还在路上，
+    /// 交的编号全当没有正文跳过了，滚动区一条没浮）。
+    texts_fresh: bool,
     /// 日志里真正存下的，照先后。
     kept: Vec<Kept>,
     /// 整理完了：醒来的那一刻、核心的回执。
@@ -177,6 +180,7 @@ impl Dream {
             floats: VecDeque::new(),
             next_float: None,
             texts: HashMap::new(),
+            texts_fresh: false,
             kept: Vec::new(),
             woke: None,
         }
@@ -220,7 +224,10 @@ impl Dream {
                     None => self.push(Line::Summary(chars, done)),
                 }
             }
-            Change::Texts(texts) => self.texts.extend(texts),
+            Change::Texts(texts) => {
+                self.texts.extend(texts);
+                self.texts_fresh = true;
+            }
             // 开始合以前的（会话里先抽的那几条）不算这次整理的。
             Change::Landed(landed) if self.index > 0 => {
                 let kept = match landed {
@@ -263,6 +270,7 @@ impl Dream {
         self.rows.retain(|l| !matches!(l, Line::Summary(..)));
         self.floats = given.into();
         self.next_float = Some(now);
+        self.texts_fresh = false;
     }
 
     /// 她写完一条改的、删的：往上推一行。
@@ -289,7 +297,7 @@ impl Dream {
 
     /// 到点浮下一条（半秒一条，放完一遍停住，第 4 条）：取不到正文的跳过。
     pub fn tick(&mut self, now: Instant, every: Duration) {
-        while self.next_float.is_some_and(|at| at <= now) {
+        while self.texts_fresh && self.next_float.is_some_and(|at| at <= now) {
             let Some(id) = self.floats.pop_front() else {
                 self.next_float = None;
                 return;
