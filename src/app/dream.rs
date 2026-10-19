@@ -9,16 +9,22 @@ use crate::dream::{Change, Dream};
 use crate::transcript::Kind;
 
 impl App {
-    /// 打的那一行交给核心以后：是 `/dream`、开着会话的，跟着看整理（第 1 条）。
+    /// 打的那一行交给核心以前：是 `/dream` 的，跟着看整理（第 1 条）。还没开会话的（首页）核心先开会话，会话编号到了再认上
+    /// （[`App::dream_ready`]）；连接那头开好会话、交命令以前先订阅，开头那一批不漏。
     pub(super) fn dream_start(&mut self, line: &str) {
         if line.split_whitespace().next() != Some("/dream") {
             return;
         }
-        let Some(session) = self.talk.transcript.session.clone() else {
-            return;
-        };
-        self.talk.dream = Some(Dream::new(session.clone(), Instant::now()));
-        self.link.core.send(Command::Dream(Some(session)));
+        let session = self.talk.transcript.session.clone().unwrap_or_default();
+        self.talk.dream = Some(Dream::new(session, Instant::now()));
+        self.link.core.send(Command::Dream(true));
+    }
+
+    /// 首页打的 `/dream`：核心替它开的会话到了，认上。
+    pub(super) fn dream_ready(&mut self, session: &str) {
+        if let Some(dream) = self.talk.dream.as_mut().filter(|d| d.session.is_empty()) {
+            dream.session = session.to_string();
+        }
     }
 
     /// 记忆流推来一样：醒了以后的不要。
@@ -39,7 +45,7 @@ impl App {
             return false;
         };
         dream.woke = Some((Instant::now(), said.to_string()));
-        self.link.core.send(Command::Dream(None));
+        self.link.core.send(Command::Dream(false));
         true
     }
 
@@ -52,7 +58,7 @@ impl App {
             .is_some_and(|d| d.batch().is_none())
         {
             self.talk.dream = None;
-            self.link.core.send(Command::Dream(None));
+            self.link.core.send(Command::Dream(false));
         }
     }
 
@@ -86,7 +92,8 @@ impl App {
 
     /// 下一次要醒来：整理着的照转圈的节拍（z 飘、星星闪），醒够了的到点收。
     pub(super) fn dream_deadline(&self) -> Option<Instant> {
-        let dream = self.talk.dream.as_ref()?;
+        // 还没认上会话的不画，不用醒。
+        let dream = self.talk.dream.as_ref().filter(|d| !d.session.is_empty())?;
         let beat = Instant::now() + Duration::from_millis(self.config.timeline.spinner_ms);
         let wake = Duration::from_millis(self.config.layout.dream.wake_ms);
         let done = dream.woke.as_ref().map(|(at, _)| *at + wake);

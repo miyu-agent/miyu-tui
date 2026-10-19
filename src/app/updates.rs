@@ -14,6 +14,15 @@ impl App {
             // 界面块跟着扩展一起停了：清掉，重连以后核心照记着的订阅重推（`widgets.rs`）。
             self.link.widgets.blocks.clear();
         }
+        // 首页打的 `/dream`：核心替它开的会话到了（`dream.rs`）；照常往下办（放在最前面：下面几处会截走它）。
+        if let Update::Ready(session) = &update {
+            self.dream_ready(session);
+        }
+        // 人打的 `/dream` 正在整理：记忆流推来的（`dream.rs`）。
+        if let Update::Dream { session, change } = update {
+            self.dream_change(&session, change);
+            return;
+        }
         // 读配置合起来的那一条回来了：照原来的编号一处一处交回去（`config_asks.rs`）。
         if self.config_asks_update(&update) {
             return;
@@ -147,11 +156,6 @@ impl App {
         // 会话列表：交给开着的框（`switch.rs`）。
         if let Update::Sessions(all) = update {
             self.sessions_listed(all);
-            return;
-        }
-        // 人打的 `/dream` 正在整理：记忆流推来的（`dream.rs`）。
-        if let Update::Dream { session, change } = update {
-            self.dream_change(&session, change);
             return;
         }
         // 会话列表变了（核心 9-5）：改手上这一份，框开着的跟着变。

@@ -156,6 +156,9 @@ impl Talk {
 
     /// 是首页：正文里一条都没有，也没在回答（`tui.md`「空会话的首页」第 1 条）。
     pub fn blank(&self) -> bool {
-        self.transcript.entries.is_empty() && self.transcript.running.is_none()
+        // 人打的 `/dream` 在整理的不算：那一块画在正文末尾（「整理记忆」第 2 条），首页打的也要换到正文。
+        self.transcript.entries.is_empty()
+            && self.transcript.running.is_none()
+            && self.dream.is_none()
     }
 }

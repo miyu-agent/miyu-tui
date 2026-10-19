@@ -29,8 +29,8 @@ impl App {
         // 会话不在了（「连核心」第 7 条）：和说下一句话一样，开新会话。
         self.leave_gone();
         self.typing.slash_draft = Some(draft);
-        self.link.core.send(Command::Slash(line.to_string()));
         self.dream_start(line);
+        self.link.core.send(Command::Slash(line.to_string()));
     }
 
     /// 交给核心的那一行办了（有回执的照常弹）：不用再放回去。
