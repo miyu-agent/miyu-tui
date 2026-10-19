@@ -260,7 +260,7 @@ fn left_line(spans: Vec<Span<'_>>, width: u16) -> Line<'static> {
 }
 
 /// 左边那一段：权限级别、模型和端点、思考强度。`short`：模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash`
-/// 写 `deepseek-v4.1-flash`）；`named`：权限级别写字，不写的只留图标。一行放不下时用窄的（[`split`]）。
+/// 写 `deepseek-v4.1-flash`），后面的供应商名不写（2026-10-19 项目主人）；`named`：权限级别写字，不写的只留图标。一行放不下时用窄的（[`split`]）。
 fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
     let text = &seen.config.text;
     let t = &seen.talk.transcript;
@@ -284,13 +284,7 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
                 spans.push(Span::styled(word, theme::warn()));
             } else if let Some((model, endpoint)) = t.shown_model() {
                 spans.push(Span::styled(sep, theme::dim()));
-                let model = if short {
-                    model.rsplit('/').next().unwrap_or(&model).to_string()
-                } else {
-                    model
-                };
-                spans.push(Span::styled(model, theme::model()));
-                spans.push(Span::styled(format!(" {endpoint}"), theme::dim()));
+                spans.extend(model_spans(model, &endpoint, short));
                 // 思考强度（`/effort`）：什么都不发的不写。
                 if let Some(effort) = t.effort() {
                     // 强调色（2026-10-02 项目主人：和「工作区」那个蓝一样）。
@@ -301,6 +295,19 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
             spans
         }
     }
+}
+
+/// 模型那一格：全的写模型编号接暗色的供应商名；`short` 的只写编号最后一段、不写供应商名（2026-10-19 项目主人：宽度不够
+/// 时供应商信息也可以隐藏，和缩模型编号同一步）。
+fn model_spans(model: String, endpoint: &str, short: bool) -> Vec<Span<'static>> {
+    if short {
+        let last = model.rsplit('/').next().unwrap_or(&model).to_string();
+        return vec![Span::styled(last, theme::model())];
+    }
+    vec![
+        Span::styled(model, theme::model()),
+        Span::styled(format!(" {endpoint}"), theme::dim()),
+    ]
 }
 
 /// 权限级别那一格写什么、后面接模型那一格用什么隔开：写字的是「⏵⏵ 开放权限」接 ` · `；窄了只留图标的是「⏵⏵」接一个空格，

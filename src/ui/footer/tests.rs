@@ -1,6 +1,6 @@
 use ratatui::text::Span;
 
-use super::{Part, fit, left_line, level_label, middle, right, split};
+use super::{Part, fit, left_line, level_label, middle, model_spans, right, split};
 
 #[test]
 fn a_narrow_left_side_is_clipped_with_an_ellipsis() {
@@ -103,7 +103,7 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
     let short = || {
         vec![
             Span::raw("▣ 工作区 · "),
-            Span::raw("deepseek-v4.1-flash dev · max"),
+            Span::raw("deepseek-v4.1-flash · max"),
         ]
     };
     let cells = || {
@@ -114,10 +114,10 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
             part(2, "¥0.12"),
         ]
     };
-    let bare = || vec![Span::raw("▣"), Span::raw(" deepseek-v4.1-flash dev · max")];
+    let bare = || vec![Span::raw("▣"), Span::raw(" deepseek-v4.1-flash · max")];
     let lefts = || [full(), short(), bare()];
     let (left, right, _) = split(lefts(), cells(), 0, 95);
-    assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
+    assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash · max");
     assert_eq!(
         right.to_string(),
         "41 tok/s · 342.6k/1M(32.7%) · Σ27.5M(C97.3%) · ¥0.12"
@@ -125,12 +125,12 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
     let (left, _, _) = split(lefts(), cells(), 0, 140);
     assert!(left.to_string().contains("clinepass/"), "宽的照旧写全");
     // 再窄：速度、花费先丢，权限级别的字还在。
-    let (left, right, _) = split(lefts(), cells(), 0, 82);
-    assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
+    let (left, right, _) = split(lefts(), cells(), 0, 78);
+    assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash · max");
     assert_eq!(right.to_string(), "342.6k/1M(32.7%) · Σ27.5M(C97.3%)");
     // 再窄：连累计、上下文都要挤掉时，权限级别的字才收掉、只留图标（2026-10-18 项目主人）。
-    let (left, right, _) = split(lefts(), cells(), 0, 70);
-    assert_eq!(left.to_string(), "▣ deepseek-v4.1-flash dev · max");
+    let (left, right, _) = split(lefts(), cells(), 0, 66);
+    assert_eq!(left.to_string(), "▣ deepseek-v4.1-flash · max");
     assert_eq!(right.to_string(), "342.6k/1M(32.7%) · Σ27.5M(C97.3%)");
 }
 
@@ -171,5 +171,19 @@ fn an_icon_only_level_drops_the_dot_too() {
         level_label(None, "开放权限", false),
         ("开放权限".to_string(), " · "),
         "没有图标的照旧写字"
+    );
+}
+
+#[test]
+fn a_shortened_model_drops_the_provider_name_too() {
+    // 2026-10-19 项目主人：宽度不够时供应商信息也可以隐藏，和缩模型编号同一步。
+    let model = || "clinepass/cline-pass/deepseek-v4.1-flash".to_string();
+    assert_eq!(
+        shown(model_spans(model(), "magpie", false)),
+        "clinepass/cline-pass/deepseek-v4.1-flash magpie"
+    );
+    assert_eq!(
+        shown(model_spans(model(), "magpie", true)),
+        "deepseek-v4.1-flash"
     );
 }
