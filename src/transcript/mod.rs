@@ -252,6 +252,7 @@ impl Transcript {
             | Update::Mermaid { .. }
             | Update::Answer { .. }
             | Update::CommandRan { .. }
+            | Update::Dream { .. }
             | Update::UsageRows { .. }
             | Update::Personas(_)
             | Update::Packages(_)

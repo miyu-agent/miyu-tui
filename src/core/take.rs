@@ -92,6 +92,8 @@ pub(super) async fn take(
             Some(Awaiting::Slash) => notify(Update::SlashRefused { message }),
             // 订阅不上界面块（核心旧、不认这个流）：什么都不画，不用说（「界面块」第 8 条）。
             Some(Awaiting::Widgets) => true,
+            // 跟着看整理订不上、取不到正文（没装记忆、核心旧）：照旧等回执，不用说。
+            Some(Awaiting::Dream | Awaiting::DreamTexts(_)) => true,
             Some(Awaiting::PackageCall) => notify(Update::PackageCallRefused { message }),
             // 读不了输出（任务没了、是子代理）：不用说，界面不再等它。
             Some(Awaiting::Output(session, job, after)) => notify(Update::Output {
@@ -120,6 +122,10 @@ pub(super) async fn take(
         }
         Some(Awaiting::Rename(title)) => return notify(Update::Renamed(title)),
         Some(Awaiting::Widgets) => return notify(super::widgets::listed(&message["result"])),
+        Some(Awaiting::Dream) => return true,
+        Some(Awaiting::DreamTexts(session)) => {
+            return notify(super::memory::texts(session, &message["result"]));
+        }
         // 调方法成了：回应不用看（`widgets.md`「头」第 6 条）。
         Some(Awaiting::PackageCall) => return true,
         Some(Awaiting::Packages) => {
@@ -331,6 +337,18 @@ pub(super) async fn take(
             awaiting.insert(id, Awaiting::UiLanguage);
         }
         return true;
+    }
+    // 记忆流（`/dream`）也带 `session`：先截下来，别当会话的事件走；开始合一批的再取一次正文（`memory.rs`）。
+    if let Some(update) = super::memory::pushed(message) {
+        let Some(update) = update else {
+            return true;
+        };
+        if let Some(session) = super::memory::wants_texts(&update)
+            && let Ok(id) = super::memory::list(rpc, session).await
+        {
+            awaiting.insert(id, Awaiting::DreamTexts(session.to_string()));
+        }
+        return notify(update);
     }
     let Some(session) = message["params"]["session"].as_str() else {
         return true;

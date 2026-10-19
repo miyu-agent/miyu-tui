@@ -48,6 +48,8 @@ pub struct Talk {
     pub default_level: crate::core::Level,
     /// 这一回的首页上按过 Tab：照按的画，配置再读到也不盖（按的那一级记在核心那头，开会话时补发）。
     pub level_picked: bool,
+    /// 人打的 `/dream` 正在整理（`dream.rs`，蓝图「整理记忆」）。
+    pub dream: Option<crate::dream::Dream>,
 }
 
 impl Talk {

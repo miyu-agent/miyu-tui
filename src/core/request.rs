@@ -114,6 +114,7 @@ pub(super) fn request(
         | Command::SetEffort { .. }
         | Command::Catalog(_)
         | Command::Widgets(_)
+        | Command::Dream(_)
         | Command::PackageCall { .. }
         | Command::Output { .. } => {
             return None;

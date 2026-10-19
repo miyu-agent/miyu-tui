@@ -149,6 +149,11 @@ impl App {
             self.sessions_listed(all);
             return;
         }
+        // 人打的 `/dream` 正在整理：记忆流推来的（`dream.rs`）。
+        if let Update::Dream { session, change } = update {
+            self.dream_change(&session, change);
+            return;
+        }
         // 会话列表变了（核心 9-5）：改手上这一份，框开着的跟着变。
         if let Update::SessionChanged(change) = update {
             self.session_changed(change);
@@ -214,7 +219,16 @@ impl App {
             return;
         }
         if let Update::SlashRefused { message, .. } = &update {
+            self.dream_refused();
             self.slash_refused(message);
+            return;
+        }
+        // `/dream` 的回执：看着整理的醒一下再收成回执（`dream.rs`）。
+        if let Update::CommandRan { command, said } = &update
+            && command == "dream"
+            && self.dream_woke(said)
+        {
+            self.slash_ran();
             return;
         }
         if let Update::CommandRan { command, said } = &update {

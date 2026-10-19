@@ -224,6 +224,16 @@
     "title": "命令",
     "count": " {count} 条"
   },
+  "dream": {
+    "title": "整理记忆",
+    "batch": " · 第 {n} 批 / 共 {total} 批",
+    "outdated": "过时",
+    "repeat": "重复",
+    "worthless": "没价值",
+    "summary": "摘要 {chars} 字",
+    "writing": "…",
+    "tally": "{merged}/{total}"
+  },
   "compaction": {
     "triggered": "已触发上下文压缩",
     "progress": "正在压缩上下文",

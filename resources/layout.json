@@ -145,6 +145,52 @@
   },
   "mascot_home": true,
   "mascot_sidebar": true,
+  "dream": {
+    "mark": "✦ ",
+    "float": "· ",
+    "retired": "✗ ",
+    "revised": "✎ ",
+    "summary": "✦ ",
+    "reason_gap": " · ",
+    "float_ms": 500,
+    "asleep": "(－ω－)",
+    "awake": "(・ω・)",
+    "wake_mark": "!",
+    "wake_ms": 1200,
+    "left_width": 13,
+    "z_top": [
+      "       ",
+      "     z ",
+      "    z Z",
+      "   Z  z",
+      "  Z    ",
+      "       "
+    ],
+    "z_side": [
+      " z",
+      " z",
+      "  ",
+      "  ",
+      " z",
+      " z"
+    ],
+    "z_frame_ms": 600,
+    "glyphs": [
+      "✦",
+      "⋆",
+      "✧",
+      "✦",
+      "*"
+    ],
+    "soon": "·",
+    "unlit": "·",
+    "stars": 24,
+    "star_cols": 3,
+    "twinkle_every": 3,
+    "twinkle_ms": 2800,
+    "twinkle_lift": 0.6,
+    "seed": 7
+  },
   "compaction": {
     "pause_ms": [
       300,

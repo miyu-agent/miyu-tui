@@ -31,6 +31,8 @@ pub struct Layout {
     pub bar: Bar,
     /// 压缩那一行的进度条怎么动（蓝图「正文」第 9 条）。
     pub compaction: CompactionMotion,
+    /// 人打的 `/dream` 整理时那一块（蓝图「整理记忆」）。
+    pub dream: super::DreamLook,
     /// 侧边栏画不画吉祥物。
     pub mascot_sidebar: bool,
     /// 子代理状态行最多几行（不算主会话）。

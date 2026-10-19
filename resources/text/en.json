@@ -224,6 +224,16 @@
     "title": "Commands",
     "count": " {count}"
   },
+  "dream": {
+    "title": "Tidying memories",
+    "batch": " · batch {n} of {total}",
+    "outdated": "outdated",
+    "repeat": "duplicate",
+    "worthless": "not useful",
+    "summary": "summary {chars} chars",
+    "writing": "…",
+    "tally": "{merged}/{total}"
+  },
   "compaction": {
     "triggered": "Context compaction started",
     "progress": "Compacting the context",

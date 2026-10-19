@@ -224,6 +224,16 @@
     "title": "コマンド",
     "count": " {count}"
   },
+  "dream": {
+    "title": "記憶を整理中",
+    "batch": " · 第 {n} 批 / 全 {total} 批",
+    "outdated": "古い",
+    "repeat": "重複",
+    "worthless": "不要",
+    "summary": "要約 {chars} 字",
+    "writing": "…",
+    "tally": "{merged}/{total}"
+  },
   "compaction": {
     "triggered": "コンテキストの圧縮を開始しました",
     "progress": "コンテキストを圧縮中",

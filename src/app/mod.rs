@@ -13,6 +13,7 @@ mod config_asks;
 mod deadline;
 mod diagrams;
 mod drawer;
+mod dream;
 mod effort;
 mod frame;
 mod goal;
@@ -320,6 +321,8 @@ impl App {
             &mut self.screen.rng,
         );
         self.drawer_tick();
+        // 人打的 `/dream`：浮下一条、醒够了收（`dream.rs`）。
+        self.dream_tick();
         // 正文少了一大截（收起大块、换会话、清空）：过一会儿把堆里空着的还给系统（`trim.rs`）。
         let now = Instant::now();
         let layout = &self.config.layout;

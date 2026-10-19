@@ -17,6 +17,7 @@ use crate::theme::Palette;
 use localize::localized;
 
 mod attach;
+mod dream;
 mod figures;
 mod goal;
 mod icons;
@@ -33,6 +34,7 @@ mod widgets;
 mod words;
 
 pub use attach::{AttachLook, AttachTexts};
+pub use dream::{DreamLook, DreamTexts};
 pub use figures::{FigureLook, Room};
 pub use goal::GoalTexts;
 pub use icons::Icons;
@@ -189,6 +191,8 @@ pub struct Texts {
     pub menu: MenuTexts,
     /// 压缩那几行（蓝图「正文」第 9 条）。
     pub compaction: CompactionTexts,
+    /// 人打的 `/dream` 整理时那一块（蓝图「整理记忆」）。
+    pub dream: DreamTexts,
     /// 出错的分类写成人话：内核自己查出来的、没有原话的用（蓝图「正文」第 4 条）；认不得的照原样。
     pub error_classes: HashMap<String, String>,
     /// 图还在做时那一行占位。
