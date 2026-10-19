@@ -7,6 +7,18 @@ use crate::config::Config;
 use crate::core::SessionInfo;
 use crate::session_list::SessionList;
 
+/// 只留会话那几行：段头（第 10 条）的另有测试。
+fn sessions_only(
+    rows: Vec<ratatui::text::Line<'static>>,
+    map: &[Option<usize>],
+) -> Vec<ratatui::text::Line<'static>> {
+    rows.into_iter()
+        .zip(map)
+        .filter(|(_, item)| item.is_some())
+        .map(|(row, _)| row)
+        .collect()
+}
+
 fn info(session: &str, title: Option<&str>, cwd: &str) -> SessionInfo {
     SessionInfo {
         session: session.into(),
@@ -33,7 +45,7 @@ fn rows_line_up_in_columns_and_only_a_different_directory_is_written() {
         info("0000-bbbbbbbb", None, "~/src/miyu"),
         info("0000-cccccccc", Some("短"), "~/src/app"),
     ]);
-    let (_, rows, _) = lines(
+    let (_, rows, map) = lines(
         &list,
         super::Marks {
             current: Some("0000-aaaaaaaa"),
@@ -45,6 +57,7 @@ fn rows_line_up_in_columns_and_only_a_different_directory_is_written() {
         20,
         0,
     );
+    let rows = sessions_only(rows, &map);
     let text: Vec<String> = rows.iter().map(ToString::to_string).collect();
     let column = |l: &str| l.find(" #").map(|at| l[..at].width());
     let at: Vec<_> = text.iter().map(|l| column(l)).collect();
@@ -85,7 +98,7 @@ fn the_current_one_gets_a_dot_and_a_busy_one_a_spinner_in_the_mark_column() {
         info("0000-cccccccc", Some("别的"), "~/src/miyu"),
     ]);
     let shown = |list: &SessionList| -> Vec<String> {
-        let (_, rows, _) = lines(
+        let (_, rows, map) = lines(
             list,
             super::Marks {
                 current: Some("0000-aaaaaaaa"),
@@ -97,6 +110,7 @@ fn the_current_one_gets_a_dot_and_a_busy_one_a_spinner_in_the_mark_column() {
             20,
             0,
         );
+        let rows = sessions_only(rows, &map);
         rows.iter().map(ToString::to_string).collect()
     };
     let spin = &config.timeline.spinner[0];
@@ -140,7 +154,8 @@ fn the_total_tokens_sit_between_the_id_and_the_right_column_right_aligned() {
         current: None,
         asking: &[],
     };
-    let (_, rows, _) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
+    let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
+    let rows = sessions_only(rows, &map);
     let text: Vec<String> = rows.iter().map(ToString::to_string).collect();
     let after_id = |l: &str| {
         let at = l.find(" #").expect("有编号") + " #".len() + 8;
@@ -173,7 +188,8 @@ fn a_narrow_box_shortens_the_title_before_the_tokens() {
         current: None,
         asking: &[],
     };
-    let (_, rows, _) = lines(&list, marks, "~/src/miyu", &config, 64, 20, 0);
+    let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 64, 20, 0);
+    let rows = sessions_only(rows, &map);
     let row = rows[0].to_string();
     assert!(row.contains("#aaaaaaaa  Σ27.5M"), "{row}");
     assert!(row.contains("…/acceptance/tui-work"), "{row}");
@@ -199,4 +215,73 @@ fn a_long_directory_keeps_its_last_two_levels() {
             "只认整层"
         );
     }
+}
+
+#[test]
+fn sessions_are_grouped_by_age_under_plain_headings_unless_searching() {
+    // 2026-10-19 项目主人：终端不做项目，只照时间分段，段头「算作标题式」：选不中、不收起，置顶、正在用的不带段头。
+    let config = Config::builtin().unwrap();
+    let ago = |days: i64| {
+        let at = jiff::Timestamp::now() - jiff::SignedDuration::from_hours(days * 24);
+        Some(at)
+    };
+    let with = |id: &str, title: &str, days: Option<i64>, pinned: bool| SessionInfo {
+        pinned,
+        last_active: days.and_then(ago),
+        ..info(id, Some(title), "~/src/miyu")
+    };
+    let mut list = SessionList::default();
+    list.replace(vec![
+        with("0000-aaaaaaaa", "置顶的", Some(40), true),
+        with("0000-bbbbbbbb", "今天", Some(0), false),
+        with("0000-cccccccc", "三天前", Some(3), false),
+        with("0000-dddddddd", "很久以前", Some(90), false),
+        with("0000-eeeeeeee", "没动静", None, false),
+    ]);
+    let marks = super::Marks {
+        current: None,
+        asking: &[],
+    };
+    let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
+    let text: Vec<String> = rows
+        .iter()
+        .map(|l| l.to_string().trim_end().to_string())
+        .collect();
+    let firsts: Vec<&str> = text
+        .iter()
+        .map(|l| l.split_whitespace().next().unwrap_or(""))
+        .collect();
+    assert_eq!(
+        firsts,
+        [
+            "❯",
+            "最近",
+            "今天",
+            "近",
+            "三天前",
+            "30",
+            "很久以前",
+            "没动静"
+        ],
+        "{text:#?}"
+    );
+    assert_eq!(text[3].trim(), "近 7 天", "空的「近 30 天」不画");
+    assert_eq!(
+        map,
+        [
+            Some(0),
+            None,
+            Some(1),
+            None,
+            Some(2),
+            None,
+            Some(3),
+            Some(4)
+        ],
+        "段头选不中"
+    );
+    // 打字筛的时候不分段。
+    list.query = "天".into();
+    let (_, _, map) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
+    assert!(map.iter().all(Option::is_some), "{map:?}");
 }

@@ -641,6 +641,7 @@
     "pinned": "Pinned",
     "unpinned": "Unpinned",
     "tokens": "Σ{tokens}",
+    "groups": ["Recent", "Past 7 days", "Past 30 days", "Older"],
     "ticked": " · {count} ticked",
     "delete_many": "Press Ctrl+D again to delete {count} sessions",
     "deleted_many": "Deleted {count} sessions"

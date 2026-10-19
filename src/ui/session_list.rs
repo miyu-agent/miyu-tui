@@ -9,6 +9,8 @@ use ratatui::text::{Line, Span};
 use serde::Deserialize;
 
 use super::panel::{self, Chrome, Row};
+
+mod groups;
 use crate::config::Config;
 use crate::core::SessionInfo;
 use crate::session_list::{SessionList, short};
@@ -57,6 +59,8 @@ pub struct Texts {
     pub pinned: String,
     /// 取消置顶了。
     pub unpinned: String,
+    /// 段头（第 10 条）：最近、近 7 天、近 30 天、30 天前。
+    pub groups: [String; 4],
     /// 编号后面那一列：一共用了多少 token，`{tokens}`。
     pub tokens: String,
 }
@@ -172,12 +176,21 @@ pub fn lines(
             .saturating_sub(fixed)
             .max(column.min(TITLE_MIN)),
     );
-    let rows: Vec<Row> = found
-        .iter()
-        .enumerate()
-        .skip(top)
-        .take(shown)
-        .map(|(i, info)| {
+    // 没打字时照最近动静分段，段前一行段头（第 10 条）；露出来的一截从一段中间开始的也先写段头。
+    let tz = jiff::tz::TimeZone::system();
+    let today = now.to_zoned(tz.clone()).date();
+    let grouped = list.query.is_empty();
+    let mut last_group = None;
+    let mut rows: Vec<Row> = Vec::new();
+    for (i, info) in found.iter().enumerate().skip(top).take(shown) {
+        if grouped {
+            let group = groups::group(info, marks.current, today, &tz);
+            if let Some(age) = group.filter(|_| group != last_group) {
+                rows.push((None, groups::heading(&texts.groups[age.index()])));
+            }
+            last_group = group;
+        }
+        rows.push({
             let mut content = Vec::new();
             if ticking {
                 let mark = &config.layout.tick_mark;
@@ -207,9 +220,9 @@ pub fn lines(
             let lead = marker(info, current, frame, config);
             let line = panel::item_with(i == list.selected, lead, content, Some(right), width);
             (Some(i), line)
-        })
-        .collect();
-    let rows = panel::fit(rows, Some(list.selected), max);
+        });
+    }
+    let rows = groups::drop_orphans(panel::fit(rows, Some(list.selected), max));
     let (map, lines) = rows.into_iter().unzip();
     (chrome, lines, map)
 }
