@@ -12,6 +12,17 @@ use image::{Rgba, RgbaImage};
 
 use crate::mascot::{Look, Part, Pose};
 
+mod laptop;
+
+/// 哪一张：过程中的通知（等你确认、等你回答）抱着电脑，完成的（回答完了、出错了）站着（2026-10-19 项目主人）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Icon {
+    /// 站着。
+    Standing,
+    /// 抱着电脑。
+    Working,
+}
+
 /// 画多少格见方（同网页的 `cols`、`rows`）、头的半径、头的中心在第几行。
 const GRID: u16 = 24;
 const RADIUS: f64 = 8.0;
@@ -35,6 +46,7 @@ struct Palette {
     fin_shade: [u8; 3],
     eye: [u8; 3],
     outline: [u8; 3],
+    lamp: [u8; 3],
 }
 
 const MORNING: Palette = Palette {
@@ -46,6 +58,7 @@ const MORNING: Palette = Palette {
     fin_shade: [0xc8, 0x64, 0x78],
     eye: [0x3a, 0x63, 0xc9],
     outline: [0x4a, 0x42, 0x60],
+    lamp: [0x5a, 0xa9, 0xff],
 };
 
 /// 两个颜色之间取 `k`（0 是 `a`）。
@@ -71,8 +84,8 @@ fn color(part: Part, mark: char, level: usize) -> [u8; 3] {
     mix(shade, light, level as f64 / (LEVELS - 1) as f64)
 }
 
-/// 画成像素图：照 `look` 的形状（换了吉祥物包的照包），网页那一套的格子大小，正面、睁着眼。
-pub fn draw(look: &Look) -> RgbaImage {
+/// 画成像素图：照 `look` 的形状（换了吉祥物包的照包），网页那一套的格子大小，正面、睁着眼；`icon` 是抱着电脑的盖上电脑。
+pub fn draw(look: &Look, icon: Icon) -> RgbaImage {
     let mut grid = Look {
         cols: GRID,
         rows: GRID,
@@ -128,32 +141,36 @@ pub fn draw(look: &Look) -> RgbaImage {
             small.put_pixel(at.0, at.1, Rgba([rgb[0], rgb[1], rgb[2], 255]));
         }
     }
+    if icon == Icon::Working {
+        laptop::hold(&mut small);
+    }
     resize(&small, side * SCALE, side * SCALE, FilterType::Nearest)
 }
 
 /// 画好的那一张放进 `dir`：名字照样子算，已经在的直接用；写不进去的是 `None`。
-pub fn file(look: &Look, dir: &Path) -> Option<PathBuf> {
+pub fn file(look: &Look, icon: Icon, dir: &Path) -> Option<PathBuf> {
     let mut h = DefaultHasher::new();
     format!("{look:?}").hash(&mut h);
+    icon.hash(&mut h);
     let path = dir.join(format!("mascot-{:016x}.png", h.finish()));
     if path.is_file() {
         return Some(path);
     }
     fs::create_dir_all(dir).ok()?;
-    draw(look).save(&path).ok()?;
+    draw(look, icon).save(&path).ok()?;
     Some(path)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{MORNING, SCALE, draw, file};
+    use super::{Icon, MORNING, SCALE, draw, file};
     use crate::config::Config;
 
     #[test]
     fn the_mascot_is_pixel_art_in_the_morning_colors_with_an_outline() {
         // 2026-10-19 项目主人：照网页晨光主题那一只、符号化一些。
         let look = Config::builtin().unwrap().mascot;
-        let picture = draw(&look);
+        let picture = draw(&look, Icon::Standing);
         assert_eq!(picture.width(), 26 * SCALE, "24 格连轮廓，放大不插值");
         let has = |rgb: [u8; 3]| {
             picture
@@ -185,13 +202,17 @@ mod tests {
             pixel_face: None,
             ..look.clone()
         };
-        assert_ne!(draw(&look), draw(&without), "照另调的那一份画");
+        assert_ne!(
+            draw(&look, Icon::Standing),
+            draw(&without, Icon::Standing),
+            "照另调的那一份画"
+        );
     }
 
     #[test]
     fn the_eyes_are_one_column_each_and_stay_clear_of_the_mouth() {
         // 2026-10-19 项目主人：眼睛和嘴挤在一起；挑了眼睛往上、只占一列，嘴往下。
-        let picture = draw(&Config::builtin().unwrap().mascot);
+        let picture = draw(&Config::builtin().unwrap().mascot, Icon::Standing);
         let cell = |x: u32, y: u32| picture.get_pixel(x * SCALE, y * SCALE).0;
         let side = picture.width() / SCALE;
         let eye = [MORNING.eye[0], MORNING.eye[1], MORNING.eye[2], 255];
@@ -216,13 +237,33 @@ mod tests {
     }
 
     #[test]
+    fn a_notification_in_progress_holds_a_laptop_and_a_finished_one_does_not() {
+        // 2026-10-19 项目主人：过程中的通知用玩电脑的，完成的用站着的。
+        let look = Config::builtin().unwrap().mascot;
+        let lamp = [MORNING.lamp[0], MORNING.lamp[1], MORNING.lamp[2], 255];
+        let working = draw(&look, Icon::Working);
+        let standing = draw(&look, Icon::Standing);
+        assert!(working.pixels().any(|p| p.0 == lamp), "电脑盖子上的灯");
+        assert!(!standing.pixels().any(|p| p.0 == lamp), "站着的没有电脑");
+        assert_eq!(working.dimensions(), standing.dimensions());
+        let dir = std::env::temp_dir().join(format!("miyu-mascot-laptop-{}", std::process::id()));
+        drop(std::fs::remove_dir_all(&dir));
+        assert_ne!(
+            file(&look, Icon::Working, &dir),
+            file(&look, Icon::Standing, &dir),
+            "两张分开存"
+        );
+        drop(std::fs::remove_dir_all(&dir));
+    }
+
+    #[test]
     fn one_look_is_drawn_once() {
         let look = Config::builtin().unwrap().mascot;
         let dir = std::env::temp_dir().join(format!("miyu-mascot-icon-{}", std::process::id()));
         drop(std::fs::remove_dir_all(&dir));
-        let first = file(&look, &dir).expect("画得出来");
+        let first = file(&look, Icon::Standing, &dir).expect("画得出来");
         let stamp = std::fs::metadata(&first).unwrap().modified().unwrap();
-        assert_eq!(file(&look, &dir), Some(first.clone()));
+        assert_eq!(file(&look, Icon::Standing, &dir), Some(first.clone()));
         assert_eq!(
             std::fs::metadata(&first).unwrap().modified().unwrap(),
             stamp,

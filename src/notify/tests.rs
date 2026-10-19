@@ -197,3 +197,13 @@ fn the_title_is_the_sessions_and_kitty_gets_an_icon() {
     );
     drop(std::fs::remove_dir_all(&cache));
 }
+
+#[test]
+fn waiting_notifications_hold_the_laptop_and_finished_ones_stand() {
+    // 2026-10-19 项目主人：过程中的通知用玩电脑的，完成的用站着的。
+    use super::mascot_icon::Icon;
+    assert_eq!(super::pose(Event::Approving), Icon::Working);
+    assert_eq!(super::pose(Event::Asking), Icon::Working);
+    assert_eq!(super::pose(Event::Replied), Icon::Standing);
+    assert_eq!(super::pose(Event::Failed), Icon::Standing);
+}

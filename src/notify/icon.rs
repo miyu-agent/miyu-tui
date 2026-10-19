@@ -14,10 +14,14 @@ const SIDE: u32 = 128;
 
 /// 这一条通知用哪张：头像缩好的那份，没有头像、缩不成的用吉祥物画成的（`mascot` 是现在的吉祥物，没有的不带
 /// 图标）；`dir` 是放它们的目录，写不进去的是 `None`。
-pub fn pick(avatar: Option<&Path>, mascot: Option<&Mascot>, dir: &Path) -> Option<PathBuf> {
+pub fn pick(
+    avatar: Option<&Path>,
+    mascot: Option<(&Mascot, super::mascot_icon::Icon)>,
+    dir: &Path,
+) -> Option<PathBuf> {
     avatar
         .and_then(|a| small(a, dir))
-        .or_else(|| mascot.and_then(|look| super::mascot_icon::file(look, dir)))
+        .or_else(|| mascot.and_then(|(look, icon)| super::mascot_icon::file(look, icon, dir)))
 }
 
 /// 现在的吉祥物（换了吉祥物包的照包的样子画）。
@@ -53,7 +57,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("miyu-notify-icon-{}", std::process::id()));
         drop(std::fs::remove_dir_all(&dir));
         let mascot: Mascot = crate::config::Config::builtin().unwrap().mascot;
-        let mascot = Some(&mascot);
+        let mascot = Some((&mascot, super::super::mascot_icon::Icon::Standing));
         let miyu = pick(None, mascot, &dir).expect("吉祥物画成的图");
         assert!(
             miyu.file_name()
