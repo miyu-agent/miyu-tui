@@ -40,6 +40,8 @@ pub fn run(
     let (mut session, look) = Session::start()?;
     // 配色、给人看的字、时间线的配置读一次，几件共用：上一件画完的配色交给下一件。
     let mut look = Some(look);
+    // 给人看的字（工具的显示名）同样交给下一件：核心只回一次（原来接上的那一轮工具名是原名 `jobs`，2026-10-20 验收）。
+    let mut human = crate::human::Human::default();
     // 印的时候敲的字：收工时写进 `leftover`，脚本接在命令行后面。
     let mut typed = String::new();
     for record in records {
@@ -60,16 +62,19 @@ pub fn run(
                     );
                 }
                 session.print(&turn)?;
+                human = turn.human.clone();
                 look = Some(turn.into_look());
             }
             Record::Turn { session: id, turn } => {
                 let mut woken = Turn::attach(id.clone(), turn, current);
+                woken.human = human.clone();
                 session.core.send(Command::Open {
                     session: id,
                     keep: false,
                 });
                 session.drive(&mut woken, |_| None)?;
                 typed.push_str(&woken.typed);
+                human = woken.human.clone();
                 look = Some(woken.into_look());
             }
         }
