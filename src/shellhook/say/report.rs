@@ -11,6 +11,11 @@ use super::spool::{self, Record};
 use super::turn::Turn;
 use crate::core::Command;
 
+/// 信箱里有没有要印的（不拿走）。
+pub fn waiting(shell: u32) -> bool {
+    spool::waiting(shell)
+}
+
 /// 信箱里没有要印的：退出码（停在提示符上的脚本照它不补换行、不重画）。
 const NOTHING: u8 = 1;
 

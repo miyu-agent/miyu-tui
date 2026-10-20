@@ -39,6 +39,13 @@ fn file(shell: u32) -> Option<PathBuf> {
     Some(dir()?.join(format!("{shell}.jsonl")))
 }
 
+/// `shell` 的信箱里有没有东西。
+pub fn waiting(shell: u32) -> bool {
+    file(shell)
+        .and_then(|path| std::fs::metadata(path).ok())
+        .is_some_and(|meta| meta.len() > 0)
+}
+
 /// 往 `shell` 的信箱里追加一件。
 ///
 /// # Errors

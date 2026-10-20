@@ -90,6 +90,14 @@ pub fn main(args: Vec<String>) -> ExitCode {
             )),
         },
         "report" => match options.shell_pid {
+            // 只问信箱里有没有要印的（zsh 停在提示符上：有的才让出提示符）。
+            Some(pid) if options.pending => {
+                return if say::report::waiting(pid) {
+                    ExitCode::SUCCESS
+                } else {
+                    ExitCode::from(1)
+                };
+            }
             Some(pid) => match say::report::run(pid, options.leftover.as_deref(), options.above) {
                 Ok(code) => return code,
                 Err(e) => Err(e),
@@ -126,6 +134,8 @@ struct Options {
     watch: Option<PathBuf>,
     /// `report` 停在提示符上印：提示符在光标上面占几行，有要印的才擦掉它们。
     above: Option<u16>,
+    /// `report` 只问有没有要印的。
+    pending: bool,
 }
 
 impl Options {
@@ -143,6 +153,7 @@ impl Options {
                 "--program" => options.program = Some(args.next().ok_or_else(value)?.into()),
                 "--leftover" => options.leftover = Some(args.next().ok_or_else(value)?.into()),
                 "--watch" => options.watch = Some(args.next().ok_or_else(value)?.into()),
+                "--pending" => options.pending = true,
                 "--above" => {
                     let rows = args.next().ok_or_else(value)?;
                     options.above = Some(rows.parse().map_err(|_| format!("bad rows: {rows}"))?);
