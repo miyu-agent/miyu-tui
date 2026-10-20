@@ -119,7 +119,12 @@ impl Drawer {
                 decision: Decision::Deny,
                 reason: (!typed.is_empty()).then_some(typed),
             })),
-            Edit::Other if typed.is_empty() || self.multiple(self.tab) => Step::Stay,
+            // 能多选的：写好就算答了（同勾上，见 `toggle`），不往下走。
+            Edit::Other if self.multiple(self.tab) => {
+                self.record();
+                Step::Stay
+            }
+            Edit::Other if typed.is_empty() => Step::Stay,
             Edit::Other => self.settle(Answer {
                 text: Some(typed),
                 ..Answer::default()
@@ -157,7 +162,8 @@ impl Drawer {
         self.enter()
     }
 
-    /// 能多选的：勾上、取消选中的那个选项。
+    /// 能多选的：勾上、取消选中的那个选项，当场记成这一道的回答（2026-10-21 项目主人：「多选题勾选之后就应该算是提交了
+    /// 内容，而不是必须要回车」，原来勾了不按 `Enter` 就切题目，这一道算没答）。
     fn toggle(&mut self) {
         if !self.multiple(self.tab) {
             return;
@@ -167,6 +173,12 @@ impl Drawer {
         {
             *mark = !*mark;
         }
+        self.record();
+    }
+
+    /// 能多选的这一道：照勾上的、「其他」写的记下回答；一个没勾、也没写的算没答。
+    fn record(&mut self) {
+        self.answers[self.tab] = self.gathered();
     }
 
     /// 换到下一页、上一页（连「确认」页），到头绕回来。
@@ -198,26 +210,33 @@ impl Drawer {
                 decision,
                 reason: None,
             })),
+            // 能多选的：勾的时候已经记下了，`Enter` 只是往下走；一个没勾、也没写其他答案的这一道算没答（2026-10-20 项目主人：
+            // 「我明明什么都没选，它怎么自动推荐了」；原来交光标所在的那一项）。
+            Some(Item::Choice(_)) if self.multiple(self.tab) => {
+                self.record();
+                self.move_on()
+            }
             Some(Item::Choice(i)) => match self.choose(i) {
                 Some(answer) => self.settle(answer),
-                // 能多选的一个没勾、也没写其他答案：这一道算没答，接着往下（2026-10-20 项目主人：「我明明什么都没选，它怎么
-                // 自动推荐了」；原来交光标所在的那一项）。
                 None => self.move_on(),
             },
             None => Step::Stay,
         }
     }
 
-    /// 在第 `i` 个选项上按 `Enter` 的回答：单选的就是它；能多选的交勾上的，接着「其他」写的字；一个没勾、也没写的是 `None`。
+    /// 单选的在第 `i` 个选项上按 `Enter` 的回答：就是它。
     fn choose(&self, i: usize) -> Option<Answer> {
         let question = self.question_at(self.tab)?;
+        Some(Answer {
+            picked: vec![question.options.get(i)?.label.clone()],
+            ..Answer::default()
+        })
+    }
+
+    /// 能多选的这一道的回答：勾上的，接着「其他」写的字；一个没勾、也没写的是 `None`。
+    fn gathered(&self) -> Option<Answer> {
+        let question = self.question_at(self.tab)?;
         let label = |i: usize| question.options[i].label.clone();
-        if !question.multiple {
-            return Some(Answer {
-                picked: vec![label(i)],
-                ..Answer::default()
-            });
-        }
         let typed = self.typed[self.tab].trim();
         let text = (!typed.is_empty()).then(|| typed.to_string());
         let picked: Vec<String> = self.checked[self.tab]

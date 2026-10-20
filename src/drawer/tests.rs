@@ -157,6 +157,22 @@ fn multiple_with_nothing_checked_is_left_unanswered() {
 }
 
 #[test]
+fn ticking_a_multiple_choice_answers_it_without_enter() {
+    // 2026-10-21 项目主人：「多选题勾选之后就应该算是提交了内容，而不是必须要回车。现在选了内容如果直接切题目，就不算提交」。
+    let mut d = Drawer::question(None, two());
+    d.key(key(KeyCode::Right));
+    d.key(key(KeyCode::Down));
+    d.key(key(KeyCode::Char(' ')));
+    assert_eq!(d.answers[1], Some(picked(&["乙"])), "勾上就记下");
+    d.key(key(KeyCode::Left));
+    assert_eq!(d.tab, 0);
+    assert_eq!(d.answers[1], Some(picked(&["乙"])), "切走了照样算答了");
+    d.key(key(KeyCode::Right));
+    d.key(key(KeyCode::Char(' ')));
+    assert_eq!(d.answers[1], None, "全取消了算没答");
+}
+
+#[test]
 fn other_needs_enter_to_edit_and_enter_saves_it() {
     let mut d = Drawer::question(None, asked());
     d.key(key(KeyCode::Down));
