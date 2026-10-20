@@ -22,10 +22,8 @@ pub struct DreamTexts {
     pub writing: String,
     /// 夜空右下角，`{merged}`、`{total}`。
     pub tally: String,
-    /// 第一行末尾整理了多久，`{thinking}`（还没写出东西时是 [`DreamTexts::thinking`]，写出了是空的）、`{time}`。
+    /// 第一行末尾整理了多久，`{time}`（2026-10-20 项目主人：前面原来的「做梦中… · 」删掉）。
     pub clock: String,
-    /// 她还一个字都没写出来（第 3 条）：吉祥物在睡觉，照睡觉说（2026-10-20 项目主人：「在想」不合适）。
-    pub thinking: String,
     /// 回执点开列的摘要打头的词。
     pub summary_full: String,
     /// 整理时人说了话、把她叫醒了的提示（第 7 条）。

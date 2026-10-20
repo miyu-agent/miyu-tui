@@ -101,7 +101,7 @@ fn dreaming_forever(tui: &mut support::Tui) {
     tui.say("/new");
     tui.pump(Duration::from_millis(500));
     tui.say("/dream");
-    tui.wait_for("做梦中…");
+    tui.wait_for("✦ 整理记忆");
 }
 
 /// 一直不答的剧本：首页新开的会话不抽，第一问就是合并（同「首页打的」那条）；说话照 plays 答。

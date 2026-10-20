@@ -123,8 +123,6 @@ struct Batch {
     upto: u64,
     /// 这一批算几条（新记的；整趟都没有新记的照交进去的条数）。
     size: u64,
-    /// 这一批她写出过东西（改、删、摘要）：没写出以前是在想（第 3 条的「做梦中…」）。
-    heard: bool,
 }
 
 /// 整理的样子。
@@ -218,11 +216,7 @@ impl Dream {
                 }
                 self.floats.clear();
             }
-            Change::Failed { upto } => {
-                if let Some(batch) = self.batch.as_mut().filter(|b| b.upto == upto) {
-                    batch.heard = false;
-                }
-            }
+            Change::Failed { .. } => {}
             Change::Revised { text } => self.wrote(Line::Revised(text)),
             Change::Retired { id, why } => {
                 let text = self.texts.get(&id).cloned().unwrap_or_default();
@@ -279,11 +273,7 @@ impl Dream {
         };
         self.index += 1;
         self.batches = self.index - 1 + left.div_ceil(size.max(1)).max(1);
-        self.batch = Some(Batch {
-            upto,
-            size,
-            heard: false,
-        });
+        self.batch = Some(Batch { upto, size });
         // 摘要那一行是上一批的：新的一批重新数。
         self.rows.retain(|l| !matches!(l, Line::Summary(..)));
         self.floats = given.into();
@@ -297,13 +287,10 @@ impl Dream {
         self.push(line);
     }
 
-    /// 她写出东西了：不再浮，不再算在想。
+    /// 她写出东西了：不再浮。
     fn heard(&mut self) {
         self.floats.clear();
         self.next_float = None;
-        if let Some(batch) = &mut self.batch {
-            batch.heard = true;
-        }
     }
 
     /// 正文回来了：删的那几条原文先空着的照编号补上（她写得比正文取回来快，2026-10-20 端到端测试抓到）。
@@ -368,14 +355,6 @@ impl Dream {
     pub fn progress(&self) -> (u64, u64, u64) {
         let size = self.batch.as_ref().map_or(0, |b| b.size);
         (self.merged, self.merged + size, self.total)
-    }
-
-    /// 还在想：这一批她一个字都还没写出来，或者还没开始合。这一批合完、下一批还没来的不算。
-    pub fn thinking(&self) -> bool {
-        match &self.batch {
-            Some(batch) => !batch.heard,
-            None => self.index == 0,
-        }
     }
 
     /// 正在看 `viewing` 这个会话时画不画这一块：叫醒了的不画；首页打的、会话编号还没到的照画（第 1、7 条）。

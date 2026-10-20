@@ -433,6 +433,7 @@ impl Transcript {
             Push::Asking(_) => {}
             // 待办归待办表（`app/sessions.rs`）。
             Push::Todos { .. } => {}
+            Push::Compactable(on) => self.cache.compactable = Some(on),
             Push::Speed { output, ms } => self.speed.record(output, ms),
             Push::CallFailed(error) => self.call_failed(error),
             // 后来又成了：前面报过的错不算（蓝图「正文」第 4 条）。

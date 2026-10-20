@@ -21,3 +21,14 @@ fn a_switched_persona_and_preset_are_read_and_an_empty_persona_means_none() {
         "body": {"persona": ""}});
     assert_eq!(read_mine(&none), [Push::PersonaSet(String::new())]);
 }
+
+#[test]
+fn compactable_changed_says_whether_there_is_something_to_compact() {
+    // 核心 W-12 补：瞬时的 `compactable.changed`，换人格、预设前写不写「切换前会先压缩」照它（2026-10-20 项目主人）。
+    let event = |on: bool| {
+        serde_json::json!({"kind": "compactable.changed", "by": {"kind": "kernel"},
+            "body": {"compactable": on}})
+    };
+    assert_eq!(super::read_mine(&event(true)), [Push::Compactable(true)]);
+    assert_eq!(super::read_mine(&event(false)), [Push::Compactable(false)]);
+}

@@ -30,14 +30,9 @@ pub fn rows(dream: &Dream, ctx: &Ctx, now: Instant) -> Vec<Row> {
             .replace("{total}", &total.to_string());
         head.push(Span::styled(batch, theme::dim()));
     }
-    // 整理了多久，每秒走一下；她还一个字都没写出来时写「做梦中…」（第 3 条）。醒了停在醒的那一刻。
+    // 整理了多久，每秒走一下（第 3 条；2026-10-20 项目主人：用时前面的「做梦中… · 」删掉）。醒了停在醒的那一刻。
     let until = dream.woke.as_ref().map_or(now, |(at, _)| *at);
-    let thinking = if dream.thinking() && dream.woke.is_none() {
-        texts.thinking.as_str()
-    } else {
-        ""
-    };
-    let clock = texts.clock.replace("{thinking}", thinking).replace(
+    let clock = texts.clock.replace(
         "{time}",
         &crate::meter::clock(until.saturating_duration_since(dream.started).as_secs()),
     );

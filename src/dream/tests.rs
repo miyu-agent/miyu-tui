@@ -45,38 +45,6 @@ fn batches_count_from_the_first_left_and_a_batch_counts_only_once_it_is_merged()
 }
 
 #[test]
-fn she_is_thinking_until_she_writes_and_again_after_a_failed_try() {
-    let (mut d, now) = dream();
-    assert!(d.thinking(), "还没开始合也算在想");
-    d.apply(merging(12, 10, 10, &[]), now);
-    assert!(d.thinking());
-    d.apply(
-        Change::Summary {
-            chars: 20,
-            done: false,
-        },
-        now,
-    );
-    assert!(!d.thinking(), "摘要也算写出来了");
-    d.apply(Change::Merged { upto: 99 }, now);
-    assert_eq!(d.progress(), (0, 10, 10), "别的批收尾不算");
-    let mut done = d.clone();
-    done.apply(Change::Merged { upto: 12 }, now);
-    assert!(!done.thinking(), "这一批合完、下一批还没来的不算在想");
-    d.apply(Change::Failed { upto: 12 }, now);
-    assert!(d.thinking(), "没合成，重来一次又要想");
-    d.apply(merging(20, 5, 5, &[]), now);
-    d.apply(
-        Change::Retired {
-            id: "m1".into(),
-            why: Retire::Repeat,
-        },
-        now,
-    );
-    assert!(!d.thinking());
-}
-
-#[test]
 fn what_landed_after_merging_began_is_kept_with_retired_texts_filled_in() {
     let (mut d, now) = dream();
     d.apply(texts(&[("m1", "住在上海")]), now);
