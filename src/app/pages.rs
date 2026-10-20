@@ -133,7 +133,11 @@ impl App {
             }
         }
         if let Some((transcript, _)) = self.slot(session) {
-            transcript.snapshot(snapshot.usage.as_ref(), snapshot.level);
+            transcript.snapshot(
+                snapshot.usage.as_ref(),
+                snapshot.level,
+                snapshot.compactable,
+            );
         }
     }
 

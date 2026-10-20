@@ -14,6 +14,8 @@ pub struct Snapshot {
     pub level: Option<Level>,
     /// 还在跑的，照编号。
     pub jobs: Option<Vec<JobStart>>,
+    /// 有没有能压缩的（核心 W-12：同 `session.compact` 回不回 `nothing_to_compact`）；以前的核心没有。
+    pub compactable: Option<bool>,
 }
 
 /// 这个会话（不带子会话）累计的。
@@ -36,6 +38,7 @@ impl Snapshot {
             usage: spent(&reply["usage"]),
             level: level(&reply["permission"]),
             jobs: JobStart::list(&reply["jobs"]),
+            compactable: reply["compactable"].as_bool(),
         };
         (snapshot != Snapshot::default()).then_some(snapshot)
     }

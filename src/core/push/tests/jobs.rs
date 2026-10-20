@@ -49,6 +49,18 @@ fn job_effects_reports_and_foreign_messages_are_read() {
         (end.reason, end.text.as_str()),
         (JobReason::Undone, "查到一半")
     );
+    // 核心 7-12 下：跑到最长时间、输出太大停掉的。
+    for (reason, want) in [
+        ("timed_out", JobReason::TimedOut),
+        ("too_large", JobReason::TooLarge),
+    ] {
+        let ended = json!({"seq": 13, "kind": "job.reported", "by": {"kind": "kernel"},
+            "body": {"job": "j3", "reason": reason}});
+        let Push::JobEnded(end) = &read_mine(&ended)[0] else {
+            panic!("{reason}")
+        };
+        assert_eq!(end.reason, want);
+    }
     // message.user：这个界面发的（cause 认得）是序号，别的带来处和字。
     let said = |by: serde_json::Value, cause: &str| {
         json!({"seq": 12, "kind": "message.user", "by": by, "cause": cause,

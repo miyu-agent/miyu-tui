@@ -364,7 +364,7 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     through_theme(&mut tui);
     through_profile(&mut tui);
     tui.wait_for("全部功能");
-    // 选基础功能（不是出厂的默认）。
+    // 选常规开发（不是出厂的默认）。
     tui.key(b"\x1b[A");
     tui.key(b"\r");
     through_semantic(&mut tui);
@@ -382,7 +382,7 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     tui.key(b"\r");
     tui.wait_for("好。");
     tui.wait_for("人格 小助手");
-    tui.wait_for("预设 基础功能");
+    tui.wait_for("预设 常规开发");
 }
 
 /// 宽屏（窄于这个宽度的引导不画左边那一块）从头走到主题那一步，建一个没头像的人格。

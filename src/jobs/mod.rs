@@ -44,6 +44,10 @@ pub enum JobState {
     Undone,
     /// 核心重启、崩了停掉的。
     Restarted,
+    /// 跑到最长时间停掉的（核心 7-12 下）。
+    TimedOut,
+    /// 输出太大停掉的（核心 7-12 下）。
+    TooLarge,
 }
 
 /// 后台任务表的一项。
@@ -183,6 +187,8 @@ impl Board {
             (JobReason::Stopped, ..) => JobState::Stopped,
             (JobReason::Undone, ..) => JobState::Undone,
             (JobReason::Restarted, ..) => JobState::Restarted,
+            (JobReason::TimedOut, ..) => JobState::TimedOut,
+            (JobReason::TooLarge, ..) => JobState::TooLarge,
             (JobReason::Finished, Some(code), _) if code != 0 => JobState::Failed(code),
             (JobReason::Finished, None, Some(signal)) => JobState::Killed(signal),
             (JobReason::Finished, ..) => JobState::Done,

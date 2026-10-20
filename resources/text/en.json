@@ -253,6 +253,7 @@
     "paused": "· Auto-compaction is paused: compact manually, switch models, or start a new session"
   },
   "error_classes": {
+    "output_limit": "Reply exceeded the output limit",
     "retryable": "Temporary error",
     "rate_limited": "Rate limited",
     "context_too_long": "Context too long",
@@ -484,6 +485,8 @@
     "killed": "(failed · signal {signal})",
     "undone": "(stopped by undo)",
     "restarted": "(stopped when the core restarted)",
+    "timed_out": " (stopped: ran too long)",
+    "too_large": " (stopped: too much output)",
     "no_output": "No output",
     "more_ended": "{count} collapsed",
     "less_ended": "Collapse finished ones",
@@ -491,6 +494,8 @@
     "agent_stopped_note": "Background task stopped · {title}{why}",
     "why_undone": " · stopped by undo",
     "why_restarted": " · stopped when the core restarted",
+    "why_timed_out": " · stopped: ran too long",
+    "why_too_large": " · stopped: too much output",
     "doing_thinking": "Thinking",
     "doing_replying": "Replying",
     "from_person": "Message from you elsewhere",
@@ -513,6 +518,7 @@
     "asking": "{who} is asking",
     "preview": "Preview",
     "unsandboxed": "Runs outside the sandbox",
+    "hazard": "Dangerous command",
     "agent": "Subagent {name}",
     "elsewhere": "\"{title}\" is asking you · /resume to switch",
     "answered_tab": " ✓",
@@ -525,7 +531,7 @@
     "notes_label": "Notes",
     "decisions": [
       "Allow once",
-      "Allow for this session",
+      "Don't ask again for this folder",
       "Don't allow"
     ],
     "reason_hint": "Add a reason (optional)",

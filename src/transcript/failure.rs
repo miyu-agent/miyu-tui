@@ -6,7 +6,9 @@ use crate::config::Texts;
 use crate::core::CallError;
 
 /// 内核自己查出来的分类：原话不是供应商的，只写分类的人话（`03-事件模型.md`「出错」）。
-const KERNEL_CLASSES: [&str; 6] = [
+const KERNEL_CLASSES: [&str; 7] = [
+    // 一轮里连着几次写到输出上限（核心 3-10）。
+    "output_limit",
     "no_model",
     "cooling",
     "bad_stream",

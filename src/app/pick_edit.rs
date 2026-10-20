@@ -33,9 +33,12 @@ impl App {
             Kind::Persona => Item::Persona,
             Kind::Preset => Item::Preset,
         };
-        let changed = self
-            .current_pick(kind)
-            .is_some_and(|id| saved.iter().any(|(i, s)| *i == item && *s == id));
+        // 没东西可压缩的不问（2026-10-20 项目主人，核心 W-12 的 `compactable`）。
+        let compactable = self.talk.transcript.cache.compactable != Some(false);
+        let changed = compactable
+            && self
+                .current_pick(kind)
+                .is_some_and(|id| saved.iter().any(|(i, s)| *i == item && *s == id));
         self.boxes.panel = Some(if changed {
             Panel::Changed {
                 kind,

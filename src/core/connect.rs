@@ -71,13 +71,10 @@ pub(super) async fn create(rpc: &mut Rpc, chosen: &Chosen) -> Result<String, Upd
     Ok(created["session"].as_str().unwrap_or_default().to_string())
 }
 
-/// `session.create` 的参数。`/workspace` 换过的目录带 `chosen: true`：人明着选的，太宽（`~` 这类）也照用；没换的照终端
-/// 现在的目录（`here`），不带，太宽的核心照旧退回默认工作区（核心 9-7 补，2026-10-09 项目主人选的 A；「新会话」第 4 条）。
+/// `session.create` 的参数。工作目录照 `/workspace` 换过的，没换的照终端现在的目录（`here`）；太宽的（`~` 这类）核心都照用
+/// （核心 5-14 上起，原来终端自动带的太宽的退回默认工作区、人换的带 `chosen: true` 才照用；「新会话」第 4 条）。
 fn create_params(chosen: &Chosen, here: impl FnOnce() -> String) -> serde_json::Value {
-    let mut params = match &chosen.cwd {
-        Some(dir) => json!({"cwd": dir, "chosen": true}),
-        None => json!({"cwd": here()}),
-    };
+    let mut params = json!({"cwd": chosen.cwd.clone().unwrap_or_else(here)});
     for (key, value) in [
         ("model", &chosen.model),
         ("persona", &chosen.persona),
@@ -180,21 +177,20 @@ mod tests {
     }
 
     #[test]
-    fn a_chosen_workspace_is_marked_and_the_terminal_one_is_not() {
-        // 2026-10-09 项目主人报：手动 `/workspace ~` 以后开会话，又被退回默认工作区。人明着选的带 `chosen`。
-        let here = || "/home/me".to_string();
+    fn the_workspace_is_the_changed_one_else_the_terminal_one_and_never_marked() {
+        // 核心 5-14 上起太宽的都照用，不再带 `chosen`（原来 2026-10-09 项目主人报：手动 `/workspace ~` 又被退回）。
+        let here = || "/home/me/src".to_string();
         let picked = Chosen {
             cwd: Some("/home/me".into()),
             ..Chosen::default()
         };
         assert_eq!(
             create_params(&picked, here),
-            serde_json::json!({"cwd": "/home/me", "chosen": true})
+            serde_json::json!({"cwd": "/home/me"})
         );
         assert_eq!(
             create_params(&Chosen::default(), here),
-            serde_json::json!({"cwd": "/home/me"}),
-            "终端起来时的目录不写 chosen"
+            serde_json::json!({"cwd": "/home/me/src"}),
         );
     }
 }

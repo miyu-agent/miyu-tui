@@ -68,6 +68,10 @@ pub struct JobTexts {
     pub undone: String,
     /// 核心重启时停掉的状态。
     pub restarted: String,
+    /// 跑到最长时间停掉的（核心 7-12 下）。
+    pub timed_out: String,
+    /// 输出太大停掉的（核心 7-12 下）。
+    pub too_large: String,
     /// 展开一条命令、点开结束的那一行：它一个字都没输出。
     pub no_output: String,
     /// 后台面板里结束了的多于一个时收起来的那一行：`{count}` 收了几条。
@@ -82,6 +86,10 @@ pub struct JobTexts {
     pub why_undone: String,
     /// 通知后面接的为什么停：核心重启时停的。
     pub why_restarted: String,
+    /// 结束那一行后面写为什么停的：超时。
+    pub why_timed_out: String,
+    /// 输出太大。
+    pub why_too_large: String,
     /// 子代理在想。
     pub doing_thinking: String,
     /// 子代理在说。

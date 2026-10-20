@@ -253,6 +253,7 @@
     "paused": "· 自动压缩已暂停"
   },
   "error_classes": {
+    "output_limit": "回复超过了输出上限",
     "retryable": "临时错误",
     "rate_limited": "请求受限",
     "context_too_long": "上下文太长",
@@ -484,6 +485,8 @@
     "killed": "（失败 · 信号 {signal}）",
     "undone": "（撤销时已停止）",
     "restarted": "（核心重启时已停止）",
+    "timed_out": "（超时已停止）",
+    "too_large": "（输出太大已停止）",
     "no_output": "没有输出",
     "more_ended": "已收起 {count} 个",
     "less_ended": "收起已结束的",
@@ -491,6 +494,8 @@
     "agent_stopped_note": "后台任务已停止 · {title}{why}",
     "why_undone": " · 撤销时已停止",
     "why_restarted": " · 核心重启时已停止",
+    "why_timed_out": " · 超时已停止",
+    "why_too_large": " · 输出太大已停止",
     "doing_thinking": "思考中",
     "doing_replying": "回答中",
     "from_person": "收到你在其他端发送的消息",
@@ -513,6 +518,7 @@
     "asking": "{who} 在问",
     "preview": "预览",
     "unsandboxed": "沙盒外运行",
+    "hazard": "高危命令",
     "agent": "子代理 {name}",
     "elsewhere": "「{title}」在问你 · /resume 切过去",
     "answered_tab": " ✓",
@@ -525,7 +531,7 @@
     "notes_label": "补充",
     "decisions": [
       "允许本次",
-      "本会话内始终允许",
+      "此目录不再询问",
       "不允许"
     ],
     "reason_hint": "理由（可选）",

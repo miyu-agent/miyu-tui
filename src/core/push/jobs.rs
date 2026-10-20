@@ -61,6 +61,10 @@ pub enum JobReason {
     Undone,
     /// 核心重启、崩了停掉的（`restarted`、`aborted`）。
     Restarted,
+    /// 跑到最长时间停掉的（核心 7-12 下，`jobs.max_running`）。
+    TimedOut,
+    /// 输出超过上限停掉的（核心 7-12 下，5 GB）。
+    TooLarge,
 }
 
 impl JobReason {
@@ -69,6 +73,8 @@ impl JobReason {
             "stopped" => Self::Stopped,
             "undone" => Self::Undone,
             "restarted" | "aborted" => Self::Restarted,
+            "timed_out" => Self::TimedOut,
+            "too_large" => Self::TooLarge,
             _ => Self::Finished,
         }
     }

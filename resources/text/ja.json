@@ -253,6 +253,7 @@
     "paused": "· 自動圧縮を一時停止しました：手動で圧縮する、モデルを変える、または新しいセッションを始めてください"
   },
   "error_classes": {
+    "output_limit": "応答が出力上限を超えました",
     "retryable": "一時的なエラー",
     "rate_limited": "レート制限",
     "context_too_long": "コンテキストが長すぎます",
@@ -484,6 +485,8 @@
     "killed": "（失敗 · シグナル {signal}）",
     "undone": "（取り消しで停止）",
     "restarted": "（コア再起動で停止）",
+    "timed_out": "（時間切れで停止）",
+    "too_large": "（出力が大きすぎて停止）",
     "no_output": "出力なし",
     "more_ended": "{count} 件を折りたたみ済み",
     "less_ended": "終了したものを折りたたむ",
@@ -491,6 +494,8 @@
     "agent_stopped_note": "バックグラウンドタスク停止 · {title}{why}",
     "why_undone": " · 取り消しで停止",
     "why_restarted": " · コア再起動で停止",
+    "why_timed_out": " · 時間切れで停止",
+    "why_too_large": " · 出力が大きすぎて停止",
     "doing_thinking": "考え中",
     "doing_replying": "返信中",
     "from_person": "他の場所からのメッセージ",
@@ -513,6 +518,7 @@
     "asking": "{who}が質問しています",
     "preview": "プレビュー",
     "unsandboxed": "サンドボックスの外で実行します",
+    "hazard": "危険なコマンド",
     "agent": "サブエージェント {name}",
     "elsewhere": "「{title}」が質問しています · /resume で切り替え",
     "answered_tab": " ✓",
@@ -525,7 +531,7 @@
     "notes_label": "補足",
     "decisions": [
       "今回だけ許可",
-      "このセッションでは常に許可",
+      "このフォルダでは今後確認しない",
       "許可しない"
     ],
     "reason_hint": "理由を入力（任意）",

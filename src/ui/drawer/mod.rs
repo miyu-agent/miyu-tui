@@ -134,6 +134,10 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     for (piece, _) in pieces(&title, width) {
         v.push(Line::styled(piece, bold), None);
     }
+    // 认成高危命令的（核心 5-17 的 `detail.hazard`）：命令上面红字写一行「高危命令」（2026-10-20 项目主人定）。
+    if d.hazardous() {
+        v.push(Line::styled(texts.hazard.clone(), theme::error()), None);
+    }
     // 要跑的命令原文：`$ ` 打头、暗色，一行行写，长的折行（2026-10-07 项目主人：确认时看不到具体的命令）。
     if let Some((_, command)) = &d.command {
         for line in command.lines() {

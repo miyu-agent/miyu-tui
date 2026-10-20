@@ -19,7 +19,7 @@ fn at_preset(t0: Instant, texts: &Texts) -> Oobe {
     let (default, _) = find(&sent, "config.get");
     oobe.answer(
         list,
-        Ok(json!({"presets": [{"preset": "dev", "name": "基础功能"}, {"preset": "full", "name": "全部功能"},
+        Ok(json!({"presets": [{"preset": "dev", "name": "常规开发"}, {"preset": "full", "name": "全部功能"},
                               {"preset": "broken", "problem": "写错了"}]})),
         t0,
         texts,
@@ -62,7 +62,7 @@ fn the_default_is_chosen_first_and_enter_makes_it_the_default() {
     );
     oobe.answer(tag, Ok(json!({})), t0, &texts);
     assert_eq!(oobe.step, Step::Done, "预设后面是好了（没装语义模型的包）");
-    assert_eq!(oobe.summary().preset, "基础功能");
+    assert_eq!(oobe.summary().preset, "常规开发");
     assert_eq!(
         oobe.picks().1.as_deref(),
         Some("dev"),
