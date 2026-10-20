@@ -43,14 +43,15 @@ pub struct Texts {
     pub preset_chosen: String,
 }
 
-/// 框（标题照是人格还是预设、提示）、排好的行、每一行是第几个。`current` 是开着的会话现在用的那一个（中途换，「新会话：
-/// 人格、工作区」第 2a 条；无人格是空的编号）：最上面一行暗色写切换前先压缩，它行首写 `dot`（选中了也照旧），不写「默认」；
-/// 还没开会话的是 `None`。
+/// 框（标题照是人格还是预设、提示）、排好的行、每一行是第几个。`current` 是现在用的那一个（无人格是空的编号）：开着会话的
+/// 是会话用的，还没开会话、已经选过的是选的（2026-10-20 项目主人报：空会话选过再打开没有圆点），还没选的是 `None`；它行首写
+/// `dot`（选中了也照旧），不写「默认」。`switching` 是开着会话、中途换（「新会话：人格、工作区」第 2a 条）：最上面一行暗色
+/// 写切换前先压缩。
 #[allow(clippy::too_many_arguments)]
 pub fn lines(
     list: &[Persona],
     default: Option<&str>,
-    current: Option<&str>,
+    (current, switching): (Option<&str>, bool),
     dot: &str,
     kind: Kind,
     selected: usize,
@@ -100,7 +101,7 @@ pub fn lines(
         })
         .collect();
     let mut rows = rows;
-    if current.is_some() {
+    if switching {
         let note = vec![Span::styled(texts.switch_note.clone(), theme::dim())];
         rows.insert(0, (None, panel::item(false, note, None, width)));
     }

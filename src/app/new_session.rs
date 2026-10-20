@@ -217,8 +217,10 @@ impl App {
                 let note = self.config.text.persona_box.cant_edit.clone();
                 self.hint(note, false);
             }
-            // 开着的会话中途换：`Esc` 关、不换。
-            Pressed::Escape if !self.not_opened() => self.boxes.panel = None,
+            // 开着的会话中途换、还没开会话但已经选过再打开的：`Esc` 关、不换（2026-10-20 查出：原来照默认的，选好的被换掉）。
+            Pressed::Escape if !self.not_opened() || self.pick(kind).chosen.is_some() => {
+                self.boxes.panel = None;
+            }
             // 照光标起初停的那一个（上一次选的、默认的）；人格都用不了的就是无人格（第一行），不卡住（2026-10-08 项目主人：
             // 人格允许为空）。
             Pressed::Escape => {

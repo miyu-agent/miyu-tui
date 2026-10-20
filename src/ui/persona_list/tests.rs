@@ -26,11 +26,11 @@ fn switching_midway_shows_the_note_first_and_dots_the_current_one() {
         persona("miyu", "miyu"),
         persona("xue", "小雪"),
     ];
-    let text = |current: Option<&str>| {
+    let text = |current: Option<&str>, switching: bool| {
         let (_, rows, map) = lines(
             &list,
             Some("miyu"),
-            current,
+            (current, switching),
             "●",
             Kind::Persona,
             2,
@@ -44,7 +44,7 @@ fn switching_midway_shows_the_note_first_and_dots_the_current_one() {
             .collect();
         (rows, map)
     };
-    let (rows, map) = text(Some("xue"));
+    let (rows, map) = text(Some("xue"), true);
     assert_eq!(
         rows[0].trim(),
         "切换前会先压缩会话避免缓存断裂导致的全量重放",
@@ -61,8 +61,12 @@ fn switching_midway_shows_the_note_first_and_dots_the_current_one() {
         !rows.iter().any(|r| r.ends_with("默认")),
         "不写默认：{rows:#?}"
     );
-    // 还没开会话：照旧写默认，没有那一行。
-    let (rows, map) = text(None);
+    // 还没开会话、还没选：照旧写默认，没有那一行。
+    let (rows, map) = text(None, false);
     assert!(rows[1].ends_with("默认"), "{rows:#?}");
     assert!(map.iter().all(Option::is_some));
+    // 还没开会话、已经选过（2026-10-20 项目主人报：空会话选了再打开没有圆点）：选的那个写 ●，没有切换那一行。
+    let (rows, map) = text(Some("xue"), false);
+    assert!(rows[2].starts_with("● 小雪"), "{rows:#?}");
+    assert!(map.iter().all(Option::is_some), "{rows:#?}");
 }
