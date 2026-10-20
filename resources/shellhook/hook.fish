@@ -57,6 +57,8 @@ end
 
 function __miyu_on_prompt --on-event fish_prompt
     set -l miyu_status 0
+    # 这一整段都算「在忙」：她答完时来的信号 fish 在 say 退出后的第一个空当办，那时还没画提示符（实测）。
+    set -g __miyu_busy 1
     if set -q __miyu_pending_buffer
         set -l buffer $__miyu_pending_buffer
         set -e __miyu_pending_buffer
@@ -77,36 +79,55 @@ function __miyu_on_prompt --on-event fish_prompt
         rm -f -- $leftover
     end
     # 前台跑着命令的时候来的后台回报：回到提示符再印（提示符还没画，不用擦）。
-    set -q __miyu_report_pending; and __miyu_report
+    while set -q __miyu_report_pending
+        __miyu_report
+    end
+    set -e __miyu_busy
+    # 刚才那一下空当里来的。
+    while set -q __miyu_report_pending
+        __miyu_report
+    end
     return $miyu_status
 end
 
 # 后台回报（设计 22 第七节「后台任务和回报」）：盯后台的进程给这个 fish 发 SIGUSR1。停在提示符上的当场印；前台在跑
-# 命令的（vim、一行里的几条命令）先记着，回到提示符再印。
+# 命令的（vim、一行里的几条命令）、她正在答的先记着，回到提示符再印。她答话时来的信号 fish 等答完才办，那时
+# current-command 已经是 fish，只看它会当成停在提示符上、往上擦掉她刚印的收尾行（2026-10-20 验收）：答话期间记着
+# __miyu_busy。
 function __miyu_report_signal --on-signal SIGUSR1
-    if test (status current-command) = fish
-        # 提示符已经画着：回到它的第一行、往下清掉，在那里印。fish 重画时从光标所在往上回「提示符行数 - 1」行：印完补上这么
-        # 多个换行，它才画在印的下面，不盖掉（实测）。敲到一半的字照旧在。
-        set -l rows (count (fish_prompt))
-        test $rows -gt 1; and printf '\e[%dA' (math $rows - 1)
-        printf '\r\e[J'
-        __miyu_report
-        test $rows -gt 1; and printf '%.0s\n' (seq (math $rows - 1))
+    if not set -q __miyu_busy; and test (status current-command) = fish
+        # 提示符已经画着：有要印的，程序回到提示符的第一行、往下清掉，在那里印。fish 重画时从光标所在往上回「提示符行数 - 1」
+        # 行：印完补上这么多个换行，它才画在印的下面，不盖掉（实测）。没有要印的什么都不动。敲到一半的字照旧在。
+        set -l rows (math (count (fish_prompt)) - 1)
+        __miyu_report $rows; or return
+        # 印的时候又来的：接着印。
+        while set -q __miyu_report_pending
+            __miyu_report
+        end
+        test $rows -gt 0; and printf '%.0s\n' (seq $rows)
         commandline -f repaint
     else
         set -g __miyu_report_pending 1
     end
 end
 
+# 印信箱里的。给了行数的是停在提示符上：程序有要印的才擦掉提示符；没有要印的交回 1。
 function __miyu_report
     set -e __miyu_report_pending
+    set -l above
+    test (count $argv) -gt 0; and set above --above $argv[1]
     # 印的时候敲的字：接在命令行后面（原来敲到一半的 fish 自己留着）。
     set -l leftover (mktemp -t miyu-shellhook.XXXXXX)
-    __miyu_shellhook report --shell fish --shell-pid $fish_pid --leftover $leftover
+    set -l was_busy (set -q __miyu_busy; and echo 1)
+    set -g __miyu_busy 1
+    __miyu_shellhook report --shell fish --shell-pid $fish_pid --leftover $leftover $above
+    set -l printed $status
+    test -n "$was_busy"; or set -e __miyu_busy
     if test -s "$leftover"
         commandline -i -- (string collect < $leftover)
     end
     rm -f -- $leftover
+    return $printed
 end
 
 function __miyu_execute_or_continue

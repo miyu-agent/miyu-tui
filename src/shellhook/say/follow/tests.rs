@@ -45,10 +45,11 @@ fn only_the_jobs_handed_over_are_reported() {
             .is_empty(),
         "别的 shell 派的"
     );
+    follow.update(Update::Push(Push::Reported(4)));
     let got = follow.update(Update::Push(Push::JobEnded(end("j1"))));
     assert!(matches!(got.as_slice(), [Record::Ended { start, .. }] if start.job == "j1"));
     assert!(!follow.finished(), "后台命令跑完也叫醒她：等那一轮");
-    let got = follow.update(Update::Push(Push::TurnStarted(5, None)));
+    let got = follow.update(Update::Push(Push::TurnStarted(5, Some(4))));
     assert_eq!(
         got,
         vec![Record::Turn {
@@ -65,10 +66,10 @@ fn only_the_jobs_handed_over_are_reported() {
 #[test]
 fn an_agent_report_hands_over_the_turn_it_wakes() {
     let mut follow = follow(vec![start("j1", true)]);
+    follow.update(Update::Push(Push::Reported(42)));
     follow.update(Update::Push(Push::JobEnded(end("j1"))));
     assert!(!follow.finished(), "还等它叫醒的那一轮");
-    // 别的 shell 里你说的话开的那一轮不算。
-    follow.update(Update::Push(Push::UserMessage(40)));
+    // 别的 shell 里你说的话开的那一轮不算（那边推来的是 `Foreign`，原来没认出来，2026-10-20 验收 SH-31 印了两遍）。
     assert!(
         follow
             .update(Update::Push(Push::TurnStarted(41, Some(40))))
@@ -88,9 +89,10 @@ fn an_agent_report_hands_over_the_turn_it_wakes() {
         crate::core::EndReason::Completed,
     )));
     assert!(!follow.finished(), "j2 还在跑");
+    follow.update(Update::Push(Push::Reported(49)));
     follow.update(Update::Push(Push::JobEnded(end("j2"))));
     assert!(!follow.finished(), "j2 跑完了也叫醒她");
-    follow.update(Update::Push(Push::TurnStarted(50, None)));
+    follow.update(Update::Push(Push::TurnStarted(50, Some(49))));
     follow.update(Update::Push(Push::TurnEnded(
         crate::core::EndReason::Completed,
     )));
@@ -111,4 +113,19 @@ fn the_replayed_page_is_not_reported() {
         "补发的那一页里的"
     );
     assert!(!follow.finished());
+}
+
+#[test]
+fn a_report_she_saw_in_a_running_turn_is_not_waited_for() {
+    // 别的 shell 里她正在答，前台 sleep 的时候这边派的结束了，下一次请求带上了：不叫醒，不再等（2026-10-20 验收 SH-30）。
+    let mut follow = follow(vec![start("j14", false)]);
+    follow.update(Update::Push(Push::TurnStarted(391, Some(390))));
+    follow.update(Update::Push(Push::Reported(396)));
+    follow.update(Update::Push(Push::JobEnded(end("j14"))));
+    assert!(!follow.finished());
+    follow.update(Update::Push(Push::Heard(398)));
+    follow.update(Update::Push(Push::TurnEnded(
+        crate::core::EndReason::Completed,
+    )));
+    assert!(follow.finished());
 }

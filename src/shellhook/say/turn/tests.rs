@@ -73,12 +73,13 @@ fn the_turn_woken_right_after_ours_is_followed_but_not_one_someone_else_started(
     turn.sent = true;
     turn.watch(&Update::Push(Push::UserMessage(367)));
     turn.watch(&Update::Push(Push::TurnStarted(368, Some(367))));
+    turn.watch(&Update::Push(Push::Reported(379)));
+    turn.unseen.ended(true, crate::core::JobReason::Finished);
     turn.watch(&Update::Push(Push::TurnEnded(
         crate::core::EndReason::Completed,
     )));
     turn.lingering = true;
     // 别处有人说了话开的那一轮不接。
-    turn.watch(&said(380, "别处说的"));
     turn.watch(&Update::Push(Push::TurnStarted(381, Some(380))));
     assert!(turn.lingering, "人说话开的那一轮");
     turn.watch(&Update::Push(Push::TurnEnded(
@@ -86,7 +87,7 @@ fn the_turn_woken_right_after_ours_is_followed_but_not_one_someone_else_started(
     )));
     turn.watch(&Update::Push(Push::TurnStarted(383, Some(379))));
     assert!(!turn.lingering);
-    assert_eq!(turn.woken, Some(383));
+    assert_eq!(turn.woken, vec![383]);
     assert_eq!(turn.ours, Some(368), "从这句话开的那一轮印起");
     turn.ended = None;
     turn.watch(&Update::Push(Push::TurnEnded(

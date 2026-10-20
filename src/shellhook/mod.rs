@@ -90,7 +90,7 @@ pub fn main(args: Vec<String>) -> ExitCode {
             )),
         },
         "report" => match options.shell_pid {
-            Some(pid) => match say::report::run(pid, options.leftover.as_deref()) {
+            Some(pid) => match say::report::run(pid, options.leftover.as_deref(), options.above) {
                 Ok(code) => return code,
                 Err(e) => Err(e),
             },
@@ -124,6 +124,8 @@ struct Options {
     shell_pid: Option<u32>,
     /// `follow` 读的那份。
     watch: Option<PathBuf>,
+    /// `report` 停在提示符上印：提示符在光标上面占几行，有要印的才擦掉它们。
+    above: Option<u16>,
 }
 
 impl Options {
@@ -141,6 +143,10 @@ impl Options {
                 "--program" => options.program = Some(args.next().ok_or_else(value)?.into()),
                 "--leftover" => options.leftover = Some(args.next().ok_or_else(value)?.into()),
                 "--watch" => options.watch = Some(args.next().ok_or_else(value)?.into()),
+                "--above" => {
+                    let rows = args.next().ok_or_else(value)?;
+                    options.above = Some(rows.parse().map_err(|_| format!("bad rows: {rows}"))?);
+                }
                 "--shell-pid" => {
                     let pid = args.next().ok_or_else(value)?;
                     options.shell_pid = Some(pid.parse().map_err(|_| format!("bad pid: {pid}"))?);

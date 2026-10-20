@@ -83,6 +83,8 @@ impl Session {
         let mut drawer_seen: Option<String> = None;
         let mut bannered = false;
         let mut lingered: Option<Instant> = None;
+        // 她答话的时候不露光标（2026-10-20 验收）：活动区原地刷新时光标跟着跳；收工时还回来。
+        ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Hide)?;
         while !turn.done {
             // 这一轮结束了、有任务在这一轮里结束：核心要叫醒她的，同一刻就开下一轮；等过这么久没开的就是不叫了。
             match (turn.lingering, lingered) {
@@ -165,6 +167,7 @@ impl Session {
         let settled = self.painter.lines(width, &lines)?;
         self.painter.finish()?;
         self.painter.frame(&settled, &[])?;
+        ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Show)?;
         match turn.ended {
             Some(EndReason::Completed) => self.notifier.tell(notify::Event::Replied),
             Some(EndReason::Error) => self.notifier.tell(notify::Event::Failed),

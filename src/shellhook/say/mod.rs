@@ -14,6 +14,7 @@ mod session;
 mod spool;
 mod terminal;
 mod turn;
+mod unseen;
 mod view;
 
 use std::io::{self, Write};
@@ -66,6 +67,15 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         && !turn.typed.is_empty()
     {
         std::fs::write(path, &turn.typed)?;
+    }
+    // 早先派的、盯后台的也记了的，这里已经印过的拿掉。
+    if let Some(shell) = ask.shell {
+        let turns: Vec<u64> = turn
+            .ours
+            .into_iter()
+            .chain(turn.woken.iter().copied())
+            .collect();
+        spool::forget(shell, &turn.ended_jobs, &turns);
     }
     // 还有没结束的后台任务：交给盯后台的，回来时印在这个 shell 里。起不来的不要紧，只是不回报。
     let jobs = turn.running_jobs();

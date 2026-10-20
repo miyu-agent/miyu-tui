@@ -3,7 +3,7 @@
 //! 信箱（`spool.rs`），给 shell 发 `SIGUSR1`，shell 回到提示符时印。不定时去查：等核心的推送、等 shell 退出（Linux 上
 //! `pidfd`），没事的时候一直睡着。shell 退出了就收工，不再回报。
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io;
 use std::path::Path;
 use std::process::ExitCode;
@@ -12,6 +12,7 @@ use std::sync::mpsc;
 use serde::{Deserialize, Serialize};
 
 use super::spool::{self, Record};
+use super::unseen::Unseen;
 use crate::core::{Command, JobStart, Push, Start, Update};
 
 /// 交给盯后台的：终端会话、派出去还没结束的任务、哪个 shell。
@@ -109,10 +110,8 @@ struct Follow {
     jobs: HashMap<String, JobStart>,
     /// 最新一页补完了（以前的不算）。
     paged: bool,
-    /// 你说的话的序号：照它开的轮不是回报叫醒的。
-    said: HashSet<u64>,
-    /// 子代理报回来了几份、还没等到它叫醒的那一轮。
-    owed: usize,
+    /// 她还没看到的回报：交给这里盯的还有没看到的，等它叫醒的那一轮。
+    unseen: Unseen,
     /// 正在跑的、回报叫醒的那一轮：这一轮里派出去的也接着盯。
     current: Option<u64>,
 }
@@ -127,8 +126,7 @@ impl Follow {
                 .map(|j| (j.job.clone(), j.clone()))
                 .collect(),
             paged: false,
-            said: HashSet::new(),
-            owed: 0,
+            unseen: Unseen::default(),
             current: None,
         }
     }
@@ -144,26 +142,24 @@ impl Follow {
             _ => return Vec::new(),
         };
         match push {
-            Push::Said { seq, .. } | Push::UserMessage(seq) => {
-                self.said.insert(seq);
-            }
+            Push::Reported(seq) => self.unseen.reported(seq),
+            Push::Heard(seen) => self.unseen.heard(seen),
             Push::JobEnded(end) => {
-                if let Some(start) = self.jobs.remove(&end.job) {
-                    // 结束了都会叫醒她：子代理报回来、后台命令跑完都是（2026-10-20 真模型实测）。
-                    self.owed += 1;
+                let start = self.jobs.remove(&end.job);
+                self.unseen.ended(start.is_some(), end.reason);
+                if let Some(start) = start {
                     return vec![Record::Ended { start, end }];
                 }
             }
-            // 不是你说的话开的那一轮：是回报叫醒的。
-            Push::TurnStarted(turn, trigger)
-                if self.owed > 0 && trigger.is_none_or(|t| !self.said.contains(&t)) =>
-            {
-                self.owed -= 1;
-                self.current = Some(turn);
-                return vec![Record::Turn {
-                    session: self.session.clone(),
-                    turn,
-                }];
+            // 照序号认：开这一轮的是交给这里盯的回报，就是叫醒她的那一轮。
+            Push::TurnStarted(turn, trigger) => {
+                if self.unseen.woke(trigger) == Some(true) {
+                    self.current = Some(turn);
+                    return vec![Record::Turn {
+                        session: self.session.clone(),
+                        turn,
+                    }];
+                }
             }
             Push::JobStarted(start) if self.current.is_some() && !start.foreground => {
                 self.jobs.insert(start.job.clone(), start);
@@ -176,7 +172,7 @@ impl Follow {
 
     /// 没有要等的了：任务都结束了，叫醒的那一轮也都等到了、跑完了。
     fn finished(&self) -> bool {
-        self.paged && self.jobs.is_empty() && self.owed == 0 && self.current.is_none()
+        self.paged && self.jobs.is_empty() && !self.unseen.owed() && self.current.is_none()
     }
 }
 

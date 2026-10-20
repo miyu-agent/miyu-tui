@@ -73,3 +73,19 @@ pub fn take(shell: u32) -> Vec<Record> {
         .filter_map(|line| serde_json::from_str(line).ok())
         .collect()
 }
+
+/// `say` 自己已经印了的从信箱里拿掉：这几个任务结束的那一行、这几轮（盯后台的同时也记了，不拿掉回到提示符又印一遍）。
+pub fn forget(shell: u32, jobs: &[String], turns: &[u64]) {
+    let left: Vec<Record> = take(shell)
+        .into_iter()
+        .filter(|record| match record {
+            Record::Ended { end, .. } => !jobs.contains(&end.job),
+            Record::Turn { turn, .. } => !turns.contains(turn),
+        })
+        .collect();
+    for record in &left {
+        if push(shell, record).is_err() {
+            break;
+        }
+    }
+}

@@ -2,7 +2,7 @@
 //! 盯后台的（`follow.rs`）记进信箱的照先后印：任务结束的那一行照全屏写（绿点、红叉）；回报叫醒她的那一轮接上画，要确认、
 //! 要回答的照常弹。
 
-use std::io;
+use std::io::{self, Write};
 use std::process::ExitCode;
 use std::time::Instant;
 
@@ -11,15 +11,31 @@ use super::spool::{self, Record};
 use super::turn::Turn;
 use crate::core::Command;
 
-/// 印 `shell` 信箱里的；没有的什么都不做。
+/// 信箱里没有要印的：退出码（停在提示符上的脚本照它不补换行、不重画）。
+const NOTHING: u8 = 1;
+
+/// 印 `shell` 信箱里的；没有的什么都不做。`above`：停在提示符上印，提示符在光标上面占几行，有要印的先擦掉提示符在那里
+/// 印（没有要印的不擦：`say` 已经印过、从信箱里拿掉了的，信号照样来，2026-10-20 验收擦掉了她的收尾行）。
 ///
 /// # Errors
 ///
 /// 读配置、开原始模式、写终端失败。
-pub fn run(shell: u32, leftover: Option<&std::path::Path>) -> io::Result<ExitCode> {
+pub fn run(
+    shell: u32,
+    leftover: Option<&std::path::Path>,
+    above: Option<u16>,
+) -> io::Result<ExitCode> {
     let records = spool::take(shell);
     if records.is_empty() {
-        return Ok(ExitCode::SUCCESS);
+        return Ok(ExitCode::from(NOTHING));
+    }
+    if let Some(rows) = above {
+        let mut out = io::stdout();
+        if rows > 0 {
+            write!(out, "\x1b[{rows}A")?;
+        }
+        write!(out, "\r\x1b[J")?;
+        out.flush()?;
     }
     let (mut session, look) = Session::start()?;
     // 配色、给人看的字、时间线的配置读一次，几件共用：上一件画完的配色交给下一件。

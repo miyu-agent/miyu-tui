@@ -410,6 +410,7 @@ impl Transcript {
             | Push::JobStarted(_)
             | Push::JobEarlier(_)
             | Push::JobMessaged(_)
+            | Push::Reported(_)
             | Push::JobEnded(_)
             | Push::PeerIdle { .. } => {}
             Push::Usage(usage) => self.used(usage),

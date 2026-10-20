@@ -74,14 +74,12 @@ pub struct Turn {
     pub ours: Option<u64>,
     /// 正在跑的那一轮（发出去以后推来的）：你说的话排着、被它听到了的，就是这一轮。
     running: Option<u64>,
-    /// 这一轮里有派出去的任务结束了：她这一轮没顾上看的，核心在这一轮结束时马上叫醒她再开一轮。
-    reported: bool,
-    /// 这一轮结束了、有任务在这一轮里结束：等一下看核心是不是马上叫醒她（`session.rs` 等多久）。
+    /// 她还没看到的回报（`unseen.rs`）：这一轮结束时还有任务表里的，核心马上叫醒她再开一轮。
+    unseen: super::unseen::Unseen,
+    /// 这一轮结束了、还有她没看到的回报：等核心开叫醒的那一轮（`session.rs` 最多等多久）。
     pub lingering: bool,
-    /// 这一轮结束后马上叫醒她的那一轮：接着印、等它结束（实测：任务在这一轮里跑完，叫醒的那一轮没人印）。
-    woken: Option<u64>,
-    /// 发出去以后人说的话的序号：照它开的轮不是叫醒的。
-    people: Vec<u64>,
+    /// 这一轮结束后叫醒她的那几轮：接着印、等它结束（实测：任务在这一轮里跑完，叫醒的那一轮没人印）。
+    pub woken: Vec<u64>,
     /// 闲置久了核心换了新会话：旧会话最后一次动静的时刻，印一行就拿走。
     pub renewed: Option<jiff::Timestamp>,
     /// 这期间提前敲的字：交还给 shell 的命令行。
@@ -146,10 +144,9 @@ impl Turn {
             said_seq: None,
             ours: None,
             running: None,
-            reported: false,
+            unseen: super::unseen::Unseen::default(),
             lingering: false,
-            woken: None,
-            people: Vec::new(),
+            woken: Vec::new(),
             renewed: None,
             typed: String::new(),
             interrupted: false,
@@ -247,24 +244,32 @@ impl Turn {
                 self.transcript
                     .update(Update::SessionPersona(id), &config.text);
             }
-            // 这一轮派出去的后台任务：记进任务表；前台跑的子代理不是后台任务（同全屏）。
-            Update::Push(Push::JobStarted(start)) if self.live() && !start.foreground => {
+            // 后台任务记进任务表：补发的那一页里以前派的也记，这一轮里结束了才写得出那一行（2026-10-20 验收 SH-30：以前派的
+            // 结束了，绿点落到了最后）；这一轮派的收工时还没结束的交给盯后台的。前台跑的子代理不是后台任务（同全屏）。
+            Update::Push(Push::JobStarted(start) | Push::JobEarlier(start))
+                if !start.foreground =>
+            {
                 self.board.start(&start, None, std::time::Instant::now());
-                self.jobs.push(start);
+                if self.live() {
+                    self.jobs.push(start);
+                }
             }
-            // 任务结束了：正文里照全屏写那一行（绿点、红叉）。
-            Update::Push(Push::JobEnded(end)) if self.live() => {
+            // 任务结束了：正文里照全屏写那一行（绿点、红叉）；补发的那一页里的只从任务表里划掉。
+            Update::Push(Push::JobEnded(end)) => {
                 let now = std::time::Instant::now();
-                if let Some(id) = self.board.end(&end, now) {
-                    crate::jobs::announce(
-                        &self.board,
-                        &mut self.transcript,
-                        id,
-                        now,
-                        &config.text.jobs,
-                    );
-                    self.ended_jobs.push(end.job);
-                    self.reported = self.ours.is_some();
+                let known = self.board.end(&end, now);
+                if self.live() {
+                    self.unseen.ended(known.is_some(), end.reason);
+                    if let Some(id) = known {
+                        crate::jobs::announce(
+                            &self.board,
+                            &mut self.transcript,
+                            id,
+                            now,
+                            &config.text.jobs,
+                        );
+                        self.ended_jobs.push(end.job);
+                    }
                 }
             }
             // 待办换了：发出去以后推来的才算（补发的那一页里的是以前的）。
@@ -291,7 +296,7 @@ impl Turn {
         // 这句话开的那一轮结束了：收工（接上的等最新一页补完再看）。
         if self.ours.is_some() && !self.paging && self.transcript.running.is_none() {
             // 说话的那一句（`report.rs` 接上的不算：叫醒的那一轮归盯后台的记）：有任务在这一轮里结束的先等等。
-            if self.reported && !self.said.is_empty() {
+            if self.unseen.owed() && !self.said.is_empty() {
                 self.lingering = true;
             } else {
                 self.done = true;
@@ -319,15 +324,17 @@ impl Turn {
         match update {
             Update::Push(Push::TurnStarted(turn, trigger)) => {
                 self.running = Some(*turn);
-                // 等着的时候开的、不是人说话开的：是叫醒她的那一轮，接着印。
-                if self.lingering && trigger.is_none_or(|t| !self.people.contains(&t)) {
-                    self.woken = Some(*turn);
+                // 照序号认出的叫醒她的那一轮，等着的时候开的：接着印。
+                if self.live() && self.unseen.woke(*trigger).is_some() && self.lingering {
+                    self.woken.push(*turn);
                     self.lingering = false;
-                    self.reported = false;
                 }
             }
+            Update::Push(Push::Reported(seq)) if self.live() => self.unseen.reported(*seq),
+            Update::Push(Push::Heard(seen)) if self.live() => self.unseen.heard(*seen),
             Update::Push(Push::TurnEnded(reason)) => {
-                let waited = self.running == self.ours || self.running == self.woken;
+                let waited = self.running == self.ours
+                    || self.running.is_some_and(|t| self.woken.contains(&t));
                 if self.ours.is_some() && waited && !self.paging {
                     self.ended = Some(reason.clone());
                 }
@@ -341,11 +348,6 @@ impl Turn {
         }
         match update {
             // 这条连接自己发的话推回来是 `user_message`（只带序号），别处看到的是 `said`（带字）：两种都认，认第一个。
-            Update::Push(Push::UserMessage(seq) | Push::Said { seq, .. })
-                if self.said_seq.is_some() =>
-            {
-                self.people.push(*seq);
-            }
             Update::Push(Push::UserMessage(seq)) if self.said_seq.is_none() => {
                 self.said_seq = Some(*seq);
             }
