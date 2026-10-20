@@ -1,5 +1,6 @@
 //! 配色（图纸 `shellhook.md`「怎么印」第 4 条）：照终端界面的配置项 `tui.theme*`、跟随壁纸找到的、终端会话那位人格的主题色
-//! 挑，算法和全屏同一份（`theme::choice::{seeds, pick}`）。每次说话现取：换了壁纸、改了配色，下一句就是新的。shell 里不铺
+//! 挑，算法和全屏同一份（`theme::choice::{seeds, pick}`）；配色那一项没人设过的跟随终端（各个头默认跟随人格，shellhook 例外，
+//! 2026-10-20 项目主人定）。每次说话现取：换了壁纸、改了配色，下一句就是新的。shell 里不铺
 //! 底色（滚动区里铺一块底很怪）。
 
 use serde_json::Value;
@@ -8,6 +9,11 @@ use crate::config::Config;
 use crate::core::Persona;
 use crate::theme::choice::{self, Choice, PersonaSeeds};
 use crate::theme::wallpaper::Wallpaper;
+
+/// 配色那一项（`Choice::KEYS` 的第一个）。
+const TUI_THEME: &str = "tui.theme";
+/// 跟随终端。
+const TERMINAL: &str = "terminal";
 
 /// 挑配色要的几样。
 pub struct Look {
@@ -31,6 +37,7 @@ impl Look {
     pub fn new(dark: Option<bool>) -> Self {
         Self {
             choice: Choice {
+                colors: TERMINAL.to_string(),
                 ground: false,
                 ..Choice::default()
             },
@@ -57,6 +64,14 @@ impl Look {
         let Some(got) = got else { return };
         self.choice.apply(got);
         self.choice.ground = false;
+        // 配色没人设过（照默认值）的跟随终端，不照终端界面的默认（2026-10-20 项目主人定：各个头默认跟随人格，shellhook
+        // 例外；人设了的照设的）。
+        if got["items"][TUI_THEME]["origin"]["layer"]
+            .as_str()
+            .is_none_or(|layer| layer == "default")
+        {
+            self.choice.colors = TERMINAL.to_string();
+        }
         self.chosen = choice::chosen_seed(got);
         if self.choice.colors == "wallpaper" {
             self.wallpaper.look(self.choice.dark(self.dark), true);
@@ -103,5 +118,27 @@ impl Look {
             crate::theme::set(picked.palette);
             self.applied = Some(now);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::Look;
+
+    fn got(value: &str, layer: &str) -> serde_json::Value {
+        json!({"items": {"tui.theme": {"value": value, "origin": {"layer": layer}}}})
+    }
+
+    #[test]
+    fn the_colors_follow_the_terminal_unless_someone_chose_them() {
+        // 终端界面默认跟随人格，shellhook 默认跟随终端；人设了的照设的（2026-10-20 项目主人定）。
+        let mut look = Look::new(Some(true));
+        assert_eq!(look.choice.colors, "terminal", "配置读回来以前");
+        look.configured(Some(&got("persona", "default")));
+        assert_eq!(look.choice.colors, "terminal", "照默认值的");
+        look.configured(Some(&got("tokyonight", "user")));
+        assert_eq!(look.choice.colors, "tokyonight", "人设了的");
     }
 }
