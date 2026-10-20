@@ -166,7 +166,11 @@ fn fullscreen() -> io::Result<()> {
     );
     leave(keyboard)?;
     ratatui::restore();
-    result
+    // 只办一条命令没办成的那句为什么：终端还原了再打（全屏、原始模式时打进标准错误会写进画面）。
+    if let Some(why) = result? {
+        eprintln!("{why}");
+    }
+    Ok(())
 }
 
 /// 换一块新画布；帧外的输出不暂存。
@@ -241,7 +245,7 @@ fn run(
     ),
     keyboard: bool,
     launch: startup::Launch,
-) -> io::Result<()> {
+) -> io::Result<Option<String>> {
     let to_main = sender.clone();
     let to_wake = sender.clone();
     // 点开看的 mermaid 大图放在机器共用的缓存目录下（蓝图「图片、公式和 mermaid 图」第 4 条）。
@@ -338,7 +342,7 @@ fn run(
                     }
                 }
                 Err(RecvTimeoutError::Timeout) => break,
-                Err(RecvTimeoutError::Disconnected) => return Ok(()),
+                Err(RecvTimeoutError::Disconnected) => return Ok(None),
             }
         }
         app.tick();
@@ -364,8 +368,7 @@ fn run(
         }
     }
     app.finish();
-    app.one_shot_report()?;
-    Ok(())
+    app.one_shot_report()
 }
 
 /// 收一条：终端的事件、核心的消息、做好的图。

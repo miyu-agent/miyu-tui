@@ -25,6 +25,8 @@ pub struct OneShot {
     ran: Option<Instant>,
     /// 框开过了。
     opened: bool,
+    /// 没办成的那句为什么：终端还原了再打（[`App::one_shot_report`]）。
+    why: Option<String>,
     /// 没开框、弹了一句提示（核心拒了、「先选模型」这类）：提示到这一刻消失，就退出。
     hinted: Option<Instant>,
 }
@@ -39,6 +41,7 @@ impl App {
             ran: None,
             opened: false,
             hinted: None,
+            why: None,
         });
     }
 
@@ -97,8 +100,10 @@ impl App {
                 }
             }
             Line::Unknown | Line::Talk => {
-                // 标准输出是画界面的：为什么没办写在标准错误，shellhook 那边好查。
-                eprintln!("not a terminal command: {line}");
+                // 为什么没办：标准错误也接在这个终端上，全屏时打会写进画面，记着等终端还原了再打。
+                if let Some(shot) = self.one_shot.as_mut() {
+                    shot.why = Some(format!("not a terminal command: {line}"));
+                }
                 self.quit = true;
             }
         }
@@ -129,17 +134,17 @@ impl App {
         self.one_shot.is_some()
     }
 
-    /// 退出时：会话换了的，把最后所在的会话编号写进 `--report` 给的文件。
-    pub fn one_shot_report(&self) -> std::io::Result<()> {
+    /// 退出时：会话换了的，把最后所在的会话编号写进 `--report` 给的文件；交回没办成的那句为什么，终端还原了再打。
+    pub fn one_shot_report(&self) -> std::io::Result<Option<String>> {
         let Some(shot) = self.one_shot.as_ref() else {
-            return Ok(());
+            return Ok(None);
         };
         let now = self.talk.main_session();
-        match (&shot.report, now) {
-            (Some(path), Some(now)) if Some(&now) != shot.from.as_ref() => {
-                std::fs::write(path, now)
-            }
-            _ => Ok(()),
+        if let (Some(path), Some(now)) = (&shot.report, now)
+            && Some(&now) != shot.from.as_ref()
+        {
+            std::fs::write(path, now)?;
         }
+        Ok(shot.why.clone())
     }
 }
