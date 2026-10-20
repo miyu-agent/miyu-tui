@@ -26,12 +26,14 @@ fn until(tui: &mut Tui, what: &str, check: impl Fn() -> bool) {
     }
 }
 
-/// 起引导，走过欢迎、语言、图标、接模型（用已配好的），停在建人格。
+/// 起引导，走过欢迎、语言、操作方式、图标、接模型（用已配好的），停在建人格。
 fn to_persona(home: &Home) -> Tui {
     let mut tui = home.tui_args("zh_CN.UTF-8", &["--page", "oobe"]);
     tui.wait_for("按 Enter 开始");
     tui.key(b"\r");
     tui.wait_for("界面语言");
+    tui.key(b"\r");
+    tui.wait_for("你喜欢的操作方式");
     tui.key(b"\r");
     tui.wait_for("方块或乱码");
     tui.key(b"\r");
@@ -285,10 +287,30 @@ fn choosing_english_switches_the_guide_and_is_saved() {
     tui.key(b"\x1b[B");
     tui.key(b"\x1b[B");
     tui.key(b"\r");
-    tui.wait_for("Boxes or garbage");
+    tui.wait_for("How do you like to move around?");
     until(&mut tui, "写进个人设置", || {
         home.settings().contains("language = \"en\"")
     });
+}
+
+#[test]
+fn choosing_vim_in_the_guide_is_saved_and_the_session_list_takes_j_and_k() {
+    // 2026-10-21 项目主人：「新用户默认不开 vimkey。oobe 里可以加一个『你喜欢的操作方式』，方向键和 Vim 两个选项」，放在语言后面。
+    let home = Home::with_settings(Script::new([]), CONFIGURED);
+    let mut tui = home.tui_args("zh_CN.UTF-8", &["--page", "oobe"]);
+    tui.wait_for("按 Enter 开始");
+    tui.key(b"\r");
+    tui.wait_for("界面语言");
+    tui.key(b"\r");
+    tui.wait_for("你喜欢的操作方式");
+    tui.wait_for("↑↓ 上下，打字直接搜");
+    tui.key(b"\x1b[B");
+    tui.key(b"\r");
+    tui.wait_for("方块或乱码");
+    until(&mut tui, "写进个人设置", || {
+        home.settings().contains("keys = \"vim\"")
+    });
+    tui.wait_for("j/k 选择");
 }
 
 #[test]
@@ -348,6 +370,8 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     tui.key(b"\r");
     tui.wait_for("界面语言");
     tui.key(b"\r");
+    tui.wait_for("你喜欢的操作方式");
+    tui.key(b"\r");
     tui.wait_for("方块或乱码");
     tui.key(b"\r");
     tui.wait_for("已配置");
@@ -391,6 +415,7 @@ fn to_theme_wide(home: &Home) -> Tui {
     for (wait, press) in [
         ("按 Enter 开始", b"\r"),
         ("界面语言", b"\r"),
+        ("你喜欢的操作方式", b"\r"),
         ("方块或乱码", b"\r"),
         ("已配置", b"\r"),
         ("创建人格", b"\r"),

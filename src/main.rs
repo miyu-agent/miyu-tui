@@ -33,6 +33,7 @@ mod language;
 mod launch;
 mod linebreak;
 mod link_cards;
+mod list_search;
 mod local;
 mod markdown;
 mod mascot;

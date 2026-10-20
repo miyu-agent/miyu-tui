@@ -7,6 +7,8 @@ use super::{Outcome, Settings, Texts, Tone};
 use crate::config::Config;
 use crate::core::Refusal;
 
+mod search;
+
 fn texts() -> Texts {
     Config::builtin().unwrap().text.settings
 }

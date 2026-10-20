@@ -1,7 +1,7 @@
 //! `/model` 的框（蓝图 `tui.md`「配置与模型」第 1 条）：和会话列表一个位置、一个样子。名字一列对齐，暗色写供应商和
 //! 窗口（池写分法和成员数，挡位写指向哪个）；右边写「当前」、冷却还要几分钟（黄）、没有 key（整行暗）。
 
-use ratatui::style::{Color, Style};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use serde::Deserialize;
 use unicode_width::UnicodeWidthStr;
@@ -9,6 +9,7 @@ use unicode_width::UnicodeWidthStr;
 use super::panel::{self, Chrome, Row};
 use crate::config::Config;
 use crate::core::{Choice, ChoiceState};
+use crate::list_search;
 use crate::model_list::ModelList;
 use crate::theme;
 
@@ -24,6 +25,10 @@ pub struct Texts {
     pub query: String,
     /// 下边框的按键提示。
     pub hint: String,
+    /// 按键模式是 Vim 时的（`/ 搜索 · j/k`，蓝图「按键」表「按键模式」那一行）。
+    pub hint_vim: String,
+    /// 按了 `/`、正在打搜索的字时的。
+    pub searching: String,
     /// 核心还没交回来。
     pub loading: String,
     /// 一个都对不上。
@@ -52,14 +57,15 @@ pub fn lines(
         texts.count.replace("{count}", &found.len().to_string()),
         theme::dim(),
     )];
-    if !list.query.is_empty() {
-        meta.push(Span::styled(texts.query.clone(), theme::dim()));
-        meta.push(Span::styled(
-            list.query.clone(),
-            Style::new().fg(Color::Reset),
-        ));
-    }
-    let chrome = Chrome::new(&texts.title, meta).hint(&texts.hint);
+    meta.extend(panel::searched(&texts.query, &list.query, list.typing));
+    let hint = list_search::hint(
+        config.layout.vim,
+        list.typing,
+        &texts.hint,
+        &texts.hint_vim,
+        &texts.searching,
+    );
+    let chrome = Chrome::new(&texts.title, meta).hint(hint);
     if !list.loaded || found.is_empty() {
         let note = if list.loaded {
             &texts.empty

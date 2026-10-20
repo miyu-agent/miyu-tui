@@ -300,3 +300,27 @@ fn an_open_list_follows_changes_from_elsewhere_and_shows_a_preview_for_untitled_
         tui.pump(Duration::from_millis(50));
     }
 }
+
+#[test]
+fn with_vim_keys_j_moves_and_a_space_after_slash_is_part_of_the_search() {
+    // 2026-10-21 项目主人：按键模式是 Vim 时会话列表 j、k 上下，`/` 才搜；搜的时候空格是字（拆段搜），不勾。
+    let (_home, mut tui) = sessions_settings(3, "[tui]\nkeys = \"vim\"\n");
+    tui.say("/sessions");
+    tui.wait_for("3 个");
+    tui.wait_for("/ 搜索 · j/k 选择");
+    tui.key(b"j");
+    tui.key(b" ");
+    tui.wait_for("已选 1");
+    tui.key(b"/");
+    tui.type_text("第 2");
+    tui.wait_for("搜索：第 2");
+    tui.wait_for("1 个");
+    assert!(
+        tui.shows("已选 1"),
+        "空格是字，不多勾：{}",
+        tui.lines().join("\n")
+    );
+    tui.key(b"\r");
+    tui.key(b"\r");
+    tui.wait_for("第 2 号的回答。");
+}

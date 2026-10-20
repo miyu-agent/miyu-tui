@@ -93,6 +93,8 @@ fn choosing_a_model_shows_no_notice() {
     tui.wait_for("▣  ");
     tui.say("/model");
     tui.wait_for("dev/beta");
+    // 按键模式出厂是方向键：打字就搜，`Enter` 一下就选（2026-10-21 项目主人：「新用户默认不开 vimkey」）。
+    tui.wait_for("↑/↓ 选择");
     tui.type_text("beta");
     tui.pump(Duration::from_millis(300));
     tui.key(b"\r");
@@ -207,4 +209,36 @@ fn a_new_session_does_not_flash_an_empty_footer() {
             assert!(footer.contains("high"), "第 {i} 帧底栏闪空了：{footer}");
         }
     }
+}
+
+#[test]
+fn with_vim_keys_a_slash_searches_and_enter_keeps_the_filter() {
+    // 2026-10-21 项目主人：「搜索用 vim 的方式，左斜杠键」「和 vim 一样。然后下次再 / 就清空搜索结果后再次进入搜索模式」。
+    let settings = "[models]\nchat = \"dev/alpha\"\n\n[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"http://dev.invalid/v1\"\n\n[providers.dev.models.alpha]\nwindow = 128000\n\n[providers.dev.models.beta]\nwindow = 64000\n\n[tui]\nkeys = \"vim\"\n";
+    let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("/model");
+    tui.wait_for("dev/beta");
+    tui.wait_for("/ 搜索 · j/k 选择");
+    tui.type_text("bet");
+    assert!(!tui.shows("搜索：bet"), "没按 / 打的字不进搜索");
+    tui.type_text("/bet");
+    tui.wait_for("搜索：bet");
+    tui.wait_for("Ctrl+J/K 选择 · Enter 完成");
+    tui.key(b"\r");
+    tui.wait_for("/ 搜索 · j/k 选择");
+    assert!(tui.shows("搜索：bet"), "Enter 收起，筛的留着");
+    assert!(!tui.shows("dev/alpha"), "{}", tui.lines().join("\n"));
+    tui.type_text("/");
+    tui.wait_for("dev/alpha");
+    assert!(!tui.shows("搜索：bet"), "再按 / 清空了重打");
+    tui.type_text("al");
+    tui.key(b"\r");
+    tui.key(b"\x1b");
+    tui.wait_for("dev/beta");
+    assert!(tui.shows("dev/alpha"), "Esc 先去掉筛的，框还开着");
+    tui.key(b"\x1b");
+    tui.pump(Duration::from_millis(300));
+    assert!(!tui.shows("dev/beta"), "再按 Esc 关框");
 }

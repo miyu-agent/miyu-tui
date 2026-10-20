@@ -145,6 +145,7 @@
   },
   "mascot_home": true,
   "mascot_sidebar": true,
+  "vim": false,
   "dream": {
     "mark": "✦ ",
     "float": "· ",

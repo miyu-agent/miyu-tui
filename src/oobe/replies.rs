@@ -18,7 +18,7 @@ impl Oobe {
         texts: &Texts,
     ) {
         let moved = match &waiting {
-            Waiting::Icons => Move::Stay,
+            Waiting::Icons | Waiting::Keys => Move::Stay,
             Waiting::Welcomed => {
                 self.marked = Some(
                     result

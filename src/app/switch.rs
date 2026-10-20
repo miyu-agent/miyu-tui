@@ -1,4 +1,4 @@
-//! `/sessions`：会话列表的框和切会话（蓝图 `tui.md`「会话列表 `/sessions`」）。打字筛，`↑` `↓` 选，`Enter` 切过去，
+//! `/sessions`：会话列表的框和切会话（蓝图 `tui.md`「会话列表 `/sessions`」）。打字筛（按键模式是 Vim 时先按 `/`），`↑` `↓` 选，`Enter` 切过去，
 //! `Ctrl+P` 置顶、取消，`Ctrl+D` 按两次删，`Esc` 关；鼠标悬停选中、点一下切过去。
 //!
 //! 切走时原来那个还忙着的（有一轮在跑、有任务没报完）停放着、接着订阅，空下来再退订（第 4 条，和 `/new` 一个规矩）；
@@ -10,6 +10,7 @@ use ratatui::layout::Position;
 use super::sessions::Parked;
 use super::{App, Panel};
 use crate::core::{Command, SessionInfo};
+use crate::list_search::{self, Step};
 use crate::session_list::SessionList;
 use crate::transcript::Transcript;
 
@@ -89,10 +90,20 @@ impl App {
     /// 框开着时的按键。
     pub(super) fn sessions_key(&mut self, key: KeyEvent) {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let vim = self.config.layout.vim;
         let Some(list) = self.boxes.session_list.as_mut() else {
             self.boxes.panel = None;
             return;
         };
+        // 空格勾选；按键模式是 Vim 时按了 `/` 打字时空格是字（拆段搜）。
+        let ticking = key.code == KeyCode::Char(' ') && !list.typing;
+        if !ctrl && !ticking {
+            match list_search::key(vim, &mut list.typing, &list.query, key) {
+                Step::Query(query) => return list.typed(query),
+                Step::Kept => return,
+                Step::Pass => {}
+            }
+        }
         match key.code {
             KeyCode::Esc => self.close_sessions(),
             KeyCode::Up => list.step(false),
@@ -116,15 +127,6 @@ impl App {
             }
             KeyCode::Char('p') if ctrl => self.toggle_pin(),
             KeyCode::Char('d') if ctrl => self.delete_picked(),
-            KeyCode::Backspace => {
-                let mut query = list.query.clone();
-                query.pop();
-                list.typed(query);
-            }
-            KeyCode::Char(c) if !ctrl => {
-                let query = format!("{}{c}", list.query);
-                list.typed(query);
-            }
             _ => {}
         }
     }

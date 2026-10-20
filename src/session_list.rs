@@ -10,6 +10,8 @@ pub struct SessionList {
     pub all: Vec<SessionInfo>,
     /// 打的字：筛标题、短编号。
     pub query: String,
+    /// 按键模式是 Vim 时按了 `/`、正在打搜索的字（`list_search.rs`）。
+    pub typing: bool,
     /// 选中对得上的第几个。
     pub selected: usize,
     /// 按过一次 `Ctrl+D`：再按一次才删这几个（第 2 条）。

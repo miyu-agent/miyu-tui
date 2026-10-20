@@ -675,6 +675,8 @@
     "count": "  {count} 件",
     "query": " · 検索：",
     "hint": "↑/↓ 選択 · Enter 切り替え · Space チェック · Ctrl+P ピン留め · Ctrl+D 削除 · Esc 閉じる",
+    "hint_vim": "/ 検索 · j/k 選択 · Enter 切り替え · Space チェック · Ctrl+P ピン留め · Ctrl+D 削除 · Esc 閉じる",
+    "searching": "入力して検索 · Ctrl+J/K 選択 · Enter 完了 · Esc キャンセル",
     "loading": "セッションを読み込み中…",
     "empty": "一致するセッションがありません",
     "now": "たった今",
@@ -707,6 +709,8 @@
     "count": "  {count} 件",
     "query": " · 検索：",
     "hint": "↑/↓ 選択 · Enter 切り替え · Esc 閉じる",
+    "hint_vim": "/ 検索 · j/k 選択 · Enter 切り替え · Esc 閉じる",
+    "searching": "入力して検索 · Ctrl+J/K 選択 · Enter 完了 · Esc キャンセル",
     "loading": "モデルを読み込み中…",
     "empty": "一致するモデルがありません",
     "cooling": "クールダウン {n}m",
@@ -1353,9 +1357,9 @@
       "builtin_mascot": "内蔵",
       "mascot_missing": "{id}（未インストール）",
       "seed_unset": "ペルソナのテーマカラーを消して、アバターの最初の候補に戻す",
-      "own_groups": {"theme": "テーマ", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン"},
+      "own_groups": {"theme": "テーマ", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン", "keys": "キー操作モード"},
       "appearance": "外観",
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}, "tui.keys": {"arrows": "矢印キー", "vim": "Vim"}},
       "unavailable": "未インストール",
       "custom_model": "モデルを入力…",
       "combo": ["設定しない", "その他…"],
@@ -1371,6 +1375,7 @@
     },
     "steps": [
       "言語",
+      "操作方法",
       "アイコン",
       "モデル",
       "人格",
@@ -1397,12 +1402,21 @@
       "enter_edit": "Enter で編集", "enter_pick": "Enter で選択",
       "presets": "↑↓ 選ぶ · Space 詳細 · Enter 次へ · Esc 戻る",
       "more": "入力して検索 · ↑↓ 選ぶ · Enter 確定 · Esc 閉じる",
+      "more_vim": "/ 検索 · j/k 選ぶ · Enter 確定 · Esc 閉じる",
       "theme": "Enter 選択 · j/k 移動 · Esc 戻る"
     },
     "language": {
       "title": "表示言語",
       "sub": "あとで設定から変えられます",
       "auto": "システムに合わせる（{name}）"
+    },
+    "controls": {
+      "title": "好みの操作方法",
+      "sub": "一覧の移動と検索のしかた。あとで設定で変えられます",
+      "arrows": "矢印キー",
+      "arrows_note": "↑↓ で移動、入力するとすぐ検索",
+      "vim": "Vim",
+      "vim_note": "j/k で移動、/ で検索"
     },
     "icons": {
       "title": "アイコン",

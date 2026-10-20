@@ -71,6 +71,7 @@ pub(super) fn draw_box(
             d,
             &config.text.drawer,
             &config.layout.drawer_preview,
+            config.layout.vim,
             &mut screen.caret,
         );
         return;

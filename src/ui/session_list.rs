@@ -4,7 +4,6 @@
 //! 正在用的强调色的 `●`，在跑的转着的盲文（照时间线的转圈，正在用的转圈也是强调色），别的空着（2026-10-02 项目主人：在跑的
 //! 看不出来，右边的「当前」不够显眼；2026-10-16 起不另占一列，左边不再空一大块）。
 
-use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use serde::Deserialize;
 
@@ -13,6 +12,7 @@ use super::panel::{self, Chrome, Row};
 mod groups;
 use crate::config::Config;
 use crate::core::SessionInfo;
+use crate::list_search;
 use crate::session_list::{SessionList, short};
 use crate::theme;
 use unicode_width::UnicodeWidthStr;
@@ -29,6 +29,10 @@ pub struct Texts {
     pub query: String,
     /// 下边框的按键提示。
     pub hint: String,
+    /// 按键模式是 Vim 时的（`/ 搜索 · j/k`，蓝图「按键」表「按键模式」那一行）。
+    pub hint_vim: String,
+    /// 按了 `/`、正在打搜索的字时的。
+    pub searching: String,
     /// 核心还没交回来。
     pub loading: String,
     /// 一个都对不上。
@@ -91,13 +95,7 @@ pub fn lines(
         texts.count.replace("{count}", &found.len().to_string()),
         theme::dim(),
     )];
-    if !list.query.is_empty() {
-        meta.push(Span::styled(texts.query.clone(), theme::dim()));
-        meta.push(Span::styled(
-            list.query.clone(),
-            Style::new().fg(Color::Reset),
-        ));
-    }
+    meta.extend(panel::searched(&texts.query, &list.query, list.typing));
     if !list.ticked.is_empty() {
         let count = list.ticked.len().to_string();
         meta.push(Span::styled(
@@ -105,7 +103,14 @@ pub fn lines(
             theme::dim(),
         ));
     }
-    let chrome = Chrome::new(&texts.title, meta).hint(&texts.hint);
+    let hint = list_search::hint(
+        config.layout.vim,
+        list.typing,
+        &texts.hint,
+        &texts.hint_vim,
+        &texts.searching,
+    );
+    let chrome = Chrome::new(&texts.title, meta).hint(hint);
     let note = |text: &str| {
         let line = panel::item(
             false,

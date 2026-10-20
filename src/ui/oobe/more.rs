@@ -14,21 +14,35 @@ pub fn popup(more: &More, texts: &Texts, (width, height): (u16, u16)) -> (String
     let mut c = Content::sized(width, height);
     let query = more.filter.text();
     let lead = "/ ";
+    let editing = more.filter.editing();
     if query.is_empty() {
-        c.lines.push(Line::from(vec![
-            Span::styled(lead, theme::faint()),
-            Span::styled(words.more_search.clone(), theme::faint()),
-        ]));
+        // 按键模式是 Vim 时没在搜：写「/ 搜索」（按 `/` 才进去）。
+        let cue = if editing {
+            vec![
+                Span::styled(lead, theme::faint()),
+                Span::styled(words.more_search.clone(), theme::faint()),
+            ]
+        } else {
+            vec![Span::styled(words.search_cue.clone(), theme::faint())]
+        };
+        c.lines.push(Line::from(cue));
     } else {
+        let style = if editing {
+            ratatui::style::Style::new()
+        } else {
+            theme::dim()
+        };
         c.lines.push(Line::from(vec![
             Span::styled(lead, theme::faint()),
-            Span::raw(query.to_string()),
+            Span::styled(query.to_string(), style),
         ]));
     }
-    let col = unicode_width::UnicodeWidthStr::width(
-        &query[..more.filter.editor.cursor().min(query.len())],
-    );
-    c.caret = Some((0, u16::try_from(lead.len() + col).unwrap_or(u16::MAX)));
+    if editing {
+        let col = unicode_width::UnicodeWidthStr::width(
+            &query[..more.filter.editor.cursor().min(query.len())],
+        );
+        c.caret = Some((0, u16::try_from(lead.len() + col).unwrap_or(u16::MAX)));
+    }
     c.blank();
     match &more.all {
         None => c.note(&words.loading, theme::dim()),
@@ -52,5 +66,14 @@ pub fn popup(more: &More, texts: &Texts, (width, height): (u16, u16)) -> (String
             }
         }
     }
-    (words.more_title.clone(), c, texts.keys.more.clone())
+    (words.more_title.clone(), c, keys(more, texts).clone())
+}
+
+/// 浮窗的按键提示：按键模式是方向键的「输入以搜索」，开着的「/ 搜索 · j/k」，按了 `/` 在搜的「Ctrl+J/K」。
+pub fn keys<'a>(more: &More, texts: &'a Texts) -> &'a String {
+    match (more.vim, more.filter.editing()) {
+        (false, _) => &texts.keys.more,
+        (true, false) => &texts.keys.more_vim,
+        (true, true) => &texts.keys.searching,
+    }
 }

@@ -75,6 +75,16 @@ applies = "now"
 name = { en = "Show the mascot in the sidebar", zh = "侧边栏显示吉祥物", ja = "サイドバーにマスコットを表示" }
 description = { en = "Show the mascot at the top of the sidebar. A persona's avatar shows regardless.", zh = "在侧边栏顶部显示吉祥物。人格设了头像的照样显示头像。", ja = "サイドバーの上部にマスコットを表示する。ペルソナのアバターは設定に関わらず表示される。" }
 
+# 按键模式（终端蓝图 `docs/blueprint/tui.md`「按键」表「按键模式」那一行，2026-10-21 项目主人）：`vim` 时会话列表、`/model`
+# 里 `j`、`k` 挪，`/` 才开始搜；`arrows` 照方向键的用法，打字就搜。配置页排在「通用」页「按键模式」一组；出厂方向键，引导里「你喜欢的操作方式」那一步选。
+[settings.keys]
+type = "option"
+choices = ["arrows", "vim"]
+default = "arrows"
+applies = "now"
+name = { en = "Key mode", zh = "按键模式", ja = "キー操作モード" }
+description = { en = "Vim: in the session list and the model list, j and k move and / starts a search. Arrow keys: typing searches right away and the arrow keys move.", zh = "Vim：会话列表、模型列表里 j、k 上下，按 / 才开始搜。方向键：打字直接搜，方向键上下。", ja = "Vim：セッション一覧とモデル一覧で j と k で移動し、/ で検索を始める。矢印キー：入力するとすぐ検索し、矢印キーで移動する。" }
+
 # 换哪一只吉祥物（终端蓝图 `docs/blueprint/tui.md`「吉祥物包」第 3 条，2026-10-11 项目主人）：值是一个吉祥物包的编号，
 # 没写的就是内置的；配置页照 `package.list` 列出装了的吉祥物包让选。
 [settings.mascot]

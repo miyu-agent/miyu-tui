@@ -68,7 +68,7 @@ mod theme_box;
 mod typing;
 mod updates;
 pub mod usage;
-mod vim;
+pub(crate) mod vim;
 mod workspace;
 
 use std::time::{Duration, Instant};

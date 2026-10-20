@@ -108,11 +108,12 @@ const OWN: &str = "tui.";
 
 /// 终端自己的配置项里另分一组的：键的开头、组的编号、放哪一页（「配置页」第 33 条，2026-10-11 项目主人：时间线单独一个
 /// 标题，吉祥物也分出去；2026-10-14：主题、吉祥物、图标单开一页「外观」，时间线留在通用）。组照这个先后排。
-const OWN_GROUPS: [(&str, &str, &str); 4] = [
+const OWN_GROUPS: [(&str, &str, &str); 5] = [
     ("tui.theme", "tui.theme", APPEARANCE),
     ("tui.mascot", "tui.mascot", APPEARANCE),
     ("tui.icons", "tui.icons", APPEARANCE),
     ("tui.timeline_", "tui.timeline", GENERAL),
+    ("tui.keys", "tui.keys", GENERAL),
 ];
 
 /// 另分的那几组的名字（`text/zh.json` 的 `settings.more.own_groups`）。
@@ -127,6 +128,8 @@ pub struct OwnGroups {
     pub mascot: String,
     /// 图标。
     pub icons: String,
+    /// 按键模式（方向键、Vim，2026-10-21）。
+    pub keys: String,
 }
 
 impl OwnGroups {
@@ -136,6 +139,7 @@ impl OwnGroups {
             "tui.theme" => &self.theme,
             "tui.timeline" => &self.timeline,
             "tui.icons" => &self.icons,
+            "tui.keys" => &self.keys,
             _ => &self.mascot,
         }
     }
@@ -394,6 +398,7 @@ mod tests {
                 item("tui.theme", "配色"),
                 item("tui.theme_mode", "明暗"),
                 item("tui.timeline_fold", "回复完成后折叠时间线"),
+                item("tui.keys", "按键模式"),
                 item("tui.mascot_home", "首页显示吉祥物"),
                 item("tui.mascot", "吉祥物")
             ]
@@ -404,10 +409,11 @@ mod tests {
                 timeline: "时间线".into(),
                 mascot: "吉祥物".into(),
                 icons: "图标".into(),
+                keys: "按键模式".into(),
             },
             "外观",
         );
-        assert_eq!(s.group_names("general"), ["显示", "时间线"]);
+        assert_eq!(s.group_names("general"), ["显示", "时间线", "按键模式"]);
         assert_eq!(s.group_names("appearance"), ["主题", "吉祥物", "图标"]);
         assert_eq!(s.listed_pages(), ["general", "appearance"]);
         assert_eq!(s.page_name("appearance"), Some("外观"));
@@ -424,6 +430,10 @@ mod tests {
         assert_eq!(
             group("tui.timeline_fold"),
             Some(("general".into(), "tui.timeline".into()))
+        );
+        assert_eq!(
+            group("tui.keys"),
+            Some(("general".into(), "tui.keys".into()))
         );
     }
 }

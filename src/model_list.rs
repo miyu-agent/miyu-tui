@@ -10,6 +10,8 @@ pub struct ModelList {
     pub all: Vec<Choice>,
     /// 打的字：筛名字和引用。
     pub query: String,
+    /// 按键模式是 Vim 时按了 `/`、正在打搜索的字（`list_search.rs`）。
+    pub typing: bool,
     /// 选中对得上的第几个。
     pub selected: usize,
     /// 核心交回来了：没交回来之前框里写「正在读」。

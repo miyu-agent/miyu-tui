@@ -1,4 +1,4 @@
-//! 语言、图标、沙盒几步的那一块（「第一次打开的引导」第 13、14、26a 条）。
+//! 语言、操作方式、图标、沙盒几步的那一块（「第一次打开的引导」第 13、13a、14、26a 条）。
 
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
@@ -20,6 +20,28 @@ pub fn language(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
         c.row(
             i == oobe.language.selected,
             vec![Span::raw(row.clone())],
+            None,
+        );
+    }
+    c
+}
+
+/// 你喜欢的操作方式：方向键、Vim 两行，名字后面暗色一句怎么用（2026-10-21）。
+pub fn controls(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
+    let words = &texts.controls;
+    let mut c = Content::new(width);
+    c.heading(&words.head.title, &words.head.sub);
+    let rows = [
+        (&words.arrows, &words.arrows_note),
+        (&words.vim, &words.vim_note),
+    ];
+    for (i, (name, note)) in rows.into_iter().enumerate() {
+        c.row(
+            i == oobe.keys.selected,
+            vec![
+                Span::raw(name.clone()),
+                Span::styled(format!("  {note}"), theme::dim()),
+            ],
             None,
         );
     }

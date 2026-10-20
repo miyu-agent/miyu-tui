@@ -108,6 +108,8 @@ pub struct Oobe {
     pub badge: Option<(String, Instant)>,
     /// 语言那一步。
     pub language: Pick,
+    /// 操作方式那一步：第 0 行方向键（`arrows`）、第 1 行 Vim（`vim`）。开引导时 App 照现在的按键模式选着。
+    pub keys: Pick,
     /// 图标那一步：第 0 行 `nerd`、第 1 行 `plain`。
     pub icons: Pick,
     /// 接模型。
@@ -134,6 +136,9 @@ pub struct Oobe {
 /// 图标那一步两行各是哪一套。
 pub const ICON_SETS: [&str; 2] = ["nerd", "plain"];
 
+/// 操作方式那一步的几行，照先后：`tui.keys` 的两个值（终端软件包清单 `[settings.keys]`）。
+pub const KEY_MODES: [&str; 2] = ["arrows", "vim"];
+
 impl Oobe {
     /// 从欢迎页开场起。`language` 是语言那一步的几行和选着的，`icons` 是现在用的那一套。
     pub fn new(now: Instant, look: look::Look, language: Pick, icons: &str, online: bool) -> Self {
@@ -151,6 +156,7 @@ impl Oobe {
             figure: figure::Figure::default(),
             badge: None,
             language,
+            keys: Pick::new(KEY_MODES.iter().map(|s| (*s).to_string()).collect(), 0),
             // 两行的字照界面语言画（「看得到图标」「是方块或者乱码」），这里记哪一套。
             icons: Pick::new(
                 ICON_SETS.iter().map(|s| (*s).to_string()).collect(),
@@ -196,6 +202,7 @@ impl Oobe {
                 }
             }
             Step::Language => self.pick_key(Step::Language, key, &mut effects),
+            Step::Keys => self.pick_key(Step::Keys, key, &mut effects),
             Step::Icons => self.pick_key(Step::Icons, key, &mut effects),
             Step::Model => self.model.key(key, &mut self.asker, &texts.model),
             Step::Persona => self
@@ -269,10 +276,10 @@ impl Oobe {
     }
 
     fn pick_key(&mut self, step: Step, key: KeyEvent, effects: &mut Vec<Effect>) -> Move {
-        let pick = if step == Step::Language {
-            &mut self.language
-        } else {
-            &mut self.icons
+        let pick = match step {
+            Step::Language => &mut self.language,
+            Step::Keys => &mut self.keys,
+            _ => &mut self.icons,
         };
         if pick.key(key) {
             return Move::Stay;
@@ -281,6 +288,14 @@ impl Oobe {
             KeyCode::Esc => Move::Back,
             KeyCode::Enter if step == Step::Language => {
                 effects.push(Effect::Language(pick.selected));
+                Move::Next
+            }
+            KeyCode::Enter if step == Step::Keys => {
+                let mode = KEY_MODES[pick.selected.min(KEY_MODES.len() - 1)];
+                let params =
+                    json!({"layer": "personal", "changes": [{"key": "tui.keys", "value": mode}]});
+                // 写成了核心推配置变了，终端照常重读 `tui.keys` 换过去（`head_settings.rs`），不另交 App。
+                self.asker.ask("config.set", params, Waiting::Keys);
                 Move::Next
             }
             KeyCode::Enter => {
@@ -344,7 +359,7 @@ impl Oobe {
                 self.stars = Stars::gather(now, self.seed.wrapping_add(1));
                 self.sliding = None;
             }
-            Step::Language | Step::Icons => {}
+            Step::Language | Step::Keys | Step::Icons => {}
         }
     }
 
@@ -397,7 +412,7 @@ impl Oobe {
     pub fn wanted_figure(&self, avatar: bool) -> figure::Shown {
         let early = matches!(
             self.step,
-            Step::Welcome | Step::Language | Step::Icons | Step::Model
+            Step::Welcome | Step::Language | Step::Keys | Step::Icons | Step::Model
         );
         if early {
             return figure::Shown::Mascot;
