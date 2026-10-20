@@ -21,6 +21,7 @@ mod lone;
 mod mcp;
 mod memory;
 mod message;
+mod settled;
 mod tabs;
 mod web;
 

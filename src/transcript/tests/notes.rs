@@ -21,6 +21,7 @@ fn started_with_command(t: &mut Transcript) {
                 text: "{\"command\":\"sleep 3\",\"description\":\"等三秒\"}".into(),
             },
             Push::BlockEnd(0),
+            Push::Calls(vec!["c1".into()]),
         ],
     );
 }
@@ -42,6 +43,22 @@ fn a_job_notice_folds_the_live_segment_before_it() {
         "后台命令完成 · sleep 3 · 3s".into(),
         String::new(),
     );
+    // 2026-10-20 项目主人：前面那段里的命令还在跑，等它跑完再收。
+    assert!(segments(&t)[0].finished, "回报前面那一段先结束");
+    assert!(segments(&t)[0].expanded(true), "命令还在跑的不收");
+    apply(
+        &mut t,
+        vec![Push::ToolResult {
+            call_id: "c1".into(),
+            status: crate::core::ToolStatus::Ok,
+            text: String::new(),
+            said: None,
+            display: Default::default(),
+            sent: 0,
+            detail: None,
+        }],
+    );
+    assert!(!segments(&t)[0].expanded(true), "跑完了收起");
     apply(
         &mut t,
         vec![
@@ -59,7 +76,7 @@ fn a_job_notice_folds_the_live_segment_before_it() {
     );
     let segs = segments(&t);
     assert_eq!(segs.len(), 2, "回报后面的步另起一段");
-    assert!(segs[0].finished, "回报前面那一段先收起");
+    assert!(segs[0].finished, "回报前面那一段先结束");
     assert!(segs[1].finished, "一轮结束照旧收起");
     let job = t.entries.iter().position(|e| e.kind == Kind::Job).unwrap();
     let first = t.entries.iter().position(|e| e.segment.is_some()).unwrap();
