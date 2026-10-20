@@ -555,7 +555,6 @@
     "unchecked": "[ ] ",
     "checked": "[✓] ",
     "other": "Type another answer",
-    "custom": "Custom: {text}",
     "notes_label": "Notes",
     "decisions": [
       "Allow once",

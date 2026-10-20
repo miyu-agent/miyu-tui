@@ -555,7 +555,6 @@
     "unchecked": "[ ] ",
     "checked": "[✓] ",
     "other": "他の回答を入力",
-    "custom": "カスタム：{text}",
     "notes_label": "補足",
     "decisions": [
       "今回だけ許可",

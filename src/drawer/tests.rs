@@ -187,6 +187,18 @@ fn n_adds_notes_without_picking_other() {
 }
 
 #[test]
+fn escape_while_writing_notes_throws_them_away() {
+    // 2026-10-20 项目主人：「esc 之后应该清空补充内容而不是还留着，因为 esc 可能代表着要换选项」。
+    let mut d = Drawer::question(None, asked());
+    d.key(key(KeyCode::Char('n')));
+    typed(&mut d, "写了一半");
+    d.key(key(KeyCode::Esc));
+    assert_eq!(d.editing, None);
+    let got = answers(d.key(key(KeyCode::Char('1'))));
+    assert_eq!(got[0].notes, None, "补充清掉了");
+}
+
+#[test]
 fn digits_pick_the_nth_item() {
     let mut d = Drawer::question(None, asked());
     assert_eq!(

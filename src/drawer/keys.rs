@@ -67,7 +67,8 @@ impl Drawer {
         step
     }
 
-    /// 编辑时的按键：`Enter` 保存，`Shift+Enter`、`Alt+Enter`、`Ctrl+J` 换行，`Esc` 退出编辑（字留着）。
+    /// 编辑时的按键：`Enter` 保存，`Shift+Enter`、`Alt+Enter`、`Ctrl+J` 换行，`Esc` 退出编辑（「输入其他答案」的字留着，补充的清空：
+    /// 2026-10-20 项目主人：「esc 之后应该清空补充内容而不是还留着，因为 esc 可能代表着要换选项」）。
     fn edit_key(&mut self, edit: Edit, key: KeyEvent) -> Step {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let newline = key
@@ -89,7 +90,12 @@ impl Drawer {
             }
         }
         match key.code {
-            KeyCode::Esc => self.editing = None,
+            KeyCode::Esc => {
+                if edit == Edit::Notes {
+                    text.clear();
+                }
+                self.editing = None;
+            }
             KeyCode::Enter if newline => text.push('\n'),
             KeyCode::Char('j') if ctrl => text.push('\n'),
             KeyCode::Enter => return self.save(edit),

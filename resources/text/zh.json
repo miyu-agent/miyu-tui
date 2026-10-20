@@ -555,7 +555,6 @@
     "unchecked": "[ ] ",
     "checked": "[✓] ",
     "other": "输入其他答案",
-    "custom": "自定义：{text}",
     "notes_label": "补充",
     "decisions": [
       "允许本次",
