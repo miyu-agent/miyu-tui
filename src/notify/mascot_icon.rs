@@ -89,7 +89,7 @@ fn color(px: Px) -> [u8; 3] {
 }
 
 /// 画成像素图：照 `look` 的形状（换了吉祥物包的照包）、像素图用的那一份脸（没写的照字符画的脸），网页那一套的格子和算法
-/// （`pixel.rs`），正面、睁着眼；`icon` 是抱着电脑的盖上电脑（照网页，电脑不抬，盖住嘴的下半截）。
+/// （`pixel.rs`），正面、睁着眼；`icon` 是抱着电脑的盖上电脑（比网页抬高几格，盖住嘴的大半）。
 pub fn draw(look: &Look, icon: Icon) -> RgbaImage {
     let face = look.pixel_face.as_ref().unwrap_or(&look.face);
     let cells = pixel::render(look, face, &GRID);
@@ -122,7 +122,7 @@ pub fn draw(look: &Look, icon: Icon) -> RgbaImage {
         }
     }
     if icon == Icon::Working {
-        laptop::hold(&mut small);
+        laptop::hold(&mut small, laptop::RAISE);
     }
     resize(&small, side * SCALE, side * SCALE, FilterType::Nearest)
 }
