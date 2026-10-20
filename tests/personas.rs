@@ -59,7 +59,7 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     }
     assert!(picked(&tui).contains("海盗"), "{}", tui.lines().join("\n"));
     tui.key(b"\r");
-    // 人格选好了接着选预设（2026-10-08 项目主人定先人格、再预设）：照编号排 dev、full（出厂叫「基础功能」「全部功能」，核心 P-4 下），光标停在默认的全部功能上。
+    // 人格选好了接着选预设（2026-10-08 项目主人定先人格、再预设）：照编号排 dev、full（出厂叫「常规开发」「全部功能」，核心 P-4 下；dev 原来叫「基础功能」，核心 2bc0e251 改名），光标停在默认的全部功能上。
     tui.wait_for("请选择预设");
     tui.wait_for("全部功能");
     tui.key(b"k");

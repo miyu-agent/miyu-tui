@@ -113,8 +113,17 @@ impl Transcript {
         }
     }
 
-    /// 订阅回应里的累计用量、权限（核心 9-6 上）：整个换掉页里的事件算出来的，之后照推来的往上加。没有的那一样不动。
-    pub fn snapshot(&mut self, spent: Option<&Spent>, level: Option<Level>) {
+    /// 订阅回应里的累计用量、权限（核心 9-6 上）、有没有能压缩的（核心 W-12）：整个换掉页里的事件算出来的，之后照推来的往上加。
+    /// 没有的那一样不动。
+    pub fn snapshot(
+        &mut self,
+        spent: Option<&Spent>,
+        level: Option<Level>,
+        compactable: Option<bool>,
+    ) {
+        if compactable.is_some() {
+            self.cache.compactable = compactable;
+        }
         if let Some(spent) = spent {
             self.total = spent.total;
             self.bill = spent.bill.clone();

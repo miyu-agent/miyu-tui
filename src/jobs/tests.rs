@@ -66,6 +66,15 @@ fn a_command_starts_with_its_own_text_and_ends_by_its_exit() {
             ended("j2", JobReason::Restarted, None, None),
             JobState::Restarted,
         ),
+        // 核心 7-12 下：跑到最长时间、输出太大停掉的写清楚，不当作完成。
+        (
+            ended("j2", JobReason::TimedOut, None, Some(9)),
+            JobState::TimedOut,
+        ),
+        (
+            ended("j2", JobReason::TooLarge, None, Some(9)),
+            JobState::TooLarge,
+        ),
     ];
     for (end, state) in cases {
         let mut board = Board::default();

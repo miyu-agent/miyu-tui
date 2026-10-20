@@ -26,11 +26,17 @@ pub(super) fn announce(
     let why = match job.state {
         JobState::Undone => words.why_undone.as_str(),
         JobState::Restarted => words.why_restarted.as_str(),
+        JobState::TimedOut => words.why_timed_out.as_str(),
+        JobState::TooLarge => words.why_too_large.as_str(),
         _ => "",
     };
     let stopped = matches!(
         job.state,
-        JobState::Stopped | JobState::Undone | JobState::Restarted
+        JobState::Stopped
+            | JobState::Undone
+            | JobState::Restarted
+            | JobState::TimedOut
+            | JobState::TooLarge
     );
     let (mark, text) = match (job.kind, job.state) {
         (JobKind::Agent, _) if stopped => (JobMark::Stopped, words.agent_stopped_note.clone()),

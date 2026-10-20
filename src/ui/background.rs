@@ -178,6 +178,8 @@ pub(super) fn state(job: &Job, config: &Config, now: Instant) -> (String, Style)
         JobState::Stopped => (words.stopped.clone(), theme::faint()),
         JobState::Undone => (words.undone.clone(), theme::faint()),
         JobState::Restarted => (words.restarted.clone(), theme::faint()),
+        JobState::TimedOut => (words.timed_out.clone(), theme::warn()),
+        JobState::TooLarge => (words.too_large.clone(), theme::warn()),
     }
 }
 

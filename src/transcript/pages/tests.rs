@@ -150,7 +150,7 @@ fn the_subscribe_reply_replaces_what_the_page_added_up() {
         compactions: 2,
         breaks: 1,
     };
-    t.snapshot(Some(&spent), Some(Level::Full));
+    t.snapshot(Some(&spent), Some(Level::Full), None);
     assert_eq!(t.total, total);
     assert_eq!((t.cache.compactions, t.cache.breaks), (2, 1));
     assert_eq!(t.level, Level::Full);
@@ -168,7 +168,7 @@ fn the_subscribe_reply_replaces_what_the_page_added_up() {
     assert_eq!(t.total.output, 105);
     assert_eq!(t.context, 15);
     // 核心旧、没有的那一样不动。
-    t.snapshot(None, None);
+    t.snapshot(None, None, None);
     assert_eq!(t.total.output, 105);
     assert_eq!(t.level, Level::Full);
 }

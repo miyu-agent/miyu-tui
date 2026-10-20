@@ -337,7 +337,7 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     tui.key(b"\r");
     tui.wait_for("↑/↓ 选择");
     assert!(
-        tui.shows("全部功能") && tui.shows("基础功能"),
+        tui.shows("全部功能") && tui.shows("常规开发"),
         "列预设：\n{}",
         tui.lines().join("\n")
     );
@@ -352,13 +352,13 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     tui.wait_for("人设提醒短语");
     assert!(!tui.shows("来自"), "{}", tui.lines().join("\n"));
     tui.key(b"\x1b");
-    // 回主菜单，人格下面一项是预设（2026-10-07 项目主人：人格和预设分两个菜单）：列着两个出厂的（「基础功能」「全部功能」，
-    // 核心 P-4 下改名），基础功能的窗里一个功能一个开关（核心 F-3 下起是功能，不是软件包），写了没装的写「未安装」。
+    // 回主菜单，人格下面一项是预设（2026-10-07 项目主人：人格和预设分两个菜单）：列着两个出厂的（「常规开发」「全部功能」，
+    // 核心 P-4 下改名），常规开发的窗里一个功能一个开关（核心 F-3 下起是功能，不是软件包），写了没装的写「未安装」。
     tui.key(b"\x1b");
     tui.wait_for("决定开关哪些功能");
     tui.open_menu("预设");
     tui.wait_for("全部功能");
-    tui.wait_for("基础功能");
+    tui.wait_for("常规开发");
     tui.key(b"\r");
     tui.wait_for("功能");
     tui.wait_for("未安装");

@@ -241,7 +241,7 @@ impl Transcript {
             Update::CurrentModel(current) => self.current_model(current),
             Update::SessionPersona(persona) => self.persona = Some(persona),
             Update::Paged(more) => self.paged(more, texts),
-            Update::Snapshot(snapshot) => self.snapshot(snapshot.usage.as_ref(), snapshot.level),
+            Update::Snapshot(s) => self.snapshot(s.usage.as_ref(), s.level, s.compactable),
             Update::SessionPreset(preset) => self.preset = Some(preset),
             Update::Configured(reference) => self.configured(reference),
             Update::Choices(_)
