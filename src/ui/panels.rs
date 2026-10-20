@@ -12,32 +12,8 @@ use super::{
 };
 use crate::app::Seen;
 
-/// 框里上下各空几行（一共）：由命令打开的框都这样（2026-10-20 项目主人：先给 `/persona` 加，看了又定别的框也加；打字时弹的
-/// 命令列表、`@` 文件列表、输入历史跟着打字走，不加）。
-pub const PAD: usize = 2;
-
-/// 开着的框排成的行，最多 `max` 行：上下各空一行（[`PAD`]），放不下空行的不空。
+/// 开着的框排成的行，最多 `max` 行（框里上下的空行由 `panel.rs` 留）。
 pub(super) fn content(
-    seen: &Seen,
-    width: u16,
-    now: Instant,
-    max: usize,
-) -> (Chrome, Vec<Line<'static>>, Vec<Option<usize>>) {
-    if max <= PAD {
-        return rows(seen, width, now, max);
-    }
-    let (chrome, mut lines, mut map) = rows(seen, width, now, max - PAD);
-    if !lines.is_empty() {
-        lines.insert(0, Line::raw(""));
-        lines.push(Line::raw(""));
-        map.insert(0, None);
-        map.push(None);
-    }
-    (chrome, lines, map)
-}
-
-/// 开着的框排成的行，最多 `max` 行（不连上下的空行）。
-fn rows(
     seen: &Seen,
     width: u16,
     now: Instant,

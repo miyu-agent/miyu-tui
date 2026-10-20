@@ -13,12 +13,7 @@ impl App {
 
     /// 框开着时的按键。
     pub(super) fn status_key(&mut self, scroll: usize, key: KeyEvent) {
-        let page = self
-            .screen
-            .panel_rows
-            .len()
-            .saturating_sub(crate::ui::PANEL_PAD)
-            .max(1);
+        let page = self.screen.panel_rows.len().max(1);
         let width = self.screen.areas.menu_text.width;
         let facts = crate::ui::status_box::facts(&self.seen());
         let rows = crate::ui::status_box::rows(&facts, &self.config, width).len();

@@ -39,7 +39,7 @@ fn an_open_session_lists_three_groups_with_a_blank_line_between_them() {
     let text = plain(&opened(), &config, 100);
     let lines: Vec<&str> = text.lines().collect();
     assert_eq!(lines[0], "修通知图标", "标题在最前（框线上）");
-    // 框里上下的空行由框统一加（`panels.rs` 的 `PAD`）：这里从会话 ID 起，段和段之间空一行。
+    // 框里上下的空行由框统一留（`panel.rs`）：这里从会话 ID 起，段和段之间空一行。
     assert!(
         lines[1].starts_with("会话 ID") && lines[1].ends_with("7e993d987fdd"),
         "{text}"

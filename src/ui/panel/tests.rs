@@ -29,13 +29,20 @@ fn a_short_room_shows_fewer_items_around_the_picked_one() {
 
 #[test]
 fn the_frame_takes_two_rows_when_there_is_room_for_it() {
-    assert_eq!((room(7), room(3), room(2)), (5, 1, 2), "不到 3 行不画框");
-    assert_eq!((height(5, 20), height(2, 2), height(0, 20)), (7, 2, 0));
+    // 框里上下各空一行（2026-10-20 项目主人）：放得下的让出两条边、两个空行；放不下空行的只让边；不到 3 行不画框。
+    assert_eq!(
+        (room(7), room(5), room(4), room(3), room(2)),
+        (3, 1, 2, 1, 2)
+    );
+    assert_eq!(
+        (height(5, 20), height(2, 4), height(2, 2), height(0, 20)),
+        (9, 4, 2, 0)
+    );
     let outer = Rect::new(10, 4, 60, 7);
     assert_eq!(
         inside(outer, 14, 52),
-        Rect::new(14, 5, 52, 5),
-        "上下各让一行"
+        Rect::new(14, 6, 52, 3),
+        "上下各让一条边、一个空行"
     );
     assert_eq!(
         inside(Rect::new(10, 4, 60, 2), 14, 52),
@@ -47,8 +54,8 @@ fn the_frame_takes_two_rows_when_there_is_room_for_it() {
 fn a_rounded_frame_with_the_title_and_hint_on_its_edges_and_a_blue_picked_bar() {
     // 2026-09-30 项目主人看过对比页定的 A，再照 Cline 给选中的铺强调蓝，上面的字换深色。
     let _theme = theme::hold();
-    let mut terminal = Terminal::new(TestBackend::new(30, 5)).unwrap();
-    let outer = Rect::new(0, 0, 30, 5);
+    let mut terminal = Terminal::new(TestBackend::new(30, 7)).unwrap();
+    let outer = Rect::new(0, 0, 30, 7);
     let text_area = inside(outer, 2, 26);
     let lines = vec![
         item(false, vec![Span::styled("/undo", theme::dim())], None, 26),
@@ -79,14 +86,23 @@ fn a_rounded_frame_with_the_title_and_hint_on_its_edges_and_a_blue_picked_bar() 
     assert!(row(0).starts_with("╭─ 命令 3 条 ─"), "{}", row(0));
     assert!(row(0).ends_with('╮'));
     assert!(
-        row(4).starts_with("╰─ Esc 关闭 ─") && row(4).ends_with('╯'),
+        row(6).starts_with("╰─ Esc 关闭 ─") && row(6).ends_with('╯'),
         "{}",
-        row(4)
+        row(6)
     );
+    // 框里上下各空一行（2026-10-20 项目主人）。
+    for y in [1, 5] {
+        assert_eq!(
+            row(y).trim_matches(['│', ' ']),
+            "",
+            "第 {y} 行空着：{}",
+            row(y)
+        );
+    }
     assert!(
-        row(1).starts_with("│   /undo") && row(1).ends_with('│'),
+        row(2).starts_with("│   /undo") && row(2).ends_with('│'),
         "{}",
-        row(1)
+        row(2)
     );
     assert_eq!(
         buf[(0, 0)].fg,
@@ -99,13 +115,13 @@ fn a_rounded_frame_with_the_title_and_hint_on_its_edges_and_a_blue_picked_bar() 
         theme::dim().fg.unwrap(),
         "边框上的字和框线一个颜色"
     );
-    let esc = (0..30).find(|&x| buf[(x, 4)].symbol() == "E").unwrap();
-    assert_eq!(buf[(esc, 4)].fg, theme::dim().fg.unwrap(), "按键提示也是");
+    let esc = (0..30).find(|&x| buf[(x, 6)].symbol() == "E").unwrap();
+    assert_eq!(buf[(esc, 6)].fg, theme::dim().fg.unwrap(), "按键提示也是");
     // 选中的那一条：❯、名字和后面补的空格都铺强调色的底，字是深色。
     let bar = theme::picked_bar();
-    assert!(row(2).contains("❯ /restore"), "{}", row(2));
+    assert!(row(3).contains("❯ /restore"), "{}", row(3));
     for x in 2..28 {
-        let cell = &buf[(x, 2)];
+        let cell = &buf[(x, 3)];
         assert_eq!(
             (cell.bg, cell.fg),
             (bar.bg.unwrap(), bar.fg.unwrap()),
@@ -113,7 +129,7 @@ fn a_rounded_frame_with_the_title_and_hint_on_its_edges_and_a_blue_picked_bar() 
         );
     }
     assert_eq!(
-        buf[(2, 1)].bg,
+        buf[(2, 2)].bg,
         ratatui::style::Color::Reset,
         "没选中的不铺底"
     );
