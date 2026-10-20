@@ -2,7 +2,14 @@
 //! 太不合理了」）：提示符下面画一个框（同终端界面输入框上面那种框，`ui::draw_panel`），`↑` `↓` 选、`Enter` 定、`Esc` 走，
 //! 定了以后框收掉、只留一行结果。接上终端会话、读配置、配色照说话那一套（借一个不说话的 [`Turn`]）。
 
+pub mod edit;
+pub mod effort;
 pub mod model;
+pub mod persona;
+pub mod sessions;
+pub mod status;
+pub mod theme;
+pub mod usage;
 
 use std::io;
 use std::time::Duration;
@@ -23,6 +30,8 @@ pub enum Picked {
     Stay,
     /// 定了（留这一行）；`None` 是不选了、什么都不留。
     Done(Option<Line<'static>>),
+    /// 只看的（`/status`）：印这一个框就完。
+    Show(Chrome, Vec<Line<'static>>),
 }
 
 /// 一种列表。
@@ -31,10 +40,10 @@ pub trait Picker {
     fn start(&mut self, core: &Core);
     /// 核心来的一件（说话那一套办之前先看一眼）。
     fn core(&mut self, update: &Update, turn: &Turn);
-    /// 每一拍看一次：带了参数的（`/model 名字`）列表到了就直接定。
-    fn ready(&mut self, turn: &Turn, core: &Core) -> Picked;
-    /// 一个键。
-    fn key(&mut self, key: KeyEvent, turn: &Turn, core: &Core) -> Picked;
+    /// 每一拍看一次：带了参数的（`/model 名字`）列表到了就直接定；要等终端会话读回来再问的，这时问。
+    fn ready(&mut self, turn: &mut Turn, core: &Core, config: &Config) -> Picked;
+    /// 一个键（挪到哪一种当场换样子的，改 `turn.look`）。
+    fn key(&mut self, key: KeyEvent, turn: &mut Turn, core: &Core, config: &Config) -> Picked;
     /// 画成框：框上的字、最多 `max` 行。
     fn view(
         &self,
@@ -45,11 +54,19 @@ pub trait Picker {
     ) -> (Chrome, Vec<Line<'static>>);
 }
 
+/// 定了以后留的那一行：缩进同她的回答，暗色。
+pub fn result(text: &str) -> Line<'static> {
+    Line::from(ratatui::text::Span::styled(
+        format!("  {text}"),
+        crate::theme::dim(),
+    ))
+}
+
 /// 框两边各让几格（同终端界面的框）。
 const SIDE: u16 = 2;
 
 impl Session {
-    /// 接上终端会话，画 `picker` 到定了或者不选了；定了的那一行留在滚动区。
+    /// 接上终端会话，画 `picker` 到定了或者不选了；定了的那一行（只看的那个框）留在滚动区。
     ///
     /// # Errors
     ///
@@ -59,85 +76,104 @@ impl Session {
         turn.ask_terminal(&self.core);
         picker.start(&self.core);
         let spinner = Duration::from_millis(self.config.timeline.spinner_ms.max(16));
-        let result = loop {
+        let end = loop {
             let first = match self.incoming.recv_timeout(spinner) {
                 Ok(first) => Some(first),
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => None,
-                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break None,
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break Picked::Done(None),
             };
             let rest: Vec<Incoming> = self.incoming.try_iter().collect();
-            let mut done = None;
+            let mut end = Picked::Stay;
             for incoming in first.into_iter().chain(rest) {
-                if done.is_some() {
+                if !matches!(end, Picked::Stay) {
                     continue;
                 }
                 match incoming {
                     Incoming::Core(update) => {
-                        picker.core(&update, turn);
+                        // 终端会话的推送包着会话编号来（`Elsewhere`），说话那一套拆开了办：列表也照拆开的看。
+                        let inner = match &update {
+                            Update::Elsewhere { session, update }
+                                if turn.transcript.session.as_deref() == Some(session.as_str()) =>
+                            {
+                                update.as_ref()
+                            }
+                            other => other,
+                        };
+                        picker.core(inner, turn);
                         turn.core(update, &mut self.config, &self.core);
                     }
                     Incoming::Key(Event::Key(key)) if key.kind != KeyEventKind::Release => {
                         let ctrl_c = key.code == KeyCode::Char('c')
                             && key.modifiers.contains(KeyModifiers::CONTROL);
-                        if ctrl_c {
-                            done = Some(None);
-                        } else if let Picked::Done(line) =
-                            // `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面的列表，vim 的上下）。
-                            picker.key(
-                                crate::app::vim_step(key, true),
-                                turn,
-                                &self.core,
-                            )
-                        {
-                            done = Some(line);
-                        }
+                        // `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面的列表，vim 的上下）。
+                        let key = crate::app::vim_step(key, true);
+                        end = if ctrl_c {
+                            Picked::Done(None)
+                        } else {
+                            picker.key(key, turn, &self.core, &self.config)
+                        };
                     }
                     Incoming::Key(_) => {}
                 }
             }
-            if done.is_none()
-                && let Picked::Done(line) = picker.ready(turn, &self.core)
-            {
-                done = Some(line);
+            if matches!(end, Picked::Stay) {
+                end = picker.ready(turn, &self.core, &self.config);
             }
             // 连不上核心、会话没了：不选了。
             if turn.done {
-                break None;
+                break Picked::Done(None);
             }
-            if let Some(line) = done {
-                break line;
+            if !matches!(end, Picked::Stay) {
+                break end;
             }
             turn.look.apply(&self.config);
             let (width, height) = size();
             let max = usize::from(height / 2).max(3);
             let (chrome, lines) =
                 picker.view(turn, &self.config, width.saturating_sub(SIDE * 2), max);
-            let rows = u16::try_from(lines.len())
-                .unwrap_or(u16::MAX)
-                .saturating_add(2);
-            let mut live = vec![String::new()];
-            live.extend(self.painter.render(width, rows, |frame| {
-                let outer = frame.area();
-                let text = Rect::new(
-                    outer.x + SIDE,
-                    outer.y + 1,
-                    outer.width.saturating_sub(SIDE * 2),
-                    outer.height.saturating_sub(2),
-                );
-                crate::ui::draw_panel(frame, outer, text, chrome, lines);
-            })?);
+            // 还在等的（`/status` 等终端会话读回来）什么都不画。
+            let mut live = Vec::new();
+            if !lines.is_empty() {
+                live.push(String::new());
+                live.extend(self.boxed(width, chrome, lines)?);
+            }
             self.painter.frame(&[], &live)?;
         };
         self.painter.finish()?;
-        let settled = match result {
-            Some(line) => self.painter.lines(width_now(), &[Line::default(), line])?,
-            None => Vec::new(),
+        turn.look.apply(&self.config);
+        let width = size().0;
+        let settled = match end {
+            Picked::Done(Some(line)) => self.painter.lines(width, &[Line::default(), line])?,
+            Picked::Show(chrome, lines) => {
+                let mut settled = vec![String::new()];
+                settled.extend(self.boxed(width, chrome, lines)?);
+                settled
+            }
+            Picked::Done(None) | Picked::Stay => Vec::new(),
         };
         self.painter.frame(&settled, &[])?;
         ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Show)
     }
-}
 
-fn width_now() -> u16 {
-    size().0
+    /// 几行画进一个框（同终端界面的框），交回画好的几行。
+    fn boxed(
+        &self,
+        width: u16,
+        chrome: Chrome,
+        lines: Vec<Line<'static>>,
+    ) -> io::Result<Vec<String>> {
+        let rows = u16::try_from(lines.len())
+            .unwrap_or(u16::MAX)
+            .saturating_add(2);
+        self.painter.render(width, rows, |frame| {
+            let outer = frame.area();
+            let text = Rect::new(
+                outer.x + SIDE,
+                outer.y + 1,
+                outer.width.saturating_sub(SIDE * 2),
+                outer.height.saturating_sub(2),
+            );
+            crate::ui::draw_panel(frame, outer, text, chrome, lines);
+        })
+    }
 }

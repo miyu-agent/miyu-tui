@@ -21,5 +21,10 @@
   "slash_pending": "/{name} isn't available in the shell yet",
   "slash_new": "Started a new session",
   "slash_model": "Switched the model to {name}",
-  "slash_no_match": "Nothing matches “{query}”"
+  "slash_no_match": "Nothing matches “{query}”",
+  "slash_theme": "Colors set to {name}",
+  "slash_effort": "Reasoning effort: {level}",
+  "slash_sessions": "Messages now go to “{title}”",
+  "slash_persona": "New terminal sessions will use the persona “{name}”",
+  "slash_preset": "New terminal sessions will use the preset “{name}”"
 }

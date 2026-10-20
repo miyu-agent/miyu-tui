@@ -38,6 +38,15 @@ pub struct Words {
     pub slash_new: String,
     /// `/model` 换好了（`{name}`）。
     pub slash_model: String,
+    /// `/theme` 换好了（`{name}`）。
+    pub slash_theme: String,
+    /// `/effort` 改好了（`{level}`）。
+    pub slash_effort: String,
+    /// `/sessions` 换好了（`{title}`）。
+    pub slash_sessions: String,
+    /// `/persona`、`/preset` 写好了（`{name}`）。
+    pub slash_persona: String,
+    pub slash_preset: String,
     /// 带的参数什么都没对上（`{query}`）。
     pub slash_no_match: String,
 }

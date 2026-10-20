@@ -16,7 +16,7 @@ use unicode_width::UnicodeWidthStr;
 use super::panel::Chrome;
 use crate::app::usage::Loaded;
 use crate::app::{Seen, UsageData};
-use crate::core::{Bill, UsageRow};
+use crate::core::{Bill, SessionInfo, UsageRow};
 use crate::{money, theme};
 
 /// 用量框里的字。
@@ -98,26 +98,89 @@ pub(super) const GAP: &str = "   ";
 /// 框和露出来的行：标签那一行、空一行，再从第 `scroll` 行起最多露到 `max` 行。
 pub fn lines(
     seen: &Seen,
+    view: (usize, usize, bool),
+    width: u16,
+    max: usize,
+) -> (Chrome, Vec<Line<'static>>) {
+    let src = Sources::of(seen);
+    match seen.boxes.usage.as_ref() {
+        Some(data) => page_lines(&src, data, view, width, max),
+        None => {
+            let texts = &seen.config.text.usage;
+            (
+                Chrome::new(&texts.title, Vec::new()).hint(&texts.hint),
+                Vec::new(),
+            )
+        }
+    }
+}
+
+/// 排一页要的几样，不碰界面（shellhook 的 `/usage` 照它排，2026-10-20 和终端界面会话商定）：配置、币种、会话编号写成
+/// 什么名字（知道的会话列表）。
+pub struct Sources<'a> {
+    pub config: &'a crate::config::Config,
+    /// 照哪种币写合计（核心说的）。
+    pub currency: &'a str,
+    /// 知道的会话：按会话那一页照它写标题。
+    pub sessions: &'a [SessionInfo],
+}
+
+impl<'a> Sources<'a> {
+    /// 从界面收。
+    pub fn of(seen: &'a Seen) -> Self {
+        Self {
+            config: seen.config,
+            currency: &seen.link.currency,
+            sessions: seen.talk.sessions_seen.as_deref().unwrap_or_default(),
+        }
+    }
+
+    /// 会话写成什么：标题，没有的写开头那句，都没有的写编号末八位。
+    pub fn name(&self, session: &str) -> String {
+        session_name(self.sessions, session)
+    }
+}
+
+/// 一个会话在用量表里写什么：标题，没标题的照预览，会话列表里没有的（子代理、删掉的）写短编号（最后 8 位）。
+pub fn session_name(known: &[SessionInfo], session: &str) -> String {
+    known
+        .iter()
+        .find(|s| s.session == session)
+        .and_then(|s| s.title.clone().or_else(|| s.preview.clone()))
+        .unwrap_or_else(|| {
+            let tail: String = session
+                .chars()
+                .rev()
+                .take(8)
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+                .collect();
+            format!("#{tail}")
+        })
+}
+
+/// 排 `/usage` 的一页：第 `tab` 页滚到 `scroll`，热度图照 `by_money` 写 token 还是花费。
+pub fn page_lines(
+    src: &Sources<'_>,
+    data: &UsageData,
     (tab, scroll, by_money): (usize, usize, bool),
     width: u16,
     max: usize,
 ) -> (Chrome, Vec<Line<'static>>) {
-    let texts = &seen.config.text.usage;
+    let texts = &src.config.text.usage;
     let chrome = Chrome::new(&texts.title, Vec::new()).hint(&texts.hint);
-    let Some(data) = seen.boxes.usage.as_ref() else {
-        return (chrome, Vec::new());
-    };
     let total = match &data.total {
-        Some(Ok(rows)) => rows.first().and_then(|r| amounts(seen, &r.bill)),
+        Some(Ok(rows)) => rows.first().and_then(|r| amounts(src, &r.bill)),
         _ => None,
     };
     let mut out = vec![tabs(texts, tab, total, width), Line::default()];
     // 换页不改框的高度：照四页里最高的那一页留地方，矮的下面空着（2026-10-07 项目主人）。
     let tallest = (0..TABS)
-        .map(|page| body(seen, data, (page, by_money), width).len())
+        .map(|page| body(src, data, (page, by_money), width).len())
         .max()
         .unwrap_or(0);
-    let body = body(seen, data, (tab, by_money), width);
+    let body = body(src, data, (tab, by_money), width);
     let room = max.saturating_sub(out.len()).max(1);
     let start = scroll.min(body.len().saturating_sub(room));
     out.extend(body.into_iter().skip(start).take(room));
@@ -128,20 +191,19 @@ pub fn lines(
 
 /// 那一页标签以下有几行：按键滚到头照它停。
 pub fn body_rows(seen: &Seen, (tab, by_money): (usize, bool), width: u16) -> usize {
-    seen.boxes
-        .usage
-        .as_ref()
-        .map_or(0, |data| body(seen, data, (tab, by_money), width).len())
+    seen.boxes.usage.as_ref().map_or(0, |data| {
+        body(&Sources::of(seen), data, (tab, by_money), width).len()
+    })
 }
 
 /// 一页的内容：要的那一样没回来、拒了、空的先说；都有了交给那一页排。
 fn body(
-    seen: &Seen,
+    src: &Sources<'_>,
     data: &UsageData,
     (tab, by_money): (usize, bool),
     width: u16,
 ) -> Vec<Line<'static>> {
-    let texts = &seen.config.text.usage;
+    let texts = &src.config.text.usage;
     let primary: &Loaded = match tab {
         0 | 1 => &data.days,
         2 => &data.models,
@@ -159,10 +221,10 @@ fn body(
         Some(Ok(rows)) => rows,
     };
     match tab {
-        0 => overview::page(seen, data, rows, by_money, width),
-        1 => charts::recent(seen, data, rows, width),
-        2 => tables::models(seen, data, rows, width),
-        _ => tables::sessions(seen, rows, width),
+        0 => overview::page(src, data, rows, by_money, width),
+        1 => charts::recent(src, data, rows, width),
+        2 => tables::models(src, data, rows, width),
+        _ => tables::sessions(src, rows, width),
     }
 }
 
@@ -193,8 +255,8 @@ fn tabs(texts: &Texts, tab: usize, total: Option<String>, width: u16) -> Line<'s
 }
 
 /// 一份账的金额（`$0.42 + ¥1.30`）；一笔都没有的是 `None`。
-pub(super) fn amounts(seen: &Seen, bill: &Bill) -> Option<String> {
-    money::amounts(bill, &seen.link.currency, &seen.config.layout.currencies)
+pub(super) fn amounts(src: &Sources<'_>, bill: &Bill) -> Option<String> {
+    money::amounts(bill, src.currency, &src.config.layout.currencies)
 }
 
 /// 一行行里一共多少 token。

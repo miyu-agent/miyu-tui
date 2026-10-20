@@ -21,5 +21,10 @@
   "slash_pending": "/{name} はシェルではまだ使えません",
   "slash_new": "新しいセッションを開始しました",
   "slash_model": "モデルを {name} に切り替えました",
-  "slash_no_match": "「{query}」に一致するものはありません"
+  "slash_no_match": "「{query}」に一致するものはありません",
+  "slash_theme": "配色を{name}に切り替えました",
+  "slash_effort": "思考の強さ：{level}",
+  "slash_sessions": "以降は「{title}」に送ります",
+  "slash_persona": "今後新しく開くターミナルセッションはペルソナ「{name}」を使います",
+  "slash_preset": "今後新しく開くターミナルセッションはプリセット「{name}」を使います"
 }

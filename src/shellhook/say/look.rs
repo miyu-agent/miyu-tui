@@ -78,6 +78,27 @@ impl Look {
         }
     }
 
+    /// 人格 `id` 的名字（列表到了才有）。
+    pub fn persona_name(&self, id: &str) -> Option<String> {
+        self.personas
+            .iter()
+            .find(|p| p.id == id)
+            .map(|p| p.name.clone().unwrap_or_else(|| p.id.clone()))
+    }
+
+    /// 现在挑的是哪种配色（`tui.theme` 的值）。
+    pub fn colors(&self) -> &str {
+        &self.choice.colors
+    }
+
+    /// 先照 `colors` 这种画（`/theme` 列表里挪到哪种当场换样子，还不写设置）；下一帧 [`Look::apply`] 换上。
+    pub fn preview(&mut self, colors: &str) {
+        self.choice.colors = colors.to_string();
+        if colors == "wallpaper" {
+            self.wallpaper.look(self.choice.dark(self.dark), true);
+        }
+    }
+
     /// 配置项读回来过。
     pub fn ready(&self) -> bool {
         self.ready

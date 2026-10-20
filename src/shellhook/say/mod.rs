@@ -55,7 +55,7 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     }
     // 终端界面的斜杠命令（`/models`）：照命令办，不当一句话（`shellhook/slash.rs`）。
     if text.starts_with('/')
-        && let Some(done) = crate::shellhook::slash::run(&text, words)
+        && let Some(done) = crate::shellhook::slash::run(&text, words, ask.leftover.as_deref())
     {
         return done;
     }
@@ -116,6 +116,20 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
 pub enum Pick<'a> {
     /// `/model`，带着后面的字。
     Model(Option<&'a str>),
+    /// `/theme`。
+    Theme(Option<&'a str>),
+    /// `/effort`。
+    Effort(Option<&'a str>),
+    /// `/sessions`。
+    Sessions,
+    /// `/status`。
+    Status,
+    /// `/persona`、`/preset`。
+    Persona(crate::app::new_session::Kind, Option<&'a str>),
+    /// `/usage`。
+    Usage,
+    /// `/edit`：上一句写进这个文件，脚本放回命令行。
+    Edit(Option<&'a std::path::Path>),
 }
 
 /// 在提示符下面原地画一个列表，定了留一行（`pick.rs`，图纸「斜杠命令」第 3 条）。
@@ -129,10 +143,22 @@ pub fn pick(which: Pick<'_>, words: &Words) -> io::Result<ExitCode> {
         .ok()
         .map(|d| d.to_string_lossy().into_owned());
     let mut turn = Turn::new(String::new(), cwd, look);
-    let mut picker = match which {
-        Pick::Model(given) => pick::model::ModelPick::new(given, words),
+    let mut picker: Box<dyn pick::Picker> = match which {
+        Pick::Model(given) => Box::new(pick::model::ModelPick::new(given, words)),
+        Pick::Theme(given) => Box::new(pick::theme::ThemePick::new(given, words)),
+        Pick::Effort(given) => Box::new(pick::effort::EffortPick::new(given, words)),
+        Pick::Sessions => Box::new(pick::sessions::SessionsPick::new(words)),
+        Pick::Status => Box::new(pick::status::StatusShow::new()),
+        Pick::Usage => Box::new(pick::usage::UsageShow::new()),
+        Pick::Edit(leftover) => Box::new(pick::edit::EditPick::new(leftover)),
+        Pick::Persona(kind, given) => Box::new(pick::persona::PersonaPick::new(
+            kind,
+            given,
+            words,
+            &session.config,
+        )),
     };
-    session.pick(&mut turn, &mut picker)?;
+    session.pick(&mut turn, picker.as_mut())?;
     session.finish()?;
     Ok(ExitCode::SUCCESS)
 }

@@ -29,6 +29,7 @@
 | `src/shellhook/say/unseen.rs` | 她还没看到的回报：照序号认叫醒她的是哪一轮（`say`、盯后台的共用） |
 | `src/shellhook/slash.rs` | 斜杠命令：和终端界面共用一张表，`say` 先问它、`miyu shellhook <名字>` 也走它 |
 | `src/shellhook/paste.rs` | `paste`：`Ctrl+V` 读剪贴板收成块，块上的字给脚本插进命令行；`say` 时换回原文、带上附件 |
+| `src/shellhook/say/pick.rs`、`pick/*.rs` | 斜杠命令在 shell 里原地选：提示符下面画一个框，定了留一行（`/model`、`/theme`、`/effort`、`/sessions`、`/persona`、`/preset`），只看的印一个框（`/status`） |
 | `src/shellhook/say/report.rs` | `report`：shell 回到提示符时印信箱里的 |
 | `resources/shellhook/hook.{fish,bash,zsh}` | 三种 shell 的脚本，`@PROGRAM@` 印的时候换成装的时候记下的程序 |
 | `resources/shellhook/text/<代码>.json` | 给人看的字，一种语言一份，和 `resources/text/` 一样多 |
@@ -124,11 +125,18 @@
 
 1. **从哪来**：fish 里 `/model` 这样的一行不是现成的命令，照一句话交给 `say`；`say` 先问 `slash.rs`：是终端界面命令表里的（`commands::Commands::read`，同一份 `resources/commands.json`）照命令办，不是的照一句话发给核心（核心认的命令模板由它办，同终端界面）。`miyu shellhook <名字> [参数]` 也走这里（不是自己的子命令的才认）。
 2. **已做**：`config`（`settings`）打开终端界面的配置页（同一个程序的 `--page config`），退出了回到 shell。`new` 请核心 `session.terminal {cwd, fresh: true}`（核心 2bd2fa8a：照新开终端会话的规矩开一个、指过去，旧的不动），说一句「开了新会话」（2026-10-20 项目主人：后半句「下一句从这里说起」去掉），下一句说进新的。`exit`、`help`、`language` 不做，说一句「在 shell 里不做」。
-3. **在做：都在 shell 里原地办，不进全屏**（2026-10-20 项目主人：「我是 shellhook 啊。怎么运行命令给我弄到 tui 里面去了……每次运行都进 TUI 太不合理了」。原来借终端界面的框，`--resume <终端会话> --command <一行>` 起全屏办一条命令，做好了又撤掉；`config` 照设计 22 打开配置页，不算在内）：
-   - 只看的（`/status`、`/usage`）：内容照 shellhook 的样子印在滚动区，不交互。
-   - 要选的（`/model`、`/effort`、`/theme`、`/sessions`、`/persona`、`/preset`）：提示符下面原地画一个列表（位置、样子同确认和提问的抽屉），`↑` `↓` 选、`Enter` 定、`Esc` 走，定了以后只留一行结果。带参数的直接改、不弹列表（`/model deepseek-flash`、`/theme tokyonight`）。`/sessions` 选了的 `session.set_terminal`；`/persona`、`/preset` 写 `terminal.persona`、`terminal.preset`，列表用终端界面的选择框部件（`pick_box.rs`）。
-   - `/edit`：上一句放回 fish 的命令行。`/dream`、`/recap`、`/undo`、`/redo`、`/jump` 另想。
-   - 没做的说一句「在 shell 里还没做」。
+3. **在 shell 里原地办，不进全屏**（2026-10-20 项目主人：「我是 shellhook 啊。怎么运行命令给我弄到 tui 里面去了……每次运行都进 TUI 太不合理了」。原来借终端界面的框，`--resume <终端会话> --command <一行>` 起全屏办一条命令，做好了又撤掉；`config` 照设计 22 打开配置页，不算在内）。驱动在 `say/pick.rs`：起来照说话那一套接上终端会话、读配置、配色（借一个不说话的 `Turn`），提示符下面原地画一个框（同终端界面输入框上面那种框，`ui::draw_panel`），`↑` `↓`（`Ctrl+J` `Ctrl+K`）选、`Enter` 定、`Esc`（`Ctrl+C`）走，定了框收掉只留一行暗色的结果；带参数的直接改、不弹列表，没对上的说一句「没有对得上「…」的」。终端界面的命令表里不收参数的，shell 里 `model`、`theme`、`effort`、`persona`、`preset` 收（2026-10-20 项目主人：「直接通过 cli 改也行啊」）。
+   - `/model`（`pick/model.rs`）：列表、筛、画法用终端界面的 `model_list`；换终端会话的模型（`session.configure`），也记成新会话的默认（同终端界面）；终端会话的最新一页读回来以后停到正在用的那个上。`/model 名字` 照筛出的第一个能用的换。
+   - `/theme`（`pick/theme.rs`）：排法用 `ui::themes`；挪到哪种当场换成哪种的样子，`Enter` 写 `tui.theme`（和终端界面共一项），`Esc` 换回。参数认值和照界面语言的名字。
+   - `/effort`（`pick/effort.rs`）：终端会话读回来、知道用的哪个模型再问几级，排法用 `ui::effort_list`；用的是模型池的说一句不让改（同终端界面）。参数认档名、`default`。
+   - `/sessions`（`pick/sessions.rs`）：列表、筛、画法用 `session_list`；选了 `session.set_terminal`，之后说进它。置顶、删除到终端界面去做。
+   - `/persona`、`/preset`（`pick/persona.rs`）：按键用 `pick_box::press`，排法用 `ui::persona_list`；选了写 `terminal.persona`、`terminal.preset`（个人设置），之后新开的终端会话照它，正在说的不换。按 `e` 编辑要整个配置页，先不做。
+   - `/status`（`pick/status.rs`）：等终端会话读回来，照 `ui::status_box` 印一个框留在滚动区；数照终端会话的最新一页填（`status_box::memory_calls` 导出给这里），终端界面才有的（连同子代理的用量、花费）不写。
+   - `/usage`（`pick/usage.rs`）：排法用终端界面的 `ui::usage::page_lines`（2026-10-20 和终端界面会话商定从 `lines` 拆出来，不碰界面：`Sources` 收配置、币种、知道的会话），自己发五次 `usage.query` 收齐；`Tab` `←` `→` 换页、`↑` `↓` 滚、`t` 切 token、花费；`Esc` 收掉，正看着的那一页（去掉补齐的空行）留在滚动区。
+   - `/edit`（`pick/edit.rs`）：向核心要终端会话的最新一页（`view.page`），最后一句人说的话写进 `--leftover`，脚本放回命令行。只放回来，改完回车照一句新的话发，不替换上一轮（shell 里看不出你是不是放弃了编辑）。不照借来的 `Turn` 的正文找：终端界面读回的那一页是先停放、再由界面换上来的，借来的不换，正文是空的（2026-10-21 实测）。
+   - 只看的、要先等终端会话读回来的（`/status`）：最新一页读回来以后，等订阅的回应（预设、窗口、压缩线跟着它来）到了再印，最多再等半秒（实测：一读回来就印，这几行没有）。终端会话的推送包着会话编号（`Elsewhere`），驱动拆开了再交给列表（实测：`/effort` 不拆一直停在「正在加载」）。
+   - 提示只写 shell 里有的键：`/sessions` 换成 `/model` 那一句（勾选、置顶、删除到终端界面去做），`/persona`、`/preset` 换成 `/theme` 那一句（`e` 编辑没做）。
+   - 还没做：`/dream`、`/recap`、`/undo`、`/redo`、`/jump`（结果画在正文里）。没做的说一句「在 shell 里还没做」。
 
 ### 还没做
 

@@ -2,10 +2,10 @@
 //! （同终端界面，2026-10-02 项目主人定）。`/model 名字` 不弹列表，照名字筛出的第一个能用的直接换。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::text::{Line, Span};
+use ratatui::text::Line;
 use serde_json::json;
 
-use super::{Picked, Picker};
+use super::{Picked, Picker, result};
 use crate::config::Config;
 use crate::core::{Choice, Command, Core, Update};
 use crate::model_list::ModelList;
@@ -81,7 +81,7 @@ impl Picker for ModelPick {
         }
     }
 
-    fn ready(&mut self, turn: &Turn, core: &Core) -> Picked {
+    fn ready(&mut self, turn: &mut Turn, core: &Core, _config: &Config) -> Picked {
         // 终端会话的最新一页读回来、知道正在用哪个了：停到它上面（只停一次，之后照人挪的）。
         let current = turn.transcript.current_ref();
         if !self.placed && self.list.loaded && self.list.query.is_empty() && current.is_some() {
@@ -110,7 +110,7 @@ impl Picker for ModelPick {
         }
     }
 
-    fn key(&mut self, key: KeyEvent, turn: &Turn, core: &Core) -> Picked {
+    fn key(&mut self, key: KeyEvent, turn: &mut Turn, core: &Core, _config: &Config) -> Picked {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         match key.code {
             KeyCode::Esc => return Picked::Done(None),
@@ -147,9 +147,4 @@ impl Picker for ModelPick {
             crate::ui::model_list::lines(&self.list, current.as_deref(), config, width, max);
         (chrome, lines)
     }
-}
-
-/// 定了以后留的那一行：缩进同她的回答，暗色。
-fn result(text: &str) -> Line<'static> {
-    Line::from(Span::styled(format!("  {text}"), crate::theme::dim()))
 }

@@ -21,5 +21,10 @@
   "slash_pending": "/{name} 在 shell 里还没做",
   "slash_new": "开了新会话",
   "slash_model": "模型换成了 {name}",
-  "slash_no_match": "没有对得上「{query}」的"
+  "slash_no_match": "没有对得上「{query}」的",
+  "slash_theme": "配色换成了{name}",
+  "slash_effort": "思考强度：{level}",
+  "slash_sessions": "之后说进「{title}」",
+  "slash_persona": "之后新开的终端会话用人格「{name}」",
+  "slash_preset": "之后新开的终端会话用预设「{name}」"
 }

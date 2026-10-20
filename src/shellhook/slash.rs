@@ -18,7 +18,11 @@ const SKIPPED: [&str; 3] = ["exit", "help", "language"];
 /// # Errors
 ///
 /// 读配置、起配置页失败。
-pub fn run(line: &str, words: &Words) -> Option<io::Result<ExitCode>> {
+pub fn run(
+    line: &str,
+    words: &Words,
+    leftover: Option<&std::path::Path>,
+) -> Option<io::Result<ExitCode>> {
     let config = match crate::shellhook::say::config() {
         Ok(config) => config,
         Err(e) => return Some(Err(e)),
@@ -42,6 +46,20 @@ pub fn run(line: &str, words: &Words) -> Option<io::Result<ExitCode>> {
         "config" => config_page(),
         "new" => fresh(&config, words),
         "model" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Model(args), words),
+        "theme" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Theme(args), words),
+        "effort" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Effort(args), words),
+        "sessions" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Sessions, words),
+        "status" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Status, words),
+        "usage" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Usage, words),
+        "edit" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Edit(leftover), words),
+        "persona" => crate::shellhook::say::pick(
+            crate::shellhook::say::Pick::Persona(crate::app::new_session::Kind::Persona, args),
+            words,
+        ),
+        "preset" => crate::shellhook::say::pick(
+            crate::shellhook::say::Pick::Persona(crate::app::new_session::Kind::Preset, args),
+            words,
+        ),
         name if SKIPPED.contains(&name) => tell(&fill(&words.slash_skipped, &[("name", name)])),
         name => tell(&fill(&words.slash_pending, &[("name", name)])),
     })

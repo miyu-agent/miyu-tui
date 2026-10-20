@@ -209,29 +209,6 @@ impl<'a> Seen<'a> {
         }
     }
 
-    /// 一个会话在用量表里写什么：标题，没标题的照预览，会话列表里没有的（子代理、删掉的）写短编号（最后 8 位）。
-    pub fn usage_name(&self, session: &str) -> String {
-        let known = self
-            .talk
-            .sessions_seen
-            .iter()
-            .flatten()
-            .find(|s| s.session == session);
-        known
-            .and_then(|s| s.title.clone().or_else(|| s.preview.clone()))
-            .unwrap_or_else(|| {
-                let tail: String = session
-                    .chars()
-                    .rev()
-                    .take(8)
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect();
-                format!("#{tail}")
-            })
-    }
-
     /// 还在等 `ui.welcomed`：问到以前、最多 `oobe.json` 的 `welcome_wait_ms`，不画首页（「第一次打开的引导」第 1 条，
     /// 2026-10-10 项目主人报：进引导前闪一下空会话）。
     pub fn welcome_pending(&self, now: Instant) -> bool {
