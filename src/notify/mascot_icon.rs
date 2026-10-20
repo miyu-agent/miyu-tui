@@ -124,10 +124,6 @@ pub fn draw(look: &Look, icon: Icon) -> RgbaImage {
                 .zip(usize::try_from(x).ok())
                 .and_then(|(r, c)| cells.get(r).and_then(|row| row.get(c)).copied().flatten());
             let rgb = match cell {
-                // 抱着电脑的不露嘴（2026-10-20 项目主人）：嘴那几格照脸画。
-                Some(cell) if icon == Icon::Working && cell.mark == LINE_MARK => {
-                    color(cell.part, ' ', LEVELS - 1)
-                }
                 Some(cell) => {
                     let found = ramp.iter().position(|c| *c == cell.mark).unwrap_or(0) as f64;
                     let level = ((found / top) * (LEVELS - 1) as f64).round() as usize;
@@ -289,8 +285,9 @@ mod tests {
     }
 
     #[test]
-    fn the_mouth_is_one_cell_thick_in_the_middle_and_the_laptop_one_shows_none() {
-        // 2026-10-20 项目主人：中间嘴巴的地方不需要加厚；玩电脑的不要漏嘴。
+    fn the_mouth_is_one_cell_thick_in_the_middle_and_the_laptop_covers_its_lower_half() {
+        // 2026-10-20 项目主人：中间嘴巴的地方不需要加厚，再挑了 B（锯齿中间那一点抬到 0.06）；玩电脑的露嘴但别全露，挑了 E
+        // （电脑不抬，盖住嘴的下半截）。
         let mouth = mouth_cells(Icon::Standing);
         assert!(!mouth.is_empty());
         let side = u32::from(super::GRID) + 2;
@@ -299,7 +296,16 @@ mod tests {
             let thick = mouth.iter().filter(|(cx, cy)| *cx == x && *cy < 17).count();
             assert_eq!(thick, 1, "正中第 {x} 列只一格：{mouth:?}");
         }
-        assert!(mouth_cells(Icon::Working).is_empty(), "抱着电脑的不露嘴");
+        let lips: Vec<_> = mouth.iter().filter(|(_, y)| *y < 17).copied().collect();
+        // B 比 A（中间那一点 0.0）少了第 16 行第 10、15 两格：中间那一段的下沿不再往下多出一截。
+        assert!(
+            !lips.contains(&(10, 16)) && !lips.contains(&(15, 16)),
+            "{lips:?}"
+        );
+        let working = mouth_cells(Icon::Working);
+        assert!(!working.is_empty(), "抱着电脑的露嘴");
+        assert!(working.iter().all(|c| lips.contains(c)), "露的是同一道嘴");
+        assert!(working.len() < lips.len(), "下半截被电脑盖住：{working:?}");
     }
 
     /// 画出来看（`ICON_OUT=<目录> cargo test dump_icons -- --ignored`）：调吉祥物的格子时用。
