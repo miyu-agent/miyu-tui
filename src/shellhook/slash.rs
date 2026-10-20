@@ -28,6 +28,7 @@ pub fn run(line: &str, words: &Words) -> Option<io::Result<ExitCode>> {
     };
     Some(match spec.name.as_str() {
         "config" => config_page(),
+        "new" => fresh(&config, words),
         name if SKIPPED.contains(&name) => tell(&fill(&words.slash_skipped, &[("name", name)])),
         name => tell(&fill(&words.slash_pending, &[("name", name)])),
     })
@@ -43,6 +44,48 @@ fn config_page() -> io::Result<ExitCode> {
     } else {
         ExitCode::FAILURE
     })
+}
+
+/// 回应等多久：核心没在跑的要先拉起来。
+const WAIT: std::time::Duration = std::time::Duration::from_secs(15);
+
+/// `/new`：请核心照新开终端会话的规矩开一个、指过去（`session.terminal {fresh: true}`，核心 2bd2fa8a）；开在 shell 这时的
+/// 目录。下一句就说进新的。
+fn fresh(config: &crate::config::Config, words: &Words) -> io::Result<ExitCode> {
+    let (sender, incoming) = std::sync::mpsc::channel();
+    let core = crate::core::spawn(
+        config.layout.reconnect_ms,
+        crate::core::Start::Bare,
+        move |update| sender.send(update).is_ok(),
+    );
+    let cwd = std::env::current_dir()
+        .ok()
+        .map(|d| d.to_string_lossy().into_owned());
+    core.send(crate::core::Command::Ask {
+        tag: 1,
+        method: "session.terminal",
+        params: serde_json::json!({ "cwd": cwd, "fresh": true }),
+    });
+    loop {
+        let update = incoming
+            .recv_timeout(WAIT)
+            .map_err(|_| io::Error::other("no answer from the core"))?;
+        match update {
+            crate::core::Update::Answer { tag: 1, result } => {
+                return match result {
+                    Ok(_) => {
+                        writeln!(io::stdout(), "\n  {}\n", words.slash_new)?;
+                        Ok(ExitCode::SUCCESS)
+                    }
+                    Err(refusal) => tell(&refusal.message),
+                };
+            }
+            crate::core::Update::NoCoreBin | crate::core::Update::Failed(_) => {
+                return Err(io::Error::other("can't reach the core"));
+            }
+            _ => {}
+        }
+    }
 }
 
 /// 说一句为什么没办，退出码 1。

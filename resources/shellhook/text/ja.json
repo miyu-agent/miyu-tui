@@ -18,5 +18,6 @@
     "days": "{n} 日"
   },
   "slash_skipped": "/{name} はシェルでは使えません",
-  "slash_pending": "/{name} はシェルではまだ使えません"
+  "slash_pending": "/{name} はシェルではまだ使えません",
+  "slash_new": "新しいセッションを開始しました：次のメッセージからこちらに送られます"
 }

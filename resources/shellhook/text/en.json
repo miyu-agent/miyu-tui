@@ -18,5 +18,6 @@
     "days": "{n} d"
   },
   "slash_skipped": "/{name} isn't available in the shell",
-  "slash_pending": "/{name} isn't available in the shell yet"
+  "slash_pending": "/{name} isn't available in the shell yet",
+  "slash_new": "Started a new session: your next message goes there"
 }

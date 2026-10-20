@@ -34,6 +34,8 @@ pub struct Words {
     pub slash_skipped: String,
     /// 斜杠命令在 shell 里还没做（`{name}`）。
     pub slash_pending: String,
+    /// `/new` 开好了。
+    pub slash_new: String,
 }
 
 /// 分钟、小时、天的写法，`{n}` 换成数。
