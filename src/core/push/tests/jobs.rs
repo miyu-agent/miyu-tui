@@ -59,7 +59,8 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     ] {
         let ended = json!({"seq": 13, "kind": "job.reported", "by": {"kind": "kernel"},
             "body": {"job": "j3", "reason": reason}});
-        let Push::JobEnded(end) = &read_mine(&ended)[0] else {
+        // 先是 `Reported(13)`（落盘的序号），再是结束。
+        let Push::JobEnded(end) = &read_mine(&ended)[1] else {
             panic!("{reason}")
         };
         assert_eq!(end.reason, want);
