@@ -33,9 +33,15 @@ impl Segment {
         }
     }
 
-    /// 现在是不是展开的：人点过的照人点的；没点过的，进行中展开，结束了照 `fold` 收不收（蓝图「时间线」第 18 条）。
+    /// 现在是不是展开的：人点过的照人点的；没点过的，进行中展开，收好了照 `fold` 收不收（蓝图「时间线」第 18 条）。
     pub fn expanded(&self, fold: bool) -> bool {
-        self.open.unwrap_or(!self.finished || !fold)
+        self.open.unwrap_or(!self.settled() || !fold)
+    }
+
+    /// 收好了：这一段结束了，而且没有还在跑的步骤。插进一条回报时前面那段结束了，可里面的命令还在跑的，等它跑完再收
+    /// （「时间线」第 21 条，2026-10-20 项目主人验收 shellhook 时报：后台命令来了，前台的时间线收起了，可里面的命令还在跑）。
+    pub fn settled(&self) -> bool {
+        self.finished && !self.steps.iter().any(Step::busy)
     }
 
     /// 在转圈的那一步（蓝图「时间线」第 19 条）：她还在写（思考中、准备……）的是最后那一步；都写完了，是最前面

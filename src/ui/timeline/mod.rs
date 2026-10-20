@@ -51,7 +51,7 @@ fn build(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
     // 只有一步、做完了、不是人点开整段的（不收起的配置让它展开着）：照进行中的样子，一行步骤加预览，不画收起那一行
     // （「时间线」第 15 条，2026-10-11 项目主人报：关了折叠、没开「展开思考」，思考却铺开了全文）。
     let lone = segment.steps.len() == 1 && segment.open != Some(true);
-    if !segment.expanded(fold) || (segment.finished && !lone) {
+    if !segment.expanded(fold) || (segment.settled() && !lone) {
         let base = lit(theme::dim(), ctx.hover == Some(target));
         let mut row = ctx.row(ctx.blank_slot(), summary::line(segment, ctx, base));
         row.target = Some(target);
