@@ -46,6 +46,7 @@ mod models;
 mod mouse;
 pub mod new_session;
 mod notify;
+mod one_shot;
 mod oobe;
 mod output;
 mod packages;
@@ -147,6 +148,8 @@ pub struct App {
     pub cwd: String,
     /// 该退出了。
     pub quit: bool,
+    /// 只办一条命令的（`--command`，`one_shot.rs`）。
+    pub one_shot: Option<one_shot::OneShot>,
     /// 按了 Ctrl+Z，主循环该把程序挂起到后台了。
     pub suspend: bool,
 }

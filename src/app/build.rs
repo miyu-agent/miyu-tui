@@ -123,6 +123,7 @@ impl App {
                 .map(|d| crate::local::home_short(&d.display().to_string()))
                 .unwrap_or_default(),
             quit: false,
+            one_shot: None,
             suspend: false,
         }
     }

@@ -277,12 +277,21 @@ fn run(
     if launch.page == Some("oobe") {
         app.open_oobe();
     }
+    // `--command`：只办这一条命令，框关了退出（蓝图「只办一条命令」，`app/one_shot.rs`）。
+    if let Some(line) = launch.command.clone() {
+        let from = match &launch.start {
+            core::Start::Resume(id) => Some(id.clone()),
+            _ => None,
+        };
+        app.one_shot(line, launch.report.clone(), from);
+    }
     let mut pointer = pointer::Pointer::default();
     // 量性能用：给了路径才记每一帧的耗时（蓝图「环境变量」）。
     let log_path = std::env::var_os("MIYU_TUI_FRAME_LOG").map(std::path::PathBuf::from);
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
     let mut log = frame_log::FrameLog::open(log_path.as_deref(), slow);
     while !app.quit {
+        app.one_shot_tick();
         app.notifier.session(app.talk.main_session().as_deref());
         frame(terminal, &mut app, &mut pointer, depth, &mut log)?;
         let drawn_at = Instant::now();
@@ -351,6 +360,7 @@ fn run(
         }
     }
     app.finish();
+    app.one_shot_report()?;
     Ok(())
 }
 
