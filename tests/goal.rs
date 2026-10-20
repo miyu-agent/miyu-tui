@@ -151,8 +151,8 @@ fn typing_goal_then_up_brings_back_the_last_goal_with_its_words() {
     tui.wait_for("工作区");
     tui.say("/goal 把测试写完");
     tui.wait_for("已设定长期目标");
-    tui.type_text("/goal");
-    tui.wait_for("命令 1 条");
+    // 命令列表开着时 ↑ 只在列表里挪（2026-10-20 项目主人）；打了空格、列表收起以后再翻（同一天项目主人选的）。
+    tui.type_text("/goal ");
     tui.key(b"\x1b[A");
     tui.wait_for("❯ /goal 把测试写完");
     assert!(
@@ -161,5 +161,13 @@ fn typing_goal_then_up_brings_back_the_last_goal_with_its_words() {
         tui.lines().join("\n")
     );
     tui.key(b"\x1b[B");
-    tui.wait_for("命令 1 条");
+    let end = std::time::Instant::now() + support::WAIT;
+    while tui.shows("把测试写完") && tui.shows("❯ /goal 把") {
+        assert!(
+            std::time::Instant::now() < end,
+            "↓ 回到打的字：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(std::time::Duration::from_millis(50));
+    }
 }

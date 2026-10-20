@@ -238,7 +238,7 @@ pub fn items(f: &Facts, words: &Texts, bar: &Bar, room: usize) -> Vec<Item> {
         groups[2].push((keys.memory.clone(), plain(value)));
     }
 
-    // 上下的空行由框统一留（`panel.rs`），这里只在段和段之间空一行。
+    // 上下的空行由框留（`panel.rs` 的 `padded`），这里只在段和段之间空一行。
     let mut out = Vec::new();
     for group in groups.into_iter().filter(|g| !g.is_empty()) {
         if !out.is_empty() {

@@ -2,7 +2,7 @@
 
 use std::time::{Duration, Instant};
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
 use super::App;
 use crate::commands::{Line, Run, Spec};
@@ -197,12 +197,9 @@ impl App {
         };
         let selected = matches.get(self.typing.menu.selected).cloned();
         match (key.code, selected) {
-            // `Ctrl+K`（换成了带 Ctrl 的 `↑`）在列表里往上挪；真的 `↑` 交给输入框，照打的字开头翻输入历史（「按键」
-            // `↑`，2026-10-17 项目主人定：打「/goal」按 `↑` 调出上一句带参数的）。
-            (KeyCode::Up, _) if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                self.typing.menu.step(false, matches.len());
-            }
-            (KeyCode::Up, _) => return self.typing.input.key(key),
+            // `↑`（`Ctrl+K`、vim 的 `k` 换成的也是它）只在列表里往上挪，不翻输入历史（2026-10-20 项目主人：「出命令列表就应该
+            // 不允许调出输入历史了」；原来 10-17 定真的 `↑` 交给输入框翻历史，`Ctrl+K` 换成的 `↑` 也跟着翻了过去）。
+            (KeyCode::Up, _) => self.typing.menu.step(false, matches.len()),
             (KeyCode::Down, _) => self.typing.menu.step(true, matches.len()),
             (KeyCode::Tab, Some(spec)) => {
                 self.typing.input.editor.take();

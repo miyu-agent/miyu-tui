@@ -58,3 +58,41 @@ fn a_command_no_one_knows_is_refused_by_the_core_and_put_back() {
     assert!(tui.shows("命令不存在"), "{}", tui.lines().join("\n"));
     assert_eq!(tui.input(), "/nosuchthing", "{}", tui.lines().join("\n"));
 }
+
+#[test]
+fn up_and_ctrl_k_move_the_command_list_and_never_recall_input_history() {
+    // 2026-10-20 项目主人：「命令历史可以向下翻页但是不能向上翻页了，向上会把输入 prompt 历史调用出来」「Ctrl+K 也是掉历史」：
+    // 列表开着时 ↑、Ctrl+K 只在列表里往上挪。
+    let home = Home::new(Script::new([Play::Says("好。")]));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("历史里的一句");
+    tui.wait_for("好。");
+    tui.type_text("/c");
+    tui.wait_for("命令");
+    let picked = |tui: &support::Tui| {
+        tui.lines()
+            .into_iter()
+            .find(|l| l.contains("❯ /"))
+            .unwrap_or_default()
+    };
+    let first = picked(&tui);
+    for up in [&b"\x1b[A"[..], &b"\x0b"[..]] {
+        tui.key(b"\x1b[B");
+        tui.pump(std::time::Duration::from_millis(100));
+        assert_ne!(picked(&tui), first, "往下挪了");
+        tui.key(up);
+        tui.pump(std::time::Duration::from_millis(100));
+        assert_eq!(
+            picked(&tui),
+            first,
+            "往上挪回来：\n{}",
+            tui.lines().join("\n")
+        );
+        assert!(
+            !tui.shows("❯ 历史里的一句"),
+            "输入框里没换成历史里的那一句：\n{}",
+            tui.lines().join("\n")
+        );
+    }
+}

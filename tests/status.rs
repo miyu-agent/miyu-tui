@@ -74,7 +74,7 @@ fn padded(tui: &support::Tui, title: &str) -> bool {
 }
 
 #[test]
-fn boxes_and_lists_above_the_input_have_a_blank_line_inside_top_and_bottom() {
+fn boxes_opened_by_a_command_have_a_blank_line_inside_but_typed_lists_do_not() {
     // 2026-10-20 项目主人：先给 /persona 加上下空行，看了又定别的框也加。
     let home = Home::new(Script::new([Play::Says("好。")]));
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
@@ -99,7 +99,7 @@ fn boxes_and_lists_above_the_input_have_a_blank_line_inside_top_and_bottom() {
         tui.key(b"\x1b");
         tui.pump(std::time::Duration::from_millis(200));
     }
-    // 打字时弹的也一样（同一天项目主人：「这个命令列表不需要空行吗」）：命令列表、`@` 文件列表、输入历史。
+    // 打字时弹的命令列表、`@` 文件列表、输入历史不空（同一天项目主人试过也加，嫌浪费地方，回滚）。
     tui.say("在吗");
     tui.wait_for("好。");
     for (keys, title, close) in [
@@ -108,15 +108,13 @@ fn boxes_and_lists_above_the_input_have_a_blank_line_inside_top_and_bottom() {
         (&b"\x12"[..], "历史", &b"\x1b"[..]),
     ] {
         tui.key(keys);
-        let end = std::time::Instant::now() + support::WAIT;
-        while !padded(&tui, title) {
-            assert!(
-                std::time::Instant::now() < end,
-                "「{title}」的列表上下没空行：\n{}",
-                tui.lines().join("\n")
-            );
-            tui.pump(std::time::Duration::from_millis(50));
-        }
+        tui.wait_for(title);
+        tui.pump(std::time::Duration::from_millis(200));
+        assert!(
+            !padded(&tui, title),
+            "「{title}」的列表不空行：\n{}",
+            tui.lines().join("\n")
+        );
         tui.key(close);
         tui.pump(std::time::Duration::from_millis(200));
     }

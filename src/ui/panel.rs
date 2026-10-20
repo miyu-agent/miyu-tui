@@ -47,27 +47,15 @@ impl Chrome {
     }
 }
 
-/// 框里上下各空一行要多高：两条边、两个空行，中间至少一条（2026-10-20 项目主人：输入框上面的框、列表里上下各空一行，先要
-/// `/persona`，又定别的都加，连打字时弹的命令列表、`@` 文件列表、输入历史）。
-const PADDED: u16 = FRAMED + 2;
-
-/// 给了 `outer` 这么高，框里放得下几条：画得下框的去掉上下两条边，放得下空行的再去掉上下两个空行。
+/// 给了 `outer` 这么高，框里放得下几条：画得下框的去掉上下两条边。
 pub fn room(outer: u16) -> u16 {
-    if outer >= PADDED {
-        outer - 4
-    } else if outer >= FRAMED {
-        outer - 2
-    } else {
-        outer
-    }
+    if outer >= FRAMED { outer - 2 } else { outer }
 }
 
-/// 放 `rows` 条要多高：连框和上下的空行（放得下的话，照 `outer` 给的最多多高算）。
+/// 放 `rows` 条要多高：连框（放得下的话，照 `outer` 给的最多多高算）。
 pub fn height(rows: u16, outer: u16) -> u16 {
     if rows == 0 {
         0
-    } else if outer >= PADDED {
-        rows + 4
     } else if outer >= FRAMED {
         rows + 2
     } else {
@@ -75,7 +63,19 @@ pub fn height(rows: u16, outer: u16) -> u16 {
     }
 }
 
-/// 框里放字的那一块：画得下框的去掉上下两条边、上下两个空行；左右照输入框里的字（`text_x`、`text_width`）。
+/// 由命令打开的框里上下各空的那两行（2026-10-20 项目主人：先要 `/persona`，又定别的框也加；打字时弹的命令列表、`@` 文件列表、
+/// 输入历史试过也加，嫌浪费地方，回滚）。
+pub const PAD: u16 = 2;
+
+/// 放字的那一块上下各让一行（[`PAD`]）：放不下的不让。
+pub fn padded(text: Rect) -> Rect {
+    if text.height <= PAD {
+        return text;
+    }
+    Rect::new(text.x, text.y + 1, text.width, text.height - PAD)
+}
+
+/// 框里放字的那一块：画得下框的去掉上下两条边；左右照输入框里的字（`text_x`、`text_width`）。
 pub fn inside(outer: Rect, text_x: u16, text_width: u16) -> Rect {
     let rows = room(outer.height);
     let top = outer.y + (outer.height - rows) / 2;

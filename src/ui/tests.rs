@@ -201,8 +201,8 @@ fn the_lists_sit_in_a_frame_lined_up_with_the_input_box() {
         );
         assert_eq!(
             (a.menu_text.y, a.menu_text.height),
-            (a.menu.y + 2, a.menu.height - 4),
-            "{name}：上下让出两条边、两个空行（2026-10-20 项目主人）"
+            (a.menu.y + 1, a.menu.height - 2),
+            "{name}：上下让出两条边"
         );
     }
 }
