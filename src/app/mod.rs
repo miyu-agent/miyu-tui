@@ -51,6 +51,7 @@ mod output;
 mod packages;
 mod pages;
 mod paste;
+pub(crate) use paste::attach_rule;
 mod pick_edit;
 mod redo;
 mod screen;

@@ -11,7 +11,7 @@ mod look;
 mod paint;
 pub mod report;
 mod session;
-mod spool;
+pub mod spool;
 mod terminal;
 mod turn;
 mod unseen;
@@ -52,12 +52,18 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     if text.trim().is_empty() {
         return Ok(ExitCode::SUCCESS);
     }
+    // 这一句里 `Ctrl+V` 贴的块：换回原文、带上附件（`shellhook/paste.rs`）。
+    let (text, files) = match ask.shell {
+        Some(shell) => crate::shellhook::paste::take(shell, &text),
+        None => (text, Vec::new()),
+    };
     let (mut session, look) = Session::start()?;
     // 这一句照 shell 所在的目录说（设计 22 第七节「她在哪个目录干活」）。
     let cwd = std::env::current_dir()
         .ok()
         .map(|d| d.to_string_lossy().into_owned());
     let mut turn = Turn::new(text, cwd, look);
+    turn.files = files;
     turn.ask_terminal(&session.core);
     session.drive(&mut turn, |t| {
         t.renewed.map(|since| renewed_line(since, words))
@@ -97,6 +103,17 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     } else {
         ExitCode::SUCCESS
     })
+}
+
+/// 读终端界面的配置（语言照环境认）。
+///
+/// # Errors
+///
+/// 内置的语言表、配置读不了。
+pub fn config() -> io::Result<crate::config::Config> {
+    let table = crate::language::LanguageTable::builtin().map_err(io::Error::other)?;
+    let language = table.detect(|name| std::env::var(name).ok());
+    crate::config::Config::load(&language, true).map_err(io::Error::other)
 }
 
 /// 闲置久了换了新会话的那一行：暗色，印在这一轮前面（设计 22 第七节「终端会话」）。

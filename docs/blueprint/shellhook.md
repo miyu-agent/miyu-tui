@@ -27,6 +27,7 @@
 | `src/shellhook/say/follow.rs` | 盯后台：订阅终端会话、等 shell 退出，任务结束和叫醒的那一轮记进信箱、给 shell 发信号 |
 | `src/shellhook/say/spool.rs` | 盯后台的和 shell 之间的信箱（一个 shell 一个文件） |
 | `src/shellhook/say/unseen.rs` | 她还没看到的回报：照序号认叫醒她的是哪一轮（`say`、盯后台的共用） |
+| `src/shellhook/paste.rs` | `paste`：`Ctrl+V` 读剪贴板收成块，块上的字给脚本插进命令行；`say` 时换回原文、带上附件 |
 | `src/shellhook/say/report.rs` | `report`：shell 回到提示符时印信箱里的 |
 | `resources/shellhook/hook.{fish,bash,zsh}` | 三种 shell 的脚本，`@PROGRAM@` 印的时候换成装的时候记下的程序 |
 | `resources/shellhook/text/<代码>.json` | 给人看的字，一种语言一份，和 `resources/text/` 一样多 |
@@ -106,6 +107,16 @@
    - 接上叫醒的那一轮只印那几轮（`view.rs` 的 `Scope::Turns`）：排到一轮不在里面的就停，后面你说话开的那一轮不印（同一天验收 bash 印了两遍）。
 6. **印什么**：「结束了」照全屏写那一行（`jobs::announce`，从全屏挪来共用：绿点、红叉）；「那一轮」照 `Open` 接上、补完最新一页后照 `say` 一样画，要确认、要回答的照常弹，画的时候按键归它。
 
+### 粘贴（`Ctrl+V`）
+
+同终端界面「输入框」第 11、12 条（2026-10-20 项目主人要：「和终端里类似即可」）。
+
+1. **读**：fish 的 `Ctrl+V` 跑 `shellhook paste --shell-pid $fish_pid`：照全屏的先后读剪贴板（复制的文件、图、字，`clipboard::{read_files, read_image, read}`），收块的规矩和写法用全屏的输入框（`input::InputBox` 的 `paste_files`、`attach`、`paste`，门槛 `layout.json` 的 `paste_fold_*`、块上的字 `paste_label`、`attach.labels`）。块上的字印到标准输出，脚本 `commandline -i` 插进去；读不到剪贴板的照 fish 自己的 `fish_clipboard_paste`。截图暂存在全屏同一处（`tui/pasted/<shell 的编号>/`，shell 不在了，下次起全屏时清掉）。
+2. **记**：块的原文、附件记在 `<缓存目录>/shellhook/<shell>-pasted.json`；同一句里再贴的附件接着编号（`[图片 2]`）。编号每句从 1 起（全屏是整个会话往下排：shell 里看不到以前的，先不做）。
+3. **说**：`say` 拿走这一份，照命令行里还在的块（`Draft::rebind`）换回原文、带上附件（`session.send` 的附件，同全屏），删掉了的块不要。
+4. **判命令还是话**：块带空格，fish 把方括号连同里面的空格算进一个词（实测），首词只看方括号以前的；块打头的是话（同一天实测：原来整句被当成命令，走了找不到命令那条路）。找不到命令那条路也带 `--shell-pid`。
+5. zsh、bash 还没接：它们靠「找不到命令」接话，`[图片 1]` 这种字 zsh 会先当通配符报错，要先做回车时判命令还是话（同 fish）。
+
 ### 还没做
 
-拿回焦点再问终端颜色；`/dream` 转后台；提前敲的字边答边显示；Ctrl+V 粘图；斜杠命令（`/models`、`/sessions`……，`set_terminal`）；图；`doctor`。
+拿回焦点再问终端颜色；`/dream` 转后台；提前敲的字边答边显示；zsh、bash 的 Ctrl+V；斜杠命令（`/models`、`/sessions`……，`set_terminal`）；图；`doctor`。

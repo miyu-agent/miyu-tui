@@ -5,6 +5,7 @@
 
 mod classify;
 mod install;
+mod paste;
 mod say;
 mod script;
 mod shells;
@@ -87,6 +88,17 @@ pub fn main(args: Vec<String>) -> ExitCode {
             None => Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "follow needs --watch",
+            )),
+        },
+        // `Ctrl+V`：读剪贴板，块上的字印出来给脚本插进命令行（`paste.rs`）。
+        "paste" => match options.shell_pid {
+            Some(pid) => match paste::run(pid) {
+                Ok(code) => return code,
+                Err(e) => Err(e),
+            },
+            None => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "paste needs --shell-pid",
             )),
         },
         "report" => match options.shell_pid {

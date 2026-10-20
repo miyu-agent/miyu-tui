@@ -11,7 +11,7 @@ use crate::transcript::Chip;
 const IMAGE: &str = "image";
 
 /// 照配置定附件的规矩：每一种认哪些扩展名、文件块上的名字最多几列（`attachments.json`），块上写什么（`attach`）。
-pub(super) fn attach_rule(config: &Config) -> AttachRule {
+pub(crate) fn attach_rule(config: &Config) -> AttachRule {
     let words = &config.text.attach;
     let kinds = config.attachments.kinds.iter().map(|k| AttachKind {
         name: k.name.clone(),

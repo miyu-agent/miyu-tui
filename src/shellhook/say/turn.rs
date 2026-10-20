@@ -60,6 +60,8 @@ pub struct Turn {
     pub ended_jobs: Vec<String>,
     /// 还没发出去的那句话：问到终端会话、接上以后发。
     pending: Option<String>,
+    /// 跟这句话一起发的附件（`Ctrl+V` 贴的图、文件）。
+    pub files: Vec<std::path::PathBuf>,
     /// 这一句在哪个目录说。
     cwd: Option<String>,
     /// 接上了终端会话、在等它最新的一页读回来：读完再发，补发的那一页里同样的话不会认成这一句。
@@ -142,6 +144,7 @@ impl Turn {
             jobs: Vec::new(),
             ended_jobs: Vec::new(),
             pending: (!text.is_empty()).then(|| text.clone()),
+            files: Vec::new(),
             cwd,
             paging: false,
             sent: false,
@@ -175,7 +178,7 @@ impl Turn {
             self.sent = true;
             core.send(Command::Send {
                 text,
-                files: Vec::new(),
+                files: self.files.clone(),
                 cwd: self.cwd.clone(),
             });
         }

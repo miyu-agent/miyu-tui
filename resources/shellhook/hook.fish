@@ -10,6 +10,23 @@ function __miyu_insert_newline
     commandline -i \n
 end
 
+# Ctrl+V：程序自己读剪贴板，复制的文件、图收成块（`[图片 1]`），大段的字收成 `[已粘贴 14 行]`，插进命令行；说这句话时
+# 换回原文、带上附件（同终端界面「输入框」第 11、12 条）。读不到剪贴板的照 fish 自己的粘贴。
+function __miyu_paste
+    # 命令替换按行拆开：拼回去（`set` 之后的 $status 是命令替换的）。
+    set -l got (__miyu_shellhook paste --shell-pid $fish_pid 2>/dev/null)
+    if test $status -eq 0
+        commandline -i -- (string join \n -- $got)
+    else
+        fish_clipboard_paste
+    end
+end
+
+bind ctrl-v __miyu_paste
+bind \cv __miyu_paste
+bind -M insert ctrl-v __miyu_paste
+bind -M insert \cv __miyu_paste
+
 bind ctrl-j __miyu_insert_newline
 bind \cj __miyu_insert_newline
 bind -M insert ctrl-j __miyu_insert_newline
@@ -208,6 +225,15 @@ function __miyu_accept_line
         # 单行本来靠 fish_command_not_found 兜底，但 fish 是先展开再找命令：话里带个没匹配上的通配符，fish 在展开时就报错，
         # 兜底永远不触发。首词是普通词又不是任何命令时提前接管。
         set -l head (__miyu_first_token_raw "$buffer")
+        # Ctrl+V 贴的块（`[已粘贴 14 行]`、`[图片 1]`）带空格，fish 把方括号连同里面的空格算进一个词（实测）：方括号以前
+        # 的才是首词，块打头的是话。
+        if string match -q -- '*[*' "$head"; and string match -qr '\s' -- "$head"
+            set head (string replace -r '\[.*' '' -- "$head")
+            if test -z "$head"
+                __miyu_hand_to_ai "$buffer"
+                return
+            end
+        end
         if not __miyu_head_is_plain_word "$head"; or type -q -- "$head"
             __miyu_execute_or_continue
             return
@@ -243,7 +269,7 @@ function fish_command_not_found
     if test -n "$current_line"; and not string match -qr '[\n\r]' -- "$current_line"
         set -l top_command (__miyu_first_command "$current_line")
         if test -z "$top_command"; or not type -q -- "$top_command"
-            printf '%s' "$current_line" | __miyu_shellhook say --shell fish
+            printf '%s' "$current_line" | __miyu_shellhook say --shell fish --shell-pid $fish_pid
             return 127
         end
     end
@@ -252,6 +278,6 @@ function fish_command_not_found
     test (count $command) -eq 0; and return 127
     set -l text (string join ' ' -- $command)
     string match -qr '[\n\r]' -- $text; and return 127
-    printf '%s' "$text" | __miyu_shellhook say --shell fish
+    printf '%s' "$text" | __miyu_shellhook say --shell fish --shell-pid $fish_pid
     return 127
 end

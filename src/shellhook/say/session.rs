@@ -38,9 +38,7 @@ impl Session {
     ///
     /// 读配置、开原始模式失败。
     pub fn start() -> io::Result<(Self, Look)> {
-        let table = crate::language::LanguageTable::builtin().map_err(io::Error::other)?;
-        let language = table.detect(|name| std::env::var(name).ok());
-        let config = Config::load(&language, true).map_err(io::Error::other)?;
+        let config = super::config()?;
         let (sender, incoming) = mpsc::channel();
         let to_core = sender.clone();
         let core = crate::core::spawn(config.layout.reconnect_ms, Start::Bare, move |update| {
@@ -53,7 +51,7 @@ impl Session {
         ratatui::crossterm::execute!(io::stdout(), EnableFocusChange)?;
         let reader =
             crate::reader::Reader::spawn(move |event| sender.send(Incoming::Key(event)).is_ok());
-        core.send(Command::FetchHuman(language.code().to_string()));
+        core.send(Command::FetchHuman(config.language.code().to_string()));
         let depth = crate::theme::Depth::detect(|name| std::env::var(name).ok());
         let session = Self {
             notifier: notifier(&config),
