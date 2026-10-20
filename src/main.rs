@@ -166,11 +166,7 @@ fn fullscreen() -> io::Result<()> {
     );
     leave(keyboard)?;
     ratatui::restore();
-    // 只办一条命令没办成的那句为什么：终端还原了再打（全屏、原始模式时打进标准错误会写进画面）。
-    if let Some(why) = result? {
-        eprintln!("{why}");
-    }
-    Ok(())
+    result
 }
 
 /// 换一块新画布；帧外的输出不暂存。
@@ -245,7 +241,7 @@ fn run(
     ),
     keyboard: bool,
     launch: startup::Launch,
-) -> io::Result<Option<String>> {
+) -> io::Result<()> {
     let to_main = sender.clone();
     let to_wake = sender.clone();
     // 点开看的 mermaid 大图放在机器共用的缓存目录下（蓝图「图片、公式和 mermaid 图」第 4 条）。
@@ -281,25 +277,12 @@ fn run(
     if launch.page == Some("oobe") {
         app.open_oobe();
     }
-    // `--command`：只办这一条命令，框关了退出（蓝图「只办一条命令」，`app/one_shot.rs`）。
-    if let Some(line) = launch.command.clone() {
-        let from = match &launch.start {
-            core::Start::Resume(id) => Some(id.clone()),
-            _ => None,
-        };
-        app.one_shot(line, launch.report.clone(), from);
-    }
     let mut pointer = pointer::Pointer::default();
     // 量性能用：给了路径才记每一帧的耗时（蓝图「环境变量」）。
     let log_path = std::env::var_os("MIYU_TUI_FRAME_LOG").map(std::path::PathBuf::from);
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
     let mut log = frame_log::FrameLog::open(log_path.as_deref(), slow);
     while !app.quit {
-        // 只办一条命令的：框关了这一拍就走，不再等下一件事（等的话可能一直睡着）。
-        app.one_shot_tick();
-        if app.quit {
-            break;
-        }
         app.notifier.session(app.talk.main_session().as_deref());
         frame(terminal, &mut app, &mut pointer, depth, &mut log)?;
         let drawn_at = Instant::now();
@@ -342,7 +325,7 @@ fn run(
                     }
                 }
                 Err(RecvTimeoutError::Timeout) => break,
-                Err(RecvTimeoutError::Disconnected) => return Ok(None),
+                Err(RecvTimeoutError::Disconnected) => return Ok(()),
             }
         }
         app.tick();
@@ -368,7 +351,7 @@ fn run(
         }
     }
     app.finish();
-    app.one_shot_report()
+    Ok(())
 }
 
 /// 收一条：终端的事件、核心的消息、做好的图。

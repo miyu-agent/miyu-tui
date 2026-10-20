@@ -15,9 +15,6 @@ pub const USAGE: &str = concat!(
   --resume <UUID>       open this session; fail if it can't be loaded
   --page config, config open the settings page without a session; Esc on its menu exits
   --page oobe           walk through the first-run guide again
-  --resume <UUID> --command <line> [--report <file>]
-                        open this session, run one slash command (\"/model\"), exit when its box closes;
-                        if the session changed, write the new session's UUID to <file> (used by shellhook)
   -h, --help            print this help
 
 Environment: MIYU_HOME, MIYU_RESOURCES, MIYU_CORE_BIN, MIYU_TUI_IME=0 (don't switch the input method)"
@@ -35,10 +32,6 @@ pub struct Launch {
     pub page: Option<&'static str>,
     /// 只印用法（`-h`、`--help`）。
     pub help: bool,
-    /// 只办这一条命令（`--command`，蓝图「只办一条命令」）：办完退出。
-    pub command: Option<String>,
-    /// 只办一条命令的：会话换了，新的编号写进这个文件（`--report`）。
-    pub report: Option<std::path::PathBuf>,
 }
 
 /// 读参数：不带的照配置启动；`--resume <完整会话编号>`；`--page <页名>` 或 `config`。
@@ -48,12 +41,7 @@ pub fn launch(args: impl IntoIterator<Item = String>) -> io::Result<Launch> {
         start: Start::Usual,
         page: None,
         help: false,
-        command: None,
-        report: None,
     };
-    if args.iter().any(|a| a == "--command") {
-        return one_command(&args, usual);
-    }
     match args.as_slice() {
         [] => Ok(usual),
         [flag] if flag == "-h" || flag == "--help" => Ok(Launch {
@@ -78,32 +66,7 @@ fn page_named(name: &str) -> Option<Launch> {
         start: Start::Bare,
         page: Some(page),
         help: false,
-        command: None,
-        report: None,
     })
-}
-
-/// `--resume <会话> --command <一行> [--report <文件>]`，几对先后不论；少了会话、命令的，多了别的，都是用法写错了。
-fn one_command(args: &[String], usual: Launch) -> io::Result<Launch> {
-    let bad = || io::Error::new(io::ErrorKind::InvalidInput, USAGE);
-    let mut launch = usual;
-    for pair in args.chunks(2) {
-        let [flag, value] = pair else {
-            return Err(bad());
-        };
-        match flag.as_str() {
-            "--resume" if miyu_client::protocol::SessionId::parse(value).is_ok() => {
-                launch.start = Start::Resume(value.clone());
-            }
-            "--command" => launch.command = Some(value.clone()),
-            "--report" => launch.report = Some(value.into()),
-            _ => return Err(bad()),
-        }
-    }
-    match (&launch.start, &launch.command) {
-        (Start::Resume(_), Some(_)) => Ok(launch),
-        _ => Err(bad()),
-    }
 }
 
 #[cfg(test)]
@@ -142,8 +105,6 @@ mod tests {
             start: Start::Bare,
             page: Some("config"),
             help: false,
-            command: None,
-            report: None,
         };
         assert_eq!(launch(args(&["--page", "config"])).unwrap(), config);
         assert_eq!(launch(args(&["config"])).unwrap(), config);
@@ -153,29 +114,5 @@ mod tests {
             (Start::Usual, None),
             "认不出的页名照常打开首页"
         );
-    }
-
-    #[test]
-    fn one_command_needs_a_session_and_the_line() {
-        let id = "01a0fb48-0000-7000-8000-000000000001";
-        let got = launch(args(&[
-            "--command",
-            "/model",
-            "--resume",
-            id,
-            "--report",
-            "/tmp/r",
-        ]))
-        .unwrap();
-        assert_eq!(got.start, Start::Resume(id.into()));
-        assert_eq!(got.command.as_deref(), Some("/model"));
-        assert_eq!(got.report, Some("/tmp/r".into()));
-        for bad in [
-            &["--command", "/model"][..],
-            &["--resume", id, "--command"],
-            &["--resume", id, "--command", "/model", "--page", "config"],
-        ] {
-            assert!(launch(args(bad)).is_err(), "{bad:?}");
-        }
     }
 }

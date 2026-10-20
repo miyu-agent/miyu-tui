@@ -123,10 +123,11 @@
 设计 22 第七节「斜杠命令」（2026-10-20 项目主人定）：终端界面的斜杠命令大多照搬，作用在终端会话上。
 
 1. **从哪来**：fish 里 `/model` 这样的一行不是现成的命令，照一句话交给 `say`；`say` 先问 `slash.rs`：是终端界面命令表里的（`commands::Commands::read`，同一份 `resources/commands.json`）照命令办，不是的照一句话发给核心（核心认的命令模板由它办，同终端界面）。`miyu shellhook <名字> [参数]` 也走这里（不是自己的子命令的才认）。
-2. **已做**：借终端界面的框的（`status`、`usage`、`model`、`effort`、`theme`、`sessions`）：`session.terminal` 问到终端会话，起同一个程序 `--resume <它> --command <这一行> --report <信箱目录下的临时文件>`（图纸 `tui.md`「只办一条命令」），框关了回到 shell；会话换了（`/sessions` 选了别的）的照文件里的编号 `session.set_terminal`。`config`（`settings`）打开终端界面的配置页（同一个程序的 `--page config`），退出了回到 shell。`new` 请核心 `session.terminal {cwd, fresh: true}`（核心 2bd2fa8a：照新开终端会话的规矩开一个、指过去，旧的不动），说一句「开了新会话」（2026-10-20 项目主人：后半句「下一句从这里说起」去掉），下一句说进新的。`exit`、`help`、`language` 不做，说一句「在 shell 里不做」。
-3. **在做**：
-   - `/persona`、`/preset`：用终端界面的选择框部件（`pick_box.rs`）自己画，选了写 `terminal.persona`、`terminal.preset`；按 `e` 进那一项的配置编辑页。
-   - `/edit`：上一句放回 fish 的命令行。`/dream`、`/recap`、`/undo`、`/redo`、`/jump` 的结果画在正文里，不借全屏，另想。
+2. **已做**：`config`（`settings`）打开终端界面的配置页（同一个程序的 `--page config`），退出了回到 shell。`new` 请核心 `session.terminal {cwd, fresh: true}`（核心 2bd2fa8a：照新开终端会话的规矩开一个、指过去，旧的不动），说一句「开了新会话」（2026-10-20 项目主人：后半句「下一句从这里说起」去掉），下一句说进新的。`exit`、`help`、`language` 不做，说一句「在 shell 里不做」。
+3. **在做：都在 shell 里原地办，不进全屏**（2026-10-20 项目主人：「我是 shellhook 啊。怎么运行命令给我弄到 tui 里面去了……每次运行都进 TUI 太不合理了」。原来借终端界面的框，`--resume <终端会话> --command <一行>` 起全屏办一条命令，做好了又撤掉；`config` 照设计 22 打开配置页，不算在内）：
+   - 只看的（`/status`、`/usage`）：内容照 shellhook 的样子印在滚动区，不交互。
+   - 要选的（`/model`、`/effort`、`/theme`、`/sessions`、`/persona`、`/preset`）：提示符下面原地画一个列表（位置、样子同确认和提问的抽屉），`↑` `↓` 选、`Enter` 定、`Esc` 走，定了以后只留一行结果。带参数的直接改、不弹列表（`/model deepseek-flash`、`/theme tokyonight`）。`/sessions` 选了的 `session.set_terminal`；`/persona`、`/preset` 写 `terminal.persona`、`terminal.preset`，列表用终端界面的选择框部件（`pick_box.rs`）。
+   - `/edit`：上一句放回 fish 的命令行。`/dream`、`/recap`、`/undo`、`/redo`、`/jump` 另想。
    - 没做的说一句「在 shell 里还没做」。
 
 ### 还没做

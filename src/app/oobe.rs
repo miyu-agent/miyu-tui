@@ -183,11 +183,7 @@ impl App {
                 // 核心不认这个键（旧核心）、读不成的当走过了（第 1 条）。
                 self.note_welcomed(welcomed != Ok(false));
                 let standalone = self.boxes.settings.as_ref().is_some_and(|s| s.standalone);
-                if welcomed == Ok(false)
-                    && self.boxes.oobe.is_none()
-                    && !standalone
-                    && !self.one_shot_mode()
-                {
+                if welcomed == Ok(false) && self.boxes.oobe.is_none() && !standalone {
                     self.open_oobe();
                 }
                 true

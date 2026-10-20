@@ -386,18 +386,6 @@ impl Tui {
         Instant::now()
     }
 
-    /// 等界面自己退出，最多 [`WAIT`]，边等边收它画的；交回退出码，到点还没退的交回 `None`。
-    pub fn exited(&mut self) -> Option<u32> {
-        let end = Instant::now() + WAIT;
-        while Instant::now() < end {
-            if let Ok(Some(status)) = self.child.try_wait() {
-                return Some(status.exit_code());
-            }
-            self.pump(Duration::from_millis(50));
-        }
-        None
-    }
-
     /// 界面的进程号。
     pub fn pid(&self) -> Option<u32> {
         self.child.process_id()
