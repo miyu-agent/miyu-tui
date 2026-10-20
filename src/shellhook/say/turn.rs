@@ -117,7 +117,12 @@ impl Turn {
 
     /// 排哪几条（`view.rs`）。
     pub fn scope(&self) -> super::view::Scope {
-        super::view::Scope::Turn(self.ours)
+        super::view::Scope::Turns(
+            self.ours
+                .into_iter()
+                .chain(self.woken.iter().copied())
+                .collect(),
+        )
     }
 
     fn blank(text: Option<String>, cwd: Option<String>, look: super::look::Look) -> Self {

@@ -14,10 +14,11 @@ use crate::transcript::Transcript;
 use crate::ui::rows::{Ctx, MdCache, Row, entry_rows, shown};
 
 /// 排哪几条。
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Scope {
-    /// 这一轮（还没开轮的是 `None`，什么都不排）起的。
-    Turn(Option<u64>),
+    /// 这几轮（说话开的那一轮、接着叫醒她的那几轮；还没开轮的是空的，什么都不排）：从第一轮的第一条起，到排进来一轮
+    /// 不在里面的为止（后台回报接上叫醒的那一轮时，后面你说话开的那一轮不印：2026-10-20 验收 bash 印了两遍）。
+    Turns(Vec<u64>),
     /// 全部（后台回报印任务结束的那几行，正文里只有它们）。
     All,
 }
@@ -62,21 +63,37 @@ impl View<'_> {
     /// 末尾转着。
     pub fn rows(&self, transcript: &Transcript, scope: Scope) -> Vec<Row> {
         let ctx = self.ctx(transcript);
-        let from = match scope {
+        let first = match &scope {
+            Scope::Turns(turns) => turns.iter().min().copied(),
+            Scope::All => None,
+        };
+        let from = match &scope {
             Scope::All => 0,
             // 这一轮的第一条起：任务结束的那几行这类不带回合号的，接在这一轮里的照样排。
-            Scope::Turn(ours) => transcript
+            Scope::Turns(_) => transcript
                 .entries
                 .iter()
                 // 你说的那句在正文最前面（发之前先画上的），不算：从她这一轮的第一条起（实测：接上的会话补发的那一页排在它后面）。
                 .position(|e| {
                     e.kind != crate::transcript::Kind::User
-                        && e.turn.zip(ours).is_some_and(|(t, o)| t >= o)
+                        && e.turn.zip(first).is_some_and(|(t, o)| t >= o)
                 })
                 .unwrap_or(transcript.entries.len()),
         };
         let mut rows = Vec::new();
-        let picked = transcript.entries.iter().enumerate().skip(from);
+        // 排进来一轮不在里面的（她说的、收尾行带着回合号）就停：不带回合号的（任务结束的那几行）照样排。
+        let outside = |e: &crate::transcript::Entry| match (&scope, e.turn) {
+            (Scope::Turns(turns), Some(t)) => {
+                e.kind != crate::transcript::Kind::User && !turns.contains(&t)
+            }
+            _ => false,
+        };
+        let picked = transcript
+            .entries
+            .iter()
+            .enumerate()
+            .skip(from)
+            .take_while(|(_, e)| !outside(e));
         for (i, entry) in
             picked.filter(|(_, e)| e.kind != crate::transcript::Kind::User && shown(e))
         {
@@ -166,3 +183,6 @@ fn shown_path(transcript: &Transcript, target: Option<crate::ui::rows::Target>) 
     }?;
     at.shown.as_ref().map(|s| s.path.clone())
 }
+
+#[cfg(test)]
+mod tests;

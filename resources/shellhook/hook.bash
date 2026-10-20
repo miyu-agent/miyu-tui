@@ -15,24 +15,15 @@ command_not_found_handle() {
     esac
     # $$ 是这个 bash（这里在子 shell 里也不变）：后台回报交回它。
     printf '%s' "$*" | __miyu_shellhook say --shell bash --shell-pid $$
+    # 收尾行和下一个提示符之间空一行（fish 的提示符自带，bash 的不一定：2026-10-20 验收贴在一起）。
+    printf '\n'
     return 127
 }
 
 # 后台回报（设计 22 第七节「后台任务和回报」）：盯后台的进程给这个 bash 发 SIGUSR1。bash 停在提示符上等你敲的时候不办
-# 信号，要等你回车（实测 bash 5.3），所以只记着，回到提示符（画提示符以前）再印。
-__miyu_report_pending=
-trap '__miyu_report_pending=1' USR1
-
-__miyu_prompt() {
-    local status=$?
-    if [[ -n $__miyu_report_pending ]]; then
-        __miyu_report_pending=
-        __miyu_shellhook report --shell bash --shell-pid $$
-    fi
-    return $status
+# 信号，等你回车、这一行读完、命令还没跑的时候才办；前台在跑命令（vim、她正在答）的，等它结束才办（实测 bash 5.3）。
+# 那时都不在画提示符：直接印。所以停在提示符上来的回报，要等你下一次回车，印在那条命令前面。
+__miyu_report() {
+    __miyu_shellhook report --shell bash --shell-pid $$ && printf '\n'
 }
-
-case ";${PROMPT_COMMAND-};" in
-    *";__miyu_prompt;"*) ;;
-    *) PROMPT_COMMAND="__miyu_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}" ;;
-esac
+trap '__miyu_report' USR1
