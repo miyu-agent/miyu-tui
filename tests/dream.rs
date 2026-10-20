@@ -52,6 +52,8 @@ fn dream_from_the_home_page_shows_the_block_and_a_receipt_that_opens() {
     tui.wait_for("✗ 用户住在上海 · 过时");
     tui.wait_for("(・ω・)");
     tui.wait_for("✦ 整理完成：检查 2 条");
+    // 核心 R-22 再补（2026-10-20 项目主人）：0 条的项不写，末尾带用时。
+    assert!(tui.shows("用时"), "{}", tui.lines().join("\n"));
     let end = std::time::Instant::now() + support::WAIT;
     while tui.shows("✦ 整理记忆") {
         assert!(
@@ -119,7 +121,8 @@ fn two_escapes_while_dreaming_stop_the_dream() {
     tui.key(b"\x1b");
     tui.wait_for("再按一次 Esc 停止整理");
     tui.key(b"\x1b");
-    tui.wait_for("✦ 整理已中断，下次再整理");
+    tui.wait_for("✦ 整理已中断，用时");
+    assert!(tui.shows("下次再整理"), "{}", tui.lines().join("\n"));
     assert!(!tui.shows("✦ 整理记忆"), "{}", tui.lines().join("\n"));
 }
 
@@ -131,7 +134,8 @@ fn dream_stop_while_dreaming_stops_it() {
     let mut tui = home.tui("zh_CN.UTF-8");
     dreaming_forever(&mut tui);
     tui.say("/dream stop");
-    tui.wait_for("✦ 整理已中断，下次再整理");
+    tui.wait_for("✦ 整理已中断，用时");
+    assert!(tui.shows("下次再整理"), "{}", tui.lines().join("\n"));
     assert!(!tui.shows("❯ /dream stop"), "{}", tui.lines().join("\n"));
 }
 
