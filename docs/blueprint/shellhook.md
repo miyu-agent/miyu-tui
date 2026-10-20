@@ -123,7 +123,7 @@
 设计 22 第七节「斜杠命令」（2026-10-20 项目主人定）：终端界面的斜杠命令大多照搬，作用在终端会话上。
 
 1. **从哪来**：fish 里 `/model` 这样的一行不是现成的命令，照一句话交给 `say`；`say` 先问 `slash.rs`：是终端界面命令表里的（`commands::Commands::read`，同一份 `resources/commands.json`）照命令办，不是的照一句话发给核心（核心认的命令模板由它办，同终端界面）。`miyu shellhook <名字> [参数]` 也走这里（不是自己的子命令的才认）。
-2. **已做**：`config`（`settings`）打开终端界面的配置页（同一个程序的 `--page config`），退出了回到 shell。`new` 请核心 `session.terminal {cwd, fresh: true}`（核心 2bd2fa8a：照新开终端会话的规矩开一个、指过去，旧的不动），说一句「开了新会话」，下一句说进新的。`exit`、`help`、`language` 不做，说一句「在 shell 里不做」。
+2. **已做**：`config`（`settings`）打开终端界面的配置页（同一个程序的 `--page config`），退出了回到 shell。`new` 请核心 `session.terminal {cwd, fresh: true}`（核心 2bd2fa8a：照新开终端会话的规矩开一个、指过去，旧的不动），说一句「开了新会话」（2026-10-20 项目主人：后半句「下一句从这里说起」去掉），下一句说进新的。`exit`、`help`、`language` 不做，说一句「在 shell 里不做」。
 3. **在做**：
    - 借终端界面的框（2026-10-20 和终端界面会话商定，图纸 `tui.md`「启动」）：`--resume <终端会话> --command <一行>` 开局等于在输入框里敲这一行回车（走 `keys.rs` 的 `run()`），开框的框关掉就退出、不开框的等核心回执再退出；会话换了的把新的编号打到标准输出，shellhook 照它 `session.set_terminal`。能借的：`/status`、`/usage`、`/model`、`/effort`、`/theme`、`/sessions`。
    - `/persona`、`/preset`：用终端界面的选择框部件（`pick_box.rs`）自己画，选了写 `terminal.persona`、`terminal.preset`；按 `e` 进那一项的配置编辑页。

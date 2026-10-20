@@ -19,5 +19,5 @@
   },
   "slash_skipped": "/{name} 在 shell 里不做",
   "slash_pending": "/{name} 在 shell 里还没做",
-  "slash_new": "开了新会话：下一句从这里说起"
+  "slash_new": "开了新会话"
 }
