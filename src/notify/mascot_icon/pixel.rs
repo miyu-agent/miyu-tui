@@ -173,12 +173,12 @@ fn on_face(face: &Face, p: [f64; 3]) -> Option<Px> {
         return None;
     }
     let q = [p[0], p[1]];
-    // 眼睛是竖着的长方形：左右各 `eye_width`、上下照两头（2026-10-20 项目主人：「眼睛现在吉祥物应该是双竖线，长方形」；原来照
-    // 线段量，两头是圆的，正对着看是三角；网页同一个判法，miyu-web 5e8bd89）。
-    let eye = |[a, b]: &[[f64; 2]; 2]| {
-        (q[0] - a[0]).abs() < face.eye_width && q[1] >= a[1].min(b[1]) && q[1] <= a[1].max(b[1])
-    };
-    if face.eyes.iter().any(eye) {
+    // 眼睛照到线段的距离量（同网页 model.js）：正对着时中间两格宽、两头一格（2026-10-20 项目主人试过长方形的，又定用回这一版）。
+    if face
+        .eyes
+        .iter()
+        .any(|[a, b]| segment(q, *a, *b) < face.eye_width)
+    {
         return Some(Px::Eye);
     }
     if face
