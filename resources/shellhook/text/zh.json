@@ -16,5 +16,7 @@
     "minutes": "{n} 分钟",
     "hours": "{n} 小时",
     "days": "{n} 天"
-  }
+  },
+  "slash_skipped": "/{name} 在 shell 里不做",
+  "slash_pending": "/{name} 在 shell 里还没做"
 }

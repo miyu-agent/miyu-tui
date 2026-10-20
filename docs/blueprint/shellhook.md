@@ -27,6 +27,7 @@
 | `src/shellhook/say/follow.rs` | 盯后台：订阅终端会话、等 shell 退出，任务结束和叫醒的那一轮记进信箱、给 shell 发信号 |
 | `src/shellhook/say/spool.rs` | 盯后台的和 shell 之间的信箱（一个 shell 一个文件） |
 | `src/shellhook/say/unseen.rs` | 她还没看到的回报：照序号认叫醒她的是哪一轮（`say`、盯后台的共用） |
+| `src/shellhook/slash.rs` | 斜杠命令：和终端界面共用一张表，`say` 先问它、`miyu shellhook <名字>` 也走它 |
 | `src/shellhook/paste.rs` | `paste`：`Ctrl+V` 读剪贴板收成块，块上的字给脚本插进命令行；`say` 时换回原文、带上附件 |
 | `src/shellhook/say/report.rs` | `report`：shell 回到提示符时印信箱里的 |
 | `resources/shellhook/hook.{fish,bash,zsh}` | 三种 shell 的脚本，`@PROGRAM@` 印的时候换成装的时候记下的程序 |
@@ -117,6 +118,19 @@
 4. **判命令还是话**：块带空格，fish 把方括号连同里面的空格算进一个词（实测），首词只看方括号以前的；块打头的是话（同一天实测：原来整句被当成命令，走了找不到命令那条路）。找不到命令那条路也带 `--shell-pid`。
 5. zsh、bash 还没接：它们靠「找不到命令」接话，`[图片 1]` 这种字 zsh 会先当通配符报错，要先做回车时判命令还是话（同 fish）。
 
+### 斜杠命令
+
+设计 22 第七节「斜杠命令」（2026-10-20 项目主人定）：终端界面的斜杠命令大多照搬，作用在终端会话上。
+
+1. **从哪来**：fish 里 `/model` 这样的一行不是现成的命令，照一句话交给 `say`；`say` 先问 `slash.rs`：是终端界面命令表里的（`commands::Commands::read`，同一份 `resources/commands.json`）照命令办，不是的照一句话发给核心（核心认的命令模板由它办，同终端界面）。`miyu shellhook <名字> [参数]` 也走这里（不是自己的子命令的才认）。
+2. **已做**：`config`（`settings`）打开终端界面的配置页（同一个程序的 `--page config`），退出了回到 shell。`exit`、`help`、`language` 不做，说一句「在 shell 里不做」。
+3. **在做**：
+   - 借终端界面的框（2026-10-20 和终端界面会话商定，图纸 `tui.md`「启动」）：`--resume <终端会话> --command <一行>` 开局等于在输入框里敲这一行回车（走 `keys.rs` 的 `run()`），开框的框关掉就退出、不开框的等核心回执再退出；会话换了的把新的编号打到标准输出，shellhook 照它 `session.set_terminal`。能借的：`/status`、`/usage`、`/model`、`/effort`、`/theme`、`/sessions`。
+   - `/persona`、`/preset`：用终端界面的选择框部件（`pick_box.rs`）自己画，选了写 `terminal.persona`、`terminal.preset`；按 `e` 进那一项的配置编辑页。
+   - `/new`：等核心的 `session.terminal {fresh: true}`（照新开终端会话的规矩开一个、指过去）。
+   - `/edit`：上一句放回 fish 的命令行。`/dream`、`/recap`、`/undo`、`/redo`、`/jump` 的结果画在正文里，不借全屏，另想。
+   - 没做的说一句「在 shell 里还没做」。
+
 ### 还没做
 
-拿回焦点再问终端颜色；`/dream` 转后台；提前敲的字边答边显示；zsh、bash 的 Ctrl+V；斜杠命令（`/models`、`/sessions`……，`set_terminal`）；图；`doctor`。
+拿回焦点再问终端颜色；`/dream` 转后台；提前敲的字边答边显示；zsh、bash 的 Ctrl+V；斜杠命令（见上一节「在做」）；图；`doctor`。

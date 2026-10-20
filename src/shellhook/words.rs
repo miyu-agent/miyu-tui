@@ -30,6 +30,10 @@ pub struct Words {
     pub renewed: String,
     /// 隔了多久的写法。
     pub units: Units,
+    /// 斜杠命令在 shell 里不做（`{name}`）。
+    pub slash_skipped: String,
+    /// 斜杠命令在 shell 里还没做（`{name}`）。
+    pub slash_pending: String,
 }
 
 /// 分钟、小时、天的写法，`{n}` 换成数。

@@ -16,5 +16,7 @@
     "minutes": "{n} 分",
     "hours": "{n} 時間",
     "days": "{n} 日"
-  }
+  },
+  "slash_skipped": "/{name} はシェルでは使えません",
+  "slash_pending": "/{name} はシェルではまだ使えません"
 }

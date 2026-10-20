@@ -16,5 +16,7 @@
     "minutes": "{n} min",
     "hours": "{n} h",
     "days": "{n} d"
-  }
+  },
+  "slash_skipped": "/{name} isn't available in the shell",
+  "slash_pending": "/{name} isn't available in the shell yet"
 }

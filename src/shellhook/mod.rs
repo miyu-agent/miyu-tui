@@ -9,6 +9,7 @@ mod paste;
 mod say;
 mod script;
 mod shells;
+mod slash;
 mod words;
 
 use std::io::{self, Read};
@@ -35,6 +36,19 @@ Options:
   --program <path>   the program the hook calls (default: the `miyu` next to this program)
   -h, --help         print this help";
 
+/// 自己的子命令：不当斜杠命令认。
+const INTERNAL: [&str; 9] = [
+    "install",
+    "uninstall",
+    "status",
+    "script",
+    "classify",
+    "say",
+    "follow",
+    "report",
+    "paste",
+];
+
 /// 用法写错了：退出码 2，同核心命令行（设计 22 O1）。
 const BAD_USAGE: u8 = 2;
 
@@ -58,6 +72,21 @@ pub fn main(args: Vec<String>) -> ExitCode {
         }
         Some((command, rest)) => (command.as_str(), rest),
     };
+    // 斜杠命令（`miyu shellhook models`）：名字后面的照参数（`compact 要求`），不是选项。
+    if !INTERNAL.contains(&command) {
+        let line = std::iter::once(format!("/{command}"))
+            .chain(options.iter().cloned())
+            .collect::<Vec<_>>()
+            .join(" ");
+        match slash::run(&line, &words) {
+            Some(Ok(code)) => return code,
+            Some(Err(e)) => {
+                eprintln!("{e}");
+                return ExitCode::FAILURE;
+            }
+            None => {}
+        }
+    }
     let options = match Options::parse(options) {
         Ok(options) => options,
         Err(e) => {

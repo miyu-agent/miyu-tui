@@ -52,6 +52,12 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     if text.trim().is_empty() {
         return Ok(ExitCode::SUCCESS);
     }
+    // 终端界面的斜杠命令（`/models`）：照命令办，不当一句话（`shellhook/slash.rs`）。
+    if text.starts_with('/')
+        && let Some(done) = crate::shellhook::slash::run(&text, words)
+    {
+        return done;
+    }
     // 这一句里 `Ctrl+V` 贴的块：换回原文、带上附件（`shellhook/paste.rs`）。
     let (text, files) = match ask.shell {
         Some(shell) => crate::shellhook::paste::take(shell, &text),
