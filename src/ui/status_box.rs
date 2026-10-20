@@ -238,10 +238,13 @@ pub fn items(f: &Facts, words: &Texts, bar: &Bar, room: usize) -> Vec<Item> {
         groups[2].push((keys.memory.clone(), plain(value)));
     }
 
-    let mut out = vec![None];
+    // 上下的空行由框统一加（`panels.rs` 的 `PAD`），这里只在段和段之间空一行。
+    let mut out = Vec::new();
     for group in groups.into_iter().filter(|g| !g.is_empty()) {
+        if !out.is_empty() {
+            out.push(None);
+        }
         out.extend(group.into_iter().map(Some));
-        out.push(None);
     }
     out
 }

@@ -105,10 +105,6 @@ pub fn lines(
         let note = vec![Span::styled(texts.switch_note.clone(), theme::dim())];
         rows.insert(0, (None, panel::item(false, note, None, width)));
     }
-    // 上下各空一行（2026-10-20 项目主人：「给 /persona 列表上下也加上空行」）。
-    let blank = || (None, panel::item(false, Vec::new(), None, width));
-    rows.insert(0, blank());
-    rows.push(blank());
     let rows = panel::fit(rows, Some(selected), max);
     let (map, lines) = rows.into_iter().unzip();
     (chrome, lines, map)

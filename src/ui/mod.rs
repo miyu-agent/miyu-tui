@@ -39,6 +39,7 @@ pub mod shown_rows;
 pub use oobe::idle_look as oobe_idle_look;
 mod panel;
 mod panels;
+pub use panels::PAD as PANEL_PAD;
 pub mod persona_list;
 pub mod session_list;
 pub mod settings;

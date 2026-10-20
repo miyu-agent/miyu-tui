@@ -83,7 +83,12 @@ impl App {
 
     /// 框开着时的按键。
     pub(super) fn usage_key(&mut self, (tab, scroll, money): (usize, usize, bool), key: KeyEvent) {
-        let page = self.screen.panel_rows.len().max(1);
+        let page = self
+            .screen
+            .panel_rows
+            .len()
+            .saturating_sub(crate::ui::PANEL_PAD)
+            .max(1);
         let (tab, scroll, money) = match key.code {
             KeyCode::Tab | KeyCode::Right => ((tab + 1) % PAGES, 0, money),
             KeyCode::BackTab | KeyCode::Left => ((tab + PAGES - 1) % PAGES, 0, money),
