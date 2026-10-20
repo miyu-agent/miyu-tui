@@ -25,6 +25,8 @@ pub struct OneShot {
     ran: Option<Instant>,
     /// 框开过了。
     opened: bool,
+    /// 没开框、弹了一句提示（核心拒了、「先选模型」这类）：提示到这一刻消失，就退出。
+    hinted: Option<Instant>,
 }
 
 impl App {
@@ -36,6 +38,7 @@ impl App {
             from,
             ran: None,
             opened: false,
+            hinted: None,
         });
     }
 
@@ -55,10 +58,22 @@ impl App {
         };
         let open = self.any_box_open();
         let opened = shot.opened || open;
+        // 没开框、弹了提示的（同终端界面的提示，停 `layout.json` 的那么久）：提示看完就退，不干等（2026-10-20 终端界面会话审）。
+        let hinted = shot
+            .hinted
+            .or_else(|| (!opened).then(|| self.typing.notice.as_ref().map(|n| n.until))?);
         if let Some(shot) = self.one_shot.as_mut() {
             shot.opened = opened;
+            shot.hinted = hinted;
         }
-        if (opened && !open) || (!opened && ran.elapsed() >= OPEN_WAIT) {
+        let now = Instant::now();
+        // 框关了还在切会话的（`/sessions` 选了别的）：切完再走，退出时才报得出新的编号。
+        let done = if opened {
+            !open && self.talk.opening.is_none()
+        } else {
+            hinted.is_some_and(|until| now >= until) || ran.elapsed() >= OPEN_WAIT
+        };
+        if done {
             self.quit = true;
         }
     }
@@ -73,15 +88,27 @@ impl App {
         }
         let commands = self.config.commands.clone();
         match commands.read(line.trim()) {
-            Line::Command(spec, words) => self.run(spec, words),
-            Line::Unknown | Line::Talk => self.quit = true,
+            Line::Command(spec, words) => {
+                self.run(spec, words);
+                // 当场开的框（`/status`）这一拍就记下：下一次看可能已经是按了 Esc 以后（测出来的）。
+                let open = self.any_box_open();
+                if let Some(shot) = self.one_shot.as_mut() {
+                    shot.opened = open;
+                }
+            }
+            Line::Unknown | Line::Talk => {
+                // 标准输出是画界面的：为什么没办写在标准错误，shellhook 那边好查。
+                eprintln!("not a terminal command: {line}");
+                self.quit = true;
+            }
         }
     }
 
-    /// 开着框、整屏页：命令开的那几样。
+    /// 开着框、整屏页：命令开的那几样；提问、确认的抽屉开着也算（她正好来问一句，答了再走）。
     fn any_box_open(&self) -> bool {
         let b = &self.boxes;
-        b.panel.is_some()
+        self.talk.drawers.open()
+            || b.panel.is_some()
             || b.session_list.is_some()
             || b.model_list.is_some()
             || b.usage.is_some()
@@ -94,7 +121,7 @@ impl App {
     pub(super) fn one_shot_deadline(&self) -> Option<Instant> {
         let shot = self.one_shot.as_ref()?;
         let ran = shot.ran.filter(|_| !shot.opened)?;
-        Some(ran + OPEN_WAIT)
+        Some(shot.hinted.unwrap_or(ran + OPEN_WAIT))
     }
 
     /// 只办一条命令的不进引导（同 `--page config`）。

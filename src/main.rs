@@ -291,7 +291,11 @@ fn run(
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
     let mut log = frame_log::FrameLog::open(log_path.as_deref(), slow);
     while !app.quit {
+        // 只办一条命令的：框关了这一拍就走，不再等下一件事（等的话可能一直睡着）。
         app.one_shot_tick();
+        if app.quit {
+            break;
+        }
         app.notifier.session(app.talk.main_session().as_deref());
         frame(terminal, &mut app, &mut pointer, depth, &mut log)?;
         let drawn_at = Instant::now();
