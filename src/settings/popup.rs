@@ -4,8 +4,8 @@ use super::data::Data;
 use super::forms::Form;
 use super::nav::Use;
 
-/// 开着的悬浮窗。改正在用的人格、预设时先留一份，「否」回到它（`in_use.rs`）。
-#[derive(Debug, Clone)]
+/// 开着的悬浮窗。
+#[derive(Debug)]
 pub enum Popup {
     /// 编辑供应商、模型、池。
     Form(Form),
@@ -238,8 +238,6 @@ pub enum Delete {
     Persona(String),
     /// 一个人格的主题色（外观页「主色」跟随头像时恢复默认）：编号。
     PersonaSeed(String),
-    /// 不是删：改了正在用的人格、预设，存不存（`in_use.rs`）。
-    Held,
 }
 
 #[cfg(test)]

@@ -79,9 +79,12 @@ fn the_config_page_starts_on_its_own_edits_a_model_and_saves_to_personal_setting
     tui.key(b"l");
     tui.key(b"\r");
     tui.wait_for("上下文窗口");
-    // 模型名只读，开窗停在「支持输入」；往下一行是窗口，原来的值整段选中，一敲就换掉。
+    // 模型名只读，开窗停在「支持输入」；往下一行是窗口。光标停在原来的值末尾、不选中（2026-10-20 项目主人），先删掉。
     tui.key(DOWN);
     tui.key(b"\r");
+    for _ in 0..12 {
+        tui.key(b"\x7f");
+    }
     tui.type_text("200k");
     tui.key(b"\r");
     // 在窗里按 s：当场存，存成了关窗（2026-10-07 项目主人）。

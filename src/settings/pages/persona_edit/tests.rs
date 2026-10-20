@@ -103,6 +103,11 @@ fn the_short_description_sits_under_the_name_and_is_saved_as_the_summary() {
         (edit.key.as_str(), edit.editor.text()),
         ("persona.summary", "会写诗")
     );
+    // 光标停在末尾、不选中（2026-10-20 项目主人：整段选中一敲就替换掉全部的字，不对）：先删掉原来的三个字。
+    assert_eq!(edit.editor.selection(), None);
+    for _ in 0..3 {
+        press(&mut page, KeyCode::Backspace);
+    }
     for c in "写代码的".chars() {
         press(&mut page, KeyCode::Char(c));
     }

@@ -11,7 +11,7 @@ use crate::settings::popup::Popup;
 use crate::settings::{Settings, Texts};
 
 /// 开着的多行编辑窗。
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SheetEdit {
     /// 改的是哪一项。
     pub key: String,

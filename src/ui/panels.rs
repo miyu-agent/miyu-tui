@@ -96,19 +96,8 @@ pub(super) fn content(
             )
         }
         Some(crate::app::Panel::Changed { kind, yes, .. }) => {
-            // 改的就是正在用的那一个：标题写它的名字。
-            let t = &seen.talk.transcript;
-            let id = match kind {
-                crate::app::new_session::Kind::Persona => t.persona.as_deref(),
-                crate::app::new_session::Kind::Preset => t.preset.as_deref(),
-            };
-            let (list, _) = seen.pick_list(kind);
-            let name = list
-                .iter()
-                .find(|p| Some(p.id.as_str()) == id)
-                .map_or(id.unwrap_or_default(), |p| p.label());
             let words = &seen.config.text.settings.in_use;
-            persona_list::changed_lines((kind, name), yes, words, width, max)
+            persona_list::changed_lines(kind, yes, words, width, max)
         }
         _ => background::lines(
             seen.boxes.panel,

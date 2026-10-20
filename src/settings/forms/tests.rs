@@ -187,3 +187,25 @@ fn constrained_decoding_is_auto_on_or_off_and_auto_writes_nothing() {
     assert_eq!(pick(2).value(key, &data), Some(&json!(false)));
     assert!(!pick(0).changed(key), "自动不写");
 }
+
+#[test]
+fn editing_a_text_row_keeps_the_old_text_and_types_after_it() {
+    // 2026-10-20 项目主人：回车进编辑整段选中，一敲就替换了全部的字，不对。光标停在末尾、不选中。
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    let data = sample();
+    let mut form = provider(&data, &data, &Draft::default(), Some("relay"));
+    let row = form
+        .rows
+        .iter()
+        .position(|r| matches!(r.val, Val::Text { .. }))
+        .unwrap();
+    form.focus = Focus::Row(row);
+    for code in [KeyCode::Enter, KeyCode::Char('!')] {
+        crate::settings::form_keys::form_key(&mut form, KeyEvent::new(code, KeyModifiers::NONE));
+    }
+    let text = form.editing.as_ref().map_or("", |e| e.text());
+    assert!(
+        text.len() > 1 && text.ends_with('!'),
+        "原来的字还在：{text}"
+    );
+}

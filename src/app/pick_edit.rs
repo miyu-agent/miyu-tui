@@ -1,6 +1,6 @@
 //! 人格框、预设框里按 `e` 编辑（蓝图 `tui.md`「新会话：人格、工作区」第 2b 条，2026-10-20 项目主人定）：直接开配置页里那
-//! 一项的详情窗，关了回到原来的框、光标不动；从框进去改了开着的会话正在用的那一个、存成了的，回框以前先问要不要压缩
-//! （「是」关框做一次前台压缩，「否」、`Esc` 回框）。从 `/config` 改正在用的，存之前在配置页里问（`settings/in_use.rs`）。
+//! 一项的详情窗，关了回到原来的框、光标不动；改了开着的会话正在用的那一个、改成了的，回框以前先问要不要压缩（「是」关框
+//! 做一次前台压缩，「否」、`Esc` 回框）。从 `/config` 改的不问（`settings/in_use.rs`）。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
@@ -18,18 +18,10 @@ impl App {
             Kind::Persona => Item::Persona,
             Kind::Preset => Item::Preset,
         };
-        let mut page = Settings::one(online, item, id);
-        self.watch_in_use(&mut page);
-        self.boxes.settings = Some(page);
+        self.boxes.settings = Some(Settings::one(online, item, id));
         self.boxes.pick_back = Some((kind, selected));
         self.boxes.panel = None;
         self.send_settings_asks();
-    }
-
-    /// 配置页记下开着的会话正在用的人格、预设：改它们时问一句（还没开会话的不问）。
-    pub(super) fn watch_in_use(&self, page: &mut Settings) {
-        page.watch.persona = self.current_pick(Kind::Persona);
-        page.watch.preset = self.current_pick(Kind::Preset);
     }
 
     /// 从框进去的详情窗关了：存成了正在用的那一个的先问要不要压缩，别的回框。

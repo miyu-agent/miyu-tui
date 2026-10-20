@@ -112,8 +112,11 @@ fn block(chrome: Chrome) -> Block<'static> {
     };
     let mut block = Block::bordered()
         .border_type(BorderType::Rounded)
-        .border_style(line)
-        .title_top(edge(chrome.title));
+        .border_style(line);
+    // 没有标题的（问要不要压缩那个框）只是一条线。
+    if chrome.title.iter().any(|s| !s.content.is_empty()) {
+        block = block.title_top(edge(chrome.title));
+    }
     if let Some(hint) = chrome.hint {
         block = block.title_bottom(edge(vec![Span::styled(hint, line)]));
     }

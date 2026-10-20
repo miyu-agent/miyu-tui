@@ -109,10 +109,10 @@ pub fn lines(
     (chrome, lines, map)
 }
 
-/// 从框进去改了正在用的、存成了，问要不要压缩（第 2b 条）：框的标题是改的那一个的名字（同配置页里问的那个窗），第一行
-/// 是项目主人那句话（放不下的折行），下面「是」「否」。
+/// 从框进去改了正在用的、改成了，问要不要压缩（第 2b 条）：框不写标题（同网页），第一行是项目主人那句话（放不下的折行），
+/// 下面「是」「否」。
 pub fn changed_lines(
-    (kind, name): (Kind, &str),
+    kind: Kind,
     yes: bool,
     words: &crate::settings::in_use::InUseTexts,
     width: u16,
@@ -126,7 +126,7 @@ pub fn changed_lines(
         Kind::Persona => &words.persona,
         Kind::Preset => &words.preset,
     };
-    let chrome = Chrome::new(name, Vec::new());
+    let chrome = Chrome::default();
     let room = usize::from(width).saturating_sub(2).max(1);
     let mut rows: Vec<Row> = crate::cells::wrap(line, room)
         .into_iter()

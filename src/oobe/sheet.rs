@@ -19,7 +19,7 @@ pub enum SheetKey {
 }
 
 /// 一格长文。
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Sheet {
     /// 字和光标。
     pub field: Field,

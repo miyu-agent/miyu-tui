@@ -105,7 +105,8 @@ fn closing_the_detail_without_saving_goes_straight_back_to_the_box() {
 }
 
 #[test]
-fn saving_the_preset_in_use_from_config_asks_before_saving() {
+fn saving_the_preset_in_use_from_config_does_not_ask() {
+    // 2026-10-20 项目主人：「配置页的就不弹提示了。没有人会特意进配置页改这东西的。」
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = talked(&home);
     tui.say("/config");
@@ -117,20 +118,6 @@ fn saving_the_preset_in_use_from_config_asks_before_saving() {
     tui.wait_for("名称  全部功能");
     tui.key(b"j");
     tui.key(b" ");
-    // 先问，不存；「否」不存，回到详情窗。
-    tui.wait_for("当前使用的预设发生变化");
-    assert!(!file(&home).exists(), "答之前不存");
-    tui.key(b"j");
-    tui.key(b"\r");
-    until(&mut tui, "回到详情窗", |t| {
-        !t.shows("当前使用的预设发生变化")
-    });
-    tui.pump(Duration::from_millis(300));
-    assert!(!file(&home).exists(), "答「否」不存");
-    // 「是」：存，留在配置页。
-    tui.key(b" ");
-    tui.wait_for("当前使用的预设发生变化");
-    tui.key(b"\r");
     until(&mut tui, "存进文件", |_| file(&home).exists());
-    assert!(!tui.shows("上下文已压缩"), "配置页里不压缩");
+    assert!(!tui.shows("当前使用的预设发生变化"), "配置页不问");
 }

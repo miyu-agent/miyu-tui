@@ -11,7 +11,7 @@ use super::attach::Attachment;
 use super::pasted::{Block, Draft};
 
 /// 输入框的文字和光标。换行、滚动这些跟屏幕有关的事不在这里，见 `wrap.rs`。
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct Editor {
     text: String,
     /// 光标的字节下标。

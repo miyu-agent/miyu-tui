@@ -15,18 +15,14 @@ impl App {
     /// 打开配置页；`standalone` 是照 `--page config` 起来的（主菜单 `Esc` 退出程序）。
     pub fn open_settings(&mut self, standalone: bool) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
-        let mut page = Settings::open(standalone, online);
-        self.watch_in_use(&mut page);
-        self.boxes.settings = Some(page);
+        self.boxes.settings = Some(Settings::open(standalone, online));
         self.send_settings_asks();
     }
 
     /// `/connect`：直接进「供应商和模型」。
     pub(super) fn open_connect(&mut self) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
-        let mut page = Settings::connect(online);
-        self.watch_in_use(&mut page);
-        self.boxes.settings = Some(page);
+        self.boxes.settings = Some(Settings::connect(online));
         self.send_settings_asks();
     }
 
@@ -83,8 +79,6 @@ impl App {
             _ => outcome,
         };
         self.settings_outcome(outcome);
-        // 改正在用的人格提示词、答了「否」：照改过的字再交给编辑器（`settings/in_use.rs`）。
-        self.open_prompt_editor();
         self.send_settings_asks();
     }
 
@@ -120,7 +114,6 @@ impl App {
         drop(std::fs::remove_file(&file));
         if let Some(page) = self.boxes.settings.as_mut() {
             page.prompt_edited(text);
-            page.raise_held(&self.config.text.settings);
         }
         self.send_settings_asks();
         true

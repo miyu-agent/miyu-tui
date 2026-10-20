@@ -51,7 +51,7 @@ pub struct DialogsView {
 }
 
 /// 改、加一轮的两格窗。
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PairEdit {
     /// 两格：user、assistant。
     pub sides: [Editor; 2],
