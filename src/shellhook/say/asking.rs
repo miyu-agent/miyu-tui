@@ -125,6 +125,8 @@ impl Asking {
         if !self.drawers.open() {
             return false;
         }
+        // 没在写字时 `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面，vim 的上下）。
+        let key = crate::app::vim_step(key, !self.drawers.editing());
         let newline = self.drawers.editing() && key.code == KeyCode::Char('j');
         if key.modifiers.contains(KeyModifiers::CONTROL) && !newline {
             return false;

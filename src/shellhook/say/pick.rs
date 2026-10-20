@@ -81,7 +81,14 @@ impl Session {
                             && key.modifiers.contains(KeyModifiers::CONTROL);
                         if ctrl_c {
                             done = Some(None);
-                        } else if let Picked::Done(line) = picker.key(key, turn, &self.core) {
+                        } else if let Picked::Done(line) =
+                            // `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面的列表，vim 的上下）。
+                            picker.key(
+                                crate::app::vim_step(key, true),
+                                turn,
+                                &self.core,
+                            )
+                        {
                             done = Some(line);
                         }
                     }

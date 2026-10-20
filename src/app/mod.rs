@@ -71,6 +71,7 @@ mod typing;
 mod updates;
 pub mod usage;
 pub(crate) mod vim;
+pub(crate) use vim::step as vim_step;
 mod workspace;
 
 use std::time::{Duration, Instant};
