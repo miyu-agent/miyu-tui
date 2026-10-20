@@ -304,6 +304,35 @@
     "days": "{n} 日前",
     "none": "このセッションではまだ発言がありません"
   },
+  "status": {
+    "new_title": "新しいセッション",
+    "keys": {
+      "id": "セッション ID",
+      "persona": "ペルソナ",
+      "preset": "プリセット",
+      "level": "権限",
+      "cwd": "作業ディレクトリ",
+      "model": "モデル",
+      "context": "コンテキスト",
+      "compaction": "圧縮",
+      "usage": "使用量",
+      "hit": "キャッシュ",
+      "cost": "費用",
+      "memory": "記憶"
+    },
+    "effort": "思考 {effort}",
+    "window": "ウィンドウ {window}",
+    "average": "平均 {rate} tok/s",
+    "context": "{used} / {window}（{percent}%）",
+    "compactions": "{n} 回",
+    "compaction_line": "{line} で自動圧縮",
+    "total": "合計 {tokens} token",
+    "split": "入力 {input} · 出力 {output}",
+    "aux": "補助リクエスト {tokens}",
+    "breaks": "キャッシュ切れ {n} 回",
+    "memory": "思い出す {recalled} 回 · 覚える {remembered} 件",
+    "hint": "↑/↓ スクロール · c コピー · Esc 閉じる"
+  },
   "usage": {
     "title": "使用量",
     "tabs": [

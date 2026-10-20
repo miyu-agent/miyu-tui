@@ -38,6 +38,7 @@ pub fn lines(
             | Panel::Models
             | Panel::Effort { .. }
             | Panel::Usage { .. }
+            | Panel::Status { .. }
             | Panel::Pick { .. }
             | Panel::Changed { .. },
         ) => (Chrome::default(), Vec::new(), Vec::new()),

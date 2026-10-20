@@ -59,6 +59,7 @@ mod session;
 mod sessions;
 mod settings;
 mod shown;
+mod status;
 mod switch;
 mod takeback;
 mod talk;

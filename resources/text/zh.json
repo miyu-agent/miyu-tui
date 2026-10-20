@@ -304,6 +304,35 @@
     "days": "{n} 天前",
     "none": "还没有说过的话"
   },
+  "status": {
+    "new_title": "新会话",
+    "keys": {
+      "id": "会话 ID",
+      "persona": "人格",
+      "preset": "预设",
+      "level": "权限模式",
+      "cwd": "当前工作目录",
+      "model": "模型",
+      "context": "上下文",
+      "compaction": "压缩",
+      "usage": "用量",
+      "hit": "缓存命中",
+      "cost": "花费",
+      "memory": "记忆"
+    },
+    "effort": "思考 {effort}",
+    "window": "窗口 {window}",
+    "average": "平均 {rate} tok/s",
+    "context": "{used} / {window}（{percent}%）",
+    "compactions": "{n} 次",
+    "compaction_line": "到 {line} 自动压缩",
+    "total": "共 {tokens} token",
+    "split": "输入 {input} · 输出 {output}",
+    "aux": "辅助请求 {tokens}",
+    "breaks": "缓存断裂 {n} 次",
+    "memory": "回忆 {recalled} 次 · 记住 {remembered} 条",
+    "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
+  },
   "usage": {
     "title": "用量",
     "tabs": [

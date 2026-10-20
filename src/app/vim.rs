@@ -26,6 +26,7 @@ impl App {
                         | Panel::Background { .. }
                         | Panel::Help { .. }
                         | Panel::Usage { .. }
+                        | Panel::Status { .. }
                 )
             );
         match event {

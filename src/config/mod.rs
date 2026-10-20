@@ -88,6 +88,8 @@ pub struct Texts {
     pub widget: crate::ui::widget::Texts,
     /// 用量框里的字（`/usage`）。
     pub usage: crate::ui::usage::Texts,
+    /// `/status` 会话状态框的字。
+    pub status: crate::ui::status_box::Texts,
     /// 配置页的字（`/config`，蓝图「配置页」）。
     pub settings: crate::settings::Texts,
     /// 确认和提问的抽屉上的字。

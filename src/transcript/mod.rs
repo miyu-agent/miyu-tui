@@ -25,6 +25,7 @@ mod queue;
 mod recap;
 mod redo;
 mod reply;
+mod speed;
 mod spent;
 mod steps;
 mod switched;
@@ -145,8 +146,8 @@ pub struct Transcript {
     manual: bool,
     /// 这一轮是清空（`/clear`）：结束时不另起收尾行、不接用时（「正文」第 9 条）。
     cleared: bool,
-    /// 最近一次请求出字的速度，每秒几个 token。
-    pub speed: Option<f64>,
+    /// 出字的速度：最近一次请求的、这个会话的平均（`speed.rs`）。
+    pub speed: speed::Speed,
     /// 正在重试时给人看的一句。
     pub retry: Option<String>,
     /// 这一轮最后一次请求出的错；后来又成了的清掉。
@@ -432,9 +433,7 @@ impl Transcript {
             Push::Asking(_) => {}
             // 待办归待办表（`app/sessions.rs`）。
             Push::Todos { .. } => {}
-            Push::Speed { output, ms } => {
-                self.speed = Some(output as f64 * 1000.0 / ms as f64);
-            }
+            Push::Speed { output, ms } => self.speed.record(output, ms),
             Push::CallFailed(error) => self.call_failed(error),
             // 后来又成了：前面报过的错不算（蓝图「正文」第 4 条）。
             Push::CallOk => self.call_ok(),

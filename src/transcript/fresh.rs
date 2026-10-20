@@ -37,7 +37,7 @@ impl Default for Transcript {
             spoke: false,
             manual: false,
             cleared: false,
-            speed: None,
+            speed: Default::default(),
             retry: None,
             failure: None,
             models: model::ModelWatch::default(),

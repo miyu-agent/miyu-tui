@@ -54,6 +54,7 @@ mod menu;
 pub mod row_cache;
 pub mod rows;
 mod status;
+pub mod status_box;
 mod timeline;
 mod undo_rows;
 pub use timeline::release_on_fold;

@@ -337,6 +337,7 @@ impl App {
             Run::Effort => self.open_effort(),
             Run::Copy => self.copy_reply(),
             Run::Usage => self.open_usage(),
+            Run::Status => self.open_status(),
             Run::New => self.new_session(),
             Run::Revert => self.link.core.send(Command::Revert),
             Run::Unrevert => self.link.core.send(Command::Unrevert),
