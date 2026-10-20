@@ -51,6 +51,7 @@ mod output;
 mod packages;
 mod pages;
 mod paste;
+mod pick_edit;
 mod redo;
 mod screen;
 mod seen;

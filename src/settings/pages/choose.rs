@@ -119,7 +119,7 @@ impl Choose {
     }
 }
 
-/// 填一行字的编辑窗（`text`、`number`）：原来的字整段选中，回车、`s` 存。
+/// 填一行字的编辑窗（`text`、`number`）：光标停在原来的字末尾，回车、`s` 存。
 #[derive(Debug)]
 pub struct LineEdit {
     /// 改的是哪一项。
@@ -137,7 +137,7 @@ pub struct LineEdit {
 }
 
 impl LineEdit {
-    /// 开窗：原来的值整段选中，一敲就换掉。
+    /// 开窗：光标停在原来的值末尾，不选中（2026-10-20 项目主人：整段选中一敲就替换、删掉了全部的字，不对）。
     pub fn open(key: &str, title: &str, number: bool, current: &Value) -> Self {
         let text = match current {
             Value::String(s) => s.clone(),
@@ -146,7 +146,6 @@ impl LineEdit {
         };
         let mut editor = Editor::default();
         editor.set(&text);
-        editor.select_all();
         Self {
             key: key.to_string(),
             title: title.to_string(),

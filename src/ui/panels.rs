@@ -77,16 +77,25 @@ pub(super) fn content(
         }
         Some(crate::app::Panel::Pick { kind, selected }) => {
             let (list, default) = seen.pick_list(kind);
-            // 开着会话的是中途换（「新会话：人格、工作区」第 2a 条）：现在用的那一个。
+            // 开着会话的是中途换（「新会话：人格、工作区」第 2a 条）：现在用的那一个；还没开会话、已经选过的是选的那一个
+            // （2026-10-20 项目主人报：空会话选了人格、预设，再打开列表没有圆点）。
             let t = &seen.talk.transcript;
-            let current = t.session.as_ref().map(|_| match kind {
-                crate::app::new_session::Kind::Persona => t.persona.as_deref().unwrap_or(""),
-                crate::app::new_session::Kind::Preset => t.preset.as_deref().unwrap_or(""),
-            });
+            let switching = t.session.is_some();
+            let current = if switching {
+                Some(match kind {
+                    crate::app::new_session::Kind::Persona => t.persona.as_deref().unwrap_or(""),
+                    crate::app::new_session::Kind::Preset => t.preset.as_deref().unwrap_or(""),
+                })
+            } else {
+                match kind {
+                    crate::app::new_session::Kind::Persona => seen.talk.persona.chosen.as_deref(),
+                    crate::app::new_session::Kind::Preset => seen.talk.preset.chosen.as_deref(),
+                }
+            };
             persona_list::lines(
                 list,
                 default,
-                current,
+                (current, switching),
                 &seen.config.layout.current_mark,
                 kind,
                 selected,
@@ -94,6 +103,10 @@ pub(super) fn content(
                 width,
                 max,
             )
+        }
+        Some(crate::app::Panel::Changed { kind, yes, .. }) => {
+            let words = &seen.config.text.settings.in_use;
+            persona_list::changed_lines(kind, yes, words, width, max)
         }
         _ => background::lines(
             seen.boxes.panel,

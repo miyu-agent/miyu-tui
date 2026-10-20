@@ -65,6 +65,8 @@ pub struct Texts {
     pub key_hints: [Vec<Hint>; 6],
     /// 通用、权限、高级、人格这几页的字。
     pub more: super::pages::Texts,
+    /// 改了正在用的人格、预设那一句（`in_use.rs`）。
+    pub in_use: super::in_use::InUseTexts,
 }
 
 impl Texts {

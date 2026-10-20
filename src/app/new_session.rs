@@ -5,10 +5,11 @@
 //! 选的记着，开会话时带上；开了会话不能换。测具设了 `MIYU_TUI_PERSONA`、`MIYU_TUI_PRESET` 的照它、不弹框（人格写 `-` 是
 //! 无人格）。
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent};
+use ratatui::crossterm::event::KeyEvent;
 
 use super::{App, Panel};
 use crate::core::{Command, Persona};
+use crate::pick_box::{Pressed, usable};
 
 /// 新会话要选的哪一样。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -186,55 +187,43 @@ impl App {
         self.boxes.panel = Some(Panel::Pick { kind, selected });
     }
 
-    /// 框开着时的按键：上下挪（跳过写错的），`Enter` 选，`Esc` 照光标起初停的那一个。别的键不管：选了才能打字。
+    /// 框开着时的按键（`pick_box.rs`）：上下挪（跳过写错的），`Enter` 选，`e` 编辑（第 2b 条），`Esc` 照光标起初停的
+    /// 那一个。别的键不管：选了才能打字。
     pub(super) fn pick_key(&mut self, kind: Kind, selected: usize, key: KeyEvent) {
         let Some(list) = self.pick(kind).list.clone() else {
             self.boxes.panel = None;
             return;
         };
-        let step = |down: bool| {
-            let next = if down {
-                usable(&list).find(|&i| i > selected)
-            } else {
-                usable(&list).filter(|&i| i < selected).last()
-            };
-            next.unwrap_or(selected)
-        };
-        match key.code {
-            KeyCode::Down => {
-                self.boxes.panel = Some(Panel::Pick {
-                    kind,
-                    selected: step(true),
-                })
-            }
-            KeyCode::Up => {
-                self.boxes.panel = Some(Panel::Pick {
-                    kind,
-                    selected: step(false),
-                })
-            }
-            KeyCode::Enter => {
-                if let Some(p) = list.get(selected).filter(|p| p.problem.is_none()) {
-                    self.boxes.panel = None;
-                    match self.current_pick(kind) {
-                        // 开着的会话中途换：选的就是现在的不发，换成了照推来的办（第 2a 条）。
-                        Some(current) => {
-                            if current != p.id {
-                                self.switch_pick(kind, p.id.clone());
-                            }
+        match crate::pick_box::press(&list, selected, key) {
+            Pressed::Moved(selected) => self.boxes.panel = Some(Panel::Pick { kind, selected }),
+            Pressed::Chose(at) => {
+                let id = list[at].id.clone();
+                self.boxes.panel = None;
+                match self.current_pick(kind) {
+                    // 开着的会话中途换：选的就是现在的不发，换成了照推来的办（第 2a 条）。
+                    Some(current) => {
+                        if current != id {
+                            self.switch_pick(kind, id);
                         }
-                        None => {
-                            self.choose(kind, p.id.clone());
-                            self.ask_next();
-                        }
+                    }
+                    None => {
+                        self.choose(kind, id);
+                        self.ask_next();
                     }
                 }
             }
-            // 开着的会话中途换：`Esc` 关、不换。
-            KeyCode::Esc if !self.not_opened() => self.boxes.panel = None,
+            Pressed::Edit(at) => self.edit_pick(kind, selected, list[at].id.clone()),
+            Pressed::CantEdit => {
+                let note = self.config.text.persona_box.cant_edit.clone();
+                self.hint(note, false);
+            }
+            // 开着的会话中途换、还没开会话但已经选过再打开的：`Esc` 关、不换（2026-10-20 查出：原来照默认的，选好的被换掉）。
+            Pressed::Escape if !self.not_opened() || self.pick(kind).chosen.is_some() => {
+                self.boxes.panel = None;
+            }
             // 照光标起初停的那一个（上一次选的、默认的）；人格都用不了的就是无人格（第一行），不卡住（2026-10-08 项目主人：
             // 人格允许为空）。
-            KeyCode::Esc => {
+            Pressed::Escape => {
                 match esc_choice(&list, self.pick(kind).preferred(self.last_pick(kind)), kind) {
                     Some(id) => {
                         self.boxes.panel = None;
@@ -248,7 +237,7 @@ impl App {
                     }
                 }
             }
-            _ => {}
+            Pressed::Ignored => {}
         }
     }
 
@@ -351,11 +340,6 @@ fn esc_choice(list: &[Persona], preferred: Option<usize>, kind: Kind) -> Option<
             (kind == Kind::Persona).then(|| list.first().map_or_else(String::new, |p| p.id.clone()))
         }
     }
-}
-
-/// 选得了的那几行。
-fn usable(list: &[Persona]) -> impl Iterator<Item = usize> + '_ {
-    (0..list.len()).filter(|&i| list[i].problem.is_none())
 }
 
 #[cfg(test)]

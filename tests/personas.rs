@@ -66,6 +66,16 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     tui.key(b"\r");
     // 选好了框关上、能打字（首页那一行不写人格、预设，2026-10-08 项目主人）；选的照发出去的请求认。
     closed(&mut tui);
+    // 还没说话再打开：选过的那个写 `●`（2026-10-20 项目主人报：空会话选了再打开没有圆点），没有切换前压缩那一行。
+    tui.say("/persona");
+    tui.wait_for("● 海盗");
+    assert!(
+        !tui.shows("切换前会先压缩会话"),
+        "{}",
+        tui.lines().join("\n")
+    );
+    tui.key(b"\x1b");
+    closed(&mut tui);
     tui.say("在吗");
     tui.wait_for("好。");
     let sent = format!("{:?}", script.requests().last());

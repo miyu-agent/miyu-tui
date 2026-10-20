@@ -177,8 +177,11 @@ fn a_form_saves_with_s_and_closes_keeps_its_input_when_refused_and_escape_needs_
     let mut page = opened(false);
     press(&mut page, KeyCode::Down);
     press(&mut page, KeyCode::Enter);
-    // 中转站的窗：停在显示名称，改它，按 s 存了关窗。
+    // 中转站的窗：停在显示名称，改它（光标停在原来的字末尾、不选中，先删掉），按 s 存了关窗。
     press(&mut page, KeyCode::Enter);
+    for _ in 0..40 {
+        press(&mut page, KeyCode::Backspace);
+    }
     for c in "Relay".chars() {
         press(&mut page, KeyCode::Char(c));
     }

@@ -27,7 +27,7 @@ impl App {
     }
 
     /// 配置页攒着的请求发出去。
-    fn send_settings_asks(&mut self) {
+    pub(super) fn send_settings_asks(&mut self) {
         let Some(page) = self.boxes.settings.as_mut() else {
             return;
         };
@@ -72,6 +72,11 @@ impl App {
                 _ => Outcome::Stay,
             },
             _ => Outcome::Stay,
+        };
+        // 从人格框、预设框按 `e` 进来的：详情窗关了就回框（「新会话：人格、工作区」第 2b 条）。
+        let outcome = match self.boxes.settings.as_ref() {
+            Some(page) if outcome == Outcome::Stay && page.lone_done() => Outcome::Back,
+            _ => outcome,
         };
         self.settings_outcome(outcome);
         self.send_settings_asks();
@@ -119,9 +124,12 @@ impl App {
         match outcome {
             Outcome::Stay => {}
             Outcome::Back => {
-                self.boxes.settings = None;
-                // 配置页里可能换了人格的头像：重读人格列表，照新的版本换（「空会话的首页」第 10 条）。
+                let page = self.boxes.settings.take();
+                // 配置页里可能换了人格的头像、改了名字：重读人格、预设列表，照新的换（「空会话的首页」第 10 条）。
                 self.link.core.send(Command::ListPersonas);
+                self.link.core.send(Command::ListPresets);
+                // 从人格框、预设框按 `e` 进来的：回框，改了正在用的先问要不要压缩（第 2b 条）。
+                self.pick_returned(page.as_ref().map_or(&[][..], |p| &p.watch.saved));
             }
             Outcome::Quit => self.quit = true,
         }

@@ -37,18 +37,21 @@ pub struct Texts {
     pub preset_title: String,
     /// 默认预设用不了时按 `Esc`（开会话一定要有预设，核心 Y12）。
     pub preset_need: String,
+    /// 「无人格」、写错了的那一行上按 `e`（第 2b 条）。
+    pub cant_edit: String,
     /// 首页框下面那一行、侧边栏：`{name}` 是选的预设。
     pub preset_chosen: String,
 }
 
-/// 框（标题照是人格还是预设、提示）、排好的行、每一行是第几个。`current` 是开着的会话现在用的那一个（中途换，「新会话：
-/// 人格、工作区」第 2a 条；无人格是空的编号）：最上面一行暗色写切换前先压缩，它行首写 `dot`（选中了也照旧），不写「默认」；
-/// 还没开会话的是 `None`。
+/// 框（标题照是人格还是预设、提示）、排好的行、每一行是第几个。`current` 是现在用的那一个（无人格是空的编号）：开着会话的
+/// 是会话用的，还没开会话、已经选过的是选的（2026-10-20 项目主人报：空会话选过再打开没有圆点），还没选的是 `None`；它行首写
+/// `dot`（选中了也照旧），不写「默认」。`switching` 是开着会话、中途换（「新会话：人格、工作区」第 2a 条）：最上面一行暗色
+/// 写切换前先压缩。
 #[allow(clippy::too_many_arguments)]
 pub fn lines(
     list: &[Persona],
     default: Option<&str>,
-    current: Option<&str>,
+    (current, switching): (Option<&str>, bool),
     dot: &str,
     kind: Kind,
     selected: usize,
@@ -98,11 +101,44 @@ pub fn lines(
         })
         .collect();
     let mut rows = rows;
-    if current.is_some() {
+    if switching {
         let note = vec![Span::styled(texts.switch_note.clone(), theme::dim())];
         rows.insert(0, (None, panel::item(false, note, None, width)));
     }
     let rows = panel::fit(rows, Some(selected), max);
+    let (map, lines) = rows.into_iter().unzip();
+    (chrome, lines, map)
+}
+
+/// 从框进去改了正在用的、改成了，问要不要压缩（第 2b 条）：框不写标题（同网页），第一行是项目主人那句话（放不下的折行），
+/// 下面「是」「否」。
+pub fn changed_lines(
+    kind: Kind,
+    yes: bool,
+    words: &crate::settings::in_use::InUseTexts,
+    width: u16,
+    max: usize,
+) -> (
+    Chrome,
+    Vec<ratatui::text::Line<'static>>,
+    Vec<Option<usize>>,
+) {
+    let line = match kind {
+        Kind::Persona => &words.persona,
+        Kind::Preset => &words.preset,
+    };
+    let chrome = Chrome::default();
+    let room = usize::from(width).saturating_sub(2).max(1);
+    let mut rows: Vec<Row> = crate::cells::wrap(line, room)
+        .into_iter()
+        .map(|part| (None, panel::item(false, vec![Span::raw(part)], None, width)))
+        .collect();
+    for (i, button) in words.buttons.iter().enumerate() {
+        let picked = (i == 0) == yes;
+        let line = panel::item(picked, vec![Span::raw(button.clone())], None, width);
+        rows.push((Some(i), line));
+    }
+    let rows = panel::fit(rows, Some(usize::from(!yes)), max);
     let (map, lines) = rows.into_iter().unzip();
     (chrome, lines, map)
 }

@@ -5,6 +5,7 @@ pub mod data;
 pub mod draft;
 mod form_keys;
 pub mod forms;
+pub mod in_use;
 mod input;
 pub mod keys;
 pub mod merge;
@@ -173,6 +174,8 @@ pub struct Settings {
     sheet_out: Option<pages::textarea::SheetEdit>,
     /// 改了人格（主色）：`App` 拿走一次，重读人格列表、照新的换颜色。
     pub personas_changed: bool,
+    /// 盯着开着的会话正在用的人格、预设（`in_use.rs`）。
+    pub watch: in_use::Watch,
 }
 
 impl Settings {
@@ -199,12 +202,6 @@ impl Settings {
     /// 要发给核心的：编号、方法、参数。
     pub fn take_asks(&mut self) -> Vec<(u64, &'static str, Value)> {
         std::mem::take(&mut self.asks)
-    }
-
-    fn ask(&mut self, method: &'static str, params: Value, waiting: Waiting) {
-        self.next += 1;
-        self.waiting.insert(self.next, waiting);
-        self.asks.push((self.next, method, params));
     }
 
     /// 重读三样；正在读的读完再补一次（「配置页」第 25 条）。
@@ -251,6 +248,7 @@ impl Settings {
         let Some(waiting) = self.waiting.remove(&tag) else {
             return;
         };
+        self.note_saved(tag, result.is_ok());
         match waiting {
             Waiting::Load(which) => self.loaded(which, result.ok()),
             Waiting::Secret(provider, name) => self.secret_saved(provider, name, result),

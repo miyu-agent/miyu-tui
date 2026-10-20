@@ -60,10 +60,10 @@ pub(super) fn form_key(form: &mut Form, key: KeyEvent) -> FormAction {
         (KeyCode::Char(' '), Focus::Row(i)) => tick(form, i),
         (KeyCode::Enter, Focus::Row(i)) => match &form.rows[i].val {
             Val::Text { text, .. } => {
-                // 原来的字整段选中：一敲就换掉，要接着改的按左右键（2026-10-07 实测：窗口 128000 后面接上了 200k）。
+                // 光标停在原来的字末尾，不选中（2026-10-20 项目主人：整段选中一敲就替换掉全部的字，不对；原来 10-07 定的整段
+                // 选中撤掉）。
                 let mut editor = crate::input::Editor::default();
                 editor.set(text);
-                editor.select_all();
                 form.editing = Some(editor);
             }
             Val::Choice { .. } => turn(form, i, true),
