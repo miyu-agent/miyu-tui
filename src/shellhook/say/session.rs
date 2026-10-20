@@ -18,6 +18,8 @@ use crate::notify::{self, Notifier};
 
 /// 这一轮结束后等多久看核心是不是叫醒她（`turn.rs` 的 `lingering`）：核心是同一刻开的，留够推送路上的时间。
 const LINGER: Duration = Duration::from_millis(500);
+/// 画一帧以前最多先办几件：补发的一页再长也不至于一直不画。
+const BATCH: usize = 512;
 
 /// 一次在 shell 里画：从连上到收工。
 pub struct Session {
@@ -91,20 +93,20 @@ impl Session {
                 (false, _) => lingered = None,
                 _ => {}
             }
-            match self.incoming.recv_timeout(Duration::from_millis(spinner)) {
-                Ok(Incoming::Core(update)) => turn.core(update, &mut self.config, &self.core),
-                Ok(Incoming::Key(event)) => {
-                    match event {
-                        Event::FocusGained => self.notifier.focus(true),
-                        Event::FocusLost => self.notifier.focus(false),
-                        _ => {}
-                    }
-                    if turn.key(&event, &self.core, &self.config) {
-                        break;
-                    }
-                }
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
+            // 等到一件，再把已经到了的都办完才画：接上会话补发的那一页一件一件来，每件画一帧的话，以前弹过、已经答了的
+            // 确认框会闪一下（2026-10-20 项目主人验收）。
+            let first = match self.incoming.recv_timeout(Duration::from_millis(spinner)) {
+                Ok(first) => Some(first),
+                Err(mpsc::RecvTimeoutError::Timeout) => None,
                 Err(mpsc::RecvTimeoutError::Disconnected) => break,
+            };
+            let rest: Vec<Incoming> = self.incoming.try_iter().take(BATCH).collect();
+            if first
+                .into_iter()
+                .chain(rest)
+                .any(|incoming| self.take(turn, incoming))
+            {
+                break;
             }
             turn.look.apply(&self.config);
             let (width, height) = size();
@@ -172,6 +174,24 @@ impl Session {
             _ => {}
         }
         self.send_out()
+    }
+
+    /// 办一件：核心来的交给这一轮，按键先看焦点再交给这一轮。交回 `true` 是不等了（按了两下 Ctrl+C）。
+    fn take(&mut self, turn: &mut Turn, incoming: Incoming) -> bool {
+        match incoming {
+            Incoming::Core(update) => {
+                turn.core(update, &mut self.config, &self.core);
+                false
+            }
+            Incoming::Key(event) => {
+                match event {
+                    Event::FocusGained => self.notifier.focus(true),
+                    Event::FocusLost => self.notifier.focus(false),
+                    _ => {}
+                }
+                turn.key(&event, &self.core, &self.config)
+            }
+        }
     }
 
     /// 等配色那几项读回来（最多半秒），照它挑好：只印定下来的几行时没有主循环替它等。

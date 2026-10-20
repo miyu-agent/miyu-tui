@@ -100,8 +100,11 @@ fn grab(input: &mut InputBox, shell: u32, config: &Config) -> bool {
         return true;
     }
     let hint = match crate::clipboard::read() {
+        // 读来的字全是本机现成的文件、目录（复制的路径）的也收成块（同全屏，2026-10-20 项目主人验收：原来只认复制的文件）。
         Ok(text) if !text.is_empty() => {
-            input.paste(&text);
+            if !input.paste_files(&text) {
+                input.paste(&text);
+            }
             return true;
         }
         Ok(_) => &config.text.clipboard_empty,
