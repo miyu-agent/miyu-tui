@@ -55,6 +55,11 @@ fn rate_limits_get_a_plain_word_in_front() {
 fn the_kernels_own_errors_say_only_their_class_in_plain_words() {
     // 2026-10-01 项目主人：已经有中文的报错了，后面不要再接英文。内核自己查出来的原话是给运行日志的诊断，不接。
     assert_eq!(failed("empty_reply", "").1, "出错：回复为空");
+    // 核心 3-10：一轮里连着几次写到输出上限，原话是英文诊断。
+    assert_eq!(
+        failed("output_limit", "4 replies in a row hit max_tokens").1,
+        "出错：回复超过了输出上限"
+    );
     assert_eq!(
         failed("bad_stream", "delta for unknown block 3").1,
         "出错：响应流异常"

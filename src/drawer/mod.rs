@@ -147,6 +147,11 @@ impl Drawer {
         matches!(&self.ask, Ask::Approval(a) if a.detail.as_ref().and_then(|d| d.sandbox) == Some(false))
     }
 
+    /// 这一次确认的命令被核心认成高危的（`detail.hazard`，核心 5-17）：抽屉写一行红字。
+    pub fn hazardous(&self) -> bool {
+        matches!(&self.ask, Ask::Approval(a) if a.detail.as_ref().is_some_and(|d| d.hazard.is_some()))
+    }
+
     fn new(who: Option<String>, call_id: String, ask: Ask, checked: Vec<Vec<bool>>) -> Self {
         let pages = checked.len();
         Self {
@@ -219,7 +224,7 @@ impl Drawer {
                     .chain([Item::Other])
                     .collect()
             }),
-            // 请求没提放行规则的不给「这个会话都允许」（核心会回 `no_rule`）。
+            // 请求没提放行规则的不给「此目录不再询问」（核心会回 `no_rule`）。
             Ask::Approval(a) if page == 0 => Decision::ALL
                 .into_iter()
                 .filter(|d| *d != Decision::Session || a.rule.is_some())

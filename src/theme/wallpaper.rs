@@ -1,7 +1,7 @@
-//! 跟随壁纸（蓝图 `tui.md`「主题」的「跟随壁纸」，2026-10-14 项目主人定）：取色和网页同一个来处（网页仓库的
-//! `miyu-wallpaper`）。先找 matugen 生成的那一份，取它的 `source` 当主色；没有的照桌面找壁纸图，取图的主色（同跟随头像的
+//! 跟随壁纸（蓝图 `tui.md`「主题」的「跟随壁纸」，2026-10-14 项目主人定）：取色和网页同一个来处（门面
+//! `miyu_client::wallpaper`，核心施工 X-29 从网页仓库搬进核心仓库）。先找 matugen 生成的那一份，取它的 `source` 当主色；没有的照桌面找壁纸图，取图的主色（同跟随头像的
 //! 取法）。主色照「跟随头像的配色」第 3 条那一套生成。找要跑命令（一家最多等 2 秒），放在后台，找好了叫醒主循环：起来时
-//! 找一次，打开配色列表、选上跟随壁纸时再找一次；跟随着的，壁纸来处的文件变了（`miyu-wallpaper` 的 `Watch`：只用系统的
+//! 找一次，打开配色列表、选上跟随壁纸时再找一次；跟随着的，壁纸来处的文件变了（`miyu_client::wallpaper` 的 `Watch`：只用系统的
 //! 文件通知，起不来的不退回定时去看、记一行日志）、窗口拿回焦点时（只能靠命令换壁纸的，hyprpaper、swaybg）也再找
 //! （2026-10-14 项目主人：换了壁纸要自动跟着变，绝对不轮询）。都找不到的配色里不列它，选着它的照 tokyonight。
 //!
@@ -16,7 +16,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender, channel};
 
-use miyu_wallpaper::watch::Watch;
+use miyu_client::wallpaper::watch::Watch;
 use serde_json::Value;
 
 /// 找到了什么。
@@ -219,10 +219,10 @@ impl Wallpaper {
 
 /// 找：matugen 那一份优先，没有的（`desktop` 开着时）照桌面找壁纸图，缓存里记着这张的直接用，没记的 `decode` 才解开取色
 /// 再记下。一并交回要盯的文件：找到了图的照它的（图本身、找到它的那一家的文件、matugen 那一份），不然只盯 matugen 那一份
-/// （`miyu-wallpaper` 的 `watch_list`；别家的不盯，后来才设上的靠拿回焦点时再找）。
+/// （`miyu_client::wallpaper` 的 `watch_list`；别家的不盯，后来才设上的靠拿回焦点时再找）。
 fn probe(dark: bool, desktop: bool, decode: bool) -> (Found, Vec<PathBuf>) {
-    let list = miyu_wallpaper::watch::watch_list;
-    let matugen = miyu_wallpaper::matugen::find()
+    let list = miyu_client::wallpaper::watch::watch_list;
+    let matugen = miyu_client::wallpaper::matugen::find()
         .and_then(|m| m.read().ok())
         .and_then(|json| source_of(&json));
     if let Some(seed) = matugen {
@@ -231,7 +231,7 @@ fn probe(dark: bool, desktop: bool, decode: bool) -> (Found, Vec<PathBuf>) {
     if !desktop {
         return (Found::Nothing, list());
     }
-    let Some(wallpaper) = miyu_wallpaper::find(dark).ok().flatten() else {
+    let Some(wallpaper) = miyu_client::wallpaper::find(dark).ok().flatten() else {
         return (Found::Nothing, list());
     };
     let cache = super::wallpaper_cache::file();

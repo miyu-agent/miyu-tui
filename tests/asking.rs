@@ -51,7 +51,7 @@ fn a_write_outside_the_workspace_asks_and_allowing_once_lets_it_through() {
     tui.wait_for("允许本次");
     assert!(!target.exists(), "还没答就没写");
     // 有放行规则：三项都在。
-    tui.wait_for("本会话内始终允许");
+    tui.wait_for("此目录不再询问");
     assert!(
         !tui.lines().iter().any(|l| l.contains("在问")),
         "她自己问的不写谁在问"
@@ -114,11 +114,33 @@ fn a_command_approval_shows_its_short_title_and_the_command() {
     // 测试里的核心没有沙盒助手：命令不在沙盒里跑，核心 D-4 的 `detail.sandbox` 是 `false`。
     assert!(screen.contains("沙盒外运行"), "{screen}");
     assert!(
-        !screen.contains("本会话内始终允许"),
+        !screen.contains("此目录不再询问"),
         "跑命令的没有放行规则：{screen}"
     );
     tui.key(b"\r");
     tui.wait_for("看完了。");
+}
+
+#[test]
+fn a_hazardous_command_says_so_and_only_offers_once_or_deny() {
+    // 核心 5-17：认成高危的命令带 `detail.hazard`、没有放行规则；2026-10-20 项目主人：写「高危命令」四个字。
+    let args = r#"{"command": "git push --force", "description": "强推上去"}"#;
+    let script = Script::new([
+        Play::Calls(vec![("shell".into(), args.into())]),
+        Play::Says("好，不推了。"),
+    ]);
+    let home = Home::with_tools(script, "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("推上去");
+    tui.wait_for("允许本次");
+    let screen = tui.lines().join("\n");
+    assert!(screen.contains("高危命令"), "{screen}");
+    assert!(screen.contains("$ git push --force"), "{screen}");
+    assert!(!screen.contains("此目录不再询问"), "{screen}");
+    tui.key(DOWN);
+    tui.key(b"\r");
+    tui.wait_for("好，不推了。");
 }
 
 #[test]

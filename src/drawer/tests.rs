@@ -80,7 +80,7 @@ fn the_kernel_samples_read_and_there_is_no_decline() {
     assert_eq!(
         a.items(0).len(),
         3,
-        "允许本次、本会话内始终允许、不允许（核心 D-1 还没有工作区）"
+        "允许本次、此目录不再询问、不允许（核心 5-15 上改叫法）"
     );
     let mut bare = approval();
     bare.rule = None;
@@ -90,7 +90,7 @@ fn the_kernel_samples_read_and_there_is_no_decline() {
             Item::Decision(Decision::Once),
             Item::Decision(Decision::Deny)
         ],
-        "没提放行规则的不给「本会话内始终允许」：选了核心回 no_rule"
+        "没提放行规则的不给「此目录不再询问」：选了核心回 no_rule"
     );
     assert!(!d.has_review(), "一道题没有「确认」页");
     assert!(Drawer::question(None, two()).has_review());
@@ -312,7 +312,7 @@ fn landing_on_deny_opens_the_reason_and_one_enter_submits() {
     // 2026-10-07 项目主人：光标移到「不允许」就能写理由，回车直接交，不用按两次。
     let mut d = Drawer::approval(None, approval());
     d.key(key(KeyCode::Down));
-    assert_eq!(d.editing, None, "「本会话内始终允许」上不写字");
+    assert_eq!(d.editing, None, "「此目录不再询问」上不写字");
     d.key(key(KeyCode::Down));
     assert_eq!(d.editing, Some(Edit::Reason), "落到「不允许」就在写理由");
     typed(&mut d, "jk别动");
@@ -354,7 +354,21 @@ fn a_command_ask_takes_its_title_and_command_from_the_core_and_says_when_unsandb
         Some("rm -rf build")
     );
     assert!(d.unsandboxed(), "sandbox:false 要写出来");
+    assert!(!d.hazardous(), "没认成高危的不写");
     assert_eq!(d.items(0).len(), 2, "没有 rule：只有允许本次、不允许");
+}
+
+#[test]
+fn a_hazardous_command_says_so_and_offers_only_once_or_deny() {
+    // 核心 5-17：认成高危的带 `detail.hazard`，`rule` 一定是 null；2026-10-20 项目主人：写「高危命令」四个字。
+    let approval: Approval = serde_json::from_value(serde_json::json!({
+        "call_id": "c1", "access": "execute", "rule": null,
+        "detail": {"command": "git push --force", "hazard": "git_force_push", "sandbox": true, "tool": "shell"}
+    }))
+    .unwrap();
+    let d = Drawer::approval(None, approval);
+    assert!(d.hazardous());
+    assert_eq!(d.items(0).len(), 2, "只有允许本次、不允许");
 }
 
 #[test]

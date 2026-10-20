@@ -50,7 +50,7 @@ pub struct Approval {
     pub call_id: String,
     /// 要什么权限：`write`、`read`、`exec` 这类。
     pub access: String,
-    /// 提的放行规则：有的才能选「这个会话都允许」（核心 D-1：没有的选了回 `no_rule`）。
+    /// 提的放行规则：有的才能选「此目录不再询问」（核心 D-1：没有的选了回 `no_rule`；5-15 上起写的是工作目录）。
     #[serde(default)]
     pub rule: Option<serde_json::Value>,
     /// 碰到哪些东西。
@@ -76,6 +76,9 @@ pub struct Detail {
     /// 跑命令的：这一次在不在沙盒里跑；`false` 的抽屉写出来（核心 D-4）。
     #[serde(default)]
     pub sandbox: Option<bool>,
+    /// 跑命令的：认出是高危命令的种类（`git_force_push` 这类，核心 5-17）；抽屉写一行红字「高危命令」。
+    #[serde(default)]
+    pub hazard: Option<String>,
     /// 装包的：包目录的路径（核心 F-10 下，`package` 工具）。
     #[serde(default)]
     pub install: Option<String>,
@@ -141,7 +144,7 @@ pub struct Decided {
 pub enum Decision {
     /// 允许这一次。
     Once,
-    /// 这个会话都允许。
+    /// 此目录不再询问（协议上叫 `session`，2026-10-20 项目主人改的叫法）。
     Session,
     /// 不允许。
     Deny,

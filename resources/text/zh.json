@@ -253,6 +253,7 @@
     "paused": "· 自动压缩已暂停"
   },
   "error_classes": {
+    "output_limit": "回复超过了输出上限",
     "retryable": "临时错误",
     "rate_limited": "请求受限",
     "context_too_long": "上下文太长",
@@ -513,6 +514,7 @@
     "asking": "{who} 在问",
     "preview": "预览",
     "unsandboxed": "沙盒外运行",
+    "hazard": "高危命令",
     "agent": "子代理 {name}",
     "elsewhere": "「{title}」在问你 · /resume 切过去",
     "answered_tab": " ✓",
@@ -525,7 +527,7 @@
     "notes_label": "补充",
     "decisions": [
       "允许本次",
-      "本会话内始终允许",
+      "此目录不再询问",
       "不允许"
     ],
     "reason_hint": "理由（可选）",

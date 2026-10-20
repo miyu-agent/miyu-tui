@@ -12,6 +12,8 @@ pub struct Texts {
     pub asking: String,
     /// 跑命令的确认不在沙盒里跑时写的那一行（核心 D-4）。
     pub unsandboxed: String,
+    /// 跑命令的确认被认成高危命令时写的那一行（核心 5-17，2026-10-20 项目主人：「可以加『高危命令』四个字」）。
+    pub hazard: String,
     /// 选项预览面板第一行。
     pub preview: String,
     /// 子会话问的，`{who}` 怎么写：`子代理 {name}`。

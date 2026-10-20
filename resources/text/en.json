@@ -253,6 +253,7 @@
     "paused": "· Auto-compaction is paused: compact manually, switch models, or start a new session"
   },
   "error_classes": {
+    "output_limit": "Reply exceeded the output limit",
     "retryable": "Temporary error",
     "rate_limited": "Rate limited",
     "context_too_long": "Context too long",
@@ -513,6 +514,7 @@
     "asking": "{who} is asking",
     "preview": "Preview",
     "unsandboxed": "Runs outside the sandbox",
+    "hazard": "Dangerous command",
     "agent": "Subagent {name}",
     "elsewhere": "\"{title}\" is asking you · /resume to switch",
     "answered_tab": " ✓",
@@ -525,7 +527,7 @@
     "notes_label": "Notes",
     "decisions": [
       "Allow once",
-      "Allow for this session",
+      "Don't ask again for this folder",
       "Don't allow"
     ],
     "reason_hint": "Add a reason (optional)",

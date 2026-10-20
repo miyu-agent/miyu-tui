@@ -253,6 +253,7 @@
     "paused": "· 自動圧縮を一時停止しました：手動で圧縮する、モデルを変える、または新しいセッションを始めてください"
   },
   "error_classes": {
+    "output_limit": "応答が出力上限を超えました",
     "retryable": "一時的なエラー",
     "rate_limited": "レート制限",
     "context_too_long": "コンテキストが長すぎます",
@@ -513,6 +514,7 @@
     "asking": "{who}が質問しています",
     "preview": "プレビュー",
     "unsandboxed": "サンドボックスの外で実行します",
+    "hazard": "危険なコマンド",
     "agent": "サブエージェント {name}",
     "elsewhere": "「{title}」が質問しています · /resume で切り替え",
     "answered_tab": " ✓",
@@ -525,7 +527,7 @@
     "notes_label": "補足",
     "decisions": [
       "今回だけ許可",
-      "このセッションでは常に許可",
+      "このフォルダでは今後確認しない",
       "許可しない"
     ],
     "reason_hint": "理由を入力（任意）",
