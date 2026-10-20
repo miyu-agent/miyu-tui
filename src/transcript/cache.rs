@@ -15,7 +15,8 @@ pub struct CacheWatch {
     excused: bool,
     /// 之前的请求最多看到第几条。
     furthest: Option<u64>,
-    /// 有没有能压缩的（核心 W-12）：订阅回应给的；之后发过一次主请求当有，压完当没有（核心在 events 流里推以前先这么顶着，
+    /// 有没有能压缩的（核心 W-12）：订阅回应给的；之后发过一次主请求当有，压完、核心回 `nothing_to_compact` 当没有（后一样在
+    /// `app/updates.rs`；核心在 events 流里推以前先这么顶着，
     /// 2026-10-20 和核心会话对的）。不知道的是 `None`，照有算。
     pub compactable: Option<bool>,
 }

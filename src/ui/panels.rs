@@ -95,7 +95,9 @@ pub(super) fn content(
             persona_list::lines(
                 list,
                 default,
-                (current, switching),
+                // 没东西可压缩的不写「切换前会先压缩」（2026-10-20 项目主人：「如果没什么可压缩的，切换就不应该提示要压缩」，
+                // 核心 W-12 的 `compactable`）。
+                (current, switching && t.cache.compactable != Some(false)),
                 &seen.config.layout.current_mark,
                 kind,
                 selected,

@@ -225,3 +225,37 @@ fn a_persona_switched_midway_compacts_first_then_speaks_as_the_new_one() {
     let sent = format!("{:?}", script.requests().last());
     assert!(sent.contains("X1Y2"), "换了以后照海盗说：{sent}");
 }
+
+#[test]
+fn nothing_to_compact_means_no_compaction_note_before_switching() {
+    // 2026-10-20 项目主人：「如果没什么可压缩的，切换就不应该提示要压缩」（核心 W-12 的 `compactable`）。
+    let script = Script::new([Play::Says("好。")]);
+    let home = Home::new(script);
+    home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("在吗");
+    tui.wait_for("好。");
+    tui.say("/persona");
+    tui.wait_for("切换前会先压缩会话");
+    tui.key(b"\x1b");
+    closed(&mut tui);
+    tui.say("/compact");
+    let end = std::time::Instant::now() + support::WAIT;
+    while !tui.shows("上下文已压缩") && !tui.shows("没有可压缩的内容") {
+        assert!(
+            std::time::Instant::now() < end,
+            "压缩：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(std::time::Duration::from_millis(50));
+    }
+    tui.say("/persona");
+    tui.wait_for("请选择人格");
+    tui.pump(std::time::Duration::from_millis(200));
+    assert!(
+        !tui.shows("切换前会先压缩会话"),
+        "压完了没东西可压：\n{}",
+        tui.lines().join("\n")
+    );
+}
