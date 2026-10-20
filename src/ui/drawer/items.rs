@@ -97,9 +97,8 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
             )
         }
         Item::Other if editing => (String::new(), None),
-        Item::Other if !typed.trim().is_empty() => {
-            (texts.custom.replace("{text}", &inline(typed)), None)
-        }
+        // 写好了的照写的字，不加「自定义：」（2026-10-20 项目主人：「编辑完成后不需要『自定义』」）。
+        Item::Other if !typed.trim().is_empty() => (inline(typed), None),
         Item::Other => (texts.other.clone(), None),
         Item::Decision(decision) => {
             let at = Decision::ALL

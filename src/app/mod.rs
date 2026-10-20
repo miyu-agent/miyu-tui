@@ -298,10 +298,12 @@ impl App {
         self.oobe_tick();
         // 附件照模型收：收不了的那几种交给输入框，刚改成文件块的提示一句（`attachments.rs`）。
         self.sync_refused();
-        // 配置页、引导里不在打字的时候输入法关成英文，打字时开回来；对话里的输入框一直算在打字（`ime.rs`）。
+        // 配置页、引导里不在打字的时候输入法关成英文，打字时开回来；确认、提问的抽屉开着时一样（没在写补充、其他答案、理由时
+        // 按键是 j、k 这些，2026-10-20 项目主人：「这里没有做 fcitx5 输入法状态记录」）；对话里的输入框一直算在打字（`ime.rs`）。
         let typing = match (&self.boxes.oobe, &self.boxes.settings) {
             (Some(oobe), _) => oobe.editing(),
             (None, Some(page)) => page.typing(),
+            (None, None) if self.talk.drawers.open() => self.talk.drawers.editing(),
             (None, None) => true,
         };
         self.typing.ime.typing(typing);

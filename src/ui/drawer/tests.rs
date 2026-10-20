@@ -101,9 +101,13 @@ fn other_edits_in_place_and_the_keys_say_only_save_and_leave() {
     let v = view(&d, &texts(), &look(), 60);
     let (row, col) = v.cursor.unwrap();
     assert_eq!((text(&v.lines[row]).as_str(), col), ("› 好", 4));
-    // 退出编辑：写成「自定义：好」。
+    // 退出编辑：照写的字，不加「自定义：」（2026-10-20 项目主人）。
     press(&mut d, KeyCode::Esc);
-    assert!(lines(&d, 60).contains(&"› 自定义：好".to_string()));
+    assert!(
+        lines(&d, 60).contains(&"› 好".to_string()),
+        "{:?}",
+        lines(&d, 60)
+    );
 }
 
 #[test]

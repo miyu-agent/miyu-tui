@@ -141,13 +141,35 @@ fn unanswered_questions_are_submitted_empty_from_the_review_page() {
 }
 
 #[test]
-fn multiple_with_nothing_checked_takes_the_one_under_the_cursor() {
+fn multiple_with_nothing_checked_is_left_unanswered() {
+    // 2026-10-20 项目主人：「我明明什么都没选，它怎么自动推荐了」：一个没勾按 Enter，这一道算没答，接着往下，不交光标那一项。
     let mut d = Drawer::question(None, two());
     d.key(key(KeyCode::Right));
     d.key(key(KeyCode::Down));
     assert_eq!(d.key(key(KeyCode::Enter)), Step::Stay);
     assert_eq!(d.tab, 0, "第一道还没答：跳回去");
+    assert_eq!(d.answers[1], None, "没勾的不替人选");
+    // 勾了的照勾的交。
+    d.key(key(KeyCode::Right));
+    d.key(key(KeyCode::Char(' ')));
+    assert_eq!(d.key(key(KeyCode::Enter)), Step::Stay);
     assert_eq!(d.answers[1], Some(picked(&["乙"])));
+}
+
+#[test]
+fn ticking_a_multiple_choice_answers_it_without_enter() {
+    // 2026-10-21 项目主人：「多选题勾选之后就应该算是提交了内容，而不是必须要回车。现在选了内容如果直接切题目，就不算提交」。
+    let mut d = Drawer::question(None, two());
+    d.key(key(KeyCode::Right));
+    d.key(key(KeyCode::Down));
+    d.key(key(KeyCode::Char(' ')));
+    assert_eq!(d.answers[1], Some(picked(&["乙"])), "勾上就记下");
+    d.key(key(KeyCode::Left));
+    assert_eq!(d.tab, 0);
+    assert_eq!(d.answers[1], Some(picked(&["乙"])), "切走了照样算答了");
+    d.key(key(KeyCode::Right));
+    d.key(key(KeyCode::Char(' ')));
+    assert_eq!(d.answers[1], None, "全取消了算没答");
 }
 
 #[test]
@@ -184,6 +206,18 @@ fn n_adds_notes_without_picking_other() {
     let got = answers(d.key(key(KeyCode::Char('1'))));
     assert_eq!(got[0].picked, vec!["删掉".to_string()]);
     assert_eq!(got[0].notes.as_deref(), Some("顺便清 target"));
+}
+
+#[test]
+fn escape_while_writing_notes_throws_them_away() {
+    // 2026-10-20 项目主人：「esc 之后应该清空补充内容而不是还留着，因为 esc 可能代表着要换选项」。
+    let mut d = Drawer::question(None, asked());
+    d.key(key(KeyCode::Char('n')));
+    typed(&mut d, "写了一半");
+    d.key(key(KeyCode::Esc));
+    assert_eq!(d.editing, None);
+    let got = answers(d.key(key(KeyCode::Char('1'))));
+    assert_eq!(got[0].notes, None, "补充清掉了");
 }
 
 #[test]

@@ -32,8 +32,6 @@ pub struct Texts {
     pub checked: String,
     /// 提问的最后一项。
     pub other: String,
-    /// 「其他」保存了以后写的，`{text}`。
-    pub custom: String,
     /// 补充那一行打头的。
     pub notes_label: String,
     /// 确认的几项，照 `Decision::ALL` 的先后。
