@@ -23,12 +23,25 @@ pub fn run(line: &str, words: &Words) -> Option<io::Result<ExitCode>> {
         Ok(config) => config,
         Err(e) => return Some(Err(e)),
     };
-    let Line::Command(spec, _args) = config.commands.read(line.trim()) else {
-        return None;
+    let line = line.trim();
+    let (spec, args) = match config.commands.read(line) {
+        Line::Command(spec, args) => (spec, args),
+        // 终端界面不收参数、shell 里收的（`/model 名字`：不弹列表直接换）。
+        Line::Talk => {
+            let name = crate::commands::typed(line)?;
+            let spec = config
+                .commands
+                .find(name)
+                .filter(|s| WITH_ARGS.contains(&s.name.as_str()))?;
+            let rest = line[1 + name.len()..].trim();
+            (spec, (!rest.is_empty()).then_some(rest))
+        }
+        Line::Unknown => return None,
     };
     Some(match spec.name.as_str() {
         "config" => config_page(),
         "new" => fresh(&config, words),
+        "model" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Model(args), words),
         name if SKIPPED.contains(&name) => tell(&fill(&words.slash_skipped, &[("name", name)])),
         name => tell(&fill(&words.slash_pending, &[("name", name)])),
     })
@@ -45,6 +58,9 @@ fn config_page() -> io::Result<ExitCode> {
         ExitCode::FAILURE
     })
 }
+
+/// shell 里能接参数、不弹列表直接改的（2026-10-20 项目主人：「直接通过 cli 改也行啊」）。
+const WITH_ARGS: [&str; 5] = ["model", "theme", "effort", "persona", "preset"];
 
 /// 回应等多久：核心没在跑的要先拉起来。
 const WAIT: std::time::Duration = std::time::Duration::from_secs(15);

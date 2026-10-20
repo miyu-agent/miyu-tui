@@ -19,5 +19,7 @@
   },
   "slash_skipped": "/{name} isn't available in the shell",
   "slash_pending": "/{name} isn't available in the shell yet",
-  "slash_new": "Started a new session"
+  "slash_new": "Started a new session",
+  "slash_model": "Switched the model to {name}",
+  "slash_no_match": "Nothing matches “{query}”"
 }

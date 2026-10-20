@@ -25,10 +25,10 @@ const BATCH: usize = 512;
 pub struct Session {
     pub config: Config,
     pub core: Core,
-    incoming: mpsc::Receiver<Incoming>,
-    reader: crate::reader::Reader,
+    pub(super) incoming: mpsc::Receiver<Incoming>,
+    pub(super) reader: crate::reader::Reader,
     notifier: Notifier,
-    painter: Painter<Stdout>,
+    pub(super) painter: Painter<Stdout>,
     media: Media,
     _raw: RawMode,
 }
@@ -253,7 +253,7 @@ impl Session {
 }
 
 /// 终端多宽多高，问不到的照 80×24。
-fn size() -> (u16, u16) {
+pub(super) fn size() -> (u16, u16) {
     ratatui::crossterm::terminal::size().unwrap_or((80, 24))
 }
 

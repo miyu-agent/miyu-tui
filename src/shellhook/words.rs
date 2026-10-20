@@ -36,6 +36,10 @@ pub struct Words {
     pub slash_pending: String,
     /// `/new` 开好了。
     pub slash_new: String,
+    /// `/model` 换好了（`{name}`）。
+    pub slash_model: String,
+    /// 带的参数什么都没对上（`{query}`）。
+    pub slash_no_match: String,
 }
 
 /// 分钟、小时、天的写法，`{n}` 换成数。

@@ -9,6 +9,7 @@ mod asking;
 pub mod follow;
 mod look;
 mod paint;
+mod pick;
 pub mod report;
 mod session;
 pub mod spool;
@@ -109,6 +110,31 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     } else {
         ExitCode::SUCCESS
     })
+}
+
+/// 斜杠命令在 shell 里原地选的那几种（`pick.rs`）。
+pub enum Pick<'a> {
+    /// `/model`，带着后面的字。
+    Model(Option<&'a str>),
+}
+
+/// 在提示符下面原地画一个列表，定了留一行（`pick.rs`，图纸「斜杠命令」第 3 条）。
+///
+/// # Errors
+///
+/// 读配置、开原始模式、写终端失败。
+pub fn pick(which: Pick<'_>, words: &Words) -> io::Result<ExitCode> {
+    let (mut session, look) = Session::start()?;
+    let cwd = std::env::current_dir()
+        .ok()
+        .map(|d| d.to_string_lossy().into_owned());
+    let mut turn = Turn::new(String::new(), cwd, look);
+    let mut picker = match which {
+        Pick::Model(given) => pick::model::ModelPick::new(given, words),
+    };
+    session.pick(&mut turn, &mut picker)?;
+    session.finish()?;
+    Ok(ExitCode::SUCCESS)
 }
 
 /// 读终端界面的配置（语言照环境认）。

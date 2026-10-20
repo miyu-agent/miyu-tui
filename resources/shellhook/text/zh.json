@@ -19,5 +19,7 @@
   },
   "slash_skipped": "/{name} 在 shell 里不做",
   "slash_pending": "/{name} 在 shell 里还没做",
-  "slash_new": "开了新会话"
+  "slash_new": "开了新会话",
+  "slash_model": "模型换成了 {name}",
+  "slash_no_match": "没有对得上「{query}」的"
 }
