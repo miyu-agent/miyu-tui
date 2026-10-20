@@ -62,3 +62,16 @@ fn a_command_that_opens_a_page_says_so() {
         "{ran:?}"
     );
 }
+
+#[test]
+fn stopping_a_dream_runs_dream_stop_in_the_session() {
+    // 核心 R-22：叫停整理是会话里的 `/dream stop`，回执不当整理的回执（`Awaiting::DreamStop`）。
+    let (method, params) = request(Command::DreamStop, "s1").unwrap();
+    assert_eq!(
+        (method, params),
+        (
+            "command.run",
+            json!({"session": "s1", "text": "/dream stop"})
+        )
+    );
+}

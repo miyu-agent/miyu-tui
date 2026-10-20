@@ -222,9 +222,9 @@ impl App {
         if self.widget_update(&update) {
             return;
         }
-        if let Update::SlashRefused { message, .. } = &update {
+        if let Update::SlashRefused { message, reason } = &update {
             self.dream_refused();
-            self.slash_refused(message);
+            self.slash_refused(message, reason.as_deref());
             return;
         }
         // `/dream` 的回执：看着整理的醒一下再收成回执（`dream.rs`）。

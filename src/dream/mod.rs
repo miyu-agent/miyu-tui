@@ -161,10 +161,23 @@ pub struct Dream {
     pub woke: Option<(Instant, String)>,
     /// 整理时人说了话，把她叫醒了：那一块不画，整理转到后台跑完，完了照样留回执（第 7 条）。
     pub awake: bool,
+    /// 人叫停了（Esc、`/dream stop`）：醒来时星星照合了多少亮，不全亮（第 7 条）。
+    pub stopping: bool,
 }
 
 /// 滚动区几行。
 pub const ROWS: usize = 5;
+
+/// 打的这一行是要整理：不带字的 `/dream`（`/dream stop` 是叫停，不是又一趟）。
+pub fn asks_to_dream(line: &str) -> bool {
+    line.trim() == "/dream"
+}
+
+/// 打的这一行是叫停整理（核心 R-22 的 `/dream stop`）。
+pub fn asks_to_stop(line: &str) -> bool {
+    let mut words = line.split_whitespace();
+    words.next() == Some("/dream") && words.next() == Some("stop") && words.next().is_none()
+}
 
 impl Dream {
     /// 刚打 `/dream`。
@@ -186,6 +199,7 @@ impl Dream {
             kept: Vec::new(),
             woke: None,
             awake: false,
+            stopping: false,
         }
     }
 

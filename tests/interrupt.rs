@@ -166,3 +166,26 @@ fn a_line_sent_before_she_answers_a_word_joins_the_request_at_once() {
         tui.lines().join("\n")
     );
 }
+
+/// 没在回答时两下 `Esc` 不再清空输入框（2026-10-20 项目主人定），也不弹提示。
+#[test]
+fn two_escapes_while_idle_leave_the_typed_text_alone() {
+    let home = Home::new(Script::new([]));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.type_text("还没写完的一句");
+    tui.wait_for("还没写完的一句");
+    tui.key(b"\x1b");
+    assert!(
+        !tui.shows("再按一次 Esc"),
+        "第一下不提示：{}",
+        tui.lines().join("\n")
+    );
+    tui.key(b"\x1b");
+    tui.pump(Duration::from_millis(300));
+    assert!(
+        input(&tui).contains("还没写完的一句"),
+        "{}",
+        tui.lines().join("\n")
+    );
+}

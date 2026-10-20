@@ -11,7 +11,7 @@ use crate::input::{Action, Draft};
 use crate::transcript::Starting;
 
 impl App {
-    /// 按了要按两下的 `Esc`：在回答时打断（排着队的接着发），没在回答时清空输入框。
+    /// 按了要按两下的 `Esc`：在回答时打断（排着队的接着发），没在回答、前台在整理时叫停整理。
     /// 上一下还在时限里就做，不然只提示再按一次。
     pub(super) fn esc(&mut self) {
         let window = Duration::from_millis(self.config.layout.esc_window_ms);
@@ -26,6 +26,9 @@ impl App {
                 }
                 if starting {
                     self.talk.transcript.starting = Starting::Stop;
+                } else if !running && self.dreaming_here() {
+                    // 她在做梦：叫停整理（`dream.rs`，「整理记忆」第 7 条）。
+                    self.dream_stop();
                 } else if running {
                     // 她还没开始做事、又没有排着的：打断以后撤掉这一轮，那一句放回输入框（「按键」`Esc`，2026-10-07
                     // 项目主人定；和 Ctrl+C 退回排着的走同一条路，`takeback.rs`）。
@@ -41,8 +44,6 @@ impl App {
                             Some(super::takeback::Takeback::Interrupting(session, back));
                     }
                     self.link.core.send(Command::Interrupt { send: true });
-                } else {
-                    self.typing.input.editor.take();
                 }
             }
             _ => {
@@ -51,7 +52,8 @@ impl App {
                 let hint = if running {
                     &text.esc_hint
                 } else {
-                    &text.esc_clear_hint
+                    // 没在回答：前台在整理才会到这里，叫停整理（「整理记忆」第 7 条）。
+                    &text.dream.esc_hint
                 };
                 self.hint(hint.clone(), false);
             }

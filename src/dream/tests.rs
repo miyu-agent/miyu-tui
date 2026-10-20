@@ -293,3 +293,16 @@ fn the_block_shows_in_its_own_session_until_she_is_woken() {
     home.awake = true;
     assert!(!home.shown_in(Some("s1")), "叫醒了转到后台不画");
 }
+
+#[test]
+fn only_a_bare_dream_starts_one_and_dream_stop_stops() {
+    assert!(asks_to_dream("/dream"));
+    assert!(asks_to_dream("  /dream "));
+    assert!(!asks_to_dream("/dream stop"), "叫停不是又一趟");
+    assert!(!asks_to_dream("/dreamy"));
+    assert!(asks_to_stop("/dream stop"));
+    assert!(asks_to_stop(" /dream   stop "));
+    assert!(!asks_to_stop("/dream"));
+    assert!(!asks_to_stop("/dream stop now"));
+    assert!(!asks_to_stop("/stop"));
+}

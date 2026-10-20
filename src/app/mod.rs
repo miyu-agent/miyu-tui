@@ -201,7 +201,7 @@ impl App {
                 self.leave_child();
                 Action::None
             }
-            // 编辑上一句时一下就取消（「输入框」第 13 条），不照下面有字时两下清空的规矩。
+            // 编辑上一句时一下就取消（「输入框」第 13 条）。
             Event::Key(key)
                 if key.code == KeyCode::Esc
                     && self.typing.input.editing()
@@ -212,13 +212,13 @@ impl App {
                 Action::None
             }
             // Esc 由近及远（`13-终端界面.md` 第十节）：列表、选区归 `key`；在回答时（发出去了、还没开轮的也算）第一下
-            // 只提示，一小会儿以内再按一下才打断；没在回答、有字时，两下清空。
+            // 只提示，一小会儿以内再按一下才打断；没在回答、前台在整理时，两下叫停整理。不再清空输入框（2026-10-20 项目主人定）。
             Event::Key(key)
                 if key.code == KeyCode::Esc
                     && self.esc_for_input(menu_open)
                     && (self.talk.transcript.running.is_some()
                         || self.talk.transcript.starting != crate::transcript::Starting::No
-                        || !self.typing.input.editor.is_empty()) =>
+                        || self.dreaming_here()) =>
             {
                 self.esc();
                 Action::None

@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 
 pub use attention::Attention;
 pub use idle::Idle;
-pub use model::{Gaze as GazeLook, Idle as IdleLook, Look, Part};
+pub use model::{Face, Gaze as GazeLook, Idle as IdleLook, Look, Part};
 pub use mouth::Mouth;
 pub use perch::Perch;
 pub use render::render;

@@ -42,6 +42,12 @@ impl App {
             return;
         };
         let texts = &self.config.text.settings;
+        // 指针挪到哪都记下：上游悬停照它画、指针照它变手（`settings/mouse.rs`）。
+        if let Event::Mouse(mouse) = &event {
+            let at = Position::new(mouse.column, mouse.row);
+            self.screen.pointer = Some(at);
+            page.hover = Some(at);
+        }
         let outcome = match event {
             Event::Key(key) if key.kind == KeyEventKind::Release => Outcome::Stay,
             // Ctrl+C：照 `--page config` 起来的退出，对话里打开的回对话（草稿丢掉）。
@@ -61,6 +67,7 @@ impl App {
                 Outcome::Stay
             }
             Event::Mouse(mouse) => match mouse.kind {
+                // 指针挪动：记下来，上游悬停照它画、指针照它变手（`settings/mouse.rs`）。
                 MouseEventKind::Down(MouseButton::Left) => {
                     let at = Position::new(mouse.column, mouse.row);
                     let window =

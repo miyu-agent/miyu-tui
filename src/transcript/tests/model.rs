@@ -217,3 +217,16 @@ fn a_pinned_model_that_went_away_says_so() {
     );
     assert_eq!(t.entries.len(), 1, "别的头换的不写");
 }
+
+#[test]
+fn before_a_session_the_current_model_is_the_one_the_footer_shows() {
+    // 2026-10-20 项目主人报：空会话里 `/model` 没有圆点。还没开会话照底栏写的那个算现在用的。
+    let mut t = Transcript::default();
+    assert_eq!(t.current_ref(), None);
+    t.show_default("magpie/clinepass/cline-pass/deepseek-v4.1-flash", None);
+    assert_eq!(
+        t.current_ref().as_deref(),
+        Some("magpie/clinepass/cline-pass/deepseek-v4.1-flash")
+    );
+    assert_eq!(t.model_ref(), None, "会话用的照旧是空的");
+}

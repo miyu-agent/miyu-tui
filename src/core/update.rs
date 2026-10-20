@@ -122,6 +122,8 @@ pub enum Update {
     SlashRefused {
         /// 原话。
         message: String,
+        /// 原因码（`data.reason`）：状态不对的不把打的那一行放回输入框。
+        reason: Option<String>,
     },
     /// 斜杠命令办了（`command.run` 的回应）：规范的命令名、照连接语言写好的回执。
     CommandRan {

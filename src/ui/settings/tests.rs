@@ -391,3 +391,74 @@ fn an_unset_secret_reads_dim_and_a_set_one_stays_bold() {
         "设了的照常加粗"
     );
 }
+
+#[test]
+fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
+    // 2026-10-20 项目主人：那一行下面空一行；链接点得开。
+    use crate::settings::Hit;
+    use crate::settings::pages::Section;
+    let config = Config::builtin().unwrap();
+    let mut page = Settings::open(false, true);
+    let item = json!({"key": "im.listen", "name": "端口", "page": "packages", "group": "im",
+        "package": "im", "control": "text", "kind": "string", "layers": ["system"]});
+    for (tag, method, _) in page.take_asks() {
+        let got = match method {
+            "model.list" => crate::settings::test_support::model_list(),
+            "config.get" => crate::settings::test_support::config_all(),
+            "config.schema" => json!({"pages": [{"id": "packages", "name": "软件包"}],
+                "groups": [{"id": "im", "name": "接入通讯平台", "page": "packages"}],
+                "items": [item]}),
+            "package.list" => json!({"packages": [{"package": "im", "name": "接入通讯平台",
+                "author": "shorin", "from": "official", "upstream": "https://github.com/miyu-agent/miyu-im"}]}),
+            _ => json!({"secrets": []}),
+        };
+        page.answer(tag, Ok(got), &config.text.settings);
+    }
+    page.on_menu = false;
+    page.more.section = Some(Section::Page("packages/im".into(), 0));
+    let (text, _) = screen(&mut page, &config, 80, 20);
+    let lines: Vec<&str> = text.lines().collect();
+    let at = lines
+        .iter()
+        .position(|l| l.contains("github.com/miyu-agent/miyu-im"))
+        .expect("那一行");
+    assert!(lines[at].contains("shorin · 官方软件源 · "), "{text}");
+    assert!(lines[at - 2].contains("软件包 › 接入通讯平台"), "{text}");
+    assert_eq!(lines[at - 1].trim(), "", "和面包屑之间空一行：\n{text}");
+    assert_eq!(lines[at + 1].trim(), "", "下面空一行：\n{text}");
+    assert!(lines[at + 2].contains("端口"), "项从空行下面起：\n{text}");
+    let link = page
+        .hits
+        .iter()
+        .find(|(_, h)| *h == Hit::Link)
+        .expect("上游能点");
+    // 照列数：前面的汉字一个占两列。
+    let (start, width) = (usize::from(link.0.x), usize::from(link.0.width));
+    let mut col = 0;
+    let shown: String = lines[at]
+        .chars()
+        .filter(|c| {
+            let here = col;
+            col += unicode_width::UnicodeWidthChar::width(*c).unwrap_or(0);
+            here >= start && here < start + width
+        })
+        .collect();
+    assert_eq!(shown, "github.com/miyu-agent/miyu-im", "点的就是上游那一截");
+    assert_eq!(
+        page.link.as_deref(),
+        Some("https://github.com/miyu-agent/miyu-im")
+    ); // 指针停上去：下划线、指针变手（2026-10-20 项目主人：没有悬浮效果、光标不会变手）。
+    assert!(!page.over_link());
+    let rect = link.0;
+    page.hover = Some(Position::new(rect.x + 1, rect.y));
+    assert!(page.over_link(), "停在上游上");
+    let mut term = Terminal::new(TestBackend::new(80, 20)).unwrap();
+    let mut caret = Caret::default();
+    term.draw(|frame| draw(frame, &mut page, &config, &mut caret))
+        .unwrap();
+    let cell = &term.backend().buffer()[(rect.x + 1, rect.y)];
+    assert!(
+        cell.modifier.contains(ratatui::style::Modifier::UNDERLINED),
+        "悬停加下划线"
+    );
+}

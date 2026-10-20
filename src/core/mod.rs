@@ -233,6 +233,9 @@ pub enum Command {
     /// 人打的 `/dream`（`memory.rs`）：`true` 是下一条斜杠命令交出去以前，订阅它对着的会话那一间的记忆流（还没开会话的开了再订，
     /// 开头那一批不漏）；`false` 是整理完了、退订。
     Dream(bool),
+    /// 叫停这个会话正在跑的整理（`command.run "/dream stop"`，核心 R-22）：回执不当整理的回执，整理那条 `/dream` 自己回
+    /// 「整理已中断」；没在整理的（`not_dreaming`）不用说。
+    DreamStop,
     /// 点了界面块里调方法的动作（`package.call`）：回应不看，拒了的回 [`Update::PackageCallRefused`]。
     PackageCall {
         /// 哪个包。

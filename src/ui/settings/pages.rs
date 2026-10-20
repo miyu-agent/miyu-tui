@@ -79,9 +79,15 @@ fn entry_words(page: &Settings, entry: &Entry, texts: &Texts) -> (String, String
                 .and_then(|s| s.page_name(id))
                 .unwrap_or(id)
                 .to_string();
-            let note = schema
-                .map(|s| s.group_names(id).join("、"))
-                .unwrap_or_default();
+            // 「软件包」照包列（一个包几组的只写一次，2026-10-20 项目主人验收：联网搜索的 key 那一组像是另一个包）。
+            let note = if id == PACKAGES {
+                let names: Vec<String> = page.more.packages().into_iter().map(|p| p.name).collect();
+                names.join("、")
+            } else {
+                schema
+                    .map(|s| s.group_names(id).join("、"))
+                    .unwrap_or_default()
+            };
             (name, note)
         }
     }
@@ -120,18 +126,16 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         }
         _ => None,
     };
-    let shift = u16::from(origin.is_some());
+    // 和面包屑之间空一行，下面照旧空一行再起项（2026-10-20 项目主人：贴着面包屑不好看）。
+    let shift = if origin.is_some() { 2 } else { 0 };
+    page.link = None;
     if let Some(origin) = origin {
-        let row = stage.y + 1;
-        frame.buffer_mut().set_line(
-            stage.x + 2,
-            row,
-            &Line::styled(
-                fit(&origin, usize::from(stage.width.saturating_sub(2))),
-                theme::dim(),
-            ),
-            stage.width.saturating_sub(2),
-        );
+        let link = match &section {
+            Section::Page(id, _) => package_of(id).and_then(|pkg| page.more.upstream(pkg)),
+            _ => None,
+        }
+        .map(str::to_string);
+        origin_row(frame, stage, &origin, link, page);
     }
     let body = Rect::new(
         stage.x,
@@ -326,4 +330,44 @@ fn list_lines(
             (Line::from(spans), i == at)
         })
         .collect()
+}
+
+/// 包页面面包屑下面那一行（第 43a 条）：作者、从哪来暗色；末尾的上游照链接的颜色画、能点，点了用浏览器打开
+/// （2026-10-20 项目主人：链接不可点击跳转）。
+fn origin_row(
+    frame: &mut Frame,
+    stage: Rect,
+    origin: &str,
+    link: Option<String>,
+    page: &mut Settings,
+) {
+    let room = usize::from(stage.width.saturating_sub(2));
+    let text = fit(origin, room);
+    let shown = link.as_deref().map(|l| l.trim_start_matches("https://"));
+    let (lead, tail) = match shown.filter(|s| text.ends_with(s)) {
+        Some(s) => text.split_at(text.len() - s.len()),
+        None => (text.as_str(), ""),
+    };
+    let x = stage.x + 2;
+    let row = stage.y + 2;
+    let start = x + u16::try_from(lead.width()).unwrap_or(0);
+    let area = Rect::new(start, row, u16::try_from(tail.width()).unwrap_or(0), 1);
+    // 悬停加下划线，同正文里的链接（2026-10-20 项目主人：没有悬浮效果）。
+    let hovered = page.hover.is_some_and(|at| area.contains(at));
+    let url_style = if hovered {
+        theme::md_url().add_modifier(Modifier::UNDERLINED)
+    } else {
+        theme::md_url()
+    };
+    let line = Line::from(vec![
+        Span::styled(lead.to_string(), theme::dim()),
+        Span::styled(tail.to_string(), url_style),
+    ]);
+    frame
+        .buffer_mut()
+        .set_line(x, row, &line, stage.width.saturating_sub(2));
+    if !tail.is_empty() {
+        page.hits.push((area, Hit::Link));
+        page.link = link;
+    }
 }

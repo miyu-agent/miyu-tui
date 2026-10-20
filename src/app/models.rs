@@ -22,7 +22,7 @@ impl App {
 
     /// 核心交回了一行行。
     pub(super) fn models_listed(&mut self, all: Vec<Choice>) {
-        let current = self.talk.transcript.model_ref().map(str::to_string);
+        let current = self.talk.transcript.current_ref();
         if let Some(list) = &mut self.boxes.model_list {
             list.replace(all, current.as_deref());
         }

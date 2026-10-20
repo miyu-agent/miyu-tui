@@ -181,6 +181,10 @@ fn stars_light_with_progress_and_all_light_when_she_wakes() {
     let all = lit(&d);
     assert!(all > half, "{half} {all}");
     let face = text(&rows(&d, &f.ctx(), now)[ROWS + 3]);
+    // 叫停的醒来照合了多少亮，不全亮。
+    let mut stopped = d.clone();
+    stopped.stopping = true;
+    assert_eq!(lit(&stopped), half, "叫停的不全亮");
     assert!(face.contains(&look.awake), "{face}");
 }
 

@@ -93,6 +93,13 @@ impl More {
     }
 }
 
+impl More {
+    /// 包 `id` 的上游完整网址：那一行末尾的上游点了照它打开（第 43a 条）。
+    pub fn upstream(&self, id: &str) -> Option<&str> {
+        self.origins.get(id)?.upstream.as_deref()
+    }
+}
+
 /// 读 `package.list` 的回应：每个包的一句说明。
 pub fn summaries(got: &Value) -> HashMap<String, String> {
     got["packages"]
