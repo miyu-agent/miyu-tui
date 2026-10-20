@@ -65,3 +65,32 @@ fn a_sentence_heard_by_a_running_turn_belongs_to_that_turn() {
     turn.watch(&Update::Push(Push::Heard(326)));
     assert_eq!(turn.ours, Some(319));
 }
+
+#[test]
+fn the_turn_woken_right_after_ours_is_followed_but_not_one_someone_else_started() {
+    // 后台命令在这一轮里跑完、她没顾上看：核心在这一轮结束的同一刻叫醒她再开一轮，接着印（2026-10-20 实测：没人印）。
+    let mut turn = Turn::new("后台跑 sleep 3".into(), None, Look::new(None));
+    turn.sent = true;
+    turn.watch(&Update::Push(Push::UserMessage(367)));
+    turn.watch(&Update::Push(Push::TurnStarted(368, Some(367))));
+    turn.watch(&Update::Push(Push::TurnEnded(
+        crate::core::EndReason::Completed,
+    )));
+    turn.lingering = true;
+    // 别处有人说了话开的那一轮不接。
+    turn.watch(&said(380, "别处说的"));
+    turn.watch(&Update::Push(Push::TurnStarted(381, Some(380))));
+    assert!(turn.lingering, "人说话开的那一轮");
+    turn.watch(&Update::Push(Push::TurnEnded(
+        crate::core::EndReason::Completed,
+    )));
+    turn.watch(&Update::Push(Push::TurnStarted(383, Some(379))));
+    assert!(!turn.lingering);
+    assert_eq!(turn.woken, Some(383));
+    assert_eq!(turn.ours, Some(368), "从这句话开的那一轮印起");
+    turn.ended = None;
+    turn.watch(&Update::Push(Push::TurnEnded(
+        crate::core::EndReason::Completed,
+    )));
+    assert_eq!(turn.ended, Some(crate::core::EndReason::Completed));
+}

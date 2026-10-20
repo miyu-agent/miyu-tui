@@ -16,6 +16,9 @@ use crate::config::Config;
 use crate::core::{Command, Core, EndReason, Start};
 use crate::notify::{self, Notifier};
 
+/// 这一轮结束后等多久看核心是不是叫醒她（`turn.rs` 的 `lingering`）：核心是同一刻开的，留够推送路上的时间。
+const LINGER: Duration = Duration::from_millis(500);
+
 /// 一次在 shell 里画：从连上到收工。
 pub struct Session {
     pub config: Config,
@@ -79,7 +82,15 @@ impl Session {
         let spinner = self.config.timeline.spinner_ms.max(16);
         let mut drawer_seen: Option<String> = None;
         let mut bannered = false;
+        let mut lingered: Option<Instant> = None;
         while !turn.done {
+            // 这一轮结束了、有任务在这一轮里结束：核心要叫醒她的，同一刻就开下一轮；等过这么久没开的就是不叫了。
+            match (turn.lingering, lingered) {
+                (true, None) => lingered = Some(Instant::now()),
+                (true, Some(since)) if since.elapsed() >= LINGER => break,
+                (false, _) => lingered = None,
+                _ => {}
+            }
             match self.incoming.recv_timeout(Duration::from_millis(spinner)) {
                 Ok(Incoming::Core(update)) => turn.core(update, &mut self.config, &self.core),
                 Ok(Incoming::Key(event)) => {
