@@ -212,6 +212,8 @@ pub enum Push {
         /// 现在的待办。
         todos: Vec<super::TodoItem>,
     },
+    /// 有没有能压缩的变了（`compactable.changed`，核心 W-12 补）：瞬时的，订阅时的值在订阅回应里。
+    Compactable(bool),
     /// 一次请求的用量（`model.called` 的 `usage`，供应商没报的没有这一条）。
     Usage(Usage),
     /// 有用量的一次请求花了多少（`model.called` 的 `cost`，核心 8-15）：算不出的是 `None`，跟在用量后面。
@@ -433,6 +435,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         }
         "goal.changed" => out.push(Push::Goal(goal::read(&body["goal"]))),
         "todos.changed" => out.extend(super::todos::read(body).map(|todos| Push::Todos { todos })),
+        "compactable.changed" => out.extend(body["compactable"].as_bool().map(Push::Compactable)),
         kind @ ("question.asked"
         | "tool.approval_requested"
         | "question.answered"

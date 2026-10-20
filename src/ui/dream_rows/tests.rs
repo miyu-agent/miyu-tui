@@ -224,9 +224,10 @@ fn before_she_writes_the_head_says_dreaming_and_the_clock_runs() {
     let later = now + Duration::from_secs(80);
     assert_eq!(
         text(&rows(&d, &f.ctx(), later)[0]),
-        "  ✦ 整理记忆 · 第 1 批 / 共 1 批 · 做梦中… 1m 20s"
+        "  ✦ 整理记忆 · 第 1 批 / 共 1 批 · 1m 20s",
+        "2026-10-20 项目主人：用时前面不写「做梦中…」"
     );
-    // 醒了：停在醒的那一刻，不再写做梦中。
+    // 醒了：停在醒的那一刻。
     d.woke = Some((now + Duration::from_secs(90), "整理完成".into()));
     let head = text(&rows(&d, &f.ctx(), now + Duration::from_secs(99))[0]);
     assert!(head.ends_with("· 1m 30s"), "{head}");

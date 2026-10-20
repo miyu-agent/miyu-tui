@@ -15,9 +15,7 @@ pub struct CacheWatch {
     excused: bool,
     /// 之前的请求最多看到第几条。
     furthest: Option<u64>,
-    /// 有没有能压缩的（核心 W-12）：订阅回应给的；之后发过一次主请求当有，压完、核心回 `nothing_to_compact` 当没有（后一样在
-    /// `app/updates.rs`；核心在 events 流里推以前先这么顶着，
-    /// 2026-10-20 和核心会话对的）。不知道的是 `None`，照有算。
+    /// 有没有能压缩的（核心 W-12）：订阅回应给的，之后照推来的 `compactable.changed`（W-12 补）。不知道的是 `None`，照有算。
     pub compactable: Option<bool>,
 }
 
@@ -26,7 +24,6 @@ impl CacheWatch {
     pub fn compacted(&mut self) {
         self.compactions += 1;
         self.excused = true;
-        self.compactable = Some(false);
     }
 
     /// 撤销了几轮。
@@ -44,26 +41,7 @@ impl CacheWatch {
         if changed && !self.excused {
             self.breaks += 1;
         }
-        self.compactable = Some(true);
         self.excused = false;
         self.furthest = Some(seen);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::CacheWatch;
-
-    #[test]
-    fn compactable_turns_on_after_a_request_and_off_after_compacting() {
-        // 核心 W-12：订阅回应给的值；之后发过一次主请求当有，压完当没有（核心在 events 流里推以前先这么顶着）。
-        let mut cache = CacheWatch::default();
-        assert_eq!(cache.compactable, None);
-        cache.sent(3, false, true);
-        assert_eq!(cache.compactable, None, "摘要请求不算");
-        cache.sent(3, false, false);
-        assert_eq!(cache.compactable, Some(true));
-        cache.compacted();
-        assert_eq!(cache.compactable, Some(false));
     }
 }

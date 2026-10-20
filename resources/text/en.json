@@ -231,8 +231,7 @@
     "summary": "summary {chars} chars",
     "writing": "…",
     "tally": "{merged}/{total}",
-    "clock": " · {thinking}{time}",
-    "thinking": "dreaming… ",
+    "clock": " · {time}",
     "summary_full": "Summary: ",
     "backgrounded": "Tidying continues in the background",
     "esc_hint": "Press Esc again to stop tidying"

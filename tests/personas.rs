@@ -80,14 +80,19 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     tui.wait_for("好。");
     let sent = format!("{:?}", script.requests().last());
     assert!(sent.contains("X1Y2"), "开会话带上了选的人格：{sent}");
-    // 开了会话能中途换（2026-10-19 项目主人放开，核心 P-13）：同一个框，最上面写切换前先压缩，现在用的行首写 `●`；Esc 关、不换。
+    // 开了会话能中途换（2026-10-19 项目主人放开，核心 P-13）：同一个框，现在用的行首写 `●`；Esc 关、不换。会话还短、没东西可压缩
+    // 的不写「切换前会先压缩」（核心 W-12 的 `compactable`，长会话的见下面那一条）。
     tui.say("/persona");
-    tui.wait_for("切换前会先压缩会话");
-    assert!(tui.shows("● 海盗"), "{}", tui.lines().join("\n"));
+    tui.wait_for("● 海盗");
+    assert!(
+        !tui.shows("切换前会先压缩会话"),
+        "{}",
+        tui.lines().join("\n")
+    );
     tui.key(b"\x1b");
     closed(&mut tui);
     tui.say("/preset");
-    tui.wait_for("切换前会先压缩会话");
+    tui.wait_for("请选择预设");
     tui.key(b"\x1b");
     closed(&mut tui);
     // `/new` 以后又先问；`Esc` 照默认的。
@@ -209,7 +214,7 @@ fn a_persona_switched_midway_compacts_first_then_speaks_as_the_new_one() {
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/persona");
-    tui.wait_for("切换前会先压缩会话");
+    tui.wait_for("请选择人格");
     for _ in 0..8 {
         if picked(&tui).contains("海盗") {
             break;
@@ -227,9 +232,10 @@ fn a_persona_switched_midway_compacts_first_then_speaks_as_the_new_one() {
 }
 
 #[test]
-fn nothing_to_compact_means_no_compaction_note_before_switching() {
-    // 2026-10-20 项目主人：「如果没什么可压缩的，切换就不应该提示要压缩」（核心 W-12 的 `compactable`）。
-    let script = Script::new([Play::Says("好。")]);
+fn the_compaction_note_shows_only_when_there_is_something_to_compact() {
+    // 2026-10-20 项目主人：「如果没什么可压缩的，切换就不应该提示要压缩」。照核心 W-12 的 `compactable`：订阅回应给的，之后照推来的
+    // `compactable.changed`。短会话没东西可压；贴一大段进去（同核心的测试，7 万字）就有了。
+    let script = Script::new([Play::Says("好。"), Play::Says("收到。")]);
     let home = Home::new(script);
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
     let mut tui = home.tui("zh_CN.UTF-8");
@@ -237,25 +243,34 @@ fn nothing_to_compact_means_no_compaction_note_before_switching() {
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/persona");
-    tui.wait_for("切换前会先压缩会话");
-    tui.key(b"\x1b");
-    closed(&mut tui);
-    tui.say("/compact");
-    let end = std::time::Instant::now() + support::WAIT;
-    while !tui.shows("上下文已压缩") && !tui.shows("没有可压缩的内容") {
-        assert!(
-            std::time::Instant::now() < end,
-            "压缩：\n{}",
-            tui.lines().join("\n")
-        );
-        tui.pump(std::time::Duration::from_millis(50));
-    }
-    tui.say("/persona");
     tui.wait_for("请选择人格");
     tui.pump(std::time::Duration::from_millis(200));
     assert!(
         !tui.shows("切换前会先压缩会话"),
-        "压完了没东西可压：\n{}",
+        "短会话不写：\n{}",
         tui.lines().join("\n")
     );
+    tui.key(b"\x1b");
+    closed(&mut tui);
+    let long = "x".repeat(70_000);
+    tui.send(format!("\x1b[200~{long}\x1b[201~").as_bytes());
+    tui.pump(std::time::Duration::from_millis(300));
+    tui.send(b"\r");
+    tui.wait_for("收到。");
+    let end = std::time::Instant::now() + support::WAIT;
+    loop {
+        tui.say("/persona");
+        tui.wait_for("请选择人格");
+        tui.pump(std::time::Duration::from_millis(200));
+        if tui.shows("切换前会先压缩会话") {
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < end,
+            "长会话要写：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.key(b"\x1b");
+        closed(&mut tui);
+    }
 }

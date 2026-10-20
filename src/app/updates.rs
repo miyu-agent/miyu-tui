@@ -202,15 +202,6 @@ impl App {
         }
         // 这几种拒绝只弹提示框，不写进正文（`tui.md`「正文」第 9 条）：认得的写自己的短话，命令清单里列着的弹核心的原话
         // （「长期目标」第 2 条）。
-        // 核心说没东西可压缩：记下，换人格、预设前不写「切换前会先压缩」（核心 W-12 的 `compactable` 推送来以前先这么顶着）。
-        if let Update::Refused {
-            reason: Some(reason),
-            ..
-        } = &update
-            && reason == "nothing_to_compact"
-        {
-            self.talk.transcript.cache.compactable = Some(false);
-        }
         if let Update::Refused {
             reason: Some(reason),
             message,

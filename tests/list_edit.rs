@@ -41,6 +41,16 @@ fn talked(home: &Home) -> Tui {
     tui
 }
 
+/// 说过一句，又贴了一大段：有东西可压缩了（核心 W-12 的 `compactable`，同核心的测试，7 万字）。
+fn long_talked(home: &Home) -> Tui {
+    let mut tui = talked(home);
+    tui.send(format!("\x1b[200~{}\x1b[201~", "x".repeat(70_000)).as_bytes());
+    tui.pump(Duration::from_millis(300));
+    tui.send(b"\r");
+    tui.wait_for("收到。");
+    tui
+}
+
 /// 预设的详情窗里切掉第一项功能，等它写进文件，`Esc` 关窗。
 fn toggle_and_close(tui: &mut Tui, home: &Home) {
     tui.wait_for("功能");
@@ -55,13 +65,19 @@ fn toggle_and_close(tui: &mut Tui, home: &Home) {
 
 #[test]
 fn editing_the_preset_in_use_from_the_box_asks_to_compact() {
-    let home = Home::new(Script::new([Play::Says("好。")]));
+    // 有东西可压缩才问（2026-10-20 项目主人：「如果没什么可压缩的，切换就不应该提示要压缩」）：先贴一大段；压缩时核心要一段摘要。
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("收到。"),
+        Play::Says("摘要。"),
+    ]);
+    let home = Home::new(script);
     // 有人格才有人格框（没有的核心不认人格，不问）。
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
-    let mut tui = talked(&home);
+    let mut tui = long_talked(&home);
     // 无人格那一行不能编辑。
     tui.say("/persona");
-    tui.wait_for("切换前会先压缩会话");
+    tui.wait_for("请选择人格");
     // 光标停在正在用的那一行，行首是 `●`（选中了也照旧，第 2a 条）。
     assert!(tui.shows("● 无人格"), "{}", tui.lines().join("\n"));
     tui.key(b"e");
@@ -77,7 +93,7 @@ fn editing_the_preset_in_use_from_the_box_asks_to_compact() {
     tui.wait_for("当前使用的预设发生变化");
     tui.key(b"j");
     tui.key(b"\r");
-    tui.wait_for("切换前会先压缩会话");
+    tui.wait_for("请选择预设");
     assert!(tui.shows("● 全部功能"), "{}", tui.lines().join("\n"));
     // 再改一次、答「是」：框关上，做一次前台压缩。
     tui.key(b"e");
@@ -87,7 +103,25 @@ fn editing_the_preset_in_use_from_the_box_asks_to_compact() {
     until(&mut tui, "压缩", |t| {
         t.shows("上下文已压缩") || t.shows("没有可压缩的内容")
     });
-    assert!(!tui.shows("切换前会先压缩会话"), "框关了");
+    assert!(!tui.shows("请选择预设"), "框关了");
+}
+
+#[test]
+fn editing_the_preset_in_use_of_a_short_session_does_not_ask() {
+    // 会话还短、没东西可压缩：改了正在用的也不问，直接回框（2026-10-20 项目主人）。
+    let home = Home::new(Script::new([Play::Says("好。")]));
+    let mut tui = talked(&home);
+    tui.say("/preset");
+    tui.wait_for("e 编辑");
+    tui.key(b"e");
+    toggle_and_close(&mut tui, &home);
+    tui.wait_for("请选择预设");
+    tui.pump(Duration::from_millis(300));
+    assert!(
+        !tui.shows("当前使用的预设发生变化"),
+        "{}",
+        tui.lines().join("\n")
+    );
 }
 
 #[test]
@@ -99,7 +133,7 @@ fn closing_the_detail_without_saving_goes_straight_back_to_the_box() {
     tui.key(b"e");
     tui.wait_for("功能");
     tui.key(b"\x1b");
-    tui.wait_for("切换前会先压缩会话");
+    tui.wait_for("请选择预设");
     assert!(!tui.shows("当前使用的预设发生变化"), "没改不问");
     assert!(!file(&home).exists(), "没改不写");
 }
