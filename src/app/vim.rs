@@ -19,6 +19,7 @@ impl App {
                 self.boxes.panel,
                 Some(
                     Panel::Pick { .. }
+                        | Panel::Changed { .. }
                         | Panel::Language { .. }
                         | Panel::Theme { .. }
                         | Panel::Effort { .. }

@@ -47,6 +47,7 @@ mod oobe;
 mod open;
 mod pacing;
 mod pairs;
+mod pick_box;
 mod pointer;
 mod pulse;
 mod reader;

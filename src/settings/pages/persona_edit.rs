@@ -216,6 +216,7 @@ impl Settings {
         }
         // 多行编辑窗交出去的（「配置页」第 45 条）先认。
         self.sheet_text()
+            .or_else(|| self.watch.draft.take())
             .or_else(|| self.prompt.as_ref().map(|p| p.original.clone()))
     }
 
@@ -229,6 +230,8 @@ impl Settings {
         let Some(edit) = self.prompt.take() else {
             return;
         };
+        // 改的是正在用的、人答「否」时照改过的字再交给编辑器（`in_use.rs`）。
+        let again = edit.clone();
         self.popup = Some(Popup::Persona(edit.view));
         // 编辑器常在末尾补一个换行：比改没改时不算末尾的空白。
         let Some(text) = text.filter(|t| t.trim_end() != edit.original.trim_end()) else {
@@ -241,6 +244,7 @@ impl Settings {
         } else {
             text
         };
+        self.watch.reopen = Some((again, text.clone()));
         let body = json!({"text": text, "expect": version});
         let params = json!({"prompts": {edit.prompt: body}});
         self.set_persona(&edit.persona, params, false);

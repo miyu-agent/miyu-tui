@@ -185,7 +185,7 @@ pub enum Focus {
 }
 
 /// 一个编辑窗。
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Form {
     /// 改的是哪一样。
     pub target: Target,

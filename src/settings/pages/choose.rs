@@ -120,7 +120,7 @@ impl Choose {
 }
 
 /// 填一行字的编辑窗（`text`、`number`）：原来的字整段选中，回车、`s` 存。
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LineEdit {
     /// 改的是哪一项。
     pub key: String,

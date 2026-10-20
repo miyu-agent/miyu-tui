@@ -609,11 +609,12 @@
   "language_switched": "界面语言：中文",
   "persona_box": {
     "title": "请选择人格",
-    "hint": "↑/↓ 选择 · Enter 确定",
+    "hint": "↑/↓ 选择 · Enter 确定 · e 编辑",
     "default_mark": "默认",
     "chosen": "人格 {name}",
     "preset_title": "请选择预设",
     "preset_need": "请先选择预设",
+    "cant_edit": "这一项不能编辑",
     "preset_chosen": "预设 {name}",
     "none": "无人格",
     "none_note": "不使用人格",
@@ -682,6 +683,14 @@
     "refuse_no_key": "该模型未设置 key"
   },
   "settings": {
+    "in_use": {
+      "persona": "当前使用的人格发生变化，下一轮对话缓存全部失效，建议提前压缩上下文。",
+      "preset": "当前使用的预设发生变化，下一轮对话缓存全部失效，建议提前压缩上下文。",
+      "buttons": [
+        "是",
+        "否"
+      ]
+    },
     "title": "配置",
     "entry": "供应商和模型",
     "entry_note": "供应商、默认模型、模型池",

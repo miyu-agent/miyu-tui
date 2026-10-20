@@ -329,17 +329,22 @@ impl Settings {
         }));
     }
 
-    /// 预设页 `Enter`：开详情窗，去读 `preset.get`。
+    /// 预设页 `Enter`：开详情窗。
     fn open_preset(&mut self, at: usize) {
-        let Some(id) = self
-            .more
-            .presets
-            .as_ref()
-            .and_then(|l| l.get(at))
-            .map(|p| p.id.clone())
-        else {
-            return;
-        };
+        if let Some(p) = self.more.presets.as_ref().and_then(|l| l.get(at)) {
+            self.show_preset(p.id.clone());
+        }
+    }
+
+    /// 人格页 `Enter`：开详情窗。
+    fn open_persona(&mut self, at: usize) {
+        if let Some(p) = self.more.personas.as_ref().and_then(|l| l.get(at)) {
+            self.show_persona(p.id.clone());
+        }
+    }
+
+    /// 开预设的详情窗，去读 `preset.get`（人格框、预设框按 `e` 也走这里，`in_use.rs`）。
+    pub(in crate::settings) fn show_preset(&mut self, id: String) {
         self.ask(
             "preset.get",
             json!({"preset": id}),
@@ -353,17 +358,8 @@ impl Settings {
         }));
     }
 
-    /// 人格页 `Enter`：开详情窗，去读 `persona.get`。
-    fn open_persona(&mut self, at: usize) {
-        let Some(id) = self
-            .more
-            .personas
-            .as_ref()
-            .and_then(|l| l.get(at))
-            .map(|p| p.id.clone())
-        else {
-            return;
-        };
+    /// 开人格的详情窗，去读 `persona.get`。
+    pub(in crate::settings) fn show_persona(&mut self, id: String) {
         self.ask(
             "persona.get",
             json!({"persona": id}),

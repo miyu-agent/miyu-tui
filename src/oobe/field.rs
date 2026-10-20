@@ -7,7 +7,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crate::input::Editor;
 
 /// 一格。
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Field {
     /// 字和光标。
     pub editor: Editor,

@@ -15,19 +15,23 @@ impl App {
     /// 打开配置页；`standalone` 是照 `--page config` 起来的（主菜单 `Esc` 退出程序）。
     pub fn open_settings(&mut self, standalone: bool) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
-        self.boxes.settings = Some(Settings::open(standalone, online));
+        let mut page = Settings::open(standalone, online);
+        self.watch_in_use(&mut page);
+        self.boxes.settings = Some(page);
         self.send_settings_asks();
     }
 
     /// `/connect`：直接进「供应商和模型」。
     pub(super) fn open_connect(&mut self) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
-        self.boxes.settings = Some(Settings::connect(online));
+        let mut page = Settings::connect(online);
+        self.watch_in_use(&mut page);
+        self.boxes.settings = Some(page);
         self.send_settings_asks();
     }
 
     /// 配置页攒着的请求发出去。
-    fn send_settings_asks(&mut self) {
+    pub(super) fn send_settings_asks(&mut self) {
         let Some(page) = self.boxes.settings.as_mut() else {
             return;
         };
@@ -73,7 +77,14 @@ impl App {
             },
             _ => Outcome::Stay,
         };
+        // 从人格框、预设框按 `e` 进来的：详情窗关了就回框（「新会话：人格、工作区」第 2b 条）。
+        let outcome = match self.boxes.settings.as_ref() {
+            Some(page) if outcome == Outcome::Stay && page.lone_done() => Outcome::Back,
+            _ => outcome,
+        };
         self.settings_outcome(outcome);
+        // 改正在用的人格提示词、答了「否」：照改过的字再交给编辑器（`settings/in_use.rs`）。
+        self.open_prompt_editor();
         self.send_settings_asks();
     }
 
@@ -109,6 +120,7 @@ impl App {
         drop(std::fs::remove_file(&file));
         if let Some(page) = self.boxes.settings.as_mut() {
             page.prompt_edited(text);
+            page.raise_held(&self.config.text.settings);
         }
         self.send_settings_asks();
         true
@@ -119,9 +131,12 @@ impl App {
         match outcome {
             Outcome::Stay => {}
             Outcome::Back => {
-                self.boxes.settings = None;
-                // 配置页里可能换了人格的头像：重读人格列表，照新的版本换（「空会话的首页」第 10 条）。
+                let page = self.boxes.settings.take();
+                // 配置页里可能换了人格的头像、改了名字：重读人格、预设列表，照新的换（「空会话的首页」第 10 条）。
                 self.link.core.send(Command::ListPersonas);
+                self.link.core.send(Command::ListPresets);
+                // 从人格框、预设框按 `e` 进来的：回框，改了正在用的先问要不要压缩（第 2b 条）。
+                self.pick_returned(page.as_ref().map_or(&[][..], |p| &p.watch.saved));
             }
             Outcome::Quit => self.quit = true,
         }

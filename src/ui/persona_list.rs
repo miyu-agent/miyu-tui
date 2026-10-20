@@ -37,6 +37,8 @@ pub struct Texts {
     pub preset_title: String,
     /// 默认预设用不了时按 `Esc`（开会话一定要有预设，核心 Y12）。
     pub preset_need: String,
+    /// 「无人格」、写错了的那一行上按 `e`（第 2b 条）。
+    pub cant_edit: String,
     /// 首页框下面那一行、侧边栏：`{name}` 是选的预设。
     pub preset_chosen: String,
 }
@@ -103,6 +105,39 @@ pub fn lines(
         rows.insert(0, (None, panel::item(false, note, None, width)));
     }
     let rows = panel::fit(rows, Some(selected), max);
+    let (map, lines) = rows.into_iter().unzip();
+    (chrome, lines, map)
+}
+
+/// 从框进去改了正在用的、存成了，问要不要压缩（第 2b 条）：框的标题是改的那一个的名字（同配置页里问的那个窗），第一行
+/// 是项目主人那句话（放不下的折行），下面「是」「否」。
+pub fn changed_lines(
+    (kind, name): (Kind, &str),
+    yes: bool,
+    words: &crate::settings::in_use::InUseTexts,
+    width: u16,
+    max: usize,
+) -> (
+    Chrome,
+    Vec<ratatui::text::Line<'static>>,
+    Vec<Option<usize>>,
+) {
+    let line = match kind {
+        Kind::Persona => &words.persona,
+        Kind::Preset => &words.preset,
+    };
+    let chrome = Chrome::new(name, Vec::new());
+    let room = usize::from(width).saturating_sub(2).max(1);
+    let mut rows: Vec<Row> = crate::cells::wrap(line, room)
+        .into_iter()
+        .map(|part| (None, panel::item(false, vec![Span::raw(part)], None, width)))
+        .collect();
+    for (i, button) in words.buttons.iter().enumerate() {
+        let picked = (i == 0) == yes;
+        let line = panel::item(picked, vec![Span::raw(button.clone())], None, width);
+        rows.push((Some(i), line));
+    }
+    let rows = panel::fit(rows, Some(usize::from(!yes)), max);
     let (map, lines) = rows.into_iter().unzip();
     (chrome, lines, map)
 }

@@ -609,11 +609,12 @@
   "language_switched": "Interface language: English",
   "persona_box": {
     "title": "Choose a persona",
-    "hint": "↑/↓ choose · Enter confirm · Esc use the default",
+    "hint": "↑/↓ choose · Enter confirm · e edit · Esc use the default",
     "default_mark": "default",
     "chosen": "Persona {name}",
     "preset_title": "Choose a preset",
     "preset_need": "Pick a preset first",
+    "cant_edit": "This one can't be edited",
     "preset_chosen": "Preset {name}",
     "none": "No persona",
     "none_note": "No persona prompt",
@@ -682,6 +683,14 @@
     "refuse_no_key": "This model has no key"
   },
   "settings": {
+    "in_use": {
+      "persona": "The persona in use has changed. The next turn will miss the whole cache; compacting the context first is recommended.",
+      "preset": "The preset in use has changed. The next turn will miss the whole cache; compacting the context first is recommended.",
+      "buttons": [
+        "Yes",
+        "No"
+      ]
+    },
     "title": "Settings",
     "entry": "Providers & models",
     "entry_note": "Providers, default models, model pools",

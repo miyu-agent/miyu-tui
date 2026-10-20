@@ -12,8 +12,8 @@ use super::{Outcome, Settings, Texts, Tone};
 type Uses = Box<dyn Fn(&str) -> bool>;
 
 impl Settings {
-    /// 按了一个键。
-    pub fn key(&mut self, key: KeyEvent, texts: &Texts) -> Outcome {
+    /// 按了一个键（经 [`Settings::key`]，`in_use.rs`）。
+    pub(super) fn press(&mut self, key: KeyEvent, texts: &Texts) -> Outcome {
         // 带 Ctrl 的配置页不管，只有预设的窗认 Ctrl+A（全开、全关，「配置页」第 38 条），几行字的窗认 Ctrl+G（交给外部
         // 编辑器，第 45 条）。
         let all = key.code == KeyCode::Char('a') && matches!(self.popup, Some(Popup::Preset(_)));
@@ -400,6 +400,8 @@ impl Settings {
                 confirm.sel = (confirm.sel + 1) % n;
             }
             KeyCode::Enter => return self.decide(&confirm.ask, confirm.sel, texts),
+            // 改正在用的：`Esc` 同「否」，回到编辑（`in_use.rs`）。
+            KeyCode::Esc if confirm.ask == Delete::Held => return self.settle_held(false),
             KeyCode::Esc => return Outcome::Stay,
             _ => {}
         }
@@ -409,6 +411,9 @@ impl Settings {
 
     /// 问的那一句选了第几个按钮：删除的当场存。
     fn decide(&mut self, ask: &Delete, button: usize, texts: &Texts) -> Outcome {
+        if *ask == Delete::Held {
+            return self.settle_held(button == 0);
+        }
         if button != 0 {
             return Outcome::Stay;
         }
@@ -436,7 +441,7 @@ impl Settings {
             Delete::Provider(id) => super::keys::provider(id),
             Delete::Model(p, m) => super::keys::model_table(p, m),
             Delete::Pool(name) => super::keys::pool(name),
-            Delete::Preset(_) | Delete::Persona(_) | Delete::PersonaSeed(_) => {
+            Delete::Preset(_) | Delete::Persona(_) | Delete::PersonaSeed(_) | Delete::Held => {
                 return Outcome::Stay;
             }
             // 恢复默认：只去掉个人设置里的这一项（只有系统配置这一层的去掉系统配置里的）。

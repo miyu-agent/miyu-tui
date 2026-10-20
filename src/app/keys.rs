@@ -338,13 +338,7 @@ impl App {
             Run::New => self.new_session(),
             Run::Revert => self.link.core.send(Command::Revert),
             Run::Unrevert => self.link.core.send(Command::Unrevert),
-            Run::Compact => {
-                // 旧核心的压缩进度不说手动、自动：自己发的照手动画进度条（「正文」第 9 条）。
-                self.talk.transcript.manual_compaction = true;
-                self.link
-                    .core
-                    .send(Command::Compact(words.map(str::to_string)));
-            }
+            Run::Compact => self.compact(words),
             Run::Theme => self.open_themes(),
             Run::Icons => self.next_icons(),
             Run::Images => self.images_command(words),
@@ -419,6 +413,15 @@ impl App {
             (false, _, Some(text)) => self.typing.input.pick(&text),
             _ => {}
         }
+    }
+
+    /// 前台压缩（`/compact`，人格框、预设框里改了正在用的答「是」也走这里）：旧核心的压缩进度不说手动、自动，自己发的照
+    /// 手动画进度条（「正文」第 9 条）。
+    pub(super) fn compact(&mut self, words: Option<&str>) {
+        self.talk.transcript.manual_compaction = true;
+        self.link
+            .core
+            .send(Command::Compact(words.map(str::to_string)));
     }
 }
 
