@@ -141,12 +141,18 @@ fn unanswered_questions_are_submitted_empty_from_the_review_page() {
 }
 
 #[test]
-fn multiple_with_nothing_checked_takes_the_one_under_the_cursor() {
+fn multiple_with_nothing_checked_is_left_unanswered() {
+    // 2026-10-20 项目主人：「我明明什么都没选，它怎么自动推荐了」：一个没勾按 Enter，这一道算没答，接着往下，不交光标那一项。
     let mut d = Drawer::question(None, two());
     d.key(key(KeyCode::Right));
     d.key(key(KeyCode::Down));
     assert_eq!(d.key(key(KeyCode::Enter)), Step::Stay);
     assert_eq!(d.tab, 0, "第一道还没答：跳回去");
+    assert_eq!(d.answers[1], None, "没勾的不替人选");
+    // 勾了的照勾的交。
+    d.key(key(KeyCode::Right));
+    d.key(key(KeyCode::Char(' ')));
+    assert_eq!(d.key(key(KeyCode::Enter)), Step::Stay);
     assert_eq!(d.answers[1], Some(picked(&["乙"])));
 }
 

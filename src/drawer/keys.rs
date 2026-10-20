@@ -198,47 +198,49 @@ impl Drawer {
                 decision,
                 reason: None,
             })),
-            Some(Item::Choice(i)) => {
-                let answer = self.choose(i);
-                self.settle(answer)
-            }
+            Some(Item::Choice(i)) => match self.choose(i) {
+                Some(answer) => self.settle(answer),
+                // 能多选的一个没勾、也没写其他答案：这一道算没答，接着往下（2026-10-20 项目主人：「我明明什么都没选，它怎么
+                // 自动推荐了」；原来交光标所在的那一项）。
+                None => self.move_on(),
+            },
             None => Step::Stay,
         }
     }
 
-    /// 在第 `i` 个选项上按 `Enter` 的回答：单选的就是它；能多选的交勾上的（一个没勾交它），接着「其他」写的字。
-    fn choose(&self, i: usize) -> Answer {
-        let Some(question) = self.question_at(self.tab) else {
-            return Answer::default();
-        };
+    /// 在第 `i` 个选项上按 `Enter` 的回答：单选的就是它；能多选的交勾上的，接着「其他」写的字；一个没勾、也没写的是 `None`。
+    fn choose(&self, i: usize) -> Option<Answer> {
+        let question = self.question_at(self.tab)?;
         let label = |i: usize| question.options[i].label.clone();
         if !question.multiple {
-            return Answer {
+            return Some(Answer {
                 picked: vec![label(i)],
                 ..Answer::default()
-            };
+            });
         }
         let typed = self.typed[self.tab].trim();
         let text = (!typed.is_empty()).then(|| typed.to_string());
-        let mut picked: Vec<String> = self.checked[self.tab]
+        let picked: Vec<String> = self.checked[self.tab]
             .iter()
             .enumerate()
             .filter(|(_, on)| **on)
             .map(|(i, _)| label(i))
             .collect();
-        if picked.is_empty() && text.is_none() {
-            picked.push(label(i));
-        }
-        Answer {
+        (!picked.is_empty() || text.is_some()).then_some(Answer {
             picked,
             text,
             ..Answer::default()
-        }
+        })
     }
 
     /// 记下这一道的回答，跳到下一道没答的；都答了到「确认」页，只有一道题的直接交。
     fn settle(&mut self, answer: Answer) -> Step {
         self.answers[self.tab] = Some(answer);
+        self.move_on()
+    }
+
+    /// 跳到下一道没答的（这一道答没答都往下）；都答了到「确认」页，只有一道题的直接交。
+    fn move_on(&mut self) -> Step {
         if !self.has_review() {
             return Step::Done(Outcome::Answered(self.answered()));
         }
