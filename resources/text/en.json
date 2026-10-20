@@ -304,6 +304,35 @@
     "days": "{n}d ago",
     "none": "Nothing said in this session yet"
   },
+  "status": {
+    "new_title": "New session",
+    "keys": {
+      "id": "Session ID",
+      "persona": "Persona",
+      "preset": "Preset",
+      "level": "Permission",
+      "cwd": "Working directory",
+      "model": "Model",
+      "context": "Context",
+      "compaction": "Compaction",
+      "usage": "Usage",
+      "hit": "Cache hits",
+      "cost": "Spent",
+      "memory": "Memory"
+    },
+    "effort": "effort {effort}",
+    "window": "window {window}",
+    "average": "avg {rate} tok/s",
+    "context": "{used} / {window} ({percent}%)",
+    "compactions": "{n} times",
+    "compaction_line": "auto at {line}",
+    "total": "{tokens} tokens in all",
+    "split": "in {input} · out {output}",
+    "aux": "side requests {tokens}",
+    "breaks": "cache broke {n} times",
+    "memory": "recalled {recalled} times · remembered {remembered}",
+    "hint": "↑/↓ scroll · c copy · Esc close"
+  },
   "usage": {
     "title": "Usage",
     "tabs": [

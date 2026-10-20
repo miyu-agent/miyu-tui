@@ -342,7 +342,7 @@ fn cooling_word(
 fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
     let text = &config.text;
     let mut parts = Vec::new();
-    if let Some(speed) = t.speed {
+    if let Some(speed) = t.speed.last {
         let rate = format!("{speed:.0}");
         let speed = Span::styled(text.speed.replace("{rate}", &rate), theme::dim());
         parts.push(Part {

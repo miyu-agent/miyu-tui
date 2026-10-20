@@ -54,6 +54,7 @@ mod menu;
 pub mod row_cache;
 pub mod rows;
 mod status;
+pub mod status_box;
 mod timeline;
 mod undo_rows;
 pub use timeline::release_on_fold;
@@ -229,13 +230,16 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     } else {
         Default::default()
     };
-    // 后台面板排成的行（第 3 条）；帮助框（`/help`）这些框一样放在这个位置（`panels.rs`）。
+    // 后台面板排成的行（第 3 条）；帮助框（`/help`）这些框一样放在这个位置（`panels.rs`）。由命令打开的框里上下各空一行
+    // （`panel::PAD`），放不下的不空；打字时弹的列表不空。
+    let pad = app.boxes.panel.is_some() && inner > panel::PAD;
+    let panel_room = if pad { inner - panel::PAD } else { inner };
     let (panel_chrome, panel_lines, panel_rows) =
-        panels::content(&app.seen(), width, now, usize::from(inner));
+        panels::content(&app.seen(), width, now, usize::from(panel_room));
     let menu_shown = menu::rows(app.config.layout.menu_rows, inner);
     // 框里的几条，放得下框的加上上下两条边（`tui.md`「斜杠命令列表」第 3 条）。
     let items = if app.boxes.panel.is_some() {
-        panel_lines.len()
+        panel_lines.len() + if pad { usize::from(panel::PAD) } else { 0 }
     } else if app.typing.history.open {
         history_rows.len()
     } else if let Some(found) = &mentions {
@@ -245,6 +249,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     let menu_rows = panel::height(u16::try_from(items).unwrap_or(u16::MAX), room);
     let mut areas = place(menu_rows);
+    if pad {
+        areas.menu_text = panel::padded(areas.menu_text);
+    }
     areas.sidebar = sidebar;
     app.screen.areas = areas;
     app.screen.panel_rows = panel_rows;

@@ -12,7 +12,7 @@ use super::{
 };
 use crate::app::Seen;
 
-/// 开着的框排成的行，最多 `max` 行。
+/// 开着的框排成的行，最多 `max` 行（框里上下的空行由 `panel.rs` 留）。
 pub(super) fn content(
     seen: &Seen,
     width: u16,
@@ -69,6 +69,9 @@ pub(super) fn content(
             let options = open.map_or(&[][..], |b| b.options.as_slice());
             let before = open.map_or("", |b| b.before.as_str());
             themes::lines(seen.config, (options, before), selected, width, max)
+        }
+        Some(crate::app::Panel::Status { scroll }) => {
+            super::status_box::lines(seen, scroll, width, max)
         }
         Some(crate::app::Panel::Usage { tab, scroll, money }) => {
             let (chrome, lines) = usage::lines(seen, (tab, scroll, money), width, max);

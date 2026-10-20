@@ -57,7 +57,8 @@ impl App {
             .talk
             .dream
             .as_mut()
-            .filter(|d| !d.awake && d.woke.is_none() && Some(&d.session) == here.as_ref())
+            // 首页打的、会话还没认上的也算（同 [`App::dreaming_here`]）。
+            .filter(|d| !d.awake && d.woke.is_none() && d.shown_in(here.as_deref()))
         else {
             return;
         };
@@ -79,13 +80,15 @@ impl App {
         true
     }
 
-    /// 前台正在画那一块（叫醒了的、整理完了的不算）：`Esc` 照它叫停（第 7 条）。
+    /// 前台正在画那一块（叫醒了的、整理完了的不算）：`Esc` 照它叫停（第 7 条）。首页打的、核心替它开的会话还没到的也算：
+    /// 叫停排在 `/dream` 后面交给连接那一头，到时会话已经开好（2026-10-20 查出：原来要等会话认上，刚打完 `/dream` 就按
+    /// `Esc` 的被吞掉，测试时好时坏）。
     pub(super) fn dreaming_here(&self) -> bool {
         let viewing = self.talk.transcript.session.as_deref();
         self.talk
             .dream
             .as_ref()
-            .is_some_and(|d| d.woke.is_none() && !d.session.is_empty() && d.shown_in(viewing))
+            .is_some_and(|d| d.woke.is_none() && d.shown_in(viewing))
     }
 
     /// 交给核心的那一行被拒：整理还没开始的收掉、退订（被拒的多半就是 `/dream` 自己）。

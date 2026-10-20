@@ -226,6 +226,15 @@
       "run": "connect"
     },
     {
+      "name": "status",
+      "summary": {
+        "zh": "这个会话的状态：人格、模型、上下文、用量",
+        "en": "This session's status: persona, model, context, usage",
+        "ja": "このセッションの状態：ペルソナ、モデル、コンテキスト、使用量"
+      },
+      "run": "status"
+    },
+    {
       "name": "usage",
       "summary": {
         "zh": "这台机器上的用量和花费：按天、按模型",

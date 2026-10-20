@@ -80,7 +80,7 @@ impl Pick {
     }
 
     /// 编号写成名字（照列表，没有的写编号）。
-    pub(super) fn name<'a>(&'a self, id: &'a str) -> &'a str {
+    pub(crate) fn name<'a>(&'a self, id: &'a str) -> &'a str {
         self.list
             .iter()
             .flatten()

@@ -63,6 +63,18 @@ pub fn height(rows: u16, outer: u16) -> u16 {
     }
 }
 
+/// 由命令打开的框里上下各空的那两行（2026-10-20 项目主人：先要 `/persona`，又定别的框也加；打字时弹的命令列表、`@` 文件列表、
+/// 输入历史试过也加，嫌浪费地方，回滚）。
+pub const PAD: u16 = 2;
+
+/// 放字的那一块上下各让一行（[`PAD`]）：放不下的不让。
+pub fn padded(text: Rect) -> Rect {
+    if text.height <= PAD {
+        return text;
+    }
+    Rect::new(text.x, text.y + 1, text.width, text.height - PAD)
+}
+
 /// 框里放字的那一块：画得下框的去掉上下两条边；左右照输入框里的字（`text_x`、`text_width`）。
 pub fn inside(outer: Rect, text_x: u16, text_width: u16) -> Rect {
     let rows = room(outer.height);

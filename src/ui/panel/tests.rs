@@ -6,7 +6,7 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
-use super::{Chrome, Row, draw, fit, height, inside, item, room};
+use super::{Chrome, Row, draw, fit, height, inside, item, padded, room};
 use crate::theme;
 
 fn text(rows: &[Row]) -> Vec<String> {
@@ -142,4 +142,11 @@ fn without_room_for_the_frame_only_the_items_are_drawn() {
     let buf = terminal.backend().buffer().clone();
     assert_eq!(buf[(0, 0)].symbol(), "❯");
     assert_eq!(buf[(2, 1)].symbol(), "/");
+}
+
+#[test]
+fn a_box_opened_by_a_command_keeps_a_blank_row_inside_top_and_bottom() {
+    // 2026-10-20 项目主人：由命令打开的框里上下各空一行；放不下的不空。
+    assert_eq!(padded(Rect::new(4, 10, 50, 6)), Rect::new(4, 11, 50, 4));
+    assert_eq!(padded(Rect::new(4, 10, 50, 2)), Rect::new(4, 10, 50, 2));
 }

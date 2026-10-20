@@ -63,6 +63,11 @@ pub enum Panel {
         /// 光标在「是」。
         yes: bool,
     },
+    /// 会话状态（`/status`，`status.rs`）：往下滚了几行。
+    Status {
+        /// 往下滚了几行。
+        scroll: usize,
+    },
     /// 用量（`/usage`）：第几页、往下滚了几行、热度图照花费（`t`）；读回来的在 [`App::usage`](super::App) 上。
     Usage {
         /// 第几页：总览、最近 30 天、按模型、按会话。
@@ -184,6 +189,7 @@ impl App {
                 return self.usage_key((tab, scroll, money), key);
             }
             Panel::Pick { kind, selected } => return self.pick_key(kind, selected, key),
+            Panel::Status { scroll } => return self.status_key(scroll, key),
             Panel::Changed {
                 kind,
                 selected,
