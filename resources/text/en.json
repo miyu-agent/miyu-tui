@@ -1126,6 +1126,7 @@
       "loading": "Reading…",
       "no_packages": "No package has settings",
       "package_items": "{n} settings",
+      "counted": "{n} listed",
       "detail": [
         "Name",
         "Detailed persona prompt",

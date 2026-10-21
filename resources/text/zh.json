@@ -1126,6 +1126,7 @@
       "loading": "正在加载…",
       "no_packages": "没有带设置的软件包",
       "package_items": "{n} 项",
+      "counted": "{n} 个",
       "detail": [
         "名称",
         "具体人格提示词",
