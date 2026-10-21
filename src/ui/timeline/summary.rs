@@ -248,7 +248,7 @@ fn spans(
     let mut out = Vec::new();
     for (i, (text, counts)) in parts.into_iter().enumerate() {
         if i > 0 {
-            out.push(Span::styled(" · ", style));
+            out.push(Span::styled(crate::sheet::sep(), style));
         }
         out.push(Span::styled(text, style));
         if counts && added + removed > 0 {

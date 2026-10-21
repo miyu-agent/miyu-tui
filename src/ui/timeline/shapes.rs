@@ -83,7 +83,7 @@ fn links(
             .filter(|s| !s.is_empty())
             .collect();
         if !place.is_empty() {
-            out.extend(each(&place.join(" · "), theme::dim()));
+            out.extend(each(&place.join(&crate::sheet::sep()), theme::dim()));
         }
         let snippet = field(item, "snippet");
         if !snippet.is_empty() {

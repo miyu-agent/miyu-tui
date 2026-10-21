@@ -50,7 +50,7 @@ pub fn content(step: &ProfileStep, texts: &Texts, width: u16) -> Content {
     } else {
         &words.next
     };
-    c.action(on(Slot::Next), &format!("{next} →"));
+    c.action(on(Slot::Next), &format!("{next} {}", super::next_mark()));
     if step.busy {
         c.blank();
         c.note(&words.saving, theme::dim());

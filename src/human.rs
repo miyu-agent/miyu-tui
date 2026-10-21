@@ -90,7 +90,7 @@ impl Human {
             .filter(|(service, tool)| !service.is_empty() && !tool.is_empty())
             .map_or_else(
                 || name.to_string(),
-                |(service, tool)| format!("{service} · {tool}"),
+                |(service, tool)| format!("{service}{}{tool}", crate::sheet::sep()),
             )
     }
 

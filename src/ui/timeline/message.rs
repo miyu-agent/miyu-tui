@@ -24,13 +24,17 @@ fn target(step: &Step, ctx: &Ctx) -> String {
             .find(|s| s.session == to)
             .and_then(|s| s.title.as_deref())
             .filter(|t| !t.trim().is_empty());
-        return title.map_or(id.clone(), |t| format!("{id} · {}", t.trim()));
+        return title.map_or(id.clone(), |t| {
+            format!("{id}{}{}", crate::sheet::sep(), t.trim())
+        });
     }
     let name = ctx
         .board
         .and_then(|b| b.jobs.iter().find(|j| j.job == to))
         .map(|j| j.title.clone());
-    name.map_or(to.to_string(), |n| format!("{to} · {n}"))
+    name.map_or(to.to_string(), |n| {
+        format!("{to}{}{n}", crate::sheet::sep())
+    })
 }
 
 /// 标题里名字后面那一截（2026-10-18 项目主人：「留言 · 会话 xxxx · 会话名称 · 消息开头」）：发给谁，再接消息的第一行，
@@ -39,7 +43,7 @@ pub fn title(step: &Step, ctx: &Ctx) -> String {
     let message = step.arg("message").unwrap_or_default();
     let first = message.lines().map(str::trim).find(|l| !l.is_empty());
     match first {
-        Some(line) => format!("{} · {line}", target(step, ctx)),
+        Some(line) => format!("{}{}{line}", target(step, ctx), crate::sheet::sep()),
         None => target(step, ctx),
     }
 }

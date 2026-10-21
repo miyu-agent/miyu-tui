@@ -47,39 +47,25 @@
     500,
     5000
   ],
-  "user_bar": "┃ ",
-  "recap_mark": "※ ",
   "title_max": 200,
-  "done_icon": "✻ ",
   "done_gap": {
     "workspace": " "
   },
-  "prompt": "❯ ",
   "menu_rows": 5,
   "history_rows": 8,
   "jump_flash_ms": 1000,
   "session_rows": 10,
   "session_cwd_width": 24,
   "session_title_width": 36,
-  "tick_mark": "✓ ",
   "history_preview_rows": 12,
   "history_keep": 1000,
-  "level_icons": {
-    "workspace": "▣ ",
-    "full": "⏵⏵ ",
-    "read_only": "⏸ "
-  },
   "level_cycle": [
     "workspace",
     "full",
     "read_only"
   ],
-  "undo_icon": "↶ ",
   "link_cover_rows": 4,
   "link_icon_cols": 2,
-  "current_mark": "●",
-  "undo_restored_mark": "✓ ",
-  "undo_left_mark": "✗ ",
   "esc_window_ms": 1500,
   "drawer_keep_rows": 6,
   "currencies": {
@@ -97,7 +83,6 @@
   "drawer_preview": {
     "side_min": 86,
     "gap": 3,
-    "divider": "│",
     "pad": 0
   },
   "dots": {
@@ -110,8 +95,6 @@
     "dim": 0.85,
     "lift": 0.35
   },
-  "queued_mark": "↳ ",
-  "goal_mark": "◎ ",
   "icons": "nerd",
   "sidebar_from": 120,
   "sidebar_width": 38,
@@ -122,11 +105,6 @@
     "poll_ms": 1000,
     "tab": 4
   },
-  "todo_marks": {
-    "pending": "☐ ",
-    "active": "■ ",
-    "done": "☑ "
-  },
   "todo_rows": 5,
   "widgets": {
     "home_blocks": 3,
@@ -134,65 +112,23 @@
     "home_total": 12,
     "sidebar_rows": 10,
     "status_cells": 3,
-    "status_width": 40,
-    "marks": {
-      "todo": "☐ ",
-      "doing": "■ ",
-      "done": "☑ ",
-      "failed": "✗ ",
-      "off": "○ "
-    }
+    "status_width": 40
   },
   "mascot_home": true,
   "mascot_sidebar": true,
   "vim": false,
   "dream": {
-    "mark": "✦ ",
-    "float": "· ",
-    "retired": "✗ ",
-    "revised": "✎ ",
-    "summary": "✦ ",
-    "reason_gap": " · ",
     "float_ms": 500,
-    "asleep": "(－ω－)",
-    "awake": "(・ω・)",
-    "wake_mark": "!",
     "wake_ms": 1200,
     "left_width": 13,
-    "z_top": [
-      "       ",
-      "     z ",
-      "    z Z",
-      "   Z  z",
-      "  Z    ",
-      "       "
-    ],
-    "z_side": [
-      " z",
-      " z",
-      "  ",
-      "  ",
-      " z",
-      " z"
-    ],
     "z_frame_ms": 600,
-    "glyphs": [
-      "✦",
-      "⋆",
-      "✧",
-      "✦",
-      "*"
-    ],
-    "soon": "·",
-    "unlit": "·",
     "stars": 24,
     "star_cols": 3,
     "twinkle_every": 3,
     "twinkle_ms": 2800,
     "twinkle_lift": 0.6,
     "seed": 7,
-    "breathe_ms": 2400,
-    "receipt": "✦ "
+    "breathe_ms": 2400
   },
   "compaction": {
     "pause_ms": [
@@ -213,8 +149,6 @@
     "finish_hold_ms": 200
   },
   "bar": {
-    "full": "▰",
-    "empty": "▱",
     "width": 20
   }
 }

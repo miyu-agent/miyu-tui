@@ -62,7 +62,11 @@ pub fn choices(result: &Value) -> Vec<Choice> {
         out.push(Choice {
             reference: format!("@{name}"),
             name: format!("@{name}"),
-            detail: format!("{} · {members}", pool["strategy"].as_str().unwrap_or("pin")),
+            detail: format!(
+                "{}{}{members}",
+                pool["strategy"].as_str().unwrap_or("pin"),
+                crate::sheet::sep()
+            ),
             state: ChoiceState::Ok,
         });
     }
@@ -76,7 +80,11 @@ pub fn choices(result: &Value) -> Vec<Choice> {
             let window = model["facts"]["window"]["value"].as_u64();
             // 写引用不只写供应商：同一个显示名常有好几个（配置里写的、目录里自带的），只写供应商分不出来。
             let detail = match window {
-                Some(window) => format!("{reference} · {}", crate::meter::short(window)),
+                Some(window) => format!(
+                    "{reference}{}{}",
+                    crate::sheet::sep(),
+                    crate::meter::short(window)
+                ),
                 None => reference.to_string(),
             };
             let state = match model["state"].as_str() {

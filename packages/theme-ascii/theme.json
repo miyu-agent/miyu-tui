@@ -1,0 +1,118 @@
+{
+  "_": "纯 ASCII 主题：框线、记号都换成 ASCII，选中不铺底。只写和默认主题（theme-default）不一样的格，别的照它。",
+  "frame": {
+    "input": "ascii",
+    "boxes": "ascii",
+    "toast": "ascii",
+    "code": "ascii",
+    "table": "ascii"
+  },
+  "marks": {
+    "pointer": "> ",
+    "on": "*",
+    "off": "o",
+    "now": "@",
+    "ok": "+",
+    "fail": "x",
+    "ellipsis": "...",
+    "gap": "...",
+    "next": "->",
+    "sep": " - ",
+    "dash": " > ",
+    "rule": "-",
+    "quote": "| ",
+    "bar": "|",
+    "side": "|",
+    "secret": "*",
+    "enter": "/",
+    "swatch": "##",
+    "heat": "# ",
+    "minus": "-",
+    "task": {
+      "todo": "[ ] ",
+      "done": "[x] "
+    },
+    "chart": [
+      "_",
+      "_",
+      ".",
+      ".",
+      ":",
+      ":",
+      "|",
+      "#"
+    ],
+    "block": "#"
+  },
+  "pick": "mark",
+  "layout": {
+    "user_bar": "| ",
+    "recap_mark": "* ",
+    "done_icon": "* ",
+    "prompt": "> ",
+    "tick_mark": "+ ",
+    "level_icons": {
+      "workspace": "[] ",
+      "full": ">> ",
+      "read_only": "|| "
+    },
+    "undo_icon": "< ",
+    "current_mark": "*",
+    "undo_restored_mark": "+ ",
+    "undo_left_mark": "x ",
+    "queued_mark": "> ",
+    "goal_mark": "@ ",
+    "todo_marks": {
+      "pending": "[ ] ",
+      "active": "[-] ",
+      "done": "[x] "
+    },
+    "drawer_preview": {
+      "divider": "|"
+    },
+    "widgets": {
+      "marks": {
+        "todo": "[ ] ",
+        "doing": "[-] ",
+        "done": "[x] ",
+        "failed": "x ",
+        "off": "o "
+      }
+    },
+    "bar": {
+      "full": "#",
+      "empty": "-"
+    },
+    "dream": {
+      "mark": "* ",
+      "float": ". ",
+      "retired": "x ",
+      "revised": "~ ",
+      "summary": "* ",
+      "reason_gap": " - ",
+      "asleep": "(-_-)",
+      "awake": "(o_o)",
+      "glyphs": [
+        "*",
+        "+",
+        "*",
+        ".",
+        "*"
+      ],
+      "soon": ".",
+      "unlit": ".",
+      "receipt": "* "
+    }
+  },
+  "timeline": {
+    "spinner": [
+      "|",
+      "/",
+      "-",
+      "\\"
+    ],
+    "line": "|",
+    "queued": ".",
+    "omitted": ":"
+  }
+}

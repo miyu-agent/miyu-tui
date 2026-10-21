@@ -169,7 +169,7 @@ impl Field {
     /// 画出来的字：密钥照字数画成 `•`。
     pub fn shown(&self) -> String {
         if self.secret {
-            "•".repeat(self.text().chars().count())
+            crate::sheet::mark(|m| &m.secret).repeat(self.text().chars().count())
         } else {
             self.text().to_string()
         }

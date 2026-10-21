@@ -56,6 +56,7 @@ mod rng;
 mod scratch;
 mod session_list;
 mod settings;
+mod sheet;
 mod shown_files;
 mod side_select;
 mod startup;

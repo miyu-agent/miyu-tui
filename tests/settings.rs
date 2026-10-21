@@ -290,7 +290,8 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
         menu.join("\n")
     );
     assert!(
-        menu.iter().any(|l| l.contains("主题、吉祥物、图标")),
+        menu.iter()
+            .any(|l| l.contains("主题、配色方案、吉祥物、图标")),
         "{}",
         menu.join("\n")
     );

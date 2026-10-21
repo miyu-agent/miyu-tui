@@ -42,6 +42,7 @@ impl Settings {
                 self.more.summaries = super::packages::summaries(&got);
                 self.more.origins = super::packages::origins(&got);
                 self.more.mascots = Some(super::mascots::read(&got));
+                self.more.looks = Some(super::mascots::looks(&got));
             }
             (Waiting::PresetDetail(id), result) => {
                 if let Some(Popup::Preset(view)) = &mut self.popup

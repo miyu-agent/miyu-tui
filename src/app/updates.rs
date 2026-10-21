@@ -39,6 +39,10 @@ impl App {
         if self.mascot_pick_update(&update) {
             return;
         }
+        // 换主题的几个回应归它；头的配置读到了也去读（`theme_pick.rs`）。
+        if self.theme_pick_update(&update) {
+            return;
+        }
         // 上面几处要读的配置合成一条，抢在人格、模型列表、给人看的字这些前头发（`config_asks.rs`）。
         self.flush_config_asks();
         // 人格头像的回应归它（`avatars.rs`）。

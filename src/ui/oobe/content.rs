@@ -46,8 +46,10 @@ pub struct Picture {
 }
 
 /// 光标停着的那一行前面的记号（「第一次打开的引导」第 7 条，2026-10-10 项目主人：「改成箭头加变颜色吧，列表里面可以是
-/// 箭头加背景」）。
-const POINTER: &str = "❯ ";
+/// 箭头加背景」；照主题的 `marks.pointer`）。
+fn pointer() -> String {
+    crate::sheet::mark(|m| &m.pointer)
+}
 /// 没选中的行前面空两格。
 const GAP: &str = "  ";
 /// 几行的格最多露几行。
@@ -118,7 +120,7 @@ impl Content {
             self.focus = Some(self.at());
         }
         let lead = if selected {
-            Span::styled(POINTER, theme::accent())
+            Span::styled(pointer(), theme::accent())
         } else {
             Span::raw(GAP)
         };
@@ -186,19 +188,21 @@ impl Content {
         } else {
             hint.to_string()
         };
+        let dot = crate::sheet::mark(|m| &m.secret);
         let cursor = if field.secret {
             field.text()[..field.editor.cursor().min(field.text().len())]
                 .chars()
                 .count()
-                * '•'.len_utf8()
+                * dot.len()
         } else {
             field.editor.cursor()
         };
         // 密钥不折行：太长的只露后面那一截（光标多半在最后）。
         let (rows, (row, col)) = if field.secret {
-            let dots = shown.chars().count().min(room.saturating_sub(1));
-            let tail = "•".repeat(dots);
-            let at = (cursor / '•'.len_utf8()).min(dots);
+            let per = dot.chars().count().max(1);
+            let dots = (shown.chars().count() / per).min(room.saturating_sub(1) / per);
+            let tail = dot.repeat(dots);
+            let at = (cursor / dot.len().max(1)).min(dots) * per;
             (vec![tail], (0, at))
         } else {
             wrap(&shown, cursor.min(shown.len()), room)
@@ -239,7 +243,7 @@ impl Content {
             self.focus = Some(self.at());
         }
         let (lead, style) = if focused {
-            (Span::styled(POINTER, theme::accent()), theme::accent())
+            (Span::styled(pointer(), theme::accent()), theme::accent())
         } else {
             (Span::raw(GAP), Style::new())
         };
@@ -287,7 +291,7 @@ impl Content {
             String::new()
         };
         let mut spans = labelled(label, label_w, focused);
-        spans.push(Span::styled("■ ", swatch));
+        spans.push(Span::styled(crate::sheet::mark(|m| &m.heat), swatch));
         let body = Span::styled(format!("#{seed:06x}"), ground);
         spans.extend(boxed(body, room.saturating_sub(2), &cue, ground));
         self.lines.push(Line::from(spans));
@@ -367,7 +371,7 @@ impl Content {
 fn labelled(label: &str, label_w: usize, focused: bool) -> Vec<Span<'static>> {
     let (lead, style) = if focused {
         (
-            Span::styled(POINTER, theme::accent()),
+            Span::styled(pointer(), theme::accent()),
             theme::accent().add_modifier(Modifier::BOLD),
         )
     } else {

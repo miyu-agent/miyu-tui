@@ -15,9 +15,9 @@ pub fn is_secret(item: &Item) -> bool {
     item.kind == "secret"
 }
 
-/// 编辑窗里显示的字：密钥的一个字一个 `•`。
+/// 编辑窗里显示的字：密钥的一个字一个 `•`（照主题的 `marks.secret`）。
 pub fn masked(text: &str) -> String {
-    "•".repeat(text.chars().count())
+    crate::sheet::mark(|m| &m.secret).repeat(text.chars().count())
 }
 
 impl Settings {

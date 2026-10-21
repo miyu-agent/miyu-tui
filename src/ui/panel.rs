@@ -8,7 +8,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Clear, Paragraph};
+use ratatui::widgets::{Block, Clear, Paragraph};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -149,17 +149,17 @@ pub fn draw(frame: &mut Frame, outer: Rect, text: Rect, chrome: Chrome, lines: V
     frame.render_widget(Paragraph::new(lines), text);
 }
 
-/// 圆角框：标题嵌在上边框 `╭─ 标题 ─…╮`，按键提示嵌在下边框 `╰─ 提示 ─…╯`。
+/// 框（框线照主题的 `frame.boxes`，出厂圆角）：标题嵌在上边框 `╭─ 标题 ─…╮`，按键提示嵌在下边框 `╰─ 提示 ─…╯`。
 fn block(chrome: Chrome) -> Block<'static> {
     let line = theme::dim();
+    let set = crate::sheet::read(|s| s.frame.boxes.set());
+    let lead = format!("{} ", set.horizontal_top);
     let edge = |mut spans: Vec<Span<'static>>| {
-        spans.insert(0, Span::styled("─ ", line));
+        spans.insert(0, Span::styled(lead.clone(), line));
         spans.push(Span::styled(" ", line));
         Line::from(spans)
     };
-    let mut block = Block::bordered()
-        .border_type(BorderType::Rounded)
-        .border_style(line);
+    let mut block = Block::bordered().border_set(set).border_style(line);
     // 没有标题的（问要不要压缩那个框）只是一条线。
     if chrome.title.iter().any(|s| !s.content.is_empty()) {
         block = block.title_top(edge(chrome.title));
@@ -191,7 +191,8 @@ pub fn item_with(
 ) -> Line<'static> {
     let mark = match lead {
         Some((lead, force)) if force || !picked => lead,
-        _ => Span::raw(if picked { "❯ " } else { "  " }),
+        _ if picked => Span::raw(crate::sheet::mark(|m| &m.pointer)),
+        _ => Span::raw("  "),
     };
     let width = usize::from(width);
     let right_width = right.as_ref().map_or(0, |r| r.width() + 1);
@@ -249,13 +250,14 @@ pub fn clip_spans(spans: Vec<Span<'static>>, room: usize) -> Vec<Span<'static>> 
     if total <= room {
         return spans;
     }
+    let mark = crate::sheet::ellipsis();
     let mut out = Vec::new();
     let mut used = 0;
     for span in spans {
         let mut kept = String::new();
         for g in span.content.graphemes(true) {
             let w = g.width();
-            if used + w + 1 > room {
+            if used + w + mark.width() > room {
                 break;
             }
             kept.push_str(g);
@@ -267,7 +269,7 @@ pub fn clip_spans(spans: Vec<Span<'static>>, room: usize) -> Vec<Span<'static>> 
         }
         if cut {
             if room > 0 {
-                out.push(Span::styled("…", span.style));
+                out.push(Span::styled(mark.clone(), span.style));
             }
             return out;
         }

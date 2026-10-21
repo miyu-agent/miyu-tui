@@ -89,7 +89,7 @@ impl Job {
         let mut lines = self.title.trim().lines();
         let first = lines.next().unwrap_or_default().trim_end();
         if lines.next().is_some() {
-            format!("{first} …")
+            format!("{first} {}", crate::sheet::ellipsis())
         } else {
             first.to_string()
         }

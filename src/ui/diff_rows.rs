@@ -27,7 +27,10 @@ pub fn lines(diff: &Diff, width: u16, tab: usize) -> Vec<(Span<'static>, Span<'s
                 Mark::Removed => ("-", theme::diff_removed()),
                 Mark::Added => ("+", theme::diff_added()),
                 Mark::Keep => (" ", theme::dim()),
-                Mark::Gap => return (gutter, Span::styled("⋯", theme::dim())),
+                Mark::Gap => {
+                    let gap = crate::sheet::mark(|m| &m.gap);
+                    return (gutter, Span::styled(gap, theme::dim()));
+                }
             };
             let room = u16::try_from(room).unwrap_or(u16::MAX);
             let text = clip(

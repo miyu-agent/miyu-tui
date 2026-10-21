@@ -171,8 +171,9 @@ fn the_colors_list_offers_the_wallpaper_only_when_there_is_one() {
         let mut tui = home.tui_args_with("zh_CN.UTF-8", &["config"], &env);
         tui.open_menu("外观");
         tui.wait_for("配色");
-        // 等起来时的那一次找完再开列表。
+        // 等起来时的那一次找完再开列表；外观页第一项是「主题」（2026-10-21），下一格才是配色。
         tui.pump(std::time::Duration::from_millis(500));
+        tui.key(b"j");
         tui.key(b"\r");
         tui.wait_for("终端配色");
         assert_eq!(tui.shows("跟随壁纸"), found, "{}", tui.lines().join("\n"));

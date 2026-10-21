@@ -100,7 +100,7 @@ fn line(item: &Item, look: &Look) -> Line<'static> {
     if let Some(detail) = &item.detail {
         let space = left_room.saturating_sub(used + 3);
         if space >= 2 {
-            let detail = format!(" · {}", clip(detail, space));
+            let detail = format!("{}{}", crate::sheet::sep(), clip(detail, space));
             used += detail.width();
             spans.push(Span::styled(detail, theme::dim()));
         }

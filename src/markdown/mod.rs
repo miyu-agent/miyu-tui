@@ -171,7 +171,14 @@ impl Renderer<'_> {
                     used: false,
                 }) = self.containers.last_mut()
                 {
-                    *marker = if done { "☑ " } else { "☐ " }.to_string();
+                    *marker = crate::sheet::read(|s| {
+                        let task = &s.marks.task;
+                        if done {
+                            task.done.clone()
+                        } else {
+                            task.todo.clone()
+                        }
+                    });
                 }
             }
             Event::InlineMath(tex) => self.inline_math(&tex),

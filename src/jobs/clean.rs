@@ -36,7 +36,7 @@ pub fn note_detail(output: &crate::core::JobOutput, tab: usize, nothing: &str) -
     let text = text.trim_end();
     match (text.is_empty(), output.truncated) {
         (true, _) => nothing.to_string(),
-        (false, true) => format!("…\n{text}"),
+        (false, true) => format!("{}\n{text}", crate::sheet::ellipsis()),
         (false, false) => text.to_string(),
     }
 }

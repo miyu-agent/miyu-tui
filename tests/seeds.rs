@@ -53,7 +53,8 @@ fn the_main_color_is_picked_from_the_avatars_candidates_and_saved_on_the_persona
     tui.say("/config");
     tui.open_menu("外观");
     tui.wait_for("主色");
-    // 配色下面一格就是主色：开色块列表，四个候选，第一个写「默认」。
+    // 外观页第一项是「主题」（2026-10-21），下一格配色，再下面一格就是主色：开色块列表，四个候选，第一个写「默认」。
+    tui.key(b"j");
     tui.key(b"j");
     tui.key(b"\r");
     tui.wait_for("默认");

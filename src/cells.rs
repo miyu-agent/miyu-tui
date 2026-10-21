@@ -4,22 +4,24 @@
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-/// 放进 `width` 列：放不下的截掉后面、结尾写 `…`（`…` 也算在里面）。
+/// 放进 `width` 列：放不下的截掉后面、结尾写 `…`（`…` 也算在里面；记号照主题的 `marks.ellipsis`）。
 pub fn clip(text: &str, width: usize) -> String {
     if text.width() <= width {
         return text.to_string();
     }
+    let mark = crate::sheet::ellipsis();
+    let mark_w = mark.width();
     let mut out = String::new();
     let mut used = 0;
     for g in text.graphemes(true) {
         let w = g.width();
-        if used + w + 1 > width {
+        if used + w + mark_w > width {
             break;
         }
         used += w;
         out.push_str(g);
     }
-    out.push('…');
+    out.push_str(&mark);
     out
 }
 
@@ -34,8 +36,9 @@ pub fn tail_marked(text: &str, width: usize) -> String {
     if text.width() <= width {
         return text.to_string();
     }
-    let (kept, _) = last_cols(text, width.saturating_sub(1));
-    format!("…{kept}")
+    let mark = crate::sheet::ellipsis();
+    let (kept, _) = last_cols(text, width.saturating_sub(mark.width()));
+    format!("{mark}{kept}")
 }
 
 /// 照显示宽度硬折：一行放满了另起一行，一个字放不下一行的也独占一行。

@@ -144,12 +144,17 @@ fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
 }
 
 /// 配置页的按键提示（一对对「键、做什么」）连成一行。
+/// 「下一步 →」这类动作行后面的记号（主题的 `marks.next`）。
+fn next_mark() -> String {
+    crate::sheet::mark(|m| &m.next)
+}
+
 fn joined(pairs: &[[String; 2]]) -> String {
     pairs
         .iter()
         .map(|[k, d]| format!("{k} {d}"))
         .collect::<Vec<_>>()
-        .join(" · ")
+        .join(&crate::sheet::sep())
 }
 
 /// 中间几步。

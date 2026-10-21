@@ -110,7 +110,8 @@ const OWN: &str = "tui.";
 
 /// 终端自己的配置项里另分一组的：键的开头、组的编号、放哪一页（「配置页」第 33 条，2026-10-11 项目主人：时间线单独一个
 /// 标题，吉祥物也分出去；2026-10-14：主题、吉祥物、图标单开一页「外观」，时间线留在通用）。组照这个先后排。
-const OWN_GROUPS: [(&str, &str, &str); 5] = [
+const OWN_GROUPS: [(&str, &str, &str); 6] = [
+    ("tui.look", "tui.look", APPEARANCE),
     ("tui.theme", "tui.theme", APPEARANCE),
     ("tui.mascot", "tui.mascot", APPEARANCE),
     ("tui.icons", "tui.icons", APPEARANCE),
@@ -122,7 +123,9 @@ const OWN_GROUPS: [(&str, &str, &str); 5] = [
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct OwnGroups {
-    /// 主题（2026-10-13：配色、明暗、铺底色）。
+    /// 主题（2026-10-21：框线、记号这些，`tui.look`）。
+    pub look: String,
+    /// 配色方案（2026-10-13：配色、明暗、铺底色；2026-10-21 从「主题」改名）。
     pub theme: String,
     /// 时间线。
     pub timeline: String,
@@ -138,6 +141,7 @@ impl OwnGroups {
     /// 照组的编号取名字。
     fn name(&self, id: &str) -> &str {
         match id {
+            "tui.look" => &self.look,
             "tui.theme" => &self.theme,
             "tui.timeline" => &self.timeline,
             "tui.icons" => &self.icons,
@@ -407,7 +411,8 @@ mod tests {
         }));
         s.split_own(
             &super::OwnGroups {
-                theme: "主题".into(),
+                look: "主题".into(),
+                theme: "配色方案".into(),
                 timeline: "时间线".into(),
                 mascot: "吉祥物".into(),
                 icons: "图标".into(),
@@ -416,7 +421,7 @@ mod tests {
             "外观",
         );
         assert_eq!(s.group_names("general"), ["显示", "时间线", "按键模式"]);
-        assert_eq!(s.group_names("appearance"), ["主题", "吉祥物", "图标"]);
+        assert_eq!(s.group_names("appearance"), ["配色方案", "吉祥物", "图标"]);
         assert_eq!(s.listed_pages(), ["general", "appearance"]);
         assert_eq!(s.page_name("appearance"), Some("外观"));
         let group = |key: &str| {

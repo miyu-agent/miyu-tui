@@ -101,7 +101,7 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
     } else {
         &words.next
     };
-    c.action(on(Slot::Next), &format!("{next} →"));
+    c.action(on(Slot::Next), &format!("{next} {}", super::next_mark()));
     if step.busy {
         c.blank();
         c.note(&words.saving, theme::dim());
@@ -118,7 +118,7 @@ pub(super) fn first_line(text: &str) -> String {
     let mut lines = text.trim_end().lines();
     let first = lines.next().unwrap_or_default().to_string();
     if lines.next().is_some() {
-        format!("{first} …")
+        format!("{first} {}", crate::sheet::ellipsis())
     } else {
         first
     }

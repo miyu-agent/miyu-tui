@@ -23,7 +23,7 @@ pub fn content(step: &PresetStep, texts: &Texts, width: u16) -> Content {
     // 一个预设一行（第 24 条，2026-10-10 项目主人：空格看得到详情，下面那一行功能不用写了）。
     for (i, card) in step.cards.iter().enumerate() {
         let selected = i == step.cursor;
-        let mark = selected.then(|| Span::styled("✓", theme::accent()));
+        let mark = selected.then(|| Span::styled(crate::sheet::mark(|m| &m.ok), theme::accent()));
         c.row(
             selected,
             vec![Span::styled(card.name.clone(), bold())],
@@ -37,7 +37,7 @@ pub fn content(step: &PresetStep, texts: &Texts, width: u16) -> Content {
             Span::styled(words.custom.clone(), bold()),
             Span::styled(format!("  {}", words.custom_note), theme::dim()),
         ],
-        custom.then(|| Span::styled("✓", theme::accent())),
+        custom.then(|| Span::styled(crate::sheet::mark(|m| &m.ok), theme::accent())),
     );
     if let Some(error) = step.error.as_ref().filter(|_| !step.custom_open) {
         c.blank();
@@ -119,7 +119,7 @@ pub fn popup(
     c.blank();
     c.action(
         step.inner == step.create_row(),
-        &format!("{} →", words.create),
+        &format!("{} {}", words.create, super::next_mark()),
     );
     if let Some(error) = &step.error {
         c.blank();

@@ -60,7 +60,7 @@ impl Block {
         };
         let mut lines: Vec<String> = top.lines.iter().map(center).collect();
         let base = lines.len();
-        lines.push("─".repeat(width));
+        lines.push(crate::sheet::mark(|m| &m.rule).repeat(width));
         lines.extend(bottom.lines.iter().map(center));
         Block { lines, base, width }
     }

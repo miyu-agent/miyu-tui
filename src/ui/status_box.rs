@@ -152,7 +152,7 @@ pub fn items(f: &Facts, words: &Texts, bar: &Bar, room: usize) -> Vec<Item> {
     let keys = &words.keys;
     let opened = f.session.is_some();
     let dim = |s: String| Span::styled(s, theme::dim());
-    let tail = |s: String| Span::styled(format!(" · {s}"), theme::dim());
+    let tail = |s: String| Span::styled(format!("{}{s}", crate::sheet::sep()), theme::dim());
     let plain = |s: String| vec![Span::raw(s)];
     let mut groups: [Vec<(String, Vec<Span<'static>>)>; 3] = Default::default();
 
@@ -175,7 +175,10 @@ pub fn items(f: &Facts, words: &Texts, bar: &Bar, room: usize) -> Vec<Item> {
     // 第二段：模型、上下文、压缩、用量、缓存命中、花费。
     let second = &mut groups[1];
     if let Some((model, endpoint)) = &f.model {
-        let mut value = vec![Span::raw(model.clone()), dim(format!(" · {endpoint}"))];
+        let mut value = vec![
+            Span::raw(model.clone()),
+            dim(format!("{}{endpoint}", crate::sheet::sep())),
+        ];
         if let Some(effort) = &f.effort {
             value.push(tail(words.effort.replace("{effort}", effort)));
         }

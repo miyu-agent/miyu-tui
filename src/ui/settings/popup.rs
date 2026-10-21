@@ -217,9 +217,9 @@ fn pick_lines(lines: &mut Lines, pick: &Pick, page: &Settings, texts: &Texts, wi
                 off,
             } => {
                 let mark = if current.as_deref() == Some(reference.as_str()) {
-                    "● "
+                    format!("{} ", crate::sheet::mark(|m| &m.on))
                 } else {
-                    "  "
+                    "  ".to_string()
                 };
                 let tag = match (off, tag) {
                     (Some("off_vision"), _) => texts.pick[2].clone(),

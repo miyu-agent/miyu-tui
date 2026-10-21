@@ -93,11 +93,16 @@ impl App {
     /// 照读到的终端配置项办（先画后连时照上次记下的，`look.rs`）：图标、时间线、吉祥物的开关、按键模式、主题、开局级别；没有的照旧。
     pub(super) fn apply_head_settings(&mut self, got: &Value) {
         self.take_icons(got);
+        self.apply_layout_settings(got);
+        self.take_theme(got);
+        self.default_level(got);
+    }
+
+    /// 盖在 `layout`、`timeline` 上的那几项（时间线、吉祥物的开关、按键模式）：读到时、换了主题重读以后都照它盖。
+    pub(super) fn apply_layout_settings(&mut self, got: &Value) {
         self.config.timeline.apply(got);
         self.config.layout.apply_mascot(got);
         self.config.layout.apply_keys(got);
-        self.take_theme(got);
-        self.default_level(got);
     }
 
     /// 图标那一套（「图标」第 4 条）。

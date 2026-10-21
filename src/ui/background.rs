@@ -49,7 +49,7 @@ pub fn lines(
         }) => {
             let count = board.shells_running().to_string();
             let meta = vec![
-                Span::styled(" · ", theme::dim()),
+                Span::styled(crate::sheet::sep(), theme::dim()),
                 Span::styled(words.active.replace("{count}", &count), theme::dim()),
             ];
             let chrome = Chrome::new(&words.title, meta).hint(&words.hint);

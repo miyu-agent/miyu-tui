@@ -243,7 +243,7 @@ fn join(parts: Vec<Part>, kept: &[bool]) -> Vec<Span<'static>> {
     let mut spans = Vec::new();
     for (i, part) in parts.enumerate() {
         if i > 0 {
-            spans.push(Span::styled(" · ", theme::dim()));
+            spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
         }
         spans.extend(part.spans);
     }
@@ -288,7 +288,7 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
                 // 思考强度（`/effort`）：什么都不发的不写。
                 if let Some(effort) = t.effort() {
                     // 强调色（2026-10-02 项目主人：和「工作区」那个蓝一样）。
-                    spans.push(Span::styled(" · ", theme::dim()));
+                    spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
                     spans.push(Span::styled(effort.to_string(), theme::accent()));
                 }
             }
@@ -312,10 +312,10 @@ fn model_spans(model: String, endpoint: &str, short: bool) -> Vec<Span<'static>>
 
 /// 权限级别那一格写什么、后面接模型那一格用什么隔开：写字的是「⏵⏵ 开放权限」接 ` · `；窄了只留图标的是「⏵⏵」接一个空格，
 /// 不留 ` · `（2026-10-19 项目主人：字收掉了，那个点也收掉）。没有图标的照旧写字。
-fn level_label(icon: Option<&str>, name: &str, named: bool) -> (String, &'static str) {
+fn level_label(icon: Option<&str>, name: &str, named: bool) -> (String, String) {
     match icon {
-        Some(icon) if !named => (icon.trim_end().to_string(), " "),
-        _ => (format!("{}{name}", icon.unwrap_or("")), " · "),
+        Some(icon) if !named => (icon.trim_end().to_string(), " ".to_string()),
+        _ => (format!("{}{name}", icon.unwrap_or("")), crate::sheet::sep()),
     }
 }
 

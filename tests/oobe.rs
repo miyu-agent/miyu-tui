@@ -157,7 +157,9 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     let row = |word: &str| {
         lines.iter().position(|l| {
             let l = l.trim_start();
-            l.trim_start_matches('❯').trim_start().starts_with(word)
+            let l = l.trim_start_matches('❯').trim_start();
+            // 这一步的标题「配色方案」也是「配色」打头，不算（2026-10-21 从「主题」改名）。
+            l.starts_with(word) && !l.starts_with("配色方案")
         })
     };
     let (mode, colors) = (row("明暗").unwrap_or(0), row("配色").unwrap_or(0));

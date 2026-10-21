@@ -10,9 +10,6 @@ use crate::app::{Seen, UsageData};
 use crate::core::UsageRow;
 use crate::{meter, theme};
 
-/// 一格里八分之一到八分之八高。
-const EIGHTHS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-
 /// 柱状图加按天的表。
 pub(super) fn recent(
     seen: &Seen,
@@ -54,6 +51,8 @@ pub(super) fn recent(
 /// 柱状图排成 `height` 行，从上往下；每天一列，柱子之间空一格。
 fn bars(values: &[u64], height: usize) -> Vec<Line<'static>> {
     let top = values.iter().copied().max().unwrap_or(0).max(1);
+    // 一格里八分之一到八分之八高（主题的 `marks.chart`）。
+    let eighths_marks = crate::sheet::read(|s| s.marks.chart.clone());
     (0..height)
         .rev()
         .map(|row| {
@@ -71,8 +70,12 @@ fn bars(values: &[u64], height: usize) -> Vec<Line<'static>> {
                 } else {
                     theme::heat(3)
                 };
-                let cell = if here == 0 { ' ' } else { EIGHTHS[here - 1] };
-                spans.push(Span::styled(cell.to_string(), style));
+                let cell = if here == 0 {
+                    " ".to_string()
+                } else {
+                    eighths_marks[here - 1].clone()
+                };
+                spans.push(Span::styled(cell, style));
             }
             Line::from(spans)
         })

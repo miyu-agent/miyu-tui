@@ -109,7 +109,8 @@ pub fn said(answer: &Answer) -> String {
     parts.join("、")
 }
 
-/// 写成一行：换行写成 `↵`（照旧版）。
+/// 写成一行：换行写成 `↵`（照旧版；记号照主题的 `marks.enter`）。
 pub fn inline(text: &str) -> String {
-    text.trim().replace(['\r', '\n'], "↵")
+    text.trim()
+        .replace(['\r', '\n'], &crate::sheet::mark(|m| &m.enter))
 }

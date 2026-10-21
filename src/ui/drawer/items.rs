@@ -184,7 +184,7 @@ pub fn review(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
 
 /// 写的字排成一行：换行写成 `↵`，前后的空白照留（光标跟着）。
 fn inline_raw(text: &str) -> String {
-    text.replace(['\r', '\n'], "↵")
+    text.replace(['\r', '\n'], &crate::sheet::mark(|m| &m.enter))
 }
 
 /// 放进 `width` 列：放不下的留后面那截（看得到最新写的）。

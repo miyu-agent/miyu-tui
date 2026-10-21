@@ -68,7 +68,7 @@ pub fn rows(
     .into_iter()
     .filter(|text| !text.is_empty())
     .collect::<Vec<_>>()
-    .join(" · ");
+    .join(&crate::sheet::sep());
     let lines: Vec<(u16, Span<'static>)> = [
         (
             title_lead,

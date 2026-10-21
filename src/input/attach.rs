@@ -78,10 +78,11 @@ pub struct Attachment {
 pub fn short_name(name: &str, max: usize) -> String {
     // 照字素簇算（review，2026-10-11：原来逐字符算，`⚠️` 这类字算窄了）。
     let width = |g: &str| g.width();
-    if name.width() <= max || max < 3 {
+    let mark = crate::sheet::ellipsis();
+    if name.width() <= max || max < 2 + mark.width() {
         return name.to_string();
     }
-    let budget = max - 1;
+    let budget = max - mark.width();
     // 点在开头的（`.bashrc`）不算扩展名。
     let ext = name
         .rfind('.')
@@ -109,7 +110,7 @@ pub fn short_name(name: &str, max: usize) -> String {
     }
     tail.reverse();
     let tail = tail.concat();
-    format!("{head}…{tail}")
+    format!("{head}{mark}{tail}")
 }
 
 #[cfg(test)]

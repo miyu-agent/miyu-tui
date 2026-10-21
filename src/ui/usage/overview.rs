@@ -106,6 +106,7 @@ fn heat(
     let grid = usage::grid(days, data.today, weeks, value);
     let cuts = usage::thresholds(grid.weeks.iter().flatten().flatten().copied());
     let mut out = vec![months(texts, &grid.months, weeks)];
+    let heat = crate::sheet::mark(|m| &m.heat);
     for row in 0..7 {
         let name = texts.weekdays.get(row).cloned().unwrap_or_default();
         let mut spans = vec![Span::styled(
@@ -114,7 +115,7 @@ fn heat(
         )];
         for column in &grid.weeks {
             spans.push(match column[row] {
-                Some(v) => Span::styled("■ ", theme::heat(usage::level(v, &cuts))),
+                Some(v) => Span::styled(heat.clone(), theme::heat(usage::level(v, &cuts))),
                 None => Span::raw("  "),
             });
         }
@@ -165,7 +166,10 @@ fn legend(seen: &Seen, by_money: bool, right: usize) -> Line<'static> {
         theme::dim(),
     )];
     for level in 0..5 {
-        spans.push(Span::styled("■ ", theme::heat(level)));
+        spans.push(Span::styled(
+            crate::sheet::mark(|m| &m.heat),
+            theme::heat(level),
+        ));
     }
     spans.push(Span::styled(texts.more.clone(), theme::dim()));
     let used: usize = spans.iter().map(Span::width).sum();

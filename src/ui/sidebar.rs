@@ -320,7 +320,7 @@ pub fn draw(
         return;
     }
     let line: Vec<Line> = (0..area.height)
-        .map(|_| Line::styled("│", theme::dim()))
+        .map(|_| Line::styled(crate::sheet::mark(|m| &m.side), theme::dim()))
         .collect();
     frame.render_widget(
         Paragraph::new(line),
