@@ -112,13 +112,17 @@ impl Session {
             {
                 break;
             }
+            super::dreaming::tick(turn, &self.config);
             turn.look.apply(&self.config);
             let (width, height) = size();
             let frame =
                 usize::try_from(started.elapsed().as_millis() / u128::from(spinner)).unwrap_or(0);
             let view = self.view(turn, width, height, frame);
             // 不印运行状态行（词、用时）：shell 里只要转圈（2026-10-20 项目主人验收：不要文字进度条）。
-            let lines = view.lines(&turn.transcript, turn.scope(), true);
+            let mut lines = view.lines(&turn.transcript, turn.scope(), true);
+            if let Some(dream) = &turn.dream {
+                lines.extend(view.dream_lines(&turn.transcript, dream));
+            }
             // 开着的抽屉画在最下面，最多占一半高（图纸「确认和提问」）。
             let drawer = turn
                 .asking

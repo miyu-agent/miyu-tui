@@ -33,6 +33,8 @@ pub struct Turn {
     pub board: crate::jobs::Board,
     /// 主题包（`pack.rs`）：读 `tui.look`、换上。
     pack: super::pack::Pack,
+    /// 打的 `/dream` 正在整理（`dreaming.rs`）。
+    pub(super) dream: Option<crate::dream::Dream>,
     /// 这一轮待办变过：收尾时把最后的样子印出来。
     pub todos_changed: bool,
     /// 这一轮派出去的后台任务（不算前台跑的子代理）：收工时还没结束的交给盯后台的进程（`follow.rs`）。
@@ -133,6 +135,7 @@ impl Turn {
             look,
             board: crate::jobs::Board::default(),
             pack: super::pack::Pack::default(),
+            dream: None,
             todos_changed: false,
             jobs: Vec::new(),
             ended_jobs: Vec::new(),
@@ -180,6 +183,7 @@ impl Turn {
                 return;
             }
             if self.slash {
+                super::dreaming::start(self, &text, core);
                 core.send(Command::Slash(text));
                 return;
             }
@@ -211,6 +215,9 @@ impl Turn {
             Update::Elsewhere { .. } => return,
             update => update,
         };
+        if super::dreaming::update(self, &update, core) {
+            return;
+        }
         self.watch(&update);
         match self.pack.update(&update, config, core) {
             super::pack::Applied::No => {}
@@ -457,6 +464,8 @@ impl Turn {
                 let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
                 let alt = key.modifiers.contains(KeyModifiers::ALT);
                 match key.code {
+                    // 在整理的头一下叫停（`dreaming.rs`）。
+                    KeyCode::Char('c') if ctrl && super::dreaming::stop(self, core) => {}
                     KeyCode::Char('c') if ctrl => {
                         let give_up = self.interrupted || self.ours.is_none();
                         self.interrupted = true;

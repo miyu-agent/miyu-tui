@@ -6,6 +6,7 @@
 //! （`report.rs`）。
 
 mod asking;
+mod dreaming;
 pub mod follow;
 mod look;
 mod pack;

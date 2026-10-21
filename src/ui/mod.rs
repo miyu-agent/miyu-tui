@@ -63,6 +63,7 @@ mod timeline;
 mod undo_rows;
 pub use timeline::release_on_fold;
 // shellhook 照同一套画等第一个字的转圈、待办（图纸 `shellhook.md`）。
+pub use dream_rows::rows as dream_rows;
 pub use sidebar::todo_lines;
 pub use timeline::tail_rows;
 mod user_rows;

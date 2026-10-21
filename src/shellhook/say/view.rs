@@ -153,6 +153,25 @@ impl View<'_> {
         lines
     }
 
+    /// 打的 `/dream` 整理时的那一块（同终端界面接在正文末尾的，`ui::dream_rows`），前面空一行和提示符那一行隔开。
+    pub fn dream_lines(
+        &self,
+        transcript: &Transcript,
+        dream: &crate::dream::Dream,
+    ) -> Vec<Line<'static>> {
+        // 每行前面有两格槽：照终端界面，这一块的宽不算它（不然右下角的「合了多少」被截掉两格）。
+        let mut ctx = self.ctx(transcript);
+        ctx.width = ctx.width.saturating_sub(2);
+        let mut lines: Vec<Line<'static>> =
+            crate::ui::dream_rows(dream, &ctx, std::time::Instant::now())
+                .into_iter()
+                .map(|row| row.line)
+                .skip_while(|l| l.spans.iter().all(|s| s.content.trim().is_empty()))
+                .collect();
+        lines.insert(0, Line::default());
+        lines
+    }
+
     fn ctx(&self, transcript: &Transcript) -> Ctx<'_> {
         Ctx {
             config: self.config,
