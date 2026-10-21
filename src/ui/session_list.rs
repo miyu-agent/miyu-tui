@@ -27,6 +27,8 @@ pub struct Texts {
     pub count: String,
     /// 打了字时接在后面的。
     pub query: String,
+    /// 终端集成开的会话标题后面那一格（2026-10-21）。
+    pub terminal: String,
     /// 下边框的按键提示。
     pub hint: String,
     /// 按键模式是 Vim 时的（`/ 搜索 · j/k`，蓝图「按键」表「按键模式」那一行）。
@@ -194,6 +196,12 @@ pub fn lines(
         0
     };
     let fixed = 2 + widest_right + 1 + tick_width + 3 + 8 + 2 + tokens_width + context_room;
+    // 终端集成开的会话在标题后面写一格「终端集成」（2026-10-21 项目主人：「终端集成会话在会话列表里可以有个区分……宽度
+    // 不够的话就不显示了」）：露出来的有这种会话、标题照它的宽度放得下才写，放不下的先省这一格。
+    let terminal_room = 2 + texts.terminal.width();
+    let terminal = found.iter().skip(top).take(shown).any(|s| s.terminal)
+        && fixed + terminal_room + column <= usize::from(width);
+    let fixed = fixed + if terminal { terminal_room } else { 0 };
     let column = column.min(
         usize::from(width)
             .saturating_sub(fixed)
@@ -225,6 +233,14 @@ pub fn lines(
                 content.push(Span::styled(mark, theme::picked()));
             }
             content.extend(head(info, config, column));
+            if terminal {
+                let cell = if info.terminal {
+                    texts.terminal.clone()
+                } else {
+                    " ".repeat(texts.terminal.width())
+                };
+                content.push(Span::styled(format!("  {cell}"), theme::faint()));
+            }
             content.push(Span::styled(
                 format!("  #{}", short(&info.session)),
                 theme::faint(),

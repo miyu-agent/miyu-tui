@@ -186,6 +186,7 @@ mod tests {
             preset: None,
             tokens: 0,
             context: None,
+            terminal: false,
         }
     }
 

@@ -672,6 +672,7 @@
     "auto_switched": "界面语言：自动（跟随系统：{name}）"
   },
   "sessions": {
+    "terminal": "终端集成",
     "title": "会话",
     "count": "  {count} 个",
     "query": " · 搜索：",
