@@ -212,8 +212,10 @@ pub fn menu_typed(text: &str) -> Option<&str> {
     after.is_empty().then_some(name)
 }
 
-/// 输入框里的字要不要当命令：`/` 开头，后面像个命令名（英文字母打头，只有英文字母、数字、`-`、`_`；
-/// 刚打一个 `/` 也算）。`/你吃了吗`、路径这些不算（`tui.md`「斜杠命令列表」第 1、4 条）。交回命令名。
+/// 输入框里的字要不要当命令：`/` 开头，后面像个命令名（英文字母打头，只有英文字母、数字、`-`、`_`，中间最多一个
+/// `:`；刚打一个 `/` 也算）。`/你吃了吗`、路径这些不算（`tui.md`「斜杠命令列表」第 1、4 条）。`:` 给 MCP 服务的提示词
+/// （核心 X-39：`<服务名>:<提示词名>`，同 Claude Code，例如 `/github:review-pr 123`；同网页：两个 `:` 不算）。打到
+/// 一半、`:` 在最后的（`/github:`）也算，列表不在打字中途收起又弹出来。交回命令名。
 pub fn typed(text: &str) -> Option<&str> {
     let rest = text.strip_prefix('/')?;
     // 名字紧挨着 `/`：`/ compact` 这种的名字是空的。
@@ -221,8 +223,9 @@ pub fn typed(text: &str) -> Option<&str> {
     let starts = name.chars().next().is_none_or(|c| c.is_ascii_alphabetic());
     let rest_ok = name
         .chars()
-        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_'));
-    (starts && rest_ok).then_some(name)
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | ':'));
+    let colons = name.matches(':').count() <= 1;
+    (starts && rest_ok && colons).then_some(name)
 }
 
 #[cfg(test)]
@@ -410,5 +413,14 @@ mod tests {
         // 核心不再给（旧核心）：拿掉借来的。
         c.take_core(&[]);
         assert!(c.find("goal").unwrap().argument.is_none());
+    }
+
+    #[test]
+    fn a_colon_inside_the_name_is_part_of_it() {
+        // 核心 X-39：MCP 服务的提示词做成斜杠命令 `<服务名>:<提示词名>`（2026-10-21 核心会话告知）。
+        assert_eq!(typed("/github:review-pr 123"), Some("github:review-pr"));
+        assert_eq!(typed("/github:"), Some("github:"), "打到一半也开着列表");
+        assert_eq!(typed("/:x"), None, "冒号不能打头");
+        assert_eq!(typed("/a:b:c"), None, "最多一个冒号（同网页）");
     }
 }
