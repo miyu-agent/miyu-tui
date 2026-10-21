@@ -20,6 +20,7 @@ pub mod schema;
 pub mod secret;
 pub mod target;
 pub mod textarea;
+pub mod ticks;
 
 use std::collections::HashMap;
 
@@ -105,7 +106,7 @@ pub struct More {
 
 impl More {
     /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、供应商和模型（2026-10-19 项目主人：挪到用户上面）、用户
-    /// （核心 P-9 再补，2026-10-16 项目主人定）、外观（2026-10-14 加）、人格、预设、软件包（和以后的别的页）、高级。「权限」
+    /// （核心 P-9 再补，2026-10-16 项目主人定）、隐私与安全（核心 5-15 下，2026-10-21 项目主人照推荐定）、外观（2026-10-14 加）、人格、预设、软件包（和以后的别的页）、高级。「权限」
     /// 并进了「通用」，「接入」并进了「软件包」（`schema.rs`）。
     pub fn entries(&self) -> Vec<Entry> {
         let pages: Vec<&str> = self
@@ -118,7 +119,7 @@ impl More {
             out.push(Entry::Page(FIRST.to_string()));
         }
         out.push(Entry::Models);
-        for page in [schema::USER, schema::APPEARANCE] {
+        for page in [schema::USER, schema::PRIVACY, schema::APPEARANCE] {
             if pages.contains(&page) {
                 out.push(Entry::Page(page.to_string()));
             }
@@ -131,7 +132,16 @@ impl More {
         out.extend(
             pages
                 .iter()
-                .filter(|p| ![FIRST, schema::USER, schema::APPEARANCE, LAST].contains(*p))
+                .filter(|p| {
+                    ![
+                        FIRST,
+                        schema::USER,
+                        schema::PRIVACY,
+                        schema::APPEARANCE,
+                        LAST,
+                    ]
+                    .contains(*p)
+                })
                 .map(|p| Entry::Page((*p).to_string())),
         );
         if pages.contains(&LAST) {
@@ -285,6 +295,8 @@ pub struct Texts {
     pub sheet_hints: Vec<[String; 2]>,
     /// 列表窗（第 47 条）。
     pub list: list::ListTexts,
+    /// 勾选窗（第 47a 条）。
+    pub ticks: ticks::TicksTexts,
     /// 包从哪来（第 43a 条，包页面包屑下面那一行）：出厂自带、官方软件源、本机安装（照 `package.list` 的 `from`）。
     pub package_from: std::collections::BTreeMap<String, String>,
 }

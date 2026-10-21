@@ -29,6 +29,8 @@ pub enum Popup {
     Dialogs(super::pages::dialogs::DialogsView),
     /// 改、加一轮示范对话的两格窗。
     Pair(super::pages::dialogs::PairEdit),
+    /// 从几个选项里勾的列表（「配置页」第 47a 条）。
+    Ticks(super::pages::ticks::TickEdit),
 }
 
 /// 选默认模型的窗。

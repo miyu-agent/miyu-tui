@@ -209,7 +209,7 @@ impl Settings {
 
     /// `Enter` 改一项：两层都写不了的、终端还不能改的弹一句；下拉开选择窗，开关当场切，数、字开编辑窗。只有系统配置这一层
     /// 的写系统配置（第 33 条）。
-    fn change(&mut self, page: &str, at: usize, texts: &Texts) {
+    pub(super) fn change(&mut self, page: &str, at: usize, texts: &Texts) {
         let (Some(schema), Some(data)) = (self.more.schema.as_ref(), self.data.as_ref()) else {
             return;
         };
@@ -260,6 +260,8 @@ impl Settings {
             }
             "combo" => self.open_combo(&item, &value, texts),
             "textarea" => self.open_textarea(&item, &value),
+            // 带选项的（隐私页的去掉出厂私密目录）勾选，不手打（第 47a 条）。
+            "list" if !item.options.is_empty() => self.open_ticks(&item, &value),
             "list" if super::list::editable(&item) => self.open_list(&item, &value),
             "list" => self.list_not_editable(texts),
             "number" | "text" => {
@@ -422,6 +424,7 @@ impl Settings {
             }
             Popup::Sheet(edit) => self.sheet_key(edit, key, texts),
             Popup::List(edit) => self.list_key(edit, key, texts),
+            Popup::Ticks(edit) => self.ticks_key(edit, key, texts),
             // 人格的窗（第 36 条）、示范对话列表和两格窗（第 41 条）。
             Popup::Persona(view) => self.persona_key(view, key, texts),
             Popup::Dialogs(view) => self.dialogs_key(view, key),
