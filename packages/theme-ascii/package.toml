@@ -1,0 +1,9 @@
+# 纯 ASCII 主题（终端蓝图 `docs/blueprint/tui.md`「主题」第 6 条，2026-10-21 项目主人照推荐定）：拿它验「所有样子都能换」，
+# 顺带有用：老终端、字体不全的机器上不乱码。只写了和默认主题不一样的那几格。
+[package]
+version = "0.0.1"
+name = { en = "Plain ASCII", zh = "纯 ASCII", ja = "ASCII のみ" }
+summary = { en = "Frames and marks drawn with ASCII only", zh = "框线、记号只用 ASCII 字符", ja = "枠線と記号を ASCII 文字だけで描く" }
+
+[theme]
+file = "theme.json"

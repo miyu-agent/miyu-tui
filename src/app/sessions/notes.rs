@@ -93,7 +93,7 @@ pub(super) fn doing(
                 .or((name == "shell").then_some("description"))
                 .and_then(|k| step.arg(k));
             if let Some(subject) = subject {
-                out.push_str(" · ");
+                out.push_str(&crate::sheet::sep());
                 out.push_str(&crate::local::home_short(subject));
             }
             out
@@ -149,7 +149,7 @@ pub(super) fn peer_note(
         "idle" => {
             let mut text = words.peer_idle.replace("{who}", &who);
             if let Some(status) = status.filter(|s| !s.trim().is_empty()) {
-                text.push_str(" · ");
+                text.push_str(&crate::sheet::sep());
                 text.push_str(&untrusted(status));
             }
             (JobMark::Done, text)

@@ -118,7 +118,8 @@ pub fn choose<H>(
 /// 一块颜色（两格宽）：主色的候选、外观页「主色」那一项的值。
 pub fn swatch(rgb: u32) -> Span<'static> {
     let [_, r, g, b] = rgb.to_be_bytes();
-    Span::styled("██", Style::new().fg(ratatui::style::Color::Rgb(r, g, b)))
+    let swatch = crate::sheet::mark(|m| &m.swatch);
+    Span::styled(swatch, Style::new().fg(ratatui::style::Color::Rgb(r, g, b)))
 }
 
 /// 在 `area` 正中画一个 `width` 宽的窗：点得到的行、按钮记进 `hits`，按钮交回 `button(i)`。
@@ -279,7 +280,7 @@ pub fn bar(frame: &mut Frame, row: Rect) {
     for y in row.y..row.bottom() {
         frame
             .buffer_mut()
-            .set_string(row.x, y, "┃", theme::accent());
+            .set_string(row.x, y, crate::sheet::mark(|m| &m.bar), theme::accent());
     }
 }
 
@@ -288,13 +289,15 @@ pub fn fit(text: &str, width: usize) -> String {
     if text.width() <= width {
         return text.to_string();
     }
+    let mark = crate::sheet::ellipsis();
     let mut out = String::new();
     for c in text.chars() {
-        if out.width() + unicode_width::UnicodeWidthChar::width(c).unwrap_or(0) + 1 > width {
+        let w = unicode_width::UnicodeWidthChar::width(c).unwrap_or(0);
+        if out.width() + w + mark.width() > width {
             break;
         }
         out.push(c);
     }
-    out.push('…');
+    out.push_str(&mark);
     out
 }

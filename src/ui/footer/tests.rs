@@ -161,15 +161,15 @@ fn an_icon_only_level_drops_the_dot_too() {
     // 2026-10-19 项目主人：窄了收掉「开放权限」这几个字以后，后面那个「·」也收掉。
     assert_eq!(
         level_label(Some("⏵⏵ "), "开放权限", true),
-        ("⏵⏵ 开放权限".to_string(), " · ")
+        ("⏵⏵ 开放权限".to_string(), " · ".to_string())
     );
     assert_eq!(
         level_label(Some("⏵⏵ "), "开放权限", false),
-        ("⏵⏵".to_string(), " ")
+        ("⏵⏵".to_string(), " ".to_string())
     );
     assert_eq!(
         level_label(None, "开放权限", false),
-        ("开放权限".to_string(), " · "),
+        ("开放权限".to_string(), " · ".to_string()),
         "没有图标的照旧写字"
     );
 }

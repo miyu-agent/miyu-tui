@@ -118,7 +118,10 @@ impl App {
     fn widget_owner(&self, package: &str, id: &str) -> Option<String> {
         let block = self.link.widgets.find(package, id)?;
         let (title, source) = block.heading();
-        Some(title.map_or_else(|| source.to_string(), |t| format!("{source} · {t}")))
+        Some(title.map_or_else(
+            || source.to_string(),
+            |t| format!("{source}{}{t}", crate::sheet::sep()),
+        ))
     }
 
     /// 做一个动作：调方法交给核心（回应不看，拒了的弹原话）；复制照拖选的复制。

@@ -45,7 +45,12 @@ pub fn pieces(
             let memories = detail["memories"].as_array()?;
             let turns = detail["turns"].as_array()?;
             for memory in memories {
-                let line = format!("{} · {}", field(memory, "date"), field(memory, "text"));
+                let line = format!(
+                    "{}{}{}",
+                    field(memory, "date"),
+                    crate::sheet::sep(),
+                    field(memory, "text")
+                );
                 let style = if memory["forgotten"] == true {
                     style.add_modifier(Modifier::CROSSED_OUT)
                 } else {
@@ -60,7 +65,7 @@ pub fn pieces(
                 let id = crate::session_list::short(&field(turn, "session"));
                 let session = ctx.config.text.on_session.replace("{id}", &id);
                 out.extend(each(
-                    &format!("{} · {session}", field(turn, "date")),
+                    &format!("{}{}{session}", field(turn, "date"), crate::sheet::sep()),
                     theme::dim(),
                 ));
                 out.extend(each(&field(turn, "text"), style));
@@ -78,7 +83,7 @@ pub fn pieces(
                 };
                 let mut head = format!("{} / {}", field(hit, "kb"), field(hit, "path"));
                 if !place.is_empty() {
-                    head = format!("{head} · {place}");
+                    head = format!("{head}{}{place}", crate::sheet::sep());
                 }
                 out.extend(each(&head, theme::dim()));
                 // 片段是文档里的原文：和读文档一样照 Markdown 画，不露 `**`。

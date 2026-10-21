@@ -29,6 +29,7 @@ mod notes;
 mod notify;
 mod open;
 mod panels;
+mod themed;
 mod timeline;
 mod widgets;
 mod words;
@@ -203,6 +204,8 @@ pub struct Texts {
     pub shown: crate::ui::shown_rows::ShownTexts,
     /// 吉祥物包读不成、查不过，换回内置的（蓝图「吉祥物包」第 3 条）。
     pub mascot_failed: String,
+    /// 主题包读不成，照默认主题画（蓝图「主题」第 3 条）。
+    pub look_failed: String,
     /// 换了图标，`{name}` 是那一套的名字。
     pub icons_changed: String,
     /// 撤销那一行打头的：`已撤销`（不写几轮：撤销只能一轮一轮撤）。
@@ -333,7 +336,13 @@ impl Config {
         if auto && let Some(summary_language) = table.find(&table.auto_summary) {
             text.summary = localize::summary(&summary_language)?;
         }
-        let layout: Layout = parse("layout.json", include_str!("../../resources/layout.json"))?;
+        // 记号照现在的主题盖在 layout.json、timeline.json 上（蓝图「主题」第 2 条）。
+        let theme = crate::sheet::whole();
+        let layout: Layout = themed::themed(
+            "layout",
+            include_str!("../../resources/layout.json"),
+            &theme,
+        )?;
         let icon_sets = icons::builtin()?;
         let icons = icons::pick(&icon_sets, &layout.icons).ok_or("resources/icons/ 一套都没有")?;
         Ok(Self {
@@ -345,9 +354,10 @@ impl Config {
                 language,
                 &table,
             )?,
-            timeline: parse(
-                "timeline.json",
+            timeline: themed::themed(
+                "timeline",
                 include_str!("../../resources/timeline.json"),
+                &theme,
             )?,
             languages: parse("code.json", include_str!("../../resources/code.json"))?,
             math: parse("math.json", include_str!("../../resources/math.json"))?,

@@ -48,7 +48,8 @@ pub fn content(
                 let model = models.names.first().map_or("", String::as_str);
                 words.connected_request.replace("{model}", model)
             };
-            c.note(&format!("✓ {line}"), theme::good());
+            let ok = crate::sheet::mark(|m| &m.ok);
+            c.note(&format!("{ok} {line}"), theme::good());
             c.blank();
             c.search(
                 &words.search,
@@ -193,7 +194,7 @@ fn form_lines(
             // 空着什么都不写（同一天项目主人去掉「可以不填」）。
             Slot::Key => c.field(&words.key, label_w, &form.key, "", focused),
             // 最后一行「测试连接 →」（格子改成回车才进编辑以后，试不再挂在最后一格的回车上）。
-            Slot::Test => c.action(focused, &format!("{} →", words.test)),
+            Slot::Test => c.action(focused, &format!("{} {}", words.test, super::next_mark())),
             Slot::Anyway => c.action(focused, &words.save_anyway),
             Slot::Model => {
                 c.field(

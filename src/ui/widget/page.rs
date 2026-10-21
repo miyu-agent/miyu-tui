@@ -37,7 +37,10 @@ pub fn draw(frame: &mut Frame, view: &PageView, seen: &Seen, screen: &mut Screen
         .and_then(|b| b.title.as_deref())
         .unwrap_or(&target.widget);
     let crumb = Line::from(vec![
-        Span::styled("● ", theme::accent()),
+        Span::styled(
+            format!("{} ", crate::sheet::mark(|m| &m.on)),
+            theme::accent(),
+        ),
         Span::styled(source.to_string(), theme::dim()),
         Span::styled(" — ", theme::dim()),
         Span::styled(
@@ -114,7 +117,7 @@ pub fn draw(frame: &mut Frame, view: &PageView, seen: &Seen, screen: &mut Screen
         view: height,
         actions,
     };
-    let rule = "─".repeat(usize::from(stage.width));
+    let rule = crate::sheet::mark(|m| &m.rule).repeat(usize::from(stage.width));
     let buf = frame.buffer_mut();
     buf.set_string(stage.x, stage.bottom() - 2, &rule, theme::faint());
     let hints = crate::ui::floating::hint_line(&texts.page_keys);

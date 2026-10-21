@@ -155,12 +155,15 @@ impl Renderer<'_> {
 
     pub(super) fn code_lines(&mut self, lang: &str, body: &str) {
         let room = usize::from(self.room());
+        // 上面那条照主题的 `frame.code`：左上角、横线（出厂 `╭─ code`）。
+        let set = crate::sheet::read(|s| s.frame.code.lines());
+        let (corner, line) = (set.top_left, set.horizontal);
         let label = if lang.is_empty() {
-            "╭─ code ".to_string()
+            format!("{corner}{line} code ")
         } else {
-            format!("╭─ code {lang} ")
+            format!("{corner}{line} code {lang} ")
         };
-        let top = format!("{label}{}", "─".repeat(room.saturating_sub(label.width())));
+        let top = format!("{label}{}", line.repeat(room.saturating_sub(label.width())));
         self.frame(top);
         // 一个代码块一个着色的：块注释、三引号字符串接到下一行（`tui.md`「代码着色」第 2 条）。
         let mut colors = code::Highlighter::new(self.languages.find(lang));
@@ -173,7 +176,7 @@ impl Renderer<'_> {
             };
             self.emit(pieces, true);
         }
-        self.frame("─".repeat(room));
+        self.frame(line.repeat(room));
     }
 
     fn frame(&mut self, text: String) {

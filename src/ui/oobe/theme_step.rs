@@ -94,7 +94,10 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
         c.note(&format!("{lead}{}", words.mascot_note), theme::dim());
     }
     c.blank();
-    c.action(on(Slot::Next), &format!("{} →", words.next));
+    c.action(
+        on(Slot::Next),
+        &format!("{} {}", words.next, super::next_mark()),
+    );
     if step.saving() {
         c.blank();
         c.note(&words.saving, theme::dim());

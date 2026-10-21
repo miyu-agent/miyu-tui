@@ -40,13 +40,14 @@ fn install(dir: &Path) {
         .join(format!("memes-ext{}", std::env::consts::EXE_SUFFIX));
     std::fs::copy(extension(), &program).expect("拷得了扩展的程序");
     let manifest = format!(
-        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Memes\" }}\nicon = \"face-slightly-smiling\"\n\n[command]\nname = \"memes\"\nprogram = \"memes-ext\"\nabout = {{ en = \"M\" }}\n\n[process]\nargs = [{:?}]\nstart = \"always\"\n",
+        "[package]\nprotocol = [1, 1]\nname = {{ en = \"Memes\" }}\nicon = \"face-slightly-smiling\"\n\n[command]\nname = \"memes\"\nprogram = \"memes-ext\"\nabout = {{ en = \"M\" }}\n\n[process]\nargs = [{:?}]\nstart = \"always\"\ncapabilities = [\"tools\"]\n",
         format!("sticker:{}", blob.as_str()),
     );
     std::fs::write(package.join("package.toml"), manifest).expect("写得进去");
     std::fs::write(
         dir.join("system/extensions.json"),
-        r#"{"version":1,"on":{"memes":true},"approved":{}}"#,
+        // 登记工具的扩展照实声明 `tools`、批过才拉起（核心 X-30）。
+        r#"{"version":1,"on":{"memes":true},"approved":{"memes":["tools"]}}"#,
     )
     .expect("写得进去");
 }

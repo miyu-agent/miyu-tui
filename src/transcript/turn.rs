@@ -92,7 +92,11 @@ impl Transcript {
             EndReason::Completed => {
                 // 手动压缩压好了：用时和用量接在结果那一行后面，不另起收尾行（「正文」第 9 条）。
                 let usage = words::turn_usage(&self.turn_usage, texts);
-                let tail = format!(" · {}{usage}", crate::meter::seconds(took));
+                let tail = format!(
+                    "{}{}{usage}",
+                    crate::sheet::sep(),
+                    crate::meter::seconds(took)
+                );
                 if self.manual && self.append_to_result(&tail) {
                     self.turn = None;
                     return;

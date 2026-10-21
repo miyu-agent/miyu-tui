@@ -10,13 +10,14 @@ use crate::theme;
 impl MdLine {
     /// 空行：块与块之间的那种（`<details>` 里的空行带着竖线，也算）。图的那一行、`<details>` 的标题那一行不算。
     pub(super) fn is_blank(&self) -> bool {
+        let quote = crate::sheet::mark(|m| &m.quote);
         self.folded.spans.is_empty()
             && self.figure.is_none()
             && self.details.is_none()
             && self
                 .lead
                 .iter()
-                .all(|s| s.content.chars().all(|c| c == '│' || c == ' '))
+                .all(|s| s.content.trim().is_empty() || s.content == quote)
     }
 }
 
@@ -27,7 +28,7 @@ impl Renderer<'_> {
         for container in &mut self.containers {
             match container {
                 Container::Quote | Container::Details => {
-                    spans.push(Span::styled("│ ", theme::dim()));
+                    spans.push(Span::styled(crate::sheet::mark(|m| &m.quote), theme::dim()));
                 }
                 Container::Item { marker, used } => {
                     let text = if first && !*used {
@@ -60,11 +61,12 @@ impl Renderer<'_> {
             .max(1)
     }
 
-    /// 分隔线：暗色的 `─`，内容宽度的三分之一，最短 16、最长 40（第 11 条）。
+    /// 分隔线：暗色的 `─`（主题的 `marks.rule`），内容宽度的三分之一，最短 16、最长 40（第 11 条）。
     pub(super) fn rule(&mut self) {
         self.gap();
         let w = usize::from(self.width / 3).clamp(16, 40);
-        self.emit(vec![Piece::new("─".repeat(w), theme::dim())], true);
+        let rule = crate::sheet::mark(|m| &m.rule).repeat(w);
+        self.emit(vec![Piece::new(rule, theme::dim())], true);
     }
 
     /// 块与块之间空一行；开头不空，已经空着的不再空，`<details>` 的标题紧接着里面的内容。

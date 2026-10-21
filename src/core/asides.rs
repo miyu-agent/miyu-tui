@@ -9,7 +9,12 @@ use super::{Command, OutputRead, config};
 /// 这个命令是不是一条不对着会话的请求：方法、参数、回应要不要另外办。不是的交回 `None`。
 pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<Awaiting>)> {
     Some(match command {
-        Command::ListSessions => ("session.list", json!({}), Some(Awaiting::List)),
+        // 整理会话不要（核心 D-1 下：不传的话它们也占 `limit`）。
+        Command::ListSessions => (
+            "session.list",
+            json!({"dream": false}),
+            Some(Awaiting::List),
+        ),
         Command::Pin { session, pinned } => (
             "session.set_meta",
             json!({"session": session, "pinned": pinned}),

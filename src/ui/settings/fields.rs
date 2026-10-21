@@ -23,7 +23,7 @@ pub(super) fn value(
             if let Some(editor) = form.editing.as_ref().filter(|_| focused) {
                 let typed = editor.text();
                 let shown = if *secret {
-                    "•".repeat(typed.chars().count())
+                    crate::sheet::mark(|m| &m.secret).repeat(typed.chars().count())
                 } else {
                     typed.to_string()
                 };
@@ -38,7 +38,7 @@ pub(super) fn value(
             }
             if !text.is_empty() {
                 let shown = if *secret {
-                    "•".repeat(8)
+                    crate::sheet::mark(|m| &m.secret).repeat(8)
                 } else {
                     fit(text, width)
                 };

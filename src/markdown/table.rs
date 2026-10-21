@@ -29,20 +29,25 @@ pub fn render(head: &[Cell], rows: &[Vec<Cell>], aligns: &[Alignment], width: u1
         })
         .collect();
     let widths = bounded(natural, usize::from(width));
+    // 线照主题的 `frame.table`（出厂直角）。
+    let set = crate::sheet::read(|s| s.frame.table.lines());
     let rule = |left: &str, mid: &str, right: &str| {
-        let body: Vec<String> = widths.iter().map(|w| "─".repeat(w + 2)).collect();
+        let body: Vec<String> = widths
+            .iter()
+            .map(|w| set.horizontal.repeat(w + 2))
+            .collect();
         line(vec![Span::styled(
             format!("{left}{}{right}", body.join(mid)),
             theme::dim(),
         )])
     };
-    let mut out = vec![rule("┌", "┬", "┐")];
+    let mut out = vec![rule(set.top_left, set.horizontal_down, set.top_right)];
     out.extend(row_lines(head, &widths, aligns, true));
     for row in rows {
-        out.push(rule("├", "┼", "┤"));
+        out.push(rule(set.vertical_right, set.cross, set.vertical_left));
         out.extend(row_lines(row, &widths, aligns, false));
     }
-    out.push(rule("└", "┴", "┘"));
+    out.push(rule(set.bottom_left, set.horizontal_up, set.bottom_right));
     out
 }
 
@@ -79,6 +84,7 @@ fn cell_width(cell: &Cell) -> usize {
 /// 一行格子：每格按列宽折好，行高照最高的那格，矮的补空。
 fn row_lines(row: &[Cell], widths: &[usize], aligns: &[Alignment], head: bool) -> Vec<Folded> {
     let empty = Cell::new();
+    let v = crate::sheet::read(|s| s.frame.table.lines().vertical);
     let cells: Vec<Vec<Folded>> = widths
         .iter()
         .enumerate()
@@ -108,8 +114,12 @@ fn row_lines(row: &[Cell], widths: &[usize], aligns: &[Alignment], head: bool) -
             let mut links = Vec::new();
             let mut col = 0u16;
             for (c, w) in widths.iter().enumerate() {
-                let bar = if c == 0 { "│ " } else { " │ " };
-                spans.push(Span::styled(bar, theme::dim()));
+                let bar = if c == 0 {
+                    format!("{v} ")
+                } else {
+                    format!(" {v} ")
+                };
+                spans.push(Span::styled(bar.clone(), theme::dim()));
                 col += u16::try_from(bar.width()).unwrap_or(0);
                 let folded = cells[c].get(r);
                 let used = folded.map_or(0, |f| plain(f).width());
@@ -132,7 +142,7 @@ fn row_lines(row: &[Cell], widths: &[usize], aligns: &[Alignment], head: bool) -
                 spans.push(Span::raw(" ".repeat(after)));
                 col += u16::try_from(used + after).unwrap_or(0);
             }
-            spans.push(Span::styled(" │", theme::dim()));
+            spans.push(Span::styled(format!(" {v}"), theme::dim()));
             Folded {
                 spans,
                 links,

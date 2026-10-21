@@ -29,7 +29,9 @@ pub(super) fn lay(segment: &Segment, look: &Look, left: Option<usize>) -> Drawn 
             if let Some(l) = left.filter(|_| cut) {
                 pieces.truncate(l);
                 if let Some(last) = pieces.last_mut() {
-                    *last = format!("{}…", wrap::take(last, room.saturating_sub(1)));
+                    let mark = crate::sheet::ellipsis();
+                    let kept = wrap::take(last, room.saturating_sub(mark.width()));
+                    *last = format!("{kept}{mark}");
                 }
             }
             let mut drawn = lines(pieces.into_iter().map(|p| Line::styled(p, style)).collect());

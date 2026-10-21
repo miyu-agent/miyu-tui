@@ -41,6 +41,17 @@ fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
     std::fs::create_dir_all(&to).expect("建得了包的目录");
     let text = std::fs::read_to_string(manifest).expect("读得了终端的清单");
     std::fs::write(to.join("package.toml"), edit(text)).expect("装得上终端的清单");
+    // 默认主题和纯 ASCII 样板两个主题包（蓝图「主题」第 4、6 条）：装终端时一起装。
+    for theme in ["theme-default", "theme-ascii"] {
+        let from = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("packages")
+            .join(theme);
+        let to = dir.join("home/alice/packages").join(theme);
+        std::fs::create_dir_all(&to).expect("建得了主题包的目录");
+        for file in ["package.toml", "theme.json"] {
+            std::fs::copy(from.join(file), to.join(file)).expect("装得上主题包");
+        }
+    }
 }
 
 impl Home {

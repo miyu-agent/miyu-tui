@@ -22,7 +22,7 @@ pub struct Look {
     /// 引导走过了。
     welcomed: bool,
     /// 终端自己的配置项：`config.get` 回应里的 `items`（读到过的都在）。
-    items: Map<String, Value>,
+    pub(super) items: Map<String, Value>,
     /// 界面语言：`auto` 或者语言代码；还没读到的是 `None`。
     language: Option<String>,
     /// 默认人格的编号。

@@ -1,0 +1,223 @@
+{
+  "_": "默认主题（终端蓝图 docs/blueprint/tui.md「主题」）：框线、记号、修饰、选中的样子、留白、动效一张表；出厂的样子就是这一份。主题包只写想换的那几格，没写的照这一份。以 _ 打头的键是说明，程序不读。颜色不在这里（配色方案），图标也不在这里（图标那一套）。",
+  "frame": {
+    "_": "框线：rounded 圆角、plain 直角、double 双线、thick 粗线、ascii（+-|）、none 不画线只留位置。",
+    "_input": "输入框。",
+    "input": "rounded",
+    "_boxes": "输入框上面开的框：命令列表、@ 文件列表、输入历史、会话列表、/model、/help 这些。",
+    "boxes": "rounded",
+    "_toast": "弹出来的提示那个小框（已复制、再按一次 Esc 打断这些）。",
+    "toast": "rounded",
+    "_code": "回答里代码块上下的线（只画左上角和横线：╭─ code ……、底下一条横线）。",
+    "code": "rounded",
+    "_table": "回答里的表格。",
+    "table": "plain"
+  },
+  "marks": {
+    "_": "记号：界面上画的小符号。要换成别的字时注意宽度：pointer 这类行首的记号两格宽，sep 这类写在字中间的照原样量宽度。",
+    "_pointer": "列表里选中的那一行前面（两格宽）。",
+    "pointer": "❯ ",
+    "_on": "正在用的、开着的、走过的。",
+    "on": "●",
+    "_off": "没在用的、没到的。",
+    "off": "○",
+    "_now": "正在这一步、这一页。",
+    "now": "◉",
+    "_ok": "成了、选着。",
+    "ok": "✓",
+    "_fail": "失败。",
+    "fail": "✗",
+    "_ellipsis": "放不下截掉的地方。",
+    "ellipsis": "…",
+    "_caret": "列表上边框里打着搜索字时末尾那根光标（按键模式是 Vim 时按了 /）。",
+    "caret": "▏",
+    "_gap": "差异里省掉的几行。",
+    "gap": "⋯",
+    "_next": "「下一步 →」这类动作行后面。",
+    "next": "→",
+    "_sep": "一行里几样东西之间（程序拼的；界面上的字里写好的 · 照那一份）。",
+    "sep": " · ",
+    "_dash": "配置页顶上那条路径各层之间。",
+    "dash": " — ",
+    "_rule": "横线：回答里的分隔线、分数线，配置页、界面块整页底下那条。",
+    "rule": "─",
+    "_quote": "回答里引用、展开的 details 每层行首。",
+    "quote": "│ ",
+    "_bar": "浮窗里选中的那一格左边的竖条。",
+    "bar": "┃",
+    "_side": "侧边栏和正文之间的竖线。",
+    "side": "│",
+    "_secret": "密钥、密码一个字一个。",
+    "secret": "•",
+    "_enter": "一行写下几行字时换行的地方。",
+    "enter": "↵",
+    "_swatch": "配置页、引导里画一块颜色。",
+    "swatch": "██",
+    "_heat": "用量热力图一格，图例也是（两格宽）。",
+    "heat": "■ ",
+    "_minus": "撤销那一行删掉了几行前面的减号。",
+    "minus": "−",
+    "_task": "回答里的任务列表：没做、做完（两格宽）。",
+    "task": {
+      "todo": "☐ ",
+      "done": "☑ "
+    },
+    "_chart": "用量柱状图一格里八分之一到八分之八高，照这个先后。",
+    "chart": [
+      "▁",
+      "▂",
+      "▃",
+      "▄",
+      "▅",
+      "▆",
+      "▇",
+      "█"
+    ],
+    "_block": "用量那一页的条形。",
+    "block": "█"
+  },
+  "text": {
+    "_": "修饰：一格一个列表，写 bold 加粗、italic 斜体、underline 下划线、dim 变暗、reversed 反色；空的就是不加。",
+    "_heading": "回答里的标题（配置页弹窗的分组标题也是）。",
+    "heading": [
+      "bold"
+    ],
+    "_title": "回答里卡片、图的标题。",
+    "title": [
+      "bold"
+    ],
+    "_strong": "回答里的粗体。",
+    "strong": [
+      "bold"
+    ],
+    "_emphasis": "回答里的斜体。",
+    "emphasis": [
+      "italic"
+    ],
+    "_link": "回答里的链接标题。",
+    "link": [
+      "bold"
+    ],
+    "_quote": "回答里的引用。",
+    "quote": [
+      "italic"
+    ],
+    "_table_head": "回答里的表头。",
+    "table_head": [
+      "bold"
+    ],
+    "_picked": "命令列表这类选中的那一条。",
+    "picked": [
+      "bold"
+    ],
+    "_level": "权限级别（提示符、左下角）。",
+    "level": [
+      "bold"
+    ],
+    "_model": "底栏的模型名。",
+    "model": [
+      "bold"
+    ],
+    "_selected": "选区。",
+    "selected": [
+      "reversed"
+    ]
+  },
+  "_pick": "选中的样子：bar 整行铺底色（出厂）；mark 不铺底，只照记号和强调色认。",
+  "pick": "bar",
+  "layout": {
+    "_": "盖在 resources/layout.json 上的那几格记号（键同那一份；主题包只写想换的）。",
+    "user_bar": "┃ ",
+    "recap_mark": "※ ",
+    "done_icon": "✻ ",
+    "prompt": "❯ ",
+    "tick_mark": "✓ ",
+    "level_icons": {
+      "workspace": "▣ ",
+      "full": "⏵⏵ ",
+      "read_only": "⏸ "
+    },
+    "undo_icon": "↶ ",
+    "current_mark": "●",
+    "undo_restored_mark": "✓ ",
+    "undo_left_mark": "✗ ",
+    "queued_mark": "↳ ",
+    "goal_mark": "◎ ",
+    "todo_marks": {
+      "pending": "☐ ",
+      "active": "■ ",
+      "done": "☑ "
+    },
+    "drawer_preview": {
+      "divider": "│"
+    },
+    "widgets": {
+      "marks": {
+        "todo": "☐ ",
+        "doing": "■ ",
+        "done": "☑ ",
+        "failed": "✗ ",
+        "off": "○ "
+      }
+    },
+    "bar": {
+      "full": "▰",
+      "empty": "▱"
+    },
+    "dream": {
+      "mark": "✦ ",
+      "float": "· ",
+      "retired": "✗ ",
+      "revised": "✎ ",
+      "summary": "✦ ",
+      "reason_gap": " · ",
+      "asleep": "(－ω－)",
+      "awake": "(・ω・)",
+      "wake_mark": "!",
+      "z_side": [
+        " z",
+        " z",
+        "  ",
+        "  ",
+        " z",
+        " z"
+      ],
+      "z_top": [
+        "       ",
+        "     z ",
+        "    z Z",
+        "   Z  z",
+        "  Z    ",
+        "       "
+      ],
+      "glyphs": [
+        "✦",
+        "⋆",
+        "✧",
+        "✦",
+        "*"
+      ],
+      "soon": "·",
+      "unlit": "·",
+      "receipt": "✦ "
+    }
+  },
+  "timeline": {
+    "_": "盖在 resources/timeline.json 上的那几格记号。",
+    "spinner": [
+      "⠋",
+      "⠙",
+      "⠹",
+      "⠸",
+      "⠼",
+      "⠴",
+      "⠦",
+      "⠧",
+      "⠇",
+      "⠏"
+    ],
+    "line": "│",
+    "queued": "·",
+    "omitted": "⋮"
+  }
+}

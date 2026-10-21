@@ -66,7 +66,7 @@ fn rows(config: &Config, width: u16) -> Vec<Line<'static>> {
                 first.push(' ');
                 first.push_str(argument);
             }
-            vec![(names.join(" · "), c.summary.clone())]
+            vec![(names.join(&crate::sheet::sep()), c.summary.clone())]
         })
         .collect();
     let keys: Vec<(String, String)> = texts

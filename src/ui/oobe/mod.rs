@@ -144,12 +144,17 @@ fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
 }
 
 /// 配置页的按键提示（一对对「键、做什么」）连成一行。
+/// 「下一步 →」这类动作行后面的记号（主题的 `marks.next`）。
+fn next_mark() -> String {
+    crate::sheet::mark(|m| &m.next)
+}
+
 fn joined(pairs: &[[String; 2]]) -> String {
     pairs
         .iter()
         .map(|[k, d]| format!("{k} {d}"))
         .collect::<Vec<_>>()
-        .join(" · ")
+        .join(&crate::sheet::sep())
 }
 
 /// 中间几步。
@@ -163,12 +168,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     // 没连上核心：按键提示那一行换成黄字（第 4 条）。
     if oobe.online {
         // 按键模式是 Vim：「↑↓」写成「j/k」（引导里不打字的地方都认 `j` `k`，蓝图「按键」表「按键模式」那一行）。
-        let keys = hint(oobe, p);
-        let keys = if p.config.layout.vim {
-            keys.replace("↑↓", "j/k")
-        } else {
-            keys
-        };
+        let keys = crate::ui::hint_keys::vim(&hint(oobe, p), p.config.layout.vim);
         stage::hints(frame, places.hints, &keys);
     } else {
         stage::warn(frame, places.hints, &p.config.text.oobe.offline);

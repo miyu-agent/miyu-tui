@@ -228,7 +228,7 @@ fn purpose_line(seen: &Seen, rows: &[UsageRow], width: u16) -> Line<'static> {
     let mut spans = Vec::new();
     for (i, r) in sorted.iter().enumerate() {
         if i > 0 {
-            spans.push(Span::styled(" · ", theme::dim()));
+            spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
         }
         let name = match &r.purpose {
             None => texts.main_purpose.clone(),
@@ -247,13 +247,14 @@ fn purpose_line(seen: &Seen, rows: &[UsageRow], width: u16) -> Line<'static> {
 pub(super) fn bar(share: f64, cells: usize) -> Cell {
     let full = ((share * cells as f64).round() as usize).min(cells);
     let full = if share > 0.0 { full.max(1) } else { 0 };
+    let block = crate::sheet::mark(|m| &m.block);
     Cell {
         text: String::new(),
         style: Style::new(),
         right: false,
         spans: Some(vec![
-            Span::styled("█".repeat(full), theme::accent()),
-            Span::styled("█".repeat(cells - full), theme::heat(0)),
+            Span::styled(block.repeat(full), theme::accent()),
+            Span::styled(block.repeat(cells - full), theme::heat(0)),
         ]),
     }
 }

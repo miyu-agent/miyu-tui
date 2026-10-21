@@ -4,7 +4,7 @@
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Paragraph};
+use ratatui::widgets::{Block, Paragraph};
 use unicode_width::UnicodeWidthStr;
 
 use super::{Areas, drawer};
@@ -61,7 +61,7 @@ pub(super) fn draw_box(
     if let Some(d) = drawer {
         frame.render_widget(
             Block::bordered()
-                .border_type(BorderType::Rounded)
+                .border_set(crate::sheet::read(|s| s.frame.input.set()))
                 .border_style(theme::dim()),
             areas.frame,
         );
@@ -106,7 +106,7 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
         tag,
     } = look;
     let mut border = Block::bordered()
-        .border_type(BorderType::Rounded)
+        .border_set(crate::sheet::read(|s| s.frame.input.set()))
         .border_style(theme::dim());
     // 编辑上一句：上边框写一句，框线的颜色（「输入框」第 13 条）。
     if input.editing() {

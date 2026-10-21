@@ -39,6 +39,8 @@ pub const DEFAULT_PRESET: &str = "preset.default";
 
 /// 换哪一只吉祥物（终端自己的配置项，「吉祥物包」第 3 条）：值是吉祥物包的编号，没写的是内置的。
 pub const MASCOT: &str = "tui.mascot";
+/// 主题（蓝图「主题」第 5 条）：值是一个主题包的编号，没设的是默认主题。
+pub const LOOK: &str = "tui.look";
 /// 放在最后的那一页。
 const LAST: &str = "advanced";
 /// 放在第一行的那一页。
@@ -81,6 +83,8 @@ pub struct More {
     pub presets: Option<Vec<Persona>>,
     /// 装了的吉祥物包（和人格一个形状）；还没读到、核心不认的是 `None`。
     pub mascots: Option<Vec<Persona>>,
+    /// 装了的主题包（默认主题包不列：没设就是它）；还没读到的是 `None`。
+    pub looks: Option<Vec<Persona>>,
     /// 主菜单选中第几项。
     pub menu_at: usize,
     /// 每个包的一句说明（`package.list` 的 `summary`）：「软件包」的列表照它写。
@@ -211,6 +215,7 @@ impl More {
             DEFAULT_PERSONA => self.personas.as_deref(),
             DEFAULT_PRESET => self.presets.as_deref(),
             MASCOT => self.mascots.as_deref(),
+            LOOK => self.looks.as_deref(),
             _ => None,
         }
     }
@@ -263,6 +268,8 @@ pub struct Texts {
     pub no_persona: String,
     /// 吉祥物没设、选择窗第一行：内置的那只（「吉祥物包」第 3 条）。
     pub builtin_mascot: String,
+    /// 主题没设、选择窗第一行：默认主题（「主题」第 5 条）。
+    pub default_look: String,
     /// 选着的吉祥物包卸掉了：`{id}` 是它的编号。
     pub mascot_missing: String,
     /// 「主色」跟随头像时恢复默认问的那一句：清掉人格的主题色。
@@ -311,7 +318,7 @@ pub fn current<'a>(item: &'a Item, data: &'a Data) -> (&'a Value, &'a str) {
 
 /// 名字照列表写、下拉照列表列的项（默认人格、默认预设）：不管清单写什么控件，一律开选择窗。
 pub fn is_named(key: &str) -> bool {
-    key == DEFAULT_PERSONA || key == DEFAULT_PRESET || key == MASCOT
+    key == DEFAULT_PERSONA || key == DEFAULT_PRESET || key == MASCOT || key == LOOK
 }
 
 /// 值写成给人看的样子：下拉写选项的名字（默认人格、默认预设写名字，`named` 是它们的列表），开关写开、关，密钥写设没设，
@@ -322,8 +329,8 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
     {
         return p.label().to_string();
     }
-    // 选着的吉祥物包卸掉了：编号后面写没装（「吉祥物包」第 3 条）。
-    if item.key == MASCOT
+    // 选着的吉祥物包、主题包卸掉了：编号后面写没装（「吉祥物包」第 3 条、「主题」第 5 条）。
+    if (item.key == MASCOT || item.key == LOOK)
         && named.is_some()
         && let Some(id) = value.as_str()
     {
@@ -349,12 +356,18 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
         (_, Value::Null) if item.key == DEFAULT_PERSONA => texts.no_persona.clone(),
         // 吉祥物没设：就是内置的。
         (_, Value::Null) if item.key == MASCOT => texts.builtin_mascot.clone(),
+        // 主题没设：就是默认主题。
+        (_, Value::Null) if item.key == LOOK => texts.default_look.clone(),
         // 下拉加「其他」手写没设：写「不设」（「配置页」第 44 条）。
         ("combo", Value::Null) => texts.combo[0].clone(),
         (_, Value::Null) => "—".to_string(),
         // 几行字：只写第一行，多行的末尾 `…`（第 45 条）。
         ("textarea", Value::String(s)) if s.trim_end().contains('\n') => {
-            format!("{}…", s.lines().next().unwrap_or_default())
+            format!(
+                "{}{}",
+                s.lines().next().unwrap_or_default(),
+                crate::sheet::ellipsis()
+            )
         }
         ("toggle", Value::Bool(on)) => texts.toggle[usize::from(!*on)].clone(),
         (_, Value::String(s)) => s.clone(),
@@ -377,6 +390,8 @@ pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Cho
             DEFAULT_PERSONA => Some(&texts.no_persona),
             // 吉祥物第一行「内置」：选了就不设（「吉祥物包」第 3 条）。
             MASCOT => Some(&texts.builtin_mascot),
+            // 主题第一行「默认主题」：选了就不设（「主题」第 5 条）。
+            LOOK => Some(&texts.default_look),
             _ => None,
         };
         let none = first.map(|label| Choice {

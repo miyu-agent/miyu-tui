@@ -27,14 +27,14 @@ pub(super) fn rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     let files = merged(report.map(|r| r.files.as_slice()).unwrap_or_default());
     let restored = files.iter().filter(|f| f.restored()).count();
     if restored > 0 {
-        head.push_str(" · ");
+        head.push_str(&crate::sheet::sep());
         head.push_str(&text.restored.replace("{count}", &restored.to_string()));
     }
-    head.push_str(" · ");
+    head.push_str(&crate::sheet::sep());
     head.push_str(&text.undo_restore);
     let peek: String = entry.text.split_whitespace().collect::<Vec<_>>().join(" ");
     if !peek.is_empty() {
-        head.push_str(" · ");
+        head.push_str(&crate::sheet::sep());
         head.push_str(&peek);
     }
     let mut out = vec![ctx.row(
@@ -138,7 +138,11 @@ fn file_lines(file: &UndoFile, cwd: Option<&str>, opened: bool, ctx: &Ctx) -> Ve
         content.push(Span::styled(format!("  +{added}"), theme::diff_added()));
     }
     if let Some(removed) = removed.filter(|&n| n > 0) {
-        content.push(Span::styled(format!(" −{removed}"), theme::diff_removed()));
+        let minus = crate::sheet::mark(|m| &m.minus);
+        content.push(Span::styled(
+            format!(" {minus}{removed}"),
+            theme::diff_removed(),
+        ));
     }
     let mut out = vec![ctx.led_row(ctx.blank_slot(), vec![Span::raw("  ")], content)];
     if let Some(diff) = diff.filter(|_| opened) {

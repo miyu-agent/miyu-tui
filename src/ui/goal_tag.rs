@@ -49,7 +49,11 @@ pub(super) fn goal(goal: Option<&Goal>, config: &Config) -> Option<String> {
         };
         words.push(rounds.replace("{round}", &goal.round.to_string()));
     }
-    Some(format!("{}{}", config.layout.goal_mark, words.join(" · ")))
+    Some(format!(
+        "{}{}",
+        config.layout.goal_mark,
+        words.join(&crate::sheet::sep())
+    ))
 }
 
 /// 画在框上面那一行，右对齐、暗色：右端和框下面那一行的用量对齐（`area` 是框里放字那么宽的一行）。

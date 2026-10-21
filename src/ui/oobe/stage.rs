@@ -71,22 +71,29 @@ pub fn bar(frame: &mut Frame, rect: Rect, step: Step, names: &[String]) {
 
 /// 进度那一行，照 `width` 列挑放得下的最宽的一档；最窄的一档也放不下的照最窄的画（两头截掉）。
 fn bar_line(now: usize, names: &[String], width: usize) -> Line<'static> {
-    let levels = [(" ── ", true), (" ─ ", true), (" ─ ", false)];
+    // 记号照主题：走过的、这一步、没到的同 `on`、`now`、`off`，中间的线是 `rule`。
+    let (rule, done, here, todo) = crate::sheet::read(|s| {
+        let m = &s.marks;
+        (m.rule.clone(), m.on.clone(), m.now.clone(), m.off.clone())
+    });
+    let wide = format!(" {rule}{rule} ");
+    let narrow = format!(" {rule} ");
+    let levels = [(&wide, true), (&narrow, true), (&narrow, false)];
     let lines = levels.map(|(gap, all_names)| {
         let mut spans = Vec::new();
         for (i, name) in names.iter().enumerate() {
             if i > 0 {
-                spans.push(Span::styled(gap, theme::faint()));
+                spans.push(Span::styled(gap.clone(), theme::faint()));
             }
             let (mark, style) = match i.cmp(&now) {
-                std::cmp::Ordering::Less => ("●", theme::dim()),
-                std::cmp::Ordering::Equal => ("◉", theme::accent().add_modifier(Modifier::BOLD)),
-                std::cmp::Ordering::Greater => ("○", theme::faint()),
+                std::cmp::Ordering::Less => (&done, theme::dim()),
+                std::cmp::Ordering::Equal => (&here, theme::accent().add_modifier(Modifier::BOLD)),
+                std::cmp::Ordering::Greater => (&todo, theme::faint()),
             };
             let text = if all_names || i == now {
                 format!("{mark} {name}")
             } else {
-                mark.to_string()
+                mark.clone()
             };
             spans.push(Span::styled(text, style));
         }

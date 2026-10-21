@@ -117,7 +117,7 @@ fn card(file: &Shown, unopened: Option<&str>, replaced: bool, ctx: &Ctx) -> Vec<
     if let Some(n) = lines(file, ctx) {
         facts.push(words.lines.replace("{n}", &n.to_string()));
     }
-    let facts = clip(&facts.join(" · "), ctx.width);
+    let facts = clip(&facts.join(&crate::sheet::sep()), ctx.width);
     let mut rows: Vec<Row> = [title, vec![Span::styled(facts, theme::dim())]]
         .into_iter()
         .map(|content| ctx.row(ctx.blank_slot(), content))

@@ -49,7 +49,11 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                 &text.thought
             };
             (
-                format!("{word} · {}", meter::seconds(step.elapsed())),
+                format!(
+                    "{word}{}{}",
+                    crate::sheet::sep(),
+                    meter::seconds(step.elapsed())
+                ),
                 Vec::new(),
             )
         }
@@ -94,15 +98,15 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                     .and_then(|s| s.fields.iter().find(|(f, _)| f.as_str() == "job"))
                     .map(|(_, v)| v.clone());
                 if let Some(job) = job {
-                    label.push_str(" · ");
+                    label.push_str(&crate::sheet::sep());
                     label.push_str(&job);
                 }
                 if kind == Some(ToolKind::Message) {
-                    label.push_str(" · ");
+                    label.push_str(&crate::sheet::sep());
                     label.push_str(&super::message::title(step, ctx));
                 }
                 if let Some(subject) = subject {
-                    label.push_str(" · ");
+                    label.push_str(&crate::sheet::sep());
                     // 发给别的会话的（C-5，`to` 是会话编号）：写「会话 短编号」，不写整个编号。
                     if crate::session_list::looks_like_session(subject) {
                         let id = crate::session_list::short(subject);
@@ -114,7 +118,7 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                 // 对着别的会话的（核心 C-4 起 `history` 能翻别的会话）：再跟一格「会话 短编号」（第 8 条）。
                 if let Some(session) = step.arg(&ctx.config.timeline.session_arg) {
                     let id = crate::session_list::short(session);
-                    label.push_str(" · ");
+                    label.push_str(&crate::sheet::sep());
                     label.push_str(&text.on_session.replace("{id}", &id));
                 }
                 // 别的工具后面跟结果那一句（「读取 · src · 12 项」）；命令有预览，编辑有加减的行数，不写；留言只有没发出去的写为什么。
@@ -126,7 +130,7 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                     && let Some(said) = said
                     && let Some(text) = ctx.human.say(said)
                 {
-                    label.push_str(" · ");
+                    label.push_str(&crate::sheet::sep());
                     label.push_str(&text);
                 }
                 // 出错、被拒的编辑没改成：不写加减的行数，和收起那一行一个算法（第 12、17 条；2026-10-13 验收 T-101：
@@ -165,7 +169,7 @@ fn counts(args: &serde_json::Value) -> Vec<Span<'static>> {
         return Vec::new();
     }
     vec![
-        Span::styled(" · ", theme::dim()),
+        Span::styled(crate::sheet::sep(), theme::dim()),
         Span::styled(format!("+{added}"), theme::added()),
         Span::raw(" "),
         Span::styled(format!("-{removed}"), theme::removed()),

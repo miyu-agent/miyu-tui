@@ -121,7 +121,7 @@ pub fn semantic(oobe: &Oobe, texts: &Texts, bar: &Bar, width: u16) -> Content {
                 _ => None,
             };
             let on = match size {
-                Some(size) => format!("{} · {size}", words.on[1]),
+                Some(size) => format!("{}{}{size}", words.on[1], crate::sheet::sep()),
                 None => words.on[1].clone(),
             };
             [

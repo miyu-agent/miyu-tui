@@ -1,4 +1,4 @@
-//! 颜色和修饰。颜色都从当前主题取（蓝图 `tui.md`「主题」）；加粗、斜体、变暗这些修饰写在这里。
+//! 颜色和修饰。颜色都从当前配色方案取（蓝图 `tui.md`「配色方案」）；加粗、斜体这些修饰照主题（`sheet/`，「主题」）。
 //!
 //! 当前主题放在一个全局的读写锁里：各处画的时候直接取，不用把主题一层层传下去；启动时照配置设一次，
 //! `/theme` 换的也是它。
@@ -58,6 +58,11 @@ pub fn set(palette: Palette) {
 }
 
 /// 换过几次主题，见 [`GENERATION`]。
+/// 别处换了画法（主题，`sheet/`）：代数往前走一格，照它记的缓存重画。
+pub fn touch() {
+    GENERATION.fetch_add(1, Ordering::Relaxed);
+}
+
 pub fn generation() -> u64 {
     GENERATION.load(Ordering::Relaxed)
 }
@@ -79,6 +84,11 @@ fn fg(get: impl Fn(&Palette) -> palette::Tone) -> Style {
 }
 
 /// 一格的字色；主题里写了 `dim:` 的另加变暗。
+/// 主题里这一处的修饰（蓝图「主题」第 1 条的 `text`）。
+fn text(get: impl FnOnce(&crate::sheet::Text) -> &Vec<crate::sheet::Mod>) -> Modifier {
+    crate::sheet::read(|sheet| crate::sheet::Mod::all(get(&sheet.text)))
+}
+
 fn styled(palette::Tone(color, dim): palette::Tone) -> Style {
     let style = Style::new().fg(color);
     if dim {
@@ -116,7 +126,7 @@ pub fn dim() -> Style {
 
 /// 选中的字：反色，任何主题下都看得出来。
 pub fn selected() -> Style {
-    Style::new().add_modifier(Modifier::REVERSED)
+    Style::new().add_modifier(text(|t| &t.selected))
 }
 
 /// 正文里你说的话前面那根竖线：跟着权限级别的颜色，不加粗。
@@ -143,7 +153,7 @@ pub fn warn() -> Style {
 pub fn level(level: Level) -> Style {
     Style::new()
         .fg(level_color(level))
-        .add_modifier(Modifier::BOLD)
+        .add_modifier(text(|t| &t.level))
 }
 
 /// 权限级别对应的颜色：提示符、左下角、你说的话的竖线、运行状态行的流光共用。
@@ -157,12 +167,12 @@ pub fn level_color(level: Level) -> Color {
 
 /// 斜杠命令列表里选中的那一条：品红加粗。
 pub fn picked() -> Style {
-    fg(|p| p.picked).add_modifier(Modifier::BOLD)
+    fg(|p| p.picked).add_modifier(text(|t| &t.picked))
 }
 
 /// 底栏的模型名：加粗，比端点亮。
 pub fn model() -> Style {
-    Style::new().add_modifier(Modifier::BOLD)
+    Style::new().add_modifier(text(|t| &t.model))
 }
 
 /// 思考的字：正体，主题的 `thought`，不叠「变暗」（叠了在深色底上发闷，2026-09-29 项目主人嫌不好看）。
@@ -187,9 +197,17 @@ pub fn faint() -> Style {
 
 /// 那三样里选中的那一条：铺强调色的底，上面的字是深色。
 pub fn picked_bar() -> Style {
+    if barless() {
+        return Style::new().fg(pick(|p| p.accent));
+    }
     Style::new()
         .bg(pick(|p| p.accent))
         .fg(pick(|p| p.on_accent))
+}
+
+/// 主题的选中不铺底（`pick` 是 `mark`，蓝图「主题」第 1 条）：选中的那一行、那一格只换强调色。
+fn barless() -> bool {
+    crate::sheet::read(|s| s.pick == crate::sheet::Pick::Mark)
 }
 
 /// 粘贴块这种小块：品红的字铺一层暗紫底（蓝图「输入框」第 11 条）。
@@ -219,11 +237,17 @@ pub fn heat(level: usize) -> Style {
 
 /// 配置页焦点那一栏选中的一行：底色深一档，字照常。
 pub fn row_focus() -> Style {
+    if barless() {
+        return Style::new().fg(pick(|p| p.accent));
+    }
     Style::new().bg(pick(|p| p.row_bg))
 }
 
 /// 配置页别的栏选中的那一行：底色浅一档。
 pub fn row_dim() -> Style {
+    if barless() {
+        return Style::new();
+    }
     Style::new().bg(pick(|p| p.row_dim_bg))
 }
 
@@ -249,23 +273,23 @@ pub fn diff_added() -> Style {
 
 /// Markdown 的标题：品红加粗（照旧版 `HEADER_STYLE`）。
 pub fn md_heading() -> Style {
-    fg(|p| p.md_heading).add_modifier(Modifier::BOLD)
+    fg(|p| p.md_heading).add_modifier(text(|t| &t.heading))
 }
 
 /// 回答里 Markdown 的标题：只加粗，不上颜色，和正文同色（2026-10-12 项目主人：原来是标题色 `md_heading`；那个颜色
 /// 配置页的分组标题还在用）。一级标题另加下划线（`markdown/mod.rs`）。
 pub fn md_title() -> Style {
-    Style::new().add_modifier(Modifier::BOLD)
+    Style::new().add_modifier(text(|t| &t.title))
 }
 
 /// Markdown 的粗体：原色加粗（2026-09-29 项目主人：原来蓝色，和暗蓝的链接挨得近）。
 pub fn md_bold() -> Style {
-    fg(|p| p.md_bold).add_modifier(Modifier::BOLD)
+    fg(|p| p.md_bold).add_modifier(text(|t| &t.strong))
 }
 
 /// Markdown 的斜体：256 色 250 号、斜体（照旧版 `ITALIC_STYLE`）。
 pub fn md_italic() -> Style {
-    fg(|p| p.md_italic).add_modifier(Modifier::ITALIC)
+    fg(|p| p.md_italic).add_modifier(text(|t| &t.emphasis))
 }
 
 /// 行内代码：淡橙（2026-09-29 项目主人：原来就是链接换掉的那个亮蓝）。
@@ -275,7 +299,7 @@ pub fn md_code() -> Style {
 
 /// 链接的标题：暗蓝、加粗（2026-09-29 项目主人：原来高亮的蓝太抢眼）。
 pub fn md_link() -> Style {
-    fg(|p| p.md_link).add_modifier(Modifier::BOLD)
+    fg(|p| p.md_link).add_modifier(text(|t| &t.link))
 }
 
 /// 链接的地址：和标题同一个暗蓝，不加粗。
@@ -290,7 +314,7 @@ pub fn md_image() -> Style {
 
 /// 引用的字：暗灰蓝、斜体（2026-09-29 项目主人：绿太显眼；改过正体，又嫌不够暗、要斜体）。
 pub fn md_quote() -> Style {
-    fg(|p| p.md_quote).add_modifier(Modifier::ITALIC)
+    fg(|p| p.md_quote).add_modifier(text(|t| &t.quote))
 }
 
 /// 回答里 `<mark>` 高亮的字（蓝图「她的回答：Markdown」第 12 条）。
@@ -300,7 +324,7 @@ pub fn md_mark() -> Style {
 
 /// 表头：蓝加粗。
 pub fn md_table_head() -> Style {
-    fg(|p| p.md_table_head).add_modifier(Modifier::BOLD)
+    fg(|p| p.md_table_head).add_modifier(text(|t| &t.table_head))
 }
 
 /// 列表的记号（`•`、数字、`☐`）：强调色，和字分开层次（2026-09-29 项目主人）。

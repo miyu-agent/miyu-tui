@@ -66,12 +66,19 @@ pub fn lines(
     // 每行前面两格：焦点所在的那一行写品红的 `❯ `。
     let lead = |row: usize, style: Style| {
         if focus == Some(row - 1) {
-            Span::styled("❯ ", theme::picked())
+            Span::styled(crate::sheet::mark(|m| &m.pointer), theme::picked())
         } else {
             Span::styled("  ", style)
         }
     };
-    let dot = |on: bool| if on { "●" } else { "○" };
+    let (on_mark, off_mark) = crate::sheet::read(|s| (s.marks.on.clone(), s.marks.off.clone()));
+    let dot = |on: bool| {
+        if on {
+            on_mark.clone()
+        } else {
+            off_mark.clone()
+        }
+    };
     let main_style = style(1, tree.viewing.is_none());
     let mut out = vec![
         Line::raw(""),
@@ -97,8 +104,9 @@ pub fn lines(
         let row = i + 2;
         // token 不带「Σ」（2026-09-30 项目主人）。
         let stats = format!(
-            "{} · {}",
+            "{}{}{}",
             meter::short(job.tokens),
+            crate::sheet::sep(),
             meter::clock(job.elapsed(now).as_secs())
         );
         let on = tree.viewing.is_some() && job.session.as_deref() == tree.viewing;

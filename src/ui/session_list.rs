@@ -362,7 +362,7 @@ fn short_path(cwd: &str, width: usize) -> String {
     }
     let parts: Vec<&str> = cwd.trim_end_matches('/').rsplit('/').take(2).collect();
     let tail: Vec<&str> = parts.into_iter().rev().collect();
-    format!("…/{}", tail.join("/"))
+    format!("{}/{}", crate::sheet::ellipsis(), tail.join("/"))
 }
 
 /// 多久以前有过动静。

@@ -157,11 +157,15 @@ fn models(
 
 /// 面包屑：`● 配置`，进了一页再接 ` — ◉ 页名`。
 pub(super) fn crumb(frame: &mut Frame, stage: Rect, texts: &Texts, inside: Option<&str>) {
-    let mut spans = vec![Span::styled("● ", theme::accent())];
+    let (on, now, dash) = crate::sheet::read(|s| {
+        let m = &s.marks;
+        (m.on.clone(), m.now.clone(), m.dash.clone())
+    });
+    let mut spans = vec![Span::styled(format!("{on} "), theme::accent())];
     if let Some(name) = inside {
         spans.push(Span::styled(texts.title.as_str(), theme::dim()));
-        spans.push(Span::styled(" — ", theme::dim()));
-        spans.push(Span::styled("◉ ", theme::accent()));
+        spans.push(Span::styled(dash, theme::dim()));
+        spans.push(Span::styled(format!("{now} "), theme::accent()));
         spans.push(Span::styled(
             name.to_string(),
             theme::accent().add_modifier(Modifier::BOLD),
@@ -199,11 +203,13 @@ fn tabs(frame: &mut Frame, row: Rect, page: &mut Settings, texts: &Texts) {
         frame.buffer_mut().set_string(x, row.y, &label, style);
         page.hits.push((Rect::new(x, row.y, width, 1), Hit::Tab(i)));
         x += width;
-        if i + 1 < texts.pages.len() && x + 3 <= row.right() {
+        let sep = crate::sheet::sep();
+        let sep_w = u16::try_from(sep.width()).unwrap_or(3);
+        if i + 1 < texts.pages.len() && x + sep_w <= row.right() {
             frame
                 .buffer_mut()
-                .set_string(x, row.y, " · ", theme::faint());
-            x += 3;
+                .set_string(x, row.y, &sep, theme::faint());
+            x += sep_w;
         }
     }
 }
@@ -231,7 +237,7 @@ pub(super) fn footer(
         &Line::from(vec![Span::styled(text, style)]),
         stage.width,
     );
-    let rule = "─".repeat(stage.width as usize);
+    let rule = crate::sheet::mark(|m| &m.rule).repeat(stage.width as usize);
     buf.set_string(stage.x, bottom - 3, &rule, theme::faint());
     let (hint_y, second_y) = if second.is_some() {
         (bottom - 2, bottom - 1)

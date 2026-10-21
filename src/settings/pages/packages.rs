@@ -89,7 +89,7 @@ impl More {
         .into_iter()
         .flatten()
         .collect();
-        (!parts.is_empty()).then(|| parts.join(" · "))
+        (!parts.is_empty()).then(|| parts.join(&crate::sheet::sep()))
     }
 }
 

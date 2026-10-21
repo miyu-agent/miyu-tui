@@ -295,13 +295,13 @@ impl Tui {
         }
     }
 
-    /// 配置页主菜单上挪到名字是 `name` 的那一项、回车进去：照选中那一行（左边的 `┃`）认，不数第几项（2026-10-14 主菜单加了
-    /// 「外观」，数行的全错一位）。清单没读到以前菜单短几项，挪过头的往回找。
+    /// 配置页主菜单上挪到名字是 `name` 的那一项、回车进去：照选中那一行（左边的 `┃`，纯 ASCII 主题是 `|`）认，不数第几项
+    /// （2026-10-14 主菜单加了「外观」，数行的全错一位）。清单没读到以前菜单短几项，挪过头的往回找。
     pub fn open_menu(&mut self, name: &str) {
         self.wait_for(name);
         let picked = |tui: &Self| {
             tui.lines().iter().any(|l| {
-                l.split_once('┃')
+                l.split_once(['┃', '|'])
                     .and_then(|(_, rest)| rest.split_whitespace().next())
                     == Some(name)
             })

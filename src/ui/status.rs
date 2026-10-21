@@ -6,7 +6,7 @@ use std::time::Instant;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Clear, Paragraph};
+use ratatui::widgets::{Block, Clear, Paragraph};
 use unicode_width::UnicodeWidthStr;
 
 use super::rows::clip;
@@ -56,7 +56,7 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState
         rest,
     ));
     if let Some(retry) = &seen.talk.transcript.retry {
-        spans.push(Span::styled(" · ", theme::dim()));
+        spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
         spans.push(Span::styled(retry.clone(), theme::warn()));
     }
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
@@ -113,7 +113,7 @@ pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, seen: 
         .collect();
     frame.render_widget(Clear, area);
     let block = Block::bordered()
-        .border_type(BorderType::Rounded)
+        .border_set(crate::sheet::read(|s| s.frame.toast.set()))
         .border_style(theme::notice_border(notice.good));
     let inner = Rect::new(
         area.x + 2,
