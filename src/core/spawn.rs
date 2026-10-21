@@ -98,6 +98,9 @@ async fn entered(rpc: &mut Rpc, resume: Option<String>, recent: bool) -> Option<
     if !recent || !switch::wants_recent(rpc).await {
         return None;
     }
-    let list = rpc.call("session.list", serde_json::json!({})).await.ok()?;
+    let list = rpc
+        .call("session.list", serde_json::json!({"dream": false}))
+        .await
+        .ok()?;
     switch::recent(&list)
 }

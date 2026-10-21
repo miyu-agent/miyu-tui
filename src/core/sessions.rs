@@ -33,7 +33,8 @@ pub struct SessionInfo {
     pub context: Option<(u64, Option<u64>)>,
 }
 
-/// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话不要，照核心交回的先后（新的在前）。
+/// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话、整理会话不要，照核心交回的先后（新的
+/// 在前）。
 pub fn read(result: &Value) -> Vec<SessionInfo> {
     result["sessions"]
         .as_array()
@@ -43,9 +44,9 @@ pub fn read(result: &Value) -> Vec<SessionInfo> {
         .collect()
 }
 
-/// 读一项；子会话、一次性会话、读不成的是 `None`。
+/// 读一项；子会话、一次性会话、整理会话（核心 D-1 下的 `kind: "dream"`，怎么画等 D-3）、读不成的是 `None`。
 fn entry(s: &Value) -> Option<SessionInfo> {
-    if !s["parent"].is_null() || s["oneshot"] == true {
+    if !s["parent"].is_null() || s["oneshot"] == true || s["kind"] == "dream" {
         return None;
     }
     let text = |v: &Value| v.as_str().filter(|t| !t.is_empty()).map(str::to_string);
@@ -257,6 +258,24 @@ mod tests {
             child,
             Some(Change::Removed("x".into())),
             "子会话不列：当没有"
+        );
+    }
+
+    #[test]
+    fn dream_sessions_are_not_listed() {
+        // 核心 D-1 下：整理会话也列得出来，带 `kind: "dream"`；终端的会话列表不要（怎么画等 D-3）。
+        use serde_json::json;
+        let got = json!({"sessions": [
+            {"session": "a1b2c3d4", "title": "平常的"},
+            {"session": "d1d2d3d4", "kind": "dream", "dream": {"persona": "miyu", "manual": true}}
+        ]});
+        let ids: Vec<String> = super::read(&got).into_iter().map(|s| s.session).collect();
+        assert_eq!(ids, ["a1b2c3d4"]);
+        let change =
+            json!({"session": "d1d2d3d4", "entry": {"session": "d1d2d3d4", "kind": "dream"}});
+        assert_eq!(
+            super::change(&change),
+            Some(Change::Removed("d1d2d3d4".into()))
         );
     }
 }
