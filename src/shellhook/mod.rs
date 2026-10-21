@@ -78,7 +78,7 @@ pub fn main(args: Vec<String>) -> ExitCode {
             .chain(options.iter().cloned())
             .collect::<Vec<_>>()
             .join(" ");
-        match slash::run(&line, &words, None) {
+        match slash::run(&line, &words, None, false) {
             Some(Ok(code)) => return code,
             Some(Err(e)) => {
                 eprintln!("{e}");
@@ -111,7 +111,7 @@ pub fn main(args: Vec<String>) -> ExitCode {
             )),
         },
         "classify" => return classify_stdin(options.shell.unwrap_or(Shell::Fish)),
-        "say" => return say(options.leftover, options.shell_pid, &words),
+        "say" => return say(options.leftover, options.shell_pid, options.redo, &words),
         "follow" => match &options.watch {
             Some(path) => return say::follow::run(path),
             None => Err(io::Error::new(
@@ -177,6 +177,8 @@ struct Options {
     above: Option<u16>,
     /// `report` 只问有没有要印的。
     pending: bool,
+    /// `say` 这一句是 `/edit` 改过的：替换上一轮重来。
+    redo: bool,
 }
 
 impl Options {
@@ -195,6 +197,7 @@ impl Options {
                 "--leftover" => options.leftover = Some(args.next().ok_or_else(value)?.into()),
                 "--watch" => options.watch = Some(args.next().ok_or_else(value)?.into()),
                 "--pending" => options.pending = true,
+                "--redo" => options.redo = true,
                 "--above" => {
                     let rows = args.next().ok_or_else(value)?;
                     options.above = Some(rows.parse().map_err(|_| format!("bad rows: {rows}"))?);
@@ -236,7 +239,7 @@ fn classify_stdin(shell: Shell) -> ExitCode {
 }
 
 /// 把标准输入的那句话交给她，这一轮印在 shell 里（`say/`）。
-fn say(leftover: Option<PathBuf>, shell: Option<u32>, words: &Words) -> ExitCode {
+fn say(leftover: Option<PathBuf>, shell: Option<u32>, redo: bool, words: &Words) -> ExitCode {
     let mut text = String::new();
     if let Err(e) = io::stdin().read_to_string(&mut text) {
         eprintln!("{e}");
@@ -247,6 +250,7 @@ fn say(leftover: Option<PathBuf>, shell: Option<u32>, words: &Words) -> ExitCode
             text,
             leftover,
             shell,
+            redo,
         },
         words,
     ) {

@@ -71,6 +71,8 @@ pub struct Turn {
     pending: Option<String>,
     /// 跟这句话一起发的附件（`Ctrl+V` 贴的图、文件）。
     pub files: Vec<std::path::PathBuf>,
+    /// 这句话替换上一轮重来（`/edit` 改过的）。
+    pub redo: bool,
     /// 这一句在哪个目录说。
     cwd: Option<String>,
     /// 接上了终端会话、在等它最新的一页读回来：读完再发，补发的那一页里同样的话不会认成这一句。
@@ -155,6 +157,7 @@ impl Turn {
             ended_jobs: Vec::new(),
             pending: (!text.is_empty()).then(|| text.clone()),
             files: Vec::new(),
+            redo: false,
             cwd,
             paging: false,
             sent: false,
@@ -186,6 +189,14 @@ impl Turn {
     fn send(&mut self, core: &Core) {
         if let Some(text) = self.pending.take() {
             self.sent = true;
+            // `/edit` 改过的：替换上一轮重来（附件没贴新的照原来的）。
+            if self.redo {
+                core.send(Command::Redo {
+                    text: Some(text),
+                    files: (!self.files.is_empty()).then(|| self.files.clone()),
+                });
+                return;
+            }
             core.send(Command::Send {
                 text,
                 files: self.files.clone(),

@@ -11,7 +11,7 @@
   "status_foreign": "{shell}: {path} wasn't written by shellhook",
   "status_stale": "{shell}: installed ({path}), but the program it calls, {program}, is gone; install again",
   "no_program": "Can't find the program to call from the script: {program}",
-  "renewed": "Started a new session: the last message was {ago} ago",
+  "renewed": "The last message was {ago} ago: started a new session so an expired cache doesn't cost extra",
   "units": {
     "minutes": "{n} min",
     "hours": "{n} h",
@@ -26,5 +26,6 @@
   "slash_effort": "Reasoning effort: {level}",
   "slash_sessions": "Messages now go to “{title}”",
   "slash_persona": "New terminal sessions will use the persona “{name}”",
-  "slash_preset": "New terminal sessions will use the preset “{name}”"
+  "slash_preset": "New terminal sessions will use the preset “{name}”",
+  "slash_ambiguous": "Nothing is called “{query}”; close matches: {names} (type the full name)"
 }

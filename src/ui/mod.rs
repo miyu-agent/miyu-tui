@@ -41,7 +41,7 @@ mod oobe;
 pub mod shown_rows;
 pub use oobe::idle_look as oobe_idle_look;
 mod panel;
-pub use panel::{Chrome, draw as draw_panel};
+pub use panel::{Chrome, PAD as PANEL_PAD, draw as draw_panel, padded as panel_padded};
 mod panels;
 pub mod persona_list;
 pub mod session_list;

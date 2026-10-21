@@ -11,7 +11,7 @@
   "status_foreign": "{shell}：{path} 不是 shellhook 写的",
   "status_stale": "{shell}：已装（{path}），但记的程序 {program} 不在了：重新装一次",
   "no_program": "找不到要记进脚本的程序 {program}",
-  "renewed": "上次说话是 {ago} 前，开了新会话",
+  "renewed": "上次说话是 {ago}前，为了防止缓存失效导致额外花费，已开启新会话",
   "units": {
     "minutes": "{n} 分钟",
     "hours": "{n} 小时",
@@ -26,5 +26,6 @@
   "slash_effort": "思考强度：{level}",
   "slash_sessions": "之后说进「{title}」",
   "slash_persona": "之后新开的终端会话用人格「{name}」",
-  "slash_preset": "之后新开的终端会话用预设「{name}」"
+  "slash_preset": "之后新开的终端会话用预设「{name}」",
+  "slash_ambiguous": "没有叫「{query}」的；对得上的有：{names}（写全名）"
 }

@@ -4,6 +4,8 @@
 
 pub mod edit;
 pub mod effort;
+pub mod fresh;
+pub mod help;
 pub mod model;
 pub mod persona;
 pub mod sessions;
@@ -161,10 +163,13 @@ impl Session {
             Picked::Done(None) | Picked::Stay => Vec::new(),
         };
         self.painter.frame(&settled, &[])?;
+        if self.hooked {
+            return Ok(());
+        }
         ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Show)
     }
 
-    /// 几行画进一个框（同终端界面的框），交回画好的几行。
+    /// 几行画进一个框（同终端界面由命令打开的框：框线里上下各空一行，`panel::PAD`），交回画好的几行。
     fn boxed(
         &self,
         width: u16,
@@ -173,15 +178,15 @@ impl Session {
     ) -> io::Result<Vec<String>> {
         let rows = u16::try_from(lines.len())
             .unwrap_or(u16::MAX)
-            .saturating_add(2);
+            .saturating_add(2 + crate::ui::PANEL_PAD);
         self.painter.render(width, rows, |frame| {
             let outer = frame.area();
-            let text = Rect::new(
+            let text = crate::ui::panel_padded(Rect::new(
                 outer.x + SIDE,
                 outer.y + 1,
                 outer.width.saturating_sub(SIDE * 2),
                 outer.height.saturating_sub(2),
-            );
+            ));
             crate::ui::draw_panel(frame, outer, text, chrome, lines);
         })
     }

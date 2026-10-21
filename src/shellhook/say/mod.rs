@@ -42,6 +42,8 @@ pub struct Ask {
     pub leftover: Option<PathBuf>,
     /// 哪个 shell（脚本给的 `$fish_pid`）：后台回报交给它。没给的不盯后台。
     pub shell: Option<u32>,
+    /// 这一句是 `/edit` 放回命令行、改过的：替换上一轮重来（`session.redo`，同终端界面的 `/edit`）。
+    pub redo: bool,
 }
 
 /// 说一句、印这一轮，交回退出码。
@@ -56,7 +58,8 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     }
     // 终端界面的斜杠命令（`/models`）：照命令办，不当一句话（`shellhook/slash.rs`）。
     if text.starts_with('/')
-        && let Some(done) = crate::shellhook::slash::run(&text, words, ask.leftover.as_deref())
+        && let Some(done) =
+            crate::shellhook::slash::run(&text, words, ask.leftover.as_deref(), ask.shell.is_some())
     {
         return done;
     }
@@ -66,12 +69,14 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         None => (text, Vec::new()),
     };
     let (mut session, look) = Session::start()?;
+    session.hooked = ask.shell.is_some();
     // 这一句照 shell 所在的目录说（设计 22 第七节「她在哪个目录干活」）。
     let cwd = std::env::current_dir()
         .ok()
         .map(|d| d.to_string_lossy().into_owned());
     let mut turn = Turn::new(text, cwd, look);
     turn.files = files;
+    turn.redo = ask.redo;
     turn.ask_terminal(&session.core);
     session.drive(&mut turn, |t| {
         t.renewed.map(|since| renewed_line(since, words))
@@ -129,6 +134,10 @@ pub enum Pick<'a> {
     Persona(crate::app::new_session::Kind, Option<&'a str>),
     /// `/usage`。
     Usage,
+    /// `/new`。
+    Fresh,
+    /// `/help`。
+    Help,
     /// `/edit`：上一句写进这个文件，脚本放回命令行。
     Edit(Option<&'a std::path::Path>),
 }
@@ -138,8 +147,9 @@ pub enum Pick<'a> {
 /// # Errors
 ///
 /// 读配置、开原始模式、写终端失败。
-pub fn pick(which: Pick<'_>, words: &Words) -> io::Result<ExitCode> {
+pub fn pick(which: Pick<'_>, words: &Words, hooked: bool) -> io::Result<ExitCode> {
     let (mut session, look) = Session::start()?;
+    session.hooked = hooked;
     let cwd = std::env::current_dir()
         .ok()
         .map(|d| d.to_string_lossy().into_owned());
@@ -151,6 +161,8 @@ pub fn pick(which: Pick<'_>, words: &Words) -> io::Result<ExitCode> {
         Pick::Sessions => Box::new(pick::sessions::SessionsPick::new(words)),
         Pick::Status => Box::new(pick::status::StatusShow::new()),
         Pick::Usage => Box::new(pick::usage::UsageShow::new()),
+        Pick::Fresh => Box::new(pick::fresh::FreshPick::new(words)),
+        Pick::Help => Box::new(pick::help::HelpShow),
         Pick::Edit(leftover) => Box::new(pick::edit::EditPick::new(leftover)),
         Pick::Persona(kind, given) => Box::new(pick::persona::PersonaPick::new(
             kind,

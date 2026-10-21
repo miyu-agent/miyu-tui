@@ -29,6 +29,9 @@ pub struct Session {
     pub(super) reader: crate::reader::Reader,
     notifier: Notifier,
     pub(super) painter: Painter<Stdout>,
+    /// 从 shell 的脚本里调的：收工时不亮光标，脚本画提示符时亮（亮早了光标停在最后一行的末尾闪一下，2026-10-21 项目主人：
+    /// 「光标会闪到那一行的最右边，很跳」）。直接在命令行里跑的照旧亮。
+    pub hooked: bool,
     media: Media,
     _raw: RawMode,
 }
@@ -63,6 +66,7 @@ impl Session {
             incoming,
             reader,
             painter: Painter::new(io::stdout(), depth),
+            hooked: false,
             _raw: raw,
         };
         Ok((session, look))
@@ -167,7 +171,9 @@ impl Session {
         let settled = self.painter.lines(width, &lines)?;
         self.painter.finish()?;
         self.painter.frame(&settled, &[])?;
-        ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Show)?;
+        if !self.hooked {
+            ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Show)?;
+        }
         match turn.ended {
             Some(EndReason::Completed) => self.notifier.tell(notify::Event::Replied),
             Some(EndReason::Error) => self.notifier.tell(notify::Event::Failed),

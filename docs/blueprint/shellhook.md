@@ -124,16 +124,19 @@
 设计 22 第七节「斜杠命令」（2026-10-20 项目主人定）：终端界面的斜杠命令大多照搬，作用在终端会话上。
 
 1. **从哪来**：fish 里 `/model` 这样的一行不是现成的命令，照一句话交给 `say`；`say` 先问 `slash.rs`：是终端界面命令表里的（`commands::Commands::read`，同一份 `resources/commands.json`）照命令办，不是的照一句话发给核心（核心认的命令模板由它办，同终端界面）。`miyu shellhook <名字> [参数]` 也走这里（不是自己的子命令的才认）。
-2. **已做**：`config`（`settings`）打开终端界面的配置页（同一个程序的 `--page config`），退出了回到 shell。`new` 请核心 `session.terminal {cwd, fresh: true}`（核心 2bd2fa8a：照新开终端会话的规矩开一个、指过去，旧的不动），说一句「开了新会话」（2026-10-20 项目主人：后半句「下一句从这里说起」去掉），下一句说进新的。`exit`、`help`、`language` 不做，说一句「在 shell 里不做」。
+2. **已做**：`config`（`settings`）打开终端界面的配置页（同一个程序的 `--page config`），退出了回到 shell。`new` 请核心 `session.terminal {cwd, fresh: true}`（核心 2bd2fa8a：照新开终端会话的规矩开一个、指过去，旧的不动），说一句「开了新会话」（2026-10-20 项目主人：后半句「下一句从这里说起」去掉），下一句说进新的。`exit`、`language` 不做，说一句「在 shell 里不做」。
 3. **在 shell 里原地办，不进全屏**（2026-10-20 项目主人：「我是 shellhook 啊。怎么运行命令给我弄到 tui 里面去了……每次运行都进 TUI 太不合理了」。原来借终端界面的框，`--resume <终端会话> --command <一行>` 起全屏办一条命令，做好了又撤掉；`config` 照设计 22 打开配置页，不算在内）。驱动在 `say/pick.rs`：起来照说话那一套接上终端会话、读配置、配色（借一个不说话的 `Turn`），提示符下面原地画一个框（同终端界面输入框上面那种框，`ui::draw_panel`），`↑` `↓`（`Ctrl+J` `Ctrl+K`）选、`Enter` 定、`Esc`（`Ctrl+C`）走，定了框收掉只留一行暗色的结果；带参数的直接改、不弹列表，没对上的说一句「没有对得上「…」的」。终端界面的命令表里不收参数的，shell 里 `model`、`theme`、`effort`、`persona`、`preset` 收（2026-10-20 项目主人：「直接通过 cli 改也行啊」）。
-   - `/model`（`pick/model.rs`）：列表、筛、画法用终端界面的 `model_list`；换终端会话的模型（`session.configure`），也记成新会话的默认（同终端界面）；终端会话的最新一页读回来以后停到正在用的那个上。`/model 名字` 照筛出的第一个能用的换。
+   - `/model`（`pick/model.rs`）：列表、筛、画法用终端界面的 `model_list`；换终端会话的模型（`session.configure`），也记成新会话的默认（同终端界面）；终端会话的最新一页读回来以后停到正在用的那个上。`/model 名字` 只认写全的名字、引用（不分大小写），没写全的不猜、列几个对得上的（2026-10-21 项目主人：「v4.1 flash 不是能匹配很多东西吗？怎么能知道自己要换的是什么呢？」）。
    - `/theme`（`pick/theme.rs`）：排法用 `ui::themes`；挪到哪种当场换成哪种的样子，`Enter` 写 `tui.theme`（和终端界面共一项），`Esc` 换回。参数认值和照界面语言的名字。
    - `/effort`（`pick/effort.rs`）：终端会话读回来、知道用的哪个模型再问几级，排法用 `ui::effort_list`；用的是模型池的说一句不让改（同终端界面）。参数认档名、`default`。
    - `/sessions`（`pick/sessions.rs`）：列表、筛、画法用 `session_list`；选了 `session.set_terminal`，之后说进它。置顶、删除到终端界面去做。
    - `/persona`、`/preset`（`pick/persona.rs`）：按键用 `pick_box::press`，排法用 `ui::persona_list`；选了写 `terminal.persona`、`terminal.preset`（个人设置），之后新开的终端会话照它，正在说的不换。按 `e` 编辑要整个配置页，先不做。
    - `/status`（`pick/status.rs`）：等终端会话读回来，照 `ui::status_box` 印一个框留在滚动区；数照终端会话的最新一页填（`status_box::memory_calls` 导出给这里），终端界面才有的（连同子代理的用量、花费）不写。
    - `/usage`（`pick/usage.rs`）：排法用终端界面的 `ui::usage::page_lines`（2026-10-20 和终端界面会话商定从 `lines` 拆出来，不碰界面：`Sources` 收配置、币种、知道的会话），自己发五次 `usage.query` 收齐；`Tab` `←` `→` 换页、`↑` `↓` 滚、`t` 切 token、花费；`Esc` 收掉，正看着的那一页（去掉补齐的空行）留在滚动区。
-   - `/edit`（`pick/edit.rs`）：向核心要终端会话的最新一页（`view.page`），最后一句人说的话写进 `--leftover`，脚本放回命令行。只放回来，改完回车照一句新的话发，不替换上一轮（shell 里看不出你是不是放弃了编辑）。不照借来的 `Turn` 的正文找：终端界面读回的那一页是先停放、再由界面换上来的，借来的不换，正文是空的（2026-10-21 实测）。
+   - `/edit`（`pick/edit.rs`）：向核心要终端会话的最新一页（`view.page`），最后一句人说的话写进 `--leftover`，脚本放回命令行，旁边放一份 `.redo` 标记；fish 照它记着「在编辑」，下一次回车带 `--redo` 交给她，替换上一轮重来（`session.redo`，同终端界面的 `/edit`，2026-10-21 项目主人：「发出去的内容是会进历史的……/edit 命令如果没有 /undo 重发的效果的话没有存在的意义」）；中途执行了别的命令（`fish_preexec`）、`Ctrl+C` 清了命令行（`fish_cancel`）就不算在编辑。bash、zsh 还没接。不照借来的 `Turn` 的正文找：终端界面读回的那一页是先停放、再由界面换上来的，借来的不换，正文是空的（同一天实测）。
+   - `/new`（`pick/fresh.rs`）、`/help`（`pick/help.rs`，照 `ui::help` 印一个框，2026-10-21 项目主人：「可以和 tui 里面一样用 tui 展示帮助信息」）也走这个驱动：留的一行、印的框和别的系统提示一个暗色。
+   - 框线里上下各空一行（同终端界面由命令打开的框，`panel::PAD`）。
+   - 光标：从 shell 的脚本里调的（`--shell-pid`）收工时不亮，脚本画提示符时亮（亮早了停在最后一行末尾闪一下，2026-10-21 项目主人）；直接在命令行里跑的照旧亮。
    - 只看的、要先等终端会话读回来的（`/status`）：最新一页读回来以后，等订阅的回应（预设、窗口、压缩线跟着它来）到了再印，最多再等半秒（实测：一读回来就印，这几行没有）。终端会话的推送包着会话编号（`Elsewhere`），驱动拆开了再交给列表（实测：`/effort` 不拆一直停在「正在加载」）。
    - 按键模式（`tui.keys`，同终端界面 2026-10-21）：开着时 `j`、`k` 当上下（没在打搜索的字），提示里的「↑/↓」写成「j/k」（`Chrome::vim`）；`/model`、`/sessions` 的搜索那一截照终端界面的 `list_search::key`（按 `/` 才搜）。说话那一套读时间线的配置项时一起读 `tui.keys`（`config.layout.apply_keys`）。
    - 主题包（`tui.look`，同终端界面「主题」，`say/pack.rs`）：头的配置到了问 `tui.look`，是主题包的照 `package.list`、`package.file` 读来盖在默认主题上（`sheet::set`、`config.retheme`），时间线、按键模式的配置项再读一遍盖上；确认和提问的框、列表的框线照主题的 `frame.boxes`。读不成的照默认主题，shell 里不弹提示。

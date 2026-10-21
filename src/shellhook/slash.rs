@@ -10,8 +10,8 @@ use std::process::ExitCode;
 use crate::commands::Line;
 use crate::shellhook::words::{Words, fill};
 
-/// shell 里不做的：退出、帮助、界面语言（设计 22 第七节，2026-10-20 项目主人定）。
-const SKIPPED: [&str; 3] = ["exit", "help", "language"];
+/// shell 里不做的：退出、界面语言（设计 22 第七节，2026-10-20 项目主人定；帮助 2026-10-21 改成照终端界面印出来）。
+const SKIPPED: [&str; 2] = ["exit", "language"];
 
 /// `line` 是终端界面的斜杠命令的：办了交回退出码；不是的交回 `None`，照一句话说。
 ///
@@ -22,6 +22,7 @@ pub fn run(
     line: &str,
     words: &Words,
     leftover: Option<&std::path::Path>,
+    hooked: bool,
 ) -> Option<io::Result<ExitCode>> {
     let config = match crate::shellhook::say::config() {
         Ok(config) => config,
@@ -44,21 +45,34 @@ pub fn run(
     };
     Some(match spec.name.as_str() {
         "config" => config_page(),
-        "new" => fresh(&config, words),
-        "model" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Model(args), words),
-        "theme" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Theme(args), words),
-        "effort" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Effort(args), words),
-        "sessions" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Sessions, words),
-        "status" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Status, words),
-        "usage" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Usage, words),
-        "edit" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Edit(leftover), words),
+        "help" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Help, words, hooked),
+        "new" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Fresh, words, hooked),
+        "model" => {
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Model(args), words, hooked)
+        }
+        "theme" => {
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Theme(args), words, hooked)
+        }
+        "effort" => {
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Effort(args), words, hooked)
+        }
+        "sessions" => {
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Sessions, words, hooked)
+        }
+        "status" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Status, words, hooked),
+        "usage" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Usage, words, hooked),
+        "edit" => {
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Edit(leftover), words, hooked)
+        }
         "persona" => crate::shellhook::say::pick(
             crate::shellhook::say::Pick::Persona(crate::app::new_session::Kind::Persona, args),
             words,
+            hooked,
         ),
         "preset" => crate::shellhook::say::pick(
             crate::shellhook::say::Pick::Persona(crate::app::new_session::Kind::Preset, args),
             words,
+            hooked,
         ),
         name if SKIPPED.contains(&name) => tell(&fill(&words.slash_skipped, &[("name", name)])),
         name => tell(&fill(&words.slash_pending, &[("name", name)])),
@@ -79,48 +93,6 @@ fn config_page() -> io::Result<ExitCode> {
 
 /// shell 里能接参数、不弹列表直接改的（2026-10-20 项目主人：「直接通过 cli 改也行啊」）。
 const WITH_ARGS: [&str; 5] = ["model", "theme", "effort", "persona", "preset"];
-
-/// 回应等多久：核心没在跑的要先拉起来。
-const WAIT: std::time::Duration = std::time::Duration::from_secs(15);
-
-/// `/new`：请核心照新开终端会话的规矩开一个、指过去（`session.terminal {fresh: true}`，核心 2bd2fa8a）；开在 shell 这时的
-/// 目录。下一句就说进新的。
-fn fresh(config: &crate::config::Config, words: &Words) -> io::Result<ExitCode> {
-    let (sender, incoming) = std::sync::mpsc::channel();
-    let core = crate::core::spawn(
-        config.layout.reconnect_ms,
-        crate::core::Start::Bare,
-        move |update| sender.send(update).is_ok(),
-    );
-    let cwd = std::env::current_dir()
-        .ok()
-        .map(|d| d.to_string_lossy().into_owned());
-    core.send(crate::core::Command::Ask {
-        tag: 1,
-        method: "session.terminal",
-        params: serde_json::json!({ "cwd": cwd, "fresh": true }),
-    });
-    loop {
-        let update = incoming
-            .recv_timeout(WAIT)
-            .map_err(|_| io::Error::other("no answer from the core"))?;
-        match update {
-            crate::core::Update::Answer { tag: 1, result } => {
-                return match result {
-                    Ok(_) => {
-                        writeln!(io::stdout(), "\n  {}\n", words.slash_new)?;
-                        Ok(ExitCode::SUCCESS)
-                    }
-                    Err(refusal) => tell(&refusal.message),
-                };
-            }
-            crate::core::Update::NoCoreBin | crate::core::Update::Failed(_) => {
-                return Err(io::Error::other("can't reach the core"));
-            }
-            _ => {}
-        }
-    }
-}
 
 /// 说一句为什么没办，退出码 1。
 fn tell(text: &str) -> io::Result<ExitCode> {

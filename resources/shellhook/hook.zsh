@@ -14,6 +14,8 @@ command_not_found_handler() {
     local leftover
     leftover=$(mktemp -t miyu-shellhook.XXXXXX)
     printf '%s' "$*" | __miyu_shellhook say --shell zsh --shell-pid $$ --leftover "$leftover"
+    # 程序收工时不亮光标（亮早了停在最后一行末尾闪一下），这里亮。
+    printf '\e[?25h'
     # 收尾行和下一个提示符之间空一行（fish 的提示符自带，zsh、bash 的不一定：2026-10-20 验收贴在一起）。
     print
     [[ -s $leftover ]] && print -z -- "$(<$leftover)"
@@ -33,6 +35,7 @@ TRAPUSR1() {
         local -a lines=("${(@f)${(%%)PS1}}")
         local rows=${#lines}
         __miyu_shellhook report --shell zsh --shell-pid $$ --above $rows && print
+        printf '\e[?25h'
     else
         __miyu_report_pending=1
     fi
@@ -43,6 +46,7 @@ __miyu_precmd() {
     if [[ -n $__miyu_report_pending ]]; then
         __miyu_report_pending=
         __miyu_shellhook report --shell zsh --shell-pid $$ && print
+        printf '\e[?25h'
     fi
 }
 

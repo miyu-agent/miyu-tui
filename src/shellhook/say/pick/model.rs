@@ -1,5 +1,5 @@
 //! `/model`（同终端界面「配置与模型」第 1 条，列表、筛、画法用它的 `model_list`）：换终端会话的模型，也记成新会话的默认
-//! （同终端界面，2026-10-02 项目主人定）。`/model 名字` 不弹列表，照名字筛出的第一个能用的直接换。
+//! （同终端界面，2026-10-02 项目主人定）。`/model 名字` 不弹列表，写全的名字、引用（不分大小写）直接换；没写全的不猜，列几个对得上的。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::text::Line;
@@ -12,6 +12,9 @@ use crate::model_list::ModelList;
 use crate::shellhook::say::turn::Turn;
 use crate::shellhook::words::{Words, fill};
 use crate::ui::Chrome;
+
+/// 带的名字没写全时列几个对得上的。
+const NEAR: usize = 5;
 
 /// 换模型那一问的编号（说话那一套用的是个位数）。
 const CONFIGURE_TAG: u64 = 90;
@@ -95,15 +98,31 @@ impl Picker for ModelPick {
         if !self.list.loaded || turn.transcript.session.is_none() {
             return Picked::Stay;
         }
-        let found = self
+        // 只认写全的名字、引用（不分大小写）：`v4.1 flash` 这样能对上好几个的不猜（2026-10-21 项目主人：「怎么能知道自己要换
+        // 的是什么呢？应该输入完整名字才允许这样切」）。
+        let wanted = given.trim().to_lowercase();
+        let exact = self
+            .list
+            .all
+            .iter()
+            .find(|c| c.name.to_lowercase() == wanted || c.reference.to_lowercase() == wanted)
+            .cloned();
+        if let Some(choice) = exact {
+            return self.choose(&choice, turn, core);
+        }
+        let near: Vec<String> = self
             .list
             .matches()
-            .into_iter()
-            .find(|c| c.state.pickable())
-            .cloned();
-        match found {
-            Some(choice) => self.choose(&choice, turn, core),
-            None => Picked::Done(Some(result(&fill(
+            .iter()
+            .take(NEAR)
+            .map(|c| c.name.clone())
+            .collect();
+        match near.is_empty() {
+            false => Picked::Done(Some(result(&fill(
+                &self.words.slash_ambiguous,
+                &[("query", given), ("names", &near.join("、"))],
+            )))),
+            true => Picked::Done(Some(result(&fill(
                 &self.words.slash_no_match,
                 &[("query", given)],
             )))),

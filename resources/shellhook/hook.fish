@@ -86,8 +86,17 @@ function __miyu_on_prompt --on-event fish_prompt
         printf '\e[?2026l'
         # 她答话的时候提前敲的字：程序写进这个文件，答完放回命令行。$fish_pid 告诉它是哪个 shell：后台回报交回这里。
         set -l leftover (mktemp -t miyu-shellhook.XXXXXX)
-        printf '%s' "$buffer" | __miyu_shellhook say --shell fish --shell-pid $fish_pid --leftover $leftover
+        # /edit 放回来改过的这一句：替换上一轮重来（`--redo`）。
+        set -l redo
+        set -q __miyu_pending_redo; and set redo --redo
+        set -e __miyu_pending_redo
+        printf '%s' "$buffer" | __miyu_shellhook say --shell fish --shell-pid $fish_pid --leftover $leftover $redo
         set miyu_status $status
+        # /edit 放回命令行的：旁边有一份 .redo 标记，记着「在编辑」。
+        if test -e "$leftover.redo"
+            set -g __miyu_editing 1
+            rm -f -- "$leftover.redo"
+        end
         trap - INT TERM EXIT
         __miyu_restore_cursor
         if test -s "$leftover"
@@ -139,6 +148,8 @@ function __miyu_report
     set -g __miyu_busy 1
     __miyu_shellhook report --shell fish --shell-pid $fish_pid --leftover $leftover $above
     set -l printed $status
+    # 程序收工时不亮光标（亮早了停在最后一行末尾闪一下），这里亮。
+    __miyu_restore_cursor
     test -n "$was_busy"; or set -e __miyu_busy
     if test -s "$leftover"
         commandline -i -- (string collect < $leftover)
@@ -200,8 +211,18 @@ function __miyu_head_is_plain_word
     return 0
 end
 
+# /edit 放回命令行以后：中途执行了别的命令、Ctrl+C 清了命令行，就不算在编辑了，之后说的话照一句新的发。
+function __miyu_edit_done --on-event fish_preexec --on-event fish_cancel
+    set -e __miyu_editing
+end
+
 function __miyu_hand_to_ai
     __miyu_wrap_fish_prompt
+    # 在编辑的这一句交给她：替换上一轮重来。
+    if set -q __miyu_editing
+        set -g __miyu_pending_redo 1
+        set -e __miyu_editing
+    end
     history append -- "$argv[1]"
     set -g __miyu_pending_buffer "$argv[1]"
     # 同步输出：fish 清空输入行会先擦掉长文，再由 __miyu_on_prompt 重放，中间那一下就是闪。从这里起终端先不画，重放完一起画。

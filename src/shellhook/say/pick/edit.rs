@@ -1,6 +1,8 @@
 //! `/edit`（设计 22 第七节「斜杠命令」：上一句放回 fish 的命令行）：问到终端会话以后向核心要它的最新一页（`view.page`），
-//! 取最后一句人说的话，写进 `say` 交给脚本的那份文件（`--leftover`，答完放回命令行的同一条路）。只放回来：改完回车照一句
-//! 新的话发，不替换上一轮（shell 里看不出你是不是放弃了编辑，替换会误伤）。
+//! 取最后一句人说的话，写进 `say` 交给脚本的那份文件（`--leftover`，答完放回命令行的同一条路），旁边放一份 `.redo` 标记：
+//! 脚本照它记着「在编辑」，下一次回车带 `--redo` 交给她，替换上一轮重来（同终端界面的 `/edit`，2026-10-21 项目主人：「发
+//! 出去的内容是会进历史的……/edit 命令如果没有 /undo 重发的效果的话没有存在的意义」）；中途执行了别的命令、`Ctrl+C`
+//! 清了命令行，脚本把标记去掉，照一句新的话发。
 //!
 //! 不照借来的 `Turn` 的正文找：终端界面读回的那一页是先停放、再由界面换上来的，借来的 `Turn` 不换，正文是空的；这条
 //! 连接以外说的话（shell 里每说一句是一条新连接）在终端界面的 `last_said` 看来也是别处来的（2026-10-21 实测三回）。
@@ -36,6 +38,13 @@ impl EditPick {
             found: None,
         }
     }
+}
+
+/// 「在编辑」的标记：放回命令行的那份文件旁边，名字多一个 `.redo`。
+fn redo_mark(path: &std::path::Path) -> std::path::PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(".redo");
+    name.into()
 }
 
 /// 一页事件里最后一句人说的话：命令模板展开的照人打的那一行，别的照字块拼起来。
@@ -96,7 +105,10 @@ impl Picker for EditPick {
             return Picked::Done(Some(result(&text)));
         };
         match &self.leftover {
-            Some(path) => match std::fs::write(path, text) {
+            // 旁边放一份标记：脚本照它记着「在编辑」，下一次回车交给她时替换上一轮重来。
+            Some(path) => match std::fs::write(path, text)
+                .and_then(|()| std::fs::write(redo_mark(path), b""))
+            {
                 Ok(()) => Picked::Done(None),
                 Err(e) => Picked::Done(Some(result(&e.to_string()))),
             },

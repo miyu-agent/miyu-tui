@@ -15,6 +15,8 @@ command_not_found_handle() {
     esac
     # $$ 是这个 bash（这里在子 shell 里也不变）：后台回报交回它。
     printf '%s' "$*" | __miyu_shellhook say --shell bash --shell-pid $$
+    # 程序收工时不亮光标（亮早了停在最后一行末尾闪一下），这里亮。
+    printf '\e[?25h'
     # 收尾行和下一个提示符之间空一行（fish 的提示符自带，bash 的不一定：2026-10-20 验收贴在一起）。
     printf '\n'
     return 127
@@ -25,5 +27,6 @@ command_not_found_handle() {
 # 那时都不在画提示符：直接印。所以停在提示符上来的回报，要等你下一次回车，印在那条命令前面。
 __miyu_report() {
     __miyu_shellhook report --shell bash --shell-pid $$ && printf '\n'
+    printf '\e[?25h'
 }
 trap '__miyu_report' USR1

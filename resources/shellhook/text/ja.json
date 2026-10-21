@@ -11,7 +11,7 @@
   "status_foreign": "{shell}：{path} は shellhook が書いたものではありません",
   "status_stale": "{shell}：インストール済み（{path}）ですが、呼び出すプログラム {program} がありません。もう一度インストールしてください",
   "no_program": "スクリプトから呼び出すプログラムが見つかりません：{program}",
-  "renewed": "前回の発言は {ago} 前のため、新しいセッションを開始しました",
+  "renewed": "前回の発言は {ago}前です。キャッシュ切れによる余計な費用を防ぐため、新しいセッションを開始しました",
   "units": {
     "minutes": "{n} 分",
     "hours": "{n} 時間",
@@ -26,5 +26,6 @@
   "slash_effort": "思考の強さ：{level}",
   "slash_sessions": "以降は「{title}」に送ります",
   "slash_persona": "今後新しく開くターミナルセッションはペルソナ「{name}」を使います",
-  "slash_preset": "今後新しく開くターミナルセッションはプリセット「{name}」を使います"
+  "slash_preset": "今後新しく開くターミナルセッションはプリセット「{name}」を使います",
+  "slash_ambiguous": "「{query}」という名前はありません。近いもの：{names}（正式名を入力してください）"
 }
