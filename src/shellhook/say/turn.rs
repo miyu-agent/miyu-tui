@@ -106,8 +106,9 @@ impl Turn {
 
     /// 排哪几条（`view.rs`）。
     pub fn scope(&self) -> super::view::Scope {
-        // 交给核心的斜杠命令只回了一句（`/dream` 的回执、被拒）：正文里只剩那一句，照全部印。
-        if self.slash && self.ours.is_none() && self.woken.is_empty() {
+        // 交给核心的斜杠命令只回了一句（`/dream` 的回执、被拒）：正文里只剩那一句，照全部印。回执到之前正文里是读回来的那一页，
+        // 什么都不画（2026-10-22 验收：`/dream` 整理时把前几轮全画了出来）。
+        if self.slash && self.done && self.ours.is_none() && self.woken.is_empty() {
             return super::view::Scope::All;
         }
         super::view::Scope::Turns(
