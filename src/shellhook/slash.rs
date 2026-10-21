@@ -29,6 +29,10 @@ pub fn run(
         Err(e) => return Some(Err(e)),
     };
     let line = line.trim();
+    // shell 里才有的：用终端界面打开终端会话（2026-10-21 项目主人：「有没有可能，用 TUI 方式进入这个终端集成会话」）。
+    if line == "/tui" {
+        return Some(open_tui(&config));
+    }
     let (spec, args) = match config.commands.read(line) {
         Line::Command(spec, args) => (spec, args),
         // 终端界面不收参数、shell 里收的（`/model 名字`：不弹列表直接换）。
@@ -93,6 +97,45 @@ fn config_page() -> io::Result<ExitCode> {
 
 /// shell 里能接参数、不弹列表直接改的（2026-10-20 项目主人：「直接通过 cli 改也行啊」）。
 const WITH_ARGS: [&str; 5] = ["model", "theme", "effort", "persona", "preset"];
+
+/// `/tui`：问到终端会话，起同一个程序 `--resume` 它（全屏的终端界面），退出了回到 shell。
+fn open_tui(config: &crate::config::Config) -> io::Result<ExitCode> {
+    let (sender, incoming) = std::sync::mpsc::channel();
+    let core = crate::core::spawn(
+        config.layout.reconnect_ms,
+        crate::core::Start::Bare,
+        move |update| sender.send(update).is_ok(),
+    );
+    let cwd = std::env::current_dir()
+        .ok()
+        .map(|d| d.to_string_lossy().into_owned());
+    core.send(crate::core::Command::Ask {
+        tag: 1,
+        method: "session.terminal",
+        params: serde_json::json!({ "cwd": cwd }),
+    });
+    let session = loop {
+        match incoming.recv_timeout(std::time::Duration::from_secs(15)) {
+            Ok(crate::core::Update::Answer { tag: 1, result }) => match result {
+                Ok(found) => break found["session"].as_str().unwrap_or_default().to_string(),
+                Err(refusal) => return tell(&refusal.message),
+            },
+            Ok(crate::core::Update::NoCoreBin | crate::core::Update::Failed(_)) | Err(_) => {
+                return Err(io::Error::other("can't reach the core"));
+            }
+            Ok(_) => {}
+        }
+    };
+    drop(core);
+    let status = std::process::Command::new(std::env::current_exe()?)
+        .args(["--resume", &session])
+        .status()?;
+    Ok(if status.success() {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    })
+}
 
 /// 说一句为什么没办，退出码 1。
 fn tell(text: &str) -> io::Result<ExitCode> {

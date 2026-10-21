@@ -1,7 +1,8 @@
 //! `shellhook paste`：shell 里按 `Ctrl+V`（图纸 `shellhook.md`「粘贴」，同终端界面「输入框」第 11、12 条）：程序自己读
 //! 剪贴板，复制的文件、图收成块（图是附件），大段的字收成 `[已粘贴 14 行]`，别的照字。块上的字印到标准输出，脚本插进
 //! 命令行；块的原文、附件记在这个 shell 的一份里（`<缓存目录>/shellhook/<shell>-pasted.json`），说这句话时（`say`）照
-//! 命令行里还在的块换回原文、带上附件，说完清掉。收块的规矩、写法和全屏同一份（`input::InputBox`）。
+//! 命令行里还在的块换回原文、带上附件。那一份留到 shell 退出：从历史里调出来再发照样认得出块，附件的编号在这个 shell 里
+//! 一直往下排、不从 1 重来（同终端界面整个会话往下排）。收块的规矩、写法和全屏同一份（`input::InputBox`）。
 
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -47,6 +48,7 @@ fn load(shell: u32) -> Vec<Stored> {
 ///
 /// 读配置、写不进记着的那一份、写标准输出失败。
 pub fn run(shell: u32) -> io::Result<ExitCode> {
+    sweep();
     let config = super::say::config()?;
     let mut stored = load(shell);
     let mut input = InputBox::new(1, std::time::Duration::ZERO);
@@ -114,29 +116,37 @@ fn grab(input: &mut InputBox, shell: u32, config: &Config) -> bool {
     false
 }
 
-/// 说这一句（`say`）：照命令行里还在的块换回原文，带上附件；记着的那一份清掉。没贴过的照原样。
+/// 说这一句（`say`）：照字里还在的块换回原文、带上附件。记着的那一份留着（发出去的这一句进了 shell 的历史，从历史里
+/// 调出来再发照样认得出块，2026-10-21 项目主人：「占位块历史应当从历史调出来时还是有正常功能的占位块」），shell
+/// 退出以后清（[`sweep`]）。没贴过的照原样。
 pub fn take(shell: u32, text: &str) -> (String, Vec<PathBuf>) {
     let stored = load(shell);
-    if let Some(path) = store(shell) {
-        drop(std::fs::remove_file(path));
-    }
     if stored.is_empty() {
         return (text.to_string(), Vec::new());
     }
-    let draft = Draft::rebind(text, &before(&stored));
+    let draft = found(text, &stored);
     (draft.expand(), draft.attachments())
 }
 
-/// 记着的几块拼成一份（块上的字一个接一个），好照它在命令行的字里认回来（`Draft::rebind`）。
-fn before(stored: &[Stored]) -> Draft {
-    let mut text = String::new();
+/// 字里认出记着的块：从前往后扫，哪个块上的字在这里起头就是它（同一个样子贴过几次的认最近的那次）。块的先后不论：从历史
+/// 调出来的那句，块不一定照贴的先后。
+fn found(text: &str, stored: &[Stored]) -> Draft {
     let mut blocks = Vec::new();
-    for s in stored {
-        let start = text.len();
-        text.push_str(&s.label);
+    let mut at = 0;
+    while at < text.len() {
+        let here = &text[at..];
+        let hit = stored
+            .iter()
+            .rev()
+            .find(|s| !s.label.is_empty() && here.starts_with(s.label.as_str()));
+        let Some(s) = hit else {
+            at += here.chars().next().map_or(1, char::len_utf8);
+            continue;
+        };
+        let end = at + s.label.len();
         blocks.push(Block {
-            start,
-            end: text.len(),
+            start: at,
+            end,
             text: s.text.clone(),
             attachment: s
                 .file
@@ -145,15 +155,39 @@ fn before(stored: &[Stored]) -> Draft {
                 .map(|(file, kind)| Attachment { file, kind }),
             path: s.path.clone(),
         });
-        text.push('\n');
+        at = end;
     }
-    Draft { text, blocks }
+    Draft {
+        text: text.to_string(),
+        blocks,
+    }
+}
+
+/// 清掉已经退出了的 shell 记着的那几份（`<shell>-pasted.json`）。看不了进程在不在的平台不清。
+fn sweep() {
+    let Some(dir) = super::say::spool::dir() else {
+        return;
+    };
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let Some(pid) = name.strip_suffix("-pasted.json") else {
+            continue;
+        };
+        if pid.parse::<u32>().is_ok()
+            && cfg!(target_os = "linux")
+            && !std::path::Path::new(&format!("/proc/{pid}")).exists()
+        {
+            drop(std::fs::remove_file(entry.path()));
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Stored, before};
-    use crate::input::Draft;
+    use super::{Stored, found};
 
     #[test]
     fn blocks_still_on_the_command_line_come_back_as_their_text_and_files() {
@@ -173,14 +207,18 @@ mod tests {
                 path: None,
             },
         ];
-        let draft = Draft::rebind("看看 [已粘贴 14 行] 和 [图片 1]", &before(&stored));
+        let draft = found("看看 [已粘贴 14 行] 和 [图片 1]", &stored);
         assert_eq!(draft.expand(), "看看 很长的日志 和 [图片 1]");
         assert_eq!(
             draft.attachments(),
             vec![std::path::PathBuf::from("/tmp/a.png")]
         );
         // 命令行里删掉了的块不要。
-        let draft = Draft::rebind("只说这个", &before(&stored));
+        let draft = found("只说这个", &stored);
         assert!(draft.attachments().is_empty());
+        // 从历史里调出来的：块的先后和贴的不一样也认得出。
+        let draft = found("[图片 1] 先说图，再看 [已粘贴 14 行]", &stored);
+        assert_eq!(draft.expand(), "[图片 1] 先说图，再看 很长的日志");
+        assert_eq!(draft.attachments().len(), 1);
     }
 }

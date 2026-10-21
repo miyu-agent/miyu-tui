@@ -195,6 +195,10 @@ impl Picker for PersonaPick {
         width: u16,
         max: usize,
     ) -> (Chrome, Vec<Line<'static>>) {
+        // 带了参数的不弹框，等回来直接定（2026-10-21 项目主人：原来先画一下框又收掉，看着像开了一下终端界面）。
+        if self.given.is_some() {
+            return (Chrome::new("", Vec::new()), Vec::new());
+        }
         let list = self.list.as_deref().unwrap_or_default();
         let current = self.current.as_deref().or(self.default.as_deref());
         let (chrome, lines, _) = crate::ui::persona_list::lines(

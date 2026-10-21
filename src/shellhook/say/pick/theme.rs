@@ -126,6 +126,10 @@ impl Picker for ThemePick {
         width: u16,
         max: usize,
     ) -> (Chrome, Vec<Line<'static>>) {
+        // 带了参数的不弹框，等回来直接定（2026-10-21 项目主人：原来先画一下框又收掉，看着像开了一下终端界面）。
+        if self.given.is_some() {
+            return (Chrome::new("", Vec::new()), Vec::new());
+        }
         let before = self.before.as_deref().unwrap_or_default();
         let (chrome, lines, _) =
             crate::ui::themes::lines(config, (&COLORS[..], before), self.selected, width, max);

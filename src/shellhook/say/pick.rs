@@ -68,6 +68,30 @@ pub fn result(text: &str) -> Line<'static> {
     ))
 }
 
+/// 留的那一行放不下的折成几行，续行和第一行一样缩进两格（2026-10-21 项目主人：长的那一行原来不折，截掉了）。
+fn wrapped(line: &Line<'static>, width: u16) -> Vec<Line<'static>> {
+    use unicode_width::UnicodeWidthChar;
+    let style = line.spans.first().map(|s| s.style).unwrap_or_default();
+    let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
+    let body = text.strip_prefix("  ").unwrap_or(&text);
+    let room = usize::from(width).saturating_sub(2).max(1);
+    let mut out = Vec::new();
+    let mut row = String::new();
+    let mut used = 0;
+    for c in body.chars() {
+        let w = c.width().unwrap_or(0);
+        if used + w > room && !row.is_empty() {
+            out.push(Line::styled(format!("  {row}"), style));
+            row.clear();
+            used = 0;
+        }
+        row.push(c);
+        used += w;
+    }
+    out.push(Line::styled(format!("  {row}"), style));
+    out
+}
+
 /// 框两边各让几格（同终端界面的框）。
 const SIDE: u16 = 2;
 
@@ -154,7 +178,11 @@ impl Session {
         turn.look.apply(&self.config);
         let width = size().0;
         let settled = match end {
-            Picked::Done(Some(line)) => self.painter.lines(width, &[Line::default(), line])?,
+            Picked::Done(Some(line)) => {
+                let mut lines = vec![Line::default()];
+                lines.extend(wrapped(&line, width));
+                self.painter.lines(width, &lines)?
+            }
             Picked::Show(chrome, lines) => {
                 let mut settled = vec![String::new()];
                 settled.extend(self.boxed(width, chrome, lines)?);

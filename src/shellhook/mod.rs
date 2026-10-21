@@ -245,6 +245,12 @@ fn say(leftover: Option<PathBuf>, shell: Option<u32>, redo: bool, words: &Words)
         eprintln!("{e}");
         return ExitCode::FAILURE;
     }
+    // 那句话是从管道交来的：读完以后标准输入接回终端，问终端颜色、读按键才读得到（2026-10-21 项目主人：「TUI 里是真色彩。
+    // 终端里不是」——问颜色的看标准输入不是终端就不问，退回 16 色）。接不上的照旧，只是问不到颜色。
+    #[cfg(unix)]
+    if let Err(e) = stdin_to_tty() {
+        eprintln!("{e}");
+    }
     match say::run(
         say::Ask {
             text,
@@ -260,6 +266,21 @@ fn say(leftover: Option<PathBuf>, shell: Option<u32>, redo: bool, words: &Words)
             ExitCode::FAILURE
         }
     }
+}
+
+/// 标准输入不是终端（管道交来的）的接回终端（`/dev/tty`）。
+#[cfg(unix)]
+fn stdin_to_tty() -> io::Result<()> {
+    use std::io::IsTerminal;
+    if io::stdin().is_terminal() {
+        return Ok(());
+    }
+    let tty = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/tty")?;
+    rustix::stdio::dup2_stdin(&tty)?;
+    Ok(())
 }
 
 #[cfg(test)]
