@@ -42,6 +42,8 @@ pub struct Words {
     pub slash_theme: String,
     /// `/effort` 改好了（`{level}`）。
     pub slash_effort: String,
+    /// `/restore` 恢复了。
+    pub slash_restored: String,
     /// `/sessions` 换好了（`{title}`）。
     pub slash_sessions: String,
     /// `/persona`、`/preset` 写好了（`{name}`）。

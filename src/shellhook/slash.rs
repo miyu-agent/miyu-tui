@@ -2,7 +2,7 @@
 //! `commands::Commands::read` 认），作用在终端会话上。在 fish 里敲 `/models`（`say` 先问这里），或者 `miyu shellhook models`。
 //! 表里没有的 `/名字` 照一句话交给核心（核心认的命令模板由它办，同终端界面）。
 //!
-//! 和终端界面不一样的：`config` 打开终端界面的配置页（`--page config`）；`exit`、`help`、`language` 不做。别的还在做。
+//! 和终端界面不一样的：`config` 打开终端界面的配置页（`--page config`）；`exit`、`language` 不做；`/clear` 和表里没有的一样整行交给核心。
 
 use std::io::{self, Write};
 use std::process::ExitCode;
@@ -47,8 +47,14 @@ pub fn run(
         }
         Line::Unknown => return None,
     };
+    if TO_CORE.contains(&spec.name.as_str()) {
+        return None;
+    }
     Some(match spec.name.as_str() {
         "config" => config_page(),
+        "undo" => act(crate::shellhook::say::Act::Revert, words, hooked),
+        "restore" => act(crate::shellhook::say::Act::Unrevert, words, hooked),
+        "recap" => act(crate::shellhook::say::Act::Recap, words, hooked),
         "help" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Help, words, hooked),
         "new" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Fresh, words, hooked),
         "model" => {
@@ -95,6 +101,18 @@ fn config_page() -> io::Result<ExitCode> {
     })
 }
 
+/// 终端界面也是整行交给核心（`command.run`）的：照说话那样发，印核心的回执（同表里没有的）。
+const TO_CORE: [&str; 1] = ["clear"];
+
+/// 这一行整行交给核心：终端界面不认的（核心的命令模板、扩展的、`/dream`），和 [`TO_CORE`] 里的。
+pub fn to_core(commands: &crate::commands::Commands, line: &str) -> bool {
+    match commands.read(line.trim()) {
+        Line::Unknown => true,
+        Line::Command(spec, _) => TO_CORE.contains(&spec.name.as_str()),
+        Line::Talk => false,
+    }
+}
+
 /// shell 里能接参数、不弹列表直接改的（2026-10-20 项目主人：「直接通过 cli 改也行啊」）。
 const WITH_ARGS: [&str; 5] = ["model", "theme", "effort", "persona", "preset"];
 
@@ -135,6 +153,11 @@ fn open_tui(config: &crate::config::Config) -> io::Result<ExitCode> {
     } else {
         ExitCode::FAILURE
     })
+}
+
+/// 交给核心办一件（`/undo`、`/restore`、`/recap`），照它回的印。
+fn act(which: crate::shellhook::say::Act, words: &Words, hooked: bool) -> io::Result<ExitCode> {
+    crate::shellhook::say::pick(crate::shellhook::say::Pick::Run(which), words, hooked)
 }
 
 /// 说一句为什么没办，退出码 1。

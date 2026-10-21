@@ -236,7 +236,13 @@ impl Session {
         ratatui::crossterm::execute!(io::stdout(), DisableFocusChange)
     }
 
-    fn view<'a>(&'a self, turn: &'a Turn, width: u16, height: u16, frame: usize) -> View<'a> {
+    pub(super) fn view<'a>(
+        &'a self,
+        turn: &'a Turn,
+        width: u16,
+        height: u16,
+        frame: usize,
+    ) -> View<'a> {
         View {
             config: &self.config,
             human: &turn.human,

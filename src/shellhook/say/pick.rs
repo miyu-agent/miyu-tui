@@ -8,6 +8,7 @@ pub mod fresh;
 pub mod help;
 pub mod model;
 pub mod persona;
+pub mod run;
 pub mod sessions;
 pub mod status;
 pub mod theme;
@@ -34,6 +35,8 @@ pub enum Picked {
     Done(Option<Line<'static>>),
     /// 只看的（`/status`）：印这一个框就完。
     Show(Chrome, Vec<Line<'static>>),
+    /// 照借来的那一轮的正文印（`/undo` 的撤销那一行、`/recap` 的回顾：核心推进正文的，照说话时的样子）。
+    Print,
 }
 
 /// 一种列表。
@@ -155,12 +158,12 @@ impl Session {
             if matches!(end, Picked::Stay) {
                 end = picker.ready(turn, &self.core, &self.config);
             }
-            // 连不上核心、会话没了：不选了。
-            if turn.done {
-                break Picked::Done(None);
-            }
+            // 先看定了没有（核心拒了的原话也在这里），再看连不上核心、会话没了。
             if !matches!(end, Picked::Stay) {
                 break end;
+            }
+            if turn.done {
+                break Picked::Done(None);
             }
             turn.look.apply(&self.config);
             let (width, height) = size();
@@ -190,6 +193,15 @@ impl Session {
                 let mut settled = vec![String::new()];
                 settled.extend(self.boxed(width, chrome, lines)?);
                 settled
+            }
+            Picked::Print => {
+                // 只印核心刚推进来的那一条（撤销那一行、回顾）：读回来的那一页前面几轮不再印一遍。
+                let last = turn.transcript.entries.pop();
+                turn.transcript.entries = last.into_iter().collect();
+                let (_, height) = size();
+                let view = self.view(turn, width, height, 0);
+                let lines = view.lines(&turn.transcript, super::view::Scope::All, false);
+                self.painter.lines(width, &lines)?
             }
             Picked::Done(None) | Picked::Stay => Vec::new(),
         };

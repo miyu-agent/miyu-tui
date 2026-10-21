@@ -15,38 +15,10 @@ const TERMINAL_TAG: u64 = 2;
 /// 同上：配色那几项。
 const THEME_TAG: u64 = 3;
 
-/// 界面语言照 `ui.language`（同全屏 `app/language.rs`）：写了一种语言的换成它，`auto` 照系统的；界面上的字、运行状态行的
-/// 词、工具的显示名都换。
-fn language(code: &str, config: &mut Config, core: &Core) {
-    let next = match config.language_table.find(code) {
-        Some(language) if code != "auto" => language,
-        _ => {
-            let table = &config.language_table;
-            table.detect(|name| std::env::var(name).ok())
-        }
-    };
-    if next == config.language {
-        return;
-    }
-    if let Ok(fresh) = Config::load(&next, code == "auto") {
-        config.text = fresh.text;
-        config.pulse = fresh.pulse;
-        config.language = next.clone();
-        core.send(Command::FetchHuman(next.code().to_string()));
-    }
-}
-
 /// 主循环等的东西。
 pub enum Incoming {
     Core(Update),
     Key(Event),
-}
-
-/// 盖在 `layout`、`timeline` 上要读的几项：时间线的、按键模式（同全屏 `apply_layout_settings`；吉祥物 shell 里不画）。
-fn layout_keys() -> Vec<&'static str> {
-    let mut keys = crate::config::Timeline::KEYS.to_vec();
-    keys.push(crate::config::Layout::KEYS_KEY);
-    keys
 }
 
 /// 这一轮的状态。
@@ -73,6 +45,10 @@ pub struct Turn {
     pub files: Vec<std::path::PathBuf>,
     /// 这句话替换上一轮重来（`/edit` 改过的）。
     pub redo: bool,
+    /// `/redo`：上一轮原样重来，不带字。
+    pub bare_redo: bool,
+    /// 终端界面不认的斜杠命令（核心的命令模板、扩展的）：整行交给核心的 `command.run`，不当一句话发。
+    pub slash: bool,
     /// 这一句在哪个目录说。
     cwd: Option<String>,
     /// 接上了终端会话、在等它最新的一页读回来：读完再发，补发的那一页里同样的话不会认成这一句。
@@ -130,6 +106,10 @@ impl Turn {
 
     /// 排哪几条（`view.rs`）。
     pub fn scope(&self) -> super::view::Scope {
+        // 交给核心的斜杠命令只回了一句（`/dream` 的回执、被拒）：正文里只剩那一句，照全部印。
+        if self.slash && self.ours.is_none() && self.woken.is_empty() {
+            return super::view::Scope::All;
+        }
         super::view::Scope::Turns(
             self.ours
                 .into_iter()
@@ -158,6 +138,8 @@ impl Turn {
             pending: (!text.is_empty()).then(|| text.clone()),
             files: Vec::new(),
             redo: false,
+            bare_redo: false,
+            slash: false,
             cwd,
             paging: false,
             sent: false,
@@ -189,6 +171,17 @@ impl Turn {
     fn send(&mut self, core: &Core) {
         if let Some(text) = self.pending.take() {
             self.sent = true;
+            if self.bare_redo {
+                core.send(Command::Redo {
+                    text: None,
+                    files: None,
+                });
+                return;
+            }
+            if self.slash {
+                core.send(Command::Slash(text));
+                return;
+            }
             // `/edit` 改过的：替换上一轮重来（附件没贴新的照原来的）。
             if self.redo {
                 core.send(Command::Redo {
@@ -226,7 +219,7 @@ impl Turn {
                 core.send(Command::Ask {
                     tag: TIMELINE_TAG,
                     method: "config.get",
-                    params: json!({ "keys": layout_keys() }),
+                    params: json!({ "keys": super::settings::layout_keys() }),
                 });
                 return;
             }
@@ -259,7 +252,7 @@ impl Turn {
                 self.send(core);
             }
             Update::HeadConfig(head) => {
-                language(&head.language, config, core);
+                super::settings::language(&head.language, config, core);
                 super::pack::Pack::ask(core);
                 core.send(Command::Ask {
                     tag: THEME_TAG,
@@ -270,7 +263,7 @@ impl Turn {
                 core.send(Command::Ask {
                     tag: TIMELINE_TAG,
                     method: "config.get",
-                    params: json!({ "keys": layout_keys() }),
+                    params: json!({ "keys": super::settings::layout_keys() }),
                 });
             }
             Update::Answer { tag, result } if tag == TIMELINE_TAG => {
@@ -327,6 +320,20 @@ impl Turn {
             | Update::Missing(_)
             | Update::SessionGone(_)) => {
                 self.transcript.update(update, &config.text);
+                self.done = true;
+            }
+            // 交给核心的那一行办完了：有回执的（`/dream` 这类不开轮的）写一行收工；没回执的（命令模板）等它开的那一轮。
+            Update::CommandRan { said, .. } if self.slash && self.ours.is_none() => {
+                if !said.is_empty() {
+                    self.transcript.entries.clear();
+                    self.transcript.note(crate::transcript::Kind::Note, said);
+                    self.done = true;
+                }
+            }
+            Update::SlashRefused { message, .. } if self.slash => {
+                let text = config.text.refused.replace("{reason}", &message);
+                self.transcript.entries.clear();
+                self.transcript.note(crate::transcript::Kind::Error, text);
                 self.done = true;
             }
             update @ (Update::Refused { .. } | Update::Unsent { .. }) => {

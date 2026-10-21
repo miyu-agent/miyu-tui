@@ -11,8 +11,10 @@ mod look;
 mod pack;
 mod paint;
 mod pick;
+pub use pick::run::Act;
 pub mod report;
 mod session;
+mod settings;
 pub mod spool;
 mod terminal;
 mod turn;
@@ -56,8 +58,11 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     if text.trim().is_empty() {
         return Ok(ExitCode::SUCCESS);
     }
+    // `/redo`：上一轮原样重来，照说话那样画重来的那一轮。
+    let bare_redo = text.trim() == "/redo";
     // 终端界面的斜杠命令（`/models`）：照命令办，不当一句话（`shellhook/slash.rs`）。
     if text.starts_with('/')
+        && !bare_redo
         && let Some(done) =
             crate::shellhook::slash::run(&text, words, ask.leftover.as_deref(), ask.shell.is_some())
     {
@@ -74,9 +79,15 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     let cwd = std::env::current_dir()
         .ok()
         .map(|d| d.to_string_lossy().into_owned());
+    let turn_text = text.clone();
     let mut turn = Turn::new(text, cwd, look);
     turn.files = files;
     turn.redo = ask.redo;
+    turn.bare_redo = bare_redo;
+    // 终端界面不认的斜杠命令（核心的命令模板、扩展的、`/dream`）：整行交给核心（同终端界面 `app/catalog.rs`）。
+    turn.slash = !bare_redo
+        && turn_text.starts_with('/')
+        && crate::shellhook::slash::to_core(&session.config.commands, &turn_text);
     turn.ask_terminal(&session.core);
     session.drive(&mut turn, |t| {
         t.renewed.map(|since| renewed_line(since, words))
@@ -138,6 +149,8 @@ pub enum Pick<'a> {
     Fresh,
     /// `/help`。
     Help,
+    /// `/undo`、`/restore`、`/recap`。
+    Run(pick::run::Act),
     /// `/edit`：上一句写进这个文件，脚本放回命令行。
     Edit(Option<&'a std::path::Path>),
 }
@@ -163,6 +176,7 @@ pub fn pick(which: Pick<'_>, words: &Words, hooked: bool) -> io::Result<ExitCode
         Pick::Usage => Box::new(pick::usage::UsageShow::new()),
         Pick::Fresh => Box::new(pick::fresh::FreshPick::new(words)),
         Pick::Help => Box::new(pick::help::HelpShow),
+        Pick::Run(act) => Box::new(pick::run::RunPick::new(act, words)),
         Pick::Edit(leftover) => Box::new(pick::edit::EditPick::new(leftover)),
         Pick::Persona(kind, given) => Box::new(pick::persona::PersonaPick::new(
             kind,

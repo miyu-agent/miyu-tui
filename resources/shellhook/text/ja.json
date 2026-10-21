@@ -37,5 +37,6 @@
   "doctor_colors_ok": "ターミナルの色を取得できます：ターミナルに合わせる配色はそこからトゥルーカラーを作ります",
   "doctor_colors_bad": "ターミナルの色を取得できません：ターミナルに合わせる配色は 16 色だけになります（tmux などはパススルーが必要）",
   "doctor_clip_ok": "Ctrl+V は {tool} でクリップボードを読みます",
-  "doctor_clip_bad": "クリップボードを読むコマンドがありません（wl-paste、xclip、xsel）：Ctrl+V はターミナル自身の貼り付けだけになります"
+  "doctor_clip_bad": "クリップボードを読むコマンドがありません（wl-paste、xclip、xsel）：Ctrl+V はターミナル自身の貼り付けだけになります",
+  "slash_restored": "取り消したやり取りを復元しました"
 }

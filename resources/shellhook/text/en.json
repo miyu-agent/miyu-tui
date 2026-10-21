@@ -37,5 +37,6 @@
   "doctor_colors_ok": "The terminal's colors can be read: following the terminal builds a truecolor palette from them",
   "doctor_colors_bad": "Can't read the terminal's colors: following the terminal uses its 16 colors only (tmux and the like need passthrough)",
   "doctor_clip_ok": "Ctrl+V reads the clipboard with {tool}",
-  "doctor_clip_bad": "No clipboard command found (wl-paste, xclip, xsel): Ctrl+V can only use the terminal's own paste"
+  "doctor_clip_bad": "No clipboard command found (wl-paste, xclip, xsel): Ctrl+V can only use the terminal's own paste",
+  "slash_restored": "Brought back the turn you just undid"
 }
