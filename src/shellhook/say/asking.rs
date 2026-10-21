@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::Rect;
-use ratatui::widgets::{Block, BorderType};
+use ratatui::widgets::Block;
 use serde_json::json;
 
 use crate::config::Config;
@@ -127,6 +127,8 @@ impl Asking {
         }
         // 没在写字时 `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面，vim 的上下）。
         let key = crate::app::vim_step(key, !self.drawers.editing());
+        // 按键模式开着、没在写字：`j`、`k` 也当 `↓`、`↑`（同全屏）。
+        let key = crate::app::vim::plain(key, config.layout.vim && !self.drawers.editing());
         let newline = self.drawers.editing() && key.code == KeyCode::Char('j');
         if key.modifiers.contains(KeyModifiers::CONTROL) && !newline {
             return false;
@@ -213,9 +215,11 @@ impl Asking {
         let Some(d) = self.drawers.current.as_mut() else {
             return;
         };
+        // 框线照主题的 `frame.boxes`（出厂圆角，同全屏的框）。
+        let set = crate::sheet::read(|s| s.frame.boxes.set());
         frame.render_widget(
             Block::bordered()
-                .border_type(BorderType::Rounded)
+                .border_set(set)
                 .border_style(crate::theme::dim()),
             area,
         );
@@ -232,6 +236,7 @@ impl Asking {
             d,
             &config.text.drawer,
             &config.layout.drawer_preview,
+            config.layout.vim,
             &mut caret,
         );
     }

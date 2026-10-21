@@ -1,7 +1,7 @@
 //! `/model`（同终端界面「配置与模型」第 1 条，列表、筛、画法用它的 `model_list`）：换终端会话的模型，也记成新会话的默认
 //! （同终端界面，2026-10-02 项目主人定）。`/model 名字` 不弹列表，照名字筛出的第一个能用的直接换。
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::text::Line;
 use serde_json::json;
 
@@ -110,8 +110,21 @@ impl Picker for ModelPick {
         }
     }
 
-    fn key(&mut self, key: KeyEvent, turn: &mut Turn, core: &Core, _config: &Config) -> Picked {
-        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+    fn typing(&self) -> bool {
+        self.list.typing
+    }
+
+    fn key(&mut self, key: KeyEvent, turn: &mut Turn, core: &Core, config: &Config) -> Picked {
+        // 搜索那一截照终端界面（按键模式按 `/` 才搜，`list_search`）。
+        let query = self.list.query.clone();
+        match crate::list_search::key(config.layout.vim, &mut self.list.typing, &query, key) {
+            crate::list_search::Step::Query(query) => {
+                self.list.typed(query);
+                return Picked::Stay;
+            }
+            crate::list_search::Step::Kept => return Picked::Stay,
+            crate::list_search::Step::Pass => {}
+        }
         match key.code {
             KeyCode::Esc => return Picked::Done(None),
             KeyCode::Up => self.list.step(false),
@@ -120,15 +133,6 @@ impl Picker for ModelPick {
                 if let Some(choice) = self.list.picked().cloned() {
                     return self.choose(&choice, turn, core);
                 }
-            }
-            KeyCode::Backspace => {
-                let mut query = self.list.query.clone();
-                query.pop();
-                self.list.typed(query);
-            }
-            KeyCode::Char(c) if !ctrl => {
-                let query = format!("{}{c}", self.list.query);
-                self.list.typed(query);
             }
             _ => {}
         }

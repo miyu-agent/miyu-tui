@@ -8,6 +8,7 @@
 mod asking;
 pub mod follow;
 mod look;
+mod pack;
 mod paint;
 mod pick;
 pub mod report;

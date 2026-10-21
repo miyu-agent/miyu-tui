@@ -42,6 +42,13 @@ pub enum Incoming {
     Key(Event),
 }
 
+/// 盖在 `layout`、`timeline` 上要读的几项：时间线的、按键模式（同全屏 `apply_layout_settings`；吉祥物 shell 里不画）。
+fn layout_keys() -> Vec<&'static str> {
+    let mut keys = crate::config::Timeline::KEYS.to_vec();
+    keys.push(crate::config::Layout::KEYS_KEY);
+    keys
+}
+
 /// 这一轮的状态。
 pub struct Turn {
     pub transcript: Transcript,
@@ -52,6 +59,8 @@ pub struct Turn {
     pub look: super::look::Look,
     /// 后台任务、待办（同全屏的任务表）。
     pub board: crate::jobs::Board,
+    /// 主题包（`pack.rs`）：读 `tui.look`、换上。
+    pack: super::pack::Pack,
     /// 这一轮待办变过：收尾时把最后的样子印出来。
     pub todos_changed: bool,
     /// 这一轮派出去的后台任务（不算前台跑的子代理）：收工时还没结束的交给盯后台的进程（`follow.rs`）。
@@ -140,6 +149,7 @@ impl Turn {
             human: Human::default(),
             look,
             board: crate::jobs::Board::default(),
+            pack: super::pack::Pack::default(),
             todos_changed: false,
             jobs: Vec::new(),
             ended_jobs: Vec::new(),
@@ -197,6 +207,19 @@ impl Turn {
             update => update,
         };
         self.watch(&update);
+        match self.pack.update(&update, config, core) {
+            super::pack::Applied::No => {}
+            super::pack::Applied::Yes => return,
+            // 主题包换上了，`timeline` 照它重读：时间线的配置项再读一遍盖上（同全屏 `apply_layout_settings`）。
+            super::pack::Applied::Retimeline => {
+                core.send(Command::Ask {
+                    tag: TIMELINE_TAG,
+                    method: "config.get",
+                    params: json!({ "keys": layout_keys() }),
+                });
+                return;
+            }
+        }
         if let Update::Push(push) = &update {
             let owner = self.transcript.session.clone().unwrap_or_default();
             if self.asking.push(&owner, push, &mut self.transcript, config) {
@@ -226,6 +249,7 @@ impl Turn {
             }
             Update::HeadConfig(head) => {
                 language(&head.language, config, core);
+                super::pack::Pack::ask(core);
                 core.send(Command::Ask {
                     tag: THEME_TAG,
                     method: "config.get",
@@ -235,12 +259,13 @@ impl Turn {
                 core.send(Command::Ask {
                     tag: TIMELINE_TAG,
                     method: "config.get",
-                    params: json!({ "keys": crate::config::Timeline::KEYS }),
+                    params: json!({ "keys": layout_keys() }),
                 });
             }
             Update::Answer { tag, result } if tag == TIMELINE_TAG => {
                 if let Ok(got) = result {
                     config.timeline.apply(&got);
+                    config.layout.apply_keys(&got);
                 }
             }
             Update::Answer { tag, result } if tag == THEME_TAG => {

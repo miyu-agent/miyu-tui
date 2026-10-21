@@ -1,7 +1,7 @@
 //! `/sessions`（同终端界面「会话列表」，列表、筛、画法用它的 `session_list`）：选一个当终端会话（`session.set_terminal`），
 //! 之后在 shell 里说的话进它。只换指向：置顶、删除这些到终端界面去做。
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::text::Line;
 use serde_json::json;
 
@@ -46,8 +46,21 @@ impl Picker for SessionsPick {
         Picked::Stay
     }
 
-    fn key(&mut self, key: KeyEvent, turn: &mut Turn, core: &Core, _config: &Config) -> Picked {
-        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+    fn typing(&self) -> bool {
+        self.list.typing
+    }
+
+    fn key(&mut self, key: KeyEvent, turn: &mut Turn, core: &Core, config: &Config) -> Picked {
+        // 搜索那一截照终端界面（按键模式按 `/` 才搜，`list_search`）。
+        let query = self.list.query.clone();
+        match crate::list_search::key(config.layout.vim, &mut self.list.typing, &query, key) {
+            crate::list_search::Step::Query(query) => {
+                self.list.typed(query);
+                return Picked::Stay;
+            }
+            crate::list_search::Step::Kept => return Picked::Stay,
+            crate::list_search::Step::Pass => {}
+        }
         match key.code {
             KeyCode::Esc => return Picked::Done(None),
             KeyCode::Up => self.list.step(false),
@@ -72,15 +85,6 @@ impl Picker for SessionsPick {
                     &[("title", &title)],
                 ))));
             }
-            KeyCode::Backspace => {
-                let mut query = self.list.query.clone();
-                query.pop();
-                self.list.typed(query);
-            }
-            KeyCode::Char(c) if !ctrl => {
-                let query = format!("{}{c}", self.list.query);
-                self.list.typed(query);
-            }
             _ => {}
         }
         Picked::Stay
@@ -102,7 +106,15 @@ impl Picker for SessionsPick {
         };
         let (chrome, lines, _) =
             crate::ui::session_list::lines(&self.list, marks, &here, config, width, max, 0);
-        // 提示只写 shell 里有的键：勾选、置顶、删除到终端界面去做（同 `/model` 那一句）。
-        (chrome.hint(&config.text.model_panel.hint), lines)
+        // 提示只写 shell 里有的键：勾选、置顶、删除到终端界面去做（照 `/model` 的几句，按键模式、在搜的各一句）。
+        let texts = &config.text.model_panel;
+        let hint = crate::list_search::hint(
+            config.layout.vim,
+            self.list.typing,
+            &texts.hint,
+            &texts.hint_vim,
+            &texts.searching,
+        );
+        (chrome.hint(hint), lines)
     }
 }

@@ -44,6 +44,10 @@ pub trait Picker {
     fn ready(&mut self, turn: &mut Turn, core: &Core, config: &Config) -> Picked;
     /// 一个键（挪到哪一种当场换样子的，改 `turn.look`）。
     fn key(&mut self, key: KeyEvent, turn: &mut Turn, core: &Core, config: &Config) -> Picked;
+    /// 在打搜索的字（按键模式按了 `/`）：这时 `j`、`k` 是字，不当上下。
+    fn typing(&self) -> bool {
+        false
+    }
     /// 画成框：框上的字、最多 `max` 行。
     fn view(
         &self,
@@ -105,8 +109,11 @@ impl Session {
                     Incoming::Key(Event::Key(key)) if key.kind != KeyEventKind::Release => {
                         let ctrl_c = key.code == KeyCode::Char('c')
                             && key.modifiers.contains(KeyModifiers::CONTROL);
-                        // `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面的列表，vim 的上下）。
+                        // `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面的列表，vim 的上下）；按键模式开着、没在打搜索的字，
+                        // `j`、`k` 也是。
                         let key = crate::app::vim_step(key, true);
+                        let key =
+                            crate::app::vim::plain(key, self.config.layout.vim && !picker.typing());
                         end = if ctrl_c {
                             Picked::Done(None)
                         } else {
@@ -131,6 +138,8 @@ impl Session {
             let max = usize::from(height / 2).max(3);
             let (chrome, lines) =
                 picker.view(turn, &self.config, width.saturating_sub(SIDE * 2), max);
+            // 按键模式开着的，提示里的「↑/↓」写成「j/k」（同终端界面的框，`panels::content`）。
+            let chrome = chrome.vim(self.config.layout.vim);
             // 还在等的（`/status` 等终端会话读回来）什么都不画。
             let mut live = Vec::new();
             if !lines.is_empty() {
