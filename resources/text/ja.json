@@ -641,6 +641,7 @@
   "stopped_jobs": "{count} 件のタスクを停止しました",
   "language_switched": "表示言語：日本語",
   "persona_box": {
+    "loading": "読み込み中…",
     "title": "ペルソナを選んでください",
     "hint": "↑/↓ 選択 · Enter 決定 · e 編集 · Esc 既定のまま",
     "default_mark": "既定",

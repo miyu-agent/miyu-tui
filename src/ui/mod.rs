@@ -54,6 +54,7 @@ mod mention;
 mod menu;
 pub mod row_cache;
 pub mod rows;
+mod start_pick;
 mod status;
 pub mod status_box;
 mod timeline;
@@ -172,9 +173,17 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             .max(half),
         _ => half,
     };
-    let box_rows = |w: u16| match open_drawer {
-        Some(d) => drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max),
-        None => app.typing.input.rows(w),
+    // 新会话开头选人格、预设：画在输入框的位置（`start_pick.rs`），占它排出来的行数。
+    let start = app.seen().start_pick();
+    let box_rows = |w: u16| match (open_drawer, start) {
+        (Some(d), _) => drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max),
+        (None, Some(kind)) => {
+            let rows = start_pick::content(&app.seen(), kind, w, usize::from(half))
+                .1
+                .len();
+            u16::try_from(rows).unwrap_or(half)
+        }
+        (None, None) => app.typing.input.rows(w),
     };
     // 空会话是首页：整组上下居中，吉祥物在中间（`tui.md`「空会话的首页」）。列表占几行交给 `place` 定位。
     let place = |menu_rows: u16| {
@@ -233,13 +242,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     // 后台面板排成的行（第 3 条）；帮助框（`/help`）这些框一样放在这个位置（`panels.rs`）。由命令打开的框里上下各空一行
     // （`panel::PAD`），放不下的不空；打字时弹的列表不空。
-    let pad = app.boxes.panel.is_some() && inner > panel::PAD;
+    // 新会话开头的人格框、预设框画在输入框里，不占上面这一块。
+    let panel_open = app.boxes.panel.is_some() && start.is_none();
+    let pad = panel_open && inner > panel::PAD;
     let panel_room = if pad { inner - panel::PAD } else { inner };
     let (panel_chrome, panel_lines, panel_rows) =
         panels::content(&app.seen(), width, now, usize::from(panel_room));
     let menu_shown = menu::rows(app.config.layout.menu_rows, inner);
     // 框里的几条，放得下框的加上上下两条边（`tui.md`「斜杠命令列表」第 3 条）。
-    let items = if app.boxes.panel.is_some() {
+    let items = if panel_open {
         panel_lines.len() + if pad { usize::from(panel::PAD) } else { 0 }
     } else if app.typing.history.open {
         history_rows.len()
@@ -261,13 +272,17 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         // 先画输入框（吉祥物照输入光标转头），再画吉祥物；开着列表时吉祥物已经让到列表上面。
         section("input", || {
             let facts = input_box::Facts::of(&app.seen(), home);
+            let pick = start.map(|kind| {
+                let max = usize::from(areas.text.height);
+                start_pick::content(&app.seen(), kind, areas.text.width, max)
+            });
             let drawer = app.talk.drawers.current.as_mut();
             let parts = (&app.config, facts);
             input_box::draw_box(
                 frame,
                 areas,
                 parts,
-                &mut app.typing.input,
+                (&mut app.typing.input, pick),
                 drawer,
                 &mut app.screen,
             );
@@ -286,13 +301,17 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         });
         section("input", || {
             let facts = input_box::Facts::of(&app.seen(), home);
+            let pick = start.map(|kind| {
+                let max = usize::from(areas.text.height);
+                start_pick::content(&app.seen(), kind, areas.text.width, max)
+            });
             let drawer = app.talk.drawers.current.as_mut();
             let parts = (&app.config, facts);
             input_box::draw_box(
                 frame,
                 areas,
                 parts,
-                &mut app.typing.input,
+                (&mut app.typing.input, pick),
                 drawer,
                 &mut app.screen,
             );

@@ -274,3 +274,35 @@ fn the_compaction_note_shows_only_when_there_is_something_to_compact() {
         closed(&mut tui);
     }
 }
+
+#[test]
+fn the_new_session_pick_takes_the_place_of_the_input_box_and_typing_goes_nowhere() {
+    // 2026-10-21 项目主人：「不是以列表的形式出，而是直接替换掉输入框。因为我刚才发现，如果开启会话加载慢了，还是会导致
+    // 输入框有很短的时间可以输入内容」。
+    let home = Home::new(Script::new([]));
+    // 一个人格都没装的核心不问人格（列表是空的），装一个才有人格框。
+    home.persona("pirate", "[persona]\nname = { zh = \"海盗\" }\n", None);
+    let mut tui = home.tui_with("zh_CN.UTF-8", &[ASK, ASK_PRESET]);
+    // 一起来就打字：列表读回来以前（「正在加载…」）、以后都不进输入框。
+    tui.type_text("abc");
+    tui.wait_for("请选择人格");
+    tui.type_text("xyz");
+    // 只有一个框：人格框就是输入框那一块，上面不另开框。
+    let frames: Vec<String> = tui
+        .lines()
+        .into_iter()
+        .filter(|l| l.trim_start().starts_with('╭'))
+        .collect();
+    assert_eq!(frames.len(), 1, "{}", tui.lines().join("\n"));
+    assert!(frames[0].contains("请选择人格"), "{frames:?}");
+    tui.key(b"\r");
+    tui.wait_for("请选择预设");
+    tui.key(b"\r");
+    closed(&mut tui);
+    tui.pump(std::time::Duration::from_millis(200));
+    let line = input(&tui);
+    assert!(
+        !line.contains("abc") && !line.contains("xyz"),
+        "选完出来的输入框是空的：{line}"
+    );
+}

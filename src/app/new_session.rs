@@ -23,6 +23,24 @@ pub enum Kind {
 /// 照这个先后问（2026-10-08 项目主人定先人格、再预设）。
 const ORDER: [Kind; 2] = [Kind::Persona, Kind::Preset];
 
+/// 新会话开头必须选的那一样（第 1、3 条；2026-10-21 项目主人：「不是以列表的形式出，而是直接替换掉输入框」，列表读回来
+/// 以前那个位置写「正在加载…」，这时打不了字）：还没开会话，照先后第一样还没选、测具没设、核心不是不认（列表不是空的）。
+/// 都选了、开了会话的是 `None`。
+pub fn start_pick(talk: &super::talk::Talk) -> Option<Kind> {
+    if talk.transcript.session.is_some() {
+        return None;
+    }
+    ORDER.into_iter().find(|kind| {
+        let pick = match kind {
+            Kind::Persona => &talk.persona,
+            Kind::Preset => &talk.preset,
+        };
+        pick.chosen.is_none()
+            && pick.env.is_none()
+            && pick.list.as_ref().is_none_or(|list| !list.is_empty())
+    })
+}
+
 /// 一样要选的：读来的一行行（人格和预设一个形状）、默认的、这个新会话选了的、测具设的。
 #[derive(Debug, Default)]
 pub struct Pick {
@@ -159,6 +177,11 @@ impl App {
             self.boxes.panel = Some(Panel::Pick { kind, selected });
             return;
         }
+    }
+
+    /// 新会话开头要选、列表还没读回来（框还没开）：输入框的位置写「正在加载…」，按键、粘贴不进输入框。
+    pub(super) fn start_loading(&self) -> bool {
+        start_pick(&self.talk).is_some() && !matches!(self.boxes.panel, Some(Panel::Pick { .. }))
     }
 
     /// 上一次选的：最近那个会话用的（`Some(None)` 是它没带）；会话列表还没到、一个会话都没有的是 `None`。

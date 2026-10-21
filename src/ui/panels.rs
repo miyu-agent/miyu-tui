@@ -90,36 +90,12 @@ fn rows(
             let map = vec![None; lines.len()];
             (chrome, lines, map)
         }
+        // 新会话开头必须选的那一次画在输入框的位置（`start_pick.rs`），这里不画。
+        Some(crate::app::Panel::Pick { kind, .. }) if seen.start_pick() == Some(kind) => {
+            Default::default()
+        }
         Some(crate::app::Panel::Pick { kind, selected }) => {
-            let (list, default) = seen.pick_list(kind);
-            // 开着会话的是中途换（「新会话：人格、工作区」第 2a 条）：现在用的那一个；还没开会话、已经选过的是选的那一个
-            // （2026-10-20 项目主人报：空会话选了人格、预设，再打开列表没有圆点）。
-            let t = &seen.talk.transcript;
-            let switching = t.session.is_some();
-            let current = if switching {
-                Some(match kind {
-                    crate::app::new_session::Kind::Persona => t.persona.as_deref().unwrap_or(""),
-                    crate::app::new_session::Kind::Preset => t.preset.as_deref().unwrap_or(""),
-                })
-            } else {
-                match kind {
-                    crate::app::new_session::Kind::Persona => seen.talk.persona.chosen.as_deref(),
-                    crate::app::new_session::Kind::Preset => seen.talk.preset.chosen.as_deref(),
-                }
-            };
-            persona_list::lines(
-                list,
-                default,
-                // 没东西可压缩的不写「切换前会先压缩」（2026-10-20 项目主人：「如果没什么可压缩的，切换就不应该提示要压缩」，
-                // 核心 W-12 的 `compactable`）。
-                (current, switching && t.cache.compactable != Some(false)),
-                &seen.config.layout.current_mark,
-                kind,
-                selected,
-                &seen.config.text.persona_box,
-                width,
-                max,
-            )
+            pick_rows(seen, kind, selected, width, max)
         }
         Some(crate::app::Panel::Changed { kind, yes, .. }) => {
             let words = &seen.config.text.settings.in_use;
@@ -134,4 +110,43 @@ fn rows(
             max,
         ),
     }
+}
+
+/// 人格框、预设框排成的行（`/persona`、`/preset`，新会话开头必须选的那一次也是这一份）。
+pub(super) fn pick_rows(
+    seen: &Seen,
+    kind: crate::app::new_session::Kind,
+    selected: usize,
+    width: u16,
+    max: usize,
+) -> (Chrome, Vec<Line<'static>>, Vec<Option<usize>>) {
+    let (list, default) = seen.pick_list(kind);
+    // 开着会话的是中途换（「新会话：人格、工作区」第 2a 条）：现在用的那一个；还没开会话、已经选过的是选的那一个
+    // （2026-10-20 项目主人报：空会话选了人格、预设，再打开列表没有圆点）。
+    let t = &seen.talk.transcript;
+    let switching = t.session.is_some();
+    let current = if switching {
+        Some(match kind {
+            crate::app::new_session::Kind::Persona => t.persona.as_deref().unwrap_or(""),
+            crate::app::new_session::Kind::Preset => t.preset.as_deref().unwrap_or(""),
+        })
+    } else {
+        match kind {
+            crate::app::new_session::Kind::Persona => seen.talk.persona.chosen.as_deref(),
+            crate::app::new_session::Kind::Preset => seen.talk.preset.chosen.as_deref(),
+        }
+    };
+    persona_list::lines(
+        list,
+        default,
+        // 没东西可压缩的不写「切换前会先压缩」（2026-10-20 项目主人：「如果没什么可压缩的，切换就不应该提示要压缩」，
+        // 核心 W-12 的 `compactable`）。
+        (current, switching && t.cache.compactable != Some(false)),
+        &seen.config.layout.current_mark,
+        kind,
+        selected,
+        &seen.config.text.persona_box,
+        width,
+        max,
+    )
 }

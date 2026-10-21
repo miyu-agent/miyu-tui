@@ -63,6 +63,11 @@ impl App {
 }
 
 impl<'a> Seen<'a> {
+    /// 新会话开头必须选的那一样（`new_session.rs`）：画在输入框的位置。
+    pub fn start_pick(&self) -> Option<Kind> {
+        super::new_session::start_pick(self.talk)
+    }
+
     /// 框下面那一行现在有哪些按钮（从左到右）：有在跑的命令时的后台按钮。
     pub fn footer_buttons(&self) -> Vec<Button> {
         (self.talk.board.shells_running() > 0)
