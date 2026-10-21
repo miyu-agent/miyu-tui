@@ -90,6 +90,9 @@ pub struct More {
     pub mascots: Option<Vec<Persona>>,
     /// 装了的主题包（默认主题包不列：没设就是它）；还没读到的是 `None`。
     pub looks: Option<Vec<Persona>>,
+    /// 读来的清单、预设列表的原样：终端记下，下次开配置页第一帧照它画主菜单（`app/look.rs`，2026-10-21 项目主人：
+    /// 「/config 打开配置菜单闪了一下」）。只有清单和名字，没有配置的值。
+    pub raw: (Option<Value>, Option<Value>),
     /// 主菜单选中第几项。
     pub menu_at: usize,
     /// 每个包的一句说明（`package.list` 的 `summary`）：「软件包」的列表照它写。
@@ -118,8 +121,9 @@ pub struct More {
 }
 
 impl More {
-    /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、供应商和模型（2026-10-19 项目主人：挪到用户上面）、用户
-    /// （核心 P-9 再补，2026-10-16 项目主人定）、隐私与安全（核心 5-15 下，2026-10-21 项目主人照推荐定）、外观（2026-10-14 加）、人格、预设、软件包（和以后的别的页）、高级。「权限」
+    /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、外观（2026-10-14 加，2026-10-21 项目主人挪到通用下面）、
+    /// 供应商和模型（2026-10-19 项目主人：挪到用户上面）、用户（核心 P-9 再补，2026-10-16 项目主人定）、隐私与安全（核心 5-15
+    /// 下，2026-10-21 项目主人照推荐定）、人格、预设、软件包（和以后的别的页）、高级。「权限」
     /// 并进了「通用」，「接入」并进了「软件包」（`schema.rs`）。
     pub fn entries(&self) -> Vec<Entry> {
         let pages: Vec<&str> = self
@@ -131,8 +135,12 @@ impl More {
         if pages.contains(&FIRST) {
             out.push(Entry::Page(FIRST.to_string()));
         }
+        // 外观紧跟通用（2026-10-21 项目主人：「把外观的顺序放在通用下面」）。
+        if pages.contains(&schema::APPEARANCE) {
+            out.push(Entry::Page(schema::APPEARANCE.to_string()));
+        }
         out.push(Entry::Models);
-        for page in [schema::USER, schema::PRIVACY, schema::APPEARANCE] {
+        for page in [schema::USER, schema::PRIVACY] {
             if pages.contains(&page) {
                 out.push(Entry::Page(page.to_string()));
             }

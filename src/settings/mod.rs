@@ -209,6 +209,23 @@ impl Settings {
         page
     }
 
+    /// 上次记下的清单、预设列表（`more.raw` 那两样）先摆上：读回来以前主菜单就是整张，不先画半截再补全（2026-10-21
+    /// 项目主人：「/config 打开配置菜单闪了一下」）。读回来的照常换上。
+    pub fn remembered(
+        &mut self,
+        (schema, presets): (Option<&Value>, Option<&Value>),
+        texts: &Texts,
+    ) {
+        if let Some(got) = schema.filter(|_| self.more.schema.is_none()) {
+            let mut schema = pages::schema::Schema::read(got);
+            schema.split_own(&texts.more.own_groups, &texts.more.appearance);
+            self.more.schema = Some(schema);
+        }
+        if let Some(got) = presets.filter(|_| self.more.presets.is_none()) {
+            self.more.presets = Some(crate::core::read_presets(got));
+        }
+    }
+
     /// `/connect`：直接停在「供应商和模型」的供应商页（2026-10-07 项目主人要）。
     pub fn connect(online: bool) -> Self {
         let mut page = Self::open(false, online);

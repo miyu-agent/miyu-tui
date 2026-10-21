@@ -31,12 +31,14 @@ impl Settings {
     ) {
         match (waiting, result) {
             (Waiting::Schema, Ok(got)) => {
+                self.more.raw.0 = Some(got.clone());
                 let mut schema = Schema::read(&got);
                 schema.split_own(&texts.own_groups, &texts.appearance);
                 self.more.schema = Some(schema);
             }
             (Waiting::Personas, Ok(got)) => self.more.personas = Some(personas::read(&got)),
             (Waiting::Presets, Ok(got)) => {
+                self.more.raw.1 = Some(got.clone());
                 self.more.presets = Some(crate::core::read_presets(&got));
             }
             (Waiting::Mascots, Ok(got)) => {

@@ -65,3 +65,27 @@ fn a_missing_theme_package_falls_back_to_the_default_and_says_so() {
     tui.wait_for("主题包无法读取，已使用默认主题");
     assert!(tui.shows("╭"), "照默认主题画：\n{}", tui.lines().join("\n"));
 }
+
+#[test]
+fn the_second_start_draws_the_chosen_theme_from_its_first_frame() {
+    // 2026-10-21 项目主人：选了主题包的，起来前两帧照默认主题画、再跳成纯 ASCII。记下上次用的，第一帧就照它。
+    let home = Home::with_settings(Script::new([]), "[tui]\nlook = \"theme-ascii\"\n");
+    {
+        let mut first = home.tui("zh_CN.UTF-8");
+        first.wait_for("工作区");
+        wait_ascii(&mut first);
+        first.pump(Duration::from_millis(300));
+    }
+    let mut tui = home.tui("zh_CN.UTF-8");
+    let start = tui.record_from_here();
+    tui.wait_for("工作区");
+    tui.pump(Duration::from_millis(500));
+    let recorded = tui.recorded();
+    for frame in support::frames(start, &recorded) {
+        assert!(
+            !frame.iter().any(|l| l.contains('╭') || l.contains('❯')),
+            "有一帧照默认主题画了：\n{}",
+            frame.join("\n")
+        );
+    }
+}

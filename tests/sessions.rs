@@ -314,12 +314,17 @@ fn with_vim_keys_j_moves_and_a_space_after_slash_is_part_of_the_search() {
     tui.key(b"/");
     tui.type_text("第 2");
     tui.wait_for("搜索：第 2");
-    // 不数对上几个：会话的短编号是随机的，带个 `2` 的也对得上（2026-10-21 macOS CI 上三个都对上）；最像的排第一。
     assert!(
         tui.shows("已选 1"),
         "空格是字，不多勾：{}",
         tui.lines().join("\n")
     );
+    // 切过去用不带空格的「第2号」：带空格的拆成几段、各段在标题和随机的短编号里哪都能对上（短编号带个 `2` 的也算），
+    // 第一行不一定是 2 号（2026-10-21 本机、macOS CI 各红过一次）；不拆段的要照先后在一处对上，只有 2 号的标题。
+    tui.key(b"\x1b");
+    tui.key(b"/");
+    tui.type_text("第2号");
+    tui.wait_for("搜索：第2号");
     tui.key(b"\r");
     tui.key(b"\r");
     tui.wait_for("第 2 号的回答。");
