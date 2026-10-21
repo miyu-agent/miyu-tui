@@ -15,6 +15,7 @@
     "ok": "+",
     "fail": "x",
     "ellipsis": "...",
+    "caret": "_",
     "gap": "...",
     "next": "->",
     "sep": " - ",

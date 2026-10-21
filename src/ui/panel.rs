@@ -57,13 +57,9 @@ impl Chrome {
     }
 }
 
-/// 按键提示里的「↑/↓」：按键模式是 Vim（`vim`）写成「j/k」（蓝图「按键」表「按键模式」那一行）。
+/// 按键提示里的上下箭头：按键模式是 Vim（`vim`）写成「j/k」（`hint_keys.rs`）。
 pub fn moves(hint: &str, vim: bool) -> String {
-    if vim {
-        hint.replace("↑/↓", "j/k")
-    } else {
-        hint.to_string()
-    }
+    super::hint_keys::vim(hint, vim)
 }
 
 /// 上边框里搜的字（`label` 是「 · 搜索：」）：打了字的写它；按键模式是 Vim 时按了 `/`、正在打的（`typing`）没打字也写，
@@ -77,7 +73,10 @@ pub fn searched(label: &str, query: &str, typing: bool) -> Vec<Span<'static>> {
         Span::styled(query.to_string(), Style::new().fg(Color::Reset)),
     ];
     if typing {
-        spans.push(Span::styled("▏", theme::accent()));
+        spans.push(Span::styled(
+            crate::sheet::mark(|m| &m.caret),
+            theme::accent(),
+        ));
     }
     spans
 }

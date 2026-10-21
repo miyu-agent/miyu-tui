@@ -147,6 +147,8 @@ pub struct Marks {
     pub fail: String,
     /// 放不下截掉的地方。
     pub ellipsis: String,
+    /// 列表上边框里打着搜索字时末尾那根光标（按键模式是 Vim 时按了 `/`）。
+    pub caret: String,
     /// 差异里省掉的几行。
     pub gap: String,
     /// 「下一步 →」这类动作行后面。

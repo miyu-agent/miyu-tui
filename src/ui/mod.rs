@@ -22,6 +22,7 @@ mod footer;
 mod foreign_rows;
 mod goal_tag;
 pub mod help;
+pub mod hint_keys;
 mod history;
 mod home;
 mod input_box;

@@ -168,12 +168,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     // 没连上核心：按键提示那一行换成黄字（第 4 条）。
     if oobe.online {
         // 按键模式是 Vim：「↑↓」写成「j/k」（引导里不打字的地方都认 `j` `k`，蓝图「按键」表「按键模式」那一行）。
-        let keys = hint(oobe, p);
-        let keys = if p.config.layout.vim {
-            keys.replace("↑↓", "j/k")
-        } else {
-            keys
-        };
+        let keys = crate::ui::hint_keys::vim(&hint(oobe, p), p.config.layout.vim);
         stage::hints(frame, places.hints, &keys);
     } else {
         stage::warn(frame, places.hints, &p.config.text.oobe.offline);

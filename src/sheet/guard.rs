@@ -4,7 +4,11 @@
 use std::path::Path;
 
 /// 不归主题管的几处，各带理由。
-const EXEMPT: [(&str, &str); 9] = [
+const EXEMPT: [(&str, &str); 10] = [
+    (
+        "src/ui/hint_keys.rs",
+        "改写界面上的字里写好的箭头（↑/↓ 换成 j/k），箭头是那份字里的",
+    ),
     ("src/sheet/guard.rs", "这道检查自己，例子里有记号"),
     ("src/linebreak.rs", "折行用的标点表，不是画的记号"),
     ("src/crash.rs", "崩溃日志的分隔，不上界面"),
