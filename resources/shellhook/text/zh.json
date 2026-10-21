@@ -27,5 +27,15 @@
   "slash_sessions": "之后说进「{title}」",
   "slash_persona": "之后新开的终端会话用人格「{name}」",
   "slash_preset": "之后新开的终端会话用预设「{name}」",
-  "slash_ambiguous": "没有叫「{query}」的；模糊匹配到："
+  "slash_ambiguous": "没有叫「{query}」的；模糊匹配到：",
+  "doctor_ok": "✓",
+  "doctor_bad": "✗",
+  "doctor_core_ok": "连得上核心",
+  "doctor_core_bad": "连不上核心：{reason}（miyu 装好了吗？MIYU_CORE_BIN 对吗？）",
+  "doctor_truecolor_ok": "终端是真彩色",
+  "doctor_truecolor_bad": "终端没说自己是真彩色（COLORTERM 不是 truecolor）：配色最多 256 色",
+  "doctor_colors_ok": "问得到终端的颜色：配色跟随终端时照它生成真彩色的一套",
+  "doctor_colors_bad": "问不到终端的颜色：配色跟随终端时只用终端的 16 色（tmux 这类要开透传）",
+  "doctor_clip_ok": "Ctrl+V 读剪贴板用 {tool}",
+  "doctor_clip_bad": "找不到读剪贴板的命令（wl-paste、xclip、xsel）：Ctrl+V 只能用终端自己的粘贴"
 }

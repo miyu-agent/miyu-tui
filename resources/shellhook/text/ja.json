@@ -27,5 +27,15 @@
   "slash_sessions": "以降は「{title}」に送ります",
   "slash_persona": "今後新しく開くターミナルセッションはペルソナ「{name}」を使います",
   "slash_preset": "今後新しく開くターミナルセッションはプリセット「{name}」を使います",
-  "slash_ambiguous": "「{query}」という名前はありません。あいまい一致："
+  "slash_ambiguous": "「{query}」という名前はありません。あいまい一致：",
+  "doctor_ok": "✓",
+  "doctor_bad": "✗",
+  "doctor_core_ok": "コアに接続できます",
+  "doctor_core_bad": "コアに接続できません：{reason}（miyu はインストール済みですか？MIYU_CORE_BIN は正しいですか？）",
+  "doctor_truecolor_ok": "ターミナルはトゥルーカラーです",
+  "doctor_truecolor_bad": "ターミナルがトゥルーカラーを名乗っていません（COLORTERM が truecolor ではありません）：最大 256 色",
+  "doctor_colors_ok": "ターミナルの色を取得できます：ターミナルに合わせる配色はそこからトゥルーカラーを作ります",
+  "doctor_colors_bad": "ターミナルの色を取得できません：ターミナルに合わせる配色は 16 色だけになります（tmux などはパススルーが必要）",
+  "doctor_clip_ok": "Ctrl+V は {tool} でクリップボードを読みます",
+  "doctor_clip_bad": "クリップボードを読むコマンドがありません（wl-paste、xclip、xsel）：Ctrl+V はターミナル自身の貼り付けだけになります"
 }

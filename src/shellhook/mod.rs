@@ -4,6 +4,7 @@
 //! 给人用的是 `install`、`uninstall`、`status`；`script`、`classify`、`say` 是 shell 脚本调的，帮助里不列。
 
 mod classify;
+mod doctor;
 mod install;
 mod paste;
 mod say;
@@ -30,6 +31,7 @@ Commands:
   uninstall [--shell <fish|bash|zsh>]
                  remove the hook
   status         show which shells have the hook
+  doctor         check the hook, the core, the terminal's colors and the clipboard
 
 Options:
   --shell <name>     fish, bash or zsh
@@ -37,10 +39,11 @@ Options:
   -h, --help         print this help";
 
 /// 自己的子命令：不当斜杠命令认。
-const INTERNAL: [&str; 9] = [
+const INTERNAL: [&str; 10] = [
     "install",
     "uninstall",
     "status",
+    "doctor",
     "script",
     "classify",
     "say",
@@ -100,6 +103,15 @@ pub fn main(args: Vec<String>) -> ExitCode {
         }),
         "uninstall" => with_shell(&options, &words, |shell| install::uninstall(shell, &words)),
         "status" => install::status(&words),
+        "doctor" => {
+            return match doctor::run(&words) {
+                Ok(code) => code,
+                Err(e) => {
+                    eprintln!("{e}");
+                    ExitCode::FAILURE
+                }
+            };
+        }
         "script" => match (options.shell, &options.program) {
             (Some(shell), Some(program)) => {
                 print!("{}", script::render(shell, program));

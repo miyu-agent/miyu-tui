@@ -27,5 +27,15 @@
   "slash_sessions": "Messages now go to “{title}”",
   "slash_persona": "New terminal sessions will use the persona “{name}”",
   "slash_preset": "New terminal sessions will use the preset “{name}”",
-  "slash_ambiguous": "Nothing is called “{query}”; fuzzy matches:"
+  "slash_ambiguous": "Nothing is called “{query}”; fuzzy matches:",
+  "doctor_ok": "✓",
+  "doctor_bad": "✗",
+  "doctor_core_ok": "The core is reachable",
+  "doctor_core_bad": "Can't reach the core: {reason} (is miyu installed? is MIYU_CORE_BIN right?)",
+  "doctor_truecolor_ok": "The terminal is truecolor",
+  "doctor_truecolor_bad": "The terminal doesn't say it's truecolor (COLORTERM isn't truecolor): at most 256 colors",
+  "doctor_colors_ok": "The terminal's colors can be read: following the terminal builds a truecolor palette from them",
+  "doctor_colors_bad": "Can't read the terminal's colors: following the terminal uses its 16 colors only (tmux and the like need passthrough)",
+  "doctor_clip_ok": "Ctrl+V reads the clipboard with {tool}",
+  "doctor_clip_bad": "No clipboard command found (wl-paste, xclip, xsel): Ctrl+V can only use the terminal's own paste"
 }

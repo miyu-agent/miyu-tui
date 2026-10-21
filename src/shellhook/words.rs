@@ -47,6 +47,21 @@ pub struct Words {
     /// `/persona`、`/preset` 写好了（`{name}`）。
     pub slash_persona: String,
     pub slash_preset: String,
+    /// `doctor` 每一条前面的记号：好的、不好的。
+    pub doctor_ok: String,
+    pub doctor_bad: String,
+    /// `doctor`：核心连得上、连不上（`{reason}`）。
+    pub doctor_core_ok: String,
+    pub doctor_core_bad: String,
+    /// `doctor`：终端是不是真彩色。
+    pub doctor_truecolor_ok: String,
+    pub doctor_truecolor_bad: String,
+    /// `doctor`：问不问得到终端的颜色。
+    pub doctor_colors_ok: String,
+    pub doctor_colors_bad: String,
+    /// `doctor`：读剪贴板用哪个命令（`{tool}`）、一个都没有。
+    pub doctor_clip_ok: String,
+    pub doctor_clip_bad: String,
     /// 带的参数没写全、对得上几个（`{query}`）：后面一行一个列对得上的。
     pub slash_ambiguous: String,
     /// 带的参数什么都没对上（`{query}`）。
