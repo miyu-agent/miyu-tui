@@ -59,6 +59,8 @@ pub struct Keys {
     pub presets: String,
     /// 「更多供应商」浮窗。
     pub more: String,
+    /// 「更多供应商」浮窗，按键模式是 Vim 时（`/ 搜索 · j/k`）。
+    pub more_vim: String,
     /// 主题那一步：左右切换。
     pub theme: String,
 }
@@ -95,6 +97,23 @@ pub struct Icons {
     pub yes: String,
     /// 是方块或者乱码。
     pub no: String,
+}
+
+/// 你喜欢的操作方式那一步（2026-10-21）：两行，名字后面暗色一句怎么用。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Controls {
+    /// 标题、说明。
+    #[serde(flatten)]
+    pub head: Heading,
+    /// 方向键。
+    pub arrows: String,
+    /// 方向键后面暗色写的。
+    pub arrows_note: String,
+    /// Vim。
+    pub vim: String,
+    /// Vim 后面暗色写的。
+    pub vim_note: String,
 }
 
 /// AI 怎么认识你那一步。
@@ -375,6 +394,8 @@ pub struct Texts {
     pub language: Language,
     /// 图标。
     pub icons: Icons,
+    /// 你喜欢的操作方式（`keys` 是每一屏最下面那行按键，这一步叫 `controls`）。
+    pub controls: Controls,
     /// 接模型。
     pub model: Model,
     /// 建人格。

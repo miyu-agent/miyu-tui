@@ -7,6 +7,8 @@ pub enum Step {
     Welcome,
     /// 界面语言。
     Language,
+    /// 你喜欢的操作方式：方向键、Vim（2026-10-21 项目主人定，放在语言后面）。
+    Keys,
     /// 图标。
     Icons,
     /// 接模型。
@@ -25,9 +27,10 @@ pub enum Step {
     Done,
 }
 
-const ORDER: [Step; 10] = [
+const ORDER: [Step; 11] = [
     Step::Welcome,
     Step::Language,
+    Step::Keys,
     Step::Icons,
     Step::Model,
     Step::Persona,
@@ -58,6 +61,7 @@ impl Step {
         matches!(
             self,
             Step::Language
+                | Step::Keys
                 | Step::Icons
                 | Step::Model
                 | Step::Persona

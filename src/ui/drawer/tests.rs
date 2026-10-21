@@ -14,7 +14,7 @@ fn text(line: &ratatui::text::Line) -> String {
 }
 
 fn lines(d: &Drawer, width: u16) -> Vec<String> {
-    view(d, &texts(), &look(), width)
+    view(d, &texts(), &look(), width, false)
         .lines
         .iter()
         .map(text)
@@ -51,7 +51,7 @@ fn asked(n: usize) -> Asked {
 #[test]
 fn it_shows_who_asks_the_tabs_the_pointer_and_the_keys() {
     let d = Drawer::question(Some("子代理 查资料".into()), asked(2));
-    let v = view(&d, &texts(), &look(), 60);
+    let v = view(&d, &texts(), &look(), 60, false);
     let got: Vec<String> = v.lines.iter().map(text).collect();
     assert_eq!(got[0], "子代理 查资料 在问");
     assert_eq!(
@@ -88,7 +88,7 @@ fn other_edits_in_place_and_the_keys_say_only_save_and_leave() {
     let mut d = Drawer::question(None, asked(1));
     press(&mut d, KeyCode::Down);
     press(&mut d, KeyCode::Enter);
-    let v = view(&d, &texts(), &look(), 60);
+    let v = view(&d, &texts(), &look(), 60, false);
     let (row, col) = v.cursor.expect("编辑时有光标");
     assert_eq!(
         text(&v.lines[row]),
@@ -98,7 +98,7 @@ fn other_edits_in_place_and_the_keys_say_only_save_and_leave() {
     assert_eq!(col, 2, "光标落在 › 后面");
     assert_eq!(text(v.lines.last().unwrap()), "Enter 保存 · Esc 退出编辑");
     press(&mut d, KeyCode::Char('好'));
-    let v = view(&d, &texts(), &look(), 60);
+    let v = view(&d, &texts(), &look(), 60, false);
     let (row, col) = v.cursor.unwrap();
     assert_eq!((text(&v.lines[row]).as_str(), col), ("› 好", 4));
     // 退出编辑：照写的字，不加「自定义：」（2026-10-20 项目主人）。
@@ -117,7 +117,7 @@ fn notes_show_under_the_options() {
     for c in "快".chars() {
         press(&mut d, KeyCode::Char(c));
     }
-    let v = view(&d, &texts(), &look(), 60);
+    let v = view(&d, &texts(), &look(), 60, false);
     let (row, _) = v.cursor.unwrap();
     assert_eq!(text(&v.lines[row]), "  补充  快");
 }
@@ -159,7 +159,7 @@ fn a_preview_sits_on_the_right_under_a_dim_title_and_below_when_narrow() {
         let bar = row.find('│').expect("每行都有竖线");
         assert_eq!(row[..bar].width(), 50, "竖线在抽屉的中线上：{row}");
     }
-    let v = view(&d, &texts(), &look(), 100);
+    let v = view(&d, &texts(), &look(), 100, false);
     assert!(
         v.lines[3].spans.iter().all(|s| s.style.bg.is_none()),
         "不铺底色：{:?}",
@@ -180,7 +180,7 @@ fn a_tall_drawer_scrolls_the_options_and_pins_the_question_and_keys() {
     for _ in 0..12 {
         press(&mut d, KeyCode::Down);
     }
-    let full = view(&d, &texts(), &look(), 60);
+    let full = view(&d, &texts(), &look(), 60, false);
     let keys = text(full.lines.last().unwrap());
     let mut scroll = 0;
     let v = fit(full, 10, &mut scroll);
@@ -199,7 +199,7 @@ fn a_tall_drawer_scrolls_the_options_and_pins_the_question_and_keys() {
 fn a_very_short_drawer_keeps_the_picked_option_before_the_blank_line() {
     // 2026-09-29 30×7 实测：抽屉只剩问题的最后一行、空行、按键提示，选项一行都没有（「窗口小的时候」第 3 条）。
     let d = Drawer::question(None, asked(4));
-    let full = view(&d, &texts(), &look(), 60);
+    let full = view(&d, &texts(), &look(), 60, false);
     let keys = text(full.lines.last().unwrap());
     let picked = full
         .lines
@@ -209,7 +209,7 @@ fn a_very_short_drawer_keeps_the_picked_option_before_the_blank_line() {
         .unwrap();
     let fitted = |height: usize| -> Vec<String> {
         let mut scroll = 0;
-        fit(view(&d, &texts(), &look(), 60), height, &mut scroll)
+        fit(view(&d, &texts(), &look(), 60, false), height, &mut scroll)
             .lines
             .iter()
             .map(text)
@@ -235,7 +235,7 @@ fn the_first_esc_turns_the_keys_line_into_a_warning() {
     use std::time::{Duration, Instant};
     let mut d = Drawer::question(None, asked(1));
     d.escape(Instant::now(), Duration::from_secs(60));
-    let v = view(&d, &texts(), &look(), 60);
+    let v = view(&d, &texts(), &look(), 60, false);
     let last = v.lines.last().unwrap();
     assert_eq!(text(last), "再按一次 Esc 取消");
     assert_eq!(last.style.fg, crate::theme::warn().fg);

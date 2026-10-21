@@ -1,12 +1,14 @@
-//! `/model`：换这个会话的模型（蓝图 `tui.md`「配置与模型」第 1 条，核心 8-10）。开框时向核心要一次 `model.list`；打字筛，
+//! `/model`：换这个会话的模型（蓝图 `tui.md`「配置与模型」第 1 条，核心 8-10）。开框时向核心要一次 `model.list`；打字筛（Vim
+//! 按键模式下先按 `/`，`list_search.rs`），
 //! `↑` `↓` 选，`Enter` 交给核心换（下一个回合开始生效），冷却中的、没有 key 的不换、提示为什么；`Esc` 关。鼠标悬停
 //! 选中、点一下等于 `Enter`，滚轮滚（照会话列表）。
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
 
 use super::{App, Panel};
 use crate::core::{Choice, Command};
+use crate::list_search::{self, Step};
 use crate::model_list::ModelList;
 
 impl App {
@@ -30,11 +32,16 @@ impl App {
 
     /// 框开着时的按键。
     pub(super) fn models_key(&mut self, key: KeyEvent) {
-        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let vim = self.config.layout.vim;
         let Some(list) = self.boxes.model_list.as_mut() else {
             self.boxes.panel = None;
             return;
         };
+        match list_search::key(vim, &mut list.typing, &list.query, key) {
+            Step::Query(query) => return list.typed(query),
+            Step::Kept => return,
+            Step::Pass => {}
+        }
         match key.code {
             KeyCode::Esc => self.close_models(),
             KeyCode::Up => list.step(false),
@@ -43,15 +50,6 @@ impl App {
                 if let Some(choice) = list.picked().cloned() {
                     self.choose_model(&choice);
                 }
-            }
-            KeyCode::Backspace => {
-                let mut query = list.query.clone();
-                query.pop();
-                list.typed(query);
-            }
-            KeyCode::Char(c) if !ctrl => {
-                let query = format!("{}{c}", list.query);
-                list.typed(query);
             }
             _ => {}
         }

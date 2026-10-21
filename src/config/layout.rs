@@ -35,6 +35,8 @@ pub struct Layout {
     pub dream: super::DreamLook,
     /// 侧边栏画不画吉祥物。
     pub mascot_sidebar: bool,
+    /// 按键模式是 Vim（蓝图「按键」表「按键模式」那一行）：会话列表、`/model` 里 `j`、`k` 挪，`/` 才搜；`false` 是方向键。
+    pub vim: bool,
     /// 子代理状态行最多几行（不算主会话）。
     pub agent_rows: usize,
     /// 后台命令的输出（`job.output`）：面板里露几行、结束了读几行、隔多久读一次、制表符换成几个空格。
@@ -167,6 +169,18 @@ impl Layout {
             self.mascot_sidebar = sidebar;
         }
     }
+
+    /// 按键模式在终端软件包里的名字（`[settings.keys]`：`arrows` 方向键、`vim`，2026-10-21 项目主人）。
+    pub const KEYS_KEY: &'static str = "tui.keys";
+
+    /// 照 `config.get` 读来的按键模式改：写了的盖过 `layout.json`，没有的（旧核心没这一项）、认不得的照原样。
+    pub fn apply_keys(&mut self, got: &serde_json::Value) {
+        match got["items"][Self::KEYS_KEY]["value"].as_str() {
+            Some("vim") => self.vim = true,
+            Some("arrows") => self.vim = false,
+            _ => {}
+        }
+    }
 }
 
 /// 运行状态行的流光明暗：主题的 `accent` 打底，一道亮光从左往右扫过。颜色不变，只变明暗。
@@ -247,5 +261,17 @@ mod tests {
             "tui.mascot_sidebar": {"value": false}
         }}));
         assert!(!layout.mascot_home && !layout.mascot_sidebar);
+    }
+
+    #[test]
+    fn the_key_mode_is_vim_until_the_setting_picks_arrow_keys() {
+        // 2026-10-21 项目主人：「按键模式」两个选项「方向键」「Vim」，「新用户默认不开 vimkey」。
+        let mut layout = Config::builtin().unwrap().layout;
+        layout.apply_keys(&json!({"items": {}}));
+        assert!(!layout.vim, "没写的照出厂：方向键");
+        layout.apply_keys(&json!({"items": {"tui.keys": {"value": "vim"}}}));
+        assert!(layout.vim);
+        layout.apply_keys(&json!({"items": {"tui.keys": {"value": "arrows"}}}));
+        assert!(!layout.vim);
     }
 }

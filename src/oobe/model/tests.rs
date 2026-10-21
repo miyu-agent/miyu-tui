@@ -280,6 +280,7 @@ fn more_providers_opens_a_searchable_window_and_enter_fills_in_that_one() {
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = at_model(t0, &texts, None);
+    // 按键模式是方向键（出厂；Vim 的见下一条）。
     // 两家常用的、「其他」段名（停不上）、更多供应商。
     for _ in 0..2 {
         oobe.key(key(KeyCode::Down), t0, &texts);
@@ -315,6 +316,46 @@ fn more_providers_opens_a_searchable_window_and_enter_fills_in_that_one() {
     oobe.key(key(KeyCode::Esc), t0, &texts);
     assert!(oobe.model.more.is_none() && matches!(oobe.model.phase, Phase::List));
     assert_eq!(oobe.step, Step::Model);
+}
+
+#[test]
+fn with_vim_keys_the_more_window_searches_after_a_slash() {
+    // 2026-10-21 项目主人：按键模式是 Vim 时 `/` 才搜，`Enter` 收起、筛的留着，`j` `k` 挪，`Esc` 先去掉筛的再关窗。
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = at_model(t0, &texts, None);
+    oobe.model.vim = true;
+    for _ in 0..2 {
+        oobe.key(key(KeyCode::Down), t0, &texts);
+    }
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let (tag, _) = find(&asks(&mut oobe), "provider.catalog");
+    let all = json!({"providers": [
+        {"id": "zai", "name": "Z.AI", "supported": true},
+        {"id": "moonshotai-cn", "name": "Moonshot AI (China)", "supported": true},
+        {"id": "moonshotai", "name": "Moonshot AI", "supported": true}]});
+    oobe.answer(tag, Ok(all), t0, &texts);
+    let more = oobe.model.more.as_ref().unwrap();
+    assert!(!more.filter.editing(), "开窗不在搜索那一格");
+    typed(&mut oobe, "zz", t0, &texts);
+    assert_eq!(
+        oobe.model.more.as_ref().unwrap().filter.text(),
+        "",
+        "没按 / 打的字不进搜索"
+    );
+    oobe.key(key(KeyCode::Char('/')), t0, &texts);
+    typed(&mut oobe, "moon", t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    let more = oobe.model.more.as_ref().unwrap();
+    assert!(!more.filter.editing(), "Enter 收起");
+    assert_eq!(more.matches().len(), 2, "筛的留着");
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    assert_eq!(oobe.model.more.as_ref().unwrap().cursor, 1, "j 往下");
+    oobe.key(key(KeyCode::Esc), t0, &texts);
+    let more = oobe.model.more.as_ref().expect("Esc 先去掉筛的，窗还开着");
+    assert_eq!(more.matches().len(), 3);
+    oobe.key(key(KeyCode::Esc), t0, &texts);
+    assert!(oobe.model.more.is_none(), "再按关窗");
 }
 
 #[test]

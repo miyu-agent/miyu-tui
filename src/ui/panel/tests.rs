@@ -150,3 +150,17 @@ fn a_box_opened_by_a_command_keeps_a_blank_row_inside_top_and_bottom() {
     assert_eq!(padded(Rect::new(4, 10, 50, 6)), Rect::new(4, 11, 50, 4));
     assert_eq!(padded(Rect::new(4, 10, 50, 2)), Rect::new(4, 10, 50, 2));
 }
+
+#[test]
+fn with_vim_keys_the_hint_says_j_and_k() {
+    // 2026-10-21 项目主人：按键模式是 Vim 时各框下边框写「j/k」，方向键时照旧「↑/↓」。
+    let chrome = || Chrome::new("人格", Vec::new()).hint("↑/↓ 选择 · Enter 确定");
+    assert_eq!(
+        chrome().vim(true).hint.as_deref(),
+        Some("j/k 选择 · Enter 确定")
+    );
+    assert_eq!(
+        chrome().vim(false).hint.as_deref(),
+        Some("↑/↓ 选择 · Enter 确定")
+    );
+}

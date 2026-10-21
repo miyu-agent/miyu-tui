@@ -14,6 +14,9 @@ type Uses = Box<dyn Fn(&str) -> bool>;
 impl Settings {
     /// 按了一个键。
     pub fn key(&mut self, key: KeyEvent, texts: &Texts) -> Outcome {
+        // 不在打字的窗里：`Ctrl+J`、`Ctrl+K` 同 `↓`、`↑`（蓝图「按键」表，2026-10-21 项目主人：「ctrl+jk 都能用」；原来带
+        // Ctrl 的一律不管，配置页按了没反应）。
+        let key = crate::app::vim::step(key, !self.writing());
         // 带 Ctrl 的配置页不管，只有预设的窗认 Ctrl+A（全开、全关，「配置页」第 38 条），几行字的窗认 Ctrl+G（交给外部
         // 编辑器，第 45 条）。
         let all = key.code == KeyCode::Char('a') && matches!(self.popup, Some(Popup::Preset(_)));
@@ -43,6 +46,15 @@ impl Settings {
         }
         self.status = self.status.take().filter(|(_, t)| *t == Tone::Busy);
         self.page_key(key, texts)
+    }
+
+    /// 正在打字的窗：一行字、几行字、示范对话的一轮，表单里正在改的那一格（这些地方 `Ctrl+J` 归编辑器）。
+    fn writing(&self) -> bool {
+        match &self.popup {
+            Some(Popup::Line(_) | Popup::Sheet(_) | Popup::Pair(_)) => true,
+            Some(Popup::Form(form)) => form.editing.is_some(),
+            _ => false,
+        }
     }
 
     /// 粘贴：正在改的那一项、正在打的筛选字收下（贴 key 是最常见的用法），换行去掉。
@@ -362,7 +374,12 @@ impl Settings {
             match key.code {
                 KeyCode::Char('j') | KeyCode::Down => pick.step(1, &self.view),
                 KeyCode::Char('k') | KeyCode::Up => pick.step(-1, &self.view),
-                KeyCode::Char('/') => pick.typing = true,
+                // 再按 `/` 清空了重打（2026-10-21 项目主人：「下次再 / 就清空搜索结果后再次进入搜索模式」）。
+                KeyCode::Char('/') => {
+                    pick.typing = true;
+                    pick.search.clear();
+                    pick.refilter(&self.view);
+                }
                 KeyCode::Enter => {
                     if let (Some(reference), Some(data)) = (pick.chosen(&self.view), &self.data) {
                         let key = match pick.usage {

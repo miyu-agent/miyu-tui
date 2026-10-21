@@ -77,11 +77,12 @@ pub(super) fn to_model(oobe: &mut Oobe, now: Instant, texts: &Texts) {
     oobe.key(key(KeyCode::Enter), now, texts);
     oobe.key(key(KeyCode::Enter), now, texts);
     oobe.key(key(KeyCode::Enter), now, texts);
+    oobe.key(key(KeyCode::Enter), now, texts);
     assert_eq!(oobe.step, Step::Model);
 }
 
 #[test]
-fn a_key_during_the_intro_only_skips_it_then_enter_walks_through_language_and_icons() {
+fn a_key_during_the_intro_only_skips_it_then_enter_walks_through_language_keys_and_icons() {
     let texts = texts();
     let t0 = Instant::now();
     let look = Config::builtin().unwrap().oobe;
@@ -96,6 +97,16 @@ fn a_key_during_the_intro_only_skips_it_then_enter_walks_through_language_and_ic
     oobe.key(key(KeyCode::Down), t0, &texts);
     let effects = oobe.key(key(KeyCode::Enter), t0, &texts);
     assert_eq!(effects, [Effect::Language(1)]);
+    // 操作方式（2026-10-21 项目主人：新用户默认方向键，引导里选）：选 Vim，写 `tui.keys`（写成了照配置变了重读）。
+    assert_eq!(oobe.step, Step::Keys);
+    assert_eq!(oobe.keys.selected, 0, "新用户停在方向键");
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    assert!(oobe.key(key(KeyCode::Enter), t0, &texts).is_empty());
+    let (_, params) = find(&asks(&mut oobe), "config.set");
+    assert_eq!(
+        params,
+        json!({"layer": "personal", "changes": [{"key": "tui.keys", "value": "vim"}]})
+    );
     assert_eq!(oobe.step, Step::Icons);
     assert_eq!(oobe.icons.selected, 1, "开的时候选着现在用的 plain");
     oobe.key(key(KeyCode::Up), t0, &texts);
@@ -135,8 +146,9 @@ fn esc_goes_back_a_step_and_the_welcome_page_does_not_replay() {
     );
     assert_eq!(oobe.step.bar(), None);
     assert_eq!(Step::Language.bar(), Some(0));
-    assert_eq!(Step::Theme.bar(), Some(4));
-    assert_eq!(Step::Preset.bar(), Some(6));
+    assert_eq!(Step::Keys.bar(), Some(1));
+    assert_eq!(Step::Theme.bar(), Some(5));
+    assert_eq!(Step::Preset.bar(), Some(7));
 }
 
 #[test]

@@ -61,6 +61,7 @@ fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> 
     let texts = &p.config.text.oobe;
     match step {
         Step::Language => pick::language(oobe, texts, width),
+        Step::Keys => pick::controls(oobe, texts, width),
         Step::Icons => {
             let nerd = p.config.icon_sets.iter().find(|s| s.name == "nerd");
             pick::icons(oobe, texts, nerd, width)
@@ -89,7 +90,9 @@ fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
     use crate::oobe::model::{Phase, Slot};
     use crate::oobe::persona::Slot as Field;
     match oobe.step {
-        Step::Model if oobe.model.more.is_some() => keys.more.clone(),
+        Step::Model if let Some(more) = &oobe.model.more => {
+            more::keys(more, &p.config.text.oobe).clone()
+        }
         Step::Model => match &oobe.model.phase {
             Phase::Form(form) if form.editing() => keys.editing.clone(),
             Phase::Form(form) if form.slot() == Some(Slot::Driver) => keys.driver.clone(),
@@ -159,7 +162,14 @@ fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     stage::bar(frame, places.bar, oobe.step, &p.config.text.oobe.steps);
     // 没连上核心：按键提示那一行换成黄字（第 4 条）。
     if oobe.online {
-        stage::hints(frame, places.hints, &hint(oobe, p));
+        // 按键模式是 Vim：「↑↓」写成「j/k」（引导里不打字的地方都认 `j` `k`，蓝图「按键」表「按键模式」那一行）。
+        let keys = hint(oobe, p);
+        let keys = if p.config.layout.vim {
+            keys.replace("↑↓", "j/k")
+        } else {
+            keys
+        };
+        stage::hints(frame, places.hints, &keys);
     } else {
         stage::warn(frame, places.hints, &p.config.text.oobe.offline);
     }

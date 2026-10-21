@@ -30,6 +30,10 @@ impl App {
             &icons,
             online,
         ));
+        // 操作方式那一步选着现在的按键模式（新用户是方向键）。
+        if let Some(oobe) = self.boxes.oobe.as_mut() {
+            oobe.keys.selected = usize::from(self.config.layout.vim);
+        }
         self.send_oobe_asks();
     }
 
@@ -68,9 +72,11 @@ impl App {
     pub(super) fn oobe_event(&mut self, event: Event) {
         let now = Instant::now();
         let texts = self.config.text.oobe.clone();
+        let vim = self.config.layout.vim;
         let Some(oobe) = self.boxes.oobe.as_mut() else {
             return;
         };
+        oobe.model.vim = vim;
         let effects = match event {
             Event::Key(key) if key.kind == KeyEventKind::Release => Vec::new(),
             // Ctrl+C：退出程序，不写标记（下次从头来，第 2 条）。

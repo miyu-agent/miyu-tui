@@ -1,5 +1,5 @@
 //! 列表开着时 `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（蓝图 `tui.md`「按键」，2026-10-01 项目主人要 vim 的上下）；开着时不能打字的框
-//! 直接 `j`、`k` 也行（2026-10-11 项目主人）。
+//! 直接 `j`、`k` 也行（2026-10-11 项目主人）；按键模式是 Vim 时会话列表、`/model` 没在打搜索的字也算（2026-10-21）。
 //! 只换按键本身，后面照常分给开着的那个列表；抽屉里写字时 `Ctrl+J` 照旧换行，不换。
 
 use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
@@ -15,23 +15,38 @@ impl App {
             || (self.talk.drawers.open() && !self.talk.drawers.editing());
         // 开着时不能打字的框；抽屉开着时按键先归抽屉（它自己认 vim 键）。
         let no_typing = !self.talk.drawers.open()
-            && matches!(
-                self.boxes.panel,
-                Some(
-                    Panel::Pick { .. }
-                        | Panel::Changed { .. }
-                        | Panel::Language { .. }
-                        | Panel::Theme { .. }
-                        | Panel::Effort { .. }
-                        | Panel::Background { .. }
-                        | Panel::Help { .. }
-                        | Panel::Usage { .. }
-                        | Panel::Status { .. }
-                )
-            );
+            && (self.vim_list_idle()
+                || matches!(
+                    self.boxes.panel,
+                    Some(
+                        Panel::Pick { .. }
+                            | Panel::Changed { .. }
+                            | Panel::Language { .. }
+                            | Panel::Theme { .. }
+                            | Panel::Effort { .. }
+                            | Panel::Background { .. }
+                            | Panel::Help { .. }
+                            | Panel::Usage { .. }
+                            | Panel::Status { .. }
+                    )
+                ));
         match event {
             Event::Key(key) => Event::Key(plain(step(key, listing), no_typing)),
             other => other,
+        }
+    }
+}
+
+impl App {
+    /// 按键模式是 Vim，会话列表、`/model` 开着、没在打搜索的字（`list_search.rs`）。
+    fn vim_list_idle(&self) -> bool {
+        if !self.config.layout.vim {
+            return false;
+        }
+        match self.boxes.panel {
+            Some(Panel::Sessions) => self.boxes.session_list.as_ref().is_some_and(|l| !l.typing),
+            Some(Panel::Models) => self.boxes.model_list.as_ref().is_some_and(|l| !l.typing),
+            _ => false,
         }
     }
 }

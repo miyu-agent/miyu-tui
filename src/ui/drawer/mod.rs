@@ -45,7 +45,8 @@ impl View {
 }
 
 /// 排成的全部行（还没按高度裁）。
-pub fn view(d: &Drawer, texts: &Texts, look: &PreviewLook, width: u16) -> View {
+/// `vim`：按键模式是 Vim，按键提示写「j/k」（蓝图「按键」表「按键模式」那一行）。
+pub fn view(d: &Drawer, texts: &Texts, look: &PreviewLook, width: u16, vim: bool) -> View {
     let mut v = View::default();
     if let Some(who) = &d.who {
         let who = texts.asking.replace("{who}", who);
@@ -72,7 +73,8 @@ pub fn view(d: &Drawer, texts: &Texts, look: &PreviewLook, width: u16) -> View {
     let last = if d.armed.is_some() {
         Line::styled(clip(&texts.cancel_hint, width), theme::warn())
     } else {
-        Line::styled(clip(&keys(d, texts), width), theme::dim())
+        let hint = super::panel::moves(&keys(d, texts), vim);
+        Line::styled(clip(&hint, width), theme::dim())
     };
     v.push(last, None);
     v
@@ -172,7 +174,8 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
 
 /// 抽屉要几行：排出来的行数，最多 `max`。
 pub fn rows(d: &Drawer, texts: &Texts, look: &PreviewLook, width: u16, max: u16) -> u16 {
-    let n = view(d, texts, look, width).lines.len();
+    // 按键提示只有一行，换不换「j/k」行数一样。
+    let n = view(d, texts, look, width, false).lines.len();
     u16::try_from(n).unwrap_or(u16::MAX).min(max).max(1)
 }
 
@@ -240,9 +243,10 @@ pub fn draw(
     d: &mut Drawer,
     texts: &Texts,
     look: &PreviewLook,
+    vim: bool,
     caret: &mut Caret,
 ) -> Vec<Option<usize>> {
-    let v = view(d, texts, look, area.width);
+    let v = view(d, texts, look, area.width, vim);
     let v = fit(v, usize::from(area.height), &mut d.scroll);
     if let Some((row, col)) = v.cursor {
         let x = area.x + col.min(area.width.saturating_sub(1));

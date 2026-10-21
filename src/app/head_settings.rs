@@ -22,6 +22,8 @@ const THEME_TAG: u64 = TAG_BASE - 9;
 const LEVEL_TAG: u64 = TAG_BASE - 10;
 /// 读默认的聊天模型的请求编号（底栏只要它的资料，`effort.rs`）。
 const CHAT_TAG: u64 = TAG_BASE - 11;
+/// 读按键模式的请求编号：单问，旧核心不认这个键时别的照样读得到。
+const VIM_TAG: u64 = TAG_BASE - 12;
 /// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
 const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
 
@@ -33,6 +35,7 @@ impl App {
                 self.ask_config(ICONS_TAG, &["tui.icons"]);
                 self.ask_config(TIMELINE_TAG, &Timeline::KEYS);
                 self.ask_config(MASCOT_TAG, &Layout::MASCOT_KEYS);
+                self.ask_config(VIM_TAG, &[Layout::KEYS_KEY]);
                 let mut keys = crate::theme::choice::Choice::KEYS.to_vec();
                 keys.push(crate::theme::choice::SEED_KEY);
                 self.ask_config(THEME_TAG, &keys);
@@ -63,6 +66,12 @@ impl App {
                 }
                 true
             }
+            Update::Answer { tag, result } if *tag == VIM_TAG => {
+                if let Ok(got) = result {
+                    self.config.layout.apply_keys(got);
+                }
+                true
+            }
             // 主题那几项（「主题」第 6 条）：读到的盖上，照新的挑一套。
             Update::Answer { tag, result } if *tag == THEME_TAG => {
                 if let Ok(got) = result {
@@ -81,11 +90,12 @@ impl App {
         }
     }
 
-    /// 照读到的终端配置项办（先画后连时照上次记下的，`look.rs`）：图标、时间线、吉祥物的开关、主题、开局级别；没有的照旧。
+    /// 照读到的终端配置项办（先画后连时照上次记下的，`look.rs`）：图标、时间线、吉祥物的开关、按键模式、主题、开局级别；没有的照旧。
     pub(super) fn apply_head_settings(&mut self, got: &Value) {
         self.take_icons(got);
         self.config.timeline.apply(got);
         self.config.layout.apply_mascot(got);
+        self.config.layout.apply_keys(got);
         self.take_theme(got);
         self.default_level(got);
     }

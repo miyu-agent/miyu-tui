@@ -675,6 +675,8 @@
     "count": "  {count} 个",
     "query": " · 搜索：",
     "hint": "↑/↓ 选择 · Enter 切换 · 空格 勾选 · Ctrl+P 置顶 · Ctrl+D 删除 · Esc 关闭",
+    "hint_vim": "/ 搜索 · j/k 选择 · Enter 切换 · 空格 勾选 · Ctrl+P 置顶 · Ctrl+D 删除 · Esc 关闭",
+    "searching": "输入以搜索 · Ctrl+J/K 选择 · Enter 完成 · Esc 取消",
     "loading": "正在加载会话…",
     "empty": "无匹配的会话",
     "now": "刚才",
@@ -707,6 +709,8 @@
     "count": "  {count} 个",
     "query": " · 搜索：",
     "hint": "↑/↓ 选择 · Enter 切换 · Esc 关闭",
+    "hint_vim": "/ 搜索 · j/k 选择 · Enter 切换 · Esc 关闭",
+    "searching": "输入以搜索 · Ctrl+J/K 选择 · Enter 完成 · Esc 取消",
     "loading": "正在加载模型…",
     "empty": "无匹配的模型",
     "cooling": "冷却 {n}m",
@@ -1353,9 +1357,9 @@
       "builtin_mascot": "内置",
       "mascot_missing": "{id}（未安装）",
       "seed_unset": "清除人格的主题色，恢复为头像取出的第一个",
-      "own_groups": {"theme": "主题", "timeline": "时间线", "mascot": "吉祥物", "icons": "图标"},
+      "own_groups": {"theme": "主题", "timeline": "时间线", "mascot": "吉祥物", "icons": "图标", "keys": "按键模式"},
       "appearance": "外观",
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}, "tui.keys": {"arrows": "方向键", "vim": "Vim"}},
       "unavailable": "未安装",
       "custom_model": "输入模型…",
       "combo": ["不设", "其他…"],
@@ -1371,6 +1375,7 @@
     },
     "steps": [
       "语言",
+      "操作方式",
       "图标",
       "模型",
       "人格",
@@ -1397,12 +1402,21 @@
       "enter_edit": "Enter 编辑", "enter_pick": "Enter 选择",
       "presets": "↑↓ 选择 · 空格 详情 · Enter 下一步 · Esc 上一步",
       "more": "输入以搜索 · ↑↓ 选择 · Enter 确定 · Esc 关闭",
+      "more_vim": "/ 搜索 · j/k 选择 · Enter 确定 · Esc 关闭",
       "theme": "Enter 选择 · j/k 移动 · Esc 上一步"
     },
     "language": {
       "title": "界面语言",
       "sub": "可在设置中修改",
       "auto": "跟随系统（{name}）"
+    },
+    "controls": {
+      "title": "你喜欢的操作方式",
+      "sub": "列表里怎么上下、怎么搜索，以后可以在设置里改",
+      "arrows": "方向键",
+      "arrows_note": "↑↓ 上下，打字直接搜",
+      "vim": "Vim",
+      "vim_note": "j/k 上下，按 / 搜索"
     },
     "icons": {
       "title": "图标",

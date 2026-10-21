@@ -62,6 +62,8 @@ pub struct ModelStep {
     pub more: Option<more::More>,
     /// 拿全目录时 `provider.catalog` 的 `limit`（`oobe.json` 的 `catalog_limit`）。
     pub catalog_limit: u64,
+    /// 按键模式是不是 Vim（终端的 `tui.keys`，界面每个按键前照配置写进来）：「更多供应商…」浮窗 `/` 才搜。
+    pub vim: bool,
     catalog: Option<Value>,
     detect: Option<Value>,
     list: Option<Value>,
@@ -74,6 +76,7 @@ impl ModelStep {
     pub fn new(catalog_limit: u64) -> Self {
         Self {
             catalog_limit,
+            vim: false,
             ..Self::default()
         }
     }
@@ -199,7 +202,7 @@ impl ModelStep {
                     },
                     Some(Row::Custom) => Form::default(),
                     Some(Row::More) => {
-                        self.more = Some(more::More::open());
+                        self.more = Some(more::More::open(self.vim));
                         let params = json!({"limit": self.catalog_limit});
                         asker.ask("provider.catalog", params, Waiting::AllProviders);
                         return Move::Stay;
@@ -386,7 +389,11 @@ impl ModelStep {
                 self.phase = Phase::List;
                 return Move::Stay;
             }
-            KeyCode::Char('/') => models.filter.begin(),
+            // 清空了重打（2026-10-21 项目主人：「下次再 / 就清空搜索结果后再次进入搜索模式」）。
+            KeyCode::Char('/') => {
+                models.filter = super::field::Field::line().live();
+                models.cursor = 0;
+            }
             _ if nav::plain(key) == Some(Nav::Up) => {
                 models.cursor = models.cursor.saturating_sub(1)
             }

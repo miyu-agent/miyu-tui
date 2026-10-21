@@ -12,8 +12,20 @@ use super::{
 };
 use crate::app::Seen;
 
-/// 开着的框排成的行，最多 `max` 行（框里上下的空行由 `panel.rs` 留）。
+/// 开着的框排成的行，最多 `max` 行（框里上下的空行由 `panel.rs` 留）。这些框都认 `j`、`k`：按键模式是 Vim 时按键提示
+/// 写「j/k」（蓝图「按键」表「按键模式」那一行）。
 pub(super) fn content(
+    seen: &Seen,
+    width: u16,
+    now: Instant,
+    max: usize,
+) -> (Chrome, Vec<Line<'static>>, Vec<Option<usize>>) {
+    let (chrome, lines, map) = rows(seen, width, now, max);
+    (chrome.vim(seen.config.layout.vim), lines, map)
+}
+
+/// 照开着的是哪一个排。
+fn rows(
     seen: &Seen,
     width: u16,
     now: Instant,

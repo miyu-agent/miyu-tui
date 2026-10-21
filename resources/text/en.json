@@ -675,6 +675,8 @@
     "count": "  {count}",
     "query": " · Search: ",
     "hint": "↑/↓ select · Enter switch · Space tick · Ctrl+P pin · Ctrl+D delete · Esc close",
+    "hint_vim": "/ search · j/k select · Enter switch · Space tick · Ctrl+P pin · Ctrl+D delete · Esc close",
+    "searching": "Type to search · Ctrl+J/K select · Enter done · Esc cancel",
     "loading": "Reading sessions…",
     "empty": "No matching sessions",
     "now": "just now",
@@ -707,6 +709,8 @@
     "count": "  {count}",
     "query": " · Search: ",
     "hint": "↑/↓ select · Enter switch · Esc close",
+    "hint_vim": "/ search · j/k select · Enter switch · Esc close",
+    "searching": "Type to search · Ctrl+J/K select · Enter done · Esc cancel",
     "loading": "Reading models…",
     "empty": "No matching models",
     "cooling": "cooling {n}m",
@@ -1353,9 +1357,9 @@
       "builtin_mascot": "Built-in",
       "mascot_missing": "{id} (not installed)",
       "seed_unset": "Clear the persona's theme color and go back to the avatar's first candidate",
-      "own_groups": {"theme": "Theme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons"},
+      "own_groups": {"theme": "Theme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons", "keys": "Key mode"},
       "appearance": "Appearance",
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
       "unavailable": "Not installed",
       "custom_model": "Enter a model…",
       "combo": ["Not set", "Other…"],
@@ -1371,6 +1375,7 @@
     },
     "steps": [
       "Language",
+      "Controls",
       "Icons",
       "Model",
       "Persona",
@@ -1397,12 +1402,21 @@
       "enter_edit": "Enter to edit", "enter_pick": "Enter to choose",
       "presets": "↑↓ choose · Space details · Enter next · Esc back",
       "more": "Type to search · ↑↓ choose · Enter confirm · Esc close",
+      "more_vim": "/ search · j/k choose · Enter confirm · Esc close",
       "theme": "Enter choose · j/k move · Esc back"
     },
     "language": {
       "title": "Language",
       "sub": "You can change it later in settings",
       "auto": "Follow the system ({name})"
+    },
+    "controls": {
+      "title": "How do you like to move around?",
+      "sub": "How lists move and search. You can change this in settings later",
+      "arrows": "Arrow keys",
+      "arrows_note": "↑↓ to move, type to search",
+      "vim": "Vim",
+      "vim_note": "j/k to move, / to search"
     },
     "icons": {
       "title": "Icons",

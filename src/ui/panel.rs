@@ -6,7 +6,7 @@
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
-use ratatui::style::Modifier;
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Clear, Paragraph};
 use unicode_segmentation::UnicodeSegmentation;
@@ -45,6 +45,41 @@ impl Chrome {
         self.hint = Some(hint.to_string());
         self
     }
+
+    /// 按键模式是 Vim（`on`）：按键提示里的「↑/↓」写成「j/k」。只给认 `j`、`k` 的框用，命令列表这些跟着输入框打字的
+    /// 照旧。
+    #[must_use]
+    pub fn vim(mut self, on: bool) -> Self {
+        if on && let Some(hint) = &mut self.hint {
+            *hint = moves(hint, true);
+        }
+        self
+    }
+}
+
+/// 按键提示里的「↑/↓」：按键模式是 Vim（`vim`）写成「j/k」（蓝图「按键」表「按键模式」那一行）。
+pub fn moves(hint: &str, vim: bool) -> String {
+    if vim {
+        hint.replace("↑/↓", "j/k")
+    } else {
+        hint.to_string()
+    }
+}
+
+/// 上边框里搜的字（`label` 是「 · 搜索：」）：打了字的写它；按键模式是 Vim 时按了 `/`、正在打的（`typing`）没打字也写，
+/// 末尾一根强调色的光标。
+pub fn searched(label: &str, query: &str, typing: bool) -> Vec<Span<'static>> {
+    if query.is_empty() && !typing {
+        return Vec::new();
+    }
+    let mut spans = vec![
+        Span::styled(label.to_string(), theme::dim()),
+        Span::styled(query.to_string(), Style::new().fg(Color::Reset)),
+    ];
+    if typing {
+        spans.push(Span::styled("▏", theme::accent()));
+    }
+    spans
 }
 
 /// 给了 `outer` 这么高，框里放得下几条：画得下框的去掉上下两条边。
