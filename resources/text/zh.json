@@ -1367,7 +1367,7 @@
       "combo": ["不设", "其他…"],
       "sheet_hints": [["Enter", "换行"], ["Ctrl+G", "外部编辑器"], ["Esc", "完成"]],
       "list": {"empty": "还没有", "whole": "请输入整数", "hints": [["Enter", "编辑"], ["a", "添加"], ["d", "删除"], ["J/K", "移动"], ["Esc", "完成"]]},
-      "ticks": {"empty": "没有可选的", "hints": [["空格", "勾选"], ["j/k", "移动"], ["Esc", "完成"]]}, "package_from": {"shipped": "出厂自带", "official": "官方软件源", "local": "本机安装"}
+      "ticks": {"empty": "没有可选的", "hints": [["空格", "勾选"], ["j/k", "移动"], ["Enter", "保存"], ["Esc", "取消"]]}, "package_from": {"shipped": "出厂自带", "official": "官方软件源", "local": "本机安装"}
     }
   },
   "oobe": {

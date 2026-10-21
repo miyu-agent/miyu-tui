@@ -1367,7 +1367,7 @@
       "combo": ["設定しない", "その他…"],
       "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]],
       "list": {"empty": "まだありません", "whole": "整数を入力してください", "hints": [["Enter", "変更"], ["a", "追加"], ["d", "削除"], ["J/K", "移動"], ["Esc", "完了"]]},
-      "ticks": {"empty": "選べるものがありません", "hints": [["Space", "チェック"], ["j/k", "移動"], ["Esc", "完了"]]}, "package_from": {"shipped": "同梱", "official": "公式ソース", "local": "ローカルからインストール"}
+      "ticks": {"empty": "選べるものがありません", "hints": [["Space", "チェック"], ["j/k", "移動"], ["Enter", "保存"], ["Esc", "キャンセル"]]}, "package_from": {"shipped": "同梱", "official": "公式ソース", "local": "ローカルからインストール"}
     }
   },
   "oobe": {
