@@ -1,5 +1,6 @@
 //! 示范对话的两种窗（蓝图「配置页」第 41 条，照旧版的「预设对话」）：列表一轮两行（你问的、AI回的），选中的那一轮铺底
-//! 色；两格窗各一行，光标在的那一格铺底色、跟着光标。配置页的列表窗（第 47 条）按键和它一样，画法也放在这里。
+//! 色；两格窗各一行，光标在的那一格铺底色、跟着光标。配置页的列表窗（第 47 条）按键和它一样，画法也放在这里；勾选窗（第 47a
+//! 条）同列表窗的样子，前面多一个勾。
 
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
@@ -9,6 +10,7 @@ use super::popup::{Body, Lines};
 use crate::settings::Texts;
 use crate::settings::pages::dialogs::{DialogsView, PairEdit};
 use crate::settings::pages::list::ListEdit;
+use crate::settings::pages::ticks::TickEdit;
 use crate::theme;
 
 /// 列表：一轮一行，两边各截前面一段；没有的写「还没有示范对话」。
@@ -84,6 +86,34 @@ pub(super) fn list(lines: &mut Lines, edit: &ListEdit, texts: &Texts, width: u16
     for (i, value) in edit.items.iter().enumerate() {
         lines.body.push(Body {
             line: Line::raw(format!("  {}", fit(&ListEdit::label(value), room))),
+            focused: i == edit.sel,
+            hit: None,
+        });
+    }
+}
+
+/// 勾选窗（第 47a 条）：一个选项一行，`[*]` 勾着（强调色）、`[ ]` 没勾（暗），选中的铺底色；没有选项的暗色写「没有可选的」。
+pub(super) fn ticks(lines: &mut Lines, edit: &TickEdit, texts: &Texts, width: u16) {
+    let words = &texts.more.ticks;
+    lines.title(edit.title.clone(), String::new());
+    lines.hints = words.hints.clone();
+    if edit.options.is_empty() {
+        lines.plain(Line::styled(format!("  {}", words.empty), theme::dim()));
+        return;
+    }
+    let room = usize::from(width).saturating_sub(10);
+    for (i, ((_, name), on)) in edit.options.iter().zip(&edit.on).enumerate() {
+        let (mark, style) = if *on {
+            ("[*]", theme::accent())
+        } else {
+            ("[ ]", theme::dim())
+        };
+        lines.body.push(Body {
+            line: Line::from(vec![
+                Span::raw("  "),
+                Span::styled(mark, style),
+                Span::raw(format!(" {}", fit(name, room))),
+            ]),
             focused: i == edit.sel,
             hit: None,
         });

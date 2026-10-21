@@ -81,6 +81,7 @@ pub fn draw(
         Popup::Preset(view) => super::more_popups::preset(&mut lines, view, page, texts),
         Popup::Dialogs(view) => super::dialog_popups::dialogs(&mut lines, view, texts, width),
         Popup::List(edit) => super::dialog_popups::list(&mut lines, edit, texts, width),
+        Popup::Ticks(edit) => super::dialog_popups::ticks(&mut lines, edit, texts, width),
         Popup::Pair(edit) => super::dialog_popups::pair(&mut lines, edit, texts),
     }
     floating::centered(

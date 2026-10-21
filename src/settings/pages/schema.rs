@@ -103,6 +103,8 @@ pub const GENERAL: &str = "general";
 pub const APPEARANCE: &str = "appearance";
 /// 「用户」页（核心 P-9 再补）：主菜单紧跟「通用」（「配置页」第 46 条）。
 pub const USER: &str = "user";
+/// 「隐私与安全」页（核心 5-15 下）：主菜单排在「用户」后面、「外观」前面（2026-10-21 项目主人照推荐定，同核心、网页的先后）。
+pub const PRIVACY: &str = "privacy";
 /// 终端自己的配置项的键打头的那一截（终端软件包的编号）。
 const OWN: &str = "tui.";
 

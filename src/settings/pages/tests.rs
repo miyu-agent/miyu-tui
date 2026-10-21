@@ -71,6 +71,27 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("advanced".into()),
         ]
     );
+    // 2026-10-21：核心的「隐私与安全」排在用户后面、外观前面（项目主人照推荐定）。
+    more.schema = Some(schema(&[
+        "general",
+        "privacy",
+        "user",
+        "advanced",
+        "appearance",
+        "models",
+    ]));
+    assert_eq!(
+        more.entries(),
+        [
+            Entry::Page("general".into()),
+            Entry::Models,
+            Entry::Page("user".into()),
+            Entry::Page("privacy".into()),
+            Entry::Page("appearance".into()),
+            Entry::Personas,
+            Entry::Page("advanced".into()),
+        ]
+    );
     more.menu_at = 99;
     assert_eq!(
         more.selected(),
