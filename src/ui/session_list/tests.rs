@@ -374,3 +374,40 @@ fn terminal_sessions_say_so_when_there_is_room() {
     );
     assert!(narrow[0].contains("看日志"), "标题不为它截短：{narrow:#?}");
 }
+
+#[test]
+fn columns_stay_put_when_the_list_scrolls() {
+    // 2026-10-22 项目主人：「列的位置不稳定，会移动」——终端集成会话、总 token 宽的那个滚出去以后，编号、总计一列跟着挪。
+    let config = Config::builtin().unwrap();
+    let mut list = SessionList::default();
+    let mut all: Vec<SessionInfo> = (0..20)
+        .map(|i| info(&format!("0000-{i:08}"), Some("写代码"), "~/src/miyu"))
+        .collect();
+    all[0].terminal = true;
+    all[0].tokens = 692_600;
+    all[0].context = Some((6_000, Some(100_000)));
+    list.replace(all);
+    let columns = |list: &SessionList| {
+        let marks = super::Marks {
+            current: None,
+            asking: &[],
+        };
+        let (_, rows, map) = lines(list, marks, "~/src/miyu", &config, 120, 30, 0);
+        let rows: Vec<String> = sessions_only(rows, &map)
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        let at = |l: &str, mark: &str| l.find(mark).map(|at| l[..at].width());
+        (at(&rows[1], " #"), at(&rows[1], "Σ"), rows)
+    };
+    let (id_top, sum_top, top) = columns(&list);
+    assert!(top[0].contains("终端集成"), "{top:#?}");
+    list.selected = 19;
+    let (id_end, sum_end, end) = columns(&list);
+    assert!(
+        end.iter().all(|l| !l.contains("终端集成")),
+        "滚到底它不在露出来的里：{end:#?}"
+    );
+    assert_eq!(id_top, id_end, "编号一列不挪：{top:#?}\n{end:#?}");
+    assert_eq!(sum_top, sum_end, "总计一列不挪：{top:#?}\n{end:#?}");
+}
