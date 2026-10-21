@@ -27,5 +27,5 @@
   "slash_sessions": "以降は「{title}」に送ります",
   "slash_persona": "今後新しく開くターミナルセッションはペルソナ「{name}」を使います",
   "slash_preset": "今後新しく開くターミナルセッションはプリセット「{name}」を使います",
-  "slash_ambiguous": "「{query}」という名前はありません。近いもの：{names}（正式名を入力してください）"
+  "slash_ambiguous": "「{query}」という名前はありません。近いもの："
 }

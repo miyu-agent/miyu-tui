@@ -27,5 +27,5 @@
   "slash_sessions": "之后说进「{title}」",
   "slash_persona": "之后新开的终端会话用人格「{name}」",
   "slash_preset": "之后新开的终端会话用预设「{name}」",
-  "slash_ambiguous": "没有叫「{query}」的；对得上的有：{names}（写全名）"
+  "slash_ambiguous": "没有叫「{query}」的；对得上的有："
 }

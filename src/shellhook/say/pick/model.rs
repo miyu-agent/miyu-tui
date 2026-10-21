@@ -110,18 +110,20 @@ impl Picker for ModelPick {
         if let Some(choice) = exact {
             return self.choose(&choice, turn, core);
         }
+        // 一行一个，名字后面写引用：同名的（几家都有的「DeepSeek V4.1 Flash」）照引用才分得清（2026-10-21 项目主人：「每行
+        // 一个模型会不会好一些」）。
         let near: Vec<String> = self
             .list
             .matches()
             .iter()
             .take(NEAR)
-            .map(|c| c.name.clone())
+            .map(|c| format!("  {}{}{}", c.name, crate::sheet::sep(), c.reference))
             .collect();
         match near.is_empty() {
-            false => Picked::Done(Some(result(&fill(
-                &self.words.slash_ambiguous,
-                &[("query", given), ("names", &near.join("、"))],
-            )))),
+            false => {
+                let head = fill(&self.words.slash_ambiguous, &[("query", given)]);
+                Picked::Done(Some(result(&format!("{head}\n{}", near.join("\n")))))
+            }
             true => Picked::Done(Some(result(&fill(
                 &self.words.slash_no_match,
                 &[("query", given)],

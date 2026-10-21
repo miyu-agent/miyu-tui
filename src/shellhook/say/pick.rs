@@ -76,19 +76,22 @@ fn wrapped(line: &Line<'static>, width: u16) -> Vec<Line<'static>> {
     let body = text.strip_prefix("  ").unwrap_or(&text);
     let room = usize::from(width).saturating_sub(2).max(1);
     let mut out = Vec::new();
-    let mut row = String::new();
-    let mut used = 0;
-    for c in body.chars() {
-        let w = c.width().unwrap_or(0);
-        if used + w > room && !row.is_empty() {
-            out.push(Line::styled(format!("  {row}"), style));
-            row.clear();
-            used = 0;
+    // 字里的换行照换（一行一个的列表）。
+    for part in body.split('\n') {
+        let mut row = String::new();
+        let mut used = 0;
+        for c in part.chars() {
+            let w = c.width().unwrap_or(0);
+            if used + w > room && !row.is_empty() {
+                out.push(Line::styled(format!("  {row}"), style));
+                row.clear();
+                used = 0;
+            }
+            row.push(c);
+            used += w;
         }
-        row.push(c);
-        used += w;
+        out.push(Line::styled(format!("  {row}"), style));
     }
-    out.push(Line::styled(format!("  {row}"), style));
     out
 }
 

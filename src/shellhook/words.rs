@@ -47,7 +47,7 @@ pub struct Words {
     /// `/persona`、`/preset` 写好了（`{name}`）。
     pub slash_persona: String,
     pub slash_preset: String,
-    /// 带的参数没写全、对得上几个（`{query}`、`{names}`）。
+    /// 带的参数没写全、对得上几个（`{query}`）：后面一行一个列对得上的。
     pub slash_ambiguous: String,
     /// 带的参数什么都没对上（`{query}`）。
     pub slash_no_match: String,

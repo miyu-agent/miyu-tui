@@ -27,5 +27,5 @@
   "slash_sessions": "Messages now go to “{title}”",
   "slash_persona": "New terminal sessions will use the persona “{name}”",
   "slash_preset": "New terminal sessions will use the preset “{name}”",
-  "slash_ambiguous": "Nothing is called “{query}”; close matches: {names} (type the full name)"
+  "slash_ambiguous": "Nothing is called “{query}”; close matches:"
 }
