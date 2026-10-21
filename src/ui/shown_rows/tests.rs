@@ -116,3 +116,33 @@ fn sizes_read_like_files() {
     assert_eq!(size(1536), "1.5 KB");
     assert_eq!(size(3 * 1024 * 1024), "3.0 MB");
 }
+
+#[test]
+fn only_the_picture_itself_opens_it_not_the_blank_to_its_right() {
+    // 2026-10-22 项目主人：show 出来的图点击判定是一整行，图右边的空档也是手形、点了也开。
+    let f = Fixture::new();
+    let (figures, jobs) = crate::figures::queued(8);
+    *f.ctx().figures.borrow_mut() = figures;
+    let dir = std::env::temp_dir().join(format!("miyu-shown-pick-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let saved = dir.join("blob");
+    std::fs::write(&saved, b"png").unwrap();
+    let mut entry = shown(7, "cat.png", "image/png", 3, None);
+    let blob = format!("sha256:pick{}", std::process::id());
+    entry.shown.as_mut().unwrap().blob.clone_from(&blob);
+    f.cards.borrow_mut().saved(blob.clone(), Some(saved));
+    assert!(rows(&entry, &f.ctx())[0].figure_pending, "先排队做图");
+    crate::figures::finish(&mut f.ctx().figures.borrow_mut(), &jobs, 100, 3);
+    let got = rows(&entry, &f.ctx());
+    assert_eq!(got.len(), 3, "图三行");
+    for row in &got {
+        assert_eq!(
+            row.links,
+            [(0, 10, "miyu-shown:7".to_string())],
+            "只有图那 10 列能点"
+        );
+    }
+    drop(std::fs::remove_dir_all(&dir));
+    let copied = crate::shown_files::place(&blob, "cat.png");
+    drop(std::fs::remove_dir_all(copied.parent().unwrap()));
+}
