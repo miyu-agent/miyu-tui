@@ -7,12 +7,14 @@ use std::time::{Duration, Instant};
 use miyu_session::testkit::Script;
 use support::{Home, Tui};
 
-/// 等到屏幕上没有圆角、有 ASCII 的框（输入框的角是 `+`）。
+/// 等到屏幕上没有圆角、有 ASCII 的框（输入框的角是 `+`），提示符也换了（`layout.json` 上盖的那一节）。
 fn wait_ascii(tui: &mut Tui) {
     let end = Instant::now() + support::WAIT;
     loop {
         let lines = tui.lines();
-        let rounded = lines.iter().any(|l| l.contains('╭') || l.contains('╰'));
+        let rounded = lines
+            .iter()
+            .any(|l| l.contains('╭') || l.contains('╰') || l.contains('❯'));
         let ascii = lines.iter().any(|l| l.trim_start().starts_with("+--"));
         if !rounded && ascii {
             return;

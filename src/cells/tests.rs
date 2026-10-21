@@ -31,3 +31,11 @@ fn wrapping_never_splits_or_overfills_a_cluster() {
     assert_eq!(wrap("", 4), [""]);
     assert_eq!(wrap("中文", 1), ["中", "文"], "放不下一个字的也独占一行");
 }
+
+#[test]
+fn a_wider_ellipsis_from_the_theme_still_fits_the_width() {
+    // 蓝图「主题」第 2 条：截掉的地方照 `marks.ellipsis` 的宽度算，纯 ASCII 主题的 `...` 三格。
+    let clipped = super::clip_marked("abcdefghij", 6, "...");
+    assert_eq!(clipped, "abc...");
+    assert_eq!(super::clip_marked("abcdefghij", 6, "…"), "abcde…");
+}

@@ -6,10 +6,14 @@ use unicode_width::UnicodeWidthStr;
 
 /// 放进 `width` 列：放不下的截掉后面、结尾写 `…`（`…` 也算在里面；记号照主题的 `marks.ellipsis`）。
 pub fn clip(text: &str, width: usize) -> String {
+    clip_marked(text, width, &crate::sheet::ellipsis())
+}
+
+/// 同 [`clip`]，截掉的地方写 `mark`（照它的宽度算）。
+fn clip_marked(text: &str, width: usize, mark: &str) -> String {
     if text.width() <= width {
         return text.to_string();
     }
-    let mark = crate::sheet::ellipsis();
     let mark_w = mark.width();
     let mut out = String::new();
     let mut used = 0;
@@ -21,7 +25,7 @@ pub fn clip(text: &str, width: usize) -> String {
         used += w;
         out.push_str(g);
     }
-    out.push_str(&mark);
+    out.push_str(mark);
     out
 }
 
