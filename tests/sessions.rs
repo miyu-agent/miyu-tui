@@ -314,7 +314,7 @@ fn with_vim_keys_j_moves_and_a_space_after_slash_is_part_of_the_search() {
     tui.key(b"/");
     tui.type_text("第 2");
     tui.wait_for("搜索：第 2");
-    tui.wait_for("1 个");
+    // 不数对上几个：会话的短编号是随机的，带个 `2` 的也对得上（2026-10-21 macOS CI 上三个都对上）；最像的排第一。
     assert!(
         tui.shows("已选 1"),
         "空格是字，不多勾：{}",
