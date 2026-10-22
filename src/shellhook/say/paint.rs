@@ -81,6 +81,10 @@ impl<W: Write> Painter<W> {
         }
         self.last = Some((live.to_vec(), caret));
         queue!(self.out, BeginSynchronizedUpdate)?;
+        // 重画时先藏起光标，画完再亮在写字的那一格：中途挪来挪去不露出来。
+        if self.shown {
+            queue!(self.out, cursor::Hide)?;
+        }
         self.erase()?;
         for line in settled {
             queue!(self.out, Print(line), Print("\r\n"))?;

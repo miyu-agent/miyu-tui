@@ -73,11 +73,9 @@ impl View<'_> {
             Scope::Turns(_) => transcript
                 .entries
                 .iter()
-                // 你说的那句在正文最前面（发之前先画上的），不算：从她这一轮的第一条起（实测：接上的会话补发的那一页排在它后面）。
-                .position(|e| {
-                    e.kind != crate::transcript::Kind::User
-                        && e.turn.zip(first).is_some_and(|(t, o)| t >= o)
-                })
+                // 你说的那句在正文最前面（发之前先画上的、藏着，`turn.rs`），不算：从这一轮第一条画得出来的起（实测：接上的会话
+                // 补发的那一页排在它后面）。答话时插的话被听到时挪到这一轮开头，算（2026-10-23 实测：原来跳过了）。
+                .position(|e| !e.hidden && e.turn.zip(first).is_some_and(|(t, o)| t >= o))
                 .unwrap_or(transcript.entries.len()),
         };
         let mut rows = Vec::new();
@@ -94,8 +92,10 @@ impl View<'_> {
             .enumerate()
             .skip(from)
             .take_while(|(_, e)| !outside(e));
+        // 你说的话：开这一轮的那句 fish 已经重放过了（在 `from` 前面），这一轮里的是答话时插的（`turn/interject.rs`），照画。
+        let talks = matches!(scope, Scope::Turns(_));
         for (i, entry) in
-            picked.filter(|(_, e)| e.kind != crate::transcript::Kind::User && shown(e))
+            picked.filter(|(_, e)| (talks || e.kind != crate::transcript::Kind::User) && shown(e))
         {
             if !rows.is_empty() {
                 rows.push(ctx.row(ctx.blank_slot(), Vec::new()));

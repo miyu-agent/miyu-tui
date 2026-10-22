@@ -5,7 +5,10 @@ use std::io::{self, Stdout, Write};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-use ratatui::crossterm::event::{DisableFocusChange, EnableFocusChange, Event};
+use ratatui::crossterm::event::{
+    DisableFocusChange, EnableFocusChange, Event, KeyboardEnhancementFlags,
+    PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+};
 use ratatui::text::Line;
 
 use super::look::Look;
@@ -55,8 +58,17 @@ impl Session {
             to_core.send(Incoming::Core(update)).is_ok()
         });
         ratatui::crossterm::terminal::enable_raw_mode()?;
-        let raw = RawMode;
+        let mut raw = RawMode { keyboard: false };
         let look = Look::new(terminal_colors());
+        // kitty 键盘协议（同全屏 `main.rs`）：认得 Ctrl+回车（打断、插的话马上发，`turn/interject.rs`）。在开始读按键以前问，
+        // 回话不让读按键读走；不认的终端不开。收工、出错时关（`RawMode`）。
+        if ratatui::crossterm::terminal::supports_keyboard_enhancement().unwrap_or(false) {
+            ratatui::crossterm::execute!(
+                io::stdout(),
+                PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+            )?;
+            raw.keyboard = true;
+        }
         // 终端在不在前台：不在时回答好了、在等你确认弹通知（同全屏「系统通知」，2026-10-20 项目主人验收要的）。
         ratatui::crossterm::execute!(io::stdout(), EnableFocusChange)?;
         let reader =
@@ -151,6 +163,10 @@ impl Session {
             } else {
                 0
             };
+            // 排着的插话、提前敲的那一行接在最下面（`typing.rs`）；抽屉开着时按键归抽屉，不画敲的那一行。
+            let (typing, typed_col) =
+                super::typing::lines(turn, &self.config, width, !settled_open);
+            lines.extend(typing);
             // 活动区最多占终端高减一行：长过的只露最新的那一截，这一轮结束时整段印出来（「怎么印」第 2 条）。
             let room = usize::from(height.saturating_sub(1 + drawer)).max(1);
             let tail = lines.len().saturating_sub(room);
@@ -175,7 +191,9 @@ impl Session {
             };
             let above = live.len();
             live.extend(box_lines);
-            let caret = caret.map(|(x, y)| (above + usize::from(y), x));
+            let caret = caret
+                .map(|(x, y)| (above + usize::from(y), x))
+                .or_else(|| typed_col.map(|col| (above.saturating_sub(1), col)));
             let settled = match banner(turn).filter(|_| !bannered) {
                 Some(line) => {
                     bannered = true;
@@ -337,11 +355,21 @@ fn notifier(config: &Config) -> Notifier {
     )
 }
 
-/// 原始模式：收工、出错都关上，不把 shell 留在原始模式里。
-struct RawMode;
+/// 原始模式、键盘协议：收工、出错都关上，不把 shell 留在原始模式里。
+struct RawMode {
+    /// 开了 kitty 键盘协议。
+    keyboard: bool,
+}
 
 impl Drop for RawMode {
     fn drop(&mut self) {
+        if self.keyboard {
+            // 关不掉也没处报：在收尾里。
+            drop(ratatui::crossterm::execute!(
+                io::stdout(),
+                PopKeyboardEnhancementFlags
+            ));
+        }
         if ratatui::crossterm::terminal::disable_raw_mode().is_err() {}
     }
 }

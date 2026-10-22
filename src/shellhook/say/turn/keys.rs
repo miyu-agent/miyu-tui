@@ -50,6 +50,8 @@ impl Turn {
                         }
                         core.send(Command::Interrupt { send: false });
                     }
+                    // 回车插话，Ctrl+回车当场打断、插的马上发（`interject.rs`）。
+                    KeyCode::Enter => self.interject(core, ctrl),
                     KeyCode::Char(c) if !ctrl && !alt => self.typed.push(c),
                     KeyCode::Backspace => {
                         self.typed.pop();

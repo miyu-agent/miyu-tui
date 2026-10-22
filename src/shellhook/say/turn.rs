@@ -39,6 +39,8 @@ pub struct Turn {
     manual: bool,
     /// 压缩进度条走满时的抖动（同全屏）。
     rng: crate::rng::Rng,
+    /// 答话时插的话（`turn/interject.rs`）。
+    interject: interject::Interject,
     /// 打的 `/dream` 正在整理（`dreaming.rs`）。
     pub(super) dream: Option<crate::dream::Dream>,
     /// 这一轮待办变过：收尾时把最后的样子印出来。
@@ -132,6 +134,10 @@ impl Turn {
         let mut transcript = Transcript::default();
         if !text.is_empty() {
             transcript.user(text.clone(), Vec::new());
+            // fish 已经在提示符那一行重放过这句，不再画（答话时插的话照画，`view.rs`）。
+            if let Some(said) = transcript.entries.last_mut() {
+                said.hidden = true;
+            }
             transcript.starting = Starting::Waiting;
         }
         Self {
@@ -144,6 +150,7 @@ impl Turn {
             compact: None,
             manual: false,
             rng: crate::rng::Rng::from_clock(),
+            interject: interject::Interject::default(),
             dream: None,
             todos_changed: false,
             jobs: Vec::new(),
@@ -236,6 +243,7 @@ impl Turn {
             return;
         }
         self.watch(&update);
+        self.follow_interject(&update);
         match self.pack.update(&update, config, core) {
             super::pack::Applied::No => {}
             super::pack::Applied::Yes => return,
@@ -274,6 +282,11 @@ impl Turn {
             update @ (Update::Paged(_) | Update::Older { .. }) if self.paging => {
                 self.paging = false;
                 self.transcript.update(update, &config.text);
+                // 那一页里还挂着「排着」的旧话：以前答话时插的，「听到了」是瞬时的、补发里没有，看着一直排着。早被以前那几轮
+                // 听过了，藏起来，不让这一轮开轮时当成带上的话归进来（2026-10-23 实测：上一次插的话画进了这一轮）。
+                for entry in self.transcript.entries.iter_mut().filter(|e| e.queued) {
+                    entry.hidden = true;
+                }
                 self.send(core);
             }
             Update::HeadConfig(head) => {
@@ -374,7 +387,12 @@ impl Turn {
             update => self.transcript.update(update, &config.text),
         }
         // 这句话开的那一轮结束了：收工（接上的等最新一页补完再看）。
-        if self.ours.is_some() && !self.paging && self.transcript.running.is_none() {
+        // 插的话还没落着的不收工：这一轮完了核心会拿它另开一轮（`turn/interject.rs`）。
+        if self.ours.is_some()
+            && !self.paging
+            && self.transcript.running.is_none()
+            && !self.interject.waiting()
+        {
             // 说话的那一句（`report.rs` 接上的不算：叫醒的那一轮归盯后台的记）：有任务在这一轮里结束的先等等。
             if self.unseen.owed() && !self.said.is_empty() {
                 self.lingering = true;
@@ -475,6 +493,7 @@ impl Turn {
     }
 }
 
+mod interject;
 mod keys;
 
 #[cfg(test)]

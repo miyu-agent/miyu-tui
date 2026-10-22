@@ -19,6 +19,7 @@ mod settings;
 pub mod spool;
 mod terminal;
 mod turn;
+mod typing;
 mod unseen;
 mod view;
 
