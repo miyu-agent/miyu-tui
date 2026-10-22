@@ -16,6 +16,7 @@ fn only_the_wait_for_the_first_word_counts() {
             class: "network".into(),
             message: "reset".into(),
             status: None,
+            retry_after_ms: None,
         })],
     );
     assert!(t.waiting(), "出错等重试：这一轮还没出过字");

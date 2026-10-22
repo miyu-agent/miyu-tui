@@ -13,6 +13,7 @@ mod clock;
 mod compaction;
 mod entry;
 mod failure;
+pub use failure::RetryAfter;
 mod foreign;
 mod fresh;
 mod goal;

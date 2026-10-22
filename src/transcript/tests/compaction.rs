@@ -107,6 +107,7 @@ fn a_failed_summary_is_red_with_its_reason_and_not_the_turns_error() {
             class: class.into(),
             message: message.into(),
             status: None,
+            retry_after_ms: None,
         }))
     };
     apply(
@@ -194,6 +195,7 @@ fn the_error_line_names_its_class() {
                 class: "compaction_paused".into(),
                 message: "the request does not fit".into(),
                 status: None,
+                retry_after_ms: None,
             }),
             Push::TurnEnded(EndReason::Error),
         ],
@@ -210,6 +212,7 @@ fn a_summary_that_called_a_tool_tries_again_without_tools_in_grey() {
         class: "bad_summary".into(),
         message: "the summary called a tool (read); trying again without tools".into(),
         status: None,
+        retry_after_ms: None,
     }));
     apply(
         &mut t,
