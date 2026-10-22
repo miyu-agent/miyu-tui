@@ -241,6 +241,19 @@ pub fn heat(level: usize) -> Style {
     fg(|p| p.heat[level.min(4)])
 }
 
+/// 选中那一行左边的竖条：强调色；不铺底的主题跟着字换选中色（2026-10-22 项目主人选的「竖条和字一起换」）。
+pub fn picked_mark() -> Style {
+    mark_style(barless())
+}
+
+fn mark_style(barless: bool) -> Style {
+    Style::new().fg(if barless {
+        pick(|p| p.picked)
+    } else {
+        pick(|p| p.accent)
+    })
+}
+
 /// 配置页焦点那一栏选中的一行：底色深一档，字照常。
 pub fn row_focus() -> Style {
     focus_style(barless())

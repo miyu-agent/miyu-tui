@@ -158,4 +158,11 @@ fn a_barless_pick_uses_the_picked_color_not_the_title_accent() {
         "配置页焦点那一栏"
     );
     assert_eq!(super::focus_style(true).bg, None);
+    // 左边的竖条跟着字换（截图里「| 外观」的竖条也和标题一个颜色）。
+    assert_eq!(super::mark_style(true).fg, Some(picked), "竖条");
+    assert_eq!(
+        super::mark_style(false).fg,
+        Some(accent),
+        "铺底的照旧强调色"
+    );
 }
