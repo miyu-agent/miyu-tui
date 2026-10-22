@@ -606,6 +606,7 @@
     },
     "outside": "工作区外",
     "private": "私密目录",
+    "protected": "受保护",
     "unanswered": "未回答",
     "keys": "↑/↓ 选择 · Enter 提交 · n 补充 · Esc ×2 取消",
     "keys_multi": "↑/↓ 选择 · Space 勾选 · Enter 提交 · n 补充 · Esc ×2 取消",

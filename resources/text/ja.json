@@ -606,6 +606,7 @@
     },
     "outside": "ワークスペース外",
     "private": "プライベートディレクトリ",
+    "protected": "保護対象",
     "unanswered": "未回答",
     "keys": "↑/↓ 選択 · Enter 送信 · n 補足 · Esc ×2 キャンセル",
     "keys_multi": "↑/↓ 選択 · Space チェック · Enter 送信 · n 補足 · Esc ×2 キャンセル",

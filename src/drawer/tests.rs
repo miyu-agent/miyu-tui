@@ -423,14 +423,16 @@ fn vim_keys_move_and_turn_pages_while_not_typing() {
 }
 
 #[test]
-fn a_path_outside_the_workspace_or_in_a_private_directory_is_marked() {
+fn a_path_outside_the_workspace_in_a_private_directory_or_protected_is_marked() {
     // 核心 5-13：别的程序的私密目录（钥匙、登录这类）`zone` 是 `private`，2026-10-12 项目主人定标「私密目录」；工作区外的照旧。
+    // 受保护的路径（`zone` 是 `read_only`，核心 5-17 下上）2026-10-22 项目主人照推荐定标「受保护」。
     let texts = Config::builtin().unwrap().text.drawer;
     let approval: Approval = serde_json::from_value(serde_json::json!({
         "call_id": "c1", "access": "read",
         "detail": {"tool": "read", "paths": [
             {"path": "/srv/keys/id_ed25519", "write": false, "zone": "private"},
             {"path": "/srv/other/notes.md", "write": false, "zone": "outside"},
+            {"path": "/srv/work/.git/hooks/pre-commit", "write": true, "zone": "read_only"},
             {"path": "/srv/work/a.md", "write": false}
         ]}
     }))
@@ -439,7 +441,12 @@ fn a_path_outside_the_workspace_or_in_a_private_directory_is_marked() {
     let marks: Vec<Option<String>> = d.paths(&texts).into_iter().map(|(_, m)| m).collect();
     assert_eq!(
         marks,
-        [Some("私密目录".into()), Some("工作区外".into()), None]
+        [
+            Some("私密目录".into()),
+            Some("工作区外".into()),
+            Some("受保护".into()),
+            None
+        ]
     );
 }
 
