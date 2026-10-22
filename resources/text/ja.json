@@ -1373,7 +1373,7 @@
       "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]],
       "list": {"empty": "まだありません", "whole": "整数を入力してください", "hints": [["Enter", "変更"], ["a", "追加"], ["d", "削除"], ["J/K", "移動"], ["Esc", "完了"]]},
       "ticks": {"empty": "選べるものがありません", "hints": [["Space", "チェック"], ["j/k", "移動"], ["Enter", "保存"], ["Esc", "キャンセル"]]}, "package_from": {"shipped": "同梱", "official": "公式ソース", "local": "ローカルからインストール"},
-      "mcp": {"entry": ["MCP", "MCP サーバーの状態とログイン"], "states": {"off": "オフ", "starting": "起動中", "running": "実行中", "waiting": "再接続待ち", "stopped": "停止", "needs_login": "ログインが必要"}, "tools": "ツール {n} 個", "login": "ログイン", "asking": "{name} の認可ページを取得中", "opened": "{name} の認可ページをブラウザで開きました", "no_browser": "ブラウザを開けません。認可ページ：{url}", "unregistered": "このサーバーはクライアント登録が必要です。client_id をサーバーの設定に書いてください", "failed": "ログインに失敗しました：{why}", "hints": [["Enter", "ログイン"], ["Esc", "戻る"]]}
+      "mcp": {"entry": ["MCP", "MCP サーバーの状態とログイン"], "states": {"off": "オフ", "starting": "起動中", "running": "実行中", "waiting": "再接続待ち", "stopped": "停止", "needs_login": "ログインが必要"}, "tools": "ツール {n} 個", "login": "ログイン", "asking": "{name} の認可ページを取得中", "opened": "{name} の認可ページをブラウザで開きました", "no_browser": "ブラウザを開けません。認可ページ：{url}", "unregistered": "このサーバーはクライアント登録が必要です。client_id をサーバーの設定に書いてください", "failed": "ログインに失敗しました：{why}", "logout": "ログアウト", "leaving": "{name} からログアウト中", "left": "{name} からログアウトしました", "not_logged_in": "{name} にはログインしていません", "hints": [["Enter", "ログイン・ログアウト"], ["Esc", "戻る"]]}
     }
   },
   "oobe": {

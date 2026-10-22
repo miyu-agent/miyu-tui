@@ -102,6 +102,8 @@ enum Waiting {
     Mcp,
     /// 要一个服务的授权页（`mcp.login`）：服务名。
     McpLogin(String),
+    /// `mcp.logout`：登出的服务名。
+    McpLogout(String),
     /// 读一个预设的详情（`preset.get`）：编号。
     PresetDetail(String),
     /// 改、建一个预设（`preset.set`，核心 P-3）：存好了要不要开它的窗（新建的）。
@@ -281,6 +283,7 @@ impl Settings {
             }
             Waiting::Mcp => self.mcp_listed(result),
             Waiting::McpLogin(name) => self.login_answer(&name, result, texts),
+            Waiting::McpLogout(name) => self.logout_answer(&name, result, texts),
             Waiting::PresetSaved(open) => self.preset_saved(open, result),
             Waiting::PresetDeleted => self.preset_deleted(result, texts),
             Waiting::PersonaSaved(id, open) => self.persona_saved((id, open), result, texts),

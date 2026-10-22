@@ -1,5 +1,6 @@
 //! 「MCP」那一页的服务列表（蓝图「配置页」第 43b 条，2026-10-22 项目主人定）：一个服务一行，名字、暗色的状态（在跑的接着
-//! 写几件工具）；要登录的状态用警示色，右边一个「登录」，同底栏的按钮：强调色、悬停加粗，点得到。名字照最长的对齐。
+//! 写几件工具）；要登录的状态用警示色，右边一个「登录」，同底栏的按钮：强调色、悬停加粗，点得到；登录过的右边是「登出」。
+//! 名字照最长的对齐。
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -38,7 +39,8 @@ fn state(server: &Server, texts: &Texts) -> String {
 /// 排成的行：字、是不是选中的那一行。「登录」不在字里，画完再照 [`buttons`] 叠上去。
 pub(super) fn lines(list: &[Server], at: usize, texts: &Texts, width: u16) -> Vec<Painted> {
     let name_w = list.iter().map(|s| s.name.width()).max().unwrap_or(0) + 2;
-    let button_w = texts.more.mcp.login.width() + 2;
+    let words = &texts.more.mcp;
+    let button_w = words.login.width().max(words.logout.width()) + 2;
     list.iter()
         .enumerate()
         .map(|(i, server)| {
@@ -63,7 +65,8 @@ pub(super) fn lines(list: &[Server], at: usize, texts: &Texts, width: u16) -> Ve
         .collect()
 }
 
-/// 要登录的那几行右边叠上「登录」，记下点得到的地方（[`Hit::Login`]）。和 `paint` 照同一个起点算哪几行看得见。
+/// 要登录的那几行右边叠上「登录」、登录过的叠上「登出」，记下点得到的地方（[`Hit::Login`]）。和 `paint` 照同一个起点算
+/// 哪几行看得见。
 pub(super) fn buttons(
     frame: &mut Frame,
     body: Rect,
@@ -72,12 +75,19 @@ pub(super) fn buttons(
     texts: &Texts,
 ) {
     let list = page.more.servers();
-    let label = &texts.more.mcp.login;
-    let w = u16::try_from(label.width()).unwrap_or(0);
+    let words = &texts.more.mcp;
     let height = usize::from(body.height);
     let first = top(lines, height);
     for (n, (i, server)) in list.iter().enumerate().skip(first).take(height).enumerate() {
-        if !server.needs_login() || body.width < w + 4 {
+        let label = if server.needs_login() {
+            &words.login
+        } else if server.logged_in {
+            &words.logout
+        } else {
+            continue;
+        };
+        let w = u16::try_from(label.width()).unwrap_or(0);
+        if body.width < w + 4 {
             continue;
         }
         let y = body.y + u16::try_from(n).unwrap_or(0);

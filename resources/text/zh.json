@@ -1373,7 +1373,7 @@
       "sheet_hints": [["Enter", "换行"], ["Ctrl+G", "外部编辑器"], ["Esc", "完成"]],
       "list": {"empty": "还没有", "whole": "请输入整数", "hints": [["Enter", "编辑"], ["a", "添加"], ["d", "删除"], ["J/K", "移动"], ["Esc", "完成"]]},
       "ticks": {"empty": "没有可选的", "hints": [["空格", "勾选"], ["j/k", "移动"], ["Enter", "保存"], ["Esc", "取消"]]}, "package_from": {"shipped": "出厂自带", "official": "官方软件源", "local": "本机安装"},
-      "mcp": {"entry": ["MCP", "MCP 服务的状态、登录"], "states": {"off": "关着", "starting": "在启动", "running": "在跑", "waiting": "等重连", "stopped": "停了", "needs_login": "要登录"}, "tools": "{n} 件工具", "login": "登录", "asking": "正在要 {name} 的授权页", "opened": "已在浏览器打开 {name} 的授权页", "no_browser": "打不开浏览器，授权页：{url}", "unregistered": "这个服务要先注册客户端，把 client_id 写进它的设置", "failed": "登录失败：{why}", "hints": [["Enter", "登录"], ["Esc", "返回"]]}
+      "mcp": {"entry": ["MCP", "MCP 服务的状态、登录"], "states": {"off": "关着", "starting": "在启动", "running": "在跑", "waiting": "等重连", "stopped": "停了", "needs_login": "要登录"}, "tools": "{n} 件工具", "login": "登录", "asking": "正在要 {name} 的授权页", "opened": "已在浏览器打开 {name} 的授权页", "no_browser": "打不开浏览器，授权页：{url}", "unregistered": "这个服务要先注册客户端，把 client_id 写进它的设置", "failed": "登录失败：{why}", "logout": "登出", "leaving": "正在登出 {name}", "left": "已登出 {name}", "not_logged_in": "{name} 没有登录过", "hints": [["Enter", "登录、登出"], ["Esc", "返回"]]}
     }
   },
   "oobe": {

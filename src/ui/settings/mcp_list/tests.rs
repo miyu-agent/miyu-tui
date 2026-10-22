@@ -11,14 +11,21 @@ use crate::settings::{Hit, Settings};
 use crate::ui::settings::draw;
 
 fn page(config: &Config) -> Settings {
+    page_with(
+        config,
+        json!({"servers": [
+            {"name": "notes", "state": "stopped", "reason": "needs_login"},
+            {"name": "context7", "state": "running", "tools": ["a", "b"]}]}),
+    )
+}
+
+fn page_with(config: &Config, servers: serde_json::Value) -> Settings {
     let mut page = Settings::open(false, true);
     for (tag, method, _) in page.take_asks() {
         let got = match method {
             "model.list" => crate::settings::test_support::model_list(),
             "config.get" => crate::settings::test_support::config_all(),
-            "mcp.list" => json!({"servers": [
-                {"name": "notes", "state": "stopped", "reason": "needs_login"},
-                {"name": "context7", "state": "running", "tools": ["a", "b"]}]}),
+            "mcp.list" => servers.clone(),
             _ => json!({"secrets": []}),
         };
         page.answer(tag, Ok(got), &config.text.settings);
@@ -112,4 +119,38 @@ fn clicking_login_selects_the_row_and_asks_for_the_sign_in_page() {
     assert_eq!(asks.len(), 1);
     assert_eq!(asks[0].1, "mcp.login");
     assert_eq!(asks[0].2, json!({"service": "notes"}));
+}
+
+#[test]
+fn a_signed_in_server_has_a_sign_out_button_that_asks_to_log_out() {
+    // 2026-10-22 项目主人验收 MCP 页：「要怎么登出？」核心 X-42 下再补给登录过的带 `logged_in: true`。
+    let config = Config::builtin().unwrap();
+    let mut page = page_with(
+        &config,
+        json!({"servers": [
+            {"name": "notes", "state": "running", "tools": ["a"], "logged_in": true},
+            {"name": "context7", "state": "running", "tools": ["a", "b"]}]}),
+    );
+    let lines = screen(&mut page, &config);
+    let notes = lines.iter().position(|l| l.contains("notes")).unwrap();
+    assert!(lines[notes].trim_end().ends_with("登出"), "{lines:#?}");
+    assert!(!lines[notes + 1].contains("登出"), "没登录过的没有");
+    let area = page
+        .hits
+        .iter()
+        .find(|(_, h)| matches!(h, Hit::Login(0)))
+        .map(|(r, _)| *r)
+        .expect("登出点得到");
+    let window = std::time::Duration::from_millis(400);
+    page.click(
+        Position::new(area.x + 1, area.y),
+        window,
+        &config.text.settings,
+    );
+    let asks = page.take_asks();
+    assert_eq!(asks.len(), 1);
+    assert_eq!(
+        (asks[0].1, &asks[0].2),
+        ("mcp.logout", &json!({"service": "notes"}))
+    );
 }
