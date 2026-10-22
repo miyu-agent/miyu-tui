@@ -27,6 +27,11 @@ impl Asking {
         self.drawers.open()
     }
 
+    /// 开着的抽屉在写补充、其他答案、理由（这时按键是字）。
+    pub fn editing(&self) -> bool {
+        self.drawers.editing()
+    }
+
     /// 开着的抽屉是谁、问的什么：`call_id` 和是不是提问（新开了一个时弹通知）。
     pub fn current(&self) -> Option<(String, bool)> {
         self.drawers

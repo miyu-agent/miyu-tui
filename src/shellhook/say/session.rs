@@ -33,6 +33,8 @@ pub struct Session {
     /// 「光标会闪到那一行的最右边，很跳」）。直接在命令行里跑的照旧亮。
     pub hooked: bool,
     media: Media,
+    /// 输入法跟着打字状态切（同全屏 `ime.rs`）：抽屉开着、没在写字时关成英文，写字、收起时开回来。
+    ime: crate::ime::Ime,
     _raw: RawMode,
 }
 
@@ -58,7 +60,9 @@ impl Session {
             crate::reader::Reader::spawn(move |event| sender.send(Incoming::Key(event)).is_ok());
         core.send(Command::FetchHuman(config.language.code().to_string()));
         let depth = crate::theme::Depth::detect(|name| std::env::var(name).ok());
+        let ime = crate::ime::Ime::start(&config.layout.ime, |name| std::env::var(name).ok());
         let session = Self {
+            ime,
             notifier: notifier(&config),
             media: Media::new(&config),
             config,
@@ -159,6 +163,10 @@ impl Session {
                 });
             }
             drawer_seen = current.map(|(call, _)| call);
+            // 确认、提问的抽屉开着、没在写补充、其他答案、理由时按键是 y、n、j、k 这些：输入法关成英文（同全屏
+            // `app` 的 `tick`，2026-10-22 项目主人：「tui 某些时候会加 fcitx5 处理，你加了吗」）。
+            self.ime
+                .typing(!turn.asking.open() || turn.asking.editing());
             self.send_out()?;
         }
         // 收工以前读按键的线程已经读走、还没处理的字也收下：先让它停下，再把排着的拿完（实测：答得快时最后几个字会丢）。
@@ -238,6 +246,8 @@ impl Session {
     ///
     /// 写终端失败。
     pub fn finish(self) -> io::Result<()> {
+        // 关掉过的输入法开回来，等它切完。
+        self.ime.finish();
         ratatui::crossterm::execute!(io::stdout(), DisableFocusChange)
     }
 
