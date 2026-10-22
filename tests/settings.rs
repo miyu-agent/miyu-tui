@@ -282,11 +282,11 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     let menu = tui.lines();
     let at = |word: &str| menu.iter().position(|l| l.contains(word));
     assert!(at("通用") < at("供应商和模型"), "通用排第一行");
-    // 2026-10-14 照推荐定：终端自己的「外观」排在通用后面，底下照组名写；2026-10-19 项目主人：供应商和模型挪到通用后面、
-    // 用户、外观前面。
+    // 2026-10-14 照推荐定：终端自己的「外观」排在通用后面，底下照组名写；2026-10-19 项目主人：供应商和模型挪到用户上面；
+    // 2026-10-21 项目主人：「把外观的顺序放在通用下面」。
     assert!(
-        at("通用") < at("供应商和模型") && at("供应商和模型") < at("外观"),
-        "供应商和模型紧跟通用：\n{}",
+        at("通用") < at("外观") && at("外观") < at("供应商和模型"),
+        "外观紧跟通用：\n{}",
         menu.join("\n")
     );
     assert!(
@@ -461,4 +461,34 @@ fn constrained_decoding_is_written_into_the_providers_compat_table() {
     wait_settings(&home, &mut tui, "strict_tools");
     let settings = home.settings();
     assert!(settings.contains("strict_tools = true"), "{settings}");
+}
+
+#[test]
+fn a_second_config_page_draws_the_whole_menu_from_its_first_frame() {
+    // 2026-10-21 项目主人：「/config 打开配置菜单闪了一下」——清单读回来以前主菜单只画了两项、底下写「正在加载配置…」。
+    // 记下上次读到的清单，第一帧就照它画整张菜单。
+    let home = Home::new(Script::new([]));
+    {
+        let mut first = home.tui_args("zh_CN.UTF-8", &["--page", "config"]);
+        first.wait_for("隐私与安全");
+        first.pump(Duration::from_millis(300));
+    }
+    let mut tui = home.tui_args("zh_CN.UTF-8", &["--page", "config"]);
+    let start = tui.record_from_here();
+    tui.wait_for("隐私与安全");
+    tui.pump(Duration::from_millis(500));
+    let recorded = tui.recorded();
+    let frames = support::frames(start, &recorded);
+    assert!(!frames.is_empty());
+    for frame in frames
+        .iter()
+        .filter(|f| f.iter().any(|l| l.contains("配置")))
+    {
+        let text = frame.join("\n");
+        assert!(
+            text.contains("通用") && text.contains("隐私与安全"),
+            "有一帧菜单不全：\n{text}"
+        );
+        assert!(!text.contains("正在加载配置"), "{text}");
+    }
 }

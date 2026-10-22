@@ -45,6 +45,9 @@ pub struct Item {
     pub package: String,
     /// 常用项：排在组里前面。
     pub common: bool,
+    /// 带选项的列表反着勾（核心给的 `"ticks": "unlisted"`）：勾着的是不在值里的（「配置页」第 47a 条，2026-10-21 项目主人：
+    /// 「默认私密目录」进去是几个已经勾着的目录，空格取消勾选）。
+    pub unlisted: bool,
 }
 
 impl Item {
@@ -133,7 +136,7 @@ pub struct OwnGroups {
     pub mascot: String,
     /// 图标。
     pub icons: String,
-    /// 按键模式（方向键、Vim，2026-10-21）。
+    /// 交互（按键模式这些，2026-10-21 项目主人：「按键模式」应在「交互」这个标题下）。
     pub keys: String,
 }
 
@@ -211,6 +214,7 @@ impl Schema {
                 group: text(&i["group"]),
                 package: text(&i["package"]),
                 common: i["common"] == true,
+                unlisted: i["ticks"] == "unlisted",
             })
             // 键里有人起的名字的归供应商和模型；别的头专有的不列（蓝图「配置页」第 5 条）。
             .filter(|i: &Item| !i.key.contains('<') && !i.key.starts_with("web."))
@@ -416,11 +420,11 @@ mod tests {
                 timeline: "时间线".into(),
                 mascot: "吉祥物".into(),
                 icons: "图标".into(),
-                keys: "按键模式".into(),
+                keys: "交互".into(),
             },
             "外观",
         );
-        assert_eq!(s.group_names("general"), ["显示", "时间线", "按键模式"]);
+        assert_eq!(s.group_names("general"), ["显示", "时间线", "交互"]);
         assert_eq!(s.group_names("appearance"), ["配色方案", "吉祥物", "图标"]);
         assert_eq!(s.listed_pages(), ["general", "appearance"]);
         assert_eq!(s.page_name("appearance"), Some("外观"));

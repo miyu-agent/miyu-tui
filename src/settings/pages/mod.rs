@@ -9,6 +9,7 @@ pub mod dialogs;
 mod keys;
 pub mod list;
 pub mod mascots;
+pub mod mcp;
 pub mod model_or;
 pub mod packages;
 pub mod persona_edit;
@@ -57,6 +58,8 @@ pub enum Entry {
     Personas,
     /// 预设（核心有 `preset.list` 才列）。
     Presets,
+    /// MCP 服务（有服务才列，第 43b 条）。
+    Mcp,
 }
 
 /// 进了哪一页（「供应商和模型」那三页不算，归 `Nav`）。
@@ -70,6 +73,8 @@ pub enum Section {
     Presets(usize),
     /// 「软件包」：有配置项的包的列表，选中第几个（「配置页」第 43a 条）；进去是 `Page("packages/<包>")`。
     Packages(usize),
+    /// 「MCP」：服务的列表，选中第几个（第 43b 条）。
+    Mcp(usize),
 }
 
 /// 新几页的状态。
@@ -85,12 +90,19 @@ pub struct More {
     pub mascots: Option<Vec<Persona>>,
     /// 装了的主题包（默认主题包不列：没设就是它）；还没读到的是 `None`。
     pub looks: Option<Vec<Persona>>,
+    /// 读来的清单、预设列表的原样：终端记下，下次开配置页第一帧照它画主菜单（`app/look.rs`，2026-10-21 项目主人：
+    /// 「/config 打开配置菜单闪了一下」）。只有清单和名字，没有配置的值。
+    pub raw: (Option<Value>, Option<Value>),
     /// 主菜单选中第几项。
     pub menu_at: usize,
     /// 每个包的一句说明（`package.list` 的 `summary`）：「软件包」的列表照它写。
     pub summaries: HashMap<String, String>,
     /// 每个包的作者、从哪来、上游（`package.list` 的 `author`、`from`、`upstream`，核心 F-12）：包页面包屑下面那一行。
     pub origins: HashMap<String, packages::Origin>,
+    /// 个人设置里的 MCP 服务（`mcp.list`）；核心不认的（旧核心）是空的。
+    pub mcp_home: Vec<mcp::Server>,
+    /// 包里带的 MCP 服务（`package.list` 每个包的 `mcp`）。
+    pub mcp_bundled: Vec<mcp::Server>,
     /// 进了哪一页。
     pub section: Option<Section>,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
@@ -109,8 +121,9 @@ pub struct More {
 }
 
 impl More {
-    /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、供应商和模型（2026-10-19 项目主人：挪到用户上面）、用户
-    /// （核心 P-9 再补，2026-10-16 项目主人定）、隐私与安全（核心 5-15 下，2026-10-21 项目主人照推荐定）、外观（2026-10-14 加）、人格、预设、软件包（和以后的别的页）、高级。「权限」
+    /// 主菜单照这个先后（2026-10-07 项目主人，2026-10-10 再定）：通用、外观（2026-10-14 加，2026-10-21 项目主人挪到通用下面）、
+    /// 供应商和模型（2026-10-19 项目主人：挪到用户上面）、用户（核心 P-9 再补，2026-10-16 项目主人定）、隐私与安全（核心 5-15
+    /// 下，2026-10-21 项目主人照推荐定）、人格、预设、软件包（和以后的别的页）、高级。「权限」
     /// 并进了「通用」，「接入」并进了「软件包」（`schema.rs`）。
     pub fn entries(&self) -> Vec<Entry> {
         let pages: Vec<&str> = self
@@ -122,8 +135,12 @@ impl More {
         if pages.contains(&FIRST) {
             out.push(Entry::Page(FIRST.to_string()));
         }
+        // 外观紧跟通用（2026-10-21 项目主人：「把外观的顺序放在通用下面」）。
+        if pages.contains(&schema::APPEARANCE) {
+            out.push(Entry::Page(schema::APPEARANCE.to_string()));
+        }
         out.push(Entry::Models);
-        for page in [schema::USER, schema::PRIVACY, schema::APPEARANCE] {
+        for page in [schema::USER, schema::PRIVACY] {
             if pages.contains(&page) {
                 out.push(Entry::Page(page.to_string()));
             }
@@ -148,6 +165,12 @@ impl More {
                 })
                 .map(|p| Entry::Page((*p).to_string())),
         );
+        // MCP 放在软件包上面（同网页，2026-10-20 项目主人），没有软件包页的放在高级前面。
+        if !self.servers().is_empty() {
+            let packages = Entry::Page(packages::PACKAGES.to_string());
+            let at = out.iter().position(|e| *e == packages).unwrap_or(out.len());
+            out.insert(at, Entry::Mcp);
+        }
         if pages.contains(&LAST) {
             out.push(Entry::Page(LAST.to_string()));
         }
@@ -264,6 +287,8 @@ pub struct Texts {
     pub no_packages: String,
     /// 「软件包」列表右边写的几项：`{n}`。
     pub package_items: String,
+    /// 只写个数的列表写的：`{n}`（[`list::counted`]）。
+    pub counted: String,
     /// 默认人格没设、选择窗第一行：不带人格（2026-10-08 项目主人定叫「无人格」）。
     pub no_persona: String,
     /// 吉祥物没设、选择窗第一行：内置的那只（「吉祥物包」第 3 条）。
@@ -306,6 +331,8 @@ pub struct Texts {
     pub ticks: ticks::TicksTexts,
     /// 包从哪来（第 43a 条，包页面包屑下面那一行）：出厂自带、官方软件源、本机安装（照 `package.list` 的 `from`）。
     pub package_from: std::collections::BTreeMap<String, String>,
+    /// 「MCP」那一页（第 43b 条）。
+    pub mcp: mcp::McpTexts,
 }
 
 /// 一项现在的值：读来的最终值和来自哪一层；哪一层都没写的照清单的默认，来自「默认」。
@@ -322,7 +349,7 @@ pub fn is_named(key: &str) -> bool {
 }
 
 /// 值写成给人看的样子：下拉写选项的名字（默认人格、默认预设写名字，`named` 是它们的列表），开关写开、关，密钥写设没设，
-/// 列表用顿号连。
+/// 列表用顿号连（私密目录两项只写个数）。
 pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Texts) -> String {
     if let (Some(list), Some(id)) = (named, value.as_str())
         && let Some(p) = list.iter().find(|p| p.id == id)
@@ -350,6 +377,12 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
     // 密钥：只写设了没设，不露引用（第 48 条）。
     if secret::is_secret(item) {
         return texts.secret[usize::from(value.is_null())].clone();
+    }
+    if let Some(n) = list::counted(item, value) {
+        return match n {
+            0 => "—".to_string(),
+            n => texts.counted.replace("{n}", &n.to_string()),
+        };
     }
     match (item.control.as_str(), value) {
         // 默认人格没设：就是无人格。

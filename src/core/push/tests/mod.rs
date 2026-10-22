@@ -80,7 +80,8 @@ fn a_failed_call_carries_class_and_message() {
         vec![Push::CallFailed(CallError {
             class: "auth".into(),
             message: "no key".into(),
-            status: None
+            status: None,
+            retry_after_ms: None,
         })]
     );
 }
@@ -189,7 +190,8 @@ fn compaction_events_are_read() {
         pushes.contains(&Push::Compaction(Compaction::Failed(CallError {
             class: "bad_summary".into(),
             message: "the summary called a tool".into(),
-            status: None
+            status: None,
+            retry_after_ms: None,
         })))
     );
     assert!(!pushes.iter().any(|p| matches!(p, Push::CallFailed(_))));
@@ -347,7 +349,8 @@ fn a_call_error_may_carry_its_http_status_and_a_good_call_clears_it() {
         vec![Push::CallFailed(CallError {
             class: "other".into(),
             message: "HTTP 404: no such model".into(),
-            status: Some(404)
+            status: Some(404),
+            retry_after_ms: None,
         })]
     );
     let ok = json!({"kind": "model.called", "by": {"kind": "kernel"}, "body": {"result": "ok"}});

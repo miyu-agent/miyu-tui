@@ -13,6 +13,7 @@
     "With background commands running, ↓ on an empty input opens the panel"
   ],
   "untitled": "Untitled session",
+  "queued_withdraw": "click to take back",
   "side_id": "#{id}",
   "side_cwd": "Workspace",
   "side_context": "Context",
@@ -52,6 +53,7 @@
     "404": "Not found: check the endpoint address and the model name",
     "429": "Rate limited or out of credit, try again later"
   },
+  "retry_after": {"hints": {"402": "Out of credit; back in about {wait}", "429": "Rate limited or out of quota; back in about {wait}"}, "cooling": "All models are cooling down; back in about {wait}", "seconds": ["{n} second", "{n} seconds"], "minutes": ["{n} minute", "{n} minutes"], "hours": ["{n} hour", "{n} hours"], "days": ["{n} day", "{n} days"]},
   "retry": "Retry {attempt}/{limit}: {message}",
   "older": "Loading earlier…",
   "older_failed": "Couldn't load earlier messages: {reason}",
@@ -607,6 +609,7 @@
     },
     "outside": "outside the workspace",
     "private": "private directory",
+    "protected": "protected",
     "unanswered": "Unanswered",
     "keys": "↑/↓ select · Enter submit · n notes · Esc ×2 cancel",
     "keys_multi": "↑/↓ select · Space check · Enter submit · n notes · Esc ×2 cancel",
@@ -643,6 +646,7 @@
   "stopped_jobs": "Stopped {count} task(s)",
   "language_switched": "Interface language: English",
   "persona_box": {
+    "loading": "Loading…",
     "title": "Choose a persona",
     "hint": "↑/↓ choose · Enter confirm · e edit · Esc use the default",
     "default_mark": "default",
@@ -674,6 +678,7 @@
     "auto_switched": "Interface language: Auto (system: {name})"
   },
   "sessions": {
+    "terminal": "Shell",
     "title": "Sessions",
     "count": "  {count}",
     "query": " · Search: ",
@@ -1128,6 +1133,7 @@
       "loading": "Reading…",
       "no_packages": "No package has settings",
       "package_items": "{n} settings",
+      "counted": "{n} listed",
       "detail": [
         "Name",
         "Detailed persona prompt",
@@ -1361,7 +1367,7 @@
       "default_look": "Default theme",
       "mascot_missing": "{id} (not installed)",
       "seed_unset": "Clear the persona's main color and go back to the avatar's first candidate",
-      "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons", "keys": "Key mode"},
+      "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons", "keys": "Interaction"},
       "appearance": "Appearance",
       "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
       "unavailable": "Not installed",
@@ -1369,7 +1375,8 @@
       "combo": ["Not set", "Other…"],
       "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]],
       "list": {"empty": "None yet", "whole": "Enter a whole number", "hints": [["Enter", "edit"], ["a", "add"], ["d", "delete"], ["J/K", "move"], ["Esc", "done"]]},
-      "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["j/k", "move"], ["Esc", "done"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally"}
+      "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["j/k", "move"], ["Enter", "save"], ["Esc", "cancel"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally"},
+      "mcp": {"entry": ["MCP", "Status and sign-in of MCP servers"], "states": {"off": "Off", "starting": "Starting", "running": "Running", "waiting": "Reconnecting", "stopped": "Stopped", "needs_login": "Sign-in needed"}, "tools": "{n} tools", "login": "Sign in", "asking": "Getting the sign-in page for {name}", "opened": "Opened the sign-in page for {name} in the browser", "no_browser": "Can't open a browser. Sign-in page: {url}", "unregistered": "This server needs a registered client. Put its client_id in the server's settings", "failed": "Sign-in failed: {why}", "logout": "Sign out", "leaving": "Signing out of {name}", "left": "Signed out of {name}", "not_logged_in": "{name} was not signed in", "hints": [["Enter", "sign in / out"], ["Esc", "back"]]}
     }
   },
   "oobe": {

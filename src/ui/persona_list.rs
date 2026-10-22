@@ -15,6 +15,8 @@ use crate::theme;
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
+    /// 新会话开头、列表还没读回来时，输入框的位置写的（2026-10-21）。
+    pub loading: String,
     /// 下边框的按键提示。
     pub hint: String,
     /// 默认人格右边写的。

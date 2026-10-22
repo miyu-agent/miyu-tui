@@ -31,6 +31,8 @@ pub struct SessionInfo {
     /// 最近一次请求的上下文 token 数、模型窗口（核心 f3f30d85 的 `context: {used, window?}`）；没说过话的是 `None`，
     /// 窗口查不到的窗口是 `None`。
     pub context: Option<(u64, Option<u64>)>,
+    /// 终端集成开的（核心 `origin: "terminal"`，2026-10-21 起开的才有）：会话列表多写一格「终端集成」。
+    pub terminal: bool,
 }
 
 /// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话、整理会话不要，照核心交回的先后（新的
@@ -65,6 +67,7 @@ fn entry(s: &Value) -> Option<SessionInfo> {
         context: s["context"]["used"]
             .as_u64()
             .map(|used| (used, s["context"]["window"].as_u64().filter(|w| *w > 0))),
+        terminal: s["origin"] == "terminal",
     })
 }
 
@@ -277,5 +280,17 @@ mod tests {
             super::change(&change),
             Some(Change::Removed("d1d2d3d4".into()))
         );
+    }
+
+    #[test]
+    fn sessions_opened_by_the_shell_hook_are_marked() {
+        // 核心 1d08dfa32：`session.terminal` 开的会话一项带 `origin: "terminal"`；别的、旧的没有这一格。
+        use serde_json::json;
+        let got = json!({"sessions": [
+            {"session": "a1b2c3d4", "origin": "terminal"},
+            {"session": "e5f6a7b8"}
+        ]});
+        let marked: Vec<bool> = super::read(&got).into_iter().map(|s| s.terminal).collect();
+        assert_eq!(marked, [true, false]);
     }
 }

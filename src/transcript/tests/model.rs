@@ -12,6 +12,7 @@ fn failed(class: &str) -> Push {
         class: class.into(),
         message: String::new(),
         status: None,
+        retry_after_ms: None,
     })
 }
 

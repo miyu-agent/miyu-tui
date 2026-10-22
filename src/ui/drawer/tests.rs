@@ -260,3 +260,22 @@ fn installing_a_package_shows_what_it_is_under_the_question() {
     assert_eq!(at("大小：4.0 KiB，3 个文件"), Some(3), "{shown:#?}");
     assert_eq!(d.items(0).len(), 2, "没有 rule：只有允许本次、不允许");
 }
+
+#[test]
+fn a_long_path_is_clipped_before_its_mark_so_the_mark_stays() {
+    // 2026-10-22 走查：工作区路径长的，「受保护」这类标记被挤出行外；路径先截，标记照写。
+    let long = format!("/srv/{}/.envrc", "deep/".repeat(20));
+    let approval = serde_json::from_value(serde_json::json!({
+        "call_id": "c1", "access": "write",
+        "detail": {"tool": "write", "paths": [{"path": long, "write": true, "zone": "read_only"}]}
+    }))
+    .unwrap();
+    let d = Drawer::approval(None, approval);
+    let shown = lines(&d, 40);
+    let row = shown
+        .iter()
+        .find(|l| l.contains("/srv/"))
+        .unwrap_or_else(|| panic!("{shown:#?}"));
+    assert!(row.ends_with("… 受保护"), "{row}");
+    assert!(row.width() <= 40, "{row}");
+}

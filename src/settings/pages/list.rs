@@ -13,6 +13,31 @@ use crate::pairs::{self, ListKey};
 use crate::settings::popup::Popup;
 use crate::settings::{Settings, Texts, Tone};
 
+/// 配置页上只写个数、不把每一条铺出来的列表（2026-10-22 项目主人：私密目录一长串路径不该铺出来，写个数；别的列表照旧列。
+/// 同一天受保护的路径（核心 5-17 下上）也照这样写）。
+const COUNTED: [&str; 4] = [
+    "sandbox.private.add",
+    "sandbox.private.remove",
+    "sandbox.readonly.add",
+    "sandbox.readonly.remove",
+];
+
+/// 这一项在配置页上只写个数的话写几个：反着勾的（默认私密目录，`"ticks": "unlisted"`）数勾着的，就是选项里不在值里的。
+pub fn counted(item: &Item, value: &Value) -> Option<usize> {
+    if !COUNTED.contains(&item.key.as_str()) {
+        return None;
+    }
+    let list = value.as_array().map(Vec::as_slice).unwrap_or_default();
+    Some(if item.unlisted {
+        item.options
+            .iter()
+            .filter(|o| !list.contains(&o.value))
+            .count()
+    } else {
+        list.len()
+    })
+}
+
 /// 列表窗的字（`text/zh.json` 的 `settings.more.list`）。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

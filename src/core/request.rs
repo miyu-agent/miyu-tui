@@ -27,6 +27,13 @@ pub(super) fn request(
             )
         }
         Command::Revert => ("session.revert", json!({"session": session})),
+        Command::Withdraw(message) => {
+            let mut params = json!({"session": session});
+            if let Some(message) = message {
+                params["message"] = json!(message);
+            }
+            ("session.withdraw", params)
+        }
         // 换工作区：相对的照终端所在的目录接（核心 9-7 下）。
         Command::Workspace { path, cwd } => (
             "command.run",
@@ -139,6 +146,21 @@ mod tests {
 
     use super::request;
     use crate::core::Command;
+
+    #[test]
+    fn taking_back_a_queued_message_names_it_or_takes_the_latest() {
+        // 2026-10-22 项目主人：点排队的那条撤回，`/undo` 逐条撤（核心 `session.withdraw`，759bfcfa）。
+        let named = json!({"session": "s", "message": 42});
+        assert_eq!(
+            request(Command::Withdraw(Some(42)), "s"),
+            Some(("session.withdraw", named))
+        );
+        let latest = json!({"session": "s"});
+        assert_eq!(
+            request(Command::Withdraw(None), "s"),
+            Some(("session.withdraw", latest))
+        );
+    }
 
     #[test]
     fn saying_something_no_longer_reports_the_directory() {

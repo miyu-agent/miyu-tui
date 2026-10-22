@@ -398,4 +398,8 @@ fn key(kind: FigureKind, source: &str, size: Size, room: (u16, u16)) -> u64 {
 }
 
 #[cfg(test)]
+mod test_support;
+#[cfg(test)]
+pub use test_support::*;
+#[cfg(test)]
 mod tests;

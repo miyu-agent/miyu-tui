@@ -33,6 +33,7 @@ fn info(session: &str, title: Option<&str>, cwd: &str) -> SessionInfo {
         preset: None,
         tokens: 0,
         context: None,
+        terminal: false,
     }
 }
 
@@ -331,4 +332,82 @@ fn the_context_share_sits_left_of_the_total_as_a_percent() {
         cells[3].starts_with("         Σ4.6k"),
         "没说过话的空着：{cells:#?}"
     );
+}
+
+#[test]
+fn terminal_sessions_say_so_when_there_is_room() {
+    // 2026-10-21 项目主人：「终端集成会话在会话列表里可以有个区分例如加`终端集成`几个字。宽度不够的话就不显示了。」
+    let config = Config::builtin().unwrap();
+    let mut list = SessionList::default();
+    let mut shell = info("0000-aaaaaaaa", Some("看日志"), "~/src/miyu");
+    shell.terminal = true;
+    list.replace(vec![
+        shell,
+        info("0000-bbbbbbbb", Some("写代码"), "~/src/miyu"),
+    ]);
+    let text = |width: u16| {
+        let marks = super::Marks {
+            current: None,
+            asking: &[],
+        };
+        let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, width, 20, 0);
+        let rows: Vec<String> = sessions_only(rows, &map)
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        rows
+    };
+    let wide = text(90);
+    assert!(wide[0].contains("终端集成"), "{wide:#?}");
+    assert!(!wide[1].contains("终端集成"), "{wide:#?}");
+    let column = |l: &str| l.find(" #").map(|at| l[..at].width());
+    assert_eq!(
+        column(&wide[0]),
+        column(&wide[1]),
+        "编号一列照旧对齐：{wide:#?}"
+    );
+    // 编号、总计这些占 18 列，标题 6 列，「终端集成」那一格要 10 列：30 列放不下它。
+    let narrow = text(30);
+    assert!(
+        narrow.iter().all(|l| !l.contains("终端集成")),
+        "窄了不写：{narrow:#?}"
+    );
+    assert!(narrow[0].contains("看日志"), "标题不为它截短：{narrow:#?}");
+}
+
+#[test]
+fn columns_stay_put_when_the_list_scrolls() {
+    // 2026-10-22 项目主人：「列的位置不稳定，会移动」——终端集成会话、总 token 宽的那个滚出去以后，编号、总计一列跟着挪。
+    let config = Config::builtin().unwrap();
+    let mut list = SessionList::default();
+    let mut all: Vec<SessionInfo> = (0..20)
+        .map(|i| info(&format!("0000-{i:08}"), Some("写代码"), "~/src/miyu"))
+        .collect();
+    all[0].terminal = true;
+    all[0].tokens = 692_600;
+    all[0].context = Some((6_000, Some(100_000)));
+    list.replace(all);
+    let columns = |list: &SessionList| {
+        let marks = super::Marks {
+            current: None,
+            asking: &[],
+        };
+        let (_, rows, map) = lines(list, marks, "~/src/miyu", &config, 120, 30, 0);
+        let rows: Vec<String> = sessions_only(rows, &map)
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        let at = |l: &str, mark: &str| l.find(mark).map(|at| l[..at].width());
+        (at(&rows[1], " #"), at(&rows[1], "Σ"), rows)
+    };
+    let (id_top, sum_top, top) = columns(&list);
+    assert!(top[0].contains("终端集成"), "{top:#?}");
+    list.selected = 19;
+    let (id_end, sum_end, end) = columns(&list);
+    assert!(
+        end.iter().all(|l| !l.contains("终端集成")),
+        "滚到底它不在露出来的里：{end:#?}"
+    );
+    assert_eq!(id_top, id_end, "编号一列不挪：{top:#?}\n{end:#?}");
+    assert_eq!(sum_top, sum_end, "总计一列不挪：{top:#?}\n{end:#?}");
 }

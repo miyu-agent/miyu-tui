@@ -60,6 +60,8 @@ pub enum Hit {
     Button(usize),
     /// 包页面那一行末尾的上游：点了照 [`Settings::link`] 打开。
     Link,
+    /// MCP 页第几个服务的「登录」（第 43b 条）。
+    Login(usize),
 }
 
 /// 按了一个键以后界面要做的。
@@ -96,6 +98,12 @@ enum Waiting {
     Presets,
     /// 读装了的吉祥物包（`package.list`，「吉祥物包」第 3 条）。
     Mascots,
+    /// 读个人设置里的 MCP 服务（`mcp.list`，第 43b 条）。
+    Mcp,
+    /// 要一个服务的授权页（`mcp.login`）：服务名。
+    McpLogin(String),
+    /// `mcp.logout`：登出的服务名。
+    McpLogout(String),
     /// 读一个预设的详情（`preset.get`）：编号。
     PresetDetail(String),
     /// 改、建一个预设（`preset.set`，核心 P-3）：存好了要不要开它的窗（新建的）。
@@ -182,6 +190,8 @@ pub struct Settings {
     pub personas_changed: bool,
     /// 盯着开着的会话正在用的人格、预设（`in_use.rs`）。
     pub watch: in_use::Watch,
+    /// 要打开的 MCP 授权页：`App` 拿走一次（[`Settings::take_opening`]）。
+    opening: Option<String>,
 }
 
 impl Settings {
@@ -197,6 +207,23 @@ impl Settings {
         };
         page.reload();
         page
+    }
+
+    /// 上次记下的清单、预设列表（`more.raw` 那两样）先摆上：读回来以前主菜单就是整张，不先画半截再补全（2026-10-21
+    /// 项目主人：「/config 打开配置菜单闪了一下」）。读回来的照常换上。
+    pub fn remembered(
+        &mut self,
+        (schema, presets): (Option<&Value>, Option<&Value>),
+        texts: &Texts,
+    ) {
+        if let Some(got) = schema.filter(|_| self.more.schema.is_none()) {
+            let mut schema = pages::schema::Schema::read(got);
+            schema.split_own(&texts.more.own_groups, &texts.more.appearance);
+            self.more.schema = Some(schema);
+        }
+        if let Some(got) = presets.filter(|_| self.more.presets.is_none()) {
+            self.more.presets = Some(crate::core::read_presets(got));
+        }
     }
 
     /// `/connect`：直接停在「供应商和模型」的供应商页（2026-10-07 项目主人要）。
@@ -271,6 +298,9 @@ impl Settings {
             | Waiting::PresetDetail(_)) => {
                 self.more_answer(more, result, &texts.more);
             }
+            Waiting::Mcp => self.mcp_listed(result),
+            Waiting::McpLogin(name) => self.login_answer(&name, result, texts),
+            Waiting::McpLogout(name) => self.logout_answer(&name, result, texts),
             Waiting::PresetSaved(open) => self.preset_saved(open, result),
             Waiting::PresetDeleted => self.preset_deleted(result, texts),
             Waiting::PersonaSaved(id, open) => self.persona_saved((id, open), result, texts),

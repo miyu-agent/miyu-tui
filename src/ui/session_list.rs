@@ -27,6 +27,8 @@ pub struct Texts {
     pub count: String,
     /// 打了字时接在后面的。
     pub query: String,
+    /// 终端集成开的会话标题后面那一格（2026-10-21）。
+    pub terminal: String,
     /// 下边框的按键提示。
     pub hint: String,
     /// 按键模式是 Vim 时的（`/ 搜索 · j/k`，蓝图「按键」表「按键模式」那一行）。
@@ -140,7 +142,8 @@ pub fn lines(
         .max()
         .unwrap_or(0)
         .min(config.layout.session_title_width);
-    // 编号后面的总 token 一列：靠右对齐，照露出来的里最宽的那个（2026-10-19 项目主人）。
+    // 编号后面的总 token 一列：靠右对齐，照最宽的那个（2026-10-19 项目主人）。这几列的宽都照对得上的整张列表算，不照露出来的：
+    // 照露出来的算，一滚动列就挪（2026-10-22 项目主人：「列的位置不稳定，会移动」）。
     let tokens = |info: &SessionInfo| {
         texts
             .tokens
@@ -154,15 +157,11 @@ pub fn lines(
     };
     let context_width = found
         .iter()
-        .skip(top)
-        .take(shown)
         .map(|info| context(info).width())
         .max()
         .unwrap_or(0);
     let tokens_width = found
         .iter()
-        .skip(top)
-        .take(shown)
         .map(|info| tokens(info).width())
         .max()
         .unwrap_or(0);
@@ -175,13 +174,7 @@ pub fn lines(
             right(info, marks.current, here, now, config).width()
         }
     };
-    let widest_right = found
-        .iter()
-        .skip(top)
-        .take(shown)
-        .map(|info| right_of(info))
-        .max()
-        .unwrap_or(0);
+    let widest_right = found.iter().map(|info| right_of(info)).max().unwrap_or(0);
     let tick_width = if ticking {
         config.layout.tick_mark.width()
     } else {
@@ -194,6 +187,12 @@ pub fn lines(
         0
     };
     let fixed = 2 + widest_right + 1 + tick_width + 3 + 8 + 2 + tokens_width + context_room;
+    // 终端集成开的会话在标题后面写一格「终端集成」（2026-10-21 项目主人：「终端集成会话在会话列表里可以有个区分……宽度
+    // 不够的话就不显示了」）：对得上的里有这种会话、标题照它的宽度放得下才写，放不下的先省这一格。
+    let terminal_room = 2 + texts.terminal.width();
+    let terminal =
+        found.iter().any(|s| s.terminal) && fixed + terminal_room + column <= usize::from(width);
+    let fixed = fixed + if terminal { terminal_room } else { 0 };
     let column = column.min(
         usize::from(width)
             .saturating_sub(fixed)
@@ -225,6 +224,14 @@ pub fn lines(
                 content.push(Span::styled(mark, theme::picked()));
             }
             content.extend(head(info, config, column));
+            if terminal {
+                let cell = if info.terminal {
+                    texts.terminal.clone()
+                } else {
+                    " ".repeat(texts.terminal.width())
+                };
+                content.push(Span::styled(format!("  {cell}"), theme::faint()));
+            }
             content.push(Span::styled(
                 format!("  #{}", short(&info.session)),
                 theme::faint(),

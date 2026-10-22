@@ -59,6 +59,8 @@ pub struct Texts {
     pub markdown: crate::markdown::Labels,
     /// 侧边栏：会话还没起名字时写的（蓝图「后台命令、子代理和侧边栏」第 7 条）。
     pub untitled: String,
+    /// 指针停在排队的话上时后面写的（「运行状态行和排队的消息」）。
+    pub queued_withdraw: String,
     /// 侧边栏的短编号，`{id}` 是完整编号的前 8 位。
     pub side_id: String,
     /// 侧边栏「工作目录」那一段的标题。
@@ -149,6 +151,8 @@ pub struct Texts {
     pub reason_with: String,
     /// 这几种 HTTP 状态码，原话前面加的人话（蓝图「正文」第 4 条）。
     pub status_hints: HashMap<String, String>,
+    /// 知道还要等多久的：带 `{wait}` 的那几句、时间怎么写（`transcript/failure.rs`）。
+    pub retry_after: crate::transcript::RetryAfter,
     /// 正在重试。
     pub retry: String,
     /// 老会话按页读，正文最上面那一行：更早的还有，正在读（蓝图「会话列表」第 5 条「按页读」）。

@@ -15,7 +15,13 @@ impl App {
     /// 打开配置页；`standalone` 是照 `--page config` 起来的（主菜单 `Esc` 退出程序）。
     pub fn open_settings(&mut self, standalone: bool) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
-        self.boxes.settings = Some(Settings::open(standalone, online));
+        let mut page = Settings::open(standalone, online);
+        let (schema, presets) = &self.link.look.settings;
+        page.remembered(
+            (schema.as_ref(), presets.as_ref()),
+            &self.config.text.settings,
+        );
+        self.boxes.settings = Some(page);
         self.send_settings_asks();
     }
 
@@ -151,7 +157,20 @@ impl App {
         let mine = match update {
             Update::Answer { tag, result } => {
                 page.answer(*tag, result.clone(), texts);
+                // MCP 页要到了授权页：用系统的打开方式开，开不了的状态行把网址写出来（「配置页」第 43b 条）。
+                if let Some(url) = page.take_opening()
+                    && crate::open::open(&url).is_err()
+                {
+                    page.open_failed(&url, texts);
+                }
+                let (schema, presets) = page.more.raw.clone();
+                self.note_settings((schema.as_ref(), presets.as_ref()));
                 true
+            }
+            // 装卸了包、MCP 服务变了（登录好了也是）：MCP 页重读服务；照旧往下走，界面重取给人看的字。
+            Update::ToolsChanged => {
+                page.tools_changed();
+                false
             }
             Update::ConfigChanged => {
                 page.changed();

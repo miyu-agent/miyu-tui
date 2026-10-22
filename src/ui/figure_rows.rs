@@ -45,6 +45,8 @@ pub fn rows(lead: Vec<Span<'static>>, figure: &Figure, ctx: &Ctx) -> Vec<Row> {
             // mermaid 图：点图本身用程序开大图（2026-10-17 项目主人定，去掉了图下面那一行「点开看大图」）。
             let zoom = ctx.figures.borrow().get(key).and_then(|d| d.zoom.clone());
             let link = zoom.map(|file| format!("{}{}", crate::shown_files::ZOOM, file.display()));
+            // 能点的只到图实际的宽，不到留的最宽（2026-10-22 项目主人：图右边的空档也能点开）。
+            let cols = ctx.figures.borrow().cols(key).unwrap_or(cols);
             (0..rows)
                 .map(|i| {
                     let mut row = ctx.led_row(ctx.blank_slot(), lead.clone(), Vec::new());

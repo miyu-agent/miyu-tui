@@ -126,3 +126,43 @@ fn setting_the_same_palette_again_keeps_what_was_drawn_with_it() {
     // 换回出厂的那一套：别的测试读的是全局的主题。
     super::set(night.clone());
 }
+
+#[test]
+fn a_barless_pick_uses_the_picked_color_not_the_title_accent() {
+    // 2026-10-22 项目主人验收纯 ASCII 主题：选中项换强调色，和配置页标题「* 配置」一个颜色分不出，照推荐换选中色。
+    let _hold = super::hold();
+    let themes = super::builtin().unwrap();
+    let (_, night) = themes
+        .iter()
+        .find(|(n, _)| n == "tokyonight-night")
+        .unwrap();
+    super::set(night.clone());
+    let picked = super::pick(|p| p.picked);
+    let accent = super::pick(|p| p.accent);
+    assert_ne!(picked, accent, "这套颜色里两个本来就不一样");
+    assert_eq!(
+        super::bar_style(true).fg,
+        Some(picked),
+        "不铺底：字换选中色"
+    );
+    assert_eq!(super::bar_style(true).bg, None, "不铺底");
+    assert_eq!(
+        super::bar_style(false).bg,
+        Some(accent),
+        "铺底的照旧铺强调色"
+    );
+    // 配置页主菜单选中的那一行（截图里的「| 外观」）是这一种。
+    assert_eq!(
+        super::focus_style(true).fg,
+        Some(picked),
+        "配置页焦点那一栏"
+    );
+    assert_eq!(super::focus_style(true).bg, None);
+    // 左边的竖条跟着字换（截图里「| 外观」的竖条也和标题一个颜色）。
+    assert_eq!(super::mark_style(true).fg, Some(picked), "竖条");
+    assert_eq!(
+        super::mark_style(false).fg,
+        Some(accent),
+        "铺底的照旧强调色"
+    );
+}

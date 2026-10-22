@@ -90,6 +90,11 @@ impl App {
         if self.drawer_key(key) {
             return Action::None;
         }
+        // 新会话开头还没选人格、预设，列表还在读：输入框的位置写「正在加载…」，按键哪都不进，只认退出、挂起
+        // （「新会话：人格、工作区」第 1 条，2026-10-21 项目主人：会话开得慢时输入框能打几个字）。
+        if self.start_loading() && !leaves(&key) {
+            return Action::None;
+        }
         // Tab、Shift+Tab（终端报成 BackTab）轮换权限级别；命令列表、`@` 文件列表开着时 Tab 归列表（`tui.md`「按键」）。
         let menu_open = self.menu_matches().is_some() || self.mention_found().is_some();
         // 整屏看输出、后台面板、后台按钮先拿按键（`tui.md`「后台命令、子代理和侧边栏」）。
@@ -340,7 +345,7 @@ impl App {
             Run::Usage => self.open_usage(),
             Run::Status => self.open_status(),
             Run::New => self.new_session(),
-            Run::Revert => self.link.core.send(Command::Revert),
+            Run::Revert => self.undo(),
             Run::Unrevert => self.link.core.send(Command::Unrevert),
             Run::Compact => self.compact(words),
             Run::Theme => self.open_themes(),
@@ -439,6 +444,13 @@ fn is_paste(key: &KeyEvent) -> bool {
 fn cycles_level(key: &KeyEvent, menu_open: bool) -> bool {
     key.code == KeyCode::BackTab
         || (key.code == KeyCode::Tab && key.modifiers.is_empty() && !menu_open)
+}
+
+/// 列表还在读时也认的键：`Ctrl+C`、`Ctrl+D`（退出）、`Ctrl+Z`（挂起）。
+fn leaves(key: &KeyEvent) -> bool {
+    key.modifiers
+        .contains(ratatui::crossterm::event::KeyModifiers::CONTROL)
+        && matches!(key.code, KeyCode::Char('c' | 'd' | 'z'))
 }
 
 #[cfg(test)]
