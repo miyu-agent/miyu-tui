@@ -18,6 +18,9 @@ use crate::notify::{self, Notifier};
 
 /// 这一轮结束后等多久看核心是不是叫醒她（`turn.rs` 的 `lingering`）：核心是同一刻开的，留够推送路上的时间。
 const LINGER: Duration = Duration::from_millis(500);
+/// 一个抽屉开着满这么久才画、才弹通知：接上会话时补发来的以前问过又答了的，开一下马上收起，分在两拍里会一闪
+/// （2026-10-20、10-22 两次验收：第一次说话时确认框一闪而过）；真要你答的一直开着，晚这么一点看不出来。
+const DRAWER_SETTLE: Duration = Duration::from_millis(150);
 /// 画一帧以前最多先办几件：补发的一页再长也不至于一直不画。
 const BATCH: usize = 512;
 
@@ -89,6 +92,8 @@ impl Session {
         let started = Instant::now();
         let spinner = self.config.timeline.spinner_ms.max(16);
         let mut drawer_seen: Option<String> = None;
+        // 开着的抽屉是哪个、什么时候开的。
+        let mut opened: Option<(String, Instant)> = None;
         let mut bannered = false;
         let mut lingered: Option<Instant> = None;
         // 抽屉里写字时停住的上面那段正文。
@@ -130,11 +135,22 @@ impl Session {
             if let Some(dream) = &turn.dream {
                 lines.extend(view.dream_lines(&turn.transcript, dream));
             }
-            // 开着的抽屉画在最下面，最多占一半高（图纸「确认和提问」）。
-            let drawer = turn
-                .asking
-                .height(&self.config, width, height / 2)
-                .unwrap_or(0);
+            // 开着的抽屉画在最下面，最多占一半高（图纸「确认和提问」）；开着满 `DRAWER_SETTLE` 才画。
+            let current = turn.asking.current();
+            let call = current.as_ref().map(|(call, _)| call.clone());
+            if opened.as_ref().map(|(c, _)| c) != call.as_ref() {
+                opened = call.map(|c| (c, Instant::now()));
+            }
+            let settled_open = opened
+                .as_ref()
+                .is_some_and(|(_, at)| at.elapsed() >= DRAWER_SETTLE);
+            let drawer = if settled_open {
+                turn.asking
+                    .height(&self.config, width, height / 2)
+                    .unwrap_or(0)
+            } else {
+                0
+            };
             // 活动区最多占终端高减一行：长过的只露最新的那一截，这一轮结束时整段印出来（「怎么印」第 2 条）。
             let room = usize::from(height.saturating_sub(1 + drawer)).max(1);
             let tail = lines.len().saturating_sub(room);
@@ -169,7 +185,7 @@ impl Session {
             };
             self.painter.frame_at(&settled, &live, caret)?;
             // 新开了一个抽屉：弹「在等你确认」「在等你回答」。
-            let current = turn.asking.current();
+            let current = current.filter(|_| settled_open);
             if let Some((call, question)) = &current
                 && drawer_seen.as_ref() != Some(call)
             {
@@ -182,8 +198,7 @@ impl Session {
             drawer_seen = current.map(|(call, _)| call);
             // 确认、提问的抽屉开着、没在写补充、其他答案、理由时按键是 y、n、j、k 这些：输入法关成英文（同全屏
             // `app` 的 `tick`，2026-10-22 项目主人：「tui 某些时候会加 fcitx5 处理，你加了吗」）。
-            self.ime
-                .typing(!turn.asking.open() || turn.asking.editing());
+            self.ime.typing(!settled_open || turn.asking.editing());
             self.send_out()?;
         }
         // 收工以前读按键的线程已经读走、还没处理的字也收下：先让它停下，再把排着的拿完（实测：答得快时最后几个字会丢）。
