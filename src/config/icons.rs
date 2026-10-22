@@ -226,9 +226,27 @@ mod tests {
             "terminal",
             "search",
             "file",
+            // 2026-10-22 移植旧 Miyu 脚本包时清单里写了、原来表里没有的（hexagon 没有对得上的字形，照旧用扳手）。
+            "dice-5",
+            "tv",
+            "radio",
+            "scroll",
+            "banknote",
+            "shield-check",
+            "download",
+            "book-marked",
+            "book-heart",
+            "shopping-bag",
         ] {
             assert!(nerd.lucide.contains_key(name), "常用的 {name} 要有");
         }
+    }
+
+    #[test]
+    fn a_lucide_name_missing_from_the_table_falls_back_to_the_tool_icon() {
+        let nerd = pick(&builtin().unwrap(), "nerd").unwrap();
+        assert_eq!(nerd.tool_in("meme_roll", Some("hexagon")), nerd.tool);
+        assert_eq!(nerd.tool_in("meme_roll", Some("dice-5")), "\u{eded}");
     }
 
     #[test]
