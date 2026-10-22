@@ -264,6 +264,8 @@ pub struct Texts {
     pub no_packages: String,
     /// 「软件包」列表右边写的几项：`{n}`。
     pub package_items: String,
+    /// 只写个数的列表写的：`{n}`（[`list::counted`]）。
+    pub counted: String,
     /// 默认人格没设、选择窗第一行：不带人格（2026-10-08 项目主人定叫「无人格」）。
     pub no_persona: String,
     /// 吉祥物没设、选择窗第一行：内置的那只（「吉祥物包」第 3 条）。
@@ -322,7 +324,7 @@ pub fn is_named(key: &str) -> bool {
 }
 
 /// 值写成给人看的样子：下拉写选项的名字（默认人格、默认预设写名字，`named` 是它们的列表），开关写开、关，密钥写设没设，
-/// 列表用顿号连。
+/// 列表用顿号连（私密目录两项只写个数）。
 pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Texts) -> String {
     if let (Some(list), Some(id)) = (named, value.as_str())
         && let Some(p) = list.iter().find(|p| p.id == id)
@@ -350,6 +352,12 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
     // 密钥：只写设了没设，不露引用（第 48 条）。
     if secret::is_secret(item) {
         return texts.secret[usize::from(value.is_null())].clone();
+    }
+    if let Some(n) = list::counted(item, value) {
+        return match n {
+            0 => "—".to_string(),
+            n => texts.counted.replace("{n}", &n.to_string()),
+        };
     }
     match (item.control.as_str(), value) {
         // 默认人格没设：就是无人格。

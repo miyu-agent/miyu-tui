@@ -170,3 +170,30 @@ fn the_colors_list_hides_the_wallpaper_until_one_is_found() {
     more.wallpaper = true;
     assert_eq!(more.offered("tui.theme", list()).len(), 3);
 }
+
+#[test]
+fn private_directories_show_how_many_not_every_path() {
+    // 2026-10-22 项目主人：「加的私密目录」把路径一条条铺出来、「默认私密目录」写「—」，都该写个数；别的列表照旧列。
+    let texts = crate::config::Config::builtin().unwrap().text.settings.more;
+    let s = Schema::read(&json!({"items": [
+        {"key": "sandbox.private.add", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+         "name": "加的私密目录", "page": "privacy", "group": "private"},
+        {"key": "sandbox.private.remove", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+         "name": "默认私密目录", "page": "privacy", "group": "private", "ticks": "unlisted",
+         "options": [{"value": "~/.ssh", "name": "~/.ssh"}, {"value": "~/.gnupg", "name": "~/.gnupg"},
+                     {"value": "~/.aws", "name": "~/.aws"}]},
+        {"key": "packages.sources", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+         "name": "软件源", "page": "packages", "group": "source"}
+    ]}));
+    let shown =
+        |i: usize, value: serde_json::Value| super::shown(&s.items[i], &value, None, &texts);
+    assert_eq!(shown(0, json!(["~/Documents", "~/Downloads"])), "2 个");
+    assert_eq!(shown(0, json!(null)), "—", "没加的照旧写「—」");
+    assert_eq!(shown(1, json!(null)), "3 个", "一个没去掉：出厂的全勾着");
+    assert_eq!(shown(1, json!(["~/.gnupg"])), "2 个", "数勾着的");
+    assert_eq!(
+        shown(2, json!(["https://a.invalid", "https://b.invalid"])),
+        "https://a.invalid、https://b.invalid",
+        "别的列表照旧列"
+    );
+}

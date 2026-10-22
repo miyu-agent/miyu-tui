@@ -12,13 +12,18 @@ fn texts() -> Texts {
 }
 
 /// 隐私页一项带选项的列表（照核心 5-15 下的 `sandbox.private.remove`），个人设置里写的是 `value`；照 `Enter` 那条路开窗。
+/// `ticks` 是核心给的画法提示（`"unlisted"` 反着勾），不写的照正着勾。
 fn opened(value: Value) -> Settings {
+    opened_with(value, Value::Null)
+}
+
+fn opened_with(value: Value, ticks: Value) -> Settings {
     let schema = json!({"pages": [{"id": "privacy", "name": "隐私与安全"}],
         "groups": [{"id": "private", "name": "私密目录", "page": "privacy"}],
         "items": [{"key": "sandbox.private.remove", "type": "list", "control": "list", "element": "text",
             "options": [{"value": "~/.ssh", "name": "~/.ssh"}, {"value": "~/.gnupg", "name": "~/.gnupg"},
                         {"value": "~/.aws", "name": "~/.aws"}],
-            "layers": ["personal"], "name": "不当私密的出厂目录", "page": "privacy", "group": "private"}]});
+            "layers": ["personal"], "name": "不当私密的出厂目录", "page": "privacy", "group": "private", "ticks": ticks}]});
     let layers = if value.is_null() {
         json!([])
     } else {
@@ -60,7 +65,7 @@ fn saved(page: &mut Settings) -> String {
 }
 
 #[test]
-fn a_list_with_options_ticks_them_and_esc_saves_in_option_order() {
+fn a_list_with_options_ticks_them_and_enter_saves_in_option_order() {
     // 2026-10-21 项目主人：「做，照预设功能那样打勾」。
     let mut page = opened(json!(["~/.aws"]));
     assert_eq!(ticked(&page), [false, false, true], "照现在的值勾上");
@@ -70,12 +75,12 @@ fn a_list_with_options_ticks_them_and_esc_saves_in_option_order() {
     press(&mut page, KeyCode::Char(' '));
     assert_eq!(ticked(&page), [true, false, false]);
     assert_eq!(saved(&mut page), "", "勾的时候不存");
-    press(&mut page, KeyCode::Esc);
+    press(&mut page, KeyCode::Enter);
     assert!(page.popup.is_none());
     let sent = saved(&mut page);
     assert!(
         sent.contains(r#""value":["~/.ssh"]"#),
-        "Esc 收起时照选项的先后存：{sent}"
+        "Enter 收起时照选项的先后存：{sent}"
     );
 }
 
@@ -87,4 +92,28 @@ fn closing_without_a_change_saves_nothing() {
     press(&mut page, KeyCode::Esc);
     assert!(page.popup.is_none());
     assert_eq!(saved(&mut page), "");
+}
+
+#[test]
+fn escape_closes_without_saving() {
+    // 2026-10-21 项目主人：「空格取消勾选，回车保存」：Esc 不存。
+    let mut page = opened(json!([]));
+    press(&mut page, KeyCode::Char(' '));
+    press(&mut page, KeyCode::Esc);
+    assert!(page.popup.is_none());
+    assert_eq!(saved(&mut page), "");
+}
+
+#[test]
+fn an_unlisted_list_ticks_what_is_not_in_the_value() {
+    // 2026-10-21 项目主人：「默认私密目录」进去是几个已经勾着的目录，空格取消勾选、回车保存（核心给 `"ticks": "unlisted"`）。
+    let mut page = opened_with(json!(["~/.gnupg"]), json!("unlisted"));
+    assert_eq!(ticked(&page), [true, false, true], "不在值里的勾着");
+    press(&mut page, KeyCode::Char(' '));
+    press(&mut page, KeyCode::Enter);
+    let sent = saved(&mut page);
+    assert!(
+        sent.contains(r#""value":["~/.ssh","~/.gnupg"]"#),
+        "存的照旧是去掉的那几个（没勾的）：{sent}"
+    );
 }

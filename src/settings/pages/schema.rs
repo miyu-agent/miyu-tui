@@ -45,6 +45,9 @@ pub struct Item {
     pub package: String,
     /// 常用项：排在组里前面。
     pub common: bool,
+    /// 带选项的列表反着勾（核心给的 `"ticks": "unlisted"`）：勾着的是不在值里的（「配置页」第 47a 条，2026-10-21 项目主人：
+    /// 「默认私密目录」进去是几个已经勾着的目录，空格取消勾选）。
+    pub unlisted: bool,
 }
 
 impl Item {
@@ -211,6 +214,7 @@ impl Schema {
                 group: text(&i["group"]),
                 package: text(&i["package"]),
                 common: i["common"] == true,
+                unlisted: i["ticks"] == "unlisted",
             })
             // 键里有人起的名字的归供应商和模型；别的头专有的不列（蓝图「配置页」第 5 条）。
             .filter(|i: &Item| !i.key.contains('<') && !i.key.starts_with("web."))

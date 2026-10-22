@@ -1127,6 +1127,7 @@
       "loading": "Reading…",
       "no_packages": "No package has settings",
       "package_items": "{n} settings",
+      "counted": "{n} listed",
       "detail": [
         "Name",
         "Detailed persona prompt",
@@ -1368,7 +1369,7 @@
       "combo": ["Not set", "Other…"],
       "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]],
       "list": {"empty": "None yet", "whole": "Enter a whole number", "hints": [["Enter", "edit"], ["a", "add"], ["d", "delete"], ["J/K", "move"], ["Esc", "done"]]},
-      "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["j/k", "move"], ["Esc", "done"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally"}
+      "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["j/k", "move"], ["Enter", "save"], ["Esc", "cancel"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally"}
     }
   },
   "oobe": {
