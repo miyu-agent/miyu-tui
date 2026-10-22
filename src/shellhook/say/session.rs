@@ -113,6 +113,7 @@ impl Session {
                 break;
             }
             super::dreaming::tick(turn, &self.config);
+            turn.climb(&self.config);
             turn.look.apply(&self.config);
             let (width, height) = size();
             let frame =

@@ -86,6 +86,8 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     turn.redo = ask.redo;
     turn.bare_redo = bare_redo;
     // 终端界面不认的斜杠命令（核心的命令模板、扩展的、`/dream`）：整行交给核心（同终端界面 `app/catalog.rs`）。
+    // `/compact`：照说话那样画压缩那一轮。
+    turn.compact = crate::shellhook::slash::compact(&session.config.commands, &turn_text);
     turn.slash = !bare_redo
         && turn_text.starts_with('/')
         && crate::shellhook::slash::to_core(&session.config.commands, &turn_text);

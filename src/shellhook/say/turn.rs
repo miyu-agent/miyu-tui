@@ -1,6 +1,6 @@
 //! 这一轮的状态：先问终端会话、接上，再说那句话；照推送认出这句话开的那一轮，那一轮结束就收工。
 
-use ratatui::crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
+use ratatui::crossterm::event::Event;
 use serde_json::json;
 
 use crate::config::Config;
@@ -33,6 +33,12 @@ pub struct Turn {
     pub board: crate::jobs::Board,
     /// 主题包（`pack.rs`）：读 `tui.look`、换上。
     pack: super::pack::Pack,
+    /// 打的是 `/compact`（带给摘要的要求的）：交 `session.compact`，不当一句话发。
+    pub compact: Option<Option<String>>,
+    /// 交了 `session.compact`：认它开的那一轮。
+    manual: bool,
+    /// 压缩进度条走满时的抖动（同全屏）。
+    rng: crate::rng::Rng,
     /// 打的 `/dream` 正在整理（`dreaming.rs`）。
     pub(super) dream: Option<crate::dream::Dream>,
     /// 这一轮待办变过：收尾时把最后的样子印出来。
@@ -110,7 +116,7 @@ impl Turn {
     pub fn scope(&self) -> super::view::Scope {
         // 交给核心的斜杠命令只回了一句（`/dream` 的回执、被拒）：正文里只剩那一句，照全部印。回执到之前正文里是读回来的那一页，
         // 什么都不画（2026-10-22 验收：`/dream` 整理时把前几轮全画了出来）。
-        if self.slash && self.done && self.ours.is_none() && self.woken.is_empty() {
+        if self.manual || (self.done && self.ours.is_none() && self.woken.is_empty()) {
             return super::view::Scope::All;
         }
         super::view::Scope::Turns(
@@ -135,6 +141,9 @@ impl Turn {
             look,
             board: crate::jobs::Board::default(),
             pack: super::pack::Pack::default(),
+            compact: None,
+            manual: false,
+            rng: crate::rng::Rng::from_clock(),
             dream: None,
             todos_changed: false,
             jobs: Vec::new(),
@@ -180,6 +189,14 @@ impl Turn {
                     text: None,
                     files: None,
                 });
+                return;
+            }
+            if let Some(words) = self.compact.take() {
+                // 压缩那几行不带回合号：读回来的那一页清掉，之后来的都是这一轮的，照全部印（`scope`）。
+                self.transcript.entries.clear();
+                self.transcript.manual_compaction = true;
+                self.manual = true;
+                core.send(Command::Compact(words));
                 return;
             }
             if self.slash {
@@ -345,6 +362,10 @@ impl Turn {
                 self.done = true;
             }
             update @ (Update::Refused { .. } | Update::Unsent { .. }) => {
+                // 还没开轮就被拒的（`/compact` 没有能压的这类）：正文里只留那一句，照全部印（`scope`）。
+                if self.ours.is_none() {
+                    self.transcript.entries.clear();
+                }
                 self.transcript.update(update, &config.text);
                 if self.ours.is_none() {
                     self.done = true;
@@ -357,9 +378,25 @@ impl Turn {
             // 说话的那一句（`report.rs` 接上的不算：叫醒的那一轮归盯后台的记）：有任务在这一轮里结束的先等等。
             if self.unseen.owed() && !self.said.is_empty() {
                 self.lingering = true;
-            } else {
+            } else if !self.transcript.compacting_shown() {
+                // 压好了、进度条还在走满的等它换成结果（`climb`）。
                 self.done = true;
             }
+        }
+    }
+
+    /// 每一拍追一下压缩那一行的进度条（同全屏 `app` 的 `tick`）；`/compact` 那一轮已经结束、走满换成结果了的收工。
+    pub fn climb(&mut self, config: &Config) {
+        let layout = &config.layout;
+        let now = std::time::Instant::now();
+        self.transcript
+            .climb(now, layout.bar.width, &layout.compaction, &mut self.rng);
+        if self.manual
+            && self.ours.is_some()
+            && self.transcript.running.is_none()
+            && !self.transcript.compacting_shown()
+        {
+            self.done = true;
         }
     }
 
@@ -420,6 +457,12 @@ impl Turn {
             {
                 self.ours = Some(*turn);
             }
+            // `/compact` 开的那一轮没有你说的话：发出去以后头一个开的就是它（同一个会话里有回合在进行核心拒 `turn_running`）。
+            Update::Push(Push::TurnStarted(turn, None))
+                if self.manual && self.ours.is_none() && self.live() =>
+            {
+                self.ours = Some(*turn);
+            }
             // 说的时候她正在跑别的一轮（回报叫醒的）：这句话排着，被那一轮听到了就算在那一轮里，不另开一轮（实测：原来一直
             // 等不到自己开的那一轮，终端还不回来）。
             Update::Push(Push::Heard(seen))
@@ -430,63 +473,9 @@ impl Turn {
             _ => {}
         }
     }
-
-    /// 收工以后才处理到的按键：只记字，不再打断、不再答抽屉。
-    pub fn keep_typed(&mut self, event: &Event) {
-        match event {
-            Event::Key(key) if key.kind != KeyEventKind::Release => {
-                let plain = !key
-                    .modifiers
-                    .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT);
-                match key.code {
-                    KeyCode::Char(c) if plain => self.typed.push(c),
-                    KeyCode::Backspace => {
-                        self.typed.pop();
-                    }
-                    _ => {}
-                }
-            }
-            Event::Paste(text) => self.typed.push_str(text),
-            _ => {}
-        }
-    }
-
-    /// 按键：Ctrl+C 打断这一轮（还没开轮的、再按一下的不等了），提前敲的字记下交还给 shell。交回要不要马上收工。
-    pub fn key(&mut self, event: &Event, core: &Core, config: &Config) -> bool {
-        match event {
-            Event::Key(key)
-                if key.kind != KeyEventKind::Release
-                    && self.asking.key(*key, core, &mut self.transcript, config) => {}
-            Event::Paste(text) if self.asking.open() => {
-                self.asking.paste(text);
-            }
-            Event::Key(key) if key.kind != KeyEventKind::Release => {
-                let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-                let alt = key.modifiers.contains(KeyModifiers::ALT);
-                match key.code {
-                    // 在整理的头一下叫停（`dreaming.rs`）。
-                    KeyCode::Char('c') if ctrl && super::dreaming::stop(self, core) => {}
-                    KeyCode::Char('c') if ctrl => {
-                        let give_up = self.interrupted || self.ours.is_none();
-                        self.interrupted = true;
-                        if give_up {
-                            return true;
-                        }
-                        core.send(Command::Interrupt { send: false });
-                    }
-                    KeyCode::Char(c) if !ctrl && !alt => self.typed.push(c),
-                    KeyCode::Backspace => {
-                        self.typed.pop();
-                    }
-                    _ => {}
-                }
-            }
-            Event::Paste(text) => self.typed.push_str(text),
-            _ => {}
-        }
-        false
-    }
 }
+
+mod keys;
 
 #[cfg(test)]
 mod tests;

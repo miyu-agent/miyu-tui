@@ -47,7 +47,7 @@ pub fn run(
         }
         Line::Unknown => return None,
     };
-    if TO_CORE.contains(&spec.name.as_str()) {
+    if TO_CORE.contains(&spec.name.as_str()) || spec.name == COMPACT {
         return None;
     }
     Some(match spec.name.as_str() {
@@ -102,7 +102,10 @@ fn config_page() -> io::Result<ExitCode> {
 }
 
 /// 终端界面也是整行交给核心（`command.run`）的：照说话那样发，印核心的回执（同表里没有的）。
-const TO_CORE: [&str; 1] = ["clear"];
+const TO_CORE: [&str; 2] = ["clear", "stop"];
+
+/// 现在就压缩（`session.compact`）：照说话那样画压缩那一轮（进度条、压好了的那一行）。
+const COMPACT: &str = "compact";
 
 /// 这一行整行交给核心：终端界面不认的（核心的命令模板、扩展的、`/dream`），和 [`TO_CORE`] 里的。
 pub fn to_core(commands: &crate::commands::Commands, line: &str) -> bool {
@@ -110,6 +113,14 @@ pub fn to_core(commands: &crate::commands::Commands, line: &str) -> bool {
         Line::Unknown => true,
         Line::Command(spec, _) => TO_CORE.contains(&spec.name.as_str()),
         Line::Talk => false,
+    }
+}
+
+/// 这一行是 `/compact`：交回给摘要的要求（没写的是 `None`）。不是的交回 `None`。
+pub fn compact(commands: &crate::commands::Commands, line: &str) -> Option<Option<String>> {
+    match commands.read(line.trim()) {
+        Line::Command(spec, args) if spec.name == COMPACT => Some(args.map(str::to_string)),
+        _ => None,
     }
 }
 
