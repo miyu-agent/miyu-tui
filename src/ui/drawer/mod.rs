@@ -15,6 +15,7 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
+use unicode_width::UnicodeWidthStr;
 
 use super::rows::clip;
 use crate::caret::Caret;
@@ -163,7 +164,10 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
         }
     }
     for (path, mark) in d.paths(texts) {
-        let mut spans = vec![Span::styled(clip(&path, width), theme::dim())];
+        // 标记不截：路径长的先截路径，给后面的空格和标记留出地方（原来整行宽截路径，长路径把标记挤没了）。
+        let room = mark.as_deref().map_or(0, |m| m.width() + 1);
+        let room = width.saturating_sub(u16::try_from(room).unwrap_or(u16::MAX));
+        let mut spans = vec![Span::styled(clip(&path, room), theme::dim())];
         if let Some(mark) = mark {
             spans.push(Span::raw(" "));
             spans.push(Span::styled(mark, theme::warn()));

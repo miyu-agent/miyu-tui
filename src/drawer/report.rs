@@ -77,7 +77,7 @@ impl Drawer {
         super::package::plan(a.detail.as_ref()?, &texts.package)
     }
 
-    /// 确认碰到的路径：家目录写 `~`，工作区外的、别的程序的私密目录（核心 5-13）带上标记。
+    /// 确认碰到的路径：家目录写 `~`，工作区外的、别的程序的私密目录（核心 5-13）、受保护的（核心 5-17 下上）带上标记。
     pub fn paths(&self, texts: &Texts) -> Vec<(String, Option<String>)> {
         let Ask::Approval(a) = &self.ask else {
             return Vec::new();
@@ -89,6 +89,7 @@ impl Drawer {
                 let mark = match p.zone.as_deref() {
                     Some("outside") => Some(texts.outside.clone()),
                     Some("private") => Some(texts.private.clone()),
+                    Some("read_only") => Some(texts.protected.clone()),
                     _ => None,
                 };
                 (home_short(&p.path), mark)

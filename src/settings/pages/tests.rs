@@ -183,7 +183,12 @@ fn private_directories_show_how_many_not_every_path() {
          "options": [{"value": "~/.ssh", "name": "~/.ssh"}, {"value": "~/.gnupg", "name": "~/.gnupg"},
                      {"value": "~/.aws", "name": "~/.aws"}]},
         {"key": "packages.sources", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
-         "name": "软件源", "page": "packages", "group": "source"}
+         "name": "软件源", "page": "packages", "group": "source"},
+        {"key": "sandbox.readonly.add", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+         "name": "加的受保护路径", "page": "privacy", "group": "readonly"},
+        {"key": "sandbox.readonly.remove", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+         "name": "默认受保护路径", "page": "privacy", "group": "readonly", "ticks": "unlisted",
+         "options": [{"value": ".git/hooks", "name": ".git/hooks"}, {"value": ".envrc", "name": ".envrc"}]}
     ]}));
     let shown =
         |i: usize, value: serde_json::Value| super::shown(&s.items[i], &value, None, &texts);
@@ -196,4 +201,7 @@ fn private_directories_show_how_many_not_every_path() {
         "https://a.invalid、https://b.invalid",
         "别的列表照旧列"
     );
+    // 受保护的路径（核心 5-17 下上）同一天照私密目录写个数。
+    assert_eq!(shown(3, json!([".miyu/hooks"])), "1 个");
+    assert_eq!(shown(4, json!([".envrc"])), "1 个", "数勾着的");
 }
