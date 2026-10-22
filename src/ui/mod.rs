@@ -125,9 +125,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let queued: Vec<String> = app
         .talk
         .transcript
-        .entries
-        .iter()
-        .filter(|e| e.queued && !e.hidden)
+        .queued()
         .map(|e| e.text.split_whitespace().collect::<Vec<_>>().join(" "))
         .collect();
     let count = u16::try_from(queued.len()).unwrap_or(u16::MAX);
@@ -323,7 +321,18 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let (seen, _, mascot) = app.parts();
         status::draw(frame, areas.pulse, &seen, mascot);
     });
-    status::queued(frame, areas.queued, &queued, &app.config.layout.queued_mark);
+    // 指针停在哪一条排队的话上：那一行后面写「点击撤回」（2026-10-22 项目主人定点那条撤回）。
+    let hovered = app
+        .screen
+        .pointer
+        .filter(|p| areas.queued.contains(*p))
+        .map(|p| p.y - areas.queued.y);
+    let look = status::Queued {
+        mark: &app.config.layout.queued_mark,
+        hint: &app.config.text.queued_withdraw,
+        hovered,
+    };
+    status::queued(frame, areas.queued, &queued, &look);
     // 长期目标的进度：框上面那一行右对齐，看着子会话时不写（「长期目标」第 5 条，2026-10-14 项目主人定）；列表、面板开着时
     // 盖在它上面（下面才画）。
     let goal = app

@@ -13,6 +13,7 @@
     "With background commands running, ↓ on an empty input opens the panel"
   ],
   "untitled": "Untitled session",
+  "queued_withdraw": "click to take back",
   "side_id": "#{id}",
   "side_cwd": "Workspace",
   "side_context": "Context",

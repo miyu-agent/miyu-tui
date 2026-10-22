@@ -97,6 +97,25 @@ impl App {
         self.link.core.send(Command::Interrupt { send: true });
     }
 
+    /// 退回第 `row` 条排着队的话（`session.withdraw`）：她这一轮照跑，核心推 `message.withdrawn`，字照退回的那一套放回
+    /// 输入框（`put_returned`）。还没落盘、没有序号的不管（2026-10-22 项目主人：「不如直接点击那条消息撤回」）。
+    pub(super) fn withdraw(&mut self, row: usize) {
+        if let Some(seq) = self.talk.transcript.queued().nth(row).and_then(|e| e.seq) {
+            self.link.core.send(Command::Withdraw(Some(seq)));
+        }
+    }
+
+    /// `/undo`：有排着队的先退回最新的那一条（一次一条），没有的才撤销上一轮（同一天项目主人：「/undo把发出去的排队消息
+    /// 逐条撤回来」）。
+    pub(super) fn undo(&mut self) {
+        let command = if self.talk.transcript.queued().next().is_some() {
+            Command::Withdraw(None)
+        } else {
+            Command::Revert
+        };
+        self.link.core.send(command);
+    }
+
     /// 正在看的会话推来的：这一轮结束了发撤销；撤销成了把那几句放回输入框；撤销被拒了、看的换了、断开了就算了。
     pub(super) fn takeback_on(&mut self, update: &Update) {
         let Some(taken) = self.talk.takeback.take() else {

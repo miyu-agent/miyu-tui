@@ -62,6 +62,11 @@ impl Transcript {
         }
     }
 
+    /// 排着队、还在框上面画着的话，照先后（运行状态行下面那几行 `↳`）。
+    pub fn queued(&self) -> impl Iterator<Item = &Entry> {
+        self.entries.iter().filter(|e| e.queued && !e.hidden)
+    }
+
     /// 排着的这几句被退回了（序号 `seqs`）：拿出正文，字和粘贴块记着放回输入框。一条条删、记着的下标跟着往前挪：这一轮
     /// 后面才开的回答、步排在它们后面（review B7，2026-10-11：原来整个 `retain`，接着来的字落到了别的条目上）。
     pub(super) fn withdraw(&mut self, seqs: &[u64]) {

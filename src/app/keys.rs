@@ -341,7 +341,7 @@ impl App {
             Run::Usage => self.open_usage(),
             Run::Status => self.open_status(),
             Run::New => self.new_session(),
-            Run::Revert => self.link.core.send(Command::Revert),
+            Run::Revert => self.undo(),
             Run::Unrevert => self.link.core.send(Command::Unrevert),
             Run::Compact => self.compact(words),
             Run::Theme => self.open_themes(),

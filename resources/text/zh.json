@@ -13,6 +13,7 @@
     "有后台命令时，在空输入框按 ↓ 打开后台面板"
   ],
   "untitled": "未命名会话",
+  "queued_withdraw": "点击撤回",
   "side_id": "#{id}",
   "side_cwd": "工作区",
   "side_context": "上下文",

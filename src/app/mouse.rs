@@ -25,6 +25,14 @@ impl App {
         if !captured && self.jobs_mouse(mouse, at) {
             return Action::None;
         }
+        // 排着队的话：点哪条退回哪条，字放回输入框，她这一轮照跑（2026-10-22 项目主人：「不如直接点击那条消息撤回」）。
+        if !captured && self.screen.areas.queued.contains(at) {
+            if matches!(mouse.kind, MouseEventKind::Down(_)) {
+                let row = usize::from(at.y - self.screen.areas.queued.y);
+                self.withdraw(row);
+            }
+            return Action::None;
+        }
         // 回到底部的按钮（`ui/bottom_button.rs`）。
         if !captured && self.screen.areas.bottom.contains(at) {
             if matches!(mouse.kind, MouseEventKind::Down(_)) {
