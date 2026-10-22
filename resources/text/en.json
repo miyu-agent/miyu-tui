@@ -52,6 +52,7 @@
     "404": "Not found: check the endpoint address and the model name",
     "429": "Rate limited or out of credit, try again later"
   },
+  "retry_after": {"hints": {"402": "Out of credit; back in about {wait}", "429": "Rate limited or out of quota; back in about {wait}"}, "cooling": "All models are cooling down; back in about {wait}", "seconds": ["{n} second", "{n} seconds"], "minutes": ["{n} minute", "{n} minutes"], "hours": ["{n} hour", "{n} hours"], "days": ["{n} day", "{n} days"]},
   "retry": "Retry {attempt}/{limit}: {message}",
   "older": "Loading earlier…",
   "older_failed": "Couldn't load earlier messages: {reason}",

@@ -10,6 +10,7 @@ fn failed(class: &str, message: &str) -> (Kind, String) {
         class: class.into(),
         message: message.into(),
         status: None,
+        retry_after_ms: None,
     })])
 }
 
@@ -80,6 +81,7 @@ fn a_status_the_core_gives_picks_the_plain_word() {
             class: class.into(),
             message: message.into(),
             status: Some(status),
+            retry_after_ms: None,
         })])
         .1
     };
@@ -106,6 +108,7 @@ fn a_call_that_went_through_later_clears_the_earlier_error() {
             class: "context_too_long".into(),
             message: "HTTP 400: maximum context length".into(),
             status: Some(400),
+            retry_after_ms: None,
         }),
         Push::CallOk,
     ]);

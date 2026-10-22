@@ -173,6 +173,7 @@ fn an_error_turn_says_why() {
                 class: "auth".into(),
                 message: "no key ".into(),
                 status: None,
+                retry_after_ms: None,
             }),
             Push::TurnEnded(crate::core::EndReason::Error),
         ],

@@ -149,6 +149,8 @@ pub struct Texts {
     pub reason_with: String,
     /// 这几种 HTTP 状态码，原话前面加的人话（蓝图「正文」第 4 条）。
     pub status_hints: HashMap<String, String>,
+    /// 知道还要等多久的：带 `{wait}` 的那几句、时间怎么写（`transcript/failure.rs`）。
+    pub retry_after: crate::transcript::RetryAfter,
     /// 正在重试。
     pub retry: String,
     /// 老会话按页读，正文最上面那一行：更早的还有，正在读（蓝图「会话列表」第 5 条「按页读」）。
