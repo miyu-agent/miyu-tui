@@ -1,5 +1,5 @@
 //! 输入框这一格：圆角框里画输入的字、提示符、暂存标记，编辑上一句时上边框写一句，上边框右边写子代理是谁、人起的标题；抽屉开着时框里画抽屉（蓝图 `tui.md`「输入框」、
-//! 「确认和提问的抽屉」第 2 条）。
+//! 「确认和提问的抽屉」第 2 条）；新会话开头选人格、预设时框里画那个列表（「新会话：人格、工作区」第 1 条）。
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -54,10 +54,21 @@ pub(super) fn draw_box(
     frame: &mut Frame,
     areas: Areas,
     (config, facts): (&Config, Facts),
-    input: &mut InputBox,
+    (input, pick): (
+        &mut InputBox,
+        Option<(super::panel::Chrome, Vec<Line<'static>>)>,
+    ),
     drawer: Option<&mut Drawer>,
     screen: &mut Screen,
 ) {
+    // 新会话开头选人格、预设（`start_pick.rs`）：框里画列表，不画输入的字、不放光标。
+    if let Some((chrome, lines)) = pick.filter(|_| drawer.is_none()) {
+        let set = crate::sheet::read(|s| s.frame.input.set());
+        frame.render_widget(super::panel::block_with(chrome, set), areas.frame);
+        frame.render_widget(Paragraph::new(lines), areas.text);
+        screen.drawer_rows.clear();
+        return;
+    }
     if let Some(d) = drawer {
         frame.render_widget(
             Block::bordered()

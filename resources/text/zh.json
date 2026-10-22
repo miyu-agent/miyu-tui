@@ -641,6 +641,7 @@
   "stopped_jobs": "已停止 {count} 个任务",
   "language_switched": "界面语言：中文",
   "persona_box": {
+    "loading": "正在加载…",
     "title": "请选择人格",
     "hint": "↑/↓ 选择 · Enter 确定 · e 编辑",
     "default_mark": "默认",

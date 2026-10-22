@@ -150,8 +150,15 @@ pub fn draw(frame: &mut Frame, outer: Rect, text: Rect, chrome: Chrome, lines: V
 
 /// 框（框线照主题的 `frame.boxes`，出厂圆角）：标题嵌在上边框 `╭─ 标题 ─…╮`，按键提示嵌在下边框 `╰─ 提示 ─…╯`。
 fn block(chrome: Chrome) -> Block<'static> {
+    block_with(chrome, crate::sheet::read(|s| s.frame.boxes.set()))
+}
+
+/// 同 [`block`]，框线照 `set`（新会话开头选人格、预设画在输入框的位置，照输入框的框线）。
+pub(super) fn block_with(
+    chrome: Chrome,
+    set: ratatui::symbols::border::Set<'static>,
+) -> Block<'static> {
     let line = theme::dim();
-    let set = crate::sheet::read(|s| s.frame.boxes.set());
     let lead = format!("{} ", set.horizontal_top);
     let edge = |mut spans: Vec<Span<'static>>| {
         spans.insert(0, Span::styled(lead.clone(), line));

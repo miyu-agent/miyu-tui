@@ -641,6 +641,7 @@
   "stopped_jobs": "Stopped {count} task(s)",
   "language_switched": "Interface language: English",
   "persona_box": {
+    "loading": "Loading…",
     "title": "Choose a persona",
     "hint": "↑/↓ choose · Enter confirm · e edit · Esc use the default",
     "default_mark": "default",
