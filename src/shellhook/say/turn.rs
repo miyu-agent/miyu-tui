@@ -386,6 +386,7 @@ impl Turn {
             }
             update => self.transcript.update(update, &config.text),
         }
+        self.take_back();
         // 这句话开的那一轮结束了：收工（接上的等最新一页补完再看）。
         // 插的话还没落着的不收工：这一轮完了核心会拿它另开一轮（`turn/interject.rs`）。
         if self.ours.is_some()

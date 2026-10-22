@@ -42,6 +42,12 @@ impl Turn {
         }
     }
 
+    /// 正文退回的字（`take_returned`）不要：终端会话几个 shell 共用，别的 shell 插的话被退回来，这里也收得到（2026-10-23
+    /// 实测：命令行里多出一句别处插的话）。这个 shell 自己插的照序号在 [`Turn::follow_interject`] 里放回去。
+    pub(super) fn take_back(&mut self) {
+        drop(self.transcript.take_returned());
+    }
+
     /// 核心推来的：插的话推回了序号、被听到了、另开了一轮（那一轮接着印，同叫醒的）。
     pub(super) fn follow_interject(&mut self, update: &Update) {
         let mine = self.said_seq.is_some() || self.said.is_empty();
@@ -51,6 +57,32 @@ impl Turn {
                 self.interject.queued.push(*seq);
             }
             Update::Push(Push::Heard(seen)) => self.interject.queued.retain(|s| s > seen),
+            // Ctrl+C 打断：排着的被退回来（`message.withdrawn`），不用再等它们落着；这个 shell 插的那几句字放回去，接在提前敲
+            // 的字前面、一条一行，答完回到命令行（同全屏放回输入框，2026-10-23 验收：原来没接住，要再按一次 Ctrl+C，那句还
+            // 留在核心的队里，下一次说话被一起带上）。正文还没退（这里先看），照序号取字。
+            Update::Push(Push::Withdrawn(seqs)) => {
+                let mine: Vec<u64> = self
+                    .interject
+                    .queued
+                    .iter()
+                    .copied()
+                    .filter(|s| seqs.contains(s))
+                    .collect();
+                self.interject.queued.retain(|s| !seqs.contains(s));
+                let mut back: Vec<String> = self
+                    .transcript
+                    .entries
+                    .iter()
+                    .filter(|e| e.seq.is_some_and(|s| mine.contains(&s)))
+                    .map(|e| e.text.clone())
+                    .collect();
+                if !back.is_empty() {
+                    if !self.typed.is_empty() {
+                        back.push(std::mem::take(&mut self.typed));
+                    }
+                    self.typed = back.join("\n");
+                }
+            }
             Update::Push(Push::TurnStarted(turn, Some(trigger)))
                 if self.interject.queued.contains(trigger) =>
             {
