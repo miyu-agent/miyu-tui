@@ -11,12 +11,12 @@ use super::popup::Popup;
 use super::{Hit, Outcome, Settings, Texts};
 
 impl Settings {
-    /// 指针停在包页面那一行的上游上（[`Hit::Link`]）：画下划线、指针变手。
+    /// 指针停在包页面那一行的上游上（[`Hit::Link`]）、MCP 页的「登录」上（[`Hit::Login`]）：指针变手。
     pub fn over_link(&self) -> bool {
         self.hover.is_some_and(|at| {
             self.hits
                 .iter()
-                .any(|(r, h)| *h == Hit::Link && r.contains(at))
+                .any(|(r, h)| matches!(h, Hit::Link | Hit::Login(_)) && r.contains(at))
         })
     }
 
@@ -43,6 +43,11 @@ impl Settings {
                     // 打不开的不用说：和正文里点链接一样，系统没有能开它的程序时什么都不做。
                     if crate::open::open(&url).is_err() {}
                 }
+            }
+            // MCP 页的「登录」：选中那一行、去要授权页（第 43b 条）。
+            Hit::Login(i) if self.popup.is_none() => {
+                self.more.section = Some(super::pages::Section::Mcp(i));
+                self.login(i, texts);
             }
             Hit::Menu(i) => {
                 self.more.menu_at = i;

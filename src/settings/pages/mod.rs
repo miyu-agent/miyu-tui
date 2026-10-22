@@ -9,6 +9,7 @@ pub mod dialogs;
 mod keys;
 pub mod list;
 pub mod mascots;
+pub mod mcp;
 pub mod model_or;
 pub mod packages;
 pub mod persona_edit;
@@ -57,6 +58,8 @@ pub enum Entry {
     Personas,
     /// 预设（核心有 `preset.list` 才列）。
     Presets,
+    /// MCP 服务（有服务才列，第 43b 条）。
+    Mcp,
 }
 
 /// 进了哪一页（「供应商和模型」那三页不算，归 `Nav`）。
@@ -70,6 +73,8 @@ pub enum Section {
     Presets(usize),
     /// 「软件包」：有配置项的包的列表，选中第几个（「配置页」第 43a 条）；进去是 `Page("packages/<包>")`。
     Packages(usize),
+    /// 「MCP」：服务的列表，选中第几个（第 43b 条）。
+    Mcp(usize),
 }
 
 /// 新几页的状态。
@@ -91,6 +96,10 @@ pub struct More {
     pub summaries: HashMap<String, String>,
     /// 每个包的作者、从哪来、上游（`package.list` 的 `author`、`from`、`upstream`，核心 F-12）：包页面包屑下面那一行。
     pub origins: HashMap<String, packages::Origin>,
+    /// 个人设置里的 MCP 服务（`mcp.list`）；核心不认的（旧核心）是空的。
+    pub mcp_home: Vec<mcp::Server>,
+    /// 包里带的 MCP 服务（`package.list` 每个包的 `mcp`）。
+    pub mcp_bundled: Vec<mcp::Server>,
     /// 进了哪一页。
     pub section: Option<Section>,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
@@ -148,6 +157,12 @@ impl More {
                 })
                 .map(|p| Entry::Page((*p).to_string())),
         );
+        // MCP 放在软件包上面（同网页，2026-10-20 项目主人），没有软件包页的放在高级前面。
+        if !self.servers().is_empty() {
+            let packages = Entry::Page(packages::PACKAGES.to_string());
+            let at = out.iter().position(|e| *e == packages).unwrap_or(out.len());
+            out.insert(at, Entry::Mcp);
+        }
         if pages.contains(&LAST) {
             out.push(Entry::Page(LAST.to_string()));
         }
@@ -308,6 +323,8 @@ pub struct Texts {
     pub ticks: ticks::TicksTexts,
     /// 包从哪来（第 43a 条，包页面包屑下面那一行）：出厂自带、官方软件源、本机安装（照 `package.list` 的 `from`）。
     pub package_from: std::collections::BTreeMap<String, String>,
+    /// 「MCP」那一页（第 43b 条）。
+    pub mcp: mcp::McpTexts,
 }
 
 /// 一项现在的值：读来的最终值和来自哪一层；哪一层都没写的照清单的默认，来自「默认」。
