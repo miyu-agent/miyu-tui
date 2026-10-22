@@ -178,3 +178,42 @@ fn a_tools_change_rereads_the_servers_and_a_signed_in_one_stops_asking() {
         ("notes", false, Some(1))
     );
 }
+
+#[test]
+fn signing_out_says_so_and_a_server_not_signed_in_says_why() {
+    let signed_in = json!({"servers": [
+        {"name": "notes", "url": "https://notes.invalid/mcp", "state": "running", "tools": ["a"], "logged_in": true}]});
+    let (mut page, config) = opened(Ok(signed_in));
+    assert!(page.more.servers()[0].logged_in, "读到 logged_in");
+    enter_mcp(&mut page, &config);
+    press(&mut page, &config, KeyCode::Enter);
+    let (tag, method, params) = page.take_asks().remove(0);
+    assert_eq!(
+        (method, params),
+        ("mcp.logout", json!({"service": "notes"}))
+    );
+    assert!(matches!(page.status, Some((_, Tone::Busy))));
+    page.answer(tag, Ok(json!({})), &config.text.settings);
+    assert_eq!(
+        page.status.clone(),
+        Some(("已登出 notes".to_string(), Tone::Note))
+    );
+    press(&mut page, &config, KeyCode::Enter);
+    let (tag, _, _) = page.take_asks().remove(0);
+    let refusal = Refusal {
+        reason: Some("not_logged_in".into()),
+        message: "not logged in".into(),
+        data: Value::Null,
+    };
+    page.answer(tag, Err(refusal), &config.text.settings);
+    assert_eq!(
+        page.status.clone(),
+        Some(("notes 没有登录过".to_string(), Tone::Bad))
+    );
+    // 没带这一格的（没登录过、在跑的）Enter 不做什么。
+    let (mut page, config) = opened(Ok(home()));
+    enter_mcp(&mut page, &config);
+    press(&mut page, &config, KeyCode::Down);
+    press(&mut page, &config, KeyCode::Enter);
+    assert!(page.take_asks().is_empty());
+}
