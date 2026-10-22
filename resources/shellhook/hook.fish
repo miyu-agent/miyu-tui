@@ -43,6 +43,10 @@ function __miyu_wrap_fish_prompt
             printf '\e[?25l'
         end
         __miyu_original_fish_prompt
+        if set -q __miyu_show_cursor
+            set -e __miyu_show_cursor
+            printf '\e[?25h'
+        end
     end
 end
 
@@ -98,9 +102,15 @@ function __miyu_on_prompt --on-event fish_prompt
             rm -f -- "$leftover.redo"
         end
         trap - INT TERM EXIT
-        __miyu_restore_cursor
-        if test -s "$leftover"
+        if test -s "$leftover"; and functions -q __miyu_original_fish_prompt
+            # 有字放回命令行：光标等 fish 画提示符时一起亮（夹在提示符的输出里，和命令行一次画出来），不先亮在提示符末尾、
+            # 再跳到字后面（2026-10-23 验收：Ctrl+C 退回的字回到命令行时光标从左跳到右）。
+            printf '\e[?2026l'
+            set -g __miyu_show_cursor 1
             commandline -r -- (string collect < $leftover)
+        else
+            __miyu_restore_cursor
+            test -s "$leftover"; and commandline -r -- (string collect < $leftover)
         end
         rm -f -- $leftover
     end
