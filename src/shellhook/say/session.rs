@@ -137,10 +137,15 @@ impl Session {
             let room = usize::from(height.saturating_sub(1 + drawer)).max(1);
             let tail = lines.len().saturating_sub(room);
             let mut live = self.painter.lines(width, &lines[tail..])?;
+            // 抽屉里写字的那一格（活动区里第几行、第几列）：光标停在那里，输入法的候选框跟着它。
+            let mut caret = None;
             if drawer > 0 {
                 let (asking, config) = (&mut turn.asking, &self.config);
+                let above = live.len();
                 live.extend(self.painter.render(width, drawer, |frame| {
-                    asking.draw(frame, frame.area(), config)
+                    caret = asking
+                        .draw(frame, frame.area(), config)
+                        .map(|(x, y)| (above + usize::from(y), x));
                 })?);
             }
             let settled = match banner(turn).filter(|_| !bannered) {
@@ -150,7 +155,7 @@ impl Session {
                 }
                 None => Vec::new(),
             };
-            self.painter.frame(&settled, &live)?;
+            self.painter.frame_at(&settled, &live, caret)?;
             // 新开了一个抽屉：弹「在等你确认」「在等你回答」。
             let current = turn.asking.current();
             if let Some((call, question)) = &current

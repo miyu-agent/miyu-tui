@@ -38,6 +38,8 @@ pub struct Texts {
     pub decisions: [String; 3],
     /// 写「不允许」的理由时，还没打字暗色写的。
     pub reason_hint: String,
+    /// 光标停在「不允许」上、没在写时后面写的：怎么写理由。
+    pub reason_key: String,
     /// 确认的问题行，照 `access` 找，`{count}` 路径数、`{tool}` 工具名。
     pub access: HashMap<String, String>,
     /// `access` 里没有的。

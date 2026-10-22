@@ -20,11 +20,15 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::theme;
 
-/// 往终端写的那一头：活动区现在占了几行（光标停在最后一行的行尾）。
+/// 往终端写的那一头：活动区现在占了几行、光标停在它的第几行。
 pub struct Painter<W: Write> {
     out: W,
     /// 活动区占的行数；没有活动区是 0。
     live: u16,
+    /// 光标停在活动区的第几行：平常是最后一行的行尾，抽屉里写字时停在写到的地方（输入法的候选框跟着它）。
+    at: u16,
+    /// 写字的那一格亮着光标。
+    shown: bool,
     depth: theme::Depth,
 }
 
@@ -34,6 +38,8 @@ impl<W: Write> Painter<W> {
         Self {
             out,
             live: 0,
+            at: 0,
+            shown: false,
             depth,
         }
     }
@@ -44,6 +50,21 @@ impl<W: Write> Painter<W> {
     ///
     /// 写终端失败。
     pub fn frame(&mut self, settled: &[String], live: &[String]) -> io::Result<()> {
+        self.frame_at(settled, live, None)
+    }
+
+    /// 同 [`Painter::frame`]，`caret` 是活动区里写字的那一格（第几行、第几列）：光标停在那里亮着，终端的输入法候选框跟着
+    /// 它（2026-10-22 验收：抽屉里写理由时候选框跑到右下角）。没有的照旧停在最后一行、不亮。
+    ///
+    /// # Errors
+    ///
+    /// 写终端失败。
+    pub fn frame_at(
+        &mut self,
+        settled: &[String],
+        live: &[String],
+        caret: Option<(usize, u16)>,
+    ) -> io::Result<()> {
         queue!(self.out, BeginSynchronizedUpdate)?;
         self.erase()?;
         for line in settled {
@@ -56,6 +77,22 @@ impl<W: Write> Painter<W> {
             queue!(self.out, Print(line))?;
         }
         self.live = u16::try_from(live.len()).unwrap_or(u16::MAX);
+        self.at = self.live.saturating_sub(1);
+        match caret.and_then(|(row, col)| Some((u16::try_from(row).ok()?, col))) {
+            Some((row, col)) if row < self.live => {
+                if self.at > row {
+                    queue!(self.out, cursor::MoveUp(self.at - row))?;
+                }
+                queue!(self.out, cursor::MoveToColumn(col), cursor::Show)?;
+                self.at = row;
+                self.shown = true;
+            }
+            _ if self.shown => {
+                queue!(self.out, cursor::Hide)?;
+                self.shown = false;
+            }
+            _ => {}
+        }
         queue!(self.out, EndSynchronizedUpdate)?;
         self.out.flush()
     }
@@ -68,6 +105,10 @@ impl<W: Write> Painter<W> {
     pub fn finish(&mut self) -> io::Result<()> {
         queue!(self.out, BeginSynchronizedUpdate)?;
         self.erase()?;
+        // 写字时亮着的光标关上：亮不亮由说话那一套收工时定。
+        if std::mem::take(&mut self.shown) {
+            queue!(self.out, cursor::Hide)?;
+        }
         queue!(self.out, ResetColor, EndSynchronizedUpdate)?;
         self.out.flush()
     }
@@ -78,11 +119,12 @@ impl<W: Write> Painter<W> {
             return Ok(());
         }
         queue!(self.out, cursor::MoveToColumn(0))?;
-        if self.live > 1 {
-            queue!(self.out, cursor::MoveUp(self.live - 1))?;
+        if self.at > 0 {
+            queue!(self.out, cursor::MoveUp(self.at))?;
         }
         queue!(self.out, Clear(ClearType::FromCursorDown))?;
         self.live = 0;
+        self.at = 0;
         Ok(())
     }
 

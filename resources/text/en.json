@@ -563,6 +563,7 @@
       "Don't allow"
     ],
     "reason_hint": "Add a reason (optional)",
+    "reason_key": "n write a reason",
     "access": {
       "execute": "Run a command",
       "write": "Wants to write {count} file(s)",
@@ -609,7 +610,7 @@
     "unanswered": "Unanswered",
     "keys": "↑/↓ select · Enter submit · n notes · Esc ×2 cancel",
     "keys_multi": "↑/↓ select · Space check · Enter submit · n notes · Esc ×2 cancel",
-    "keys_approve": "↑/↓ select · Enter confirm · n write a reason · Esc ×2 cancel",
+    "keys_approve": "↑/↓ select · Enter confirm · Esc ×2 cancel",
     "keys_review": "Enter submit · Esc ×2 cancel",
     "keys_edit": "Enter save · Esc stop editing",
     "keys_reason": "Enter submit · Esc stop editing",

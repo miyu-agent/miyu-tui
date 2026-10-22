@@ -215,11 +215,14 @@ impl Asking {
         Some(inner + 2)
     }
 
-    /// 画进 `area`：圆角框、框里的抽屉（同全屏 `ui/input_box.rs`）。
-    pub fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect, config: &Config) {
-        let Some(d) = self.drawers.current.as_mut() else {
-            return;
-        };
+    /// 画进 `area`：圆角框、框里的抽屉（同全屏 `ui/input_box.rs`）。在写字的交回写到的那一格（列、行），光标停在那里。
+    pub fn draw(
+        &mut self,
+        frame: &mut ratatui::Frame,
+        area: Rect,
+        config: &Config,
+    ) -> Option<(u16, u16)> {
+        let d = self.drawers.current.as_mut()?;
         // 框线照主题的 `frame.boxes`（出厂圆角，同全屏的框）。
         let set = crate::sheet::read(|s| s.frame.boxes.set());
         frame.render_widget(
@@ -244,6 +247,7 @@ impl Asking {
             config.layout.vim,
             &mut caret,
         );
+        caret.shown.then_some((caret.at.x, caret.at.y))
     }
 }
 

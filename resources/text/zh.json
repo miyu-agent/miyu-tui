@@ -563,6 +563,7 @@
       "不允许"
     ],
     "reason_hint": "理由（可选）",
+    "reason_key": "n 编写理由",
     "access": {
       "execute": "运行一条命令",
       "write": "写入 {count} 个文件",
@@ -609,7 +610,7 @@
     "unanswered": "未回答",
     "keys": "↑/↓ 选择 · Enter 提交 · n 补充 · Esc ×2 取消",
     "keys_multi": "↑/↓ 选择 · Space 勾选 · Enter 提交 · n 补充 · Esc ×2 取消",
-    "keys_approve": "↑/↓ 选择 · Enter 确定 · n 编写理由 · Esc ×2 取消",
+    "keys_approve": "↑/↓ 选择 · Enter 确定 · Esc ×2 取消",
     "keys_review": "Enter 提交 · Esc ×2 取消",
     "keys_edit": "Enter 保存 · Esc 退出编辑",
     "keys_reason": "Enter 提交 · Esc 退出编辑",
