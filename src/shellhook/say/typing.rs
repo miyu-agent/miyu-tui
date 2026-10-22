@@ -21,7 +21,7 @@ pub fn lines(
         .transcript
         .entries
         .iter()
-        .filter(|e| e.queued && !e.hidden)
+        .filter(|e| e.queued && turn.interjected(e.id))
         .map(|e| {
             let text = format!("{}{}", config.layout.queued_mark, one_line(&e.text));
             Line::styled(

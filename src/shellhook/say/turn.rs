@@ -282,8 +282,7 @@ impl Turn {
             update @ (Update::Paged(_) | Update::Older { .. }) if self.paging => {
                 self.paging = false;
                 self.transcript.update(update, &config.text);
-                // 那一页里还挂着「排着」的旧话：以前答话时插的，「听到了」是瞬时的、补发里没有，看着一直排着。早被以前那几轮
-                // 听过了，藏起来，不让这一轮开轮时当成带上的话归进来（2026-10-23 实测：上一次插的话画进了这一轮）。
+                // 那一页里看着还「排着」的旧话（「听到了」是瞬时的、补发里没有）藏起来，开轮时别当成带上的话（2026-10-23）。
                 for entry in self.transcript.entries.iter_mut().filter(|e| e.queued) {
                     entry.hidden = true;
                 }

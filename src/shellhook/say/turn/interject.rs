@@ -12,6 +12,8 @@ pub struct Interject {
     sending: usize,
     /// 推回了序号、还没被听到、也没开轮的。
     queued: Vec<u64>,
+    /// 插的那几句在正文里是哪几条（条目编号）：最下面「排着」的只画这几条（`typing.rs`）。
+    entries: Vec<u64>,
 }
 
 impl Interject {
@@ -19,9 +21,20 @@ impl Interject {
     pub fn waiting(&self) -> bool {
         self.sending > 0 || !self.queued.is_empty()
     }
+
+    /// 正文第 `id` 条是这个 shell 这一次插的话。读回的那一页里还挂着「排着」的旧话、别的 shell 插的都不是：画出来再藏
+    /// 会一闪（2026-10-23 验收 bash：第一次说话时有东西删了一下）。
+    pub fn owns(&self, id: u64) -> bool {
+        self.entries.contains(&id)
+    }
 }
 
 impl Turn {
+    /// 正文第 `id` 条是这个 shell 这一次答话时插的话。
+    pub fn interjected(&self, id: u64) -> bool {
+        self.interject.owns(id)
+    }
+
     /// 回车：提前敲的字插进这一轮；`now`（Ctrl+回车）当场打断，排着的马上发。她没在答的不插，字留着交还给 shell。
     pub(super) fn interject(&mut self, core: &Core, now: bool) {
         let text = self.typed.trim().to_string();
@@ -36,6 +49,9 @@ impl Turn {
         });
         // 她在答：正文里记成排着的（`queued`），听到了再挪进这一轮（同全屏）。
         self.transcript.user(text, Vec::new());
+        if let Some(entry) = self.transcript.entries.last() {
+            self.interject.entries.push(entry.id);
+        }
         self.interject.sending += 1;
         if now {
             core.send(Command::Interrupt { send: true });
