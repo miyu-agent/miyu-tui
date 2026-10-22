@@ -673,6 +673,7 @@
     "auto_switched": "表示言語：自動（システムに合わせる：{name}）"
   },
   "sessions": {
+    "terminal": "シェル連携",
     "title": "セッション",
     "count": "  {count} 件",
     "query": " · 検索：",

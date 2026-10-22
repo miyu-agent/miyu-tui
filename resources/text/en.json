@@ -673,6 +673,7 @@
     "auto_switched": "Interface language: Auto (system: {name})"
   },
   "sessions": {
+    "terminal": "Shell",
     "title": "Sessions",
     "count": "  {count}",
     "query": " · Search: ",
