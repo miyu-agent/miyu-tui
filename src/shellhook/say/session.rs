@@ -110,7 +110,8 @@ impl Session {
         let mut lingered: Option<Instant> = None;
         // 抽屉里写字时停住的上面那段正文。
         let mut frozen: Option<Vec<String>> = None;
-        // 她答话的时候不露光标（2026-10-20 验收）：活动区原地刷新时光标跟着跳；收工时还回来。
+        // 先不露光标（2026-10-20 验收）：活动区原地刷新时光标跟着跳；留出输入那一行以后亮在那一行（`paint.rs` 的 `Caret`），
+        // 收工时还回来。
         ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Hide)?;
         while !turn.done {
             // 这一轮结束了、有任务在这一轮里结束：核心要叫醒她的，同一刻就开下一轮；等过这么久没开的就是不叫了。
@@ -192,8 +193,8 @@ impl Session {
             let above = live.len();
             live.extend(box_lines);
             let caret = caret
-                .map(|(x, y)| (above + usize::from(y), x, true))
-                .or_else(|| typed_col.map(|(col, lit)| (above.saturating_sub(1), col, lit)));
+                .map(|(x, y)| (above + usize::from(y), x))
+                .or_else(|| typed_col.map(|col| (above.saturating_sub(1), col)));
             let settled = match banner(turn).filter(|_| !bannered) {
                 Some(line) => {
                     bannered = true;

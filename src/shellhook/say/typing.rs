@@ -7,15 +7,15 @@ use unicode_width::UnicodeWidthStr;
 use super::turn::Turn;
 use crate::config::Config;
 
-/// 排着的插话、输入那一行，交回光标停在最后一行的第几列、亮不亮。输入那一行她一开始答就留着（光标不亮地停在那里，输入法
-/// 的候选框一开始就在对的地方，2026-10-23 项目主人）；没打字时什么都不画，打了字画指示符和字、光标亮。抽屉开着时
-/// （`typing` 是假）只画排着的。
+/// 排着的插话、输入那一行，交回光标停在最后一行的第几列。输入那一行她一开始答就留着（光标亮着停在那里，输入法的候选框
+/// 一开始就在对的地方，2026-10-23 项目主人；为什么亮着见 `paint.rs` 的 `Caret`）；没打字时什么都不画，打了字画指示符和字。
+/// 抽屉开着时（`typing` 是假）只画排着的。
 pub fn lines(
     turn: &Turn,
     config: &Config,
     width: u16,
     typing: bool,
-) -> (Vec<Line<'static>>, Option<(u16, bool)>) {
+) -> (Vec<Line<'static>>, Option<u16>) {
     let width = usize::from(width).saturating_sub(2);
     let mut out: Vec<Line<'static>> = turn
         .transcript
@@ -35,11 +35,8 @@ pub fn lines(
         let pointer = &config.text.drawer.pointer;
         let room = width.saturating_sub(pointer.width() + 1);
         let shown = tail(&one_line(&turn.typed), room);
-        let typed = !shown.is_empty();
-        col = u16::try_from(2 + pointer.width() + shown.width())
-            .ok()
-            .map(|c| (c, typed));
-        out.push(if typed {
+        col = u16::try_from(2 + pointer.width() + shown.width()).ok();
+        out.push(if !shown.is_empty() {
             Line::from(vec![
                 Span::raw("  "),
                 Span::styled(pointer.clone(), crate::theme::accent()),
