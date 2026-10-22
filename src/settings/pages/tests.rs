@@ -40,14 +40,14 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("advanced".into()),
         ]
     );
-    // 2026-10-14：终端自己加的「外观」排在通用后面；2026-10-19 起供应商和模型挪到它前面（紧跟通用）。
+    // 2026-10-14：终端自己加的「外观」排在通用后面；2026-10-21 项目主人：外观紧跟通用、在供应商和模型前面。
     more.schema = Some(schema(&["advanced", "appearance", "general", "models"]));
     assert_eq!(
         more.entries(),
         [
             Entry::Page("general".into()),
-            Entry::Models,
             Entry::Page("appearance".into()),
+            Entry::Models,
             Entry::Personas,
             Entry::Page("advanced".into()),
         ]
@@ -64,9 +64,9 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
         more.entries(),
         [
             Entry::Page("general".into()),
+            Entry::Page("appearance".into()),
             Entry::Models,
             Entry::Page("user".into()),
-            Entry::Page("appearance".into()),
             Entry::Personas,
             Entry::Page("advanced".into()),
         ]
@@ -84,10 +84,10 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
         more.entries(),
         [
             Entry::Page("general".into()),
+            Entry::Page("appearance".into()),
             Entry::Models,
             Entry::Page("user".into()),
             Entry::Page("privacy".into()),
-            Entry::Page("appearance".into()),
             Entry::Personas,
             Entry::Page("advanced".into()),
         ]

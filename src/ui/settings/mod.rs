@@ -285,7 +285,8 @@ fn status(page: &Settings, texts: &Texts) -> (String, Style) {
         };
         return (text.clone(), style);
     }
-    if page.loading() {
+    // 主菜单照记下的清单已经画全了的不写「正在加载配置…」，免得读回来时底下那一行闪一下（2026-10-21）。
+    if page.loading() && !(page.on_menu && page.more.schema.is_some()) {
         return (texts.status("loading"), theme::dim());
     }
     if page.on_menu {

@@ -110,6 +110,7 @@ impl App {
         if applied.is_err() {
             return self.look_failed();
         }
+        self.note_theme(id.is_some().then_some(whole));
         self.media.theme_pick.shown = id;
         let items = Value::Object(self.link.look.items.clone());
         self.apply_layout_settings(&json!({ "items": items }));
@@ -125,6 +126,7 @@ impl App {
             let items = Value::Object(self.link.look.items.clone());
             self.apply_layout_settings(&json!({ "items": items }));
         }
+        self.note_theme(None);
         let text = self.config.text.look_failed.clone();
         self.hint(text, false);
     }

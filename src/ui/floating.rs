@@ -275,12 +275,15 @@ pub fn hint_line(hints: &[[String; 2]]) -> Line<'_> {
     Line::from(spans)
 }
 
-/// 选中的那一行左边的强调色竖条。
+/// 选中的那一行左边的竖条：强调色，不铺底的主题换选中色（`theme::picked_mark`）。
 pub fn bar(frame: &mut Frame, row: Rect) {
     for y in row.y..row.bottom() {
-        frame
-            .buffer_mut()
-            .set_string(row.x, y, crate::sheet::mark(|m| &m.bar), theme::accent());
+        frame.buffer_mut().set_string(
+            row.x,
+            y,
+            crate::sheet::mark(|m| &m.bar),
+            theme::picked_mark(),
+        );
     }
 }
 

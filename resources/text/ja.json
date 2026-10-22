@@ -1364,7 +1364,7 @@
       "default_look": "デフォルトテーマ",
       "mascot_missing": "{id}（未インストール）",
       "seed_unset": "ペルソナのメインカラーを消して、アバターの最初の候補に戻す",
-      "own_groups": {"look": "テーマ", "theme": "配色", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン", "keys": "キー操作モード"},
+      "own_groups": {"look": "テーマ", "theme": "配色", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン", "keys": "操作"},
       "appearance": "外観",
       "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}, "tui.keys": {"arrows": "矢印キー", "vim": "Vim"}},
       "unavailable": "未インストール",

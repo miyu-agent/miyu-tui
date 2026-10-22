@@ -34,6 +34,14 @@ pub struct Look {
     /// 最近那个会话用的人格、预设：会话列表到以前首页照它画、框照它停（2026-10-19：无人格也先闪一帧默认人格的头像）。
     #[serde(default)]
     last: Option<Last>,
+    /// 配置页的清单（`config.schema` 的回应）、预设列表：配置页起来时照它先画整张主菜单（2026-10-21 项目主人：「/config
+    /// 打开配置菜单闪了一下」）。只记清单和名字，不记配置的值（值里有令牌、请求头）。
+    #[serde(default)]
+    pub(super) settings: (Option<Value>, Option<Value>),
+    /// 现在用的主题的整份（选了主题包的；默认主题不记）：起来第一帧照它画（2026-10-21 项目主人：选了主题包的起来先闪一下
+    /// 默认主题）。连上以后照常读包，改了、卸了再换。
+    #[serde(default)]
+    theme: Option<Value>,
     /// 上一次写下的：一样的不再写。
     #[serde(skip)]
     written: Vec<u8>,
@@ -92,6 +100,13 @@ impl App {
         self.screen.wallpaper.restore(&look.wallpaper);
         if let Some(language) = &look.language {
             self.language_from_config(language);
+        }
+        // 主题先换上：`layout`、`timeline` 照它重读，下面终端自己的配置项再盖上去。
+        if let Some(theme) = &look.theme
+            && crate::sheet::set(theme).is_ok()
+            && self.config.retheme(theme).is_err()
+        {
+            drop(crate::sheet::set(&crate::sheet::default_value()));
         }
         let items = Value::Object(look.items.clone());
         self.apply_head_settings(&json!({ "items": items }));
@@ -154,6 +169,31 @@ impl App {
             self.link.look.last = Some(last);
             self.save_look();
         }
+    }
+
+    /// 换了主题：记下整份（默认主题是 `None`）。
+    pub(super) fn note_theme(&mut self, theme: Option<&Value>) {
+        if self.link.look.theme.as_ref() != theme {
+            self.link.look.theme = theme.cloned();
+            self.save_look();
+        }
+    }
+
+    /// 配置页读回了清单、预设列表：变了的记下。
+    pub(super) fn note_settings(&mut self, raw: (Option<&Value>, Option<&Value>)) {
+        let look = &mut self.link.look.settings;
+        let schema = raw.0.filter(|v| look.0.as_ref() != Some(*v));
+        let presets = raw.1.filter(|v| look.1.as_ref() != Some(*v));
+        if schema.is_none() && presets.is_none() {
+            return;
+        }
+        if let Some(schema) = schema {
+            look.0 = Some(schema.clone());
+        }
+        if let Some(presets) = presets {
+            look.1 = Some(presets.clone());
+        }
+        self.save_look();
     }
 
     /// 壁纸找好了：记下候选主色。
