@@ -50,11 +50,19 @@ pub fn rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     } else {
         card(file, entry.unopened.as_deref(), replaced, ctx)
     };
-    // 点哪一行都是开它（第 6 条）：挂上展示的地址，点链接那一套认得（`app/shown.rs`）。
+    // 点哪一行都是开它（第 6 条）：挂上展示的地址，点链接那一套认得（`app/shown.rs`）。图那几行只有图本身能点（2026-10-22
+    // 项目主人：原来整行都能点，图右边的空档也是手形、点了也开）。
     let link = format!("{}{}", crate::shown_files::SCHEME, entry.id);
+    let figures = ctx.figures.borrow();
     for row in &mut rows {
-        row.links = vec![(0, ctx.width, link.clone())];
+        let picture = row
+            .figure
+            .as_ref()
+            .and_then(|cell| Some((cell.x, cell.x + figures.cols(cell.key)?)));
+        let (from, to) = picture.unwrap_or((0, ctx.width));
+        row.links = vec![(from, to, link.clone())];
     }
+    drop(figures);
     rows
 }
 
