@@ -192,8 +192,8 @@ impl Session {
             let above = live.len();
             live.extend(box_lines);
             let caret = caret
-                .map(|(x, y)| (above + usize::from(y), x))
-                .or_else(|| typed_col.map(|col| (above.saturating_sub(1), col)));
+                .map(|(x, y)| (above + usize::from(y), x, true))
+                .or_else(|| typed_col.map(|(col, lit)| (above.saturating_sub(1), col, lit)));
             let settled = match banner(turn).filter(|_| !bannered) {
                 Some(line) => {
                     bannered = true;

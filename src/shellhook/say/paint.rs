@@ -21,7 +21,9 @@ use unicode_width::UnicodeWidthStr;
 use crate::theme;
 
 /// 活动区里写字的那一格：第几行、第几列。
-pub type Caret = Option<(usize, u16)>;
+/// 第三样是亮不亮：答话时光标先不亮地停在输入那一行，打了字才亮（2026-10-23 项目主人：「为什么不在 AI 开始回复的时候就在
+/// 下方放一个隐形的箭头……这样光标不就在那里了吗」）。
+pub type Caret = Option<(usize, u16, bool)>;
 
 /// 往终端写的那一头：活动区现在占了几行、光标停在它的第几行。
 pub struct Painter<W: Write> {
@@ -97,14 +99,19 @@ impl<W: Write> Painter<W> {
         }
         self.live = u16::try_from(live.len()).unwrap_or(u16::MAX);
         self.at = self.live.saturating_sub(1);
-        match caret.and_then(|(row, col)| Some((u16::try_from(row).ok()?, col))) {
-            Some((row, col)) if row < self.live => {
+        match caret.and_then(|(row, col, lit)| Some((u16::try_from(row).ok()?, col, lit))) {
+            Some((row, col, lit)) if row < self.live => {
                 if self.at > row {
                     queue!(self.out, cursor::MoveUp(self.at - row))?;
                 }
-                queue!(self.out, cursor::MoveToColumn(col), cursor::Show)?;
+                queue!(self.out, cursor::MoveToColumn(col))?;
                 self.at = row;
-                self.shown = true;
+                if lit {
+                    queue!(self.out, cursor::Show)?;
+                    self.shown = true;
+                } else {
+                    self.shown = false;
+                }
             }
             _ if self.shown => {
                 queue!(self.out, cursor::Hide)?;
