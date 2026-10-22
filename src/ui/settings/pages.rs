@@ -73,6 +73,10 @@ fn entry_words(page: &Settings, entry: &Entry, texts: &Texts) -> (String, String
             texts.more.personas[1].clone(),
         ),
         Entry::Presets => (texts.more.presets[0].clone(), texts.more.presets[1].clone()),
+        Entry::Mcp => (
+            texts.more.mcp.entry[0].clone(),
+            texts.more.mcp.entry[1].clone(),
+        ),
         Entry::Page(id) => {
             let schema = page.more.schema.as_ref();
             let name = schema
@@ -115,6 +119,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
             &texts.more.hints[0],
         ),
         Section::Packages(_) => (packages(), &texts.more.hints[10]),
+        Section::Mcp(_) => (texts.more.mcp.entry[0].clone(), &texts.more.mcp.hints),
         Section::Personas(_) => (texts.more.personas[0].clone(), &texts.more.hints[5]),
         Section::Presets(_) => (texts.more.presets[0].clone(), &texts.more.hints[5]),
     };
@@ -164,20 +169,27 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
             let lines = super::package_list::lines(&list, *at, texts, body.width);
             (lines, *at, list.len())
         }
+        Section::Mcp(at) => {
+            let list = page.more.servers();
+            let lines = super::mcp_list::lines(&list, *at, texts, body.width);
+            (lines, *at, list.len())
+        }
     };
     paint(frame, body, &lines);
+    if let Section::Mcp(_) = &section {
+        super::mcp_list::buttons(frame, body, &lines, page, texts);
+    }
     let counter = format!("{}/{count}", if count == 0 { 0 } else { at + 1 });
     footer(frame, stage, page, texts, hints, None, Some(counter));
 }
 
 /// 一行：字、是不是选中的那一行。
-type Painted = (Line<'static>, bool);
+pub(super) type Painted = (Line<'static>, bool);
 
 /// 写进 `body`：放不下的照选中的那一行滚；选中的铺底色、左边竖条。
-fn paint(frame: &mut Frame, body: Rect, lines: &[Painted]) {
+pub(super) fn paint(frame: &mut Frame, body: Rect, lines: &[Painted]) {
     let height = usize::from(body.height);
-    let focus = lines.iter().position(|(_, f)| *f).unwrap_or(0);
-    let top = focus.saturating_sub(height.saturating_sub(1));
+    let top = top(lines, height);
     for (n, (line, focused)) in lines.iter().skip(top).take(height).enumerate() {
         let y = body.y + u16::try_from(n).unwrap_or(0);
         let row = Rect::new(body.x, y, body.width, 1);
@@ -189,6 +201,12 @@ fn paint(frame: &mut Frame, body: Rect, lines: &[Painted]) {
             .buffer_mut()
             .set_line(body.x + 2, y, line, body.width.saturating_sub(2));
     }
+}
+
+/// 从第几行画起：选中的那一行要在 `height` 行里看得见。
+pub(super) fn top(lines: &[Painted], height: usize) -> usize {
+    let focus = lines.iter().position(|(_, f)| *f).unwrap_or(0);
+    focus.saturating_sub(height.saturating_sub(1))
 }
 
 /// 照清单画的一页：组名一行，下面一项一行（名字、值）。两层都写不了的整行暗着。

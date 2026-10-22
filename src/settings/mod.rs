@@ -60,6 +60,8 @@ pub enum Hit {
     Button(usize),
     /// 包页面那一行末尾的上游：点了照 [`Settings::link`] 打开。
     Link,
+    /// MCP 页第几个服务的「登录」（第 43b 条）。
+    Login(usize),
 }
 
 /// 按了一个键以后界面要做的。
@@ -96,6 +98,10 @@ enum Waiting {
     Presets,
     /// 读装了的吉祥物包（`package.list`，「吉祥物包」第 3 条）。
     Mascots,
+    /// 读个人设置里的 MCP 服务（`mcp.list`，第 43b 条）。
+    Mcp,
+    /// 要一个服务的授权页（`mcp.login`）：服务名。
+    McpLogin(String),
     /// 读一个预设的详情（`preset.get`）：编号。
     PresetDetail(String),
     /// 改、建一个预设（`preset.set`，核心 P-3）：存好了要不要开它的窗（新建的）。
@@ -182,6 +188,8 @@ pub struct Settings {
     pub personas_changed: bool,
     /// 盯着开着的会话正在用的人格、预设（`in_use.rs`）。
     pub watch: in_use::Watch,
+    /// 要打开的 MCP 授权页：`App` 拿走一次（[`Settings::take_opening`]）。
+    opening: Option<String>,
 }
 
 impl Settings {
@@ -271,6 +279,8 @@ impl Settings {
             | Waiting::PresetDetail(_)) => {
                 self.more_answer(more, result, &texts.more);
             }
+            Waiting::Mcp => self.mcp_listed(result),
+            Waiting::McpLogin(name) => self.login_answer(&name, result, texts),
             Waiting::PresetSaved(open) => self.preset_saved(open, result),
             Waiting::PresetDeleted => self.preset_deleted(result, texts),
             Waiting::PersonaSaved(id, open) => self.persona_saved((id, open), result, texts),

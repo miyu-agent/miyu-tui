@@ -19,6 +19,7 @@ impl Settings {
         self.ask("persona.list", json!({}), Waiting::Personas);
         self.ask("preset.list", json!({}), Waiting::Presets);
         self.ask("package.list", json!({}), Waiting::Mascots);
+        self.ask("mcp.list", json!({}), Waiting::Mcp);
     }
 
     /// 清单、人格、人格详情回来了：记下；核心不认的（旧核心）当没有，菜单里不列那几页。
@@ -41,6 +42,7 @@ impl Settings {
             (Waiting::Mascots, Ok(got)) => {
                 self.more.summaries = super::packages::summaries(&got);
                 self.more.origins = super::packages::origins(&got);
+                self.more.mcp_bundled = super::mcp::bundled(&got);
                 self.more.mascots = Some(super::mascots::read(&got));
                 self.more.looks = Some(super::mascots::looks(&got));
             }
@@ -88,6 +90,7 @@ impl Settings {
                     Entry::Page(id) => Some(Section::Page(id, 0)),
                     Entry::Personas => Some(Section::Personas(0)),
                     Entry::Presets => Some(Section::Presets(0)),
+                    Entry::Mcp => Some(Section::Mcp(0)),
                 };
             }
             KeyCode::Esc | KeyCode::Char('q') => return self.back(),
@@ -111,6 +114,7 @@ impl Settings {
             Section::Personas(at) => (*at, |n, _| Section::Personas(n)),
             Section::Presets(at) => (*at, |n, _| Section::Presets(n)),
             Section::Packages(at) => (*at, |n, _| Section::Packages(n)),
+            Section::Mcp(at) => (*at, |n, _| Section::Mcp(n)),
         };
         match key.code {
             KeyCode::Esc | KeyCode::Char('q' | 'h') | KeyCode::Left => self.leave_section(&section),
@@ -126,6 +130,7 @@ impl Settings {
                 Section::Page(id, at) => self.change(id, *at, texts),
                 Section::Personas(at) => self.open_persona(*at),
                 Section::Presets(at) => self.open_preset(*at),
+                Section::Mcp(at) => self.login(*at, texts),
             },
             KeyCode::Char('d') => match &section {
                 Section::Page(id, at) => self.ask_unset(id, *at, texts),
@@ -153,7 +158,7 @@ impl Settings {
                         self.ask_delete_persona(&id, texts);
                     }
                 }
-                Section::Packages(_) => {}
+                Section::Packages(_) | Section::Mcp(_) => {}
             },
             // 预设页、人格页 `a`：新建（第 37、39 条，同旧版）。
             KeyCode::Char('a') if matches!(section, Section::Presets(_)) => self.new_preset(texts),
@@ -172,6 +177,7 @@ impl Settings {
             Section::Personas(_) => self.more.personas.as_ref().map_or(0, Vec::len),
             Section::Presets(_) => self.more.presets.as_ref().map_or(0, Vec::len),
             Section::Packages(_) => self.more.packages().len(),
+            Section::Mcp(_) => self.more.servers().len(),
         }
     }
 
