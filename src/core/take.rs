@@ -113,6 +113,8 @@ pub(super) async fn take(
         }
         // 说的话、重做成了：落盘、开轮都照推送来，回应不用管。
         Some(Awaiting::Send | Awaiting::Redo) => return true,
+        // 退回排队的话成了：照推送（`message.withdrawn`）把字放回输入框，回应不用管。
+        Some(Awaiting::Withdraw) => return true,
         // 回顾：写成了的已经照推送（`session.recapped`）画过；交回上一句的核心不推，照回应画（蓝图「回顾」第 3 条）。
         Some(Awaiting::Recap) => {
             let result = &message["result"];

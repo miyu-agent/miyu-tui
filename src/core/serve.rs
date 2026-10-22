@@ -343,6 +343,7 @@ async fn send(
 ) -> Sent {
     let kind = match command {
         Command::Revert => Some(Awaiting::Revert),
+        Command::Withdraw(_) => Some(Awaiting::Withdraw),
         Command::Unrevert => Some(Awaiting::Unrevert),
         Command::Send { .. } => Some(Awaiting::Send),
         Command::Redo { .. } => Some(Awaiting::Redo),

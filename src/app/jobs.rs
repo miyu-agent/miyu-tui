@@ -368,6 +368,8 @@ impl App {
             || over(self.screen.areas.session_id)
             || over(self.screen.areas.todo)
             || over(self.screen.areas.bottom)
+            // 排着队的话点了能撤回（`takeback.rs`）。
+            || over(self.screen.areas.queued)
             || self.screen.agents_hover.is_some_and(|r| r >= 2)
             || self
                 .screen

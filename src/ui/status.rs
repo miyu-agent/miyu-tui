@@ -151,21 +151,69 @@ fn toast_area(text_x: u16, bottom: u16, width: u16, lines: u16, screen: Rect) ->
 }
 
 /// 排队的消息：一条一行，暗色的记号加这句话，放不下截掉加 `…`（`tui.md`「运行状态行和排队的消息」第 5 条）。
-pub fn queued(frame: &mut Frame, area: Rect, texts: &[String], mark: &str) {
+pub fn queued(frame: &mut Frame, area: Rect, texts: &[String], look: &Queued) {
+    let hint_w = u16::try_from(look.hint.width() + 2).unwrap_or(u16::MAX);
     let lines: Vec<Line> = texts
         .iter()
         .take(usize::from(area.height))
-        .map(|t| Line::styled(clip(&format!("{mark}{t}"), area.width), theme::dim()))
+        .enumerate()
+        .map(|(i, t)| {
+            let text = format!("{}{t}", look.mark);
+            if look.hovered != u16::try_from(i).ok() {
+                return Line::styled(clip(&text, area.width), theme::dim());
+            }
+            // 指针停着的那一条：字亮一档，后面暗色写「点击撤回」。
+            let room = area.width.saturating_sub(hint_w);
+            Line::from(vec![
+                Span::styled(clip(&text, room), theme::hover()),
+                Span::raw("  "),
+                Span::styled(look.hint.to_string(), theme::faint()),
+            ])
+        })
         .collect();
     frame.render_widget(Paragraph::new(lines), area);
+}
+
+/// 排队那几行怎么画：前面的记号、悬停时后面写的字、指针停在第几行（在这一块里算）。
+pub struct Queued<'a> {
+    pub mark: &'a str,
+    pub hint: &'a str,
+    pub hovered: Option<u16>,
 }
 
 #[cfg(test)]
 mod tests {
     use ratatui::layout::Rect;
 
-    use super::{fitted, swept, toast_area};
+    use super::{Queued, fitted, queued, swept, toast_area};
     use crate::config::Config;
+
+    #[test]
+    fn the_queued_line_under_the_pointer_says_a_click_takes_it_back() {
+        // 2026-10-22 项目主人：「不如直接点击那条消息撤回？」
+        let mut term = ratatui::Terminal::new(ratatui::backend::TestBackend::new(40, 2)).unwrap();
+        let texts = ["/sandbox clear".to_string(), "再看看".to_string()];
+        let look = Queued {
+            mark: "↳ ",
+            hint: "点击撤回",
+            hovered: Some(1),
+        };
+        term.draw(|f| queued(f, Rect::new(0, 0, 40, 2), &texts, &look))
+            .unwrap();
+        let buf = term.backend().buffer();
+        let row = |y| -> String {
+            (0..40)
+                .map(|x| buf[(x, y)].symbol().to_string())
+                .collect::<String>()
+                .replace(' ', "")
+        };
+        assert_eq!(row(0), "↳/sandboxclear", "没停着的不写");
+        assert!(
+            row(1).starts_with("↳再看看") && row(1).ends_with("点击撤回"),
+            "{}",
+            row(1)
+        );
+    }
 
     #[test]
     fn a_long_toast_keeps_its_tail_and_clips_the_words_before_it() {

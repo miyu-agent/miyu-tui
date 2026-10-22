@@ -97,6 +97,9 @@ pub enum Command {
     },
     /// 撤销最后一轮（`session.revert`，不写 `turn`）。
     Revert,
+    /// 退回一句排着队、她还没听到的话（`session.withdraw`，核心 759bfcfa）：写了序号的退那一句，`None` 退最新的一条。
+    /// 退了核心推 `message.withdrawn`，字照退回的那一套放回输入框（2026-10-22 项目主人定：点排队的那条、`/undo` 逐条撤）。
+    Withdraw(Option<u64>),
     /// 恢复最近一次撤销（`session.unrevert`）。
     Unrevert,
     /// 现在就压缩上下文（`session.compact`，施工 6-8），带着给摘要的要求。
