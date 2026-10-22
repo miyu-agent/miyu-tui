@@ -80,9 +80,8 @@ fn denying_with_a_reason_tells_her_and_writes_a_red_line() {
     tui.wait_for("工作区");
     tui.say("写个文件");
     tui.wait_for("允许本次");
-    // 移到「不允许」就在写理由：直接打字，回车交（2026-10-07 项目主人：不用按两次回车）。
-    tui.key(DOWN);
-    tui.key(DOWN);
+    // `n` 写「不允许」的理由，回车交（2026-10-22 项目主人：照提问的 `n` 补充）。
+    tui.key(b"n");
     tui.type_text("别写这里");
     tui.key(b"\r");
     tui.wait_for("不允许 · 别写这里");

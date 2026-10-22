@@ -22,8 +22,9 @@ pub fn run(
     line: &str,
     words: &Words,
     leftover: Option<&std::path::Path>,
-    hooked: bool,
+    shell: Option<u32>,
 ) -> Option<io::Result<ExitCode>> {
+    let hooked = shell.is_some();
     let config = match crate::shellhook::say::config() {
         Ok(config) => config,
         Err(e) => return Some(Err(e)),
@@ -71,9 +72,11 @@ pub fn run(
         }
         "status" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Status, words, hooked),
         "usage" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Usage, words, hooked),
-        "edit" => {
-            crate::shellhook::say::pick(crate::shellhook::say::Pick::Edit(leftover), words, hooked)
-        }
+        "edit" => crate::shellhook::say::pick(
+            crate::shellhook::say::Pick::Edit(leftover, shell),
+            words,
+            hooked,
+        ),
         "persona" => crate::shellhook::say::pick(
             crate::shellhook::say::Pick::Persona(crate::app::new_session::Kind::Persona, args),
             words,

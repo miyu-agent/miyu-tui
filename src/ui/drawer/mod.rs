@@ -82,9 +82,10 @@ pub fn view(d: &Drawer, texts: &Texts, look: &PreviewLook, width: u16, vim: bool
 
 /// 最后一行按键提示：照这一页能做什么写；编辑时只写保存、退出编辑。
 fn keys(d: &Drawer, texts: &Texts) -> String {
-    // 写「不允许」的理由不换提示：方向键、两下 Esc 照旧（第 4 条）。
-    if matches!(d.editing, Some(Edit::Other | Edit::Notes)) {
-        return texts.keys_edit.clone();
+    match d.editing {
+        Some(Edit::Other | Edit::Notes) => return texts.keys_edit.clone(),
+        Some(Edit::Reason) => return texts.keys_reason.clone(),
+        None => {}
     }
     let mut keys = if d.on_review() {
         texts.keys_review.clone()

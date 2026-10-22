@@ -66,8 +66,8 @@
 1. 回车：空行照常；单行的看没展开的首词（`--tokens-raw`），是普通词又不是任何命令的交给她，别的交回 fish；多行的先看首个命令在不在，不在的问 `classify`。
 2. 交给她：记进 fish 的历史，清空输入行，在提示符那一行用报错色重放这句话；清空和重放包在一段同步输出里，不闪（旧版 2026-10-01 报过）。
 3. Ctrl+J 换行。找不到命令时兜底交给她（`fish_command_not_found`）。
-4. zsh（2026-10-22）：回车换成自己的小部件（`zle -N accept-line`），判法同 fish：单行看首词（`${(z)…}`，跳过 `变量=值`）是普通词又 `whence` 认不出的是话，多行的先看首个命令、再问 `classify`。交给她就在小部件里（`zle -I` 以后程序自己用终端，同 fzf）：这一行留在屏幕上照报错色（`region_highlight`），记进历史（`print -s`），答完提前敲的字放回命令行。答话时来的后台回报记着、答完印（`TRAPUSR1` 看 `__miyu_busy`）。`Ctrl+V` 绑同一个 `paste`。`/edit` 的 `.redo` 标记同 fish，开新的一行（`zle-line-init`：`Ctrl+C`、执行了别的命令）就不算在编辑。
-5. bash（同一天）：readline 一个键里没法先判再决定执不执行，回车绑成两个键的宏 `\C-x\C-a\C-x\C-b`：第一个 `bind -x` 跑判断（同 zsh，认命令用 `type -t`），是话就当场交给她，再把第二个键（`accept-line`）换成空的，这一下不执行；是命令的换回 `accept-line`。bash 跑 `bind -x` 以前擦掉输入的那一行（只擦提示符最后一行），照 `${PS1@P}` 的最后一行加报错色重画；答完 bash 只重画提示符最后一行，前面几行先补上（实测 bash 5.3）。提前敲的字放回 `READLINE_LINE`。`Ctrl+V` 绑 `bind -x`；`/edit` 的在编辑记号在 `PROMPT_COMMAND` 里清（`Ctrl+C`、执行了别的命令都会画新的提示符）。emacs、vi 插入两套键表都绑。
+4. zsh（2026-10-22）：回车换成自己的小部件（`zle -N accept-line`），判法同 fish：单行看首词（`${(z)…}`，跳过 `变量=值`）是普通词又 `whence` 认不出的是话（单独一个 `-` 不算命令：zsh 当它是前缀修饰，2026-10-22 验收「- 说的……」这种多行话被当成脚本一行行跑了；多行的 `time`、`test`、`date`、`which`、`type`、`command`、`history` 也交给程序判，同 fish），多行的先看首个命令、再问 `classify`。交给她就在小部件里（`zle -I` 以后程序自己用终端，同 fzf）：这一行留在屏幕上照报错色（`region_highlight`），记进历史（`print -s`），答完提前敲的字放回命令行。答话时来的后台回报记着、答完印（`TRAPUSR1` 看 `__miyu_busy`）。`Ctrl+V` 绑同一个 `paste`，`Ctrl+J` 在命令行里换行（同 fish）。`/edit` 的 `.redo` 标记同 fish，开新的一行（`zle-line-init`：`Ctrl+C`、执行了别的命令）就不算在编辑。
+5. bash（同一天）：readline 一个键里没法先判再决定执不执行，回车绑成两个键的宏 `\C-x\C-a\C-x\C-b`：第一个 `bind -x` 跑判断（同 zsh，认命令用 `type -t`），是话就当场交给她，再把第二个键（`accept-line`）换成空的，这一下不执行；是命令的换回 `accept-line`。bash 跑 `bind -x` 以前擦掉输入的那一行（只擦提示符最后一行），照 `${PS1@P}` 的最后一行加报错色重画；答完 bash 只重画提示符最后一行，前面几行先补上（实测 bash 5.3）。提前敲的字放回 `READLINE_LINE`。`Ctrl+V` 绑 `bind -x`，绑以前关掉 `bind-tty-special-chars`（readline 每读一行都把 stty 的 lnext `^V` 绑回 quoted-insert，盖掉自己绑的，同一天验收）；`Ctrl+J` 换行；`/edit` 的在编辑记号在 `PROMPT_COMMAND` 里清（`Ctrl+C`、执行了别的命令都会画新的提示符）。emacs、vi 插入、vi 命令三套键表都绑回车（命令模式里回车也判）。
 6. 两边都留着找不到命令时交给她（`command_not_found_handle`、`command_not_found_handler`）兜底。
 
 ### say
@@ -134,9 +134,10 @@
 
 1. **读**：fish 的 `Ctrl+V` 跑 `shellhook paste --shell-pid $fish_pid`：照全屏的先后读剪贴板（复制的文件、图、字，`clipboard::{read_files, read_image, read}`；读来的字全是本机现成的文件、目录的也收成块，同一天验收：原来只认复制的文件），收块的规矩和写法用全屏的输入框（`input::InputBox` 的 `paste_files`、`attach`、`paste`，门槛 `layout.json` 的 `paste_fold_*`、块上的字 `paste_label`、`attach.labels`）。块上的字印到标准输出，脚本 `commandline -i` 插进去；读不到剪贴板的照 fish 自己的 `fish_clipboard_paste`。截图暂存在全屏同一处（`tui/pasted/<shell 的编号>/`，shell 不在了，下次起全屏时清掉）。
 2. **记**：块的原文、附件记在 `<缓存目录>/shellhook/<shell>-pasted.json`，留到 shell 退出（下一次 `Ctrl+V` 时清掉已经退出的 shell 的那几份）；附件的编号在这个 shell 里一直往下排（同全屏整个会话往下排）。
-3. **说**：`say` 照字里认出的块（从前往后扫，哪个块上的字在这里起头就是它，同一个样子贴过几次的认最近的那次，块的先后不论）换回原文、带上附件（`session.send` 的附件，同全屏），删掉了的块不要。从 fish 的历史里调出来再发照样认得出（2026-10-21 项目主人：「占位块历史应当从历史调出来时还是有正常功能的占位块」）。
-4. **判命令还是话**：块带空格，fish 把方括号连同里面的空格算进一个词（实测），首词只看方括号以前的；块打头的是话（同一天实测：原来整句被当成命令，走了找不到命令那条路）。找不到命令那条路也带 `--shell-pid`。
-5. zsh、bash 同 fish（2026-10-22）：回车时判，块打头的首词带 `[`，不是命令，是话。
+3. **`/edit` 放回去**：发出去的是展开了的原文，`/edit` 写回命令行以前把这个 shell 贴过的原文换回块上的字（`paste::fold`，长的先换；图、文件块字里本来就是块上的字），回车照样展开（2026-10-22 验收 SH-76）。
+4. **说**：`say` 照字里认出的块（从前往后扫，哪个块上的字在这里起头就是它，同一个样子贴过几次的认最近的那次，块的先后不论）换回原文、带上附件（`session.send` 的附件，同全屏），删掉了的块不要。从 fish 的历史里调出来再发照样认得出（2026-10-21 项目主人：「占位块历史应当从历史调出来时还是有正常功能的占位块」）。
+5. **判命令还是话**：块带空格，fish 把方括号连同里面的空格算进一个词（实测），首词只看方括号以前的；块打头的是话（同一天实测：原来整句被当成命令，走了找不到命令那条路）。找不到命令那条路也带 `--shell-pid`。
+6. zsh、bash 同 fish（2026-10-22）：回车时判，块打头的首词带 `[`，不是命令，是话。
 
 ### 斜杠命令
 

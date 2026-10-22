@@ -48,15 +48,23 @@ __miyu_plain() {
     [[ -n $1 && $1 != *[\'\"\$\(\)~\{\}%\;\&\|\<\>\#^\!\\[:space:]]* ]]
 }
 
+# 首词是不是命令：`type` 认得出。单独一个 `-` 不算（同 zsh、fish）。多行的，`time`、`test` 这几个常出现在话里的也不算，
+# 交给程序判（同 fish）。
+__miyu_is_command() {
+    [[ $1 == - ]] && return 1
+    [[ -n $2 && " time test date which type command history " == *" $1 "* ]] && return 1
+    type -t -- "$1" >/dev/null 2>&1
+}
+
 __miyu_is_talk() {
     local buffer=$1 head
     [[ -z ${buffer//[[:space:]]/} ]] && return 1
     head=$(__miyu_head "$buffer")
     if [[ $buffer != *$'\n'* ]]; then
-        __miyu_plain "$head" && ! type -t -- "$head" >/dev/null 2>&1
+        __miyu_plain "$head" && ! __miyu_is_command "$head"
         return
     fi
-    [[ -n $head ]] && __miyu_plain "$head" && type -t -- "$head" >/dev/null 2>&1 && return 1
+    [[ -n $head ]] && __miyu_plain "$head" && __miyu_is_command "$head" multi && return 1
     # 多行：交给程序判是命令还是一句话。0 是命令，1 是话，别的（出错）照命令。
     printf '%s' "$buffer" | __miyu_shellhook classify --shell bash 2>/dev/null
     (( $? == 1 ))
@@ -125,12 +133,24 @@ __miyu_prompt() {
 }
 PROMPT_COMMAND="__miyu_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 
-for __miyu_map in emacs vi-insert; do
+# readline 每次读一行都把终端的特殊键（stty 的 lnext 是 ^V）重新绑回它自己的（quoted-insert），盖掉下面的 Ctrl+V
+# （2026-10-22 验收：bash 里 Ctrl+V 没反应）。关掉：退格、Ctrl+U、Ctrl+W 这些默认键表里本来就绑着。
+bind 'set bind-tty-special-chars off'
+# Ctrl+J 在命令行里换行（同 fish），敲多行的话。
+__miyu_newline() {
+    READLINE_LINE=${READLINE_LINE:0:READLINE_POINT}$'\n'${READLINE_LINE:READLINE_POINT}
+    READLINE_POINT=$((READLINE_POINT + 1))
+}
+
+# vi 的命令模式按回车也走判断（Esc 以后回车）。
+for __miyu_map in emacs vi-insert vi-command; do
     bind -m "$__miyu_map" -x '"\C-x\C-a": __miyu_accept_line'
     bind -m "$__miyu_map" '"\C-x\C-b": accept-line'
     bind -m "$__miyu_map" '"\C-m": "\C-x\C-a\C-x\C-b"'
-    bind -m "$__miyu_map" '"\C-j": "\C-x\C-a\C-x\C-b"'
     bind -m "$__miyu_map" -x '"\C-v": __miyu_paste'
+done
+for __miyu_map in emacs vi-insert; do
+    bind -m "$__miyu_map" -x '"\C-j": __miyu_newline'
 done
 unset __miyu_map
 

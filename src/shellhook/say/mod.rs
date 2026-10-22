@@ -65,7 +65,7 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     if text.starts_with('/')
         && !bare_redo
         && let Some(done) =
-            crate::shellhook::slash::run(&text, words, ask.leftover.as_deref(), ask.shell.is_some())
+            crate::shellhook::slash::run(&text, words, ask.leftover.as_deref(), ask.shell)
     {
         return done;
     }
@@ -155,7 +155,8 @@ pub enum Pick<'a> {
     /// `/undo`、`/restore`、`/recap`。
     Run(pick::run::Act),
     /// `/edit`：上一句写进这个文件，脚本放回命令行。
-    Edit(Option<&'a std::path::Path>),
+    /// 放回命令行的文件、哪个 shell（贴过的块照它记着的换回块上的字）。
+    Edit(Option<&'a std::path::Path>, Option<u32>),
 }
 
 /// 在提示符下面原地画一个列表，定了留一行（`pick.rs`，图纸「斜杠命令」第 3 条）。
@@ -180,7 +181,7 @@ pub fn pick(which: Pick<'_>, words: &Words, hooked: bool) -> io::Result<ExitCode
         Pick::Fresh => Box::new(pick::fresh::FreshPick::new(words)),
         Pick::Help => Box::new(pick::help::HelpShow),
         Pick::Run(act) => Box::new(pick::run::RunPick::new(act, words)),
-        Pick::Edit(leftover) => Box::new(pick::edit::EditPick::new(leftover)),
+        Pick::Edit(leftover, shell) => Box::new(pick::edit::EditPick::new(leftover, shell)),
         Pick::Persona(kind, given) => Box::new(pick::persona::PersonaPick::new(
             kind,
             given,

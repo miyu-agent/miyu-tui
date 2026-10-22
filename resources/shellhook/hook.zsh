@@ -46,6 +46,14 @@ __miyu_plain() {
     [[ -n $1 && $1 != *[\'\"\$\(\)~\{\}%\;\&\|\<\>\#^\!\\[:space:]]* ]]
 }
 
+# 首词是不是命令：`whence` 认得出。单独一个 `-` 不算（zsh 当它是前缀修饰，fish 不认；2026-10-22 验收：「- 说的……」
+# 这种多行话被当成脚本一行行跑了）。多行的，`time`、`test` 这几个常出现在话里的也不算，交给程序判（同 fish）。
+__miyu_is_command() {
+    [[ $1 == - ]] && return 1
+    [[ -n $2 && " time test date which type command history " == *" $1 "* ]] && return 1
+    whence -- "$1" >/dev/null 2>&1
+}
+
 __miyu_accept_line() {
     local buffer=$BUFFER
     if [[ -z ${buffer//[[:space:]]/} ]]; then
@@ -55,12 +63,12 @@ __miyu_accept_line() {
     local head
     head=$(__miyu_head "$buffer")
     if [[ $buffer != *$'\n'* ]]; then
-        if ! __miyu_plain "$head" || whence -- "$head" >/dev/null 2>&1; then
+        if ! __miyu_plain "$head" || __miyu_is_command "$head"; then
             zle .accept-line
             return
         fi
     else
-        if [[ -n $head ]] && __miyu_plain "$head" && whence -- "$head" >/dev/null 2>&1; then
+        if [[ -n $head ]] && __miyu_plain "$head" && __miyu_is_command "$head" multi; then
             zle .accept-line
             return
         fi
@@ -127,6 +135,14 @@ __miyu_paste() {
 zle -N __miyu_paste
 bindkey '^V' __miyu_paste
 bindkey -M viins '^V' __miyu_paste
+
+# Ctrl+J 在命令行里换行（同 fish），敲多行的话。
+__miyu_newline() {
+    LBUFFER+=$'\n'
+}
+zle -N __miyu_newline
+bindkey '^J' __miyu_newline
+bindkey -M viins '^J' __miyu_newline
 
 # 后台回报（设计 22 第七节「后台任务和回报」）：盯后台的进程给这个 zsh 发 SIGUSR1。停在提示符上的（zle 开着）当场印：
 # 信箱里有要印的才 `zle -I`（提示符画到印的下面），程序往上擦掉旧的提示符在那里印；前台在跑命令、她正在答的，zsh 等它

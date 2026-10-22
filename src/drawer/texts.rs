@@ -60,6 +60,8 @@ pub struct Texts {
     pub keys_review: String,
     /// 见 `keys`。
     pub keys_edit: String,
+    /// 写「不允许」的理由时：`Enter` 直接交。
+    pub keys_reason: String,
     /// 见 `keys`。
     pub keys_tabs: String,
     /// 回答在时间线里一道一行，`{label}` `{answer}`。

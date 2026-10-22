@@ -128,6 +128,26 @@ pub fn take(shell: u32, text: &str) -> (String, Vec<PathBuf>) {
     (draft.expand(), draft.attachments())
 }
 
+/// `/edit` 放回命令行以前：发出去的这一句里贴过的大段原文换回块上的字（长的先换，同一段贴过几次的照最近的那次）。
+/// 图、文件这些附件块发出去时字里本来就是块上的字，不用换。
+pub fn fold(shell: u32, text: &str) -> String {
+    fold_in(text, load(shell))
+}
+
+fn fold_in(text: &str, stored: Vec<Stored>) -> String {
+    let mut stored: Vec<Stored> = stored
+        .into_iter()
+        .rev()
+        .filter(|s| s.file.is_none() && !s.text.is_empty() && s.text != s.label)
+        .collect();
+    stored.sort_by_key(|s| std::cmp::Reverse(s.text.len()));
+    let mut text = text.to_string();
+    for s in &stored {
+        text = text.replace(s.text.as_str(), &s.label);
+    }
+    text
+}
+
 /// 字里认出记着的块：从前往后扫，哪个块上的字在这里起头就是它（同一个样子贴过几次的认最近的那次）。块的先后不论：从历史
 /// 调出来的那句，块不一定照贴的先后。
 fn found(text: &str, stored: &[Stored]) -> Draft {
@@ -187,7 +207,7 @@ fn sweep() {
 
 #[cfg(test)]
 mod tests {
-    use super::{Stored, found};
+    use super::{Stored, fold_in, found};
 
     #[test]
     fn blocks_still_on_the_command_line_come_back_as_their_text_and_files() {
@@ -220,5 +240,26 @@ mod tests {
         let draft = found("[图片 1] 先说图，再看 [已粘贴 14 行]", &stored);
         assert_eq!(draft.expand(), "[图片 1] 先说图，再看 很长的日志");
         assert_eq!(draft.attachments().len(), 1);
+    }
+
+    #[test]
+    fn edit_folds_pasted_text_back_into_its_block() {
+        let block = |label: &str, text: &str| Stored {
+            label: label.into(),
+            text: text.into(),
+            file: None,
+            kind: None,
+            path: None,
+        };
+        let stored = vec![
+            block("[已粘贴 2 行]", "第一行\n第二行"),
+            block("[已粘贴 3 行]", "第一行\n第二行\n第三行"),
+        ];
+        assert_eq!(
+            fold_in("第一行\n第二行\n第三行 这是什么", stored.clone()),
+            "[已粘贴 3 行] 这是什么",
+            "长的先换"
+        );
+        assert_eq!(fold_in("没贴过的", stored), "没贴过的");
     }
 }

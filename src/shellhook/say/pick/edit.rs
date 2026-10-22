@@ -28,14 +28,17 @@ pub struct EditPick {
     asked: bool,
     /// 页回来了：上一句（没有的是 `None`）。
     found: Option<Option<String>>,
+    /// 哪个 shell：它贴过的块，原文照记着的换回块上的字。
+    shell: Option<u32>,
 }
 
 impl EditPick {
-    pub fn new(leftover: Option<&std::path::Path>) -> Self {
+    pub fn new(leftover: Option<&std::path::Path>, shell: Option<u32>) -> Self {
         Self {
             leftover: leftover.map(std::path::Path::to_path_buf),
             asked: false,
             found: None,
+            shell,
         }
     }
 }
@@ -103,6 +106,11 @@ impl Picker for EditPick {
                 .cloned()
                 .unwrap_or_default();
             return Picked::Done(Some(result(&text)));
+        };
+        // 发出去的是展开了的原文：这个 shell 贴过的块换回块上的字（2026-10-22 验收 SH-76：`/edit` 回来的不是块了）。
+        let text = match self.shell {
+            Some(shell) => crate::shellhook::paste::fold(shell, &text),
+            None => text,
         };
         match &self.leftover {
             // 旁边放一份标记：脚本照它记着「在编辑」，下一次回车交给她时替换上一轮重来。

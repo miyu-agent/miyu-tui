@@ -81,7 +81,7 @@ pub fn main(args: Vec<String>) -> ExitCode {
             .chain(options.iter().cloned())
             .collect::<Vec<_>>()
             .join(" ");
-        match slash::run(&line, &words, None, false) {
+        match slash::run(&line, &words, None, None) {
             Some(Ok(code)) => return code,
             Some(Err(e)) => {
                 eprintln!("{e}");
