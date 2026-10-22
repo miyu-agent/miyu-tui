@@ -14,6 +14,9 @@ pub struct Interject {
     queued: Vec<u64>,
     /// 插的那几句在正文里是哪几条（条目编号）：最下面「排着」的只画这几条（`typing.rs`）。
     entries: Vec<u64>,
+    /// 请求带上了哪一条为止（`model.called` 的 `seen`、出字时的「听到了」）：带上了的核心不再退回，算落着了（2026-10-23
+    /// 验收：她刚开始答就插话、马上按 Ctrl+C，那次请求带上了它、没出字就停了，既没「听到了」也没退回，停在「↳」上不收工）。
+    heard: u64,
 }
 
 impl Interject {
@@ -70,9 +73,14 @@ impl Turn {
         match update {
             Update::Push(Push::UserMessage(seq)) if self.interject.sending > 0 && mine => {
                 self.interject.sending -= 1;
-                self.interject.queued.push(*seq);
+                if *seq > self.interject.heard {
+                    self.interject.queued.push(*seq);
+                }
             }
-            Update::Push(Push::Heard(seen)) => self.interject.queued.retain(|s| s > seen),
+            Update::Push(Push::Heard(seen) | Push::Sent { seen, .. }) => {
+                self.interject.heard = self.interject.heard.max(*seen);
+                self.interject.queued.retain(|s| s > seen);
+            }
             // Ctrl+C 打断：排着的被退回来（`message.withdrawn`），不用再等它们落着；这个 shell 插的那几句字放回去，接在提前敲
             // 的字前面、一条一行，答完回到命令行（同全屏放回输入框，2026-10-23 验收：原来没接住，要再按一次 Ctrl+C，那句还
             // 留在核心的队里，下一次说话被一起带上）。正文还没退（这里先看），照序号取字。
@@ -111,5 +119,33 @@ impl Turn {
             }
             _ => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::Turn;
+    use crate::core::{Push, Update};
+    use crate::shellhook::say::look::Look;
+
+    #[test]
+    fn a_word_the_request_took_is_no_longer_waited_for() {
+        // 2026-10-23 验收：她刚开始答就插话、马上按 Ctrl+C。那次请求带上了它、没出字就停了：没有「听到了」也不退回。
+        let mut turn = Turn::new("数到三十".into(), None, Look::new(None));
+        turn.sent = true;
+        turn.said_seq = Some(1);
+        turn.interject.sending = 1;
+        turn.follow_interject(&Update::Push(Push::UserMessage(3)));
+        assert!(turn.interject.waiting());
+        turn.follow_interject(&Update::Push(Push::Sent {
+            seen: 4,
+            changed: false,
+            summary: false,
+        }));
+        assert!(!turn.interject.waiting(), "带上了就落着了");
+        // 序号比请求晚推回的也一样。
+        turn.interject.sending = 1;
+        turn.follow_interject(&Update::Push(Push::UserMessage(4)));
+        assert!(!turn.interject.waiting());
     }
 }

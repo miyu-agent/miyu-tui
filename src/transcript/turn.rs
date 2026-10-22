@@ -40,6 +40,7 @@ impl Transcript {
         self.opened_by.clear();
         self.failure = None;
         self.turn = Some(turn);
+        self.seen = 0;
         self.turn_usage = Usage::default();
         self.turn_level = self.level;
         // 手动压缩那一轮没有 `trigger`，不是哪一句开的（施工 6-8，蓝图「正文」第 9 条）。
@@ -85,6 +86,8 @@ impl Transcript {
         if self.turn.is_none() && self.running.is_none() {
             return;
         }
+        // 请求带上了、还没出字就结束的排着的话进这一轮（`queue.rs` 的 `took`）。
+        self.heard(self.seen);
         let (took, failure) = self.wind_up();
         match reason {
             // 清空那一轮：正文已经有「上下文已清空」那一行，不另起收尾行、不接用时（「正文」第 9 条）。

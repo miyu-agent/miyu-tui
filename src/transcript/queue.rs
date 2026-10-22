@@ -11,6 +11,29 @@ impl Transcript {
         self.entries.iter().rposition(|e| !e.queued)
     }
 
+    /// 这一轮的一次请求发出去了，带上了第 `seen` 条为止（`model.called`）。没出字就被打断的那次请求里带上的话核心不退回、
+    /// 也推不来「听到了」（出第一个字才推）：收尾时照它带进这一轮（`turn.rs` 的 `end`），不然一直挂在「排着」（2026-10-23
+    /// 验收：她刚开始答就插话、马上按 Ctrl+C）。
+    pub(super) fn took(&mut self, seen: u64) {
+        if self.turn.is_some() {
+            self.seen = self.seen.max(seen);
+        }
+    }
+
+    /// 你发的话照先后落盘：序号配给最早那句还没有序号的。序号推回得比请求带上它晚的，配上就带进这一轮。
+    pub(super) fn stamped(&mut self, seq: u64) {
+        let first = self
+            .entries
+            .iter_mut()
+            .find(|e| e.kind == Kind::User && e.seq.is_none() && e.from.is_none());
+        if let Some(entry) = first {
+            entry.seq = Some(seq);
+            if entry.queued && seq <= self.seen && self.running.is_some() {
+                self.heard(self.seen);
+            }
+        }
+    }
+
     /// 这一轮的一次请求看到了第 `seen` 条为止：排着的话序号不超过它的，这次请求带上了。
     pub(super) fn heard(&mut self, seen: u64) {
         let Some(turn) = self.turn.filter(|_| self.running.is_some()) else {
