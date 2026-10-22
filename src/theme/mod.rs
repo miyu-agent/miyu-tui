@@ -197,15 +197,21 @@ pub fn faint() -> Style {
 
 /// 那三样里选中的那一条：铺强调色的底，上面的字是深色。
 pub fn picked_bar() -> Style {
-    if barless() {
-        return Style::new().fg(pick(|p| p.accent));
+    bar_style(barless())
+}
+
+/// 选中的那一条照主题铺不铺底：不铺底的只换成选中色（`picked`）。原来换强调色，和配置页标题一个颜色分不出（2026-10-22
+/// 项目主人验收纯 ASCII 主题时报，照推荐定）。
+fn bar_style(barless: bool) -> Style {
+    if barless {
+        return Style::new().fg(pick(|p| p.picked));
     }
     Style::new()
         .bg(pick(|p| p.accent))
         .fg(pick(|p| p.on_accent))
 }
 
-/// 主题的选中不铺底（`pick` 是 `mark`，蓝图「主题」第 1 条）：选中的那一行、那一格只换强调色。
+/// 主题的选中不铺底（`pick` 是 `mark`，蓝图「主题」第 1 条）：选中的那一行、那一格只换选中色。
 fn barless() -> bool {
     crate::sheet::read(|s| s.pick == crate::sheet::Pick::Mark)
 }
@@ -237,8 +243,13 @@ pub fn heat(level: usize) -> Style {
 
 /// 配置页焦点那一栏选中的一行：底色深一档，字照常。
 pub fn row_focus() -> Style {
-    if barless() {
-        return Style::new().fg(pick(|p| p.accent));
+    focus_style(barless())
+}
+
+/// 同 [`bar_style`]：不铺底的换选中色，不和配置页标题的强调色撞（配置页主菜单就是这一种）。
+fn focus_style(barless: bool) -> Style {
+    if barless {
+        return Style::new().fg(pick(|p| p.picked));
     }
     Style::new().bg(pick(|p| p.row_bg))
 }
