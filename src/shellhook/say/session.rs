@@ -91,6 +91,8 @@ impl Session {
         let mut drawer_seen: Option<String> = None;
         let mut bannered = false;
         let mut lingered: Option<Instant> = None;
+        // 抽屉里写字时停住的上面那段正文。
+        let mut frozen: Option<Vec<String>> = None;
         // 她答话的时候不露光标（2026-10-20 验收）：活动区原地刷新时光标跟着跳；收工时还回来。
         ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Hide)?;
         while !turn.done {
@@ -136,18 +138,28 @@ impl Session {
             // 活动区最多占终端高减一行：长过的只露最新的那一截，这一轮结束时整段印出来（「怎么印」第 2 条）。
             let room = usize::from(height.saturating_sub(1 + drawer)).max(1);
             let tail = lines.len().saturating_sub(room);
-            let mut live = self.painter.lines(width, &lines[tail..])?;
-            // 抽屉里写字的那一格（活动区里第几行、第几列）：光标停在那里，输入法的候选框跟着它。
+            // 抽屉里写字的那一格（抽屉里第几行、第几列）：光标停在那里，输入法的候选框跟着它。
             let mut caret = None;
+            let mut box_lines = Vec::new();
             if drawer > 0 {
                 let (asking, config) = (&mut turn.asking, &self.config);
-                let above = live.len();
-                live.extend(self.painter.render(width, drawer, |frame| {
-                    caret = asking
-                        .draw(frame, frame.area(), config)
-                        .map(|(x, y)| (above + usize::from(y), x));
-                })?);
+                box_lines = self.painter.render(width, drawer, |frame| {
+                    caret = asking.draw(frame, frame.area(), config);
+                })?;
             }
+            // 写字时上面的正文停住（计时、转圈不再走）：不然每一拍都重画，光标回上面再跳回来（2026-10-22 验收）。
+            let fresh = self.painter.lines(width, &lines[tail..])?;
+            let mut live = match (caret, &mut frozen) {
+                (Some(_), Some(kept)) => kept.clone(),
+                (Some(_), slot) => slot.insert(fresh).clone(),
+                (None, slot) => {
+                    *slot = None;
+                    fresh
+                }
+            };
+            let above = live.len();
+            live.extend(box_lines);
+            let caret = caret.map(|(x, y)| (above + usize::from(y), x));
             let settled = match banner(turn).filter(|_| !bannered) {
                 Some(line) => {
                     bannered = true;

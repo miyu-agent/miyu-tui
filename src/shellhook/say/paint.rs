@@ -20,6 +20,9 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::theme;
 
+/// 活动区里写字的那一格：第几行、第几列。
+pub type Caret = Option<(usize, u16)>;
+
 /// 往终端写的那一头：活动区现在占了几行、光标停在它的第几行。
 pub struct Painter<W: Write> {
     out: W,
@@ -29,6 +32,8 @@ pub struct Painter<W: Write> {
     at: u16,
     /// 写字的那一格亮着光标。
     shown: bool,
+    /// 上一帧的活动区和光标：一样的不再画（重画时光标要回上面去，输入法的候选框跟着跳，2026-10-22 验收）。
+    last: Option<(Vec<String>, Caret)>,
     depth: theme::Depth,
 }
 
@@ -40,6 +45,7 @@ impl<W: Write> Painter<W> {
             live: 0,
             at: 0,
             shown: false,
+            last: None,
             depth,
         }
     }
@@ -63,8 +69,17 @@ impl<W: Write> Painter<W> {
         &mut self,
         settled: &[String],
         live: &[String],
-        caret: Option<(usize, u16)>,
+        caret: Caret,
     ) -> io::Result<()> {
+        if settled.is_empty()
+            && self
+                .last
+                .as_ref()
+                .is_some_and(|(l, c)| l.as_slice() == live && *c == caret)
+        {
+            return Ok(());
+        }
+        self.last = Some((live.to_vec(), caret));
         queue!(self.out, BeginSynchronizedUpdate)?;
         self.erase()?;
         for line in settled {
@@ -105,6 +120,7 @@ impl<W: Write> Painter<W> {
     pub fn finish(&mut self) -> io::Result<()> {
         queue!(self.out, BeginSynchronizedUpdate)?;
         self.erase()?;
+        self.last = None;
         // 写字时亮着的光标关上：亮不亮由说话那一套收工时定。
         if std::mem::take(&mut self.shown) {
             queue!(self.out, cursor::Hide)?;
