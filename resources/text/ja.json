@@ -1376,6 +1376,7 @@
       "seed_unset": "ペルソナのメインカラーを消して、アバターの最初の候補に戻す",
       "own_groups": {"look": "テーマ", "theme": "配色", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン", "keys": "操作"},
       "appearance": "外観",
+      "service": {"group": "起動", "name": "ログイン時にコアを起動", "enabling": "ログイン時の起動を設定中…", "disabling": "ログイン時の起動を解除中…", "enabled": "ログイン時に起動します：{file}", "disabled": "ログイン時に起動しなくなりました", "failed": "失敗：{step}：{said}", "no_home": "ホームディレクトリが見つかりません", "windows": "MIYU_HOME を設定した Windows では使えません"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}, "tui.keys": {"arrows": "矢印キー", "vim": "Vim"}},
       "unavailable": "未インストール",
       "custom_model": "モデルを入力…",

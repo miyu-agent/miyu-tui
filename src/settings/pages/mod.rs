@@ -80,6 +80,10 @@ pub enum Section {
 /// 新几页的状态。
 #[derive(Debug, Default)]
 pub struct More {
+    /// 开机启动要在后台跑的（`settings/service.rs`，App 拿去跑）。
+    pub service_runs: Vec<crate::service::Verb>,
+    /// 知道核心程序在哪（`MIYU_CORE_BIN`）：不知道的不列「开机启动」。
+    pub service_known: bool,
     /// 读来的清单；还没读到、核心不认的是 `None`。
     pub schema: Option<Schema>,
     /// 读来的人格；还没读到、核心不认的是 `None`。
@@ -301,6 +305,8 @@ pub struct Texts {
     pub seed_unset: String,
     /// 终端自己的配置项另分的几组的名字（「配置页」第 33 条）。
     pub own_groups: schema::OwnGroups,
+    /// 「开机启动」那一组（`settings/service.rs`）。
+    pub service: crate::settings::service::Words,
     /// 「外观」那一页的名字（主题、吉祥物、图标，2026-10-14）。
     pub appearance: String,
     /// 终端自己的选项写成什么（清单里只有值，照界面语言写名字）：键、值、名字。

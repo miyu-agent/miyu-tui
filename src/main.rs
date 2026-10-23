@@ -56,6 +56,7 @@ mod reader;
 mod rng;
 mod scratch;
 mod scrollbar;
+mod service;
 mod session_list;
 mod settings;
 mod sheet;
@@ -262,7 +263,8 @@ fn run(
     let wake: theme::wallpaper::Wake =
         std::sync::Arc::new(move || if to_wake.send(Incoming::Wake).is_err() {});
     app.screen.wallpaper.set_wake(wake.clone());
-    app.screen.seeds.set_wake(wake);
+    app.screen.seeds.set_wake(wake.clone());
+    app.link.service.set_wake(wake);
     // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）；问到的终端颜色在挑主题以前装上（终端配色照它推底色）。
     let depth = theme::Depth::detect(|name| std::env::var(name).ok());
     theme::terminal_colors::install(colors, ground, depth);
@@ -362,7 +364,7 @@ fn dispatch(app: &mut App, message: Incoming) {
         Incoming::Terminal(event) => app.handle(event),
         Incoming::Core(update) => app.core(update),
         Incoming::Figure(done) => app.media.figures.borrow_mut().done(done),
-        Incoming::Wake => {}
+        Incoming::Wake => app.woken(),
     }
 }
 

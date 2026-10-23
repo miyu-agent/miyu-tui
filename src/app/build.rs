@@ -93,6 +93,7 @@ impl App {
                 config_asks: Default::default(),
                 look: Default::default(),
                 widgets: Default::default(),
+                service: Default::default(),
             },
             typing: super::typing::Typing {
                 input,

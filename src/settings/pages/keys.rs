@@ -34,6 +34,11 @@ impl Settings {
                 self.more.raw.0 = Some(got.clone());
                 let mut schema = Schema::read(&got);
                 schema.split_own(&texts.own_groups, &texts.appearance);
+                crate::settings::service::add_row(
+                    &mut schema,
+                    &texts.service,
+                    self.more.service_known,
+                );
                 self.more.schema = Some(schema);
             }
             (Waiting::Personas, Ok(got)) => self.more.personas = Some(personas::read(&got)),
@@ -243,6 +248,10 @@ impl Settings {
         }
         let (value, _) = current(&item, data);
         let value = value.clone();
+        // 开机启动当场装上、拿掉，不走草稿（`settings/service.rs`）。
+        if item.key == crate::settings::service::KEY {
+            return self.toggle_service(value == Value::Bool(true), texts);
+        }
         // 默认人格不管清单写什么控件（核心写的是填名字），都照 `persona.list` 开列表（2026-10-07 项目主人报）。
         let control = if is_named(&item.key) {
             "select"

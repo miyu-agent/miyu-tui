@@ -16,12 +16,15 @@ impl App {
     pub fn open_settings(&mut self, standalone: bool) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
         let mut page = Settings::open(standalone, online);
+        page.more.service_known = crate::service::program().is_some();
         let (schema, presets) = &self.link.look.settings;
         page.remembered(
             (schema.as_ref(), presets.as_ref()),
             &self.config.text.settings,
         );
         self.boxes.settings = Some(page);
+        // 开机启动开没开着：问一次（`settings/service.rs`）。
+        self.link.service.run(crate::service::Verb::Status);
         self.send_settings_asks();
     }
 
@@ -37,8 +40,21 @@ impl App {
         let Some(page) = self.boxes.settings.as_mut() else {
             return;
         };
+        let runs = page.take_service_runs();
         for (tag, method, params) in page.take_asks() {
             self.send_ask(tag, method, params);
+        }
+        for verb in runs {
+            self.link.service.run(verb);
+        }
+    }
+
+    /// 后台做好了叫醒主循环：开机启动的命令跑完了交给配置页（`settings/service.rs`）。
+    pub fn woken(&mut self) {
+        if let Some(reply) = self.link.service.take()
+            && let Some(page) = self.boxes.settings.as_mut()
+        {
+            page.service_replied(&reply, &self.config.text.settings);
         }
     }
 
