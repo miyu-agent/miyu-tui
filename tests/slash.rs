@@ -46,7 +46,7 @@ fn a_template_command_is_listed_and_shows_the_typed_line() {
 }
 
 #[test]
-fn a_command_no_one_knows_is_refused_by_the_core_and_put_back() {
+fn a_command_no_one_knows_is_refused_by_the_core_and_not_put_back() {
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("Tab 切换权限级别");
@@ -54,9 +54,14 @@ fn a_command_no_one_knows_is_refused_by_the_core_and_put_back() {
     tui.key(b"\x1b");
     tui.key(b"\r");
     tui.pump(Duration::from_millis(500));
-    // 弹核心说的那一句（`unknown_command` 的原话恰好也是「命令不存在」；终端自己的那句字已经去掉了）；打的字回到输入框。
+    // 弹核心说的那一句（`unknown_command` 的原话恰好也是「命令不存在」；终端自己的那句字已经去掉了）；打的字不回到输入框
+    // （2026-10-23 项目主人：「输入不存在的命令不应该把命令再回填到输入框」）。
     assert!(tui.shows("命令不存在"), "{}", tui.lines().join("\n"));
-    assert_eq!(tui.input(), "/nosuchthing", "{}", tui.lines().join("\n"));
+    assert!(
+        !tui.input().contains("/nosuchthing"),
+        "输入框空着（只有提示）：{}",
+        tui.lines().join("\n")
+    );
 }
 
 #[test]
