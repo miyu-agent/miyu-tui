@@ -1,9 +1,9 @@
 //! 从几个选项里勾的列表（蓝图「配置页」第 47a 条，2026-10-21 项目主人照推荐定「照预设功能那样打勾」，起因是核心 5-15 下的
 //! `sandbox.private.remove`，同一天改名「默认私密目录」）。`control` 是 `list`、带 `options` 的开这个窗：一个选项一行，`[*]`
-//! 勾着、`[ ]` 没勾；空格勾上、取消，`j` `k` 挪，`Enter` 存了关窗、`Esc` 不存（同一天项目主人：「空格取消勾选，回车保存」），
-//! 动过的照选项的先后整份存。核心标了 `"ticks": "unlisted"` 的反着勾：勾着的是不在值里的（默认私密目录：勾着的还是私密的）。
+//! 勾着、`[ ]` 没勾；空格勾上、取消，`Ctrl+A` 全勾、全不勾（2026-10-22 项目主人验收时要的），`j` `k` 挪，`Enter` 存了关窗、
+//! `Esc` 不存（同一天项目主人：「空格取消勾选，回车保存」），动过的照选项的先后整份存。核心标了 `"ticks": "unlisted"` 的反着勾：勾着的是不在值里的（默认私密目录：勾着的还是私密的）。
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -86,12 +86,24 @@ impl TickEdit {
         Value::Array(picked.collect())
     }
 
+    /// `Ctrl+A`：没全勾的全勾上，全勾着的全取消。一个选项都没有的不算动过。
+    fn toggle_all(&mut self) {
+        let all = self.on.iter().all(|on| *on);
+        for on in &mut self.on {
+            *on = !all;
+        }
+        self.changed |= !self.on.is_empty();
+    }
+
     /// 按了一个键：交回收不收起、收起时存不存。
     fn key(&mut self, key: KeyEvent) -> Close {
         let last = self.options.len().saturating_sub(1);
         match key.code {
             KeyCode::Char('j') | KeyCode::Down => self.sel = (self.sel + 1).min(last),
             KeyCode::Char('k') | KeyCode::Up => self.sel = self.sel.saturating_sub(1),
+            KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                self.toggle_all()
+            }
             KeyCode::Char(' ') => {
                 if let Some(on) = self.on.get_mut(self.sel) {
                     *on = !*on;

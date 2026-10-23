@@ -117,3 +117,19 @@ fn an_unlisted_list_ticks_what_is_not_in_the_value() {
         "存的照旧是去掉的那几个（没勾的）：{sent}"
     );
 }
+
+#[test]
+fn ctrl_a_ticks_all_or_clears_all() {
+    // 2026-10-22 项目主人验收默认私密目录：「这里应该支持ctrl+A切换全选」。
+    let ctrl_a = || KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL);
+    let mut page = opened(json!(["~/.aws"]));
+    page.key(ctrl_a(), &texts());
+    assert_eq!(ticked(&page), [true, true, true], "没全勾的全勾上");
+    page.key(ctrl_a(), &texts());
+    assert_eq!(ticked(&page), [false, false, false], "全勾着的全取消");
+    press(&mut page, KeyCode::Char('a'));
+    assert_eq!(ticked(&page), [false, false, false], "不按 Ctrl 的 a 不算");
+    press(&mut page, KeyCode::Enter);
+    let sent = saved(&mut page);
+    assert!(sent.contains(r#""value":[]"#), "全取消照样存：{sent}");
+}

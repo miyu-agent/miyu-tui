@@ -17,9 +17,10 @@ impl Settings {
         // 不在打字的窗里：`Ctrl+J`、`Ctrl+K` 同 `↓`、`↑`（蓝图「按键」表，2026-10-21 项目主人：「ctrl+jk 都能用」；原来带
         // Ctrl 的一律不管，配置页按了没反应）。
         let key = crate::app::vim::step(key, !self.writing());
-        // 带 Ctrl 的配置页不管，只有预设的窗认 Ctrl+A（全开、全关，「配置页」第 38 条），几行字的窗认 Ctrl+G（交给外部
-        // 编辑器，第 45 条）。
-        let all = key.code == KeyCode::Char('a') && matches!(self.popup, Some(Popup::Preset(_)));
+        // 带 Ctrl 的配置页不管，只有预设的窗、勾选窗认 Ctrl+A（全开、全关，「配置页」第 38、47a 条），几行字的窗认 Ctrl+G
+        // （交给外部编辑器，第 45 条）。
+        let all = key.code == KeyCode::Char('a')
+            && matches!(self.popup, Some(Popup::Preset(_) | Popup::Ticks(_)));
         let external =
             key.code == KeyCode::Char('g') && matches!(self.popup, Some(Popup::Sheet(_)));
         if key.modifiers.contains(KeyModifiers::CONTROL) && !all && !external {
