@@ -225,6 +225,13 @@ impl App {
         start_pick(&self.talk).is_some() && !matches!(self.boxes.panel, Some(Panel::Pick { .. }))
     }
 
+    /// 新会话开头那个换掉输入框的框画着（开着的人格、预设框，或者列表还在读时写「正在加载…」的那个；不问人格预设的等默认
+    /// 时照旧画输入框，不算）。
+    pub(super) fn start_box_shown(&self) -> bool {
+        let open = matches!(self.boxes.panel, Some(Panel::Pick { .. }));
+        start_pick(&self.talk).is_some() && (open || !self.config.layout.skip_pick)
+    }
+
     /// 上一次选的：最近那个会话用的（`Some(None)` 是它没带）；会话列表还没到、一个会话都没有的是 `None`。
     fn last_pick(&self, kind: Kind) -> Option<Option<&str>> {
         let Some(seen) = self.talk.sessions_seen.as_deref() else {
