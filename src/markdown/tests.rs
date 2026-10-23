@@ -428,7 +428,9 @@ fn local_paths_in_text_and_inline_code_open_but_keep_their_look() {
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("b.rs");
     std::fs::write(&file, "x").unwrap();
+    // Windows 的 canonicalize 交回 `\\?\C:\…`：正文里 Markdown 会把 `\\`、`\?` 当转义吃掉，回答里也不这样写，去掉这截。
     let file = file.canonicalize().unwrap().display().to_string();
+    let file = file.trim_start_matches(r"\\?\").to_string();
     let drawn = draw(&format!("改了 {file}，见 `{file}:3`。"), 200);
     let links: Vec<_> = drawn[0].folded.links.iter().map(|l| l.2.clone()).collect();
     assert_eq!(links, [file.clone(), file.clone()]);

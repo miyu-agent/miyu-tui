@@ -51,12 +51,18 @@ fn a_run_happens_in_the_background_and_wakes_the_loop() {
     // 假的核心程序：照参数印一行（测试不碰本机真的服务管理器）。
     let dir = std::env::temp_dir().join(format!("miyu-tui-service-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let fake = dir.join("miyu");
-    std::fs::write(
-        &fake,
+    #[cfg(unix)]
+    let (fake, script) = (
+        dir.join("miyu"),
         "#!/bin/sh\n[ \"$1 $2 $3 $4\" = \"service enable --format json\" ] || exit 2\necho '{\"file\":\"/f\",\"installed\":true,\"manager\":\"systemd\",\"on\":true}'\n",
-    )
-    .unwrap();
+    );
+    // Windows 跑不了 sh 脚本：换成同样行为的批处理。
+    #[cfg(windows)]
+    let (fake, script) = (
+        dir.join("miyu.cmd"),
+        "@echo off\r\nif not \"%1 %2 %3 %4\"==\"service enable --format json\" exit /b 2\r\necho {\"file\":\"/f\",\"installed\":true,\"manager\":\"systemd\",\"on\":true}\r\n",
+    );
+    std::fs::write(&fake, script).unwrap();
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
