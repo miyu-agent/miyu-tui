@@ -54,7 +54,7 @@ function global:__miyu_is_talk([string] $buffer) {
     return -not (Get-Command -Name $head.Text -ErrorAction Ignore)
 }
 
-# 回车：是话的当场交给她。命令行先清掉，提示符最后一行和那句话自己重画，话照报错色，折下来的几行缩两格
+# 回车：是话的当场交给她。命令行先清掉，提示符最后一行和那句话自己重画，照普通的字色（2026-10-23 项目主人：「让文字别回车后全部变成红色了」，原来照报错色），折下来的几行缩两格
 # （同 fish）；答完在新的一行重画提示符，提前敲的字放回命令行。
 Set-PSReadLineKeyHandler -Key Enter -BriefDescription MiyuAcceptLine -ScriptBlock {
     $buffer = $null
@@ -78,7 +78,7 @@ Set-PSReadLineKeyHandler -Key Enter -BriefDescription MiyuAcceptLine -ScriptBloc
     [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
     $e = $global:__miyu_esc
     $lines = $buffer -split "`r?`n"
-    [Console]::Write("`r$e[0J" + $prompt + "$e[31m" + $lines[0])
+    [Console]::Write("`r$e[0J" + $prompt + "$e[0m" + $lines[0])
     foreach ($line in ($lines | Select-Object -Skip 1)) {
         [Console]::Write("`n  " + $line)
     }

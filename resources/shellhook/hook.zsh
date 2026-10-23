@@ -25,7 +25,7 @@ command_not_found_handler() {
 
 # 回车（同 fish 的 __miyu_accept_line）：首词是普通词、又不是任何命令（外部命令、函数、别名、内建、保留字）的是一句话，
 # 当场在这个小部件里交给她（同 fzf 的小部件：先 `zle -I`，程序自己用终端）；多行的交给程序判。别的照 zsh 原样执行。
-# 交给她的那一行留在屏幕上、照报错色，进历史；她答完，提前敲的字放回命令行。
+# 交给她的那一行留在屏幕上、照普通的字色，进历史；她答完，提前敲的字放回命令行。
 typeset -g __miyu_busy= __miyu_editing=
 
 # 首词：跳过前面的 `变量=值`。
@@ -87,8 +87,8 @@ __miyu_hand_to_ai() {
     [[ -n $__miyu_editing ]] && redo=--redo
     __miyu_editing=
     print -rs -- "$buffer"
-    # 留在屏幕上的那一行照报错色。
-    region_highlight=("0 ${#BUFFER} fg=red")
+    # 留在屏幕上的那一行照普通的字色（2026-10-23 项目主人：「让文字别回车后全部变成红色了」，原来照报错色）：语法高亮插件标的颜色也盖掉。
+    region_highlight=("0 ${#BUFFER} fg=default")
     zle -R
     zle -I
     print

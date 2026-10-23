@@ -50,7 +50,7 @@ function __miyu_wrap_fish_prompt
     end
 end
 
-# 交给她的那句话在提示符那一行原样重放一遍（照 fish 的报错色），上面留着你说了什么。
+# 交给她的那句话在提示符那一行原样重放一遍，照普通的字色（2026-10-23 项目主人：「让文字别回车后全部变成红色了」，原来照报错色），上面留着你说了什么。
 function __miyu_replay_buffer
     set -l buffer $argv[1]
     set -l lines (string split \n -- "$buffer")
@@ -60,9 +60,7 @@ function __miyu_replay_buffer
         set -l prompt_col (math (string length --visible -- "$prompt_lines[-1]") + 1)
         printf '\e[?25l'
         printf '\e[1A\e[%sG' $prompt_col
-        if not set -q fish_color_error; or not set_color $fish_color_error 2>/dev/null
-            set_color red
-        end
+        set_color normal
         printf '%s\n' "$lines[1]"
         for line in $lines[2..-1]
             printf '  %s\n' "$line"

@@ -24,7 +24,7 @@ command_not_found_handle() {
 
 # 回车（同 fish 的 __miyu_accept_line）：回车绑成「先跑 __miyu_accept_line，再执行这一行」两个键。首词是普通词、又不是任何
 # 命令（`type` 认不出）的是一句话，当场在这里交给她，把第二个键换成什么都不做（这一下不执行）；多行的交给程序判。别的照
-# bash 原样执行。bash 跑之前擦掉了输入的那一行（只擦提示符最后一行）：照报错色重画，答完把提示符前面几行补上（bash 只重画
+# bash 原样执行。bash 跑之前擦掉了输入的那一行（只擦提示符最后一行）：照普通的字色重画，答完把提示符前面几行补上（bash 只重画
 # 最后一行），提前敲的字放回命令行（实测 bash 5.3）。
 __miyu_busy=
 __miyu_editing=
@@ -84,9 +84,9 @@ __miyu_accept_line() {
     local prompt=${PS1@P}
     prompt=${prompt//$'\001'/}
     prompt=${prompt//$'\002'/}
-    # 交给她的那句话照报错色重画在提示符最后一行后面，折下来的几行缩两格（同 fish）。
+    # 交给她的那句话照普通的字色重画在提示符最后一行后面（2026-10-23 项目主人：「让文字别回车后全部变成红色了」，原来照报错色），折下来的几行缩两格（同 fish）。
     local first=${buffer%%$'\n'*} line
-    printf '%s\e[31m%s' "${prompt##*$'\n'}" "$first"
+    printf '%s\e[0m%s' "${prompt##*$'\n'}" "$first"
     if [[ $buffer == *$'\n'* ]]; then
         while IFS= read -r line; do
             printf '\n  %s' "$line"
