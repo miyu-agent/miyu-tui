@@ -190,6 +190,12 @@ fn every_script_calls_the_recorded_program_and_parses() {
         let text = script::render(shell, program);
         assert!(!text.contains("@PROGRAM@"), "{}", shell.name());
         assert!(text.contains(&format!("{} shellhook", shell.quote(program))));
+        if shell.powershell() {
+            // PowerShell 的参数是一个数组拼起来的（那句话从文件读），语法照下面它自己的解析器检查。
+            assert!(text.contains("'say', '--shell'"), "{}", shell.name());
+            assert!(!text.contains("@SHELL@") && !text.contains("@SPOOL@"));
+            continue;
+        }
         assert!(text.contains("shellhook say --shell"), "{}", shell.name());
         // 机器上装着这种 shell 的，照它自己的语法检查过一遍（`-n` 只读不跑）。Windows 上叫 `bash` 的多半是 WSL 的启动器，
         // 没装发行版时跑不起来，不算数。
@@ -241,4 +247,36 @@ fn every_language_has_the_same_words() {
         words::fill("{shell}：{path}", &[("shell", "fish"), ("path", "/a")]),
         "fish：/a"
     );
+}
+
+#[test]
+fn the_powershell_script_parses_where_powershell_is_installed() {
+    // 机器上有 PowerShell 的（Windows 的 CI 有 5.1），照它自己的解析器读一遍脚本和装进去的那一段，不能有语法错。
+    let program = Path::new("C:/it's/miyu.exe");
+    for shell in [Shell::Pwsh, Shell::WinPs] {
+        for text in [script::render(shell, program), block(shell, program)] {
+            let dir =
+                std::env::temp_dir().join(format!("miyu-shellhook-ps-{}", std::process::id()));
+            std::fs::create_dir_all(&dir).unwrap();
+            let file = dir.join("hook.ps1");
+            std::fs::write(&file, format!("\u{feff}{text}")).unwrap();
+            let check = format!(
+                "$e = $null; $t = $null; [void][System.Management.Automation.Language.Parser]::ParseFile('{}', [ref]$t, [ref]$e); if ($e.Count) {{ $e | % {{ $_.Message }}; exit 1 }}",
+                file.display().to_string().replace('\'', "''")
+            );
+            let status = std::process::Command::new(shell.name())
+                .args([
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-Command",
+                    &check,
+                ])
+                .status();
+            std::fs::remove_dir_all(&dir).unwrap();
+            if let Ok(status) = status {
+                assert!(status.success(), "{} 的脚本语法不对", shell.name());
+            }
+        }
+    }
 }

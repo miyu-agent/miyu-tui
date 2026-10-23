@@ -126,7 +126,15 @@ pub fn main(args: Vec<String>) -> ExitCode {
             )),
         },
         "classify" => return classify_stdin(options.shell.unwrap_or(Shell::Fish)),
-        "say" => return say(options.leftover, options.shell_pid, options.redo, &words),
+        "say" => {
+            return say(
+                options.input.as_deref(),
+                options.leftover,
+                options.shell_pid,
+                options.redo,
+                &words,
+            );
+        }
         "follow" => match &options.watch {
             Some(path) => return say::follow::run(path),
             None => Err(io::Error::new(
@@ -184,6 +192,8 @@ struct Options {
     program: Option<PathBuf>,
     /// `say` 提前敲的字写在哪（脚本读了放回命令行）。
     leftover: Option<PathBuf>,
+    /// `say` 那句话从这个文件读，不读标准输入（PowerShell：管道照 `$OutputEncoding` 编码，5.1 默认 ASCII）。
+    input: Option<PathBuf>,
     /// 哪个 shell（`$fish_pid`）：`say` 交给盯后台的、`report` 拿哪个信箱。
     shell_pid: Option<u32>,
     /// `follow` 读的那份。
@@ -210,6 +220,7 @@ impl Options {
                 }
                 "--program" => options.program = Some(args.next().ok_or_else(value)?.into()),
                 "--leftover" => options.leftover = Some(args.next().ok_or_else(value)?.into()),
+                "--input" => options.input = Some(args.next().ok_or_else(value)?.into()),
                 "--watch" => options.watch = Some(args.next().ok_or_else(value)?.into()),
                 "--pending" => options.pending = true,
                 "--redo" => options.redo = true,
@@ -253,13 +264,28 @@ fn classify_stdin(shell: Shell) -> ExitCode {
     }
 }
 
-/// 把标准输入的那句话交给她，这一轮印在 shell 里（`say/`）。
-fn say(leftover: Option<PathBuf>, shell: Option<u32>, redo: bool, words: &Words) -> ExitCode {
-    let mut text = String::new();
-    if let Err(e) = io::stdin().read_to_string(&mut text) {
-        eprintln!("{e}");
-        return ExitCode::FAILURE;
-    }
+/// 把那句话（`input` 文件里的，没给的读标准输入）交给她，这一轮印在 shell 里（`say/`）。
+fn say(
+    input: Option<&std::path::Path>,
+    leftover: Option<PathBuf>,
+    shell: Option<u32>,
+    redo: bool,
+    words: &Words,
+) -> ExitCode {
+    let read = match input {
+        Some(path) => std::fs::read_to_string(path),
+        None => {
+            let mut text = String::new();
+            io::stdin().read_to_string(&mut text).map(|_| text)
+        }
+    };
+    let text = match read {
+        Ok(text) => text,
+        Err(e) => {
+            eprintln!("{e}");
+            return ExitCode::FAILURE;
+        }
+    };
     // 那句话是从管道交来的：读完以后标准输入接回终端，问终端颜色、读按键才读得到（2026-10-21 项目主人：「TUI 里是真色彩。
     // 终端里不是」——问颜色的看标准输入不是终端就不问，退回 16 色）。接不上的照旧，只是问不到颜色。
     #[cfg(unix)]

@@ -64,7 +64,36 @@ pub fn install(shell: Shell, program: Option<PathBuf>, words: &Words) -> io::Res
         Done::Foreign => return Err(io::Error::other(fill(&words.foreign, &values))),
     }
     warn_old(shell, &env, words);
+    warn_policy(shell, words);
     Ok(())
+}
+
+/// PowerShell 的执行策略不让跑启动文件（Windows 客户端默认 `Restricted`）：装了也不生效，说一声怎么改。不替人改：是安全设置。
+fn warn_policy(shell: Shell, words: &Words) {
+    if let Some(policy) = blocking_policy(shell) {
+        eprintln!("{}", fill(&words.ps_policy, &[("policy", &policy)]));
+    }
+}
+
+/// 这种 PowerShell 现在的执行策略不让跑启动文件的，交回它的名字；别的 shell、问不出、让跑的是 `None`。
+pub fn blocking_policy(shell: Shell) -> Option<String> {
+    if !shell.powershell() {
+        return None;
+    }
+    let out = std::process::Command::new(shell.name())
+        .args([
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Get-ExecutionPolicy",
+        ])
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()?;
+    let policy = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    matches!(policy.as_str(), "Restricted" | "AllSigned").then_some(policy)
 }
 
 /// 从 `shell` 里删掉。
@@ -143,6 +172,20 @@ pub fn block(shell: Shell, program: &Path) -> String {
         Shell::Zsh => format!(
             "{MARK}\n{note}\nif [[ -o interactive && -x {p} ]]; then eval \"$({p} shellhook script --shell zsh --program {p})\"; fi\n{END}\n"
         ),
+        // Windows PowerShell 5.1 照系统代码页读没有 BOM 的启动文件：这一段只写 ASCII 的说明。程序印的脚本照 UTF-8 读进来
+        // （它照 `[Console]::OutputEncoding` 解码程序的输出，默认是系统代码页）。
+        Shell::Pwsh | Shell::WinPs => {
+            let name = shell.name();
+            format!(
+                "{MARK}\n# Written by `miyu shellhook install`; `miyu shellhook uninstall` removes it.\n\
+                 if ([Environment]::UserInteractive -and (Test-Path -LiteralPath {p})) {{\n\
+                 \x20   $__miyu_encoding = [Console]::OutputEncoding\n\
+                 \x20   try {{ [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); $__miyu_script = (& {p} shellhook script --shell {name} --program {p}) -join \"`n\" }} finally {{ [Console]::OutputEncoding = $__miyu_encoding }}\n\
+                 \x20   if ($__miyu_script) {{ Invoke-Expression $__miyu_script }}\n\
+                 \x20   Remove-Variable __miyu_encoding, __miyu_script -ErrorAction Ignore\n\
+                 }}\n{END}\n"
+            )
+        }
     }
 }
 
@@ -156,6 +199,8 @@ pub fn install_at(shell: Shell, path: &Path, program: &Path) -> io::Result<Done>
     let existing = read(path)?;
     let (text, done) = match (shell, existing) {
         (Shell::Fish, None) => (block, Done::Installed),
+        // 新建的 PowerShell 启动文件带 BOM：Windows PowerShell 5.1 才照 UTF-8 读（程序的路径里可能有中文）。
+        (Shell::Pwsh | Shell::WinPs, None) => (format!("\u{feff}{block}"), Done::Installed),
         (Shell::Fish, Some(old)) if old.starts_with(MARK) => (block, Done::Updated),
         (Shell::Fish, Some(_)) => return Ok(Done::Foreign),
         (_, None) => (block, Done::Installed),
@@ -190,7 +235,7 @@ pub fn uninstall_at(shell: Shell, path: &Path) -> io::Result<bool> {
             Ok(true)
         }
         Shell::Fish => Ok(false),
-        Shell::Bash | Shell::Zsh => match cut(&old) {
+        Shell::Bash | Shell::Zsh | Shell::Pwsh | Shell::WinPs => match cut(&old) {
             Some((before, after)) => {
                 write(path, &format!("{before}{after}"))?;
                 Ok(true)
@@ -212,7 +257,9 @@ pub fn found(shell: Shell, path: &Path) -> io::Result<Found> {
     let ours = match shell {
         Shell::Fish if text.starts_with(MARK) => Some(text.as_str()),
         Shell::Fish => return Ok(Found::Foreign),
-        Shell::Bash | Shell::Zsh => cut(&text).map(|(before, _)| &text[before.len()..]),
+        Shell::Bash | Shell::Zsh | Shell::Pwsh | Shell::WinPs => {
+            cut(&text).map(|(before, _)| &text[before.len()..])
+        }
     };
     Ok(match ours {
         Some(ours) => Found::Ours(program_in(ours)),
@@ -220,19 +267,28 @@ pub fn found(shell: Shell, path: &Path) -> io::Result<Found> {
     })
 }
 
-/// 装进去的那一段里记的程序：`test -x` 或 `-x` 后面那个单引号包着的词。
+/// 装进去的那一段里记的程序：`test -x`、`-x`、`-LiteralPath` 后面那个单引号包着的词。
 fn program_in(block: &str) -> Option<PathBuf> {
-    // fish 的单引号里 \' \\ 是转义；POSIX 的引号里写不了引号，写成 '\''（[`Shell::quote`]）。
+    // fish 的单引号里 \' \\ 是转义；POSIX 的引号里写不了引号，写成 '\''；PowerShell 的写成 ''（[`Shell::quote`]）。
     let fish = block.contains("status is-interactive");
-    let quoted = &block[block.find("-x '")? + "-x '".len()..];
+    let lead = if block.contains("-LiteralPath '") {
+        "-LiteralPath '"
+    } else {
+        "-x '"
+    };
+    let powershell = lead.starts_with("-L");
+    let quoted = &block[block.find(lead)? + lead.len()..];
     let mut out = String::new();
     let mut at = 0;
     while let Some(rest) = quoted.get(at..) {
-        if fish && rest.starts_with('\\') {
+        if powershell && rest.starts_with("''") {
+            out.push('\'');
+            at += 2;
+        } else if fish && rest.starts_with('\\') {
             let c = rest[1..].chars().next()?;
             out.push(c);
             at += 1 + c.len_utf8();
-        } else if !fish && rest.starts_with("'\\''") {
+        } else if !fish && !powershell && rest.starts_with("'\\''") {
             out.push('\'');
             at += "'\\''".len();
         } else if rest.starts_with('\'') {
@@ -251,7 +307,7 @@ fn cut(text: &str) -> Option<(&str, &str)> {
     let start = text
         .match_indices(MARK)
         .map(|(i, _)| i)
-        .find(|&i| i == 0 || text[..i].ends_with('\n'))?;
+        .find(|&i| i == 0 || text[..i].ends_with('\n') || &text[..i] == "\u{feff}")?;
     let end_at = text[start..].find(END)? + start + END.len();
     let end = text[end_at..]
         .strip_prefix('\n')

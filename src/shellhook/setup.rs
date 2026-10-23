@@ -40,13 +40,18 @@ pub fn shells() -> Vec<Entry> {
 ///
 /// # Errors
 ///
-/// 认不出的名字、没有家目录、读写失败、fish 那个文件不是自己写的：交回给人看的一句。
+/// 认不出的名字、没有家目录、读写失败、fish 那个文件不是自己写的、PowerShell 的执行策略不让加载（这时已经装上了）：
+/// 交回给人看的一句。
 pub fn install(name: &str) -> Result<(), String> {
     let words = Words::detect().map_err(|e| e.to_string())?;
     let (shell, target) = locate(name, &words)?;
     let program = install::default_program().map_err(|e| e.to_string())?;
     match install::install_at(shell, &target, &program).map_err(|e| e.to_string())? {
-        Done::Installed | Done::Updated => Ok(()),
+        // 装上了，可 PowerShell 的执行策略不让加载启动文件：照失败说，告诉人怎么改（不替人改安全设置）。
+        Done::Installed | Done::Updated => match install::blocking_policy(shell) {
+            Some(policy) => Err(fill(&words.ps_policy, &[("policy", &policy)])),
+            None => Ok(()),
+        },
         Done::Foreign => {
             let shown = target.display().to_string();
             Err(fill(

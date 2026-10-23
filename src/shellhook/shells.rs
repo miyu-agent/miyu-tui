@@ -1,4 +1,4 @@
-//! 认得的三种 shell：叫什么、装在哪、调它的那一行怎么引号。
+//! 认得的 shell：叫什么、装在哪、调它的那一行怎么引号。
 
 use std::path::{Path, PathBuf};
 
@@ -11,21 +11,44 @@ pub enum Shell {
     Bash,
     /// zsh：同 bash。
     Zsh,
+    /// PowerShell 7（`pwsh`，Windows、Linux、macOS 都有）：回车交给 PSReadLine 的按键处理判断（2026-10-23 项目主人）。
+    Pwsh,
+    /// Windows 自带的 Windows PowerShell 5.1（`powershell`）：脚本同 `pwsh`，启动文件是另一个。
+    WinPs,
 }
 
-/// 三种都在这：`status` 照这个顺序一行一种。
-pub const ALL: [Shell; 3] = [Shell::Fish, Shell::Bash, Shell::Zsh];
+/// 都在这：`status` 照这个顺序一行一种。
+pub const ALL: [Shell; 5] = [
+    Shell::Fish,
+    Shell::Bash,
+    Shell::Zsh,
+    Shell::Pwsh,
+    Shell::WinPs,
+];
 
 impl Shell {
-    /// 照名字认：`fish`、`bash`、`zsh`，也认带路径的（`/usr/bin/fish`）和登录 shell 的 `-fish`。
+    /// 照名字认：`fish`、`bash`、`zsh`、`pwsh`、`powershell`，也认带路径的（`/usr/bin/fish`）、登录 shell 的 `-fish`
+    /// 和 Windows 上带 `.exe` 的。
     pub fn named(name: &str) -> Option<Self> {
         let base = Path::new(name).file_name()?.to_str()?;
-        match base.trim_start_matches('-') {
+        let base = base.trim_start_matches('-');
+        let base = base
+            .strip_suffix(".exe")
+            .or_else(|| base.strip_suffix(".EXE"))
+            .unwrap_or(base);
+        match base {
             "fish" => Some(Self::Fish),
             "bash" => Some(Self::Bash),
             "zsh" => Some(Self::Zsh),
+            "pwsh" => Some(Self::Pwsh),
+            "powershell" => Some(Self::WinPs),
             _ => None,
         }
+    }
+
+    /// 是 PowerShell（两种脚本、装法一样）。
+    pub fn powershell(self) -> bool {
+        matches!(self, Self::Pwsh | Self::WinPs)
     }
 
     /// 名字。
@@ -34,10 +57,13 @@ impl Shell {
             Self::Fish => "fish",
             Self::Bash => "bash",
             Self::Zsh => "zsh",
+            Self::Pwsh => "pwsh",
+            Self::WinPs => "powershell",
         }
     }
 
-    /// 装在哪：fish 是 conf.d 下自己的一个文件；bash、zsh 是启动文件里的一段。`env` 读环境变量（测试里换掉）。
+    /// 装在哪：fish 是 conf.d 下自己的一个文件；bash、zsh、PowerShell 是启动文件里的一段。`env` 读环境变量（测试里换掉）。
+    /// PowerShell 的启动文件问它自己（`$PROFILE`：「文档」可能被挪到 OneDrive，自己拼会拼错），没装的是 `None`。
     pub fn target(self, env: &impl Fn(&str) -> Option<String>) -> Option<PathBuf> {
         let home = env("HOME").filter(|h| !h.is_empty()).map(PathBuf::from);
         match self {
@@ -56,6 +82,7 @@ impl Shell {
                     .or(home)?;
                 Some(dir.join(".zshrc"))
             }
+            Self::Pwsh | Self::WinPs => profile(self.name()),
         }
     }
 
@@ -63,7 +90,7 @@ impl Shell {
     pub fn old_hook(self, env: &impl Fn(&str) -> Option<String>) -> Option<PathBuf> {
         match self {
             Self::Fish => Some(self.target(env)?.with_file_name("miyu.fish")),
-            Self::Bash | Self::Zsh => None,
+            Self::Bash | Self::Zsh | Self::Pwsh | Self::WinPs => None,
         }
     }
 
@@ -75,8 +102,29 @@ impl Shell {
             Self::Fish => format!("'{}'", text.replace('\\', "\\\\").replace('\'', "\\'")),
             // POSIX 的单引号里什么都不转义：引号先关上，转义的引号，再打开。
             Self::Bash | Self::Zsh => format!("'{}'", text.replace('\'', "'\\''")),
+            // PowerShell 的单引号里只有两个单引号是一个单引号。
+            Self::Pwsh | Self::WinPs => format!("'{}'", text.replace('\'', "''")),
         }
     }
+}
+
+/// 问 PowerShell 它的启动文件在哪（这个用户、这个宿主的那一个）；没装、问不出的是 `None`。
+fn profile(program: &str) -> Option<PathBuf> {
+    let out = std::process::Command::new(program)
+        .args([
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); $PROFILE.CurrentUserCurrentHost",
+        ])
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()?;
+    let path = String::from_utf8(out.stdout).ok()?;
+    let path = path.trim();
+    (out.status.success() && !path.is_empty()).then(|| PathBuf::from(path))
 }
 
 /// 照上一层进程认是哪种 shell（`miyu shellhook install` 是在 shell 里敲的；核心转交时换成这个程序，上一层还是那个 shell），

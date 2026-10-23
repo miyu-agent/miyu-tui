@@ -13,6 +13,15 @@ pub fn render(shell: Shell, program: &Path) -> String {
         Shell::Fish => include_str!("../../resources/shellhook/hook.fish"),
         Shell::Bash => include_str!("../../resources/shellhook/hook.bash"),
         Shell::Zsh => include_str!("../../resources/shellhook/hook.zsh"),
+        Shell::Pwsh | Shell::WinPs => include_str!("../../resources/shellhook/hook.ps1"),
     };
-    source.replace(PROGRAM, &shell.quote(program))
+    let text = source.replace(PROGRAM, &shell.quote(program));
+    if !shell.powershell() {
+        return text;
+    }
+    // PowerShell 没有信号可等：画提示符时自己看信箱（`say/spool.rs`），这里告诉它在哪。认不出的写一个不在的地方，不印回报。
+    let spool = super::say::spool::dir()
+        .unwrap_or_else(|| std::env::temp_dir().join("miyu-shellhook-none"));
+    text.replace("@SHELL@", shell.name())
+        .replace("@SPOOL@", &shell.quote(&spool))
 }
