@@ -108,6 +108,7 @@ impl App {
             return;
         }
         if let Update::Presets(list) = update {
+            self.note_presets(&list);
             self.listed(super::new_session::Kind::Preset, list);
             return;
         }
