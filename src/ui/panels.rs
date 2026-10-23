@@ -85,6 +85,12 @@ fn rows(
         Some(crate::app::Panel::Status { scroll }) => {
             super::status_box::lines(seen, scroll, width, max)
         }
+        Some(crate::app::Panel::Tools { scroll }) => {
+            super::tool_list::lines(seen, scroll, width, max)
+        }
+        Some(crate::app::Panel::Context { scroll }) => {
+            super::context_box::lines(seen, scroll, width, max)
+        }
         Some(crate::app::Panel::Usage { tab, scroll, money }) => {
             let (chrome, lines) = usage::lines(seen, (tab, scroll, money), width, max);
             let map = vec![None; lines.len()];

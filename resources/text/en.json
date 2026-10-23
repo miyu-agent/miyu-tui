@@ -335,6 +335,41 @@
     "memory": "recalled {recalled} times · remembered {remembered}",
     "hint": "↑/↓ scroll · c copy · Esc close"
   },
+  "tool_list": {
+    "title": "Tools · {n}",
+    "loading": "Reading tools…",
+    "empty": "No tools available",
+    "count": "{n}",
+    "hint": "↑/↓ scroll · c copy · Esc close"
+  },
+  "context_box": {
+    "title": "Context breakdown",
+    "loading": "Loading…",
+    "used": "Used {used} / {window}",
+    "used_only": "Used {used}",
+    "line": "compaction at {line}",
+    "estimated": "estimated",
+    "totals": "This session so far",
+    "columns": {
+      "requests": "Calls",
+      "uncached": "Input",
+      "cache_read": "Cache read",
+      "cache_write": "Cache write",
+      "output": "Output",
+      "cost": "Cost"
+    },
+    "sum": "Total",
+    "uses": {
+      "main": "Main",
+      "compaction": "Compaction",
+      "subagent": "Subagents",
+      "recap": "Recap",
+      "title": "Titles",
+      "memory": "Memory",
+      "other": "Other"
+    },
+    "hint": "↑/↓ scroll · c copy · Esc close"
+  },
   "usage": {
     "title": "Usage",
     "tabs": [

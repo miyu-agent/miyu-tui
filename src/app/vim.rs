@@ -30,6 +30,8 @@ impl App {
                             | Panel::Help { .. }
                             | Panel::Usage { .. }
                             | Panel::Status { .. }
+                            | Panel::Tools { .. }
+                            | Panel::Context { .. }
                     )
                 ));
         match event {

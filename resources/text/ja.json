@@ -335,6 +335,41 @@
     "memory": "思い出す {recalled} 回 · 覚える {remembered} 件",
     "hint": "↑/↓ スクロール · c コピー · Esc 閉じる"
   },
+  "tool_list": {
+    "title": "ツール · {n} 件",
+    "loading": "ツールを読み込み中…",
+    "empty": "使えるツールはありません",
+    "count": "{n} 件",
+    "hint": "↑/↓ スクロール · c コピー · Esc 閉じる"
+  },
+  "context_box": {
+    "title": "コンテキスト内訳",
+    "loading": "読み込み中…",
+    "used": "使用 {used} / {window}",
+    "used_only": "使用 {used}",
+    "line": "圧縮ライン {line}",
+    "estimated": "推定",
+    "totals": "このセッションの累計",
+    "columns": {
+      "requests": "回数",
+      "uncached": "入力",
+      "cache_read": "キャッシュ読",
+      "cache_write": "キャッシュ書",
+      "output": "出力",
+      "cost": "費用"
+    },
+    "sum": "合計",
+    "uses": {
+      "main": "メイン",
+      "compaction": "圧縮",
+      "subagent": "サブエージェント",
+      "recap": "振り返り",
+      "title": "タイトル",
+      "memory": "記憶",
+      "other": "その他"
+    },
+    "hint": "↑/↓ スクロール · c コピー · Esc 閉じる"
+  },
   "usage": {
     "title": "使用量",
     "tabs": [
