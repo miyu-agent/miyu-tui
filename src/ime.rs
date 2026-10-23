@@ -1,7 +1,8 @@
 //! 输入法跟着打字状态切（蓝图「配置页」第 30 条，2026-10-07 项目主人：回车进编辑、改完出来还要手动切英文）。离开打字（编辑窗里
 //! 改完一项、筛完、关掉）时问一下输入法开没开，开着的关成英文、记住；再进打字时开回来。和 fcitx.vim 一个做法。命令照
 //! `layout.json` 的 `ime`，在单独的线程里跑，不卡画面；没装、出错的什么都不做。只在环境变量看得出用的是 fcitx 时切，
-//! `MIYU_TUI_IME=0` 关掉（测试、测具都关：不然会切走跑测试那台机器上人正在用的输入法）。
+//! `MIYU_TUI_IME=0` 关掉（测试、测具都关：不然会切走跑测试那台机器上人正在用的输入法）。终端不在前台时不切，只记着该是什么
+//! 样子，回到前台再补（2026-10-22 项目主人：人在别的软件里打字，后台的界面弹了确认，把那个软件的输入法切走了）。
 
 use std::process::{Command, Stdio};
 use std::sync::mpsc::{self, Sender};
@@ -29,11 +30,16 @@ pub struct Look {
     pub on: Vec<String>,
 }
 
-/// 管输入法的那一头：界面告诉它进没进打字状态。
+/// 管输入法的那一头：界面告诉它进没进打字状态、终端在不在前台。
 #[derive(Debug, Default)]
 pub struct Ime {
     tell: Option<Sender<bool>>,
+    /// 界面现在是不是在打字。
     typing: Option<bool>,
+    /// 交给切换线程的最后一次。
+    sent: Option<bool>,
+    /// 终端报了不在前台（没报过的当在前台：不报焦点的终端照旧切）。
+    away: bool,
     worker: Option<std::thread::JoinHandle<()>>,
 }
 
@@ -54,18 +60,32 @@ impl Ime {
         });
         Self {
             tell: Some(tell),
-            typing: None,
             worker: Some(worker),
+            ..Self::default()
         }
     }
 
-    /// 现在是不是在打字；变了才去切。
+    /// 现在是不是在打字；在前台、和交出去的不一样才去切。
     pub fn typing(&mut self, typing: bool) {
-        if self.typing == Some(typing) {
+        self.typing = Some(typing);
+        self.sync();
+    }
+
+    /// 终端到了前台、去了后台：去了后台的不切，回来补上这期间变了的。
+    pub fn focus(&mut self, gained: bool) {
+        self.away = !gained;
+        self.sync();
+    }
+
+    fn sync(&mut self) {
+        let Some(typing) = self.typing else {
+            return;
+        };
+        if self.away || self.sent == Some(typing) {
             return;
         }
-        let first = self.typing.is_none();
-        self.typing = Some(typing);
+        let first = self.sent.is_none();
+        self.sent = Some(typing);
         // 一起来就在打字（对话的输入框）：不动人原来的输入法。
         if first && typing {
             return;
@@ -79,7 +99,7 @@ impl Ime {
 }
 
 impl Ime {
-    /// 退出程序前：关掉过的开回来，等它切完（不然进程一退线程就没了）。
+    /// 退出程序前：关掉过的开回来，等它切完（不然进程一退线程就没了）。在后台的不开：开的是人正在用的那个软件的。
     pub fn finish(mut self) {
         self.typing(true);
         drop(self.tell.take());
@@ -149,7 +169,37 @@ fn run(cmd: &[String]) {
 mod tests {
     use std::cell::RefCell;
 
-    use super::{Look, step, wanted};
+    use std::sync::mpsc;
+
+    use super::{Ime, Look, step, wanted};
+
+    #[test]
+    fn nothing_is_switched_while_the_terminal_is_in_the_background() {
+        // 2026-10-22 项目主人：「对fcitx5的处理应该只在聚焦的时候才进行，否则别人在用别的软件的时候，也会被tui切」。
+        let (tell, heard) = mpsc::channel();
+        let mut ime = Ime {
+            tell: Some(tell),
+            ..Ime::default()
+        };
+        ime.typing(true);
+        assert!(heard.try_recv().is_err(), "一起来就在打字：不动");
+        ime.typing(false);
+        assert_eq!(heard.try_recv(), Ok(false), "在前台：离开打字就切");
+        ime.focus(false);
+        ime.typing(true);
+        ime.typing(false);
+        ime.typing(true);
+        assert!(heard.try_recv().is_err(), "在后台：一次都不切");
+        ime.focus(true);
+        assert_eq!(heard.try_recv(), Ok(true), "回到前台：补上现在该是的样子");
+        assert!(heard.try_recv().is_err());
+        ime.focus(false);
+        ime.typing(false);
+        ime.focus(true);
+        ime.typing(true);
+        assert_eq!(heard.try_recv(), Ok(false));
+        assert_eq!(heard.try_recv(), Ok(true));
+    }
 
     fn look() -> Look {
         let words = |list: &[&str]| list.iter().map(|s| s.to_string()).collect();
