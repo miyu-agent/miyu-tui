@@ -233,6 +233,7 @@
   "think": "",
   "error": "",
   "pin": " ",
+  "warn": "\uf071 ",
   "video": "▶",
   "stash": " "
 }

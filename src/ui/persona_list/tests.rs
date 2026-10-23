@@ -31,7 +31,7 @@ fn switching_midway_shows_the_note_first_and_dots_the_current_one() {
             &list,
             Some("miyu"),
             (current, switching),
-            "●",
+            ("●", "! "),
             Kind::Persona,
             2,
             texts,
@@ -47,13 +47,17 @@ fn switching_midway_shows_the_note_first_and_dots_the_current_one() {
     let (rows, map) = text(Some("xue"), true);
     assert_eq!(
         rows[0].trim(),
-        "切换前会先压缩会话避免缓存断裂导致的全量重放",
+        "! 切换前会先压缩会话避免缓存断裂导致的全量重放",
         "{rows:#?}"
     );
     assert_eq!(map[0], None, "选不中");
+    assert!(
+        rows[1].trim().is_empty() && map[1].is_none(),
+        "和列表之间空一行：{rows:#?}"
+    );
     // 2026-10-19 项目主人：现在用的行首写 `●`，光标停在它上面也不换成 `❯`，右边不写「当前」。
     assert!(
-        rows[3].starts_with("● 小雪"),
+        rows[4].starts_with("● 小雪"),
         "现在用的、选着的写 ●：{rows:#?}"
     );
     assert!(!rows.iter().any(|r| r.contains("当前")), "{rows:#?}");
