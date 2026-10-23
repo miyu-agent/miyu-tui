@@ -235,6 +235,24 @@
       "run": "status"
     },
     {
+      "name": "tool-list",
+      "summary": {
+        "zh": "看看这个会话能用哪些工具",
+        "en": "See which tools this session can use",
+        "ja": "このセッションで使えるツールを見る"
+      },
+      "run": "tool_list"
+    },
+    {
+      "name": "context",
+      "summary": {
+        "zh": "看看上下文一块块各占多少，和这个会话按用途的累计用量",
+        "en": "See what fills the context, and this session's usage by purpose",
+        "ja": "コンテキストの内訳と、このセッションの用途別の累計使用量を見る"
+      },
+      "run": "context"
+    },
+    {
       "name": "usage",
       "summary": {
         "zh": "这台机器上的用量和花费：按天、按模型",

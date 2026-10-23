@@ -93,6 +93,10 @@ pub struct Texts {
     pub usage: crate::ui::usage::Texts,
     /// `/status` 会话状态框的字。
     pub status: crate::ui::status_box::Texts,
+    /// `/tool-list` 工具框的字。
+    pub tool_list: crate::ui::tool_list::Texts,
+    /// `/context` 上下文框的字。
+    pub context_box: crate::ui::context_box::Texts,
     /// 配置页的字（`/config`，蓝图「配置页」）。
     pub settings: crate::settings::Texts,
     /// 确认和提问的抽屉上的字。

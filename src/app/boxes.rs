@@ -14,6 +14,10 @@ pub struct Boxes {
     pub efforts: Option<crate::core::Efforts>,
     /// `/usage` 框读回来的（开着才有）。
     pub usage: Option<super::usage::UsageData>,
+    /// `/tool-list` 框读回来的（开着才有；拒了的是核心的原话）。
+    pub tools: Option<Result<Vec<crate::ui::tool_list::Tool>, String>>,
+    /// `/context` 框读回来的（开着才有）。
+    pub context: Option<crate::ui::context_box::ContextData>,
     /// 开着的配置页（`/config`、`--page config`，蓝图「配置页」）：开着时整屏归它。
     pub settings: Option<crate::settings::Settings>,
     /// 开着的配色框（`/theme`）：打开以前用的哪种、列哪几种（`theme_box.rs`）。

@@ -67,6 +67,7 @@ mod talk;
 mod theme;
 mod theme_box;
 mod theme_pick;
+mod tool_list;
 mod typing;
 mod updates;
 pub mod usage;

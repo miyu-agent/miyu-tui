@@ -335,6 +335,41 @@
     "memory": "回忆 {recalled} 次 · 记住 {remembered} 条",
     "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
   },
+  "tool_list": {
+    "title": "工具 · {n} 件",
+    "loading": "正在读工具…",
+    "empty": "没有能用的工具",
+    "count": "{n} 件",
+    "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
+  },
+  "context_box": {
+    "title": "上下文明细",
+    "loading": "正在读…",
+    "used": "已用 {used} / {window}",
+    "used_only": "已用 {used}",
+    "line": "压缩线 {line}",
+    "estimated": "估算",
+    "totals": "本会话累计",
+    "columns": {
+      "requests": "次数",
+      "uncached": "输入",
+      "cache_read": "缓存读",
+      "cache_write": "缓存写",
+      "output": "输出",
+      "cost": "花费"
+    },
+    "sum": "合计",
+    "uses": {
+      "main": "主对话",
+      "compaction": "压缩",
+      "subagent": "子代理",
+      "recap": "回顾",
+      "title": "起标题",
+      "memory": "记忆",
+      "other": "其他"
+    },
+    "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
+  },
   "usage": {
     "title": "用量",
     "tabs": [

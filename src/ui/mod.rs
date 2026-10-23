@@ -58,6 +58,7 @@ mod start_pick;
 mod status;
 pub mod status_box;
 mod timeline;
+pub mod tool_list;
 mod undo_rows;
 pub use timeline::release_on_fold;
 mod user_rows;

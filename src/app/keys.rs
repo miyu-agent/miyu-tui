@@ -346,6 +346,8 @@ impl App {
             Run::Copy => self.copy_reply(),
             Run::Usage => self.open_usage(),
             Run::Status => self.open_status(),
+            Run::ToolList => self.open_tool_list(),
+            Run::Context => self.open_context(),
             Run::New => self.new_session(),
             Run::Revert => self.undo(),
             Run::Unrevert => self.link.core.send(Command::Unrevert),
