@@ -224,8 +224,8 @@ fn other_tags_are_still_written_as_they_are() {
         ["按 <abbr>Ctrl</abbr> 键"]
     );
     assert_eq!(
-        lines("<table><tr><td>格</td></tr></table>", &[]),
-        ["<table><tr><td>格</td></tr></table>"]
+        lines("<video src=\"a.mp4\">片子</video>", &[]),
+        ["<video src=\"a.mp4\">片子</video>"]
     );
     assert_eq!(lines("上<br>下", &[]), ["上", "下"]);
 }
@@ -278,4 +278,63 @@ fn center_and_align_center_are_centered_in_the_room() {
     // 居中补的空格在引子里：复制时不带。
     let drawn = draw("<center>居中</center>", 80, &[]);
     assert_eq!(super::super::inline::plain(&drawn[0].folded), "居中");
+}
+
+#[test]
+fn entities_are_decoded_in_text_and_in_attributes() {
+    // 2026-10-23 review：原来 `&amp;`、`&nbsp;` 照原样写出来。
+    assert_eq!(
+        lines("<p>Tom &amp; Jerry&nbsp;go &lt;home&gt;</p>", &[]),
+        ["Tom & Jerry\u{a0}go <home>"]
+    );
+    assert_eq!(
+        lines("<span>&#x4E2D;&#25991; &quot;q&quot;</span>", &[]),
+        ["中文 \"q\""]
+    );
+    assert_eq!(lines("Hello &amp; <b>world</b>", &[]), ["Hello & world"]);
+}
+
+#[test]
+fn markdown_and_html_styles_that_cross_each_other_end_their_own_layer() {
+    // 2026-10-23 review：`**` 收尾原来拿掉的是最上面那层（`<i>`），斜体丢了、加粗一直到行尾。
+    let drawn = draw("**a <i>b** c</i> d", 80, &[]);
+    let style_of = |word: &str| {
+        drawn[0]
+            .folded
+            .spans
+            .iter()
+            .find(|s| s.content.contains(word))
+            .map(|s| s.style)
+            .unwrap()
+    };
+    assert_eq!(style_of("a"), crate::theme::md_bold());
+    assert_eq!(style_of("c"), crate::theme::md_italic());
+    assert_eq!(style_of("d"), ratatui::style::Style::new());
+}
+
+#[test]
+fn common_block_tags_are_drawn_like_their_markdown() {
+    // 2026-10-23 review：这几种块原来照原样露出标签。
+    assert_eq!(lines("<h2>Title &amp; more</h2>", &[]), ["Title & more"]);
+    assert_eq!(
+        lines("<ul>\n<li>one</li>\n<li>two <b>bold</b></li>\n</ul>", &[]),
+        ["▪ one", "▪ two bold"]
+    );
+    assert_eq!(
+        lines("<blockquote>quoted</blockquote>\n\nafter", &[]),
+        ["│ quoted", "", "after"]
+    );
+    assert_eq!(
+        lines(
+            "<table>\n<tr><th>h1</th><th>h2</th></tr>\n<tr><td>a</td><td>b</td></tr>\n</table>",
+            &[]
+        ),
+        ["h1  h2", "a  b"]
+    );
+    assert_eq!(lines("<pre>code\n  block</pre>", &[]), ["code", "  block"]);
+    // 没开过就收尾的 `</blockquote>` 不收 Markdown 的引用以外的东西，也不让后面接着缩进。
+    assert_eq!(
+        lines("> md\n\n</blockquote>\n\nafter", &[]),
+        ["│ md", "", "after"]
+    );
 }

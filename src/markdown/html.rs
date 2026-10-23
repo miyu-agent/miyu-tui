@@ -13,7 +13,7 @@ use unicode_width::UnicodeWidthStr;
 use super::inline::{Piece, fold};
 use super::{Container, FigureKind, MdLine, Renderer};
 use crate::theme;
-use scan::{Token, find, tokens};
+use scan::{Token, entities, find, tokens};
 
 /// 套着的一块 `<details>`。
 pub(super) struct Details {
@@ -83,6 +83,7 @@ impl Renderer<'_> {
                     }
                 }
                 Token::Text(text) => {
+                    let text = &*entities(text);
                     let summary = self.details.last_mut().and_then(|d| d.summary.as_mut());
                     match summary {
                         Some(summary) => summary.push_str(text),
@@ -168,11 +169,12 @@ impl Renderer<'_> {
             return;
         };
         let pixels = |key: &str| get(key).and_then(|v| v.trim_end_matches("px").parse().ok());
-        self.styles.push(theme::md_image());
+        let style = self.push_style(theme::md_image());
         self.link_starts.push((src.to_string(), self.pieces.len()));
         let label = self.labels.image.clone();
         self.push(&label, Style::new());
         self.push(get("alt").unwrap_or_default(), Style::new());
+        self.drop_style(style);
         self.end_link(true);
         if let Some(last) = self.images.last_mut().filter(|(url, _)| url == src) {
             last.1 = (pixels("width"), pixels("height"));

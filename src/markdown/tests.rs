@@ -445,3 +445,17 @@ fn local_paths_in_text_and_inline_code_open_but_keep_their_look() {
     );
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn a_code_block_that_opens_a_list_item_carries_the_marker_on_its_top_rule() {
+    // 2026-10-23 review：原来记号单独占一行，代码框在下一行才开始。
+    let drawn = lines("- ```rust\n  let x = 1;\n  ```", 40);
+    assert!(drawn[0].starts_with("▪ ╭─ code rust"), "{drawn:?}");
+    assert_eq!(drawn[1], "  let x = 1;");
+}
+
+#[test]
+fn footnotes_show_their_mark_and_their_note() {
+    // 2026-10-23 review：原来没开脚注，`[^1]` 成了「a^1」、定义成了一条链接。
+    assert_eq!(lines("a[^1]\n\n[^1]: note", 40), ["a[1]", "", "[1] note"]);
+}

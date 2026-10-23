@@ -11,7 +11,6 @@ use crate::theme;
 impl Renderer<'_> {
     /// 链接收完：标题成链；标题和地址不一样的，后面跟 ` <地址>`。图片写成 `[图片: 说明] <地址>`。
     pub(super) fn end_link(&mut self, image: bool) {
-        self.styles.pop();
         let Some((url, start)) = self.link_starts.pop() else {
             return;
         };
