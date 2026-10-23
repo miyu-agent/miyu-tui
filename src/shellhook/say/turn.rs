@@ -79,8 +79,8 @@ pub struct Turn {
     pub lingering: bool,
     /// 这一轮结束后叫醒她的那几轮：接着印、等它结束（实测：任务在这一轮里跑完，叫醒的那一轮没人印）。
     pub woken: Vec<u64>,
-    /// 闲置久了核心换了新会话：旧会话最后一次动静的时刻，印一行就拿走。
-    pub renewed: Option<jiff::Timestamp>,
+    /// 问终端会话问得怎样：这个终端的键、只问不开、闲置久了换了新的（`terminal.rs`）。
+    pub terminal: super::terminal::Asked,
     /// 这期间提前敲的字：交还给 shell 的命令行。
     pub typed: String,
     /// 按过 Ctrl+C。
@@ -116,8 +116,7 @@ impl Turn {
 
     /// 排哪几条（`view.rs`）。
     pub fn scope(&self) -> super::view::Scope {
-        // 交给核心的斜杠命令只回了一句（`/dream` 的回执、被拒）：正文里只剩那一句，照全部印。回执到之前正文里是读回来的那一页，
-        // 什么都不画（2026-10-22 验收：`/dream` 整理时把前几轮全画了出来）。
+        // 交给核心的斜杠命令只回了一句（`/dream` 的回执、被拒）照全部印；回执到之前什么都不画（2026-10-22 验收）。
         if self.manual || (self.done && self.ours.is_none() && self.woken.is_empty()) {
             return super::view::Scope::All;
         }
@@ -170,7 +169,7 @@ impl Turn {
             unseen: super::unseen::Unseen::default(),
             lingering: false,
             woken: Vec::new(),
-            renewed: None,
+            terminal: super::terminal::Asked::default(),
             typed: String::new(),
             interrupted: false,
             ended: None,
@@ -183,7 +182,7 @@ impl Turn {
         core.send(Command::Ask {
             tag: TERMINAL_TAG,
             method: "session.terminal",
-            params: json!({ "cwd": self.cwd }),
+            params: self.terminal.params(self.cwd.as_deref()),
         });
     }
 
@@ -265,8 +264,9 @@ impl Turn {
         }
         match update {
             Update::Answer { tag, result } if tag == TERMINAL_TAG => {
-                if let Some(found) = result.ok().as_ref().and_then(super::terminal::read) {
-                    self.renewed = found.renewed;
+                if self.terminal.again(&result) {
+                    self.ask_terminal(core);
+                } else if let Some(found) = self.terminal.answered(result.ok().as_ref()) {
                     self.transcript.session = Some(found.session.clone());
                     self.transcript.link = Link::Ready;
                     core.send(Command::Open {
@@ -275,6 +275,8 @@ impl Turn {
                     });
                     // 最新一页读回来（`Paged`、读不成的 `Older`）再发。
                     self.paging = true;
+                } else if self.terminal.none {
+                    self.done = true;
                 } else {
                     self.send(core);
                 }
@@ -386,8 +388,7 @@ impl Turn {
             update => self.transcript.update(update, &config.text),
         }
         self.take_back();
-        // 这句话开的那一轮结束了：收工（接上的等最新一页补完再看）。
-        // 插的话还没落着的不收工：这一轮完了核心会拿它另开一轮（`turn/interject.rs`）。
+        // 这句话开的那一轮结束了：收工（接上的等最新一页补完；插的话没落着的不收，`turn/interject.rs`）。
         if self.ours.is_some()
             && !self.paging
             && self.transcript.running.is_none()
@@ -481,8 +482,7 @@ impl Turn {
             {
                 self.ours = Some(*turn);
             }
-            // 说的时候她正在跑别的一轮（回报叫醒的）：这句话排着，被那一轮听到了就算在那一轮里，不另开一轮（实测：原来一直
-            // 等不到自己开的那一轮，终端还不回来）。
+            // 说的时候她正在跑别的一轮（回报叫醒的）：这句话排着，被那一轮听到了就算在那一轮里，不另开一轮（实测）。
             Update::Push(Push::Heard(seen))
                 if self.ours.is_none() && self.said_seq.is_some_and(|s| s <= *seen) =>
             {

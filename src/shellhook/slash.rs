@@ -24,7 +24,6 @@ pub fn run(
     leftover: Option<&std::path::Path>,
     shell: Option<u32>,
 ) -> Option<io::Result<ExitCode>> {
-    let hooked = shell.is_some();
     let config = match crate::shellhook::say::config() {
         Ok(config) => config,
         Err(e) => return Some(Err(e)),
@@ -32,7 +31,7 @@ pub fn run(
     let line = line.trim();
     // shell 里才有的：用终端界面打开终端会话（2026-10-21 项目主人：「有没有可能，用 TUI 方式进入这个终端集成会话」）。
     if line == "/tui" {
-        return Some(open_tui(&config));
+        return Some(open_tui(&config, shell));
     }
     let (spec, args) = match config.commands.read(line) {
         Line::Command(spec, args) => (spec, args),
@@ -53,39 +52,39 @@ pub fn run(
     }
     Some(match spec.name.as_str() {
         "config" => config_page(),
-        "undo" => act(crate::shellhook::say::Act::Revert, words, hooked),
-        "restore" => act(crate::shellhook::say::Act::Unrevert, words, hooked),
-        "recap" => act(crate::shellhook::say::Act::Recap, words, hooked),
-        "help" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Help, words, hooked),
-        "new" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Fresh, words, hooked),
+        "undo" => act(crate::shellhook::say::Act::Revert, words, shell),
+        "restore" => act(crate::shellhook::say::Act::Unrevert, words, shell),
+        "recap" => act(crate::shellhook::say::Act::Recap, words, shell),
+        "help" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Help, words, shell),
+        "new" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Fresh, words, shell),
         "model" => {
-            crate::shellhook::say::pick(crate::shellhook::say::Pick::Model(args), words, hooked)
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Model(args), words, shell)
         }
         "theme" => {
-            crate::shellhook::say::pick(crate::shellhook::say::Pick::Theme(args), words, hooked)
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Theme(args), words, shell)
         }
         "effort" => {
-            crate::shellhook::say::pick(crate::shellhook::say::Pick::Effort(args), words, hooked)
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Effort(args), words, shell)
         }
         "sessions" => {
-            crate::shellhook::say::pick(crate::shellhook::say::Pick::Sessions, words, hooked)
+            crate::shellhook::say::pick(crate::shellhook::say::Pick::Sessions, words, shell)
         }
-        "status" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Status, words, hooked),
-        "usage" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Usage, words, hooked),
+        "status" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Status, words, shell),
+        "usage" => crate::shellhook::say::pick(crate::shellhook::say::Pick::Usage, words, shell),
         "edit" => crate::shellhook::say::pick(
             crate::shellhook::say::Pick::Edit(leftover, shell),
             words,
-            hooked,
+            shell,
         ),
         "persona" => crate::shellhook::say::pick(
             crate::shellhook::say::Pick::Persona(crate::app::new_session::Kind::Persona, args),
             words,
-            hooked,
+            shell,
         ),
         "preset" => crate::shellhook::say::pick(
             crate::shellhook::say::Pick::Persona(crate::app::new_session::Kind::Preset, args),
             words,
-            hooked,
+            shell,
         ),
         name if SKIPPED.contains(&name) => tell(&fill(&words.slash_skipped, &[("name", name)])),
         name => tell(&fill(&words.slash_pending, &[("name", name)])),
@@ -130,8 +129,9 @@ pub fn compact(commands: &crate::commands::Commands, line: &str) -> Option<Optio
 /// shell 里能接参数、不弹列表直接改的（2026-10-20 项目主人：「直接通过 cli 改也行啊」）。
 const WITH_ARGS: [&str; 5] = ["model", "theme", "effort", "persona", "preset"];
 
-/// `/tui`：问到终端会话，起同一个程序 `--resume` 它（全屏的终端界面），退出了回到 shell。
-fn open_tui(config: &crate::config::Config) -> io::Result<ExitCode> {
+/// `/tui`：问到这个终端的终端会话，起同一个程序 `--resume` 它（全屏的终端界面），退出了回到 shell。只问不开：这个终端还没
+/// 说过话的照常起全屏，不替它开终端会话（核心 T-22）。
+fn open_tui(config: &crate::config::Config, shell: Option<u32>) -> io::Result<ExitCode> {
     let (sender, incoming) = std::sync::mpsc::channel();
     let core = crate::core::spawn(
         config.layout.reconnect_ms,
@@ -141,13 +141,25 @@ fn open_tui(config: &crate::config::Config) -> io::Result<ExitCode> {
     let cwd = std::env::current_dir()
         .ok()
         .map(|d| d.to_string_lossy().into_owned());
-    core.send(crate::core::Command::Ask {
-        tag: 1,
-        method: "session.terminal",
-        params: serde_json::json!({ "cwd": cwd }),
-    });
+    let mut asked = crate::shellhook::say::terminal::Asked {
+        key: crate::shellhook::say::terminal::key(shell),
+        only_ask: true,
+        ..Default::default()
+    };
+    let ask = |asked: &crate::shellhook::say::terminal::Asked| {
+        core.send(crate::core::Command::Ask {
+            tag: 1,
+            method: "session.terminal",
+            params: asked.params(cwd.as_deref()),
+        });
+    };
+    ask(&asked);
     let session = loop {
         match incoming.recv_timeout(std::time::Duration::from_secs(15)) {
+            // T-22 以前的核心不认带键、只问不开的问法：照原来的再问一次。
+            Ok(crate::core::Update::Answer { tag: 1, result }) if asked.again(&result) => {
+                ask(&asked);
+            }
             Ok(crate::core::Update::Answer { tag: 1, result }) => match result {
                 Ok(found) => break found["session"].as_str().unwrap_or_default().to_string(),
                 Err(refusal) => return tell(&refusal.message),
@@ -159,9 +171,11 @@ fn open_tui(config: &crate::config::Config) -> io::Result<ExitCode> {
         }
     };
     drop(core);
-    let status = std::process::Command::new(std::env::current_exe()?)
-        .args(["--resume", &session])
-        .status()?;
+    let mut tui = std::process::Command::new(std::env::current_exe()?);
+    if !session.is_empty() {
+        tui.args(["--resume", &session]);
+    }
+    let status = tui.status()?;
     Ok(if status.success() {
         ExitCode::SUCCESS
     } else {
@@ -170,8 +184,12 @@ fn open_tui(config: &crate::config::Config) -> io::Result<ExitCode> {
 }
 
 /// 交给核心办一件（`/undo`、`/restore`、`/recap`），照它回的印。
-fn act(which: crate::shellhook::say::Act, words: &Words, hooked: bool) -> io::Result<ExitCode> {
-    crate::shellhook::say::pick(crate::shellhook::say::Pick::Run(which), words, hooked)
+fn act(
+    which: crate::shellhook::say::Act,
+    words: &Words,
+    shell: Option<u32>,
+) -> io::Result<ExitCode> {
+    crate::shellhook::say::pick(crate::shellhook::say::Pick::Run(which), words, shell)
 }
 
 /// 说一句为什么没办，退出码 1。

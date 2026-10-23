@@ -32,6 +32,10 @@ impl SessionsPick {
 }
 
 impl Picker for SessionsPick {
+    fn needs_session(&self) -> bool {
+        false
+    }
+
     fn start(&mut self, core: &Core) {
         core.send(Command::ListSessions);
     }
@@ -73,7 +77,10 @@ impl Picker for SessionsPick {
                     core.send(Command::Ask {
                         tag: POINT_TAG,
                         method: "session.set_terminal",
-                        params: json!({ "session": picked.session }),
+                        params: super::fresh::with_key(
+                            json!({ "session": picked.session }),
+                            turn.terminal.key.as_deref(),
+                        ),
                     });
                 }
                 let title = picked

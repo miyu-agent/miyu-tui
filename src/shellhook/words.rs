@@ -28,6 +28,8 @@ pub struct Words {
     pub no_program: String,
     /// PowerShell 的执行策略不让加载启动文件（`{policy}`）。
     pub ps_policy: String,
+    /// 这个终端还没和她说过话：斜杠命令没有会话可办。
+    pub no_session: String,
     /// 闲置久了换了新会话（`{ago}` 是隔了多久）。
     pub renewed: String,
     /// 隔了多久的写法。

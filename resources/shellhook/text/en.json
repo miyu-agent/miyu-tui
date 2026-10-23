@@ -12,6 +12,7 @@
   "status_stale": "{shell}: installed ({path}), but the program it calls, {program}, is gone; install again",
   "no_program": "Can't find the program to call from the script: {program}",
   "ps_policy": "PowerShell's execution policy is {policy}, so it won't load the profile and the hook has no effect: run Set-ExecutionPolicy -Scope CurrentUser RemoteSigned in PowerShell, then open a new window",
+  "no_session": "This terminal hasn't talked to her yet: say something first, then use this command",
   "renewed": "The last message was {ago} ago: started a new session so an expired cache doesn't cost extra",
   "units": {
     "minutes": "{n} min",

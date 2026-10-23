@@ -53,6 +53,10 @@ pub trait Picker {
     fn typing(&self) -> bool {
         false
     }
+    /// 要这个终端已经有终端会话（撤销、看用量这些）：还没说过话的不办（核心 T-22 只问不开）。列表、配色、帮助、`/new` 不用。
+    fn needs_session(&self) -> bool {
+        true
+    }
     /// 画成框：框上的字、最多 `max` 行。
     fn view(
         &self,
@@ -162,7 +166,8 @@ impl Session {
             if !matches!(end, Picked::Stay) {
                 break end;
             }
-            if turn.done {
+            // 这个终端还没说过话（只问不开）：用不着会话的照常办。
+            if turn.done && !(turn.terminal.none && !picker.needs_session()) {
                 break Picked::Done(None);
             }
             turn.look.apply(&self.config);

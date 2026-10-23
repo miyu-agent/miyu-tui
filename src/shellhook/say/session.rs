@@ -278,6 +278,17 @@ impl Session {
         turn.look.apply(&self.config);
     }
 
+    /// 印一行定下来的（前面空一行）。
+    ///
+    /// # Errors
+    ///
+    /// 写终端失败。
+    pub fn note(&mut self, line: Line<'static>) -> io::Result<()> {
+        let width = size().0;
+        let settled = self.painter.lines(width, &[Line::default(), line])?;
+        self.painter.frame(&settled, &[])
+    }
+
     /// 几行定下来的直接印（后台命令结束的那几行）。
     ///
     /// # Errors

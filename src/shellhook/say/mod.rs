@@ -17,7 +17,7 @@ pub mod report;
 mod session;
 mod settings;
 pub mod spool;
-mod terminal;
+pub mod terminal;
 mod turn;
 mod typing;
 mod unseen;
@@ -92,10 +92,16 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     turn.slash = !bare_redo
         && turn_text.starts_with('/')
         && crate::shellhook::slash::to_core(&session.config.commands, &turn_text);
+    // 这个终端自己的终端会话；不说话的（交给核心的斜杠命令、`/redo`）只问不开（核心 T-22）。
+    turn.terminal.key = terminal::key(ask.shell);
+    turn.terminal.only_ask = turn.slash || turn.compact.is_some() || bare_redo;
     turn.ask_terminal(&session.core);
     session.drive(&mut turn, |t| {
-        t.renewed.map(|since| renewed_line(since, words))
+        t.terminal.renewed.map(|since| renewed_line(since, words))
     })?;
+    if turn.terminal.none {
+        session.note(note(&words.no_session))?;
+    }
     session.finish()?;
     if let Some(path) = &ask.leftover
         && !turn.typed.is_empty()
@@ -165,13 +171,16 @@ pub enum Pick<'a> {
 /// # Errors
 ///
 /// 读配置、开原始模式、写终端失败。
-pub fn pick(which: Pick<'_>, words: &Words, hooked: bool) -> io::Result<ExitCode> {
+pub fn pick(which: Pick<'_>, words: &Words, shell: Option<u32>) -> io::Result<ExitCode> {
     let (mut session, look) = Session::start()?;
-    session.hooked = hooked;
+    session.hooked = shell.is_some();
     let cwd = std::env::current_dir()
         .ok()
         .map(|d| d.to_string_lossy().into_owned());
     let mut turn = Turn::new(String::new(), cwd, look);
+    // 斜杠命令不说话：只问这个终端的终端会话，还没说过话的不开（核心 T-22）。
+    turn.terminal.key = terminal::key(shell);
+    turn.terminal.only_ask = true;
     let mut picker: Box<dyn pick::Picker> = match which {
         Pick::Model(given) => Box::new(pick::model::ModelPick::new(given, words)),
         Pick::Theme(given) => Box::new(pick::theme::ThemePick::new(given, words)),
@@ -179,7 +188,10 @@ pub fn pick(which: Pick<'_>, words: &Words, hooked: bool) -> io::Result<ExitCode
         Pick::Sessions => Box::new(pick::sessions::SessionsPick::new(words)),
         Pick::Status => Box::new(pick::status::StatusShow::new()),
         Pick::Usage => Box::new(pick::usage::UsageShow::new()),
-        Pick::Fresh => Box::new(pick::fresh::FreshPick::new(words)),
+        Pick::Fresh => Box::new(pick::fresh::FreshPick::new(
+            words,
+            turn.terminal.key.clone(),
+        )),
         Pick::Help => Box::new(pick::help::HelpShow),
         Pick::Run(act) => Box::new(pick::run::RunPick::new(act, words)),
         Pick::Edit(leftover, shell) => Box::new(pick::edit::EditPick::new(leftover, shell)),
@@ -191,6 +203,9 @@ pub fn pick(which: Pick<'_>, words: &Words, hooked: bool) -> io::Result<ExitCode
         )),
     };
     session.pick(&mut turn, picker.as_mut())?;
+    if turn.terminal.none && picker.needs_session() {
+        session.note(note(&words.no_session))?;
+    }
     session.finish()?;
     Ok(ExitCode::SUCCESS)
 }
@@ -204,6 +219,14 @@ pub fn config() -> io::Result<crate::config::Config> {
     let table = crate::language::LanguageTable::builtin().map_err(io::Error::other)?;
     let language = table.detect(|name| std::env::var(name).ok());
     crate::config::Config::load(&language, true).map_err(io::Error::other)
+}
+
+/// 暗色的一行，缩进同她的回答。
+fn note(text: &str) -> Line<'static> {
+    Line::from(Span::styled(
+        format!("  {text}"),
+        Style::default().patch(crate::theme::dim()),
+    ))
 }
 
 /// 闲置久了换了新会话的那一行：暗色，印在这一轮前面（设计 22 第七节「终端会话」）。

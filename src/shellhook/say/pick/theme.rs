@@ -61,6 +61,10 @@ fn name(value: &str, config: &Config) -> String {
 }
 
 impl Picker for ThemePick {
+    fn needs_session(&self) -> bool {
+        false
+    }
+
     fn start(&mut self, _core: &Core) {}
 
     fn core(&mut self, _update: &Update, _turn: &Turn) {}

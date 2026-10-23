@@ -12,6 +12,7 @@
   "status_stale": "{shell}：インストール済み（{path}）ですが、呼び出すプログラム {program} がありません。もう一度インストールしてください",
   "no_program": "スクリプトから呼び出すプログラムが見つかりません：{program}",
   "ps_policy": "PowerShell の実行ポリシーが {policy} のため、プロファイルが読み込まれずフックは効きません。PowerShell で Set-ExecutionPolicy -Scope CurrentUser RemoteSigned を実行してから新しいウィンドウを開いてください",
+  "no_session": "この端末ではまだ彼女と話していません。先に何か話してからこのコマンドを使ってください",
   "renewed": "前回の発言は {ago}前です。キャッシュ切れによる余計な費用を防ぐため、新しいセッションを開始しました",
   "units": {
     "minutes": "{n} 分",

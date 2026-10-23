@@ -15,6 +15,10 @@ use crate::ui::Chrome;
 pub struct HelpShow;
 
 impl Picker for HelpShow {
+    fn needs_session(&self) -> bool {
+        false
+    }
+
     fn start(&mut self, _core: &Core) {}
 
     fn core(&mut self, _update: &Update, _turn: &Turn) {}

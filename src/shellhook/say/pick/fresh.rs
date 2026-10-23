@@ -20,18 +20,25 @@ pub struct FreshPick {
     /// 核心回了：留哪一行。
     done: Option<Line<'static>>,
     words: Words,
+    /// 这个终端的键（`terminal.rs`）：开的新会话只给这个终端。
+    terminal: Option<String>,
 }
 
 impl FreshPick {
-    pub fn new(words: &Words) -> Self {
+    pub fn new(words: &Words, terminal: Option<String>) -> Self {
         Self {
             done: None,
             words: words.clone(),
+            terminal,
         }
     }
 }
 
 impl Picker for FreshPick {
+    fn needs_session(&self) -> bool {
+        false
+    }
+
     fn start(&mut self, core: &Core) {
         let cwd = std::env::current_dir()
             .ok()
@@ -39,7 +46,10 @@ impl Picker for FreshPick {
         core.send(Command::Ask {
             tag: FRESH_TAG,
             method: "session.terminal",
-            params: json!({ "cwd": cwd, "fresh": true }),
+            params: with_key(
+                json!({ "cwd": cwd, "fresh": true }),
+                self.terminal.as_deref(),
+            ),
         });
     }
 
@@ -77,4 +87,12 @@ impl Picker for FreshPick {
     ) -> (Chrome, Vec<Line<'static>>) {
         (Chrome::new("", Vec::new()), Vec::new())
     }
+}
+
+/// 参数里写上这个终端的键（有的才写：没有的照账号原来那一个指针）。
+pub fn with_key(mut params: serde_json::Value, terminal: Option<&str>) -> serde_json::Value {
+    if let Some(key) = terminal {
+        params["terminal"] = serde_json::Value::from(key);
+    }
+    params
 }

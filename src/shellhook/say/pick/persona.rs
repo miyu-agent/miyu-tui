@@ -106,6 +106,10 @@ impl PersonaPick {
 }
 
 impl Picker for PersonaPick {
+    fn needs_session(&self) -> bool {
+        false
+    }
+
     fn start(&mut self, core: &Core) {
         core.send(match self.kind {
             Kind::Persona => Command::ListPersonas,
