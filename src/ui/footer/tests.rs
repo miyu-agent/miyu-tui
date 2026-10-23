@@ -36,11 +36,11 @@ fn nothing_on_the_right_while_everything_is_zero() {
     let config = Config::builtin().unwrap();
     let mut t = Transcript::default();
     assert!(
-        right(&t, &t.total, &config).is_empty(),
+        right(&t, &t.total, &config, None).is_empty(),
         "还没用过：右边整段空着"
     );
     t.context = 1800;
-    let cells = right(&t, &t.total, &config);
+    let cells = right(&t, &t.total, &config, None);
     assert_eq!(cells.len(), 1, "只有上下文有数");
 }
 

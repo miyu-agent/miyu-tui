@@ -346,6 +346,7 @@ impl App {
         };
         self.link.core.send(command);
         self.pick_mut(kind).chosen = Some(id);
+        self.preview_context();
     }
 
     /// 第一次引导刚走完：还没开会话的照引导里写成默认的人格、预设开这一个会话，开着的框收掉，不再问（蓝图「第一次
@@ -404,6 +405,7 @@ impl App {
     pub(super) fn forget_picks(&mut self) {
         self.talk.persona.chosen = None;
         self.talk.preset.chosen = None;
+        self.talk.preview = None;
         self.ask_next();
         self.link.core.send(Command::ListPersonas);
         self.link.core.send(Command::ListPresets);
