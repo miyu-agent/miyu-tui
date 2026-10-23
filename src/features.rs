@@ -132,7 +132,8 @@ pub fn tool_on(feature: &Feature, tool: &Tool) -> bool {
     feature.on && tool.on
 }
 
-/// 空格切一行要写的键：功能那一行切整个功能；工具切这一件，功能关着时就是打开这个功能（工具回到各自原来的开关）。
+/// 空格切一行要写的键：功能那一行切整个功能；工具切这一件。功能关着时打开这一件：功能打开，只开这一件，同一功能里别的
+/// 工具都关上（2026-10-23 项目主人：「激活读取会激活整个文件读写，不合理」，原来只写功能，工具回到各自原来的开关）。
 pub fn toggle(features: &[Feature], row: Row) -> Vec<(String, bool)> {
     match row {
         Row::Feature(i) => features
@@ -145,7 +146,15 @@ pub fn toggle(features: &[Feature], row: Row) -> Vec<(String, bool)> {
                 return Vec::new();
             };
             if !feature.on {
-                return vec![(format!("features.{}", feature.id), true)];
+                let mut out = vec![(format!("features.{}", feature.id), true)];
+                for (k, t) in feature.tools.iter().enumerate() {
+                    if k == j && !t.on {
+                        out.push((format!("tools.{}", t.name), true));
+                    } else if k != j && t.on {
+                        out.push((format!("tools.{}", t.name), false));
+                    }
+                }
+                return out;
             }
             feature
                 .tools

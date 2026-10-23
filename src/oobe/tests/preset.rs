@@ -120,9 +120,10 @@ fn a_custom_preset_is_named_toggled_created_and_made_the_default() {
         oobe.preset.features.iter().all(|f| !f.on),
         "都开着就全关功能"
     );
-    // 功能关着时在它的工具上按空格：打开这个功能。
+    // 功能关着时在它的工具上按空格：打开这个功能、只开这一件（2026-10-23 项目主人：「激活读取会激活整个文件读写」）。
     oobe.key(key(KeyCode::Char(' ')), t0, &texts);
     assert!(oobe.preset.features[0].on && !oobe.preset.features[1].on);
+    assert!(oobe.preset.features[0].tools[0].on && !oobe.preset.features[0].tools[1].on);
     for _ in 0..5 {
         oobe.key(key(KeyCode::Char('j')), t0, &texts);
     }
@@ -130,7 +131,7 @@ fn a_custom_preset_is_named_toggled_created_and_made_the_default() {
     let (tag, params) = find(&asks(&mut oobe), "preset.set");
     assert_eq!(
         params,
-        json!({"changes": [{"key": "preset.name", "value": "写代码"}, {"key": "features.memory", "value": false}]})
+        json!({"changes": [{"key": "preset.name", "value": "写代码"}, {"key": "tools.grep", "value": false}, {"key": "features.memory", "value": false}]})
     );
     oobe.answer(tag, Ok(json!({"preset": "preset-1"})), t0, &texts);
     let (tag, params) = find(&asks(&mut oobe), "config.set");
