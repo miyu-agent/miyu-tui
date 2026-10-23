@@ -54,7 +54,7 @@ pub fn lines(
     list: &[Persona],
     default: Option<&str>,
     (current, switching): (Option<&str>, bool),
-    dot: &str,
+    (dot, warn): (&str, &str),
     kind: Kind,
     selected: usize,
     texts: &Texts,
@@ -104,8 +104,14 @@ pub fn lines(
         .collect();
     let mut rows = rows;
     if switching {
-        let note = vec![Span::styled(texts.switch_note.clone(), theme::dim())];
+        // 黄字、前面一个警示记号（2026-10-23 项目主人：「加个什么符号警醒一下会不会好一些？或者这句话应该高亮？」）。
+        let note = vec![Span::styled(
+            format!("{warn}{}", texts.switch_note),
+            theme::warn(),
+        )];
         rows.insert(0, (None, panel::item(false, note, None, width)));
+        // 那一句和下面的列表之间空一行（2026-10-23 项目主人，人格框、预设框一样）。
+        rows.insert(1, (None, panel::item(false, Vec::new(), None, width)));
     }
     let rows = panel::fit(rows, Some(selected), max);
     let (map, lines) = rows.into_iter().unzip();
