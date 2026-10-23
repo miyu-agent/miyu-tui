@@ -171,6 +171,8 @@ pub enum Update {
     },
     /// 说的话、重做没发出去（核心拒了、附件传不上）：和 [`Update::Refused`] 一样的两样；先画进正文的那句要撤掉，
     /// 字放回输入框（「输入框」第 12、13 条）。
+    /// 回答里贴的图传不上（核心的原话）：回答照样交了，只是不带图（抽屉已经关了，不交她会一直等）。
+    AnswerFilesLost(String),
     Unsent {
         /// 原因码，例如 `not_redoable`。
         reason: Option<String>,

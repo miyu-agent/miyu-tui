@@ -105,6 +105,12 @@ pub struct Texts {
     pub mention: MentionTexts,
     /// `Ctrl+V` 读不到剪贴板时的提示。
     pub clipboard_unreadable: String,
+    /// 抽屉、历史搜索里 `Ctrl+V` 读不成字（多半剪贴板里是图片）：这里只收字。
+    pub clipboard_text_only: String,
+    /// 确认的抽屉里光标不在「不允许」上时贴图（核心 Q-A：只有拒绝能带图）。
+    pub attach_deny_only: String,
+    /// 回答里贴的图传不上，回答照样交了，`{message}` 是核心的原话。
+    pub answer_files_lost: String,
     /// `Ctrl+V` 读到空剪贴板时的提示。
     pub clipboard_empty: String,
     /// 空会话的首页上，输入框空着时固定写的提示（蓝图「输入框」第 9 条）。

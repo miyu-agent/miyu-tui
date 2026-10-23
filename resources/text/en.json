@@ -622,6 +622,9 @@
     "cancel_hint": "Press Esc again to cancel"
   },
   "clipboard_unreadable": "Can't read the clipboard: use your terminal's own paste (Ctrl+Shift+V in kitty)",
+  "clipboard_text_only": "Only text can be pasted here",
+  "attach_deny_only": "Images can only go with \"Don't allow\"",
+  "answer_files_lost": "The images could not be uploaded, so only the text was sent: {message}",
   "clipboard_empty": "The clipboard is empty",
   "paste_label": "[pasted {lines} line(s)]",
   "attach": {

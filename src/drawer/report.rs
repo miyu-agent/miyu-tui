@@ -9,8 +9,9 @@ use crate::local::home_short;
 pub enum Report {
     /// 提问答了：一道一行「问题：回答」，接在时间线里「提问」那一步下面（第 6 条，2026-10-11 项目主人）。
     Answers(Vec<String>),
-    /// 不允许：红 `✗` 一行。
-    Denied(String),
+    /// 不允许：红 `✗` 一行、点开看的全文。理由有几行的，那一行只写第一行接「…」，全文点开看（2026-10-22 项目主人：
+    /// 换行写成一串「↵」露在那一行里）；只有一行的全文是空的。
+    Denied(String, String),
     /// 什么都不留：允许了、取消了（取消一定顺带打断这一轮，那一步的结果和「已中断」已经说了，2026-10-11 项目主人）。
     Nothing,
 }
@@ -39,13 +40,25 @@ impl Drawer {
             }
             Outcome::Cancelled => Report::Nothing,
             Outcome::Decided(d) if d.decision != Decision::Deny => Report::Nothing,
-            Outcome::Decided(d) => {
-                let text = d.reason.as_ref().map_or_else(
-                    || texts.decisions[2].clone(),
-                    |r| texts.denied_with.replace("{reason}", &inline(r)),
-                );
-                Report::Denied(text)
-            }
+            Outcome::Decided(d) => match with_images(d.reason.as_deref(), &d.files).as_deref() {
+                Some(reason) if !reason.is_empty() => {
+                    let mut lines = reason.lines();
+                    let first = lines.next().unwrap_or_default().trim_end();
+                    let more = lines.next().is_some();
+                    let head = if more {
+                        format!("{first} {}", crate::sheet::ellipsis())
+                    } else {
+                        first.to_string()
+                    };
+                    let full = if more {
+                        reason.to_string()
+                    } else {
+                        String::new()
+                    };
+                    Report::Denied(texts.denied_with.replace("{reason}", &head), full)
+                }
+                _ => Report::Denied(texts.decisions[2].clone(), String::new()),
+            },
         }
     }
 
@@ -99,15 +112,35 @@ impl Drawer {
 }
 
 /// 什么都没答（补充不算）。
+/// 拒绝的理由接上贴的图的块（`[图片 1]`），都没有的是 `None`。
+fn with_images(reason: Option<&str>, files: &[super::Pasted]) -> Option<String> {
+    let mut text = reason.map(str::trim).unwrap_or_default().to_string();
+    for file in files {
+        if !text.is_empty() {
+            text.push(' ');
+        }
+        text.push_str(&file.label);
+    }
+    (!text.is_empty()).then_some(text)
+}
+
 fn empty(answer: &Answer) -> bool {
-    answer.picked.is_empty() && answer.text.is_none()
+    answer.picked.is_empty() && answer.text.is_none() && answer.files.is_empty()
 }
 
 /// 一道的回答写成一句：选了的用「、」接起来，再接自己写的话。
 pub fn said(answer: &Answer) -> String {
     let mut parts = answer.picked.clone();
     parts.extend(answer.text.as_deref().map(inline));
-    parts.join("、")
+    let mut said = parts.join("、");
+    // 贴的图接在后面写块上的字（`[图片 1]`）。
+    for file in &answer.files {
+        if !said.is_empty() {
+            said.push(' ');
+        }
+        said.push_str(&file.label);
+    }
+    said
 }
 
 /// 写成一行：换行写成 `↵`（照旧版；记号照主题的 `marks.enter`）。

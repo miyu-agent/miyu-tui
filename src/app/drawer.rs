@@ -18,7 +18,12 @@ impl App {
             return false;
         }
         let newline = self.talk.drawers.editing() && key.code == KeyCode::Char('j');
-        if key.modifiers.contains(KeyModifiers::CONTROL) && !newline {
+        // `Ctrl+↑` `Ctrl+↓`、`Ctrl+J` `Ctrl+K` 滚命令那一块（`drawer/keys.rs`）。
+        let scroll = matches!(
+            key.code,
+            KeyCode::Up | KeyCode::Down | KeyCode::Char('j' | 'k')
+        );
+        if key.modifiers.contains(KeyModifiers::CONTROL) && !newline && !scroll {
             return false;
         }
         let window = self.esc_window();
@@ -113,6 +118,7 @@ impl App {
                     session: owner.or_else(|| drawer.session.clone()),
                     call: drawer.call_id.clone(),
                     body,
+                    files: answer_files(outcome),
                 });
             }
             None => self.write_report(&drawer, outcome),
@@ -158,7 +164,21 @@ pub(super) fn report_into(
                 transcript.note(Kind::Answered, lines.join("\n"));
             }
         }
-        Report::Denied(text) => transcript.job(JobMark::Failed, text, String::new()),
+        Report::Denied(text, full) => transcript.job(JobMark::Failed, text, full),
         Report::Nothing => {}
+    }
+}
+
+/// 回答里贴的图：第几道的（拒绝的是外面的）、本机的文件，照贴的先后。
+fn answer_files(outcome: &Outcome) -> Vec<(Option<usize>, std::path::PathBuf)> {
+    match outcome {
+        Outcome::Answered(a) => a
+            .answers
+            .iter()
+            .enumerate()
+            .flat_map(|(i, answer)| answer.files.iter().map(move |f| (Some(i), f.file.clone())))
+            .collect(),
+        Outcome::Decided(d) => d.files.iter().map(|f| (None, f.file.clone())).collect(),
+        Outcome::Cancelled => Vec::new(),
     }
 }

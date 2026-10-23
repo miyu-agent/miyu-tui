@@ -3,7 +3,7 @@
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use super::{Answer, Decided, Decision, Drawer, Edit, Item, Outcome, Step};
+use super::{Answer, Decided, Decision, Drawer, Edit, Item, Outcome, Pasted, Step};
 
 impl Drawer {
     /// 按一下（抽屉开着时按键都先归它）。
@@ -12,6 +12,18 @@ impl Drawer {
         let typing = matches!(self.editing, Some(Edit::Other | Edit::Notes));
         if key.code != KeyCode::Esc || typing {
             self.armed = None;
+        }
+        // `Ctrl+↑` `Ctrl+↓` 滚命令那一块（写着字也行）；`Ctrl+J` `Ctrl+K` 没在写字时也滚，写字时 `Ctrl+J` 照旧换行
+        // （2026-10-22 项目主人：「ctrl+JK怎么不能滚」）。
+        let typing = self.editing.is_some();
+        let scroll = match key.code {
+            KeyCode::Up | KeyCode::Down => true,
+            KeyCode::Char('j' | 'k') => !typing,
+            _ => false,
+        };
+        if key.modifiers.contains(KeyModifiers::CONTROL) && scroll {
+            self.scroll_command(matches!(key.code, KeyCode::Down | KeyCode::Char('j')));
+            return Step::Stay;
         }
         if let Some(edit) = self.editing {
             return self.edit_key(edit, key);
@@ -41,6 +53,7 @@ impl Drawer {
             KeyCode::Left | KeyCode::BackTab => self.turn(false),
             KeyCode::Right | KeyCode::Tab => self.turn(true),
             KeyCode::Enter => return self.enter(),
+            KeyCode::Backspace => self.unattach(),
             KeyCode::Char(c) if plain => return self.char(c),
             _ => {}
         }
@@ -56,6 +69,39 @@ impl Drawer {
         } else if !on_deny && self.editing == Some(Edit::Reason) {
             self.editing = None;
         }
+    }
+
+    /// 贴一张图（核心 Q-A）：提问贴给光标所在的这一道（「确认」页不收），确认只有光标在「不允许」上时收；收不了的交回
+    /// `false`。能多选的当场重记这一道的回答（只贴了图也算答了）。
+    pub fn attach(&mut self, pasted: Pasted) -> bool {
+        let takes = if self.is_question() {
+            !self.on_review()
+        } else {
+            self.editing == Some(Edit::Reason)
+        };
+        if !takes {
+            return false;
+        }
+        self.images[self.tab].push(pasted);
+        if self.is_question() && self.multiple(self.tab) {
+            self.record();
+        }
+        true
+    }
+
+    /// 删这一页最后一张图（字删空了再按 `Backspace`、没在写字时按 `Backspace`）。
+    fn unattach(&mut self) {
+        if self.images.get_mut(self.tab).and_then(Vec::pop).is_some()
+            && self.is_question()
+            && self.multiple(self.tab)
+        {
+            self.record();
+        }
+    }
+
+    /// 已经贴了几张（几页加起来）：新贴的照它接着编号。
+    pub fn pasted_count(&self) -> usize {
+        self.images.iter().map(Vec::len).sum()
     }
 
     /// 点中第几项：等于移过去按 `Enter`（能多选的是勾上、取消）。
@@ -99,6 +145,8 @@ impl Drawer {
             KeyCode::Enter if newline => text.push('\n'),
             KeyCode::Char('j') if ctrl => text.push('\n'),
             KeyCode::Enter => return self.save(edit),
+            // 字删空了再按删最后一张图（2026-10-22 项目主人照推荐定）；补充的字不管图。
+            KeyCode::Backspace if text.is_empty() && edit != Edit::Notes => self.unattach(),
             KeyCode::Backspace => {
                 text.pop();
             }
@@ -118,13 +166,16 @@ impl Drawer {
                 call_id: self.call_id.clone(),
                 decision: Decision::Deny,
                 reason: (!typed.is_empty()).then_some(typed),
+                files: self.images[self.tab].clone(),
             })),
             // 能多选的：写好就算答了（同勾上，见 `toggle`），不往下走。
             Edit::Other if self.multiple(self.tab) => {
                 self.record();
                 Step::Stay
             }
-            Edit::Other if typed.is_empty() => Step::Stay,
+            // 没写字、也没贴图的不算答；只贴了图的算（核心 Q-A）。
+            Edit::Other if typed.is_empty() && self.images[self.tab].is_empty() => Step::Stay,
+            Edit::Other if typed.is_empty() => self.settle(Answer::default()),
             Edit::Other => self.settle(Answer {
                 text: Some(typed),
                 ..Answer::default()
@@ -209,6 +260,7 @@ impl Drawer {
                 call_id: self.call_id.clone(),
                 decision,
                 reason: None,
+                files: Vec::new(),
             })),
             // 能多选的：勾的时候已经记下了，`Enter` 只是往下走；一个没勾、也没写其他答案的这一道算没答（2026-10-20 项目主人：
             // 「我明明什么都没选，它怎么自动推荐了」；原来交光标所在的那一项）。
@@ -245,7 +297,8 @@ impl Drawer {
             .filter(|(_, on)| **on)
             .map(|(i, _)| label(i))
             .collect();
-        (!picked.is_empty() || text.is_some()).then_some(Answer {
+        let images = !self.images[self.tab].is_empty();
+        (!picked.is_empty() || text.is_some() || images).then_some(Answer {
             picked,
             text,
             ..Answer::default()

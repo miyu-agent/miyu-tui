@@ -622,6 +622,9 @@
     "cancel_hint": "もう一度 Esc でキャンセル"
   },
   "clipboard_unreadable": "クリップボードを読み取れません：ターミナル自体の貼り付けを使ってください（kitty では Ctrl+Shift+V）",
+  "clipboard_text_only": "ここに貼り付けられるのはテキストだけです",
+  "attach_deny_only": "画像を添えられるのは「許可しない」だけです",
+  "answer_files_lost": "画像をアップロードできなかったため、テキストだけを送りました：{message}",
   "clipboard_empty": "クリップボードは空です",
   "paste_label": "[{lines} 行を貼り付け済み]",
   "attach": {

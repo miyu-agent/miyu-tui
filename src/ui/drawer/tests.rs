@@ -279,3 +279,177 @@ fn a_long_path_is_clipped_before_its_mark_so_the_mark_stays() {
     assert!(row.ends_with("… 受保护"), "{row}");
     assert!(row.width() <= 40, "{row}");
 }
+
+/// 确认跑一条 `n` 行的命令（第几行写 `echo 第几行`），短标题「跑探针」。
+fn long_command(n: usize) -> Drawer {
+    let approval = serde_json::from_value(serde_json::json!({
+        "call_id": "c1", "access": "execute", "detail": {"tool": "shell"}
+    }))
+    .unwrap();
+    let mut d = Drawer::approval(None, approval);
+    let command = (1..=n)
+        .map(|i| format!("echo {i}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    d.command = Some((Some("跑探针".into()), command));
+    d
+}
+
+#[test]
+fn a_long_command_shows_a_window_of_it_and_scrolls() {
+    // 2026-10-22 项目主人：命令太长把问题顶没了，照选「全文放在可以滚的一块里」；看了样子又定「标题和提示在上、命令一块
+    // 缩进」：问题下面空一行，命令每行前面一根竖线，放不下的块下面写还有几行。
+    let mut d = long_command(30);
+    let shown = lines(&d, 60);
+    assert_eq!(shown[0], "跑探针", "{shown:#?}");
+    assert_eq!(shown[1], "", "问题和命令之间空一行：{shown:#?}");
+    let commands: Vec<&String> = shown.iter().filter(|l| l.contains("$ echo")).collect();
+    assert_eq!(commands.len(), 8, "只露 8 行：{shown:#?}");
+    assert_eq!(commands[0], "│ $ echo 1");
+    assert!(shown.iter().any(|l| l == "↓ 还有 22 行"), "{shown:#?}");
+    d.command_rows = 30;
+    for _ in 0..3 {
+        d.scroll_command(true);
+    }
+    let shown = lines(&d, 60);
+    assert!(shown.iter().any(|l| l == "│ $ echo 4"), "{shown:#?}");
+    assert!(!shown.iter().any(|l| l == "│ $ echo 3"), "{shown:#?}");
+    assert!(
+        shown.iter().any(|l| l == "↑ 上面还有 3 行 · ↓ 还有 19 行"),
+        "{shown:#?}"
+    );
+    assert!(
+        shown
+            .last()
+            .is_some_and(|l| l.contains("Ctrl+J/K 滚动命令")),
+        "能滚的按键提示里写：{shown:#?}"
+    );
+    for _ in 0..40 {
+        d.scroll_command(true);
+    }
+    assert_eq!(d.command_top, 22, "停在最后一段");
+    let short = long_command(3);
+    let shown = lines(&short, 60);
+    assert!(
+        !shown
+            .iter()
+            .any(|l| l.contains("还有") || l.contains("Ctrl+J/K")),
+        "放得下的不写：{shown:#?}"
+    );
+}
+
+#[test]
+fn a_wrapped_command_line_is_indented_under_the_dollar() {
+    let mut d = long_command(1);
+    d.command = Some((None, format!("probe {}", "x".repeat(30))));
+    let shown = lines(&d, 20);
+    let at = shown
+        .iter()
+        .position(|l| l.starts_with("│ $ probe"))
+        .unwrap();
+    assert!(shown[at + 1].starts_with("│   x"), "{shown:#?}");
+}
+
+#[test]
+fn ctrl_j_k_scroll_the_command_unless_writing_where_ctrl_j_is_a_new_line() {
+    // 同一天项目主人：「ctrl+JK怎么不能滚」。
+    let ctrl = |c| KeyEvent::new(KeyCode::Char(c), KeyModifiers::CONTROL);
+    let mut d = long_command(30);
+    d.command_rows = 30;
+    d.key(ctrl('j'));
+    d.key(ctrl('j'));
+    d.key(ctrl('k'));
+    assert_eq!(d.command_top, 1);
+    // 落到「不允许」上就在写理由：Ctrl+J 是换行。
+    press(&mut d, KeyCode::Down);
+    press(&mut d, KeyCode::Down);
+    assert_eq!(d.editing, Some(crate::drawer::Edit::Reason));
+    d.key(ctrl('j'));
+    assert_eq!((d.command_top, d.typed[0].as_str()), (1, "\n"));
+}
+
+#[test]
+fn a_reason_with_a_new_line_shows_on_two_rows() {
+    // 同一天项目主人：「理由不支持换行」（换行原来写成 `↲` 挤在一行里）。
+    let mut d = long_command(1);
+    press(&mut d, KeyCode::Down);
+    press(&mut d, KeyCode::Down);
+    d.typed[0] = "第一行\n第二行".into();
+    let v = view(&d, &texts(), &look(), 40, false);
+    let shown: Vec<String> = v.lines.iter().map(text).collect();
+    let at = shown
+        .iter()
+        .position(|l| l.ends_with("第一行"))
+        .expect("第一行接在不允许后面");
+    assert!(shown[at].contains("不允许"), "{shown:#?}");
+    // 比显示的列（中文一个字两列、三个字节），不比字节。
+    let col = |line: &str, word: &str| line.find(word).map(|i| line[..i].width());
+    assert_eq!(
+        col(&shown[at + 1], "第二行"),
+        col(&shown[at], "第一行"),
+        "对齐接着写：{shown:#?}"
+    );
+    assert_eq!(v.cursor.map(|(row, _)| row), Some(at + 1), "光标在最后一行");
+}
+
+#[test]
+fn a_short_drawer_keeps_the_confirm_title() {
+    // 同一天：放不下时问题行、「高危命令」不被顶掉。
+    let mut d = long_command(30);
+    if let crate::drawer::Ask::Approval(a) = &mut d.ask {
+        a.detail = serde_json::from_value(
+            serde_json::json!({"tool": "shell", "hazard": "delete_unresolved"}),
+        )
+        .ok();
+    }
+    let mut scroll = 0;
+    let v = fit(view(&d, &texts(), &look(), 60, false), 9, &mut scroll);
+    let shown: Vec<String> = v.lines.iter().map(text).collect();
+    assert_eq!(shown[0], "跑探针", "{shown:#?}");
+    assert_eq!(shown[1], "高危命令", "{shown:#?}");
+    assert!(
+        shown.iter().any(|l| l.contains("不允许")),
+        "选项还在：{shown:#?}"
+    );
+}
+
+#[test]
+fn a_short_drawer_shows_fewer_command_rows_but_keeps_the_blank_lines() {
+    // 2026-10-22 项目主人看了样子：「空行也没有」——抽屉放不下时原来先裁空行，命令照样露 8 行。
+    let mut d = long_command(30);
+    let mut term = ratatui::Terminal::new(ratatui::backend::TestBackend::new(60, 14)).unwrap();
+    let mut caret = crate::caret::Caret::default();
+    term.draw(|f| {
+        super::draw(f, f.area(), &mut d, &texts(), &look(), false, &mut caret);
+    })
+    .unwrap();
+    let buf = term.backend().buffer();
+    let shown: Vec<String> = (0..14)
+        .map(|y| {
+            let mut line = String::new();
+            let mut skip = 0;
+            for x in 0..60 {
+                if skip > 0 {
+                    skip -= 1;
+                    continue;
+                }
+                let symbol = buf[(x, y)].symbol();
+                skip = symbol.width().saturating_sub(1);
+                line.push_str(symbol);
+            }
+            line.trim_end().to_string()
+        })
+        .collect();
+    assert_eq!(shown[0], "跑探针", "{shown:#?}");
+    assert_eq!(shown[1], "", "问题和命令之间的空行留着：{shown:#?}");
+    let commands = shown.iter().filter(|l| l.contains("$ echo")).count();
+    assert!((2..8).contains(&commands), "少露几行命令：{shown:#?}");
+    let more = shown
+        .iter()
+        .position(|l| l.starts_with("↓ 还有"))
+        .expect("写还有几行");
+    assert_eq!(shown[more + 1], "", "命令和选项之间的空行留着：{shown:#?}");
+    assert!(d.command_scrolls(), "照收窄的窗口算能滚");
+}
+
+mod preview;

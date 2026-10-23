@@ -66,9 +66,10 @@ pub(super) fn read_with(list: &[(&str, &[&str])], wait: Duration) -> Result<Stri
         .ok_or(Unreadable)
 }
 
-/// 跑一个命令，读它的输出当字（照 UTF-8，认不出的字换成替代符）。
+/// 跑一个命令，读它的输出当字。不是 UTF-8 的（剪贴板里是图片：`wl-paste` 交出 PNG 的原始字节）当没读到，不硬转成一串
+/// 替代符（2026-10-22 项目主人在确认的理由里 `Ctrl+V`，贴进来一大片乱码）。
 fn run(cmd: &str, args: &[&str], wait: Duration) -> Option<String> {
-    run_bytes(cmd, args, wait).map(|out| String::from_utf8_lossy(&out).into_owned())
+    run_bytes(cmd, args, wait).and_then(|out| String::from_utf8(out).ok())
 }
 
 /// 跑一个命令，读它的输出；没装、失败、到点还没完的交回 `None`（到点的杀掉）。输出边跑边在另一个线程里读：

@@ -13,6 +13,7 @@ mod config_asks;
 mod deadline;
 mod diagrams;
 mod drawer;
+mod drawer_attach;
 mod dream;
 mod effort;
 mod frame;

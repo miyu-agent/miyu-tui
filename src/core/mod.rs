@@ -265,6 +265,9 @@ pub enum Command {
         call: String,
         /// `{"decision": …}` 或 `{"answers": […]}`。
         body: serde_json::Value,
+        /// 贴的图（核心 Q-A）：连接那头先 `blob.put`，`Some(i)` 的填进第 `i` 道回答的 `attachments`，`None` 的填进外面的
+        /// （拒绝的理由）。
+        files: Vec<(Option<usize>, std::path::PathBuf)>,
     },
     /// 不对着会话的一条请求，回应原样交回（[`Update::Answer`]）：配置页用（蓝图「配置页」第 23 条），不为每个方法再加一对命令。
     Ask {
