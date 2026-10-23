@@ -23,8 +23,8 @@ pub fn hex(seed: &str) -> Option<u32> {
 /// 照主色生成一套盖在 `base`（tokyonight 深色或浅色那一份）上，两个头同一套算法（2026-10-14 项目主人定统一，网页
 /// `theme-persona` 照这个改）：MD3 `SchemeContent`，对比度 0。不带色相的、强调色每一格照 `base` 那一格的亮度（tone），从
 /// 主色生成的几条色板里取同一亮度的颜色，明暗层次和 tokyonight 一样，只换色相（项目主人报：思考还是青的、深色的底太深）：
-/// 底、正文、面板、思考、粗体、行内代码、公式从中性色板，暗字、边框、引用、斜体、图里的字线、代码注释和运算符从中性变体，
-/// 强调色、链接、表头、热度图从主色，标签的底从次色，选中、图片从第三色。有含义的颜色（出错、增删、警告、成功、权限级别、
+/// 底、正文、面板、粗体、行内代码、公式从中性色板，暗字、边框、引用、斜体、图里的字线、代码注释和运算符从中性变体，
+/// 强调色、链接、表头、热度图从主色，标签的底、思考从次色，选中、图片从第三色。有含义的颜色（出错、增删、警告、成功、权限级别、
 /// 高亮、标题、代码着色其余几格）色相往主色最多转 15°（`harmonize`），认得出是哪一种；吉祥物也跟着换。
 pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
     let source = Rgb::from_u32(seed);
@@ -57,8 +57,10 @@ pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
         full: near(b.full),
         read_only: near(b.read_only),
         picked: like(third, b.picked),
-        thought: like(neutral, b.thought),
-        thought_hover: like(neutral, b.thought_hover),
+        // 思考取次色（2026-10-23 项目主人看了样板选的：原来中性色，比命令输出的暗字亮一档，看着像两种灰；次色带一点主题的
+        // 色相、不艳，和 tokyonight 里思考有自己的颜色一个意思）。
+        thought: like(second, b.thought),
+        thought_hover: like(second, b.thought_hover),
         shade: like(neutral, b.shade),
         chip_bg: like(second, b.chip_bg),
         chip_hover_bg: like(second, b.chip_hover_bg),
@@ -170,7 +172,12 @@ mod tests {
                     "{name} {what}和 tokyonight 一样亮"
                 );
             }
-            assert!(hct(green.thought).1 < 12.0, "{name} 思考是中性色");
+            let (thought, dim) = (hct(green.thought), hct(green.dim));
+            assert!(
+                thought.1 > dim.1,
+                "{name} 思考取次色：比暗字（中性变体）带色"
+            );
+            assert!(thought.1 < hct(green.accent).1, "{name} 思考不比强调色艳");
             let (error, before) = (hct(green.error), hct(base.error));
             let turned = (error.0 - before.0)
                 .abs()
