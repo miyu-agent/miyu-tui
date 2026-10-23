@@ -313,6 +313,6 @@ fn warn_old(shell: Shell, env: &impl Fn(&str) -> Option<String>, words: &Words) 
     }
 }
 
-fn no_home() -> io::Error {
+pub fn no_home() -> io::Error {
     io::Error::other("HOME is not set")
 }

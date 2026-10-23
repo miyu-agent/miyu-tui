@@ -8,7 +8,10 @@ mod doctor;
 mod install;
 mod paste;
 mod say;
+// 终端界面的第一次引导接上以前没人调（`setup.rs`）。
 mod script;
+#[allow(dead_code)]
+pub mod setup;
 mod shells;
 mod slash;
 mod words;
