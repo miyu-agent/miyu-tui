@@ -54,7 +54,7 @@ function global:__miyu_is_talk([string] $buffer) {
     return -not (Get-Command -Name $head.Text -ErrorAction Ignore)
 }
 
-# 回车：是话的当场交给她。命令行先清掉（PSReadLine 照它记着的重画），那句话照报错色重画在提示符后面，折下来的几行缩两格
+# 回车：是话的当场交给她。命令行先清掉，提示符最后一行和那句话自己重画，话照报错色，折下来的几行缩两格
 # （同 fish）；答完在新的一行重画提示符，提前敲的字放回命令行。
 Set-PSReadLineKeyHandler -Key Enter -BriefDescription MiyuAcceptLine -ScriptBlock {
     $buffer = $null
@@ -68,10 +68,17 @@ Set-PSReadLineKeyHandler -Key Enter -BriefDescription MiyuAcceptLine -ScriptBloc
     $redo = $global:__miyu_editing
     $global:__miyu_editing = $false
     [Microsoft.PowerShell.PSConsoleReadLine]::AddToHistory($buffer)
+    # 提示符最后一行自己重画（同 bash）：PSReadLine 2.0 清命令行时照字数不照格数，中文的话清不干净、光标停错格，头一个字
+    # 留着重了一个（2026-10-23 项目主人在 Windows Terminal 里看到「用 用 shell 跑」）。回到行首往下全清再画。
+    $prompt = ''
+    try {
+        $prompt = ([string](& $global:__miyu_original_prompt) -split "`r?`n")[-1]
+    } catch {
+    }
     [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
     $e = $global:__miyu_esc
     $lines = $buffer -split "`r?`n"
-    [Console]::Write("$e[31m" + $lines[0])
+    [Console]::Write("`r$e[0J" + $prompt + "$e[31m" + $lines[0])
     foreach ($line in ($lines | Select-Object -Skip 1)) {
         [Console]::Write("`n  " + $line)
     }
