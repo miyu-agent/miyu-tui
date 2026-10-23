@@ -14,6 +14,7 @@ pub mod nav;
 pub mod pages;
 pub mod popup;
 mod saving;
+pub mod service;
 pub mod texts;
 
 #[cfg(test)]
@@ -221,6 +222,7 @@ impl Settings {
         if let Some(got) = schema.filter(|_| self.more.schema.is_none()) {
             let mut schema = pages::schema::Schema::read(got);
             schema.split_own(&texts.more.own_groups, &texts.more.appearance);
+            service::add_row(&mut schema, &texts.more.service, self.more.service_known);
             self.more.schema = Some(schema);
         }
         if let Some(got) = presets.filter(|_| self.more.presets.is_none()) {

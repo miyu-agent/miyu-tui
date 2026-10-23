@@ -1376,6 +1376,7 @@
       "seed_unset": "Clear the persona's main color and go back to the avatar's first candidate",
       "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons", "keys": "Interaction"},
       "appearance": "Appearance",
+      "service": {"group": "Startup", "name": "Start the core at login", "enabling": "Turning on start at login…", "disabling": "Turning off start at login…", "enabled": "Starts at login: {file}", "disabled": "No longer starts at login", "failed": "Failed: {step}: {said}", "no_home": "Home directory not found", "windows": "Not available on Windows with MIYU_HOME set"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
       "unavailable": "Not installed",
       "custom_model": "Enter a model…",
