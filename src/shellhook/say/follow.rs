@@ -176,7 +176,8 @@ impl Follow {
     }
 }
 
-/// 给 shell 发 `SIGUSR1`：它回到提示符时来拿（fish 的脚本）。
+/// 给 shell 发 `SIGUSR1`：它回到提示符时来拿（fish 的脚本）。Windows 上没有信号，不发。
+#[cfg_attr(not(unix), allow(unused_variables))]
 fn signal(shell: u32) {
     #[cfg(unix)]
     if let Some(pid) = i32::try_from(shell)
