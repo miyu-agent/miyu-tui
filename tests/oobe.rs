@@ -333,7 +333,10 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
     tui.wait_for("全部功能");
     // 自定义在最后：回车开浮窗（光标在名字），回车填名字，关掉第一项功能，到最后一行「创建」回车建好。
     assert!(tui.shows("自选启用的功能"));
-    tui.key(b"\x1b[B");
+    // 出厂预设几个随核心变（P-16 上多了「最少」），往下挪到底就是自定义。
+    for _ in 0..8 {
+        tui.key(b"\x1b[B");
+    }
     tui.key(b"\r");
     tui.wait_for("输入名称");
     assert!(tui.shows("[*]"));
