@@ -262,7 +262,7 @@ pub struct Texts {
     /// 主菜单「预设」那一项和它底下那一行（决定开关哪些功能）。
     pub presets: [String; 2],
     /// 预设的窗：功能（`{on}/{all}`）、没安装。
-    pub preset_detail: [String; 2],
+    pub preset_detail: [String; 3],
     /// 来自哪一层：`default`、`system`、`personal`、`project`。
     pub origins: HashMap<String, String>,
     /// 开关的两种：开、关。

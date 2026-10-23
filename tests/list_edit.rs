@@ -55,6 +55,8 @@ fn long_talked(home: &Home) -> Tui {
 fn toggle_and_close(tui: &mut Tui, home: &Home) {
     tui.wait_for("功能");
     let before = text(home);
+    // 名称、描述（2026-10-23 加）下面才是功能。
+    tui.key(b"j");
     tui.key(b"j");
     tui.key(b" ");
     until(tui, "切掉的那一项写进文件", |_| {
@@ -150,6 +152,7 @@ fn saving_the_preset_in_use_from_config_does_not_ask() {
     tui.key(b"j");
     tui.key(b"\r");
     tui.wait_for("名称  全部功能");
+    tui.key(b"j");
     tui.key(b"j");
     tui.key(b" ");
     until(&mut tui, "存进文件", |_| file(&home).exists());

@@ -1109,7 +1109,8 @@
       ],
       "preset_detail": [
         "功能 {on}/{all}",
-        "未安装"
+        "未安装",
+        "描述"
       ],
       "origins": {
         "default": "默认",

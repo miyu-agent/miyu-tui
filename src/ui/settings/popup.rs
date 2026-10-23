@@ -72,13 +72,21 @@ pub fn draw(
             let hints = texts.more.hints[2].clone();
             floating::choose(&mut lines, choose, hints, width, Hit::PickRow);
         }
-        Popup::Line(edit) => super::more_popups::line(&mut lines, edit, texts),
+        // 预设的名称、描述就在详情窗那一行里改，不另开小窗（2026-10-23 项目主人：「回车直接编辑就好了」）。
+        Popup::Line(edit) => match &edit.target {
+            crate::settings::pages::target::Target::Preset(view) => {
+                super::more_popups::preset(&mut lines, view, page, texts, (width, Some(edit)));
+            }
+            _ => super::more_popups::line(&mut lines, edit, texts),
+        },
         Popup::Sheet(edit) => {
             let room = (width.saturating_sub(6), max_height.saturating_sub(6));
             super::more_popups::sheet(&mut lines, edit, texts, room);
         }
         Popup::Persona(view) => super::more_popups::persona(&mut lines, view, page, texts),
-        Popup::Preset(view) => super::more_popups::preset(&mut lines, view, page, texts),
+        Popup::Preset(view) => {
+            super::more_popups::preset(&mut lines, view, page, texts, (width, None));
+        }
         Popup::Dialogs(view) => super::dialog_popups::dialogs(&mut lines, view, texts, width),
         Popup::List(edit) => super::dialog_popups::list(&mut lines, edit, texts, width),
         Popup::Ticks(edit) => super::dialog_popups::ticks(&mut lines, edit, texts, width),

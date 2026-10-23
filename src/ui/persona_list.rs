@@ -87,9 +87,17 @@ pub fn lines(
                     let mark = (current.is_none() && default == Some(p.id.as_str()))
                         .then(|| Span::styled(texts.default_mark.clone(), theme::dim()));
                     let mut content = vec![Span::raw(p.label().to_string())];
-                    // 「无人格」那一行（编号空着）后面暗色写它意味着什么。
-                    if p.id.is_empty() {
-                        content.push(Span::styled(format!("  {}", texts.none_note), theme::dim()));
+                    // 预设后面暗色写它的描述（核心交回的 `summary`，照连接的语言挑好；2026-10-23 项目主人定，没有的不写；
+                    // 编号空着的「无工具」也照它）；人格框「无人格」那一行（编号空着）写它意味着什么。
+                    let note = if kind == Kind::Preset {
+                        p.summary.as_deref().filter(|s| !s.trim().is_empty())
+                    } else if p.id.is_empty() {
+                        Some(texts.none_note.as_str())
+                    } else {
+                        None
+                    };
+                    if let Some(note) = note {
+                        content.push(Span::styled(format!("  {note}"), theme::dim()));
                     }
                     (content, mark)
                 }
