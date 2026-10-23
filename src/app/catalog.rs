@@ -5,9 +5,9 @@
 
 use super::App;
 
-/// 被拒是因为当时的状态不对、不是打错了的原因码：打的那一行不放回输入框（2026-10-20 项目主人报：没在整理时打 `/dream stop`，
-/// 回车后又出现在输入框里）。
-const STATE_REFUSALS: &[&str] = &["not_dreaming"];
+/// 打的那一行不放回输入框的原因码：当时的状态不对的（2026-10-20 项目主人报：没在整理时打 `/dream stop`，回车后又出现在
+/// 输入框里），没有这个命令的（2026-10-23 项目主人：「输入不存在的命令不应该把命令再回填到输入框」）。再发一遍也一样。
+const STATE_REFUSALS: &[&str] = &["not_dreaming", "unknown_command"];
 use crate::core::{Command, CoreCommand};
 use crate::input::Draft;
 
