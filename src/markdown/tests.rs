@@ -420,3 +420,28 @@ fn other_ways_of_writing_display_math_are_figures_too() {
         "{inline}"
     );
 }
+
+#[test]
+fn local_paths_in_text_and_inline_code_open_but_keep_their_look() {
+    // 第 10a 条（2026-10-22 项目主人）：文件真在的路径点了能开；样子不变，悬停才加下划线。
+    let dir = std::env::temp_dir().join(format!("miyu-tui-md-render-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("b.rs");
+    std::fs::write(&file, "x").unwrap();
+    let file = file.canonicalize().unwrap().display().to_string();
+    let drawn = draw(&format!("改了 {file}，见 `{file}:3`。"), 200);
+    let links: Vec<_> = drawn[0].folded.links.iter().map(|l| l.2.clone()).collect();
+    assert_eq!(links, [file.clone(), file.clone()]);
+    let plain = draw("改了 那个文件，见 `代码`。", 200);
+    let styles = |d: &[MdLine]| -> Vec<_> { d[0].folded.spans.iter().map(|s| s.style).collect() };
+    assert_eq!(
+        styles(&drawn)
+            .into_iter()
+            .collect::<std::collections::HashSet<_>>(),
+        styles(&plain)
+            .into_iter()
+            .collect::<std::collections::HashSet<_>>(),
+        "不另上色"
+    );
+    std::fs::remove_dir_all(&dir).unwrap();
+}

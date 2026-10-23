@@ -14,6 +14,7 @@ mod kit;
 mod layout;
 mod links;
 mod math;
+mod paths;
 mod pieces;
 mod stack;
 mod table;
@@ -160,7 +161,7 @@ impl Renderer<'_> {
                 Some((_, body)) => body.push_str(&text),
                 None => self.text(&text),
             },
-            Event::Code(text) => self.push(&text, theme::md_code()),
+            Event::Code(text) => self.pathed(&text, theme::md_code()),
             Event::SoftBreak | Event::HardBreak => self.line_break(),
             Event::Html(html) => self.html(&html, true),
             Event::InlineHtml(html) => self.html(&html, false),
@@ -352,13 +353,29 @@ impl Renderer<'_> {
         }
         let mut at = 0;
         for (start, end) in links::bare_urls(text) {
-            self.push(&text[at..start], Style::new());
+            self.pathed(&text[at..start], Style::new());
             let url = &text[start..end];
             self.pieces
                 .push(Piece::linked(url, style.patch(theme::md_url()), url));
             at = end;
         }
-        self.push(&text[at..], Style::new());
+        self.pathed(&text[at..], Style::new());
+    }
+
+    /// 同 [`Self::push`]，在链接外面的本机路径（文件真在的）记成链接，样子不变、悬停才加下划线（第 10a 条）。
+    fn pathed(&mut self, text: &str, extra: Style) {
+        if !self.link_starts.is_empty() {
+            return self.push(text, extra);
+        }
+        let style = self.style().patch(extra);
+        let mut at = 0;
+        for (start, end, file) in paths::local_paths(text) {
+            self.push(&text[at..start], extra);
+            self.pieces
+                .push(Piece::linked(&text[start..end], style, &file));
+            at = end;
+        }
+        self.push(&text[at..], extra);
     }
 
     /// 收一段字，样子叠在当前的行内样子上；在链接里的记着地址。

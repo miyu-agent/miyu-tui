@@ -54,6 +54,8 @@ pub struct Summary {
 pub struct Timeline {
     /// 哪几件工具算哪一类（`command`、`edit`），没写的算工具。图标在 `resources/icons/`（蓝图「图标」）。
     pub kinds: HashMap<String, ToolKind>,
+    /// 对象是本机路径的几件工具：标题里的路径文件真在的，点了用系统的打开方式开（蓝图「时间线」第 7a 条）。
+    pub path_tools: Vec<String>,
     /// 参数里会话编号叫什么：带着它的一步，对象后面跟「会话 短编号」（蓝图「时间线」第 8 条，核心 C-4 的 `history`）。
     pub session_arg: String,
     /// 转圈的一帧帧。
