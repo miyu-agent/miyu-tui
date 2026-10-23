@@ -115,6 +115,18 @@ impl App {
     /// 按键先归面板、框下面那一行的按钮、子代理状态行（第 2–6 条）；归了它们返回 `true`。
     /// 输入框空着时按 `↓`，焦点往下走。
     pub(super) fn jobs_key(&mut self, key: KeyEvent, menu_open: bool) -> bool {
+        // 新会话开头那个换掉输入框的人格、预设框：没有输入框，`Ctrl+C`、`Ctrl+D` 都直接退出，`Ctrl+Z` 照常挂起（2026-10-23
+        // 项目主人：「这个界面我期望能 ctrl+C/Ctrl+D 退出 tui」）。
+        if matches!(self.boxes.panel, Some(Panel::Pick { .. }))
+            && super::new_session::start_pick(&self.talk).is_some()
+            && super::keys::leaves(&key)
+        {
+            if key.code == KeyCode::Char('z') {
+                return false;
+            }
+            self.quit = true;
+            return true;
+        }
         if let Some(panel) = self.boxes.panel {
             self.panel_key(panel, key);
             return true;

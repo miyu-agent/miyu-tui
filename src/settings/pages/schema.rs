@@ -113,13 +113,15 @@ const OWN: &str = "tui.";
 
 /// 终端自己的配置项里另分一组的：键的开头、组的编号、放哪一页（「配置页」第 33 条，2026-10-11 项目主人：时间线单独一个
 /// 标题，吉祥物也分出去；2026-10-14：主题、吉祥物、图标单开一页「外观」，时间线留在通用）。组照这个先后排。
-const OWN_GROUPS: [(&str, &str, &str); 6] = [
+const OWN_GROUPS: [(&str, &str, &str); 7] = [
     ("tui.look", "tui.look", APPEARANCE),
     ("tui.theme", "tui.theme", APPEARANCE),
     ("tui.mascot", "tui.mascot", APPEARANCE),
     ("tui.icons", "tui.icons", APPEARANCE),
     ("tui.timeline_", "tui.timeline", GENERAL),
     ("tui.keys", "tui.keys", GENERAL),
+    // 新会话不问人格、预设（2026-10-22）：也是怎么操作的事，跟按键模式一组。
+    ("tui.skip_pick", "tui.keys", GENERAL),
 ];
 
 /// 另分的那几组的名字（`text/zh.json` 的 `settings.more.own_groups`）。
@@ -254,7 +256,8 @@ impl Schema {
             return;
         };
         let here = self.groups[at].page.clone();
-        for (n, (prefix, id, page)) in OWN_GROUPS.iter().enumerate() {
+        let mut added = 0;
+        for (prefix, id, page) in &OWN_GROUPS {
             let page = if *page == APPEARANCE {
                 APPEARANCE
             } else {
@@ -264,12 +267,17 @@ impl Schema {
                 item.group = (*id).to_string();
                 item.page = page.to_string();
             }
+            // 几样并进同一组的（交互：按键模式、不问人格预设）只开一组。
+            if self.groups.iter().any(|g| g.id == *id) {
+                continue;
+            }
             let group = Group {
                 id: (*id).to_string(),
                 name: names.name(id).to_string(),
                 page: page.to_string(),
             };
-            self.groups.insert(at + 1 + n, group);
+            self.groups.insert(at + 1 + added, group);
+            added += 1;
         }
         let after = self.pages.iter().position(|(id, _)| id == GENERAL);
         let page = (APPEARANCE.to_string(), appearance.to_string());
