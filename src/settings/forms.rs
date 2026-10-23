@@ -3,7 +3,7 @@
 
 mod apply;
 
-pub use apply::{apply, name_ok};
+pub use apply::{apply, name_ok, reserved};
 use serde_json::Value;
 
 use super::data::{Data, Model};
@@ -262,10 +262,8 @@ pub fn provider(view: &Data, data: &Data, draft: &Draft, id: Option<&str>) -> Fo
     let p = id.and_then(|id| view.provider(id));
     let table = id.map(keys::provider).unwrap_or_default();
     let written = |item: &str| draft.value(&format!("{table}.{item}"), data).cloned();
-    let id_row = match id {
-        Some(id) => Row::new(Field::Id, Val::Fixed(id.to_string())),
-        None => Row::text(Field::Id, ""),
-    };
+    // 已有的也能改（核心 8-34 `provider.rename` 一次改完引用；2026-10-22 项目主人：「最好是能改，方便一些」）。
+    let id_row = Row::text(Field::Id, id.unwrap_or_default());
     let name = written("name").and_then(|v| v.as_str().map(str::to_string));
     let base_url = written("base_url").map(|v| match v.get("env").and_then(Value::as_str) {
         Some(env) => format!("env:{env}"),
@@ -327,7 +325,11 @@ pub fn provider(view: &Data, data: &Data, draft: &Draft, id: Option<&str>) -> Fo
             },
         ),
     ];
-    Form::new(Target::Provider(id.map(str::to_string)), rows, Vec::new())
+    let mut form = Form::new(Target::Provider(id.map(str::to_string)), rows, Vec::new());
+    if id.is_some() {
+        form.focus = Focus::Row(1); // 已有的先停在显示名称，编号往上挪一格才改得到（免得手快改到）。
+    }
+    form
 }
 
 /// 编辑一个模型（`model` 是 `None` 的新加）。

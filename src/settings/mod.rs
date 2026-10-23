@@ -84,6 +84,8 @@ enum Waiting {
     Secret(String, String),
     /// 存配置。
     Save,
+    /// 供应商改编号（`provider.rename`）。
+    Rename,
     /// 测一家：显示名。
     Test(String),
     /// 重取一家的模型列表（`model.list` 带 `refresh`）：编号、显示名。
@@ -288,6 +290,7 @@ impl Settings {
             Waiting::Load(which) => self.loaded(which, result.ok()),
             Waiting::Secret(provider, name) => self.secret_saved(provider, name, result),
             Waiting::Save => self.saved(result, texts),
+            Waiting::Rename => self.renamed(result, texts),
             Waiting::Test(name) => self.tested(&name, result, texts),
             Waiting::Refresh(id, name) => self.refreshed(&id, &name, result, texts),
             more @ (Waiting::Schema

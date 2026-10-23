@@ -28,7 +28,20 @@ fn provider(
     draft: &mut Draft,
 ) -> Result<String, Refused> {
     let id = match id {
-        Some(id) => id.to_string(),
+        Some(id) => {
+            // 改了编号：先照旧编号记别的改动，存完再改编号（`saving.rs`）；交回新编号，存完选中它。
+            let typed = form.text(Field::Id).trim().to_string();
+            if typed != id {
+                if !name_ok(&typed) {
+                    return Err(("bad_id", typed));
+                }
+                if view.provider(&typed).is_some() {
+                    return Err(("taken", typed));
+                }
+                draft.rename = Some((id.to_string(), typed));
+            }
+            id.to_string()
+        }
         None => {
             let id = form.text(Field::Id).trim().to_string();
             if !name_ok(&id) {
@@ -82,7 +95,7 @@ fn provider(
             draft.set_secret(&id, pasted);
         }
     }
-    Ok(id)
+    Ok(draft.rename.as_ref().map_or(id, |(_, to)| to.clone()))
 }
 
 fn model(
@@ -272,14 +285,24 @@ fn name_new(form: &Form) -> bool {
     form.target == Target::Pool(None)
 }
 
-/// 名字的写法（`config.md`）：小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符。
-/// 编号的写法（和核心的一样）：小写字母打头，只有小写字母、数字、`-`、`_`，最长 64 个字符。引导里起编号也照它。
+/// 供应商、池的编号的写法（核心 `miyu_config::key::ID`）：小写字母打头，只有小写字母、数字、`-`、`_`，最长 32 个字符，
+/// 不是 Windows 的保留名（核心拿它当文件名）。引导里起编号也照它。
 pub fn name_ok(name: &str) -> bool {
-    name.len() <= 64
+    name.len() <= 32
+        && !reserved(name)
         && name.starts_with(|c: char| c.is_ascii_lowercase())
         && name
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
+}
+
+/// Windows 上建不了同名文件的名字（核心 `miyu_config::key` 的同一张表）。
+pub fn reserved(name: &str) -> bool {
+    const NAMES: [&str; 22] = [
+        "con", "nul", "aux", "prn", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8",
+        "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+    ];
+    NAMES.contains(&name)
 }
 
 fn text_or_unset(draft: &mut Draft, data: &Data, key: &str, text: &str) {

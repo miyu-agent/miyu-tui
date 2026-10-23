@@ -33,6 +33,8 @@ pub struct Draft {
     pub new_pools: Vec<String>,
     /// 这一份写系统配置（不是个人设置）：改只有系统配置这一层的项时设上，存完、扔掉时回到个人设置。
     pub system: bool,
+    /// 供应商改编号（旧、新）：别的改动照旧编号存完再改（`provider.rename`，`saving.rs`）。
+    pub rename: Option<(String, String)>,
 }
 
 impl Draft {
@@ -123,6 +125,16 @@ impl Draft {
     /// 什么都没改。
     pub fn is_empty(&self) -> bool {
         self.changes.is_empty()
+            && self.secrets.is_empty()
+            && self.new_providers.is_empty()
+            && self.new_pools.is_empty()
+            && self.rename.is_none()
+    }
+
+    /// 只改了供应商编号，别的什么都没动（`saving.rs` 直接改编号，不发空的 `config.set`）。
+    pub fn only_renames(&self) -> bool {
+        self.rename.is_some()
+            && self.changes.is_empty()
             && self.secrets.is_empty()
             && self.new_providers.is_empty()
             && self.new_pools.is_empty()
