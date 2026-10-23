@@ -32,6 +32,21 @@ impl Drawer {
             .modifiers
             .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT);
         let count = self.items(self.tab).len();
+        // 提问换了选项、换了页：预览从头露起（命令那一块照旧，`Ctrl+J` `Ctrl+K` 滚的是同一个）。
+        if self.command.is_none()
+            && matches!(
+                key.code,
+                KeyCode::Up
+                    | KeyCode::Down
+                    | KeyCode::Left
+                    | KeyCode::Right
+                    | KeyCode::Tab
+                    | KeyCode::BackTab
+                    | KeyCode::Char('j' | 'k' | 'h' | 'l')
+            )
+        {
+            self.command_top = 0;
+        }
         // 没在写字：认 vim 的 `h` `j` `k` `l`，同引导（「确认和提问的抽屉」第 4 条，2026-10-11 项目主人）。
         let code = match key.code {
             KeyCode::Char('j') if plain => KeyCode::Down,

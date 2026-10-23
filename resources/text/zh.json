@@ -565,6 +565,11 @@
       "不允许"
     ],
     "reason_hint": "理由（可选）",
+    "command_above": "↑ 上面还有 {n} 行",
+    "command_below": "↓ 还有 {n} 行",
+    "keys_scroll": "Ctrl+J/K 滚动命令",
+    "keys_scroll_preview": "Ctrl+J/K 滚动预览",
+    "preview_below": "下面还有 {n} 行",
     "access": {
       "execute": "运行一条命令",
       "write": "写入 {count} 个文件",

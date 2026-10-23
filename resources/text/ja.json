@@ -565,6 +565,11 @@
       "許可しない"
     ],
     "reason_hint": "理由を入力（任意）",
+    "command_above": "↑ 上にあと {n} 行",
+    "command_below": "↓ あと {n} 行",
+    "keys_scroll": "Ctrl+J/K コマンドをスクロール",
+    "keys_scroll_preview": "Ctrl+J/K プレビューをスクロール",
+    "preview_below": "下にあと {n} 行",
     "access": {
       "execute": "コマンドを実行します",
       "write": "{count} 個のファイルへの書き込みを求めています",

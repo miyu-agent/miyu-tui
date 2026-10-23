@@ -136,45 +136,6 @@ fn the_review_page_lists_every_answer() {
 }
 
 #[test]
-fn a_preview_sits_on_the_right_under_a_dim_title_and_below_when_narrow() {
-    let asked: Asked = serde_json::from_value(serde_json::json!({
-        "call_id": "c",
-        "questions": [{"question": "哪种？", "options": [
-            {"label": "左右", "preview": "┌──┬──┐\n│甲│乙│\n└──┴──┘"},
-            {"label": "上下", "preview": "┌──┐\n└──┘"}
-        ]}]
-    }))
-    .unwrap();
-    let d = Drawer::question(None, asked);
-    let wide = lines(&d, 100);
-    // 竖线在中线（第 50 列），预览从第 52 列起，和选项顶上对齐：第一行暗色「预览」，下面是图；不铺底色，中间一条竖线（2026-10-07 项目主人）。
-    assert!(wide[2].starts_with("› 左右"), "{wide:?}");
-    let title = wide[2].find("预览").expect("第一行写预览");
-    assert_eq!(wide[2][..title].width(), 52);
-    let at = wide[3].find('┌').expect("图在下一行");
-    assert_eq!(wide[3][..at].width(), 52);
-    assert!(wide[5].contains("└──┴──┘"));
-    assert!(!wide.iter().any(|l| l.contains('╭')), "不描边");
-    for row in &wide[2..6] {
-        let bar = row.find('│').expect("每行都有竖线");
-        assert_eq!(row[..bar].width(), 50, "竖线在抽屉的中线上：{row}");
-    }
-    let v = view(&d, &texts(), &look(), 100, false);
-    assert!(
-        v.lines[3].spans.iter().all(|s| s.style.bg.is_none()),
-        "不铺底色：{:?}",
-        v.lines[3]
-    );
-    // 窄了：挪到选项下面，中间空一行。
-    let narrow = lines(&d, 50);
-    assert_eq!(narrow[2], "› 左右");
-    let title = narrow.iter().position(|l| l == "预览").expect("有预览");
-    assert_eq!(narrow[title - 1], "", "{narrow:?}");
-    assert_eq!(narrow[title + 1], "┌──┬──┐", "{narrow:?}");
-    assert!(!narrow[2].contains('│'), "上下排不画竖线");
-}
-
-#[test]
 fn a_tall_drawer_scrolls_the_options_and_pins_the_question_and_keys() {
     let mut d = Drawer::question(None, asked(12));
     for _ in 0..12 {

@@ -6,7 +6,7 @@ mod command;
 mod items;
 mod preview;
 
-pub use preview::Look as PreviewLook;
+pub use preview::{Look as PreviewLook, wanted as preview_wanted};
 
 #[cfg(test)]
 mod tests;
@@ -101,6 +101,17 @@ fn keys(d: &Drawer, texts: &Texts) -> String {
     };
     if d.has_review() {
         keys.push_str(&texts.keys_tabs);
+    }
+    // 命令、预览放不下：第一项后面插「Ctrl+J/K 滚动命令」「Ctrl+J/K 滚动预览」。
+    if d.command_scrolls() {
+        let sep = " · ";
+        let at = keys.find(sep).unwrap_or(keys.len());
+        let scroll = if d.command.is_some() {
+            &texts.keys_scroll
+        } else {
+            &texts.keys_scroll_preview
+        };
+        keys.insert_str(at, &format!("{sep}{scroll}"));
     }
     keys
 }
