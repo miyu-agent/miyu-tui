@@ -1,14 +1,43 @@
 //! 用量那一行要的小工具：token 数写短、算百分比。
 
-/// 把 token 数写短：`950`、`12.3k`、`1.4M`。整数不带 `.0`。
+/// 把 token 数写短：`950`、`12.3k`、`1.4M`、`1B`。整数不带 `.0`。
 pub fn short(n: u64) -> String {
     let (value, unit) = match n {
         0..1_000 => return n.to_string(),
         1_000..1_000_000 => (n as f64 / 1e3, "k"),
-        _ => (n as f64 / 1e6, "M"),
+        1_000_000..1_000_000_000 => (n as f64 / 1e6, "M"),
+        _ => (n as f64 / 1e9, "B"),
     };
     let text = format!("{value:.1}");
     format!("{}{unit}", text.strip_suffix(".0").unwrap_or(&text))
+}
+
+/// 一段字大约多少 token。思考中那一行用：供应商一轮结束才报用量，这时只能估。不带分词表，照字分几类数：汉字 0.7 个，
+/// 数字、别的非 ASCII 字各 1 个，英文词每 7 个字母 1 个，ASCII 符号半个，空白不算。
+///
+/// 2026-10-24 拿 DeepSeek 8 段思考（中文、日文、英文、代码、数学、逻辑）的实报量定的：8 段都在实报的 ±13% 以内，
+/// 每段拿另外 7 段定的数去估，最差差 28%。核心那种 4 个字节一个（`miyu-kernel` 的 `estimate.rs`）最差差 47%：
+/// 数学推理里数字、符号多，只估到一半。
+pub fn estimate_tokens(text: &str) -> u64 {
+    // 以十分之一个 token 为单位累加。
+    let word = |letters: u64| letters.div_ceil(7) * 10;
+    let (mut tenths, mut letters) = (0u64, 0u64);
+    for c in text.chars() {
+        if c.is_ascii_alphabetic() {
+            letters += 1;
+            continue;
+        }
+        tenths += word(letters);
+        letters = 0;
+        tenths += match c {
+            _ if c.is_ascii_whitespace() => 0,
+            _ if c.is_ascii_digit() => 10,
+            _ if c.is_ascii() => 5,
+            '\u{2e80}'..='\u{9fff}' | '\u{f900}'..='\u{ffef}' => 7,
+            _ => 10,
+        };
+    }
+    (tenths + word(letters)).div_ceil(10)
 }
 
 /// 三位一撇：`3120` 写成 `3,120`（压缩中收到的字数，照 `miyu ask`）。
@@ -78,6 +107,21 @@ mod tests {
         assert_eq!(short(12_345), "12.3k");
         assert_eq!(short(1_000_000), "1M");
         assert_eq!(short(1_400_000), "1.4M");
+        assert_eq!(short(1_000_000_000), "1B");
+        assert_eq!(short(2_500_000_000), "2.5B");
+    }
+
+    #[test]
+    fn tokens_are_estimated_by_kind_of_character() {
+        use super::estimate_tokens;
+        assert_eq!(estimate_tokens(""), 0);
+        assert_eq!(estimate_tokens("  \n"), 0, "空白不算");
+        assert_eq!(estimate_tokens("think"), 1, "英文词每 7 个字母一个");
+        assert_eq!(estimate_tokens("tokenizers"), 2);
+        assert_eq!(estimate_tokens("the cat sat"), 3);
+        assert_eq!(estimate_tokens("1+2=3"), 4, "数字各一个，符号各半个");
+        assert_eq!(estimate_tokens("思考一下"), 3, "汉字各 0.7 个，零头进一");
+        assert_eq!(estimate_tokens("é"), 1, "别的非 ASCII 字各一个");
     }
 
     #[test]
