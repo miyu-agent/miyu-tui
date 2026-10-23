@@ -167,15 +167,39 @@ pub(super) fn preset(lines: &mut Lines, view: &PresetView, page: &Settings, text
     // 存不进去的原话写在窗里（读成了详情以后 `error` 只管这个）。
     lines.error = view.error.clone();
     let at = fields(detail).get(view.cursor).copied();
-    let none = String::new;
-    lines.body.push(Body {
-        line: Line::from(vec![
-            Span::styled(format!("  {}  ", words.detail[0]), theme::dim()),
-            Span::raw(detail.name.clone().unwrap_or_else(none)),
-        ]),
-        focused: at == Some(Field::Name),
-        hit: None,
-    });
+    // 名字、描述两行，名字那一栏对齐（描述 2026-10-23 加，没写的空着）。正在改的那一行写编辑器里的字、光标停在里面。
+    let rows = [
+        (Field::Name, "preset.name", &words.detail[0], &detail.name),
+        (
+            Field::Summary,
+            "preset.summary",
+            &words.preset_detail[2],
+            &detail.summary,
+        ),
+    ];
+    let label_w = rows.iter().map(|(_, _, n, _)| n.width()).max().unwrap_or(0);
+    for (field, key, name, value) in rows {
+        let pad = " ".repeat(label_w.saturating_sub(name.width()));
+        let lead = format!("  {name}{pad}  ");
+        let editing = inline.filter(|edit| edit.key == key);
+        let text = match editing {
+            Some(edit) => {
+                let typed = edit.editor.text();
+                let before = &typed[..edit.editor.cursor().min(typed.len())];
+                let col = lead.width() + before.width();
+                lines.caret = Some((lines.body.len(), u16::try_from(col).unwrap_or(0)));
+                lines.error = edit.error.clone();
+                lines.hints = words.hints[3].clone();
+                typed.to_string()
+            }
+            None => value.clone().unwrap_or_default(),
+        };
+        lines.body.push(Body {
+            line: Line::from(vec![Span::styled(lead, theme::dim()), Span::raw(text)]),
+            focused: at == Some(field) || editing.is_some(),
+            hit: None,
+        });
+    }
     // 功能：照旧版一行一个开关，空格、Tab 切（2026-10-08 项目主人）；工具平铺在功能下面，一件一行（2026-10-09）。
     let installed: Vec<_> = detail.features.iter().filter(|f| f.installed).collect();
     let on = installed.iter().filter(|f| f.on).count();

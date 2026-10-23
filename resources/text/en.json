@@ -1109,7 +1109,8 @@
       ],
       "preset_detail": [
         "Features {on}/{all}",
-        "Not installed"
+        "Not installed",
+        "Description"
       ],
       "origins": {
         "default": "default",

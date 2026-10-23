@@ -33,6 +33,8 @@ pub struct EditTexts {
 pub enum Field {
     /// 名字。
     Name,
+    /// 描述（`preset.summary`，2026-10-23 项目主人定，核心转来）：开编辑窗。
+    Summary,
     /// 一个功能、一件工具（平铺的一行；没装的不算，切不了）。
     Row(features::Row),
 }
@@ -43,7 +45,10 @@ pub fn fields(detail: &Detail) -> Vec<Field> {
         .into_iter()
         .filter(|r| features::selectable(&detail.features, *r))
         .map(Field::Row);
-    std::iter::once(Field::Name).chain(rows).collect()
+    [Field::Name, Field::Summary]
+        .into_iter()
+        .chain(rows)
+        .collect()
 }
 
 /// 几个开关写成要交的值。单件工具打开回来是删掉那个键（`unset`）：预设里只能关单件工具，写 `true` 核心拒
@@ -119,13 +124,19 @@ impl Settings {
         }
     }
 
-    /// 改名字（编辑窗）。预设不再管默认人格（2026-10-08 项目主人）。
+    /// 改名字、描述（编辑窗）。预设不再管默认人格（2026-10-08 项目主人）。
     fn edit_preset(&mut self, view: PresetView, at: Option<Field>, detail: &Detail, texts: &Texts) {
         let words = &texts.more;
         let popup = match at {
             Some(Field::Name) => {
                 let current = detail.name.clone().map_or(Value::Null, Value::String);
                 let edit = LineEdit::open("preset.name", &words.detail[0], false, &current);
+                Popup::Line(edit.to(Target::Preset(Box::new(view))))
+            }
+            Some(Field::Summary) => {
+                let current = detail.summary.clone().map_or(Value::Null, Value::String);
+                let label = &words.preset_detail[2];
+                let edit = LineEdit::open("preset.summary", label, false, &current);
                 Popup::Line(edit.to(Target::Preset(Box::new(view))))
             }
             _ => Popup::Preset(view),
@@ -317,7 +328,7 @@ mod tests {
         };
         let key = |code, modifiers| KeyEvent::new(code, modifiers);
         let mut page = Settings::default();
-        page.preset_key(view(2), key(KeyCode::Char(' '), KeyModifiers::NONE), &texts);
+        page.preset_key(view(3), key(KeyCode::Char(' '), KeyModifiers::NONE), &texts);
         let asks = page.take_asks();
         assert_eq!(
             asks[0].2["changes"],
@@ -335,7 +346,7 @@ mod tests {
             "Ctrl+A 全开也一样"
         );
         let mut page = Settings::default();
-        page.preset_key(view(3), key(KeyCode::Char(' '), KeyModifiers::NONE), &texts);
+        page.preset_key(view(4), key(KeyCode::Char(' '), KeyModifiers::NONE), &texts);
         assert_eq!(
             page.take_asks()[0].2["changes"],
             json!([{"key": "tools.grep", "value": false}]),
@@ -373,6 +384,41 @@ mod tests {
     }
 
     #[test]
+    fn the_description_row_writes_the_presets_summary() {
+        // 2026-10-23 项目主人定预设要有描述（核心转来）：名字下面一行，回车开编辑窗，存的是 `preset.summary`。
+        use crate::settings::pages::target::Target;
+        use crate::settings::popup::Popup;
+        let texts = crate::config::Config::builtin().unwrap().text.settings;
+        let got =
+            detail(&json!({"preset": "mine", "name": "我的", "summary": "旧的", "features": []}));
+        let view = PresetView {
+            id: "mine".into(),
+            detail: Some(got),
+            error: None,
+            cursor: 1,
+        };
+        let mut page = Settings::default();
+        page.preset_key(
+            view.clone(),
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            &texts,
+        );
+        let Some(Popup::Line(edit)) = &page.popup else {
+            panic!("开编辑窗：{:?}", page.popup);
+        };
+        assert_eq!(edit.editor.text(), "旧的");
+        assert!(page.preset_write(
+            Target::Preset(Box::new(view)),
+            "preset.summary",
+            json!("写代码用")
+        ));
+        assert_eq!(
+            page.take_asks()[0].2["changes"],
+            json!([{"key": "preset.summary", "value": "写代码用"}])
+        );
+    }
+
+    #[test]
     fn the_window_lists_the_name_then_features_and_their_tools() {
         let got = detail(&json!({"preset": "mine", "features": [
             {"id": "files", "name": "文件读写", "on": true, "installed": true, "tools": [
@@ -385,6 +431,7 @@ mod tests {
             fields(&got),
             [
                 Field::Name,
+                Field::Summary,
                 Field::Row(Row::Feature(0)),
                 Field::Row(Row::Tool(0, 0)),
                 Field::Row(Row::Tool(0, 1)),
