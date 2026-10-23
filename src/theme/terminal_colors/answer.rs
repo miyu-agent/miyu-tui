@@ -1,5 +1,5 @@
 //! 问终端的颜色、读它的回话（从 `mod.rs` 分出来）：OSC 4 问 16 色，OSC 10、11 问字色、底色，后面跟一句 DA1（不认的终端
-//! 先答 DA1，当场知道问不到）。照 `ratatui-image` 问图的协议的读法轮询标准输入（macOS 轮询不了 `/dev/tty`），Windows 不问。
+//! 先答 DA1，当场知道问不到）。照 `ratatui-image` 问图的协议的读法轮询标准输入（macOS 轮询不了 `/dev/tty`），Windows 照 crossterm 的按键事件拼回回话。
 
 use std::time::Duration;
 
@@ -97,7 +97,7 @@ fn channel(hex: &str) -> Option<u8> {
 }
 
 /// 终端答完了：DA1 的回话（`ESC [ ? … c`）到了。只有问的那边（Unix）用。
-#[cfg(any(unix, test))]
+#[cfg(any(unix, windows, test))]
 fn answered(got: &[u8]) -> bool {
     got.windows(3)
         .position(|w| w == b"\x1b[?")
@@ -140,7 +140,53 @@ pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
     Some(got)
 }
 
-#[cfg(not(unix))]
+/// Windows：照 crossterm 的事件读回话（2026-10-23 项目主人在 Windows Terminal 里看 shellhook：跟随终端的配色问不到 16 色，
+/// 退回主题文件里的「蓝」，粗体的蓝暗得难看）。终端的回话在 Windows 上一个字一个按键事件进来：照字拼回字节，`Esc` 是
+/// ESC，`Ctrl+字母` 是那个控制字符（BEL 是 `Ctrl+G`）。不写 unsafe：等输入用 crossterm 的 `poll`。
+#[cfg(windows)]
+pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
+    use std::io::{IsTerminal, Write};
+    use std::time::Instant;
+
+    use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+
+    if !std::io::stdout().is_terminal() {
+        return None;
+    }
+    let mut out = std::io::stdout();
+    out.write_all(query.as_bytes()).ok()?;
+    out.flush().ok()?;
+    let end = Instant::now() + wait;
+    let mut got = Vec::new();
+    while !answered(&got) {
+        let left = end.checked_duration_since(Instant::now())?;
+        if !event::poll(left).ok()? {
+            return None;
+        }
+        let Event::Key(key) = event::read().ok()? else {
+            continue;
+        };
+        if key.kind == KeyEventKind::Release {
+            continue;
+        }
+        match key.code {
+            KeyCode::Esc => got.push(0x1b),
+            KeyCode::Char(c)
+                if key.modifiers.contains(KeyModifiers::CONTROL) && c.is_ascii_alphabetic() =>
+            {
+                got.push(c.to_ascii_lowercase() as u8 - b'a' + 1);
+            }
+            KeyCode::Char(c) => {
+                let mut buf = [0u8; 4];
+                got.extend_from_slice(c.encode_utf8(&mut buf).as_bytes());
+            }
+            _ => {}
+        }
+    }
+    Some(got)
+}
+
+#[cfg(not(any(unix, windows)))]
 pub(super) fn ask(_: &str, _: Duration) -> Option<Vec<u8>> {
     None
 }
