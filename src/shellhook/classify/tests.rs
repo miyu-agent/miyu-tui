@@ -6,10 +6,22 @@ fn commands_are_commands() {
     for line in [
         "echo hi",
         "cd /tmp",
+        "# comment\necho hi",
+        "for item in a b",
+        "time printf hi",
+    ] {
+        assert!(is_shell_command(line, Shell::Fish), "{line:?}");
+    }
+}
+
+/// 照 PATH、照路径找得到的：要真有 `sh`、`ls`（Windows 的 CI 上没有）。
+#[cfg(unix)]
+#[test]
+fn programs_on_the_path_are_commands() {
+    for line in [
         "FOO=bar sh -c true",
         "# comment\nls",
         "/bin/sh -c true",
-        "for item in a b",
         "time sh -c true",
         "sh -c \\\n  true",
     ] {

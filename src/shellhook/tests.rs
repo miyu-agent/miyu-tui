@@ -191,7 +191,11 @@ fn every_script_calls_the_recorded_program_and_parses() {
         assert!(!text.contains("@PROGRAM@"), "{}", shell.name());
         assert!(text.contains(&format!("{} shellhook", shell.quote(program))));
         assert!(text.contains("shellhook say --shell"), "{}", shell.name());
-        // 机器上装着这种 shell 的，照它自己的语法检查过一遍（`-n` 只读不跑）。
+        // 机器上装着这种 shell 的，照它自己的语法检查过一遍（`-n` 只读不跑）。Windows 上叫 `bash` 的多半是 WSL 的启动器，
+        // 没装发行版时跑不起来，不算数。
+        if cfg!(windows) {
+            continue;
+        }
         let checked = std::process::Command::new(shell.name())
             .arg("-n")
             .arg("-c")

@@ -117,8 +117,10 @@ fn is_keyword_or_builtin(command: &str, shell: Shell) -> bool {
         "cd",
         "command",
         "continue",
+        "echo",
         "else",
         "end",
+        "eval",
         "exec",
         "exit",
         "false",
@@ -132,6 +134,8 @@ fn is_keyword_or_builtin(command: &str, shell: Shell) -> bool {
         "not",
         "or",
         "and",
+        "printf",
+        "pwd",
         "read",
         "return",
         "set",
@@ -145,7 +149,7 @@ fn is_keyword_or_builtin(command: &str, shell: Shell) -> bool {
     ];
     const FISH: &[&str] = &[
         "abbr", "argparse", "begin", "bind", "block", "contains", "count", "disown", "emit",
-        "eval", "math", "random", "string", "type", "ulimit",
+        "math", "random", "string", "type", "ulimit",
     ];
     COMMON.contains(&command) || (shell == Shell::Fish && FISH.contains(&command))
 }
