@@ -153,11 +153,29 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
 
 /// 预设的窗（蓝图「配置页」第 38 条）：名字；「功能 N/M」一段照旧版「启用的功能」一行一个 `[*] 名字   说明`，
 /// 没装的暗着、右边黄字「没安装」；关掉的单件工具一行，写显示名。光标那一行铺底色。
-pub(super) fn preset(lines: &mut Lines, view: &PresetView, page: &Settings, texts: &Texts) {
+pub(super) fn preset(
+    lines: &mut Lines,
+    view: &PresetView,
+    page: &Settings,
+    texts: &Texts,
+    (width, inline): (u16, Option<&LineEdit>),
+) {
     let words = &texts.more;
     let listed = page.more.presets.iter().flatten().find(|p| p.id == view.id);
     let named = view.detail.as_ref().and_then(|d| d.name.as_deref());
-    lines.title(title(named, listed, &view.id), String::new());
+    let title = title(named, listed, &view.id);
+    // 右上角暗色写光标那一行的工具名（2026-10-22 项目主人：只看中文名不知道到底是哪件）。
+    let at = view
+        .detail
+        .as_ref()
+        .and_then(|d| match fields(d).get(view.cursor) {
+            Some(Field::Row(row)) => Some(tool_names(&d.features, *row)),
+            _ => None,
+        });
+    // 窗里左右各两格；标题和它之间至少空两格（`floating::centered` 放不下就不画）。
+    let room = usize::from(width.saturating_sub(4)).saturating_sub(title.width() + 3);
+    let sub = at.map_or_else(String::new, |names| super::fit(&names, room));
+    lines.title(title, sub);
     lines.hints = words.hints[7].clone();
     let Some(detail) = &view.detail else {
         let text = view.error.clone().unwrap_or_else(|| words.loading.clone());
@@ -217,6 +235,17 @@ pub(super) fn preset(lines: &mut Lines, view: &PresetView, page: &Settings, text
             focused: at == Some(Field::Row(row)),
             hit: None,
         });
+    }
+}
+
+/// 一行对应的工具名：工具那一行写它自己；功能那一行写它下面的几件，` · ` 隔开（同一天项目主人照推荐定）。
+fn tool_names(list: &[features::Feature], row: features::Row) -> String {
+    match row {
+        features::Row::Tool(i, j) => list[i].tools[j].name.clone(),
+        features::Row::Feature(i) => {
+            let names: Vec<_> = list[i].tools.iter().map(|t| t.name.as_str()).collect();
+            names.join(&crate::sheet::sep())
+        }
     }
 }
 
