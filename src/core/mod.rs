@@ -64,7 +64,9 @@ pub use links::{Card, CardKind, blob_path, cards_dir};
 pub use mermaid::{Marks, Rendered};
 pub use models::{Choice, ChoiceState, Current};
 pub use output::JobOutput;
-pub use personas::{Persona, Preset, read_personas, read_presets};
+pub use personas::{
+    Persona, Preset, preset_param, read_personas, read_preset_files, read_presets, session_preset,
+};
 pub use push::{
     Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobReason, JobStart,
     Push, Sender, Sent, Shown, Usage,

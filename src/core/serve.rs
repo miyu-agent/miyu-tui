@@ -214,7 +214,8 @@ pub(super) async fn serve(
                         match link.target() {
                             None => link.pending_preset = Some(id),
                             Some(session) => {
-                                let params = json!({"session": session, "preset": id});
+                                let preset = super::preset_param(&id);
+                                let params = json!({"session": session, "preset": preset});
                                 if rpc.send("session.configure", params).await.is_err() {
                                     return Served::Lost;
                                 }

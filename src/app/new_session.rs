@@ -143,10 +143,9 @@ impl App {
                 },
             );
         }
-        // 正文里「已换成」照名字写（`transcript/switched.rs`）。
+        // 正文里「已换成」照名字写（`transcript/switched.rs`）；预设的空编号是「无工具」（核心 P-16 下）。
         let names = list
             .iter()
-            .filter(|p| !p.id.is_empty())
             .map(|p| (p.id.clone(), p.label().to_string()))
             .collect();
         crate::transcript::set_names(kind == Kind::Persona, names);

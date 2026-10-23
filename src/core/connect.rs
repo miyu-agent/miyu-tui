@@ -75,11 +75,7 @@ pub(super) async fn create(rpc: &mut Rpc, chosen: &Chosen) -> Result<String, Upd
 /// （核心 5-14 上起，原来终端自动带的太宽的退回默认工作区、人换的带 `chosen: true` 才照用；「新会话」第 4 条）。
 fn create_params(chosen: &Chosen, here: impl FnOnce() -> String) -> serde_json::Value {
     let mut params = json!({"cwd": chosen.cwd.clone().unwrap_or_else(here)});
-    for (key, value) in [
-        ("model", &chosen.model),
-        ("persona", &chosen.persona),
-        ("preset", &chosen.preset),
-    ] {
+    for (key, value) in [("model", &chosen.model), ("persona", &chosen.persona)] {
         if let Some(value) = value {
             params[key] = json!(value);
         }
@@ -87,6 +83,10 @@ fn create_params(chosen: &Chosen, here: impl FnOnce() -> String) -> serde_json::
     // 选了「无人格」：明着不带人格，不看默认的（核心 P-4 上，`"persona": null`）。
     if chosen.persona.as_deref() == Some("") {
         params["persona"] = serde_json::Value::Null;
+    }
+    // 选了「无工具」：一样交 `null`（核心 P-16 下）。
+    if let Some(preset) = &chosen.preset {
+        params["preset"] = super::preset_param(preset);
     }
     params
 }
@@ -116,7 +116,7 @@ pub(super) async fn subscribe(rpc: &mut Rpc, session: &str) -> Result<Joined, Up
         limits: Limits::of(&json!({ "result": subscribed })).unwrap_or_default(),
         current: super::models::current(&subscribed),
         persona: text("persona"),
-        preset: text("preset"),
+        preset: super::session_preset(&subscribed),
         workspace: workspace(&subscribed),
         snapshot: super::Snapshot::read(&subscribed),
     })
@@ -191,6 +191,29 @@ mod tests {
         assert_eq!(
             create_params(&Chosen::default(), here),
             serde_json::json!({"cwd": "/home/me/src"}),
+        );
+    }
+
+    #[test]
+    fn no_persona_and_no_tools_are_sent_as_null() {
+        let here = || "/w".to_string();
+        let none = Chosen {
+            persona: Some(String::new()),
+            preset: Some(String::new()),
+            ..Chosen::default()
+        };
+        assert_eq!(
+            create_params(&none, here),
+            serde_json::json!({"cwd": "/w", "persona": null, "preset": null})
+        );
+        let named = Chosen {
+            persona: Some("miyu".into()),
+            preset: Some("full".into()),
+            ..Chosen::default()
+        };
+        assert_eq!(
+            create_params(&named, here),
+            serde_json::json!({"cwd": "/w", "persona": "miyu", "preset": "full"})
         );
     }
 }
