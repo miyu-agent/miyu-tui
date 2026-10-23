@@ -59,7 +59,8 @@ pub fn render(text: &str, width: u16, kit: &Kit, flipped: &[usize]) -> Vec<MdLin
     let options = Options::ENABLE_TABLES
         | Options::ENABLE_STRIKETHROUGH
         | Options::ENABLE_TASKLISTS
-        | Options::ENABLE_MATH;
+        | Options::ENABLE_MATH
+        | Options::ENABLE_FOOTNOTES;
     let mut r = Renderer {
         width,
         languages: kit.languages,
@@ -77,6 +78,8 @@ pub fn render(text: &str, width: u16, kit: &Kit, flipped: &[usize]) -> Vec<MdLin
         containers: Vec::new(),
         lists: Vec::new(),
         styles: Vec::new(),
+        md_styles: Vec::new(),
+        style_seq: 0,
         link_starts: Vec::new(),
         pieces: Vec::new(),
         code: None,
@@ -134,8 +137,12 @@ struct Renderer<'a> {
     containers: Vec<Container>,
     /// 每一层列表：有序的记着下一个数，无序的是 `None`。
     lists: Vec<Option<u64>>,
-    /// 行内样子，一层叠一层。
-    styles: Vec<Style>,
+    /// 行内样子，一层叠一层：每层带编号，收的时候照编号拿掉自己那一层（Markdown 和行内 HTML 交错着收也不拿错）。
+    styles: Vec<(u32, Style)>,
+    /// Markdown 自己叠的那几层的编号（强调、加粗、删除线、标题、链接、图片），收尾时拿最后一个。
+    md_styles: Vec<u32>,
+    /// 下一层样子的编号。
+    style_seq: u32,
     /// 链接开头时：地址、那时候收了几段。
     link_starts: Vec<(String, usize)>,
     /// 这一块收着的行内片段。
@@ -184,7 +191,9 @@ impl Renderer<'_> {
             }
             Event::InlineMath(tex) => self.inline_math(&tex),
             Event::DisplayMath(tex) => self.display_math(&tex),
-            Event::FootnoteReference(name) => self.push(&format!("[^{name}]"), Style::new()),
+            // 脚注（2026-10-23 review：原来没开，`[^1]: …` 被当成链接定义，正文写成 `^1 <…>`）：引用写暗色的 `[1]`，
+            // 定义照列表的一项排，记号是 `[1] `。
+            Event::FootnoteReference(name) => self.push(&format!("[{name}]"), theme::dim()),
         }
     }
 
@@ -205,7 +214,7 @@ impl Renderer<'_> {
                 } else {
                     theme::md_title()
                 };
-                self.styles.push(style);
+                self.push_md_style(style);
             }
             Tag::BlockQuote(_) => {
                 self.flush();
@@ -247,16 +256,16 @@ impl Renderer<'_> {
                 });
                 self.fresh_item = true;
             }
-            Tag::Emphasis => self.styles.push(theme::md_italic()),
-            Tag::Strong => self.styles.push(theme::md_bold()),
-            Tag::Strikethrough => self.styles.push(Style::new().crossed_out()),
+            Tag::Emphasis => self.push_md_style(theme::md_italic()),
+            Tag::Strong => self.push_md_style(theme::md_bold()),
+            Tag::Strikethrough => self.push_md_style(Style::new().crossed_out()),
             Tag::Link { dest_url, .. } => {
-                self.styles.push(theme::md_link());
+                self.push_md_style(theme::md_link());
                 self.link_starts
                     .push((dest_url.to_string(), self.pieces.len()));
             }
             Tag::Image { dest_url, .. } => {
-                self.styles.push(theme::md_image());
+                self.push_md_style(theme::md_image());
                 // 先记起点再写「[图片: 」：整行一条链接，悬停时下划线从头连到尾（蓝图第 9、12 条）。
                 self.link_starts
                     .push((dest_url.to_string(), self.pieces.len()));
@@ -274,6 +283,16 @@ impl Renderer<'_> {
                 });
             }
             Tag::TableCell => drop(self.take_pieces()),
+            Tag::FootnoteDefinition(name) => {
+                self.flush();
+                self.gap();
+                let marker = format!("[{name}] ");
+                self.containers.push(Container::Item {
+                    marker,
+                    used: false,
+                });
+                self.fresh_item = true;
+            }
             _ => {}
         }
     }
@@ -282,7 +301,7 @@ impl Renderer<'_> {
         match tag {
             TagEnd::Paragraph => self.flush(),
             TagEnd::Heading(_) => {
-                self.styles.pop();
+                self.pop_md_style();
                 self.flush();
             }
             TagEnd::BlockQuote(_) => {
@@ -295,16 +314,20 @@ impl Renderer<'_> {
                 self.flush();
                 self.lists.pop();
             }
-            TagEnd::Item => {
+            TagEnd::Item | TagEnd::FootnoteDefinition => {
                 self.flush();
                 self.containers.pop();
                 self.fresh_item = false;
             }
-            TagEnd::Emphasis | TagEnd::Strong | TagEnd::Strikethrough => {
-                self.styles.pop();
+            TagEnd::Emphasis | TagEnd::Strong | TagEnd::Strikethrough => self.pop_md_style(),
+            TagEnd::Link => {
+                self.pop_md_style();
+                self.end_link(false);
             }
-            TagEnd::Link => self.end_link(false),
-            TagEnd::Image => self.end_link(true),
+            TagEnd::Image => {
+                self.pop_md_style();
+                self.end_link(true);
+            }
             TagEnd::TableCell => {
                 let cell = self.take_pieces();
                 if let Some(t) = &mut self.table {
@@ -402,7 +425,7 @@ impl Renderer<'_> {
         } else {
             Style::new()
         };
-        self.styles.iter().fold(base, |s, next| s.patch(*next))
+        self.styles.iter().fold(base, |s, (_, next)| s.patch(*next))
     }
 
     /// 把收着的行内片段排出来。独占一行的「标题 (地址)」改写成链接（蓝图第 9 条）：

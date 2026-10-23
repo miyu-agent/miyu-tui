@@ -14,6 +14,63 @@ pub(super) enum Token<'a> {
     Text(&'a str),
 }
 
+/// HTML 的字符实体换回字：`&amp;`、`&lt;`、`&nbsp;` 这几个常见的名字，和 `&#20013;`、`&#x4E2D;`（2026-10-23 review：
+/// 独占一块的 HTML 里的字 pulldown-cmark 原样交过来，`<p>Tom &amp; Jerry</p>` 原来写成 `&amp;`）。认不得的原样留着。
+pub(in crate::markdown) fn entities(text: &str) -> std::borrow::Cow<'_, str> {
+    if !text.contains('&') {
+        return std::borrow::Cow::Borrowed(text);
+    }
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(at) = rest.find('&') {
+        out.push_str(&rest[..at]);
+        rest = &rest[at..];
+        let decoded = rest.find(';').filter(|end| *end <= 10).and_then(|end| {
+            let name = &rest[1..end];
+            let c = match name {
+                "amp" => Some('&'),
+                "lt" => Some('<'),
+                "gt" => Some('>'),
+                "quot" => Some('"'),
+                "apos" | "#39" => Some('\''),
+                "nbsp" => Some('\u{a0}'),
+                "copy" => Some('©'),
+                "reg" => Some('®'),
+                "trade" => Some('™'),
+                // 解出来的字不是画的记号：写成转义，主题守卫（`sheet::guard`）不当它是写死的记号。
+                "hellip" => Some('\u{2026}'),
+                "mdash" => Some('—'),
+                "ndash" => Some('–'),
+                "middot" => Some('\u{b7}'),
+                "times" => Some('×'),
+                "rarr" => Some('\u{2192}'),
+                "larr" => Some('\u{2190}'),
+                _ => {
+                    let number = name.strip_prefix('#')?;
+                    let code = match number.strip_prefix(['x', 'X']) {
+                        Some(hex) => u32::from_str_radix(hex, 16).ok(),
+                        None => number.parse().ok(),
+                    };
+                    code.and_then(char::from_u32)
+                }
+            };
+            c.map(|c| (c, end))
+        });
+        match decoded {
+            Some((c, end)) => {
+                out.push(c);
+                rest = &rest[end + 1..];
+            }
+            None => {
+                out.push('&');
+                rest = &rest[1..];
+            }
+        }
+    }
+    out.push_str(rest);
+    std::borrow::Cow::Owned(out)
+}
+
 /// `needle`（小写的 ASCII）在 `hay` 里第一次出现的地方，不分大小写。
 pub(super) fn find(hay: &str, needle: &str) -> Option<usize> {
     hay.to_ascii_lowercase().find(needle)
@@ -102,7 +159,7 @@ fn attrs(mut s: &str) -> Vec<(String, String)> {
                     }
                 };
                 s = rest;
-                value.to_string()
+                entities(value).into_owned()
             }
             None => String::new(),
         };
