@@ -38,9 +38,16 @@ pub fn style(step: &Step, hovered: bool) -> Style {
 }
 
 /// 标题那一行：图标（出错的换成叉）、显示名、对象、结果那一句；编辑后面跟 `· +3 -3`。`width` 是能写几列，
-/// 太长截掉加 `…`。
-pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'static>> {
+/// 太长截掉加 `…`。另交回对象那一截的链接（读取、编辑、写入的路径，文件真在的；列从内容开头算）。
+pub fn title(
+    step: &Step,
+    style: Style,
+    width: u16,
+    ctx: &Ctx,
+) -> (Vec<Span<'static>>, Vec<(u16, u16, String)>) {
     let text = &ctx.config.text;
+    // 对象在 `label` 里的哪一截（字节）、打开时交的路径。
+    let mut path = None;
     let (label, extra) = match &step.kind {
         StepKind::Thought { .. } => {
             let word = if step.busy() {
@@ -112,7 +119,13 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
                         let id = crate::session_list::short(subject);
                         label.push_str(&text.on_session.replace("{id}", &id));
                     } else {
+                        let at = label.len();
                         label.push_str(&crate::local::home_short(subject));
+                        if ctx.config.timeline.path_tools.contains(name)
+                            && let Some(file) = crate::local::existing(subject)
+                        {
+                            path = Some((at, label.len(), file));
+                        }
                     }
                 }
                 // 对着别的会话的（核心 C-4 起 `history` 能翻别的会话）：再跟一格「会话 短编号」（第 8 条）。
@@ -154,12 +167,39 @@ pub fn title(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Span<'stat
     let icon = format!("{icon} ");
     let room = usize::from(width)
         .saturating_sub(extra.iter().map(Span::width).sum::<usize>() + icon.width());
-    let mut spans = vec![
-        Span::styled(icon, style),
-        Span::styled(clip(&label, u16::try_from(room).unwrap_or(width)), style),
-    ];
+    let clipped = clip(&label, u16::try_from(room).unwrap_or(width));
+    let links = path
+        .and_then(|(start, end, file)| {
+            path_link(&label, &clipped, (start, end), icon.width(), file)
+        })
+        .into_iter()
+        .collect();
+    let mut spans = vec![Span::styled(icon, style), Span::styled(clipped, style)];
     spans.extend(extra);
-    spans
+    (spans, links)
+}
+
+/// 对象那一截截完以后还露着的列（`clip` 截掉的部分、`…` 不算）；一列都不露的不算链接。
+fn path_link(
+    label: &str,
+    clipped: &str,
+    (start, end): (usize, usize),
+    icon: usize,
+    file: String,
+) -> Option<(u16, u16, String)> {
+    let shown = if clipped == label {
+        clipped.width()
+    } else {
+        clipped
+            .width()
+            .saturating_sub(crate::sheet::ellipsis().width())
+    };
+    let from = label[..start].width();
+    let to = label[..end].width().min(shown);
+    (to > from).then(|| {
+        let col = |w: usize| u16::try_from(icon + w).unwrap_or(u16::MAX);
+        (col(from), col(to), file)
+    })
 }
 
 /// 编辑、写入的 `· +3 -3`：照参数排出来的差异数（和点开以后画的是同一份）。

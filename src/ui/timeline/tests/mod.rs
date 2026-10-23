@@ -479,6 +479,7 @@ mod edits;
 mod icons;
 mod live;
 mod narrow;
+mod paths;
 mod sent;
 mod session_arg;
 mod shapes;

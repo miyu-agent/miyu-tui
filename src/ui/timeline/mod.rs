@@ -68,7 +68,10 @@ fn build(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
             // 项目主人看网页时说，10-18 定终端一样）。思考的标题就是收起那一行说的，不重复。
             let style = step::style(only, false);
             if matches!(only.kind, crate::transcript::StepKind::Tool { .. }) {
-                out.push(ctx.row(ctx.blank_slot(), step::title(only, style, ctx.width, ctx)));
+                let (title, links) = step::title(only, style, ctx.width, ctx);
+                let mut head = ctx.row(ctx.blank_slot(), title);
+                head.links = links;
+                out.push(head);
             }
             out.extend(opened(only, style, ctx));
             for row in &mut out {
@@ -168,8 +171,10 @@ fn step_rows(target: Target, step: &Step, spinning: bool, ctx: &Ctx) -> Vec<Row>
     } else {
         ctx.blank_slot()
     };
-    let mut head = ctx.row(slot, step::title(step, style, ctx.width, ctx));
+    let (title, links) = step::title(step, style, ctx.width, ctx);
+    let mut head = ctx.row(slot, title);
     head.target = Some(target);
+    head.links = links;
     let mut out = vec![head];
     if step.opened(&ctx.config.timeline) {
         out.extend(opened(step, style, ctx));
