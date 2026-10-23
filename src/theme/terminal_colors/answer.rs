@@ -1,5 +1,5 @@
 //! 问终端的颜色、读它的回话（从 `mod.rs` 分出来）：OSC 4 问 16 色，OSC 10、11 问字色、底色，后面跟一句 DA1（不认的终端
-//! 先答 DA1，当场知道问不到）。照 `ratatui-image` 问图的协议的读法轮询标准输入（macOS 轮询不了 `/dev/tty`），Windows 不问。
+//! 先答 DA1，当场知道问不到）。照 `ratatui-image` 问图的协议的读法轮询标准输入（macOS 轮询不了 `/dev/tty`），Windows 照 crossterm 的按键事件拼回回话。
 
 use std::time::Duration;
 
@@ -97,7 +97,7 @@ fn channel(hex: &str) -> Option<u8> {
 }
 
 /// 终端答完了：DA1 的回话（`ESC [ ? … c`）到了。只有问的那边（Unix）用。
-#[cfg(any(unix, test))]
+#[cfg(any(unix, windows, test))]
 fn answered(got: &[u8]) -> bool {
     got.windows(3)
         .position(|w| w == b"\x1b[?")
@@ -140,7 +140,126 @@ pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
     Some(got)
 }
 
-#[cfg(not(unix))]
+/// Windows：照 crossterm 的事件读回话（2026-10-23 项目主人在 Windows Terminal 里看 shellhook：跟随终端的配色问不到 16 色，
+/// 退回主题文件里的「蓝」，粗体的蓝暗得难看）。终端的回话在 Windows 上一个字一个按键事件进来：照字拼回字节，`Esc` 是
+/// ESC，`Ctrl+字母` 是那个控制字符（BEL 是 `Ctrl+G`）。不写 unsafe：等输入用 crossterm 的 `poll`。问的时候开控制台的「虚拟终端
+/// 输入」：不开的，终端的回话被控制台吞掉（同一天：Windows Terminal 1.24 认 OSC 4，跟随终端的配色照旧问不到）。
+#[cfg(windows)]
+pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
+    use std::io::{IsTerminal, Write};
+    use std::time::Instant;
+
+    use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+
+    if !std::io::stdout().is_terminal() {
+        return None;
+    }
+    let _vt = VtInput::on();
+    let mut out = std::io::stdout();
+    out.write_all(query.as_bytes()).ok()?;
+    out.flush().ok()?;
+    let end = Instant::now() + wait;
+    let mut got = Rebuilt::default();
+    while !answered(&got.bytes) {
+        let left = end.checked_duration_since(Instant::now())?;
+        if !event::poll(left).ok()? {
+            return None;
+        }
+        let Event::Key(key) = event::read().ok()? else {
+            continue;
+        };
+        if key.kind == KeyEventKind::Release {
+            continue;
+        }
+        match key.code {
+            KeyCode::Esc => got.push(0x1b),
+            KeyCode::Char(c)
+                if key.modifiers.contains(KeyModifiers::CONTROL) && c.is_ascii_alphabetic() =>
+            {
+                got.push(c.to_ascii_lowercase() as u8 - b'a' + 1);
+            }
+            KeyCode::Char(c) => {
+                // ESC 后面紧跟的字，crossterm 可能读成 Alt+那个字。
+                if key.modifiers.contains(KeyModifiers::ALT) {
+                    got.push(0x1b);
+                }
+                got.push_char(c);
+            }
+            _ => {}
+        }
+    }
+    Some(got.bytes)
+}
+
+/// 照按键事件拼回终端的回话。Windows 上回话打头的 ESC 读不到（2026-10-24 在虚拟机里记下的：DA1 的回话头一个事件就是 `[`），
+/// 照回话的样子补上：一句回话开头的 `]`、`[`，OSC 结尾 ST 的 `\`，前面不是 ESC 的补一个。回话里别处没有这几个字
+/// （`rgb:RRRR/GGGG/BBBB`、DA1 的数字和分号），补不错。
+#[cfg(any(windows, test))]
+#[derive(Default)]
+struct Rebuilt {
+    bytes: Vec<u8>,
+    /// 在一句 OSC 回话里（`]` 以后，BEL、ST 以前）。
+    in_osc: bool,
+}
+
+#[cfg(any(windows, test))]
+impl Rebuilt {
+    fn push(&mut self, byte: u8) {
+        let last = self.bytes.last().copied();
+        let after_esc = last == Some(0x1b);
+        // 一句回话开头：最前面，或者上一句刚结束（BEL、ST 的 `\`、DA1 的 `c`）。
+        let starts = matches!(last, None | Some(0x07 | b'\\' | b'c')) && !self.in_osc;
+        match byte {
+            b']' | b'[' if starts && !after_esc => self.bytes.push(0x1b),
+            b'\\' if self.in_osc && !after_esc => self.bytes.push(0x1b),
+            _ => {}
+        }
+        match byte {
+            b']' if starts || after_esc => self.in_osc = true,
+            0x07 | b'\\' if self.in_osc => self.in_osc = false,
+            _ => {}
+        }
+        self.bytes.push(byte);
+    }
+
+    fn push_char(&mut self, c: char) {
+        let mut buf = [0u8; 4];
+        for &byte in c.encode_utf8(&mut buf).as_bytes() {
+            self.push(byte);
+        }
+    }
+}
+
+/// 问的这一会儿开着控制台的「虚拟终端输入」，丢掉时照原来的设回去。
+#[cfg(windows)]
+struct VtInput {
+    console: crossterm_winapi::ConsoleMode,
+    before: u32,
+}
+
+#[cfg(windows)]
+impl VtInput {
+    /// `ENABLE_VIRTUAL_TERMINAL_INPUT`。
+    const FLAG: u32 = 0x0200;
+
+    fn on() -> Option<Self> {
+        let console = crossterm_winapi::ConsoleMode::from(
+            crossterm_winapi::Handle::current_in_handle().ok()?,
+        );
+        let before = console.mode().ok()?;
+        console.set_mode(before | Self::FLAG).ok()?;
+        Some(Self { console, before })
+    }
+}
+
+#[cfg(windows)]
+impl Drop for VtInput {
+    fn drop(&mut self) {
+        drop(self.console.set_mode(self.before));
+    }
+}
+
+#[cfg(not(any(unix, windows)))]
 pub(super) fn ask(_: &str, _: Duration) -> Option<Vec<u8>> {
     None
 }

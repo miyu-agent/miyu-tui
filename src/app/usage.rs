@@ -109,7 +109,7 @@ impl App {
 }
 
 /// 时区写成核心认的样子：`+09:00`、`-05:30`。
-fn offset_text(seconds: i32) -> String {
+pub(crate) fn offset_text(seconds: i32) -> String {
     let sign = if seconds < 0 { '-' } else { '+' };
     let minutes = seconds.unsigned_abs() / 60;
     format!("{sign}{:02}:{:02}", minutes / 60, minutes % 60)

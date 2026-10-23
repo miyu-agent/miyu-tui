@@ -15,6 +15,8 @@ mod drawer;
 mod dream_rows;
 mod dreamt_rows;
 pub use drawer::PreviewLook;
+// shellhook 把抽屉画在 shell 里，照同一套（图纸 `shellhook.md`「确认和提问」）。
+pub use drawer::{draw as draw_drawer, rows as drawer_rows};
 pub mod effort_list;
 mod figure_rows;
 mod floating;
@@ -39,6 +41,7 @@ mod oobe;
 pub mod shown_rows;
 pub use oobe::idle_look as oobe_idle_look;
 mod panel;
+pub use panel::{Chrome, PAD as PANEL_PAD, draw as draw_panel, padded as panel_padded};
 mod panels;
 pub mod persona_list;
 pub mod session_list;
@@ -62,6 +65,10 @@ mod timeline;
 pub mod tool_list;
 mod undo_rows;
 pub use timeline::release_on_fold;
+// shellhook 照同一套画等第一个字的转圈、待办（图纸 `shellhook.md`）。
+pub use dream_rows::rows as dream_rows;
+pub use sidebar::todo_lines;
+pub use timeline::tail_rows;
 mod user_rows;
 pub mod wide;
 

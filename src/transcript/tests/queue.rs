@@ -361,3 +361,30 @@ fn withdrawing_a_queued_message_keeps_the_reply_after_it_in_place() {
         "退回的不在正文里"
     );
 }
+
+#[test]
+fn a_queued_message_the_request_took_joins_the_turn_when_it_stops_before_speaking() {
+    // 2026-10-23 验收：她刚开始答就插话、马上按 Ctrl+C。那次请求带上了它（`model.called` 的 `seen`）、没出字就停了：
+    // 核心不退回，也没有「听到了」，原来一直挂在「排着」。
+    let mut t = started();
+    t.user("插的".into(), Vec::new());
+    apply(
+        &mut t,
+        vec![
+            Push::UserMessage(5),
+            Push::Sent {
+                seen: 6,
+                changed: false,
+                summary: false,
+            },
+            Push::TurnEnded(crate::core::EndReason::Interrupted),
+        ],
+    );
+    let said = t
+        .entries
+        .iter()
+        .find(|e| e.text == "插的")
+        .expect("还在正文里");
+    assert!(!said.queued, "进了这一轮");
+    assert!(t.entries.last().is_some_and(|e| e.kind == Kind::Done));
+}

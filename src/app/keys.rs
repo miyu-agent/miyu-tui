@@ -283,7 +283,11 @@ impl App {
         self.dream_wake_up();
         self.talk.transcript.user(text, chips);
         self.awaiting_turn();
-        self.link.core.send(Command::Send { text: full, files });
+        self.link.core.send(Command::Send {
+            text: full,
+            files,
+            cwd: None,
+        });
     }
 
     /// 执行一条命令；`words` 是名字后面的字（能带参数的命令才有，蓝图「斜杠命令列表」第 5 条）。

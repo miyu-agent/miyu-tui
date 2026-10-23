@@ -91,6 +91,8 @@ pub enum Command {
         text: String,
         /// 附件：照先后。
         files: Vec<std::path::PathBuf>,
+        /// 这一句换到哪个目录说（`session.send` 的 `cwd`，核心 05eb8159）：shellhook 每句带上 shell 所在的目录，全屏不带。
+        cwd: Option<String>,
     },
     /// 打断在进行的这一轮。`send` 为真时排着队的消息接着发（两下 Esc），为假时退回来（Ctrl+C）。
     Interrupt {

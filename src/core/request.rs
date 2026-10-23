@@ -11,7 +11,14 @@ pub(super) fn request(
 ) -> Option<(&'static str, serde_json::Value)> {
     Some(match command {
         // 不再带 `cwd`：工作区是会话的属性，核心照收不理（核心 9-7 上）。
-        Command::Send { text, .. } => ("session.send", json!({"session": session, "text": text})),
+        // 全屏不带 `cwd`：工作区是会话的属性（核心 9-7 上）。shellhook 带：这一句照 shell 所在的目录说（核心 05eb8159）。
+        Command::Send { text, cwd, .. } => {
+            let mut params = json!({"session": session, "text": text});
+            if let Some(cwd) = cwd {
+                params["cwd"] = json!(cwd);
+            }
+            ("session.send", params)
+        }
         Command::Interrupt { send } => {
             let queued = if send { "send" } else { "return" };
             (
@@ -162,9 +169,18 @@ mod tests {
         let said = Command::Send {
             text: "你好".into(),
             files: Vec::new(),
+            cwd: None,
         };
         let expected = json!({"session": "s", "text": "你好"});
         assert_eq!(request(said, "s"), Some(("session.send", expected)));
+        // shellhook 每句带上 shell 所在的目录。
+        let here = Command::Send {
+            text: "你好".into(),
+            files: Vec::new(),
+            cwd: Some("/srv".into()),
+        };
+        let expected = json!({"session": "s", "text": "你好", "cwd": "/srv"});
+        assert_eq!(request(here, "s"), Some(("session.send", expected)));
     }
 
     #[test]

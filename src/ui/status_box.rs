@@ -270,7 +270,7 @@ fn context(f: &Facts, words: &Texts, marks: &Bar, room: usize) -> Vec<Span<'stat
 }
 
 /// 这个会话里做成了的回忆（`memory_search`）、记住（`remember`）各几次。
-fn memory_calls(t: &Transcript) -> (usize, usize) {
+pub fn memory_calls(t: &Transcript) -> (usize, usize) {
     let mut counts = (0, 0);
     let steps = t
         .entries

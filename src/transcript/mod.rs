@@ -156,6 +156,8 @@ pub struct Transcript {
     models: model::ModelWatch,
     /// 在跑的这一轮的编号：这期间收到的都记在它名下。
     turn: Option<u64>,
+    /// 这一轮的请求带上了第几条为止（`queue.rs` 的 `took`、`stamped`）。
+    seen: u64,
     /// 被退回的排队消息：字和里面的粘贴块，等输入框拿走（`take_returned`）。
     returned: Vec<(String, Vec<Chip>)>,
     /// 这一轮是排着的话开的：那几句照排着时的样子，一句一条（`queue.rs` 的 `takeback`）。
@@ -292,15 +294,7 @@ impl Transcript {
         match push {
             Push::TurnStarted(turn, trigger) => self.start(turn, trigger),
             // 你发的话照先后落盘：配给最早那句还没有序号的。
-            Push::UserMessage(seq) => {
-                let first = self
-                    .entries
-                    .iter_mut()
-                    .find(|e| e.kind == Kind::User && e.seq.is_none() && e.from.is_none());
-                if let Some(entry) = first {
-                    entry.seq = Some(seq);
-                }
-            }
+            Push::UserMessage(seq) => self.stamped(seq),
             Push::Withdrawn(seqs) => self.withdraw(&seqs),
             // 去掉标题推来的是空的：读成没有标题。
             Push::Title { title, named } => {
@@ -411,6 +405,7 @@ impl Transcript {
             | Push::JobStarted(_)
             | Push::JobEarlier(_)
             | Push::JobMessaged(_)
+            | Push::Reported(_)
             | Push::JobEnded(_)
             | Push::PeerIdle { .. } => {}
             Push::Usage(usage) => self.used(usage),
@@ -419,7 +414,10 @@ impl Transcript {
                 seen,
                 changed,
                 summary,
-            } => self.cache.sent(seen, changed, summary),
+            } => {
+                self.cache.sent(seen, changed, summary);
+                self.took(seen);
+            }
             Push::Compaction(push) => self.compaction(push, texts),
             Push::Compacted { clear } => {
                 self.cache.compacted();

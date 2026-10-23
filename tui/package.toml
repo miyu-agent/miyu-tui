@@ -5,10 +5,18 @@ protocol = [1, 1]
 name = { en = "Terminal interface", zh = "终端界面", ja = "ターミナル画面" }
 summary = { en = "Chat with the AI, watch what it does and change settings in the terminal", zh = "在终端里和 AI 对话、看 AI 做事、改配置", ja = "ターミナルで会話し、作業の様子を見て、設定を変える" }
 
-[command]
+[[command]]
 name = "tui"
 program = "miyu-tui"
 about = { en = "Open the terminal interface", zh = "打开终端界面", ja = "ターミナル画面を開く" }
+
+# 终端无缝集成（图纸 `docs/blueprint/shellhook.md`，2026-10-20 项目主人定：并进这个包）：`miyu shellhook …` 转交成
+# `miyu-tui shellhook …`（核心 F-13，一个包几个命令）。
+[[command]]
+name = "shellhook"
+program = "miyu-tui"
+args = ["shellhook"]
+about = { en = "Talk to Miyu from your shell", zh = "在 shell 里和 Miyu 说话", ja = "シェルから Miyu と話す" }
 
 [ui]
 opens = ["config"]

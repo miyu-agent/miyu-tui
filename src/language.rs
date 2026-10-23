@@ -60,10 +60,23 @@ impl LanguageTable {
     }
 
     /// 照系统语言：`LC_ALL`、`LC_MESSAGES`、`LANG` 依次看第一个不空的，照表里的前缀认；认不出、都没有的用退回的那种。
+    /// Windows 一般不设这几个：都没有的照系统的界面语言（`zh-CN`；2026-10-23 项目主人在 Windows 上看到设置页中英混杂：
+    /// 核心照系统语言写了中文，界面退回了英文）。
     pub fn detect(&self, var: impl Fn(&str) -> Option<String>) -> Language {
+        let system = if cfg!(windows) { system_locale() } else { None };
+        self.detect_with(var, system)
+    }
+
+    /// 同 [`LanguageTable::detect`]，环境变量都没有的照 `system`（系统的界面语言）。
+    pub fn detect_with(
+        &self,
+        var: impl Fn(&str) -> Option<String>,
+        system: Option<String>,
+    ) -> Language {
         let locale = ["LC_ALL", "LC_MESSAGES", "LANG"]
             .into_iter()
             .find_map(|name| var(name).filter(|v| !v.trim().is_empty()))
+            .or(system)
             .map(|l| l.to_ascii_lowercase());
         let found = locale.and_then(|l| {
             self.languages.iter().find(|entry| {
@@ -108,6 +121,18 @@ impl LanguageTable {
     }
 }
 
+/// 系统的界面语言（Windows 照系统设置，`zh-CN` 这样）；别的平台、认不出的是 `None`。
+fn system_locale() -> Option<String> {
+    #[cfg(windows)]
+    {
+        sys_locale::get_locale()
+    }
+    #[cfg(not(windows))]
+    {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::LanguageTable;
@@ -124,7 +149,7 @@ mod tests {
     #[test]
     fn the_system_locale_picks_the_language() {
         let table = LanguageTable::builtin().unwrap();
-        let code = |pairs: &[(&str, &str)]| table.detect(env(pairs)).code().to_string();
+        let code = |pairs: &[(&str, &str)]| table.detect_with(env(pairs), None).code().to_string();
         assert_eq!(code(&[("LANG", "zh_CN.UTF-8")]), "zh");
         assert_eq!(code(&[("LANG", "en_US.UTF-8")]), "en");
         assert_eq!(
@@ -145,6 +170,20 @@ mod tests {
         assert_eq!(code(&[("LANG", "C")]), "en", "认不出的用退回的那种");
         assert_eq!(code(&[("LANG", "de_DE.UTF-8")]), "en");
         assert_eq!(code(&[]), "en", "都没有的用退回的那种");
+    }
+
+    #[test]
+    fn without_locale_variables_the_system_language_counts() {
+        // Windows 一般不设 LANG：照系统的界面语言（2026-10-23 设置页中英混杂）。环境变量设了的照旧在前。
+        let table = LanguageTable::builtin().unwrap();
+        let zh = Some("zh-CN".to_string());
+        assert_eq!(table.detect_with(env(&[]), zh.clone()).code(), "zh");
+        assert_eq!(
+            table
+                .detect_with(env(&[("LANG", "en_US.UTF-8")]), zh)
+                .code(),
+            "en"
+        );
     }
 
     #[test]

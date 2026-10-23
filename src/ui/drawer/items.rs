@@ -167,6 +167,14 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
             more.extend(rows.map(|r| Line::from(vec![Span::raw(indent.clone()), Span::raw(r)])));
         }
     }
+    // 光标停在「不允许」上、还没在写：后面暗色写怎么写理由（2026-10-22 项目主人：「鼠标移动到不允许，然后出现 n 键
+    // 输入理由」）。
+    if active && !editing && item == Item::Decision(Decision::Deny) && d.editing.is_none() {
+        spans.push(Span::styled(
+            format!("  {}", texts.reason_key),
+            theme::dim(),
+        ));
+    }
     b.push(Line::from(spans), Some(index));
     for line in more {
         b.push(line, Some(index));

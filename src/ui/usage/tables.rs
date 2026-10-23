@@ -5,8 +5,9 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
+use super::Sources;
 use super::{GAP, amounts, tokens};
-use crate::app::{Seen, UsageData};
+use crate::app::UsageData;
 use crate::core::UsageRow;
 use crate::{meter, theme};
 
@@ -124,8 +125,8 @@ fn clip(spans: Vec<Span<'static>>, width: usize) -> Line<'static> {
 }
 
 /// 次数、token、金额、缺价那几格（每张表的后半截一样）。
-fn tail(seen: &Seen, row: &UsageRow) -> Vec<Cell> {
-    let texts = &seen.config.text.usage;
+fn tail(src: &Sources<'_>, row: &UsageRow) -> Vec<Cell> {
+    let texts = &src.config.text.usage;
     let unpriced = if row.bill.unpriced > 0 {
         texts
             .unpriced
@@ -136,19 +137,19 @@ fn tail(seen: &Seen, row: &UsageRow) -> Vec<Cell> {
     vec![
         Cell::right(texts.requests.replace("{n}", &row.requests.to_string())),
         Cell::right(meter::short(row.tokens)),
-        Cell::left(amounts(seen, &row.bill).unwrap_or_default()),
+        Cell::left(amounts(src, &row.bill).unwrap_or_default()),
         Cell::dim(unpriced),
     ]
 }
 
 /// 按天的表：今天在最上，今天那一行标「今天」，没用的日子不列。
 pub(super) fn days(
-    seen: &Seen,
+    src: &Sources<'_>,
     data: &UsageData,
     rows: &[UsageRow],
     width: u16,
 ) -> Vec<Line<'static>> {
-    let texts = &seen.config.text.usage;
+    let texts = &src.config.text.usage;
     let today = data.today.to_string();
     let rows: Vec<Vec<Cell>> = rows
         .iter()
@@ -162,7 +163,7 @@ pub(super) fn days(
                 String::new()
             };
             let mut row = vec![Cell::left(day), Cell::dim(mark)];
-            row.extend(tail(seen, r));
+            row.extend(tail(src, r));
             row
         })
         .collect();
@@ -171,13 +172,13 @@ pub(super) fn days(
 
 /// 按模型：照 token 多少排，一个模型一行，名字后面接占比条和百分比；最下面一行用途占比。
 pub(super) fn models(
-    seen: &Seen,
+    src: &Sources<'_>,
     data: &UsageData,
     rows: &[UsageRow],
     width: u16,
 ) -> Vec<Line<'static>> {
     let all = tokens(rows).max(1);
-    let cells = usize::from(seen.config.layout.usage.share_cells);
+    let cells = usize::from(src.config.layout.usage.share_cells);
     let mut sorted: Vec<&UsageRow> = rows.iter().collect();
     sorted.sort_by_key(|r| std::cmp::Reverse(r.tokens));
     let table_rows: Vec<Vec<Cell>> = sorted
@@ -189,7 +190,7 @@ pub(super) fn models(
                 bar(share, cells),
                 Cell::right(percent(share)),
             ];
-            row.extend(tail(seen, r));
+            row.extend(tail(src, r));
             row
         })
         .collect();
@@ -198,21 +199,21 @@ pub(super) fn models(
         && !purposes.is_empty()
     {
         out.push(Line::default());
-        out.push(purpose_line(seen, purposes, width));
+        out.push(purpose_line(src, purposes, width));
     }
     out
 }
 
 /// 按会话：照 token 多少排，一个会话一行；标题照会话列表，没有的写短编号。
-pub(super) fn sessions(seen: &Seen, rows: &[UsageRow], width: u16) -> Vec<Line<'static>> {
+pub(super) fn sessions(src: &Sources<'_>, rows: &[UsageRow], width: u16) -> Vec<Line<'static>> {
     let mut sorted: Vec<&UsageRow> = rows.iter().collect();
     sorted.sort_by_key(|r| std::cmp::Reverse(r.tokens));
     let table_rows: Vec<Vec<Cell>> = sorted
         .iter()
         .map(|r| {
             let id = r.session.clone().unwrap_or_default();
-            let mut row = vec![Cell::left(seen.usage_name(&id))];
-            row.extend(tail(seen, r));
+            let mut row = vec![Cell::left(src.name(&id))];
+            row.extend(tail(src, r));
             row
         })
         .collect();
@@ -220,8 +221,8 @@ pub(super) fn sessions(seen: &Seen, rows: &[UsageRow], width: u16) -> Vec<Line<'
 }
 
 /// 用途占比一行：「主对话 91% · 起标题 2% · 回顾 1%」，照 token 多少排。
-fn purpose_line(seen: &Seen, rows: &[UsageRow], width: u16) -> Line<'static> {
-    let texts = &seen.config.text.usage;
+fn purpose_line(src: &Sources<'_>, rows: &[UsageRow], width: u16) -> Line<'static> {
+    let texts = &src.config.text.usage;
     let all = tokens(rows).max(1);
     let mut sorted: Vec<&UsageRow> = rows.iter().collect();
     sorted.sort_by_key(|r| std::cmp::Reverse(r.tokens));

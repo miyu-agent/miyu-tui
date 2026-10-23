@@ -169,8 +169,8 @@ pub(super) fn report_into(
     }
 }
 
-/// 回答里贴的图：第几道的（拒绝的是外面的）、本机的文件，照贴的先后。
-fn answer_files(outcome: &Outcome) -> Vec<(Option<usize>, std::path::PathBuf)> {
+/// 回答里贴的图：第几道的（拒绝的是外面的）、本机的文件，照贴的先后。shellhook 的抽屉也照它交。
+pub(crate) fn answer_files(outcome: &Outcome) -> Vec<(Option<usize>, std::path::PathBuf)> {
     match outcome {
         Outcome::Answered(a) => a
             .answers
