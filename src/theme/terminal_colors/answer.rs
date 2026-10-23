@@ -159,8 +159,8 @@ pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
     out.write_all(query.as_bytes()).ok()?;
     out.flush().ok()?;
     let end = Instant::now() + wait;
-    let mut got = Vec::new();
-    while !answered(&got) {
+    let mut got = Rebuilt::default();
+    while !answered(&got.bytes) {
         let left = end.checked_duration_since(Instant::now())?;
         if !event::poll(left).ok()? {
             return None;
@@ -179,13 +179,55 @@ pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
                 got.push(c.to_ascii_lowercase() as u8 - b'a' + 1);
             }
             KeyCode::Char(c) => {
-                let mut buf = [0u8; 4];
-                got.extend_from_slice(c.encode_utf8(&mut buf).as_bytes());
+                // ESC 后面紧跟的字，crossterm 可能读成 Alt+那个字。
+                if key.modifiers.contains(KeyModifiers::ALT) {
+                    got.push(0x1b);
+                }
+                got.push_char(c);
             }
             _ => {}
         }
     }
-    Some(got)
+    Some(got.bytes)
+}
+
+/// 照按键事件拼回终端的回话。Windows 上回话打头的 ESC 读不到（2026-10-24 在虚拟机里记下的：DA1 的回话头一个事件就是 `[`），
+/// 照回话的样子补上：一句回话开头的 `]`、`[`，OSC 结尾 ST 的 `\`，前面不是 ESC 的补一个。回话里别处没有这几个字
+/// （`rgb:RRRR/GGGG/BBBB`、DA1 的数字和分号），补不错。
+#[cfg(any(windows, test))]
+#[derive(Default)]
+struct Rebuilt {
+    bytes: Vec<u8>,
+    /// 在一句 OSC 回话里（`]` 以后，BEL、ST 以前）。
+    in_osc: bool,
+}
+
+#[cfg(any(windows, test))]
+impl Rebuilt {
+    fn push(&mut self, byte: u8) {
+        let last = self.bytes.last().copied();
+        let after_esc = last == Some(0x1b);
+        // 一句回话开头：最前面，或者上一句刚结束（BEL、ST 的 `\`、DA1 的 `c`）。
+        let starts = matches!(last, None | Some(0x07 | b'\\' | b'c')) && !self.in_osc;
+        match byte {
+            b']' | b'[' if starts && !after_esc => self.bytes.push(0x1b),
+            b'\\' if self.in_osc && !after_esc => self.bytes.push(0x1b),
+            _ => {}
+        }
+        match byte {
+            b']' if starts || after_esc => self.in_osc = true,
+            0x07 | b'\\' if self.in_osc => self.in_osc = false,
+            _ => {}
+        }
+        self.bytes.push(byte);
+    }
+
+    fn push_char(&mut self, c: char) {
+        let mut buf = [0u8; 4];
+        for &byte in c.encode_utf8(&mut buf).as_bytes() {
+            self.push(byte);
+        }
+    }
 }
 
 /// 问的这一会儿开着控制台的「虚拟终端输入」，丢掉时照原来的设回去。
