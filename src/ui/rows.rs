@@ -204,6 +204,36 @@ pub fn clip(text: &str, width: u16) -> String {
     crate::cells::clip(text, usize::from(width))
 }
 
+/// 一段字照 `style` 画，搜索 `query` 对上的那几个字换成强调色加粗（`fuzzy::marks`，2026-10-23 项目主人：「搜索匹配到的
+/// 文字我希望颜色能不一样」）；没在搜的整段一个样子。
+pub fn marked(
+    text: &str,
+    query: &str,
+    style: ratatui::style::Style,
+) -> Vec<ratatui::text::Span<'static>> {
+    use ratatui::text::Span;
+    let marks = crate::fuzzy::marks(query, text);
+    if marks.is_empty() {
+        return vec![Span::styled(text.to_string(), style)];
+    }
+    let hit = style
+        .patch(crate::theme::accent())
+        .add_modifier(ratatui::style::Modifier::BOLD);
+    let mut out: Vec<Span<'static>> = Vec::new();
+    for (i, c) in text.chars().enumerate() {
+        let want = if marks.binary_search(&i).is_ok() {
+            hit
+        } else {
+            style
+        };
+        match out.last_mut() {
+            Some(last) if last.style == want => last.content.to_mut().push(c),
+            _ => out.push(Span::styled(c.to_string(), want)),
+        }
+    }
+    out
+}
+
 /// 缓存认的键：字、点过的 `<details>`、换过几次主题的哈希（颜色烤在排好的行里，换了主题要重排）。
 fn cache_key(text: &str, details: &[usize], language: &str) -> u64 {
     let mut hasher = DefaultHasher::new();

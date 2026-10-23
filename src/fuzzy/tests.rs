@@ -69,3 +69,20 @@ fn whole_pieces_match_in_any_order_but_rank_after_ordered_matches() {
     });
     assert_eq!(ranked, [model]);
 }
+
+#[test]
+fn marks_point_at_the_matched_letters_in_each_field() {
+    use super::marks;
+    // 照先后对上：`open` 落在 `opencode-zen/test` 开头四个字。
+    assert_eq!(marks("open", "opencode-zen/test"), [0, 1, 2, 3]);
+    // 两段各自对上，可以落在不同的地方。
+    assert_eq!(marks("cl op", "Claude Opus 5.5"), [0, 1, 7, 8]);
+    // 这个字段对不上的段不标。
+    assert!(marks("zzz", "Claude").is_empty());
+    // 切成几截才对上的：每截原样出现的那一处。
+    assert_eq!(
+        marks("clinedeepseek", "clinepass/deepseek-v4"),
+        [0, 1, 2, 3, 4, 10, 11, 12, 13, 14, 15, 16, 17]
+    );
+    assert!(marks("", "anything").is_empty());
+}

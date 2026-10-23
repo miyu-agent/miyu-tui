@@ -99,14 +99,16 @@ pub fn lines(
             let name_style = if off { theme::dim() } else { Style::new() };
             let name = super::rows::clip(&choice.name, u16::try_from(column).unwrap_or(u16::MAX));
             let pad = column.saturating_sub(name.width());
-            let content = vec![
-                Span::styled(format!("{name}{}", " ".repeat(pad)), name_style),
-                // 引用和窗口用 `dim`：原来 `faint` 太暗（2026-10-01 项目主人）；没有 key 的整行压暗。
-                Span::styled(
-                    format!("  {}", choice.detail),
-                    if off { theme::faint() } else { theme::dim() },
-                ),
-            ];
+            // 搜索对上的字换成强调色（2026-10-23 项目主人）。
+            let detail_style = if off { theme::faint() } else { theme::dim() };
+            let mut content = super::rows::marked(&name, &list.query, name_style);
+            content.push(Span::raw(" ".repeat(pad + 2)));
+            // 引用和窗口用 `dim`：原来 `faint` 太暗（2026-10-01 项目主人）；没有 key 的整行压暗。
+            content.extend(super::rows::marked(
+                &choice.detail,
+                &list.query,
+                detail_style,
+            ));
             let right = right(choice, now, texts);
             // 会话现在用的那一个行首写 `●`，选中了也照旧（2026-10-19 项目主人）。
             let on = current == Some(choice.reference.as_str());
