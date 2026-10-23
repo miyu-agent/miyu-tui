@@ -192,6 +192,16 @@ impl App {
             return;
         }
         // Ctrl+C 打断、要退回排着的：这一轮结束了撤掉它，撤掉了放回输入框（`takeback.rs`）。
+        // 回答里贴的图传不上：回答已经照样交了，提示一句（核心 Q-A，`core/serve.rs`）。
+        if let Update::AnswerFilesLost(message) = &update {
+            let note = self
+                .config
+                .text
+                .answer_files_lost
+                .replace("{message}", message);
+            self.hint(note, false);
+            return;
+        }
         self.takeback_on(&update);
         // 没发出去：先撤掉先画上的那句、字放回输入框，接着照一般的拒绝办（`redo.rs`）。
         let update = match update {

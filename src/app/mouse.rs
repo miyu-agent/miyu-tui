@@ -42,6 +42,13 @@ impl App {
         }
         // 抽屉开着：悬停选中那一项，点一下等于 `Enter`（`tui.md`「确认和提问的抽屉」第 4 条）。
         if !captured && self.talk.drawers.open() && self.screen.areas.text.contains(at) {
+            // 滚轮滚要跑的命令那一块：抽屉里只有它会滚（`ui/drawer/command.rs`）。
+            if let MouseEventKind::ScrollUp | MouseEventKind::ScrollDown = mouse.kind {
+                if let Some(d) = self.talk.drawers.current.as_mut() {
+                    d.scroll_command(mouse.kind == MouseEventKind::ScrollDown);
+                }
+                return Action::None;
+            }
             let row = usize::from(at.y - self.screen.areas.text.y);
             if let Some(index) = self.screen.drawer_rows.get(row).copied().flatten() {
                 match mouse.kind {

@@ -124,6 +124,18 @@ pub struct Answer {
     /// 补充的话（按 `n` 写的；核心 D-2 起有）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+    /// 贴的图（核心 Q-A）：发的时候连接那头先 `blob.put` 再填进 `attachments`，不跟着 `body` 走。
+    #[serde(skip)]
+    pub files: Vec<Pasted>,
+}
+
+/// 抽屉里贴的一张图（2026-10-22 项目主人：问问题、写理由时要能贴图辅助表达）：块上写的字、本机的文件。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Pasted {
+    /// 块上写的（`[图片 1]`），照输入框的编号接着编。
+    pub label: String,
+    /// 本机的文件（剪贴板里的图先落在暂存目录）。
+    pub file: std::path::PathBuf,
 }
 
 /// `tool.approval_decided` 的 `body`。
@@ -136,6 +148,9 @@ pub struct Decided {
     /// 不允许时写的理由。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
+    /// 不允许时贴的图（核心 Q-A），同 [`Answer::files`]。
+    #[serde(skip)]
+    pub files: Vec<Pasted>,
 }
 
 /// 确认的几种回答（核心 D-1；「这个工作区都允许」核心还没有）。

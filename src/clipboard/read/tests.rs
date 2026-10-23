@@ -64,3 +64,16 @@ fn a_big_clipboard_is_read_whole() {
     );
     assert_eq!(got.map(|t| t.len()), Ok(300_000));
 }
+
+#[cfg(unix)]
+#[test]
+fn a_picture_on_the_clipboard_is_not_read_as_text() {
+    // 2026-10-22 项目主人在确认的理由里 Ctrl+V，剪贴板里是截图：wl-paste 交出 PNG 的原始字节，原来硬转成一大片乱码贴进去。
+    let picture = read_with(&[("printf", &["\\211PNG\\r\\n"])], Duration::from_secs(1));
+    assert_eq!(picture, Err(Unreadable), "不是 UTF-8 的当没读到");
+    let next = read_with(
+        &[("printf", &["\\211PNG\\r\\n"]), ("printf", &["字"])],
+        Duration::from_secs(1),
+    );
+    assert_eq!(next, Ok("字".to_string()), "接着试下一个");
+}

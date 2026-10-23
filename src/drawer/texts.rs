@@ -38,6 +38,16 @@ pub struct Texts {
     pub decisions: [String; 3],
     /// 写「不允许」的理由时，还没打字暗色写的。
     pub reason_hint: String,
+    /// 要跑的命令往上滚过了：上面还有几行，`{n}`。
+    pub command_above: String,
+    /// 要跑的命令放不下：下面还有几行，`{n}`。
+    pub command_below: String,
+    /// 命令能滚时按键提示里多的那一项。
+    pub keys_scroll: String,
+    /// 预览能滚时按键提示里多的那一项。
+    pub keys_scroll_preview: String,
+    /// 预览放不下时「预览」后面写的：下面还有几行，`{n}`。
+    pub preview_below: String,
     /// 确认的问题行，照 `access` 找，`{count}` 路径数、`{tool}` 工具名。
     pub access: HashMap<String, String>,
     /// `access` 里没有的。

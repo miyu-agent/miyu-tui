@@ -366,6 +366,35 @@ async fn send(
         Command::DreamStop => Some(Awaiting::DreamStop),
         _ => None,
     };
+    // 回答里贴的图：传不上照样交回答、不带图，告诉界面一声（抽屉已经关了）。
+    let answer_files = match &command {
+        Command::Answer { files, .. } if !files.is_empty() => {
+            let paths: Vec<_> = files.iter().map(|(_, f)| f.clone()).collect();
+            match upload::attach(rpc, &paths).await {
+                Ok(got) => Some(
+                    files
+                        .iter()
+                        .map(|(slot, _)| *slot)
+                        .zip(got)
+                        .collect::<Vec<_>>(),
+                ),
+                Err(Update::Disconnected) => return Sent::Lost,
+                Err(Update::Refused { message, .. }) => {
+                    if !notify(Update::AnswerFilesLost(message)) {
+                        return Sent::Quit;
+                    }
+                    None
+                }
+                Err(update) => {
+                    if !notify(update) {
+                        return Sent::Quit;
+                    }
+                    None
+                }
+            }
+        }
+        _ => None,
+    };
     let files = match &command {
         Command::Send { files, .. } if !files.is_empty() => Some(files.clone()),
         Command::Redo { files, .. } => files.clone(),
@@ -395,6 +424,9 @@ async fn send(
     };
     if let Some(attachments) = attachments {
         params["attachments"] = json!(attachments);
+    }
+    if let Some(files) = answer_files {
+        place_answer_files(&mut params, files);
     }
     match (rpc.send(method, params).await, kind) {
         (Err(_), _) => Sent::Lost,
@@ -435,3 +467,25 @@ async fn unsubscribe(rpc: &mut Rpc, session: &str) -> io::Result<String> {
     let params = json!({"session": session, "stream": "events"});
     rpc.send("unsubscribe", params).await
 }
+
+/// 回答里传上去的图放进 `session.answer` 的参数：`Some(i)` 的进第 `i` 道回答的 `attachments`，`None` 的进外面的（拒绝）。
+fn place_answer_files(
+    params: &mut serde_json::Value,
+    files: Vec<(Option<usize>, serde_json::Value)>,
+) {
+    for (slot, attachment) in files {
+        let into = match slot {
+            Some(i) => &mut params["answers"][i]["attachments"],
+            None => &mut params["attachments"],
+        };
+        if !into.is_array() {
+            *into = json!([]);
+        }
+        if let Some(list) = into.as_array_mut() {
+            list.push(attachment);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests;

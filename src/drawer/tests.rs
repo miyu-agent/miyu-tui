@@ -325,16 +325,29 @@ fn what_is_left_behind() {
         call_id: "x".into(),
         decision: Decision::Once,
         reason: None,
+        files: Vec::new(),
     });
     assert_eq!(a.report(&allow, &texts), Report::Nothing);
     let deny = Outcome::Decided(super::Decided {
         call_id: "x".into(),
         decision: Decision::Deny,
         reason: Some("不要".into()),
+        files: Vec::new(),
     });
     assert_eq!(
         a.report(&deny, &texts),
-        Report::Denied("不允许 · 不要".into())
+        Report::Denied("不允许 · 不要".into(), String::new())
+    );
+    // 2026-10-22 项目主人：理由有几行的，那一行露出一串「↵」。只写第一行接「…」，全文点开看。
+    let lines = Outcome::Decided(super::Decided {
+        call_id: "x".into(),
+        decision: Decision::Deny,
+        reason: Some("第一行\n第二行".into()),
+        files: Vec::new(),
+    });
+    assert_eq!(
+        a.report(&lines, &texts),
+        Report::Denied("不允许 · 第一行 …".into(), "第一行\n第二行".into())
     );
     // 2026-10-11 项目主人：取消一定顺带打断这一轮，那一步的结果、「已中断」已经说了，不再写「提问已取消」「批准已取消」。
     assert_eq!(a.report(&Outcome::Cancelled, &texts), Report::Nothing);

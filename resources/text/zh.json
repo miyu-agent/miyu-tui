@@ -622,6 +622,9 @@
     "cancel_hint": "再按一次 Esc 取消"
   },
   "clipboard_unreadable": "无法读取剪贴板：请使用终端的粘贴（kitty 为 Ctrl+Shift+V）",
+  "clipboard_text_only": "这里只能粘贴文字",
+  "attach_deny_only": "只有「不允许」能附图",
+  "answer_files_lost": "图片没传上去，回答只交了文字：{message}",
   "clipboard_empty": "剪贴板为空",
   "paste_label": "[已粘贴 {lines} 行]",
   "attach": {

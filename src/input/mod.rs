@@ -22,7 +22,8 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
 pub use attach::{AttachKind, AttachRule, Attachment};
-use dropped::Dropped;
+
+pub use dropped::{Dropped, dropped, quoted};
 pub use editor::Editor;
 pub use pasted::{Block, Draft, PasteRule, Sent};
 pub use saved::{Saved, place};

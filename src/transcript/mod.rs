@@ -66,8 +66,7 @@ pub enum Link {
     Down(String),
 }
 
-/// 发出去了、核心还没开轮（`turn.started` 没来）的那一小段（蓝图 `tui.md`「按键」`Esc`，2026-10-14 项目主人定）：两下
-/// `Esc` 记下要打断，轮一开就打断。
+/// 发出去了、核心还没开轮（`turn.started` 没来）的那一小段：两下 `Esc` 记下要打断，轮一开就打断（蓝图「按键」`Esc`，2026-10-14）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Starting {
     /// 没在等开轮。
@@ -238,7 +237,8 @@ impl Transcript {
             | Update::WidgetChanged { .. }
             | Update::PackageCallRefused { .. }
             | Update::OpenPage(_)
-            | Update::DirChecked(_) => {}
+            | Update::DirChecked(_)
+            | Update::AnswerFilesLost(_) => {}
             Update::CoolingUntil(until) => self.cooling_until(until),
             Update::CurrentModel(current) => self.current_model(current),
             Update::SessionPersona(persona) => self.persona = Some(persona),
