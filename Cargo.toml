@@ -60,6 +60,12 @@ ratex-render = { version = "0.1.14", features = ["embed-fonts"] }
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "1", features = ["stdio", "process", "event"] }
 
+# Windows 上同上那一下把 stderr 临时指到 NUL（`figures/math.rs`），照系统的界面语言认语言（`language.rs`：Windows 一般不设
+# `LANG`）。都用它们的安全接口，依赖树里本来就有。
+[target.'cfg(windows)'.dependencies]
+filedescriptor = "0.8.3"
+sys-locale = "0.3.2"
+
 # 伪终端里的端到端测试（`tests/pty.rs`，蓝图「守着它的」）：测试进程里起一个照剧本回话的核心（和端点的测试同一套），
 # 在伪终端里起真的界面连上去，读屏幕、发按键。只在测试里用。
 [dev-dependencies]

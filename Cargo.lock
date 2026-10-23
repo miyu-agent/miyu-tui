@@ -2477,6 +2477,7 @@ version = "0.0.1"
 dependencies = [
  "base64 0.22.1",
  "crossterm",
+ "filedescriptor",
  "futures-core",
  "image",
  "jiff",
@@ -2503,6 +2504,7 @@ dependencies = [
  "serde",
  "serde_json",
  "similar",
+ "sys-locale",
  "terminal-colorsaurus",
  "tokio",
  "unicode-segmentation",

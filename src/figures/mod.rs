@@ -22,7 +22,6 @@ use ratatui_image::sliced::SlicedProtocol;
 use crate::config::{FigureLook, Room};
 use crate::markdown::{FigureKind, Size};
 use crate::theme;
-pub use math::warm_up_before_drawing;
 pub use terminal::Graphics;
 use worker::Job;
 pub use worker::{Done, Outcome};

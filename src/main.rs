@@ -126,8 +126,6 @@ fn fullscreen() -> io::Result<()> {
         launch.start.clone(),
         move |update| to_core.send(Incoming::Core(update)).is_ok(),
     );
-    // Windows：RaTeX 找字体时打的那一行在进全屏以前打完、擦掉（`figures/math.rs`）。
-    figures::warm_up_before_drawing();
     // 初始化原始模式、备用屏及 panic 收尾；自定义 writer 用来收齐一帧。
     drop(ratatui::init());
     let mut terminal = screen().inspect_err(|_| ratatui::restore())?;
