@@ -51,12 +51,24 @@ fn space_writes_the_feature_or_the_tool_and_ctrl_a_flips_everything() {
         toggle(&features, Row::Feature(0)),
         [("features.files".to_string(), false)]
     );
-    // 功能关着时切它的工具 = 打开这个功能。
+    // 功能关着时开它的一件工具：功能打开、只开这一件，别的关上（2026-10-23 项目主人：「激活读取会激活整个文件读写」）。
     let mut off = features.clone();
     off[0].on = false;
+    let key = |k: &str, on: bool| (k.to_string(), on);
     assert_eq!(
         toggle(&off, Row::Tool(0, 0)),
-        [("features.files".to_string(), true)]
+        [key("features.files", true), key("tools.read", false)],
+        "本来关着的 grep 不用再写"
+    );
+    assert_eq!(
+        toggle(&off, Row::Tool(0, 1)),
+        [
+            key("features.files", true),
+            key("tools.glob", false),
+            key("tools.grep", true),
+            key("tools.read", false)
+        ],
+        "自己原来关着的照样打开"
     );
     assert!(toggle(&features, Row::Feature(3)).is_empty(), "没装的不写");
     // 有没开的：全开（关着的功能、开着的功能里关掉的工具）。
