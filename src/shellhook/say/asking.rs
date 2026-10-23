@@ -194,6 +194,7 @@ impl Asking {
                 session: Some(drawer.owner.clone()).filter(|o| !o.is_empty()),
                 call: drawer.call_id.clone(),
                 body,
+                files: crate::app::answer_files(outcome),
             }),
             None => report(transcript, &drawer, outcome, config),
         }
@@ -260,7 +261,7 @@ fn report(transcript: &mut Transcript, drawer: &Drawer, outcome: &Outcome, confi
                 transcript.note(Kind::Answered, lines.join("\n"));
             }
         }
-        Report::Denied(text) => transcript.job(JobMark::Failed, text, String::new()),
+        Report::Denied(text, full) => transcript.job(JobMark::Failed, text, full),
         Report::Nothing => {}
     }
 }

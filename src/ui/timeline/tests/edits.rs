@@ -69,7 +69,7 @@ fn a_refused_edit_is_red_end_to_end_and_opens_on_why() {
     }
     let style = step::style(&refused, false);
     assert_eq!(style, theme::error());
-    let title = step::title(&refused, style, 80, &f.ctx());
+    let (title, _) = step::title(&refused, style, 80, &f.ctx());
     assert!(
         title.iter().all(|s| s.style == theme::error()),
         "整行红，不夹绿字：{title:?}"

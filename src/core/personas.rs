@@ -38,9 +38,35 @@ pub fn read_personas(got: &Value) -> Vec<Persona> {
     read_list(got, "personas", "persona")
 }
 
-/// 读 `preset.list` 的回应。
+/// 读 `preset.list` 的回应。末尾那一项「无工具」编号是 `null`（核心 P-16 下），读成空的编号，和「无人格」一个记法。
 pub fn read_presets(got: &Value) -> Vec<Preset> {
     read_list(got, "presets", "preset")
+}
+
+/// 读 `preset.list` 的回应，去掉「无工具」：它不是文件，配置页不能编辑、不能设成默认（核心 P-16 下）。
+pub fn read_preset_files(got: &Value) -> Vec<Preset> {
+    let mut list = read_presets(got);
+    list.retain(|p| !p.id.is_empty());
+    list
+}
+
+/// 会话信息里用的预设（会话列表、`subscribe` 回应）：无工具的写 `preset: null`、`no_tools: true`，读成空的编号
+/// （核心 P-16 下）；没写的是 `None`。
+pub fn session_preset(info: &Value) -> Option<String> {
+    match info["preset"].as_str() {
+        Some(id) => Some(id.to_string()),
+        None if info["no_tools"] == true => Some(String::new()),
+        None => None,
+    }
+}
+
+/// 开会话、换预设时交的预设：空的编号（无工具）交 `null`（核心 P-16 下）。
+pub fn preset_param(id: &str) -> Value {
+    if id.is_empty() {
+        Value::Null
+    } else {
+        Value::from(id)
+    }
 }
 
 /// 一行行在 `list` 那一格，编号在每一项的 `id` 那一格。
@@ -64,4 +90,45 @@ fn read_list(got: &Value, list: &str, id: &str) -> Vec<Persona> {
             }),
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::{preset_param, read_preset_files, read_presets, session_preset};
+
+    /// 核心 P-16 下的 `preset.list`：末尾一项编号是 `null` 的「无工具」。
+    fn listed() -> serde_json::Value {
+        json!({"presets": [
+            {"preset": "full", "name": "全部"},
+            {"preset": null, "name": "无工具", "summary": "不提供任何工具。", "icon": "circle-off"},
+        ]})
+    }
+
+    #[test]
+    fn no_tools_reads_as_the_empty_id_and_is_left_out_of_the_files() {
+        let all = read_presets(&listed());
+        assert_eq!(all.len(), 2);
+        assert_eq!(all[1].id, "");
+        assert_eq!(all[1].label(), "无工具");
+        let files = read_preset_files(&listed());
+        assert_eq!(
+            files.iter().map(|p| p.id.as_str()).collect::<Vec<_>>(),
+            ["full"]
+        );
+    }
+
+    #[test]
+    fn a_session_with_no_tools_is_the_empty_id_and_is_sent_back_as_null() {
+        assert_eq!(
+            session_preset(&json!({"preset": "full"})).as_deref(),
+            Some("full")
+        );
+        let none = json!({"preset": null, "no_tools": true});
+        assert_eq!(session_preset(&none).as_deref(), Some(""));
+        assert_eq!(session_preset(&json!({})), None, "以前的会话没记预设");
+        assert_eq!(preset_param(""), json!(null));
+        assert_eq!(preset_param("full"), json!("full"));
+    }
 }

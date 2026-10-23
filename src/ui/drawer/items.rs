@@ -50,7 +50,34 @@ pub fn choices(d: &Drawer, texts: &Texts, width: u16) -> Block {
             b.focus = (first, b.lines.len() - 1);
         }
     }
+    images(d, texts, width, &mut b);
     b
+}
+
+/// 这一页贴的图（核心 Q-A，「确认和提问的抽屉」第 3a 条）：选项下面一行小块，同输入框的块；放不下的折到下一行。
+fn images(d: &Drawer, texts: &Texts, width: u16, b: &mut Block) {
+    let Some(images) = d.images.get(d.tab).filter(|i| !i.is_empty()) else {
+        return;
+    };
+    let indent = " ".repeat(texts.pointer.width());
+    let room = usize::from(width);
+    let mut spans = vec![Span::raw(indent.clone())];
+    let mut used = indent.width();
+    for pasted in images {
+        let w = pasted.label.width();
+        if used > indent.width() && used + 1 + w > room {
+            b.push(Line::from(std::mem::take(&mut spans)), None);
+            spans.push(Span::raw(indent.clone()));
+            used = indent.width();
+        }
+        if used > indent.width() {
+            spans.push(Span::raw(" "));
+            used += 1;
+        }
+        spans.push(Span::styled(pasted.label.clone(), theme::chip()));
+        used += w;
+    }
+    b.push(Line::from(spans), None);
 }
 
 fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b: &mut Block) {
@@ -111,6 +138,7 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
     let label = super::clip(&label, u16::try_from(room).unwrap_or(u16::MAX));
     let mut used = lead + label.width();
     spans.push(Span::styled(label, label_style));
+    let mut more = Vec::new();
     if editing {
         let (gap, hint) = match item {
             Item::Other => ("", &texts.other),
@@ -119,12 +147,24 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
         spans.push(Span::raw(gap));
         used += gap.width();
         let room = usize::from(width).saturating_sub(used + 1);
-        let shown = tail(&inline_raw(typed), room);
-        b.cursor = Some((b.lines.len(), col(used + shown.width())));
-        if shown.is_empty() {
-            spans.push(Span::styled(tail(hint, room), theme::dim()));
+        if item == Item::Other || typed.is_empty() {
+            let shown = tail(&inline_raw(typed), room);
+            b.cursor = Some((b.lines.len(), col(used + shown.width())));
+            if shown.is_empty() {
+                spans.push(Span::styled(tail(hint, room), theme::dim()));
+            } else {
+                spans.push(Span::raw(shown));
+            }
         } else {
-            spans.push(Span::raw(shown));
+            // 理由能分行（2026-10-22 项目主人：「理由不支持换行」）：第一行接在「不允许」后面，换了行的、写长了的往下对齐
+            // 接着写，光标跟在最后。
+            let rows = reason_rows(typed, room);
+            let last = rows.last().map_or(0, |r| r.width());
+            b.cursor = Some((b.lines.len() + rows.len() - 1, col(used + last)));
+            let mut rows = rows.into_iter();
+            spans.push(Span::raw(rows.next().unwrap_or_default()));
+            let indent = " ".repeat(used);
+            more.extend(rows.map(|r| Line::from(vec![Span::raw(indent.clone()), Span::raw(r)])));
         }
     }
     // 光标停在「不允许」上、还没在写：后面暗色写怎么写理由（2026-10-22 项目主人：「鼠标移动到不允许，然后出现 n 键
@@ -136,6 +176,9 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
         ));
     }
     b.push(Line::from(spans), Some(index));
+    for line in more {
+        b.push(line, Some(index));
+    }
     if let Some(description) = description.filter(|s| !s.trim().is_empty()) {
         let indent = " ".repeat(lead);
         let room = col(usize::from(width).saturating_sub(lead)).max(1);
@@ -191,6 +234,20 @@ pub fn review(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
 }
 
 /// 写的字排成一行：换行写成 `↵`，前后的空白照留（光标跟着）。
+/// 理由排成的几行：照换行分开，长的照 `room` 折行；空行照样占一行。
+fn reason_rows(text: &str, room: usize) -> Vec<String> {
+    let room = u16::try_from(room).unwrap_or(u16::MAX).max(1);
+    let mut out = Vec::new();
+    for line in text.split('\n') {
+        let parts = pieces(line, room);
+        if parts.is_empty() {
+            out.push(String::new());
+        }
+        out.extend(parts.into_iter().map(|(piece, _)| piece));
+    }
+    out
+}
+
 fn inline_raw(text: &str) -> String {
     text.replace(['\r', '\n'], &crate::sheet::mark(|m| &m.enter))
 }

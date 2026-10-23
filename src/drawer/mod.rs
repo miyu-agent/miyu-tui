@@ -10,6 +10,8 @@ mod report;
 mod texts;
 
 #[cfg(test)]
+mod image_tests;
+#[cfg(test)]
 mod tests;
 
 use std::collections::VecDeque;
@@ -18,7 +20,7 @@ use std::time::{Duration, Instant};
 mod asks;
 
 pub use asks::Asks;
-pub use event::{Answer, Answered, Approval, Asked, Decided, Decision, Question};
+pub use event::{Answer, Answered, Approval, Asked, Decided, Decision, Pasted, Question};
 pub use package::{PackageTexts, Plan};
 pub use report::{Report, inline, said};
 pub use texts::Texts;
@@ -76,6 +78,9 @@ pub enum Step {
     Done(Outcome),
 }
 
+/// 确认要跑的命令一次露几行，多的滚着看（`ui/drawer/command.rs`，2026-10-22 项目主人）。
+pub const COMMAND_ROWS: usize = 8;
+
 /// 一个抽屉。
 #[derive(Debug, Clone)]
 pub struct Drawer {
@@ -102,6 +107,8 @@ pub struct Drawer {
     pub typed: Vec<String>,
     /// 每一页按 `n` 写的补充。
     pub notes: Vec<String>,
+    /// 每一页贴的图（确认的是「不允许」的）：字下面一行小块，字删空了再按 `Backspace` 删最后一张（2026-10-22 项目主人）。
+    pub images: Vec<Vec<Pasted>>,
     /// 每一道的回答；还没答的是 `None`。
     pub answers: Vec<Option<Answer>>,
     /// 正在写什么；没在编辑是 `None`。
@@ -110,9 +117,30 @@ pub struct Drawer {
     pub armed: Option<Instant>,
     /// 放不下时选项从第几行露起：画的时候跟着选中的那一项定。
     pub scroll: usize,
+    /// 命令那一块滚到第几行（`ui/drawer/command.rs`）。
+    pub command_top: usize,
+    /// 命令排成几行：画的时候记下，滚的时候照它停在最后一段。
+    pub command_rows: usize,
+    /// 命令一次露几行：最多 [`COMMAND_ROWS`]，抽屉放不下时画的时候收窄（空行、问题留着，命令能滚）。
+    pub command_window: usize,
 }
 
 impl Drawer {
+    /// 要跑的命令（提问的是选中那一项的预览）放不下、能滚（画的时候记下排成几行）。
+    pub fn command_scrolls(&self) -> bool {
+        self.command_rows > self.command_window
+    }
+
+    /// 命令那一块往下、往上滚一行（滚轮、`Ctrl+J` `Ctrl+K`、`Ctrl+↓` `Ctrl+↑`）；放得下的不动。
+    pub fn scroll_command(&mut self, down: bool) {
+        let last = self.command_rows.saturating_sub(self.command_window);
+        self.command_top = if down {
+            (self.command_top + 1).min(last)
+        } else {
+            self.command_top.saturating_sub(1).min(last)
+        };
+    }
+
     /// 她的提问。
     pub fn question(who: Option<String>, asked: Asked) -> Self {
         let pages = asked.questions.len().max(1);
@@ -166,10 +194,14 @@ impl Drawer {
             checked,
             typed: vec![String::new(); pages],
             notes: vec![String::new(); pages],
+            images: vec![Vec::new(); pages],
             answers: vec![None; pages],
             editing: None,
             armed: None,
             scroll: 0,
+            command_top: 0,
+            command_rows: 0,
+            command_window: COMMAND_ROWS,
         }
     }
 
@@ -269,6 +301,8 @@ impl Drawer {
                 let mut a = self.answers[p].clone().unwrap_or_default();
                 let notes = self.notes[p].trim();
                 a.notes = (!notes.is_empty()).then(|| notes.to_string());
+                // 只贴了图的那道也算答了（核心 Q-A）。
+                a.files.clone_from(&self.images[p]);
                 a
             })
             .collect();
@@ -308,6 +342,11 @@ impl Drawers {
     /// 开着的那一个正在编辑。
     pub fn editing(&self) -> bool {
         self.current.as_ref().is_some_and(|d| d.editing.is_some())
+    }
+
+    /// 开着的那一个的命令能滚：`Ctrl+J` `Ctrl+K` 归它，不当上下（`app/vim.rs`）。
+    pub fn command_scrolls(&self) -> bool {
+        self.current.as_ref().is_some_and(Drawer::command_scrolls)
     }
 
     /// 这一次调用了结了（别的头答了、打断了、补发里一问一答都在）：开着的收起、排着的、搁着的拿掉；交回收起的是不是开着的

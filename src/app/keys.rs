@@ -90,6 +90,12 @@ impl App {
         if self.drawer_key(key) {
             return Action::None;
         }
+        // 新会话开头那个换掉输入框的人格、预设框（列表读到以前写「正在加载…」也算）：没有输入框，`Ctrl+C`、`Ctrl+D` 直接
+        // 退出，`Ctrl+Z` 照常挂起（2026-10-23 项目主人：「这个界面我期望能 ctrl+C/Ctrl+D 退出 tui」）。
+        if self.start_box_shown() && leaves(&key) && key.code != KeyCode::Char('z') {
+            self.quit = true;
+            return Action::None;
+        }
         // 新会话开头还没选人格、预设，列表还在读：输入框的位置写「正在加载…」，按键哪都不进，只认退出、挂起
         // （「新会话：人格、工作区」第 1 条，2026-10-21 项目主人：会话开得慢时输入框能打几个字）。
         if self.start_loading() && !leaves(&key) {
@@ -344,6 +350,8 @@ impl App {
             Run::Copy => self.copy_reply(),
             Run::Usage => self.open_usage(),
             Run::Status => self.open_status(),
+            Run::ToolList => self.open_tool_list(),
+            Run::Context => self.open_context(),
             Run::New => self.new_session(),
             Run::Revert => self.undo(),
             Run::Unrevert => self.link.core.send(Command::Unrevert),

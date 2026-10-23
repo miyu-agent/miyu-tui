@@ -26,14 +26,20 @@ fn boundary(prev: Option<char>, c: char) -> bool {
     }
 }
 
-/// 一段在一个字段里的分：对不上是 `None`。从每一个能起头的地方往后贪心地找，取最好的。
+/// 一段在一个字段里的分：对不上是 `None`。
 fn term_score(term: &[char], text: &[char], lower: &[char]) -> Option<i64> {
+    term_match(term, text, lower).map(|(score, _)| score)
+}
+
+/// 一段在一个字段里的分和对上的那几个字（第几个字）：从每一个能起头的地方往后贪心地找，取最好的。
+fn term_match(term: &[char], text: &[char], lower: &[char]) -> Option<(i64, Vec<usize>)> {
     let first = *term.first()?;
-    let mut best: Option<i64> = None;
+    let mut best: Option<(i64, Vec<usize>)> = None;
     for start in (0..lower.len()).filter(|&i| lower[i] == first) {
         let mut at = start;
         let mut score = 0i64;
         let mut last: Option<usize> = None;
+        let mut hits = Vec::new();
         let mut ok = true;
         for &want in term {
             let Some(found) = (at..lower.len()).find(|&i| lower[i] == want) else {
@@ -50,6 +56,7 @@ fn term_score(term: &[char], text: &[char], lower: &[char]) -> Option<i64> {
                 None => {}
             }
             last = Some(found);
+            hits.push(found);
             at = found + 1;
         }
         if !ok {
@@ -57,9 +64,54 @@ fn term_score(term: &[char], text: &[char], lower: &[char]) -> Option<i64> {
         }
         // 越靠前越好：起头每晚一格扣一点，最多扣 10。
         score -= i64::try_from(start).unwrap_or(i64::MAX).min(10);
-        best = Some(best.map_or(score, |b| b.max(score)));
+        if best.as_ref().is_none_or(|(b, _)| score > *b) {
+            best = Some((score, hits));
+        }
     }
     best
+}
+
+/// `query` 在 `field` 这一个字段里对上的字（第几个字，从小到大）：列表里把它们换个颜色（2026-10-23 项目主人：「搜索匹配到
+/// 的文字我希望颜色能不一样」）。照先后对上的照那几个字；切成几截才对上的照每截原样出现的那一处。
+pub fn marks(query: &str, field: &str) -> Vec<usize> {
+    let text: Vec<char> = field.chars().collect();
+    let lower: Vec<char> = text
+        .iter()
+        .map(|c| c.to_lowercase().next().unwrap_or(*c))
+        .collect();
+    let mut out = Vec::new();
+    for term in terms(query) {
+        match term_match(&term, &text, &lower) {
+            Some((_, hits)) => out.extend(hits),
+            None => out.extend(piece_marks(&term, &lower)),
+        }
+    }
+    out.sort_unstable();
+    out.dedup();
+    out
+}
+
+/// 切开对上的一段：从前往后取最长的、原样出现在这个字段里的一截（至少 [`PIECE`] 个字），标上它出现的地方。
+fn piece_marks(term: &[char], lower: &[char]) -> Vec<usize> {
+    let mut out = Vec::new();
+    let mut from = 0;
+    while from + PIECE <= term.len() {
+        let found = (from + PIECE..=term.len()).rev().find_map(|to| {
+            let part = &term[from..to];
+            lower
+                .windows(part.len())
+                .position(|w| w == part)
+                .map(|at| (to, at))
+        });
+        match found {
+            Some((to, at)) => {
+                out.extend(at..at + (to - from));
+                from = to;
+            }
+            None => from += 1,
+        }
+    }
+    out
 }
 
 /// `query` 和这几个字段的分：每一段取它最对得上的那个字段，加起来；有一段哪个字段都对不上是 `None`。空的 `query` 是 0。

@@ -31,6 +31,9 @@ pub struct Icons {
     pub stash: String,
     /// 视频卡片封面下的播放标记（蓝图「链接卡片」第 3 条）。
     pub video: String,
+    /// 要人留意的一句前面的记号，连同它后面的空格（人格、预设框里「切换前会先压缩」，2026-10-23 项目主人定黄字加 ⚠）。
+    #[serde(default = "warn_mark")]
+    pub warn: String,
     /// 展示的卡片前面的种类图标：`html`、`markdown`、`code`、`pdf`、`text`、`file`（蓝图「展示」第 4 条，2026-10-17 项目主人
     /// 要的）；没写的这一套不画。
     #[serde(default)]
@@ -83,6 +86,11 @@ pub fn pick(sets: &[Icons], name: &str) -> Option<Icons> {
         .find(|icons| icons.name == name)
         .or(sets.first())
         .cloned()
+}
+
+/// 没写 `warn` 的图标套件（以前的、包里带的）用它。
+fn warn_mark() -> String {
+    "! ".to_string()
 }
 
 #[cfg(test)]

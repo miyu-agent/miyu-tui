@@ -180,6 +180,36 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
             frame.buffer_mut().set_style(cols, reversed);
         }
     }
+    bar(frame, area, &screen.view);
+}
+
+/// 滚动条（「正文」第 1a 条，2026-10-22 项目主人照 Pi 要的）：内容放不下、指针停在那一列上或者正拖着时才画（2026-10-23
+/// 项目主人：鼠标不移过去就藏着），在正文这一栏最右边（`BodyView::bar_x`）；暗色细线当轨道，粗的亮块当滑块。记号照主题
+/// （`side`、`block`）。
+fn bar(frame: &mut Frame, area: Rect, view: &crate::body_view::BodyView) {
+    let Some(bar) = view.bar() else {
+        return;
+    };
+    if !(view.bar_hover || view.bar_held()) {
+        return;
+    }
+    let x = view.bar_column();
+    for y in 0..area.height {
+        // 滑块照八分之一格画（拖动按像素以后跟得上，2026-10-23）：头尾那一格只盖一部分的，从当中开始的画下半截，在当中
+        // 结束的把下半截的记号反着画成上半截。
+        let (cover, starts) = bar.cover(y);
+        let eighths = (cover * 8.0).round() as usize;
+        let (mark, style) = match eighths {
+            0 => (crate::sheet::mark(|m| &m.side), theme::faint()),
+            8.. => (crate::sheet::mark(|m| &m.block), theme::dim()),
+            n if starts => (crate::sheet::mark(|m| &m.chart[n - 1]), theme::dim()),
+            n => (
+                crate::sheet::mark(|m| &m.chart[7 - n]),
+                theme::dim().add_modifier(Modifier::REVERSED),
+            ),
+        };
+        frame.buffer_mut().set_string(x, area.y + y, mark, style);
+    }
 }
 
 /// 最新的那段回答（编号、第一行、还在不在写）算不算在看：在写的算；写完了的，上一帧（`view.latest`、`view.first`）

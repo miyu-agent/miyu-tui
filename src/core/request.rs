@@ -44,6 +44,7 @@ pub(super) fn request(
             session: asker,
             call,
             mut body,
+            ..
         } => {
             body["session"] = json!(asker.as_deref().unwrap_or(session));
             body["call"] = json!(call);

@@ -335,6 +335,41 @@
     "memory": "recalled {recalled} times · remembered {remembered}",
     "hint": "↑/↓ scroll · c copy · Esc close"
   },
+  "tool_list": {
+    "title": "Tools · {n}",
+    "loading": "Reading tools…",
+    "empty": "No tools available",
+    "count": "{n}",
+    "hint": "↑/↓ scroll · c copy · Esc close"
+  },
+  "context_box": {
+    "title": "Context breakdown",
+    "loading": "Loading…",
+    "used": "Used {used} / {window}",
+    "used_only": "Used {used}",
+    "line": "compaction at {line}",
+    "estimated": "estimated",
+    "totals": "This session so far",
+    "columns": {
+      "requests": "Calls",
+      "uncached": "Input",
+      "cache_read": "Cache read",
+      "cache_write": "Cache write",
+      "output": "Output",
+      "cost": "Cost"
+    },
+    "sum": "Total",
+    "uses": {
+      "main": "Main",
+      "compaction": "Compaction",
+      "subagent": "Subagents",
+      "recap": "Recap",
+      "title": "Titles",
+      "memory": "Memory",
+      "other": "Other"
+    },
+    "hint": "↑/↓ scroll · c copy · Esc close"
+  },
   "usage": {
     "title": "Usage",
     "tabs": [
@@ -566,6 +601,11 @@
     ],
     "reason_hint": "Add a reason (optional)",
     "reason_key": "n write a reason",
+    "command_above": "↑ {n} more above",
+    "command_below": "↓ {n} more below",
+    "keys_scroll": "Ctrl+J/K scroll command",
+    "keys_scroll_preview": "Ctrl+J/K scroll preview",
+    "preview_below": "{n} more below",
     "access": {
       "execute": "Run a command",
       "write": "Wants to write {count} file(s)",
@@ -624,6 +664,9 @@
     "cancel_hint": "Press Esc again to cancel"
   },
   "clipboard_unreadable": "Can't read the clipboard: use your terminal's own paste (Ctrl+Shift+V in kitty)",
+  "clipboard_text_only": "Only text can be pasted here",
+  "attach_deny_only": "Images can only go with \"Don't allow\"",
+  "answer_files_lost": "The images could not be uploaded, so only the text was sent: {message}",
   "clipboard_empty": "The clipboard is empty",
   "paste_label": "[pasted {lines} line(s)]",
   "attach": {
@@ -1103,7 +1146,8 @@
       ],
       "preset_detail": [
         "Features {on}/{all}",
-        "Not installed"
+        "Not installed",
+        "Description"
       ],
       "origins": {
         "default": "default",
@@ -1369,13 +1413,14 @@
       "seed_unset": "Clear the persona's main color and go back to the avatar's first candidate",
       "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons", "keys": "Interaction"},
       "appearance": "Appearance",
+      "service": {"group": "Startup", "name": "Start the core at login", "enabling": "Turning on start at login…", "disabling": "Turning off start at login…", "enabled": "Starts at login: {file}", "disabled": "No longer starts at login", "failed": "Failed: {step}: {said}", "no_home": "Home directory not found", "windows": "Not available on Windows with MIYU_HOME set"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
       "unavailable": "Not installed",
       "custom_model": "Enter a model…",
       "combo": ["Not set", "Other…"],
       "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]],
       "list": {"empty": "None yet", "whole": "Enter a whole number", "hints": [["Enter", "edit"], ["a", "add"], ["d", "delete"], ["J/K", "move"], ["Esc", "done"]]},
-      "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["j/k", "move"], ["Enter", "save"], ["Esc", "cancel"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally"},
+      "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["Ctrl+A", "all"], ["j/k", "move"], ["Enter", "save"], ["Esc", "cancel"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally"},
       "mcp": {"entry": ["MCP", "Status and sign-in of MCP servers"], "states": {"off": "Off", "starting": "Starting", "running": "Running", "waiting": "Reconnecting", "stopped": "Stopped", "needs_login": "Sign-in needed"}, "tools": "{n} tools", "login": "Sign in", "asking": "Getting the sign-in page for {name}", "opened": "Opened the sign-in page for {name} in the browser", "no_browser": "Can't open a browser. Sign-in page: {url}", "unregistered": "This server needs a registered client. Put its client_id in the server's settings", "failed": "Sign-in failed: {why}", "logout": "Sign out", "leaving": "Signing out of {name}", "left": "Signed out of {name}", "not_logged_in": "{name} was not signed in", "hints": [["Enter", "sign in / out"], ["Esc", "back"]]}
     }
   },

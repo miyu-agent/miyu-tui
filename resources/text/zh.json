@@ -335,6 +335,41 @@
     "memory": "回忆 {recalled} 次 · 记住 {remembered} 条",
     "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
   },
+  "tool_list": {
+    "title": "工具 · {n} 件",
+    "loading": "正在读工具…",
+    "empty": "没有能用的工具",
+    "count": "{n} 件",
+    "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
+  },
+  "context_box": {
+    "title": "上下文明细",
+    "loading": "正在读…",
+    "used": "已用 {used} / {window}",
+    "used_only": "已用 {used}",
+    "line": "压缩线 {line}",
+    "estimated": "估算",
+    "totals": "本会话累计",
+    "columns": {
+      "requests": "次数",
+      "uncached": "输入",
+      "cache_read": "缓存读",
+      "cache_write": "缓存写",
+      "output": "输出",
+      "cost": "花费"
+    },
+    "sum": "合计",
+    "uses": {
+      "main": "主对话",
+      "compaction": "压缩",
+      "subagent": "子代理",
+      "recap": "回顾",
+      "title": "起标题",
+      "memory": "记忆",
+      "other": "其他"
+    },
+    "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
+  },
   "usage": {
     "title": "用量",
     "tabs": [
@@ -566,6 +601,11 @@
     ],
     "reason_hint": "理由（可选）",
     "reason_key": "n 编写理由",
+    "command_above": "↑ 上面还有 {n} 行",
+    "command_below": "↓ 还有 {n} 行",
+    "keys_scroll": "Ctrl+J/K 滚动命令",
+    "keys_scroll_preview": "Ctrl+J/K 滚动预览",
+    "preview_below": "下面还有 {n} 行",
     "access": {
       "execute": "运行一条命令",
       "write": "写入 {count} 个文件",
@@ -624,6 +664,9 @@
     "cancel_hint": "再按一次 Esc 取消"
   },
   "clipboard_unreadable": "无法读取剪贴板：请使用终端的粘贴（kitty 为 Ctrl+Shift+V）",
+  "clipboard_text_only": "这里只能粘贴文字",
+  "attach_deny_only": "只有「不允许」能附图",
+  "answer_files_lost": "图片没传上去，回答只交了文字：{message}",
   "clipboard_empty": "剪贴板为空",
   "paste_label": "[已粘贴 {lines} 行]",
   "attach": {
@@ -1103,7 +1146,8 @@
       ],
       "preset_detail": [
         "功能 {on}/{all}",
-        "未安装"
+        "未安装",
+        "描述"
       ],
       "origins": {
         "default": "默认",
@@ -1369,13 +1413,14 @@
       "seed_unset": "清除人格的主色，恢复为头像取出的第一个",
       "own_groups": {"look": "主题", "theme": "配色方案", "timeline": "时间线", "mascot": "吉祥物", "icons": "图标", "keys": "交互"},
       "appearance": "外观",
+      "service": {"group": "启动", "name": "开机启动核心", "enabling": "正在设为开机启动…", "disabling": "正在取消开机启动…", "enabled": "已设为开机启动：{file}", "disabled": "已取消开机启动", "failed": "没成：{step}：{said}", "no_home": "找不到家目录", "windows": "设了 MIYU_HOME 时 Windows 上装不了"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}, "tui.keys": {"arrows": "方向键", "vim": "Vim"}},
       "unavailable": "未安装",
       "custom_model": "输入模型…",
       "combo": ["不设", "其他…"],
       "sheet_hints": [["Enter", "换行"], ["Ctrl+G", "外部编辑器"], ["Esc", "完成"]],
       "list": {"empty": "还没有", "whole": "请输入整数", "hints": [["Enter", "编辑"], ["a", "添加"], ["d", "删除"], ["J/K", "移动"], ["Esc", "完成"]]},
-      "ticks": {"empty": "没有可选的", "hints": [["空格", "勾选"], ["j/k", "移动"], ["Enter", "保存"], ["Esc", "取消"]]}, "package_from": {"shipped": "出厂自带", "official": "官方软件源", "local": "本机安装"},
+      "ticks": {"empty": "没有可选的", "hints": [["空格", "勾选"], ["Ctrl+A", "全选"], ["j/k", "移动"], ["Enter", "保存"], ["Esc", "取消"]]}, "package_from": {"shipped": "出厂自带", "official": "官方软件源", "local": "本机安装"},
       "mcp": {"entry": ["MCP", "MCP 服务的状态、登录"], "states": {"off": "关着", "starting": "在启动", "running": "在跑", "waiting": "等重连", "stopped": "停了", "needs_login": "要登录"}, "tools": "{n} 件工具", "login": "登录", "asking": "正在要 {name} 的授权页", "opened": "已在浏览器打开 {name} 的授权页", "no_browser": "打不开浏览器，授权页：{url}", "unregistered": "这个服务要先注册客户端，把 client_id 写进它的设置", "failed": "登录失败：{why}", "logout": "登出", "leaving": "正在登出 {name}", "left": "已登出 {name}", "not_logged_in": "{name} 没有登录过", "hints": [["Enter", "登录、登出"], ["Esc", "返回"]]}
     }
   },

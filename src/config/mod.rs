@@ -93,6 +93,10 @@ pub struct Texts {
     pub usage: crate::ui::usage::Texts,
     /// `/status` 会话状态框的字。
     pub status: crate::ui::status_box::Texts,
+    /// `/tool-list` 工具框的字。
+    pub tool_list: crate::ui::tool_list::Texts,
+    /// `/context` 上下文框的字。
+    pub context_box: crate::ui::context_box::Texts,
     /// 配置页的字（`/config`，蓝图「配置页」）。
     pub settings: crate::settings::Texts,
     /// 确认和提问的抽屉上的字。
@@ -105,6 +109,12 @@ pub struct Texts {
     pub mention: MentionTexts,
     /// `Ctrl+V` 读不到剪贴板时的提示。
     pub clipboard_unreadable: String,
+    /// 抽屉、历史搜索里 `Ctrl+V` 读不成字（多半剪贴板里是图片）：这里只收字。
+    pub clipboard_text_only: String,
+    /// 确认的抽屉里光标不在「不允许」上时贴图（核心 Q-A：只有拒绝能带图）。
+    pub attach_deny_only: String,
+    /// 回答里贴的图传不上，回答照样交了，`{message}` 是核心的原话。
+    pub answer_files_lost: String,
     /// `Ctrl+V` 读到空剪贴板时的提示。
     pub clipboard_empty: String,
     /// 空会话的首页上，输入框空着时固定写的提示（蓝图「输入框」第 9 条）。
@@ -336,6 +346,9 @@ impl Config {
         let table = LanguageTable::builtin()?;
         let (text_name, text_json) = localize::text(language)?;
         let mut text: Texts = parse(&text_name, text_json)?;
+        // 测试不看跑测试的终端是哪种（设计 5.3）。
+        let var = |name: &str| (!cfg!(test)).then(|| std::env::var(name).ok()).flatten();
+        crate::tips::fit(&mut text.tips, &mut text.home_placeholder, cfg!(unix), var);
         // 自动时收起那一行照语言表定的那一种（英文）；手动选了哪种照哪种（蓝图「时间线」第 17 条）。
         if auto && let Some(summary_language) = table.find(&table.auto_summary) {
             text.summary = localize::summary(&summary_language)?;

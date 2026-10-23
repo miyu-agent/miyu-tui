@@ -199,51 +199,6 @@ fn a_long_form_error_wraps_instead_of_being_cut() {
 }
 
 #[test]
-fn a_new_preset_or_persona_window_is_titled_by_its_name_before_the_list_is_read_again() {
-    use crate::core::Persona;
-    use crate::settings::pages::choose::{PersonaView, PresetView};
-    use crate::settings::pages::{personas, presets};
-    use crate::settings::popup::Popup;
-
-    let config = Config::builtin().unwrap();
-    let mut p = page(&config);
-    // 列表还是新建以前的那一份：只有一个别的。
-    let other = Persona {
-        id: "dev".into(),
-        name: Some("开发".into()),
-        summary: None,
-        problem: None,
-        avatar: None,
-        seed: None,
-        seeds: None,
-    };
-    p.more.presets = Some(vec![other.clone()]);
-    p.more.personas = Some(vec![other]);
-    // 新建回来了，窗开着（`preset.set`、`persona.set` 回的详情带着名字），`*.list` 还没回来。
-    let made = json!({"preset": "preset-1", "persona": "persona-1", "name": "我的预设"});
-    p.popup = Some(Popup::Preset(PresetView {
-        id: "preset-1".into(),
-        detail: Some(presets::detail(&made)),
-        error: None,
-        cursor: 0,
-    }));
-    let (text, _) = screen(&mut p, &config, 100, 30);
-    assert!(!text.contains("preset-1"), "编号不出现：\n{text}");
-    assert!(
-        text.lines().any(|l| l.trim() == "我的预设"),
-        "标题写名字：\n{text}"
-    );
-    p.popup = Some(Popup::Persona(PersonaView {
-        id: "persona-1".into(),
-        detail: Some(personas::detail(&made)),
-        error: None,
-        cursor: 0,
-    }));
-    let (text, _) = screen(&mut p, &config, 100, 30);
-    assert!(!text.contains("persona-1"), "编号不出现：\n{text}");
-}
-
-#[test]
 fn a_secret_being_typed_is_drawn_as_dots() {
     // 「配置页」第 48 条：密钥的编辑窗里一个字一个 `•`，明文不上屏。
     use crate::settings::pages::choose::LineEdit;
@@ -462,3 +417,5 @@ fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
         "悬停加下划线"
     );
 }
+
+mod presets;

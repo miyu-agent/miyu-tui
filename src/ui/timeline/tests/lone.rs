@@ -19,7 +19,9 @@ fn a_one_step_segment_opens_straight_into_its_content() {
     let rows = super::rows(0, &seg, &f.ctx());
     let lines = text(&rows);
     assert_eq!(lines[0], "  列目录 · 1s");
-    assert!(lines[1].contains("shell · 列目录"), "{lines:?}");
+    // 和收起那一行之间隔一行连接线，同几步的一段（2026-10-23 项目主人：「Used 1 tool」和「抖音下载」之间没有空行）。
+    assert_eq!(lines[1].trim(), "│", "{lines:?}");
+    assert!(lines[2].contains("shell · 列目录"), "{lines:?}");
     assert!(lines.iter().any(|l| l.contains("a.txt")), "{lines:?}");
     assert!(
         rows.iter()

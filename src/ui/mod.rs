@@ -53,6 +53,7 @@ pub mod widget;
 
 pub use history::{index_at as history_index_at, lines as history_lines};
 pub use menu::{index_at as menu_index_at, rows as menu_rows};
+pub mod context_box;
 mod mention;
 mod menu;
 pub mod row_cache;
@@ -61,6 +62,7 @@ mod start_pick;
 mod status;
 pub mod status_box;
 mod timeline;
+pub mod tool_list;
 mod undo_rows;
 pub use timeline::release_on_fold;
 // shellhook 照同一套画等第一个字的转圈、待办（图纸 `shellhook.md`）。
@@ -178,8 +180,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             .max(half),
         _ => half,
     };
-    // 新会话开头选人格、预设：画在输入框的位置（`start_pick.rs`），占它排出来的行数。
-    let start = app.seen().start_pick();
+    // 新会话开头选人格、预设：画在输入框的位置（`start_pick.rs`），占它排出来的行数。不问人格预设的（`tui.skip_pick`）
+    // 等默认的读到以前照旧画输入框，不画「正在加载…」那个框（2026-10-23 项目主人：打开时一瞬间看到选择框，像闪了一下）；
+    // 默认的用不了、真要选时框照常开。
+    let skip = app.config.layout.skip_pick
+        && !matches!(app.boxes.panel, Some(crate::app::Panel::Pick { .. }));
+    let start = app.seen().start_pick().filter(|_| !skip);
     let box_rows = |w: u16| match (open_drawer, start) {
         (Some(d), _) => drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max),
         (None, Some(kind)) => {
@@ -190,6 +196,23 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         }
         (None, None) => app.typing.input.rows(w),
     };
+    // 抽屉这一页的预览比输入框宽：抽屉跟着放宽（最多整栏），选项往左让（2026-10-23 项目主人照 Claude Code，`drawer/preview.rs`）。
+    let widened = open_drawer.and_then(|d| {
+        let base = &app.config.layout;
+        let chrome = layout::box_width(main.width, base) - layout::text_width(main.width, base);
+        let most = main.width.saturating_sub(chrome);
+        let want = drawer::preview_wanted(d, texts, &base.drawer_preview, most)?;
+        if want <= layout::text_width(main.width, base) {
+            return None;
+        }
+        let mut wide = base.clone();
+        let box_w = u32::from(want.min(most) + chrome);
+        wide.width_percent = u16::try_from((box_w * 100).div_ceil(u32::from(main.width.max(1))))
+            .unwrap_or(100)
+            .min(100);
+        Some(wide)
+    });
+    let layout_used = widened.as_ref().unwrap_or(&app.config.layout);
     // 空会话是首页：整组上下居中，吉祥物在中间（`tui.md`「空会话的首页」）。列表占几行交给 `place` 定位。
     let place = |menu_rows: u16| {
         if home {
@@ -203,7 +226,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             home::areas(
                 main,
                 &box_rows,
-                &app.config.layout,
+                layout_used,
                 mascot,
                 menu_rows,
                 agent_rows,
@@ -214,7 +237,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             areas(
                 main,
                 &box_rows,
-                &app.config.layout,
+                layout_used,
                 menu_rows,
                 running,
                 count,
@@ -270,6 +293,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         areas.menu_text = panel::padded(areas.menu_text);
     }
     areas.sidebar = sidebar;
+    // 正文的滚动条贴在这一栏最右边（`body_view.rs` 的 `bar_x`）。
+    app.screen.view.bar_x = Some(main.right().saturating_sub(1));
+    let whole = frame.area();
+    app.screen.pixel.size = (whole.width, whole.height);
     app.screen.areas = areas;
     app.screen.panel_rows = panel_rows;
     use crate::frame_log::section;

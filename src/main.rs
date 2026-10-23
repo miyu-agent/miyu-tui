@@ -49,11 +49,14 @@ mod open;
 mod pacing;
 mod pairs;
 mod pick_box;
+mod pixel_mouse;
 mod pointer;
 mod pulse;
 mod reader;
 mod rng;
 mod scratch;
+mod scrollbar;
+mod service;
 mod session_list;
 mod settings;
 mod sheet;
@@ -68,6 +71,7 @@ mod transcript;
 mod trim;
 mod ui;
 mod usage;
+mod view_stream;
 mod widgets;
 
 use std::io::{self, Write, stdout};
@@ -128,6 +132,9 @@ fn fullscreen() -> io::Result<()> {
     );
     // 初始化原始模式、备用屏及 panic 收尾；自定义 writer 用来收齐一帧。
     drop(ratatui::init());
+    // 进了全屏先藏光标：画第一帧以前要问终端好几样（键盘协议、能不能显示图、配色），这时光标露在左上角，第一帧才藏起来、
+    // 挪到框里（2026-10-22 项目主人：「光标是从左上角移动到输入框」）。
+    execute!(stdout(), cursor::Hide).inspect_err(|_| ratatui::restore())?;
     let mut terminal = screen().inspect_err(|_| ratatui::restore())?;
     let keyboard = match enter() {
         Ok(keyboard) => keyboard,
@@ -204,6 +211,7 @@ fn modes_on(keyboard: bool) -> io::Result<()> {
 
 fn leave(keyboard: bool) -> io::Result<()> {
     pointer::reset(&mut stdout())?;
+    pixel_mouse::PixelMouse::default().reset(&mut stdout())?;
     if keyboard {
         execute!(stdout(), PopKeyboardEnhancementFlags)?;
     }
@@ -248,6 +256,11 @@ fn run(
     let zoom_dir = miyu_client::places::cache_root(&Env::current())
         .ok()
         .map(|root| root.join("tui").join("diagrams"));
+    // 一格几个像素：拖滚动条按像素报鼠标时换回格子用（`pixel_mouse.rs`）。
+    let cell = graphics.as_ref().map(|g| {
+        let c = g.cell();
+        (c.width, c.height)
+    });
     let figures = figures::Figures::start(graphics, &config.figures, zoom_dir, move |done| {
         to_main.send(Incoming::Figure(done)).is_ok()
     });
@@ -255,12 +268,14 @@ fn run(
     let reader = reader::Reader::spawn(move |event| sender.send(Incoming::Terminal(event)).is_ok());
     let human = human::Human::default();
     let mut app = App::new(config, core, human, figures);
+    app.screen.pixel.cell = cell;
     // 跟随壁纸盯着的文件变了：叫醒主循环，这一拍再找（蓝图「主题」的「跟随壁纸」第 3 条）。
     // 头像的主色、壁纸在后台取好了：同样叫醒主循环，不每一拍醒来看（蓝图「空闲不醒」）。
     let wake: theme::wallpaper::Wake =
         std::sync::Arc::new(move || if to_wake.send(Incoming::Wake).is_err() {});
     app.screen.wallpaper.set_wake(wake.clone());
-    app.screen.seeds.set_wake(wake);
+    app.screen.seeds.set_wake(wake.clone());
+    app.link.service.set_wake(wake);
     // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）；问到的终端颜色在挑主题以前装上（终端配色照它推底色）。
     let depth = theme::Depth::detect(|name| std::env::var(name).ok());
     theme::terminal_colors::install(colors, ground, depth);
@@ -360,7 +375,7 @@ fn dispatch(app: &mut App, message: Incoming) {
         Incoming::Terminal(event) => app.handle(event),
         Incoming::Core(update) => app.core(update),
         Incoming::Figure(done) => app.media.figures.borrow_mut().done(done),
-        Incoming::Wake => {}
+        Incoming::Wake => app.woken(),
     }
 }
 
@@ -459,6 +474,7 @@ fn frame(
     let drawn = drawn.map(|_| ()).and_then(|()| {
         let out = terminal.backend_mut().inner_mut().writer_mut();
         caret::park(app.screen.caret, out)?;
+        app.screen.pixel.sync(out)?;
         pointer.set(app.pointing(), out)
     });
     // 画面、图片和光标都准备好了才送出；画失败了也带上同步结尾。

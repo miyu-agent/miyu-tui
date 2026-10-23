@@ -26,4 +26,6 @@ pub struct Link {
     pub system_language: crate::language::Language,
     /// 扩展包放的界面块（蓝图「界面块」，`app/widgets.rs`）。
     pub widgets: crate::widgets::Widgets,
+    /// 开机启动核心：在后台跑 `miyu service`（配置页「开机启动」，`crate::service`）。
+    pub service: crate::service::Service,
 }

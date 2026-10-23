@@ -103,6 +103,10 @@ pub enum Run {
     Usage,
     /// 这个会话的状态（蓝图「会话状态 `/status`」）。
     Status,
+    /// 这个会话（还没开的照选的人格、预设）能用哪些工具（`/tool-list`，`tool_list.rs`）。
+    ToolList,
+    /// 这个会话的上下文一块块各占多少、按用途的累计（`/context`，`context_box.rs`）。
+    Context,
     /// 复制她上一轮的回答（蓝图「斜杠命令」`/copy`）。
     Copy,
     /// 换下一套主题。

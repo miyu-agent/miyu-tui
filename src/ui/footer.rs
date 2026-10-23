@@ -46,7 +46,12 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
             spans: vec![Span::styled(text.clone(), *style)],
         })
         .collect();
-    cells.extend(right(&seen.talk.transcript, &total, seen.config));
+    // 还没开会话：照选了的人格、预设预览的上下文（核心 CX-1 下，「框下面那一行」）。
+    let preview = seen
+        .talk
+        .preview
+        .filter(|_| seen.talk.transcript.session.is_none());
+    cells.extend(right(&seen.talk.transcript, &total, seen.config, preview));
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
     if let Some(amounts) = seen.spent() {
         cells.push(Part {
@@ -60,9 +65,10 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
         .collect();
     let (left, right, kept) = split(
         [
-            left(seen, false, true),
-            left(seen, true, true),
-            left(seen, true, false),
+            left(seen, Model::Full, true),
+            left(seen, Model::Short, true),
+            left(seen, Model::Short, false),
+            left(seen, Model::Bare, false),
         ],
         cells,
         button_w,
@@ -143,12 +149,13 @@ fn button_style(screen: &Screen, at: Rect, focused: bool) -> ratatui::style::Sty
     }
 }
 
-/// 一行怎么分：左边从全的到窄的三种（`lefts`：全的；模型编号只写最后一段的；再把权限级别的字收掉、只留图标的），右边的
-/// 格子全放得下就用最宽的那种，空出的地方给右边；最窄的也放不下右边全部时再照 [`choose`] 挑格子（2026-10-11 项目主人定：
-/// 原来模型编号一长，速度、累计先丢了，中间空着一大截；2026-10-18 项目主人：窄了「开放权限」这些字可以收，图标留着）。
+/// 一行怎么分：左边从全的到窄的四种（`lefts`：全的；模型编号只写最后一段的；再把权限级别的字收掉、只留图标的；最后才
+/// 收掉供应商名），右边的格子全放得下就用最宽的那种，空出的地方给右边；最窄的也放不下右边全部时再照 [`choose`] 挑格子
+/// （2026-10-11 项目主人定：原来模型编号一长，速度、累计先丢了，中间空着一大截；2026-10-18 项目主人：窄了「开放权限」这些字
+/// 可以收，图标留着；2026-10-23 项目主人：供应商名最后再收，不然不知道用的是哪家）。
 /// `button` 是后台按钮连两边的空占几列。交回左边、右边。
 fn split(
-    lefts: [Vec<Span<'_>>; 3],
+    lefts: [Vec<Span<'_>>; 4],
     cells: Vec<Part>,
     button: usize,
     width: u16,
@@ -161,11 +168,13 @@ fn split(
     let fits = |spans: &Vec<Span<'_>>, need: usize| {
         spans.iter().map(Span::width).sum::<usize>() + GAP + button + need <= usize::from(width)
     };
-    let [full, short, bare] = lefts;
+    let [full, short, iconic, bare] = lefts;
     let chosen = if fits(&full, need) {
         full
     } else if fits(&short, need_late) {
         short
+    } else if fits(&iconic, need_late) {
+        iconic
     } else {
         bare
     };
@@ -259,9 +268,20 @@ fn left_line(spans: Vec<Span<'_>>, width: u16) -> Line<'static> {
     Line::from(super::panel::clip_spans(owned, usize::from(width)))
 }
 
-/// 左边那一段：权限级别、模型和端点、思考强度。`short`：模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash`
-/// 写 `deepseek-v4.1-flash`），后面的供应商名不写（2026-10-19 项目主人）；`named`：权限级别写字，不写的只留图标。一行放不下时用窄的（[`split`]）。
-fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
+/// 模型那一格写多全（[`split`] 从全的往窄里挑）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Model {
+    /// 模型编号接暗色的供应商名。
+    Full,
+    /// 模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash` 写 `deepseek-v4.1-flash`），供应商名照写。
+    Short,
+    /// 只写最后一段，供应商名也收掉（最窄的时候）。
+    Bare,
+}
+
+/// 左边那一段：权限级别、模型和端点、思考强度。`model`：模型那一格写多全；`named`：权限级别写字，不写的只留图标。一行放不下
+/// 时用窄的（[`split`]）。
+fn left<'a>(seen: &Seen<'a>, model: Model, named: bool) -> Vec<Span<'a>> {
     let text = &seen.config.text;
     let t = &seen.talk.transcript;
     match &t.link {
@@ -282,9 +302,9 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
             if let Some(word) = cooling {
                 spans.push(Span::styled(sep, theme::dim()));
                 spans.push(Span::styled(word, theme::warn()));
-            } else if let Some((model, endpoint)) = t.shown_model() {
+            } else if let Some((shown, endpoint)) = t.shown_model() {
                 spans.push(Span::styled(sep, theme::dim()));
-                spans.extend(model_spans(model, &endpoint, short));
+                spans.extend(model_spans(shown, &endpoint, model));
                 // 思考强度（`/effort`）：什么都不发的不写。
                 if let Some(effort) = t.effort() {
                     // 强调色（2026-10-02 项目主人：和「工作区」那个蓝一样）。
@@ -297,17 +317,18 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
     }
 }
 
-/// 模型那一格：全的写模型编号接暗色的供应商名；`short` 的只写编号最后一段、不写供应商名（2026-10-19 项目主人：宽度不够
-/// 时供应商信息也可以隐藏，和缩模型编号同一步）。
-fn model_spans(model: String, endpoint: &str, short: bool) -> Vec<Span<'static>> {
-    if short {
-        let last = model.rsplit('/').next().unwrap_or(&model).to_string();
-        return vec![Span::styled(last, theme::model())];
+/// 模型那一格：全的写模型编号接暗色的供应商名；窄的先只写编号最后一段、供应商名照写，最窄才收掉供应商名（2026-10-19 项目主人：
+/// 宽度不够时供应商信息也可以隐藏；2026-10-23 改：「最后再缩，而不是一开始就缩」，同名的模型分不出是哪家）。
+fn model_spans(model: String, endpoint: &str, how: Model) -> Vec<Span<'static>> {
+    let name = match how {
+        Model::Full => model,
+        Model::Short | Model::Bare => model.rsplit('/').next().unwrap_or(&model).to_string(),
+    };
+    let mut spans = vec![Span::styled(name, theme::model())];
+    if how != Model::Bare {
+        spans.push(Span::styled(format!(" {endpoint}"), theme::dim()));
     }
-    vec![
-        Span::styled(model, theme::model()),
-        Span::styled(format!(" {endpoint}"), theme::dim()),
-    ]
+    spans
 }
 
 /// 权限级别那一格写什么、后面接模型那一格用什么隔开：写字的是「⏵⏵ 开放权限」接 ` · `；窄了只留图标的是「⏵⏵」接一个空格，
@@ -339,7 +360,12 @@ fn cooling_word(
 /// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢速度（1）、花费（2，接在累计后面，见调用处），
 /// 这几样比权限级别的字先丢（[`EARLY`]，2026-10-19 项目主人）；再丢累计（3），上下文留到最后（4）。还是 0 的格子不写
 /// （`tui.md`「框下面那一行」）。
-fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
+fn right(
+    t: &Transcript,
+    total: &Usage,
+    config: &Config,
+    preview: Option<(u64, Option<u64>)>,
+) -> Vec<Part> {
     let text = &config.text;
     let mut parts = Vec::new();
     if let Some(speed) = t.speed.last {
@@ -350,7 +376,11 @@ fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
             spans: vec![speed],
         });
     }
-    if let Some(context) = context_text(t, config) {
+    let context = match preview {
+        Some((used, window)) => context_words(used, window, config),
+        None => context_text(t, config),
+    };
+    if let Some(context) = context {
         parts.push(Part {
             keep: 4,
             spans: vec![Span::styled(context, theme::dim())],
@@ -379,20 +409,24 @@ pub fn total_text(total: &Usage, config: &Config) -> Option<String> {
 
 /// 上下文：`1.8k/1M(0.2%)`；不知道窗口多大的模型只写用了多少；还是 0 的是 `None`。侧边栏也照它写。
 pub fn context_text(t: &Transcript, config: &Config) -> Option<String> {
-    if t.context == 0 {
+    // 窗口照核心在订阅的回应里给的，头不自己照模型名查。
+    context_words(t.context, t.limits.window, config)
+}
+
+/// 用了多少、窗口写成字（开着的会话、还没开的预览一个写法）。
+fn context_words(used: u64, window: Option<u64>, config: &Config) -> Option<String> {
+    if used == 0 {
         return None;
     }
-    let used = meter::short(t.context);
-    // 窗口照核心在订阅的回应里给的，头不自己照模型名查。
-    let window = t.limits.window;
+    let short = meter::short(used);
     let text = match window {
-        None => used,
+        None => short,
         Some(window) => config
             .text
             .context
-            .replace("{used}", &used)
+            .replace("{used}", &short)
             .replace("{window}", &meter::short(window))
-            .replace("{percent}", &meter::percent_tenths(t.context, window)),
+            .replace("{percent}", &meter::percent_tenths(used, window)),
     };
     Some(text)
 }

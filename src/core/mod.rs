@@ -56,7 +56,7 @@ use connect::connect;
 pub use abilities::Abilities;
 pub use catalog::CoreCommand;
 pub use config::HeadConfig;
-pub use cost::{Bill, Cost, UsageAsk, UsageKind, UsageRow};
+pub use cost::{Bill, Cost, Split, UsageAsk, UsageKind, UsageRow, rows as usage_rows};
 pub use efforts::{EffortList, Efforts, wanted as wanted_models};
 pub use kinds::{EndReason, Level, ToolStatus};
 pub use limits::Limits;
@@ -64,7 +64,9 @@ pub use links::{Card, CardKind, blob_path, cards_dir};
 pub use mermaid::{Marks, Rendered};
 pub use models::{Choice, ChoiceState, Current};
 pub use output::JobOutput;
-pub use personas::{Persona, Preset, read_personas, read_presets};
+pub use personas::{
+    Persona, Preset, preset_param, read_personas, read_preset_files, read_presets, session_preset,
+};
 pub use push::{
     Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobReason, JobStart,
     Push, Sender, Sent, Shown, Usage,
@@ -265,6 +267,9 @@ pub enum Command {
         call: String,
         /// `{"decision": …}` 或 `{"answers": […]}`。
         body: serde_json::Value,
+        /// 贴的图（核心 Q-A）：连接那头先 `blob.put`，`Some(i)` 的填进第 `i` 道回答的 `attachments`，`None` 的填进外面的
+        /// （拒绝的理由）。
+        files: Vec<(Option<usize>, std::path::PathBuf)>,
     },
     /// 不对着会话的一条请求，回应原样交回（[`Update::Answer`]）：配置页用（蓝图「配置页」第 23 条），不为每个方法再加一对命令。
     Ask {
@@ -299,5 +304,9 @@ impl Core {
     }
 }
 
+#[cfg(test)]
+mod test_support;
+#[cfg(test)]
+pub use test_support::*;
 #[cfg(test)]
 mod tests;

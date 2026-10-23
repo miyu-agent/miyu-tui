@@ -27,6 +27,9 @@ fn plain(text: &str) -> String {
 
 #[test]
 fn wide_characters_are_written_once_and_trailing_blanks_are_dropped() {
+    // 铺底色是全局的：别的测试铺了没收，行尾的空格就带了底色、照写（合了 main 以后一起跑撞见）。shell 里不铺。
+    let _theme = crate::theme::hold();
+    crate::theme::set_ground(None);
     let lines = painter()
         .lines(20, &[Line::from("你好 ok"), Line::default()])
         .unwrap();

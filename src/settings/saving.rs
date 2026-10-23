@@ -25,7 +25,7 @@ impl Settings {
         if self
             .waiting
             .values()
-            .any(|w| matches!(w, Waiting::Save | Waiting::Secret(..)))
+            .any(|w| matches!(w, Waiting::Save | Waiting::Secret(..) | Waiting::Rename))
         {
             return;
         }
@@ -37,6 +37,11 @@ impl Settings {
         self.close_after_save = close;
         self.named.clear();
         self.say(texts.status("saving"), Tone::Busy);
+        // 只改了供应商编号：直接改。
+        if secrets.is_empty() && self.draft.only_renames() {
+            self.rename_provider();
+            return;
+        }
         if secrets.is_empty() {
             self.send_config();
         } else {
@@ -97,6 +102,14 @@ impl Settings {
 
     pub(super) fn saved(&mut self, result: Result<Value, Refusal>, texts: &Texts) {
         match result {
+            // 还要改供应商编号：别的改动照旧编号存成了，接着改编号，改完再算存完。
+            Ok(_) if self.draft.rename.is_some() => {
+                let rename = self.draft.rename.take();
+                self.draft.clear();
+                self.draft.rename = rename;
+                self.named.clear();
+                self.rename_provider();
+            }
             Ok(_) => {
                 // 存成了：界面上看的那一份先当成读来的，等重读回来再换成核心的（不闪一下旧的）。
                 let reconnect = self
@@ -142,6 +155,34 @@ impl Settings {
                 };
                 self.failed(text);
             }
+        }
+    }
+
+    /// 改供应商编号（核心 8-34，2026-10-22 项目主人：「最好是能改」）：核心一次改完配置、密钥引用、默认模型和池里的引用，
+    /// 两层各推一条 `config.changed`。
+    fn rename_provider(&mut self) {
+        if let Some((from, to)) = self.draft.rename.clone() {
+            self.ask(
+                "provider.rename",
+                json!({"from": from, "to": to}),
+                Waiting::Rename,
+            );
+        }
+    }
+
+    /// 改编号回来了：成了照存成办（重读、关窗）；没成写核心的原话（编号已存在这类），这一次别的改动已经存了。
+    pub(super) fn renamed(&mut self, result: Result<Value, Refusal>, texts: &Texts) {
+        match result {
+            Ok(_) => {
+                self.draft.clear();
+                self.say(texts.status("saved"), Tone::Good);
+                self.reload();
+                self.refresh();
+                if std::mem::take(&mut self.close_after_save) {
+                    self.popup = None;
+                }
+            }
+            Err(refusal) => self.failed(refusal.message),
         }
     }
 }

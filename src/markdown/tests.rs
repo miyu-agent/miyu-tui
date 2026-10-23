@@ -420,3 +420,44 @@ fn other_ways_of_writing_display_math_are_figures_too() {
         "{inline}"
     );
 }
+
+#[test]
+fn local_paths_in_text_and_inline_code_open_but_keep_their_look() {
+    // 第 10a 条（2026-10-22 项目主人）：文件真在的路径点了能开；样子不变，悬停才加下划线。
+    let dir = std::env::temp_dir().join(format!("miyu-tui-md-render-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("b.rs");
+    std::fs::write(&file, "x").unwrap();
+    // Windows 的 canonicalize 交回 `\\?\C:\…`：正文里 Markdown 会把 `\\`、`\?` 当转义吃掉，回答里也不这样写，去掉这截。
+    let file = file.canonicalize().unwrap().display().to_string();
+    let file = file.trim_start_matches(r"\\?\").to_string();
+    let drawn = draw(&format!("改了 {file}，见 `{file}:3`。"), 200);
+    let links: Vec<_> = drawn[0].folded.links.iter().map(|l| l.2.clone()).collect();
+    assert_eq!(links, [file.clone(), file.clone()]);
+    let plain = draw("改了 那个文件，见 `代码`。", 200);
+    let styles = |d: &[MdLine]| -> Vec<_> { d[0].folded.spans.iter().map(|s| s.style).collect() };
+    assert_eq!(
+        styles(&drawn)
+            .into_iter()
+            .collect::<std::collections::HashSet<_>>(),
+        styles(&plain)
+            .into_iter()
+            .collect::<std::collections::HashSet<_>>(),
+        "不另上色"
+    );
+    std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn a_code_block_that_opens_a_list_item_carries_the_marker_on_its_top_rule() {
+    // 2026-10-23 review：原来记号单独占一行，代码框在下一行才开始。
+    let drawn = lines("- ```rust\n  let x = 1;\n  ```", 40);
+    assert!(drawn[0].starts_with("▪ ╭─ code rust"), "{drawn:?}");
+    assert_eq!(drawn[1], "  let x = 1;");
+}
+
+#[test]
+fn footnotes_show_their_mark_and_their_note() {
+    // 2026-10-23 review：原来没开脚注，`[^1]` 成了「a^1」、定义成了一条链接。
+    assert_eq!(lines("a[^1]\n\n[^1]: note", 40), ["a[1]", "", "[1] note"]);
+}

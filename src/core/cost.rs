@@ -125,12 +125,25 @@ pub struct UsageRow {
     pub session: Option<String>,
     /// 按用途分的：`title`、`recap`、`vision`……；主请求、摘要请求的是 `None`。
     pub purpose: Option<String>,
+    /// 按 `use` 分的（核心 CX-1 上）：`main`、`compaction`、`subagent`、`recap`、`title`、`memory`、`other`。
+    pub used_for: Option<String>,
     /// 发出去的请求数。
     pub requests: u64,
     /// 四项用量加起来。
     pub tokens: u64,
+    /// 四项各多少（`/context` 的累计明细写）。
+    pub split: Split,
     /// 金额和没价格的几次。
     pub bill: Bill,
+}
+
+/// 一行的四项用量：没命中缓存的输入、缓存读、缓存写、输出。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Split {
+    pub uncached: u64,
+    pub cache_read: u64,
+    pub cache_write: u64,
+    pub output: u64,
 }
 
 /// 读 `usage.query` 的回应：一行行。
@@ -142,6 +155,12 @@ pub fn rows(result: &Value) -> Vec<UsageRow> {
         .map(|row| {
             let usage = &row["usage"];
             let n = |k: &str| usage[k].as_u64().unwrap_or_default();
+            let split = Split {
+                uncached: n("uncached"),
+                cache_read: n("cache_read"),
+                cache_write: n("cache_write"),
+                output: n("output"),
+            };
             let amounts = row["amounts"]
                 .as_array()
                 .map(|list| list.iter().filter_map(Cost::read).collect())
@@ -151,8 +170,10 @@ pub fn rows(result: &Value) -> Vec<UsageRow> {
                 model: row["model"].as_str().map(str::to_string),
                 session: row["session"].as_str().map(str::to_string),
                 purpose: row["purpose"].as_str().map(str::to_string),
+                used_for: row["use"].as_str().map(str::to_string),
                 requests: row["requests"].as_u64().unwrap_or_default(),
-                tokens: n("uncached") + n("cache_read") + n("cache_write") + n("output"),
+                tokens: split.uncached + split.cache_read + split.cache_write + split.output,
+                split,
                 bill: Bill {
                     amounts,
                     unpriced: row["unpriced"].as_u64().unwrap_or_default(),
@@ -195,6 +216,7 @@ mod tests {
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].day.as_deref(), Some("2026-10-07"));
         assert_eq!(got[0].tokens, 35);
+        assert_eq!(got[0].split.cache_read, 20);
         assert_eq!(got[0].bill.unpriced, 1);
         assert!(rows(&json!({})).is_empty());
     }

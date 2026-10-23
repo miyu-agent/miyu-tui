@@ -108,18 +108,24 @@ pub const APPEARANCE: &str = "appearance";
 pub const USER: &str = "user";
 /// 「隐私与安全」页（核心 5-15 下）：主菜单排在「用户」后面、「外观」前面（2026-10-21 项目主人照推荐定，同核心、网页的先后）。
 pub const PRIVACY: &str = "privacy";
+/// 核心的「新会话」一组（核心排着做，2026-10-23）。
+const NEW_SESSION: &str = "new_session";
+/// 「新会话不再询问人格预设」。
+const SKIP_PICK: &str = "tui.skip_pick";
 /// 终端自己的配置项的键打头的那一截（终端软件包的编号）。
 const OWN: &str = "tui.";
 
 /// 终端自己的配置项里另分一组的：键的开头、组的编号、放哪一页（「配置页」第 33 条，2026-10-11 项目主人：时间线单独一个
 /// 标题，吉祥物也分出去；2026-10-14：主题、吉祥物、图标单开一页「外观」，时间线留在通用）。组照这个先后排。
-const OWN_GROUPS: [(&str, &str, &str); 6] = [
+const OWN_GROUPS: [(&str, &str, &str); 7] = [
     ("tui.look", "tui.look", APPEARANCE),
     ("tui.theme", "tui.theme", APPEARANCE),
     ("tui.mascot", "tui.mascot", APPEARANCE),
     ("tui.icons", "tui.icons", APPEARANCE),
     ("tui.timeline_", "tui.timeline", GENERAL),
     ("tui.keys", "tui.keys", GENERAL),
+    // 新会话不问人格、预设（2026-10-22）：也是怎么操作的事，跟按键模式一组。
+    ("tui.skip_pick", "tui.keys", GENERAL),
 ];
 
 /// 另分的那几组的名字（`text/zh.json` 的 `settings.more.own_groups`）。
@@ -254,7 +260,8 @@ impl Schema {
             return;
         };
         let here = self.groups[at].page.clone();
-        for (n, (prefix, id, page)) in OWN_GROUPS.iter().enumerate() {
+        let mut added = 0;
+        for (prefix, id, page) in &OWN_GROUPS {
             let page = if *page == APPEARANCE {
                 APPEARANCE
             } else {
@@ -264,16 +271,39 @@ impl Schema {
                 item.group = (*id).to_string();
                 item.page = page.to_string();
             }
+            // 几样并进同一组的（交互：按键模式、不问人格预设）只开一组。
+            if self.groups.iter().any(|g| g.id == *id) {
+                continue;
+            }
             let group = Group {
                 id: (*id).to_string(),
                 name: names.name(id).to_string(),
                 page: page.to_string(),
             };
-            self.groups.insert(at + 1 + n, group);
+            self.groups.insert(at + 1 + added, group);
+            added += 1;
         }
+        self.join_new_session();
         let after = self.pages.iter().position(|(id, _)| id == GENERAL);
         let page = (APPEARANCE.to_string(), appearance.to_string());
         self.pages.insert(after.map_or(0, |at| at + 1), page);
+    }
+
+    /// 「新会话不再询问人格预设」并进核心的「新会话」一组（`new_session`：默认人格、默认预设、开局只读，2026-10-23 项目主人：
+    /// 「做成一个新会话标题下面的项，而不是分散各处」）；核心还没有这一组的照旧在「交互」。
+    fn join_new_session(&mut self) {
+        let Some(page) = self
+            .groups
+            .iter()
+            .find(|g| g.id == NEW_SESSION)
+            .map(|g| g.page.clone())
+        else {
+            return;
+        };
+        for item in self.items.iter_mut().filter(|i| i.key == SKIP_PICK) {
+            item.group = NEW_SESSION.to_string();
+            item.page = page.clone();
+        }
     }
 
     /// 这一页的名字。
@@ -327,124 +357,4 @@ impl Schema {
 }
 
 #[cfg(test)]
-mod tests {
-    use serde_json::json;
-
-    use super::{Row, Schema};
-
-    fn sample() -> Schema {
-        Schema::read(&json!({
-            "pages": [{"id": "general", "name": "通用"}, {"id": "permissions", "name": "权限"}, {"id": "models", "name": "模型"}],
-            "groups": [{"id": "display", "name": "显示", "page": "general"}, {"id": "persona", "name": "人格", "page": "general"},
-                       {"id": "sessions", "name": "会话", "page": "permissions"}, {"id": "empty", "name": "空", "page": "general"},
-                       {"id": "providers", "name": "供应商", "page": "models"}],
-            "items": [
-                {"key": "ui.startup", "control": "select", "layers": ["system", "personal"], "name": "启动时", "page": "general", "group": "display",
-                 "options": [{"value": "new", "name": "新会话"}, {"value": "recent", "name": "最近的"}], "default": "new"},
-                {"key": "ui.language", "control": "select", "layers": ["system", "personal"], "name": "界面语言", "page": "general", "group": "display", "common": true},
-                {"key": "persona.default", "control": "select", "layers": ["system", "personal"], "name": "默认人格", "page": "general", "group": "persona"},
-                {"key": "permission.start_read_only", "control": "toggle", "layers": ["system"], "name": "只读开始", "page": "permissions", "group": "sessions"},
-                {"key": "providers.<id>.base_url", "control": "text", "layers": ["personal"], "name": "地址", "page": "models", "group": "providers"},
-                {"key": "web.theme", "control": "select", "layers": ["personal"], "name": "网页主题", "page": "general", "group": "display"},
-                {"key": "ui.ticket", "control": "text", "layers": ["system"], "name": "票据", "page": "general", "group": "display", "hidden": true}
-            ]
-        }))
-    }
-
-    #[test]
-    fn pages_list_their_groups_with_common_items_first_and_models_stay_out() {
-        let s = sample();
-        assert_eq!(s.items.len(), 4, "人起的名字的、web 的、hidden 的不要");
-        assert_eq!(
-            s.rows("general"),
-            vec![
-                Row::Group(0),
-                Row::Item(1),
-                Row::Item(0),
-                Row::Group(1),
-                Row::Item(2)
-            ]
-        );
-        assert_eq!(s.group_names("general"), ["显示", "人格"], "空的组不写");
-        assert_eq!(
-            s.listed_pages(),
-            ["general", "permissions"],
-            "模型那一页不另列"
-        );
-        assert!(!s.items[3].personal(), "只能写系统配置");
-        assert_eq!(s.page_name("permissions"), Some("权限"));
-    }
-
-    #[test]
-    fn the_terminals_own_items_sit_on_the_general_page() {
-        // 「配置页」第 33 条（2026-10-10 项目主人：时间线的配置项应在通用里、又是终端自己的）。
-        let s = Schema::read(&json!({
-            "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
-            "groups": [{"id": "display", "name": "显示", "page": "general"},
-                       {"id": "im", "name": "接入通讯平台", "page": "packages"},
-                       {"id": "tui", "name": "终端界面", "page": "packages"}],
-            "items": [
-                {"key": "ui.language", "control": "select", "layers": ["personal"], "name": "界面语言", "page": "general", "group": "display"},
-                {"key": "im.listen", "control": "number", "layers": ["system"], "name": "端口", "page": "packages", "group": "im"},
-                {"key": "tui.timeline_fold", "control": "toggle", "layers": ["system", "personal"], "name": "做完收起", "page": "packages", "group": "tui"}
-            ]
-        }));
-        assert_eq!(s.group_names("general"), ["显示", "终端界面"]);
-        assert_eq!(s.group_names("packages"), ["接入通讯平台"]);
-    }
-
-    #[test]
-    fn the_terminals_look_items_move_to_an_appearance_page_after_general() {
-        // 「配置页」第 33 条（2026-10-11 项目主人：时间线相关的配置项单独一个标题，吉祥物也分出去；2026-10-14 照推荐定：
-        // 主题、吉祥物、图标单开一页「外观」，排在通用后面，时间线留在通用）。
-        let item = |key: &str, name: &str| json!({"key": key, "control": "toggle", "layers": ["personal"], "name": name, "page": "packages", "group": "tui"});
-        let mut s = Schema::read(&json!({
-            "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
-            "groups": [{"id": "display", "name": "显示", "page": "general"},
-                       {"id": "tui", "name": "终端界面", "page": "packages"}],
-            "items": [
-                {"key": "ui.language", "control": "select", "layers": ["personal"], "name": "界面语言", "page": "general", "group": "display"},
-                item("tui.icons", "图标"),
-                item("tui.theme", "配色"),
-                item("tui.theme_mode", "明暗"),
-                item("tui.timeline_fold", "回复完成后折叠时间线"),
-                item("tui.keys", "按键模式"),
-                item("tui.mascot_home", "首页显示吉祥物"),
-                item("tui.mascot", "吉祥物")
-            ]
-        }));
-        s.split_own(
-            &super::OwnGroups {
-                look: "主题".into(),
-                theme: "配色方案".into(),
-                timeline: "时间线".into(),
-                mascot: "吉祥物".into(),
-                icons: "图标".into(),
-                keys: "交互".into(),
-            },
-            "外观",
-        );
-        assert_eq!(s.group_names("general"), ["显示", "时间线", "交互"]);
-        assert_eq!(s.group_names("appearance"), ["配色方案", "吉祥物", "图标"]);
-        assert_eq!(s.listed_pages(), ["general", "appearance"]);
-        assert_eq!(s.page_name("appearance"), Some("外观"));
-        let group = |key: &str| {
-            s.items
-                .iter()
-                .find(|i| i.key == key)
-                .map(|i| (i.page.clone(), i.group.clone()))
-        };
-        assert_eq!(
-            group("tui.theme_mode"),
-            Some(("appearance".into(), "tui.theme".into()))
-        );
-        assert_eq!(
-            group("tui.timeline_fold"),
-            Some(("general".into(), "tui.timeline".into()))
-        );
-        assert_eq!(
-            group("tui.keys"),
-            Some(("general".into(), "tui.keys".into()))
-        );
-    }
-}
+mod tests;

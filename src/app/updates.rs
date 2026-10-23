@@ -45,6 +45,14 @@ impl App {
         }
         // 上面几处要读的配置合成一条，抢在人格、模型列表、给人看的字这些前头发（`config_asks.rs`）。
         self.flush_config_asks();
+        // `/tool-list` 的回应归它（`tool_list.rs`）。
+        if self.tool_list_update(&update) {
+            return;
+        }
+        // `/context` 的两样回应归它（`context_box.rs`）。
+        if self.context_update(&update) {
+            return;
+        }
         // 人格头像的回应归它（`avatars.rs`）。
         if self.avatar_update(&update) {
             return;
@@ -108,6 +116,7 @@ impl App {
             return;
         }
         if let Update::Presets(list) = update {
+            self.note_presets(&list);
             self.listed(super::new_session::Kind::Preset, list);
             return;
         }
@@ -191,6 +200,16 @@ impl App {
             return;
         }
         // Ctrl+C 打断、要退回排着的：这一轮结束了撤掉它，撤掉了放回输入框（`takeback.rs`）。
+        // 回答里贴的图传不上：回答已经照样交了，提示一句（核心 Q-A，`core/serve.rs`）。
+        if let Update::AnswerFilesLost(message) = &update {
+            let note = self
+                .config
+                .text
+                .answer_files_lost
+                .replace("{message}", message);
+            self.hint(note, false);
+            return;
+        }
         self.takeback_on(&update);
         // 没发出去：先撤掉先画上的那句、字放回输入框，接着照一般的拒绝办（`redo.rs`）。
         let update = match update {

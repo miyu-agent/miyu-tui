@@ -68,6 +68,16 @@ pub enum Panel {
         /// 往下滚了几行。
         scroll: usize,
     },
+    /// 工具（`/tool-list`，`tool_list.rs`）：往下滚了几行；读回来的在 `boxes.tools` 上。
+    Tools {
+        /// 往下滚了几行。
+        scroll: usize,
+    },
+    /// 上下文（`/context`，`context_box.rs`）：往下滚了几行；读回来的在 `boxes.context` 上。
+    Context {
+        /// 往下滚了几行。
+        scroll: usize,
+    },
     /// 用量（`/usage`）：第几页、往下滚了几行、热度图照花费（`t`）；读回来的在 [`App::usage`](super::App) 上。
     Usage {
         /// 第几页：总览、最近 30 天、按模型、按会话。
@@ -190,6 +200,8 @@ impl App {
             }
             Panel::Pick { kind, selected } => return self.pick_key(kind, selected, key),
             Panel::Status { scroll } => return self.status_key(scroll, key),
+            Panel::Tools { scroll } => return self.tool_list_key(scroll, key),
+            Panel::Context { scroll } => return self.context_key(scroll, key),
             Panel::Changed {
                 kind,
                 selected,
@@ -368,6 +380,8 @@ impl App {
             || over(self.screen.areas.session_id)
             || over(self.screen.areas.todo)
             || over(self.screen.areas.bottom)
+            // 正文的滚动条（`body_view.rs`）。
+            || self.screen.view.bar_hover
             // 排着队的话点了能撤回（`takeback.rs`）。
             || over(self.screen.areas.queued)
             || self.screen.agents_hover.is_some_and(|r| r >= 2)

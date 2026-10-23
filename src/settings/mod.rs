@@ -14,6 +14,7 @@ pub mod nav;
 pub mod pages;
 pub mod popup;
 mod saving;
+pub mod service;
 pub mod texts;
 
 #[cfg(test)]
@@ -84,6 +85,8 @@ enum Waiting {
     Secret(String, String),
     /// 存配置。
     Save,
+    /// 供应商改编号（`provider.rename`）。
+    Rename,
     /// 测一家：显示名。
     Test(String),
     /// 重取一家的模型列表（`model.list` 带 `refresh`）：编号、显示名。
@@ -219,10 +222,11 @@ impl Settings {
         if let Some(got) = schema.filter(|_| self.more.schema.is_none()) {
             let mut schema = pages::schema::Schema::read(got);
             schema.split_own(&texts.more.own_groups, &texts.more.appearance);
+            service::add_row(&mut schema, &texts.more.service, self.more.service_known);
             self.more.schema = Some(schema);
         }
         if let Some(got) = presets.filter(|_| self.more.presets.is_none()) {
-            self.more.presets = Some(crate::core::read_presets(got));
+            self.more.presets = Some(crate::core::read_preset_files(got));
         }
     }
 
@@ -288,6 +292,7 @@ impl Settings {
             Waiting::Load(which) => self.loaded(which, result.ok()),
             Waiting::Secret(provider, name) => self.secret_saved(provider, name, result),
             Waiting::Save => self.saved(result, texts),
+            Waiting::Rename => self.renamed(result, texts),
             Waiting::Test(name) => self.tested(&name, result, texts),
             Waiting::Refresh(id, name) => self.refreshed(&id, &name, result, texts),
             more @ (Waiting::Schema

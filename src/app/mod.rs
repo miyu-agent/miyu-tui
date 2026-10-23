@@ -13,6 +13,7 @@ mod config_asks;
 mod deadline;
 mod diagrams;
 mod drawer;
+mod drawer_attach;
 mod dream;
 mod effort;
 mod frame;
@@ -23,6 +24,7 @@ mod widget_page;
 mod widgets;
 
 pub use avatars::{Avatar, Place};
+pub(crate) use drawer::answer_files;
 pub use frame::Lists;
 pub use jobs::Panel;
 pub use mascot::MascotState;
@@ -30,6 +32,7 @@ pub use media::Media;
 pub use screen::Screen;
 pub use seen::Seen;
 pub use usage::UsageData;
+mod context_box;
 mod head_settings;
 mod help;
 mod images;
@@ -67,12 +70,18 @@ mod talk;
 mod theme;
 mod theme_box;
 mod theme_pick;
+mod tool_list;
 mod typing;
 mod updates;
 pub mod usage;
 pub(crate) mod vim;
 pub(crate) use vim::step as vim_step;
 mod workspace;
+
+#[cfg(test)]
+mod test_support;
+#[cfg(test)]
+mod tests;
 
 use std::time::{Duration, Instant};
 
@@ -237,6 +246,8 @@ impl App {
             Event::FocusGained | Event::FocusLost => {
                 let gained = matches!(event, Event::FocusGained);
                 self.notifier.focus(gained);
+                // 输入法只在前台切（`ime.rs`）。
+                self.typing.ime.focus(gained);
                 // 拿回焦点：跟随壁纸的再找一次（只能靠命令换壁纸的也跟得上，「主题」的「跟随壁纸」第 3 条），跟着终端颜色的
                 // 再问一次终端（「主题」第 11 条）。
                 if gained {

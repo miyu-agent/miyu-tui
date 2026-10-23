@@ -12,7 +12,9 @@ impl App {
         let listing = menu_open
             || self.typing.history.open
             || self.boxes.panel.is_some()
-            || (self.talk.drawers.open() && !self.talk.drawers.editing());
+            || (self.talk.drawers.open()
+                && !self.talk.drawers.editing()
+                && !self.talk.drawers.command_scrolls());
         // 开着时不能打字的框；抽屉开着时按键先归抽屉（它自己认 vim 键）。
         let no_typing = !self.talk.drawers.open()
             && (self.vim_list_idle()
@@ -28,6 +30,8 @@ impl App {
                             | Panel::Help { .. }
                             | Panel::Usage { .. }
                             | Panel::Status { .. }
+                            | Panel::Tools { .. }
+                            | Panel::Context { .. }
                     )
                 ));
         match event {

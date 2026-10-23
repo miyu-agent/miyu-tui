@@ -54,7 +54,7 @@ pub fn lines(
     list: &[Persona],
     default: Option<&str>,
     (current, switching): (Option<&str>, bool),
-    dot: &str,
+    (dot, warn): (&str, &str),
     kind: Kind,
     selected: usize,
     texts: &Texts,
@@ -87,9 +87,17 @@ pub fn lines(
                     let mark = (current.is_none() && default == Some(p.id.as_str()))
                         .then(|| Span::styled(texts.default_mark.clone(), theme::dim()));
                     let mut content = vec![Span::raw(p.label().to_string())];
-                    // 「无人格」那一行（编号空着）后面暗色写它意味着什么。
-                    if p.id.is_empty() {
-                        content.push(Span::styled(format!("  {}", texts.none_note), theme::dim()));
+                    // 预设后面暗色写它的描述（核心交回的 `summary`，照连接的语言挑好；2026-10-23 项目主人定，没有的不写；
+                    // 编号空着的「无工具」也照它）；人格框「无人格」那一行（编号空着）写它意味着什么。
+                    let note = if kind == Kind::Preset {
+                        p.summary.as_deref().filter(|s| !s.trim().is_empty())
+                    } else if p.id.is_empty() {
+                        Some(texts.none_note.as_str())
+                    } else {
+                        None
+                    };
+                    if let Some(note) = note {
+                        content.push(Span::styled(format!("  {note}"), theme::dim()));
                     }
                     (content, mark)
                 }
@@ -104,8 +112,14 @@ pub fn lines(
         .collect();
     let mut rows = rows;
     if switching {
-        let note = vec![Span::styled(texts.switch_note.clone(), theme::dim())];
+        // 黄字、前面一个警示记号（2026-10-23 项目主人：「加个什么符号警醒一下会不会好一些？或者这句话应该高亮？」）。
+        let note = vec![Span::styled(
+            format!("{warn}{}", texts.switch_note),
+            theme::warn(),
+        )];
         rows.insert(0, (None, panel::item(false, note, None, width)));
+        // 那一句和下面的列表之间空一行（2026-10-23 项目主人，人格框、预设框一样）。
+        rows.insert(1, (None, panel::item(false, Vec::new(), None, width)));
     }
     let rows = panel::fit(rows, Some(selected), max);
     let (map, lines) = rows.into_iter().unzip();

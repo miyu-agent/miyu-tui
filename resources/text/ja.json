@@ -335,6 +335,41 @@
     "memory": "思い出す {recalled} 回 · 覚える {remembered} 件",
     "hint": "↑/↓ スクロール · c コピー · Esc 閉じる"
   },
+  "tool_list": {
+    "title": "ツール · {n} 件",
+    "loading": "ツールを読み込み中…",
+    "empty": "使えるツールはありません",
+    "count": "{n} 件",
+    "hint": "↑/↓ スクロール · c コピー · Esc 閉じる"
+  },
+  "context_box": {
+    "title": "コンテキスト内訳",
+    "loading": "読み込み中…",
+    "used": "使用 {used} / {window}",
+    "used_only": "使用 {used}",
+    "line": "圧縮ライン {line}",
+    "estimated": "推定",
+    "totals": "このセッションの累計",
+    "columns": {
+      "requests": "回数",
+      "uncached": "入力",
+      "cache_read": "キャッシュ読",
+      "cache_write": "キャッシュ書",
+      "output": "出力",
+      "cost": "費用"
+    },
+    "sum": "合計",
+    "uses": {
+      "main": "メイン",
+      "compaction": "圧縮",
+      "subagent": "サブエージェント",
+      "recap": "振り返り",
+      "title": "タイトル",
+      "memory": "記憶",
+      "other": "その他"
+    },
+    "hint": "↑/↓ スクロール · c コピー · Esc 閉じる"
+  },
   "usage": {
     "title": "使用量",
     "tabs": [
@@ -566,6 +601,11 @@
     ],
     "reason_hint": "理由を入力（任意）",
     "reason_key": "n 理由を書く",
+    "command_above": "↑ 上にあと {n} 行",
+    "command_below": "↓ あと {n} 行",
+    "keys_scroll": "Ctrl+J/K コマンドをスクロール",
+    "keys_scroll_preview": "Ctrl+J/K プレビューをスクロール",
+    "preview_below": "下にあと {n} 行",
     "access": {
       "execute": "コマンドを実行します",
       "write": "{count} 個のファイルへの書き込みを求めています",
@@ -624,6 +664,9 @@
     "cancel_hint": "もう一度 Esc でキャンセル"
   },
   "clipboard_unreadable": "クリップボードを読み取れません：ターミナル自体の貼り付けを使ってください（kitty では Ctrl+Shift+V）",
+  "clipboard_text_only": "ここに貼り付けられるのはテキストだけです",
+  "attach_deny_only": "画像を添えられるのは「許可しない」だけです",
+  "answer_files_lost": "画像をアップロードできなかったため、テキストだけを送りました：{message}",
   "clipboard_empty": "クリップボードは空です",
   "paste_label": "[{lines} 行を貼り付け済み]",
   "attach": {
@@ -1103,7 +1146,8 @@
       ],
       "preset_detail": [
         "機能 {on}/{all}",
-        "未インストール"
+        "未インストール",
+        "説明"
       ],
       "origins": {
         "default": "既定",
@@ -1369,13 +1413,14 @@
       "seed_unset": "ペルソナのメインカラーを消して、アバターの最初の候補に戻す",
       "own_groups": {"look": "テーマ", "theme": "配色", "timeline": "タイムライン", "mascot": "マスコット", "icons": "アイコン", "keys": "操作"},
       "appearance": "外観",
+      "service": {"group": "起動", "name": "ログイン時にコアを起動", "enabling": "ログイン時の起動を設定中…", "disabling": "ログイン時の起動を解除中…", "enabled": "ログイン時に起動します：{file}", "disabled": "ログイン時に起動しなくなりました", "failed": "失敗：{step}：{said}", "no_home": "ホームディレクトリが見つかりません", "windows": "MIYU_HOME を設定した Windows では使えません"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}, "tui.keys": {"arrows": "矢印キー", "vim": "Vim"}},
       "unavailable": "未インストール",
       "custom_model": "モデルを入力…",
       "combo": ["設定しない", "その他…"],
       "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]],
       "list": {"empty": "まだありません", "whole": "整数を入力してください", "hints": [["Enter", "変更"], ["a", "追加"], ["d", "削除"], ["J/K", "移動"], ["Esc", "完了"]]},
-      "ticks": {"empty": "選べるものがありません", "hints": [["Space", "チェック"], ["j/k", "移動"], ["Enter", "保存"], ["Esc", "キャンセル"]]}, "package_from": {"shipped": "同梱", "official": "公式ソース", "local": "ローカルからインストール"},
+      "ticks": {"empty": "選べるものがありません", "hints": [["Space", "チェック"], ["Ctrl+A", "すべて"], ["j/k", "移動"], ["Enter", "保存"], ["Esc", "キャンセル"]]}, "package_from": {"shipped": "同梱", "official": "公式ソース", "local": "ローカルからインストール"},
       "mcp": {"entry": ["MCP", "MCP サーバーの状態とログイン"], "states": {"off": "オフ", "starting": "起動中", "running": "実行中", "waiting": "再接続待ち", "stopped": "停止", "needs_login": "ログインが必要"}, "tools": "ツール {n} 個", "login": "ログイン", "asking": "{name} の認可ページを取得中", "opened": "{name} の認可ページをブラウザで開きました", "no_browser": "ブラウザを開けません。認可ページ：{url}", "unregistered": "このサーバーはクライアント登録が必要です。client_id をサーバーの設定に書いてください", "failed": "ログインに失敗しました：{why}", "logout": "ログアウト", "leaving": "{name} からログアウト中", "left": "{name} からログアウトしました", "not_logged_in": "{name} にはログインしていません", "hints": [["Enter", "ログイン・ログアウト"], ["Esc", "戻る"]]}
     }
   },

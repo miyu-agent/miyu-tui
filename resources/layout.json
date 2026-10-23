@@ -83,7 +83,8 @@
   "drawer_preview": {
     "side_min": 86,
     "gap": 3,
-    "pad": 0
+    "pad": 0,
+    "rows": 16
   },
   "dots": {
     "mark": ".",
@@ -117,6 +118,7 @@
   "mascot_home": true,
   "mascot_sidebar": true,
   "vim": false,
+  "skip_pick": false,
   "dream": {
     "float_ms": 500,
     "wake_ms": 1200,

@@ -209,7 +209,7 @@ impl Picker for PersonaPick {
             list,
             self.default.as_deref(),
             (current, false),
-            &config.layout.current_mark,
+            (&config.layout.current_mark, &config.icons.warn),
             self.kind,
             self.selected,
             &config.text.persona_box,

@@ -2,10 +2,11 @@
 //! 放不下时问题钉在上面、按键提示钉在下面，中间的选项跟着选中的那一项滚。选项的写法在 `items.rs`，
 //! 右边的文字画在 `preview.rs`。
 
+mod command;
 mod items;
 mod preview;
 
-pub use preview::Look as PreviewLook;
+pub use preview::{Look as PreviewLook, wanted as preview_wanted};
 
 #[cfg(test)]
 mod tests;
@@ -19,7 +20,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::rows::clip;
 use crate::caret::Caret;
-use crate::drawer::{Drawer, Edit, Texts};
+use crate::drawer::{COMMAND_ROWS, Drawer, Edit, Texts};
 use crate::input::pieces;
 use crate::theme;
 
@@ -36,6 +37,8 @@ pub struct View {
     pub cursor: Option<(usize, u16)>,
     /// 选项前面有几行（谁在问、标签、问题、空行）：放不下时钉在上面。
     pub head: usize,
+    /// 前面那几行里放不下时也不裁的：谁在问、标签、问题行（2026-10-22：长命令把问题顶没了）。
+    pub pinned: usize,
 }
 
 impl View {
@@ -100,6 +103,17 @@ fn keys(d: &Drawer, texts: &Texts) -> String {
     if d.has_review() {
         keys.push_str(&texts.keys_tabs);
     }
+    // 命令、预览放不下：第一项后面插「Ctrl+J/K 滚动命令」「Ctrl+J/K 滚动预览」。
+    if d.command_scrolls() {
+        let sep = " · ";
+        let at = keys.find(sep).unwrap_or(keys.len());
+        let scroll = if d.command.is_some() {
+            &texts.keys_scroll
+        } else {
+            &texts.keys_scroll_preview
+        };
+        keys.insert_str(at, &format!("{sep}{scroll}"));
+    }
     keys
 }
 
@@ -142,17 +156,14 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     if d.hazardous() {
         v.push(Line::styled(texts.hazard.clone(), theme::error()), None);
     }
-    // 要跑的命令原文：`$ ` 打头、暗色，一行行写，长的折行（2026-10-07 项目主人：确认时看不到具体的命令）。
-    if let Some((_, command)) = &d.command {
-        for line in command.lines() {
-            for (piece, _) in pieces(&format!("$ {line}"), width) {
-                v.push(Line::styled(piece, theme::dim()), None);
-            }
-        }
-    }
-    // 这一次不在沙盒里跑（核心 D-4 的 `detail.sandbox` 是 `false`）：黄字写一行。
+    // 这一次不在沙盒里跑（核心 D-4 的 `detail.sandbox` 是 `false`）：黄字写一行，紧跟在问题下面，命令那一块之上。
     if d.unsandboxed() {
         v.push(Line::styled(texts.unsandboxed.clone(), theme::warn()), None);
+    }
+    // 确认的问题行和这两行提示放不下时也留着（提问的照旧留问题的后半截；2026-10-22 项目主人截图：长命令把它们都顶掉了，
+    // 只剩「沙盒外运行」，看着像权限没切过去）。
+    if !d.is_question() {
+        v.pinned = v.lines.len();
     }
     // 装、卸软件包，打开扩展的：包含、读不成、需要、一并删除、大小，一样一行（第 3 条，2026-10-12 项目主人定）。
     for row in d
@@ -175,6 +186,8 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
         }
         v.push(Line::from(spans), None);
     }
+    // 要跑的命令原文（2026-10-07 项目主人：确认时看不到具体的命令）：空一行，自成一块，长的能滚（`command.rs`）。
+    command::push(d, texts, width, v);
 }
 
 /// 抽屉要几行：排出来的行数，最多 `max`。
@@ -225,8 +238,11 @@ pub fn fit(v: View, height: usize, scroll: &mut usize) -> View {
         start = (last + 1).saturating_sub(room);
     }
     *scroll = start;
-    // 留下的行在原来的第几行：问题的后半截、选项的一段、按键提示。
-    let kept: Vec<usize> = (head_end.saturating_sub(top)..head_end)
+    // 留下的行在原来的第几行：钉住的几行、问题的后半截、选项的一段、按键提示。
+    let pinned = v.pinned.min(top);
+    let from = head_end.saturating_sub(top - pinned).max(pinned);
+    let kept: Vec<usize> = (0..pinned)
+        .chain(from..head_end)
         .chain(v.head + start..(v.head + start + room).min(n - tail))
         .chain(n - foot..n)
         .collect();
@@ -237,6 +253,7 @@ pub fn fit(v: View, height: usize, scroll: &mut usize) -> View {
         items: kept.iter().map(|&k| v.items[k]).collect(),
         focus: v.focus,
         head: top,
+        pinned,
         cursor,
     }
 }
@@ -251,7 +268,22 @@ pub fn draw(
     vim: bool,
     caret: &mut Caret,
 ) -> Vec<Option<usize>> {
-    let v = view(d, texts, look, area.width, vim);
+    d.command_rows = d
+        .command
+        .as_ref()
+        .map_or(0, |(_, c)| command::rows(c, area.width).len());
+    // 放不下：先少露几行命令（最少 2 行，能滚），空行和问题留着，再照高度裁（2026-10-22 项目主人：「空行也没有」）。
+    d.command_window = COMMAND_ROWS;
+    // 提问没有命令：同一套滚的是选中那一项的预览（`preview.rs`）。
+    if d.command.is_none() {
+        (d.command_rows, d.command_window) = preview::scroll(d, texts, look, area.width);
+    }
+    let mut v = view(d, texts, look, area.width, vim);
+    let over = v.lines.len().saturating_sub(usize::from(area.height));
+    if over > 0 && d.command.is_some() {
+        d.command_window = COMMAND_ROWS.saturating_sub(over).max(2);
+        v = view(d, texts, look, area.width, vim);
+    }
     let v = fit(v, usize::from(area.height), &mut d.scroll);
     if let Some((row, col)) = v.cursor {
         let x = area.x + col.min(area.width.saturating_sub(1));

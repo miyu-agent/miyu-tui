@@ -164,7 +164,8 @@ impl Renderer<'_> {
             format!("{corner}{line} code {lang} ")
         };
         let top = format!("{label}{}", line.repeat(room.saturating_sub(label.width())));
-        self.frame(top);
+        // 列表这一项头一样就是代码块的：记号写在上面那条框线前面（2026-10-23 review：原来写在框里第一行代码前面）。
+        self.frame(top, true);
         // 一个代码块一个着色的：块注释、三引号字符串接到下一行（`tui.md`「代码着色」第 2 条）。
         let mut colors = code::Highlighter::new(self.languages.find(lang));
         for line in body.trim_end_matches('\n').split('\n') {
@@ -176,11 +177,11 @@ impl Renderer<'_> {
             };
             self.emit(pieces, true);
         }
-        self.frame(line.repeat(room));
+        self.frame(line.repeat(room), false);
     }
 
-    fn frame(&mut self, text: String) {
-        let lead = self.lead(false);
+    fn frame(&mut self, text: String, first: bool) {
+        let lead = self.lead(first);
         let folded = Folded {
             spans: vec![Span::styled(text, theme::dim())],
             links: Vec::new(),

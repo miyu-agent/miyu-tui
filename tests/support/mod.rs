@@ -391,6 +391,18 @@ impl Tui {
         self.child.process_id()
     }
 
+    /// 等界面退出（最多 [`WAIT`]）：退出了交回 `true`。
+    pub fn exited(&mut self) -> bool {
+        let end = Instant::now() + WAIT;
+        while Instant::now() < end {
+            if matches!(self.child.try_wait(), Ok(Some(_))) {
+                return true;
+            }
+            self.pump(Duration::from_millis(50));
+        }
+        false
+    }
+
     /// 界面这个进程的所有线程到现在一共切进来几次（自愿的加被抢的）：量空闲时醒没醒。只有 Linux 读得到
     /// （`/proc/<进程>/task/*/status`），别的系统交回 `None`。
     pub fn wakeups(&self) -> Option<u64> {

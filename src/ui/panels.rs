@@ -85,6 +85,12 @@ fn rows(
         Some(crate::app::Panel::Status { scroll }) => {
             super::status_box::lines(seen, scroll, width, max)
         }
+        Some(crate::app::Panel::Tools { scroll }) => {
+            super::tool_list::lines(seen, scroll, width, max)
+        }
+        Some(crate::app::Panel::Context { scroll }) => {
+            super::context_box::lines(seen, scroll, width, max)
+        }
         Some(crate::app::Panel::Usage { tab, scroll, money }) => {
             let (chrome, lines) = usage::lines(seen, (tab, scroll, money), width, max);
             let map = vec![None; lines.len()];
@@ -142,7 +148,7 @@ pub(super) fn pick_rows(
         // 没东西可压缩的不写「切换前会先压缩」（2026-10-20 项目主人：「如果没什么可压缩的，切换就不应该提示要压缩」，
         // 核心 W-12 的 `compactable`）。
         (current, switching && t.cache.compactable != Some(false)),
-        &seen.config.layout.current_mark,
+        (&seen.config.layout.current_mark, &seen.config.icons.warn),
         kind,
         selected,
         &seen.config.text.persona_box,

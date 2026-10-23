@@ -8,7 +8,7 @@ use crate::input::{AttachKind, AttachRule, Draft};
 use crate::transcript::Chip;
 
 /// 剪贴板里的截图算哪一种附件（`attachments.json` 里的名字）。
-const IMAGE: &str = "image";
+pub(super) const IMAGE: &str = "image";
 
 /// 照配置定附件的规矩：每一种认哪些扩展名、文件块上的名字最多几列（`attachments.json`），块上写什么（`attach`）。
 pub(crate) fn attach_rule(config: &Config) -> AttachRule {
@@ -83,12 +83,18 @@ impl App {
                 return;
             }
         }
+        // 抽屉开着：复制的图片文件、截图收成这一道（确认是「不允许」）的图（核心 Q-A，`drawer_attach.rs`）。
+        if self.talk.drawers.open() && self.drawer_attach() {
+            return;
+        }
         match clipboard::read() {
             Ok(text) if text.is_empty() => {
                 self.hint(self.config.text.clipboard_empty.clone(), false);
             }
             Ok(text) if into_input && self.typing.input.paste_files(&text) => {}
             Ok(text) => self.paste(&text),
+            // 抽屉、历史搜索里读不成字的多半是剪贴板里放着图片：这里只收字。
+            Err(_) if !into_input => self.hint(self.config.text.clipboard_text_only.clone(), false),
             Err(_) => self.hint(self.config.text.clipboard_unreadable.clone(), false),
         }
     }

@@ -122,3 +122,42 @@ fn clicking_the_blank_of_an_open_timeline_folds_the_whole_segment() {
         "点开那一块的空白收起那一步"
     );
 }
+
+#[test]
+fn the_scrollbar_shows_under_the_pointer_at_the_column_edge_and_drags_the_view() {
+    // 2026-10-22 项目主人照 Pi 要的：正文右边的滚动条，能拖、能点。100 行露 10 行，滑块一格。
+    use ratatui::crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+    let mut v = view_of((0..100).map(|i| row(&format!("第 {i} 行"))).collect());
+    let at = |kind, column, row| MouseEvent {
+        kind,
+        column,
+        row,
+        modifiers: KeyModifiers::NONE,
+    };
+    assert!(v.bar().is_some(), "放不下才有");
+    v.mouse(at(MouseEventKind::Moved, 39, 3));
+    assert!(v.bar_hover, "停在最右一列：变粗");
+    v.mouse(at(MouseEventKind::Moved, 20, 3));
+    assert!(!v.bar_hover, "挪开就细回去");
+    v.mouse(at(MouseEventKind::Down(MouseButton::Left), 39, 9));
+    assert_eq!(v.top, Some(90), "点轨道底下：滚到底");
+    assert!(v.bar_held());
+    v.first = 90;
+    v.mouse(at(MouseEventKind::Drag(MouseButton::Left), 25, 0));
+    assert_eq!(v.top, Some(0), "拖着出了这一列照样跟着，拖到顶");
+    v.mouse(at(MouseEventKind::Up(MouseButton::Left), 25, 0));
+    assert!(!v.bar_held(), "松开放手");
+    assert!(v.select.is_none(), "拖滚动条不算拖选");
+    let short = view();
+    assert!(short.bar().is_none(), "放得下的不画");
+    // 2026-10-23 项目主人：贴着这一栏的边（侧边栏的竖线）画，不贴输入框右边；正文区外面那一列也认。
+    v.bar_x = Some(45);
+    v.mouse(at(MouseEventKind::Moved, 39, 3));
+    assert!(!v.bar_hover, "原来那一列不算了");
+    assert!(
+        v.on_bar_column(45, 3) && !v.on_bar_column(45, 10),
+        "正文那几行里的这一列"
+    );
+    v.mouse(at(MouseEventKind::Moved, 45, 3));
+    assert!(v.bar_hover, "停在贴边那一列：露出来");
+}
