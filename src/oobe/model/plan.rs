@@ -82,8 +82,12 @@ pub fn config_id(target: &Target, existing: &[String]) -> (String, Option<String
     if !existing.contains(&base) {
         return (base, catalog);
     }
+    // 加了尾巴也不超过 32 个：前面截短（`path_name` 交出来的全是 ASCII）。
     let id = (2..)
-        .map(|n| format!("{base}-{n}"))
+        .map(|n| {
+            let tail = format!("-{n}");
+            format!("{}{tail}", &base[..base.len().min(32 - tail.len())])
+        })
         .find(|id| !existing.contains(id))
         .unwrap_or(base);
     (id, catalog)
@@ -112,7 +116,7 @@ fn host_name(url: &str) -> String {
     }
 }
 
-/// 照「路径里的名字」的写法改：小写，别的字换成 `-`，不是字母开头的前面加 `p-`，最多 64 个。
+/// 照「路径里的名字」的写法改：小写，别的字换成 `-`，不是字母开头的、是 Windows 保留名的前面加 `p-`，最多 32 个。
 fn path_name(name: &str) -> String {
     let mut out: String = name
         .to_lowercase()
@@ -125,10 +129,11 @@ fn path_name(name: &str) -> String {
             }
         })
         .collect();
-    if !out.starts_with(|c: char| c.is_ascii_lowercase()) {
+    if !out.starts_with(|c: char| c.is_ascii_lowercase()) || crate::settings::forms::reserved(&out)
+    {
         out = format!("p-{out}");
     }
-    out.chars().take(64).collect()
+    out.chars().take(32).collect()
 }
 
 /// key 怎么写进配置。
@@ -277,6 +282,16 @@ mod tests {
             config_id(&Target::Listed(listed("wafer.ai")), &[]).0,
             "wafer-ai"
         );
+        // 核心的编号最长 32 个、不收 Windows 保留名：起的编号连尾巴都守着。
+        let long = "a".repeat(40);
+        assert_eq!(
+            config_id(&Target::Listed(listed(&long)), &[]).0,
+            "a".repeat(32)
+        );
+        let taken = vec!["a".repeat(32)];
+        let next = config_id(&Target::Listed(listed(&long)), &taken).0;
+        assert_eq!(next, format!("{}-2", "a".repeat(30)));
+        assert_eq!(config_id(&Target::Listed(listed("con")), &[]).0, "p-con");
     }
 
     #[test]

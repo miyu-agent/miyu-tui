@@ -51,7 +51,10 @@ fn an_existing_provider_writes_only_what_moved() {
     let data = sample();
     let mut draft = Draft::default();
     let mut form = provider(&data, &data, &draft, Some("relay"));
-    assert!(matches!(form.rows[0].val, Val::Fixed(_)), "已有的 ID 只读");
+    assert!(
+        matches!(form.rows[0].val, Val::Text { .. }),
+        "已有的 ID 也能改"
+    );
     set_text(&mut form, Field::Name, "Relay");
     apply(&form, &data, &data, &mut draft).unwrap();
     assert_eq!(
@@ -208,4 +211,43 @@ fn editing_a_text_row_keeps_the_old_text_and_types_after_it() {
         text.len() > 1 && text.ends_with('!'),
         "原来的字还在：{text}"
     );
+}
+
+#[test]
+fn renaming_a_provider_keeps_its_changes_under_the_old_id_until_the_core_renames_it() {
+    // 2026-10-22 项目主人：「不能改的是id，只能在创建的时候改……最好是能改，方便一些。」核心 8-34 `provider.rename` 一次改完
+    // 引用；终端先照旧编号存窗里别的改动，存完再改编号（`saving.rs`）。
+    let data = sample();
+    let mut draft = Draft::default();
+    let mut form = provider(&data, &data, &draft, Some("relay"));
+    set_text(&mut form, Field::Id, "Relay2");
+    assert_eq!(
+        apply(&form, &data, &data, &mut draft),
+        Err(("bad_id", "Relay2".into()))
+    );
+    set_text(&mut form, Field::Id, "relay2");
+    set_text(&mut form, Field::Name, "中转");
+    assert_eq!(
+        apply(&form, &data, &data, &mut draft),
+        Ok("relay2".into()),
+        "存完选中新编号"
+    );
+    assert_eq!(draft.rename, Some(("relay".into(), "relay2".into())));
+    assert_eq!(
+        draft.value("providers.relay.name", &data),
+        Some(&json!("中转")),
+        "别的改动照旧编号记"
+    );
+    assert!(draft.new_providers.is_empty(), "不是新加的");
+}
+
+#[test]
+fn ids_follow_the_cores_rule_of_32_characters_and_no_windows_reserved_names() {
+    use super::name_ok;
+    assert!(name_ok(&"a".repeat(32)));
+    assert!(!name_ok(&"a".repeat(33)));
+    assert!(!name_ok("con"));
+    assert!(!name_ok("com1"));
+    assert!(name_ok("console"));
+    assert!(!name_ok("1st"));
 }
