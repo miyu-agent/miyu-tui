@@ -1,6 +1,6 @@
 use ratatui::text::Span;
 
-use super::{Part, fit, left_line, level_label, middle, model_spans, right, split};
+use super::{Model, Part, fit, left_line, level_label, middle, model_spans, right, split};
 
 #[test]
 fn a_narrow_left_side_is_clipped_with_an_ellipsis() {
@@ -103,7 +103,7 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
     let short = || {
         vec![
             Span::raw("▣ 工作区 · "),
-            Span::raw("deepseek-v4.1-flash · max"),
+            Span::raw("deepseek-v4.1-flash dev · max"),
         ]
     };
     let cells = || {
@@ -114,10 +114,12 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
             part(2, "¥0.12"),
         ]
     };
+    // 2026-10-23 项目主人：供应商名最后才收。
+    let iconic = || vec![Span::raw("▣"), Span::raw(" deepseek-v4.1-flash dev · max")];
     let bare = || vec![Span::raw("▣"), Span::raw(" deepseek-v4.1-flash · max")];
-    let lefts = || [full(), short(), bare()];
+    let lefts = || [full(), short(), iconic(), bare()];
     let (left, right, _) = split(lefts(), cells(), 0, 95);
-    assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash · max");
+    assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
     assert_eq!(
         right.to_string(),
         "41 tok/s · 342.6k/1M(32.7%) · Σ27.5M(C97.3%) · ¥0.12"
@@ -125,13 +127,16 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
     let (left, _, _) = split(lefts(), cells(), 0, 140);
     assert!(left.to_string().contains("clinepass/"), "宽的照旧写全");
     // 再窄：速度、花费先丢，权限级别的字还在。
-    let (left, right, _) = split(lefts(), cells(), 0, 78);
-    assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash · max");
+    let (left, right, _) = split(lefts(), cells(), 0, 82);
+    assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
     assert_eq!(right.to_string(), "342.6k/1M(32.7%) · Σ27.5M(C97.3%)");
     // 再窄：连累计、上下文都要挤掉时，权限级别的字才收掉、只留图标（2026-10-18 项目主人）。
-    let (left, right, _) = split(lefts(), cells(), 0, 66);
-    assert_eq!(left.to_string(), "▣ deepseek-v4.1-flash · max");
+    let (left, right, _) = split(lefts(), cells(), 0, 70);
+    assert_eq!(left.to_string(), "▣ deepseek-v4.1-flash dev · max");
     assert_eq!(right.to_string(), "342.6k/1M(32.7%) · Σ27.5M(C97.3%)");
+    // 最窄：供应商名也收掉。
+    let (left, _, _) = split(lefts(), cells(), 0, 62);
+    assert_eq!(left.to_string(), "▣ deepseek-v4.1-flash · max");
 }
 
 #[test]
@@ -175,15 +180,19 @@ fn an_icon_only_level_drops_the_dot_too() {
 }
 
 #[test]
-fn a_shortened_model_drops_the_provider_name_too() {
-    // 2026-10-19 项目主人：宽度不够时供应商信息也可以隐藏，和缩模型编号同一步。
+fn a_shortened_model_keeps_the_provider_name_until_last() {
+    // 2026-10-19 项目主人：宽度不够时供应商信息也可以隐藏；2026-10-23 改成最后才收（「最后再缩，而不是一开始就缩」）。
     let model = || "clinepass/cline-pass/deepseek-v4.1-flash".to_string();
     assert_eq!(
-        shown(model_spans(model(), "magpie", false)),
+        shown(model_spans(model(), "magpie", Model::Full)),
         "clinepass/cline-pass/deepseek-v4.1-flash magpie"
     );
     assert_eq!(
-        shown(model_spans(model(), "magpie", true)),
+        shown(model_spans(model(), "magpie", Model::Short)),
+        "deepseek-v4.1-flash magpie"
+    );
+    assert_eq!(
+        shown(model_spans(model(), "magpie", Model::Bare)),
         "deepseek-v4.1-flash"
     );
 }

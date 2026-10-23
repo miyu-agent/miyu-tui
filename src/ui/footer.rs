@@ -60,9 +60,10 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
         .collect();
     let (left, right, kept) = split(
         [
-            left(seen, false, true),
-            left(seen, true, true),
-            left(seen, true, false),
+            left(seen, Model::Full, true),
+            left(seen, Model::Short, true),
+            left(seen, Model::Short, false),
+            left(seen, Model::Bare, false),
         ],
         cells,
         button_w,
@@ -143,12 +144,13 @@ fn button_style(screen: &Screen, at: Rect, focused: bool) -> ratatui::style::Sty
     }
 }
 
-/// 一行怎么分：左边从全的到窄的三种（`lefts`：全的；模型编号只写最后一段的；再把权限级别的字收掉、只留图标的），右边的
-/// 格子全放得下就用最宽的那种，空出的地方给右边；最窄的也放不下右边全部时再照 [`choose`] 挑格子（2026-10-11 项目主人定：
-/// 原来模型编号一长，速度、累计先丢了，中间空着一大截；2026-10-18 项目主人：窄了「开放权限」这些字可以收，图标留着）。
+/// 一行怎么分：左边从全的到窄的四种（`lefts`：全的；模型编号只写最后一段的；再把权限级别的字收掉、只留图标的；最后才
+/// 收掉供应商名），右边的格子全放得下就用最宽的那种，空出的地方给右边；最窄的也放不下右边全部时再照 [`choose`] 挑格子
+/// （2026-10-11 项目主人定：原来模型编号一长，速度、累计先丢了，中间空着一大截；2026-10-18 项目主人：窄了「开放权限」这些字
+/// 可以收，图标留着；2026-10-23 项目主人：供应商名最后再收，不然不知道用的是哪家）。
 /// `button` 是后台按钮连两边的空占几列。交回左边、右边。
 fn split(
-    lefts: [Vec<Span<'_>>; 3],
+    lefts: [Vec<Span<'_>>; 4],
     cells: Vec<Part>,
     button: usize,
     width: u16,
@@ -161,11 +163,13 @@ fn split(
     let fits = |spans: &Vec<Span<'_>>, need: usize| {
         spans.iter().map(Span::width).sum::<usize>() + GAP + button + need <= usize::from(width)
     };
-    let [full, short, bare] = lefts;
+    let [full, short, iconic, bare] = lefts;
     let chosen = if fits(&full, need) {
         full
     } else if fits(&short, need_late) {
         short
+    } else if fits(&iconic, need_late) {
+        iconic
     } else {
         bare
     };
@@ -259,9 +263,20 @@ fn left_line(spans: Vec<Span<'_>>, width: u16) -> Line<'static> {
     Line::from(super::panel::clip_spans(owned, usize::from(width)))
 }
 
-/// 左边那一段：权限级别、模型和端点、思考强度。`short`：模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash`
-/// 写 `deepseek-v4.1-flash`），后面的供应商名不写（2026-10-19 项目主人）；`named`：权限级别写字，不写的只留图标。一行放不下时用窄的（[`split`]）。
-fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
+/// 模型那一格写多全（[`split`] 从全的往窄里挑）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Model {
+    /// 模型编号接暗色的供应商名。
+    Full,
+    /// 模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash` 写 `deepseek-v4.1-flash`），供应商名照写。
+    Short,
+    /// 只写最后一段，供应商名也收掉（最窄的时候）。
+    Bare,
+}
+
+/// 左边那一段：权限级别、模型和端点、思考强度。`model`：模型那一格写多全；`named`：权限级别写字，不写的只留图标。一行放不下
+/// 时用窄的（[`split`]）。
+fn left<'a>(seen: &Seen<'a>, model: Model, named: bool) -> Vec<Span<'a>> {
     let text = &seen.config.text;
     let t = &seen.talk.transcript;
     match &t.link {
@@ -282,9 +297,9 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
             if let Some(word) = cooling {
                 spans.push(Span::styled(sep, theme::dim()));
                 spans.push(Span::styled(word, theme::warn()));
-            } else if let Some((model, endpoint)) = t.shown_model() {
+            } else if let Some((shown, endpoint)) = t.shown_model() {
                 spans.push(Span::styled(sep, theme::dim()));
-                spans.extend(model_spans(model, &endpoint, short));
+                spans.extend(model_spans(shown, &endpoint, model));
                 // 思考强度（`/effort`）：什么都不发的不写。
                 if let Some(effort) = t.effort() {
                     // 强调色（2026-10-02 项目主人：和「工作区」那个蓝一样）。
@@ -297,17 +312,18 @@ fn left<'a>(seen: &Seen<'a>, short: bool, named: bool) -> Vec<Span<'a>> {
     }
 }
 
-/// 模型那一格：全的写模型编号接暗色的供应商名；`short` 的只写编号最后一段、不写供应商名（2026-10-19 项目主人：宽度不够
-/// 时供应商信息也可以隐藏，和缩模型编号同一步）。
-fn model_spans(model: String, endpoint: &str, short: bool) -> Vec<Span<'static>> {
-    if short {
-        let last = model.rsplit('/').next().unwrap_or(&model).to_string();
-        return vec![Span::styled(last, theme::model())];
+/// 模型那一格：全的写模型编号接暗色的供应商名；窄的先只写编号最后一段、供应商名照写，最窄才收掉供应商名（2026-10-19 项目主人：
+/// 宽度不够时供应商信息也可以隐藏；2026-10-23 改：「最后再缩，而不是一开始就缩」，同名的模型分不出是哪家）。
+fn model_spans(model: String, endpoint: &str, how: Model) -> Vec<Span<'static>> {
+    let name = match how {
+        Model::Full => model,
+        Model::Short | Model::Bare => model.rsplit('/').next().unwrap_or(&model).to_string(),
+    };
+    let mut spans = vec![Span::styled(name, theme::model())];
+    if how != Model::Bare {
+        spans.push(Span::styled(format!(" {endpoint}"), theme::dim()));
     }
-    vec![
-        Span::styled(model, theme::model()),
-        Span::styled(format!(" {endpoint}"), theme::dim()),
-    ]
+    spans
 }
 
 /// 权限级别那一格写什么、后面接模型那一格用什么隔开：写字的是「⏵⏵ 开放权限」接 ` · `；窄了只留图标的是「⏵⏵」接一个空格，
