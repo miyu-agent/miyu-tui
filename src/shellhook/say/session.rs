@@ -57,6 +57,8 @@ impl Session {
         let core = crate::core::spawn(config.layout.reconnect_ms, Start::Bare, move |update| {
             to_core.send(Incoming::Core(update)).is_ok()
         });
+        // Windows：RaTeX 找字体时打的那一行在开始画以前打完、擦掉（`figures/math.rs`）。
+        crate::figures::warm_up_before_drawing();
         ratatui::crossterm::terminal::enable_raw_mode()?;
         let mut raw = RawMode { keyboard: false };
         let look = Look::new(terminal_colors());

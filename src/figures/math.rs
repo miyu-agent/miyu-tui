@@ -80,7 +80,6 @@ fn png(list: &ratex_types::display_item::DisplayList, em: f32) -> Result<RgbaIma
 /// 空设备，用一个带中文的小公式把字体找好，再指回来（蓝图第 7 条；照旧版 `silence_first_font_load`）。
 /// 只这一次、只这一小段；字体找好以后缓存在进程里，不会再打。
 fn quiet_fonts() {
-    static ONCE: std::sync::OnceLock<()> = std::sync::OnceLock::new();
     ONCE.get_or_init(|| {
         #[cfg(unix)]
         {
@@ -98,6 +97,35 @@ fn quiet_fonts() {
             }
         }
         warm_up();
+    });
+}
+
+/// 字体找过一次就不再找（[`quiet_fonts`]、[`warm_up_before_drawing`]）。
+static ONCE: std::sync::OnceLock<()> = std::sync::OnceLock::new();
+
+/// Windows 上没法不写 unsafe 地把 stderr 临时指走（2026-10-23 项目主人在 Windows 的全屏里看到输入框上多出
+/// 「path: C:\Windows\Fonts\NotoSansSC-VF.ttf」）：开始画以前（进全屏、开原始模式以前）先把字体找好，RaTeX 打的那一行
+/// 照控制台记的光标位置擦掉（Windows 上问光标位置走控制台接口，不是问终端）。别的平台什么都不做，照 [`quiet_fonts`]。
+pub fn warm_up_before_drawing() {
+    #[cfg(windows)]
+    ONCE.get_or_init(|| {
+        use std::io::IsTerminal;
+
+        use crossterm::{cursor, execute, terminal};
+        let before = cursor::position().ok();
+        warm_up();
+        if let Some((x, y)) = before
+            && std::io::stderr().is_terminal()
+            && cursor::position().ok() != before
+            && execute!(
+                std::io::stderr(),
+                cursor::MoveTo(x, y),
+                terminal::Clear(terminal::ClearType::FromCursorDown)
+            )
+            .is_err()
+        {
+            // 擦不掉：留着那一行，只是难看。
+        }
     });
 }
 
