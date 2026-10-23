@@ -346,6 +346,9 @@ impl Config {
         let table = LanguageTable::builtin()?;
         let (text_name, text_json) = localize::text(language)?;
         let mut text: Texts = parse(&text_name, text_json)?;
+        // 测试不看跑测试的终端是哪种（设计 5.3）。
+        let var = |name: &str| (!cfg!(test)).then(|| std::env::var(name).ok()).flatten();
+        crate::tips::fit(&mut text.tips, &mut text.home_placeholder, cfg!(unix), var);
         // 自动时收起那一行照语言表定的那一种（英文）；手动选了哪种照哪种（蓝图「时间线」第 17 条）。
         if auto && let Some(summary_language) = table.find(&table.auto_summary) {
             text.summary = localize::summary(&summary_language)?;
