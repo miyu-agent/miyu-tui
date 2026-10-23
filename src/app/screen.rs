@@ -70,6 +70,8 @@ pub struct Screen {
     pub status_hover: Option<(String, String)>,
     /// 上一帧扩展的整页画成什么样：键盘照它选、滚（`app/widget_page.rs`）。
     pub widget_page: crate::ui::widget::PageFrame,
+    /// 拖滚动条时按像素报鼠标（`pixel_mouse.rs`）。
+    pub pixel: crate::pixel_mouse::PixelMouse,
 }
 
 impl Screen {
@@ -105,6 +107,7 @@ impl Screen {
             widget_spots: Vec::new(),
             status_hover: None,
             widget_page: Default::default(),
+            pixel: Default::default(),
         }
     }
 }

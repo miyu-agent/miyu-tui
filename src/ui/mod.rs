@@ -284,6 +284,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         areas.menu_text = panel::padded(areas.menu_text);
     }
     areas.sidebar = sidebar;
+    // 正文的滚动条贴在这一栏最右边（`body_view.rs` 的 `bar_x`）。
+    app.screen.view.bar_x = Some(main.right().saturating_sub(1));
+    let whole = frame.area();
+    app.screen.pixel.size = (whole.width, whole.height);
     app.screen.areas = areas;
     app.screen.panel_rows = panel_rows;
     use crate::frame_log::section;

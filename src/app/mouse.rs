@@ -12,6 +12,17 @@ use crate::ui::rows::Target;
 impl App {
     /// 鼠标：按下时看落在哪一块，之后的拖动、松开都归那一块；悬停、滚轮照位置分。
     pub(super) fn mouse(&mut self, mouse: MouseEvent) -> Action {
+        // 拖滚动条时终端按像素报（`pixel_mouse.rs`）：先换回格子，带小数的第几行交给正文。
+        let (mouse, pixel_y) = self.screen.pixel.as_cells(mouse);
+        self.screen.view.pixel_y = pixel_y;
+        let action = self.mouse_cells(mouse);
+        self.screen.view.pixel_y = None;
+        // 抓着滚动条就开像素坐标，松开就关（`main.rs` 每帧照它开关）。
+        self.screen.pixel.want = self.screen.view.bar_held();
+        action
+    }
+
+    fn mouse_cells(&mut self, mouse: MouseEvent) -> Action {
         let at = Position::new(mouse.column, mouse.row);
         // 首页的吉祥物没字可看时跟着鼠标转头（`tui.md`「空会话的首页」第 6 条）。
         self.screen.pointer = Some(at);
@@ -67,7 +78,8 @@ impl App {
             Some(Grab::Menu)
         } else if self.screen.areas.frame.contains(at) {
             Some(Grab::Input)
-        } else if self.screen.areas.body.contains(at) {
+        } else if self.screen.areas.body.contains(at) || self.screen.view.on_bar_column(at.x, at.y)
+        {
             Some(Grab::Body)
         } else {
             None
@@ -83,6 +95,7 @@ impl App {
         };
         if owner != Some(Grab::Body) {
             self.screen.view.hover = None;
+            self.screen.view.bar_hover = false;
             // 链接的悬停也放掉：挪到正文左边的空白、输入框这些地方时，下划线和手形指针不留着（2026-10-13 验收 T-225）。
             self.screen.view.hover_link = None;
         }

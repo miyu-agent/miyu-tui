@@ -49,11 +49,13 @@ mod open;
 mod pacing;
 mod pairs;
 mod pick_box;
+mod pixel_mouse;
 mod pointer;
 mod pulse;
 mod reader;
 mod rng;
 mod scratch;
+mod scrollbar;
 mod session_list;
 mod settings;
 mod sheet;
@@ -197,6 +199,7 @@ fn modes_on(keyboard: bool) -> io::Result<()> {
 
 fn leave(keyboard: bool) -> io::Result<()> {
     pointer::reset(&mut stdout())?;
+    pixel_mouse::PixelMouse::default().reset(&mut stdout())?;
     if keyboard {
         execute!(stdout(), PopKeyboardEnhancementFlags)?;
     }
@@ -241,6 +244,11 @@ fn run(
     let zoom_dir = miyu_client::places::cache_root(&Env::current())
         .ok()
         .map(|root| root.join("tui").join("diagrams"));
+    // 一格几个像素：拖滚动条按像素报鼠标时换回格子用（`pixel_mouse.rs`）。
+    let cell = graphics.as_ref().map(|g| {
+        let c = g.cell();
+        (c.width, c.height)
+    });
     let figures = figures::Figures::start(graphics, &config.figures, zoom_dir, move |done| {
         to_main.send(Incoming::Figure(done)).is_ok()
     });
@@ -248,6 +256,7 @@ fn run(
     let reader = reader::Reader::spawn(move |event| sender.send(Incoming::Terminal(event)).is_ok());
     let human = human::Human::default();
     let mut app = App::new(config, core, human, figures);
+    app.screen.pixel.cell = cell;
     // 跟随壁纸盯着的文件变了：叫醒主循环，这一拍再找（蓝图「主题」的「跟随壁纸」第 3 条）。
     // 头像的主色、壁纸在后台取好了：同样叫醒主循环，不每一拍醒来看（蓝图「空闲不醒」）。
     let wake: theme::wallpaper::Wake =
@@ -452,6 +461,7 @@ fn frame(
     let drawn = drawn.map(|_| ()).and_then(|()| {
         let out = terminal.backend_mut().inner_mut().writer_mut();
         caret::park(app.screen.caret, out)?;
+        app.screen.pixel.sync(out)?;
         pointer.set(app.pointing(), out)
     });
     // 画面、图片和光标都准备好了才送出；画失败了也带上同步结尾。
