@@ -10,6 +10,8 @@ use crate::transcript::Transcript;
 
 /// 会话。
 pub struct Talk {
+    /// 还没开会话：照选了的人格、预设预览的上下文，用了多少、窗口（核心 CX-1 下，底栏写，`context_box.rs`）。
+    pub preview: Option<(u64, Option<u64>)>,
     /// 会话：正文、在不在跑、用量。
     pub transcript: Transcript,
     /// 后台任务表和待办。

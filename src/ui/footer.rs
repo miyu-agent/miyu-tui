@@ -46,7 +46,12 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
             spans: vec![Span::styled(text.clone(), *style)],
         })
         .collect();
-    cells.extend(right(&seen.talk.transcript, &total, seen.config));
+    // 还没开会话：照选了的人格、预设预览的上下文（核心 CX-1 下，「框下面那一行」）。
+    let preview = seen
+        .talk
+        .preview
+        .filter(|_| seen.talk.transcript.session.is_none());
+    cells.extend(right(&seen.talk.transcript, &total, seen.config, preview));
     // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
     if let Some(amounts) = seen.spent() {
         cells.push(Part {
@@ -355,7 +360,12 @@ fn cooling_word(
 /// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢速度（1）、花费（2，接在累计后面，见调用处），
 /// 这几样比权限级别的字先丢（[`EARLY`]，2026-10-19 项目主人）；再丢累计（3），上下文留到最后（4）。还是 0 的格子不写
 /// （`tui.md`「框下面那一行」）。
-fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
+fn right(
+    t: &Transcript,
+    total: &Usage,
+    config: &Config,
+    preview: Option<(u64, Option<u64>)>,
+) -> Vec<Part> {
     let text = &config.text;
     let mut parts = Vec::new();
     if let Some(speed) = t.speed.last {
@@ -366,7 +376,11 @@ fn right(t: &Transcript, total: &Usage, config: &Config) -> Vec<Part> {
             spans: vec![speed],
         });
     }
-    if let Some(context) = context_text(t, config) {
+    let context = match preview {
+        Some((used, window)) => context_words(used, window, config),
+        None => context_text(t, config),
+    };
+    if let Some(context) = context {
         parts.push(Part {
             keep: 4,
             spans: vec![Span::styled(context, theme::dim())],
@@ -395,20 +409,24 @@ pub fn total_text(total: &Usage, config: &Config) -> Option<String> {
 
 /// 上下文：`1.8k/1M(0.2%)`；不知道窗口多大的模型只写用了多少；还是 0 的是 `None`。侧边栏也照它写。
 pub fn context_text(t: &Transcript, config: &Config) -> Option<String> {
-    if t.context == 0 {
+    // 窗口照核心在订阅的回应里给的，头不自己照模型名查。
+    context_words(t.context, t.limits.window, config)
+}
+
+/// 用了多少、窗口写成字（开着的会话、还没开的预览一个写法）。
+fn context_words(used: u64, window: Option<u64>, config: &Config) -> Option<String> {
+    if used == 0 {
         return None;
     }
-    let used = meter::short(t.context);
-    // 窗口照核心在订阅的回应里给的，头不自己照模型名查。
-    let window = t.limits.window;
+    let short = meter::short(used);
     let text = match window {
-        None => used,
+        None => short,
         Some(window) => config
             .text
             .context
-            .replace("{used}", &used)
+            .replace("{used}", &short)
             .replace("{window}", &meter::short(window))
-            .replace("{percent}", &meter::percent_tenths(t.context, window)),
+            .replace("{percent}", &meter::percent_tenths(used, window)),
     };
     Some(text)
 }

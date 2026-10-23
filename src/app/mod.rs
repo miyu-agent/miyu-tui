@@ -31,6 +31,7 @@ pub use media::Media;
 pub use screen::Screen;
 pub use seen::Seen;
 pub use usage::UsageData;
+mod context_box;
 mod head_settings;
 mod help;
 mod images;

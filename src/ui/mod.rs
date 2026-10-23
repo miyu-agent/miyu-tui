@@ -50,6 +50,7 @@ pub mod widget;
 
 pub use history::{index_at as history_index_at, lines as history_lines};
 pub use menu::{index_at as menu_index_at, rows as menu_rows};
+pub mod context_box;
 mod mention;
 mod menu;
 pub mod row_cache;
