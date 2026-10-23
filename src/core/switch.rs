@@ -93,8 +93,8 @@ pub(super) fn replayed(
     {
         return false;
     }
-    if let Some(preset) = message["result"]["preset"].as_str()
-        && !notify(wrap(Update::SessionPreset(preset.to_string())))
+    if let Some(preset) = super::session_preset(&message["result"])
+        && !notify(wrap(Update::SessionPreset(preset)))
     {
         return false;
     }

@@ -222,7 +222,7 @@ impl Settings {
             self.more.schema = Some(schema);
         }
         if let Some(got) = presets.filter(|_| self.more.presets.is_none()) {
-            self.more.presets = Some(crate::core::read_presets(got));
+            self.more.presets = Some(crate::core::read_preset_files(got));
         }
     }
 

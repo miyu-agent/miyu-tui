@@ -62,7 +62,7 @@ fn entry(s: &Value) -> Option<SessionInfo> {
         last_active: s["last_active"].as_str().and_then(|t| t.parse().ok()),
         preview: text(&s["preview"]),
         persona: text(&s["persona"]),
-        preset: text(&s["preset"]),
+        preset: super::session_preset(s),
         tokens: s["tokens"].as_u64().unwrap_or(0),
         context: s["context"]["used"]
             .as_u64()

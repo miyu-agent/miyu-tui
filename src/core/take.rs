@@ -229,9 +229,7 @@ pub(super) async fn take(
                 reply["persona"]
                     .as_str()
                     .map(|p| Update::SessionPersona(p.to_string())),
-                reply["preset"]
-                    .as_str()
-                    .map(|p| Update::SessionPreset(p.to_string())),
+                super::session_preset(reply).map(Update::SessionPreset),
             ];
             for update in named.into_iter().flatten() {
                 let update = Box::new(update);

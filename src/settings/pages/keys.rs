@@ -39,7 +39,7 @@ impl Settings {
             (Waiting::Personas, Ok(got)) => self.more.personas = Some(personas::read(&got)),
             (Waiting::Presets, Ok(got)) => {
                 self.more.raw.1 = Some(got.clone());
-                self.more.presets = Some(crate::core::read_presets(&got));
+                self.more.presets = Some(crate::core::read_preset_files(&got));
             }
             (Waiting::Mascots, Ok(got)) => {
                 self.more.summaries = super::packages::summaries(&got);
