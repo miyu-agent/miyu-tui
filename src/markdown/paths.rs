@@ -31,12 +31,13 @@ pub fn local_paths(text: &str) -> Vec<(usize, usize, String)> {
     out
 }
 
-/// 写法像路径：带 `/`（不是地址），或者 `名字.后缀`（`Cargo.toml`）。别的（一个词、版本号 `1.2`）不去问文件系统。
+/// 写法像路径：带 `/` 或 `\`（不是地址；Windows 的路径是反斜杠，带行号的 `C:\a\b.rs:3` 也认），或者 `名字.后缀`
+/// （`Cargo.toml`）。别的（一个词、版本号 `1.2`）不去问文件系统。
 fn looks_like_path(word: &str) -> bool {
     if word.is_empty() || word.contains("://") {
         return false;
     }
-    if word.contains('/') {
+    if word.contains(['/', '\\']) {
         return word.chars().any(char::is_alphanumeric);
     }
     match word.rsplit_once('.') {
@@ -62,6 +63,8 @@ mod tests {
             "/etc/hosts",
             "Cargo.toml",
             "./run.sh",
+            r"C:\Users\a\notes.md:3",
+            r"\\?\C:\Temp\b.rs",
         ] {
             assert!(looks_like_path(yes), "{yes}");
         }
