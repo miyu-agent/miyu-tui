@@ -171,8 +171,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             .max(half),
         _ => half,
     };
-    // 新会话开头选人格、预设：画在输入框的位置（`start_pick.rs`），占它排出来的行数。
-    let start = app.seen().start_pick();
+    // 新会话开头选人格、预设：画在输入框的位置（`start_pick.rs`），占它排出来的行数。不问人格预设的（`tui.skip_pick`）
+    // 等默认的读到以前照旧画输入框，不画「正在加载…」那个框（2026-10-23 项目主人：打开时一瞬间看到选择框，像闪了一下）；
+    // 默认的用不了、真要选时框照常开。
+    let skip = app.config.layout.skip_pick
+        && !matches!(app.boxes.panel, Some(crate::app::Panel::Pick { .. }));
+    let start = app.seen().start_pick().filter(|_| !skip);
     let box_rows = |w: u16| match (open_drawer, start) {
         (Some(d), _) => drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max),
         (None, Some(kind)) => {

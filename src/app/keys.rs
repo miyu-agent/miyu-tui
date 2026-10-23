@@ -443,7 +443,7 @@ fn cycles_level(key: &KeyEvent, menu_open: bool) -> bool {
 }
 
 /// 列表还在读时也认的键：`Ctrl+C`、`Ctrl+D`（退出）、`Ctrl+Z`（挂起）。
-fn leaves(key: &KeyEvent) -> bool {
+pub(super) fn leaves(key: &KeyEvent) -> bool {
     key.modifiers
         .contains(ratatui::crossterm::event::KeyModifiers::CONTROL)
         && matches!(key.code, KeyCode::Char('c' | 'd' | 'z'))

@@ -117,6 +117,7 @@
   "mascot_home": true,
   "mascot_sidebar": true,
   "vim": false,
+  "skip_pick": false,
   "dream": {
     "float_ms": 500,
     "wake_ms": 1200,

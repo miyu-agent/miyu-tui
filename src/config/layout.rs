@@ -37,6 +37,8 @@ pub struct Layout {
     pub mascot_sidebar: bool,
     /// 按键模式是 Vim（蓝图「按键」表「按键模式」那一行）：会话列表、`/model` 里 `j`、`k` 挪，`/` 才搜；`false` 是方向键。
     pub vim: bool,
+    /// 新会话不问人格、预设，直接用默认的（`tui.skip_pick`，「新会话：人格、工作区」第 1a 条）。
+    pub skip_pick: bool,
     /// 子代理状态行最多几行（不算主会话）。
     pub agent_rows: usize,
     /// 后台命令的输出（`job.output`）：面板里露几行、结束了读几行、隔多久读一次、制表符换成几个空格。
@@ -179,6 +181,18 @@ impl Layout {
             Some("vim") => self.vim = true,
             Some("arrows") => self.vim = false,
             _ => {}
+        }
+    }
+}
+
+impl Layout {
+    /// 新会话不问人格、预设那一项在终端软件包里的名字（`[settings.skip_pick]`，2026-10-22 项目主人）。
+    pub const SKIP_PICK_KEY: &'static str = "tui.skip_pick";
+
+    /// 照 `config.get` 读来的改：写了的盖过 `layout.json`，没有的（旧核心、旧清单没这一项）照原样。
+    pub fn apply_skip_pick(&mut self, got: &serde_json::Value) {
+        if let Some(on) = got["items"][Self::SKIP_PICK_KEY]["value"].as_bool() {
+            self.skip_pick = on;
         }
     }
 }

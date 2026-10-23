@@ -24,6 +24,8 @@ const LEVEL_TAG: u64 = TAG_BASE - 10;
 const CHAT_TAG: u64 = TAG_BASE - 11;
 /// 读按键模式的请求编号：单问，旧核心不认这个键时别的照样读得到。
 const VIM_TAG: u64 = TAG_BASE - 12;
+/// 读「新会话不问人格、预设」的请求编号：单问，同按键模式（`TAG_BASE - 13` 到 `- 15` 是 `theme_pick.rs` 的）。
+const SKIP_PICK_TAG: u64 = TAG_BASE - 16;
 /// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
 const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
 
@@ -36,6 +38,7 @@ impl App {
                 self.ask_config(TIMELINE_TAG, &Timeline::KEYS);
                 self.ask_config(MASCOT_TAG, &Layout::MASCOT_KEYS);
                 self.ask_config(VIM_TAG, &[Layout::KEYS_KEY]);
+                self.ask_config(SKIP_PICK_TAG, &[Layout::SKIP_PICK_KEY]);
                 let mut keys = crate::theme::choice::Choice::KEYS.to_vec();
                 keys.push(crate::theme::choice::SEED_KEY);
                 self.ask_config(THEME_TAG, &keys);
@@ -72,6 +75,13 @@ impl App {
                 }
                 true
             }
+            Update::Answer { tag, result } if *tag == SKIP_PICK_TAG => {
+                if let Ok(got) = result {
+                    self.config.layout.apply_skip_pick(got);
+                    self.skip_pick_read();
+                }
+                true
+            }
             // 主题那几项（「主题」第 6 条）：读到的盖上，照新的挑一套。
             Update::Answer { tag, result } if *tag == THEME_TAG => {
                 if let Ok(got) = result {
@@ -103,6 +113,7 @@ impl App {
         self.config.timeline.apply(got);
         self.config.layout.apply_mascot(got);
         self.config.layout.apply_keys(got);
+        self.config.layout.apply_skip_pick(got);
     }
 
     /// 图标那一套（「图标」第 4 条）。
