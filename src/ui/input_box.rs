@@ -67,6 +67,12 @@ pub(super) fn draw_box(
         frame.render_widget(super::panel::block_with(chrome, set), areas.frame);
         frame.render_widget(Paragraph::new(lines), areas.text);
         screen.drawer_rows.clear();
+        // 藏着的光标停在框里第一格（输入框出来时就在原地）：不挪的话停在上一帧的地方，一起来是左上角，选完一跳，开了
+        // 拖尾的终端还画一道（2026-10-22 项目主人：「光标会在左上角，选择完人格和预设后又从左上跳到输入框」）。
+        screen.caret.put(
+            ratatui::layout::Position::new(areas.text.x, areas.text.y),
+            false,
+        );
         return;
     }
     if let Some(d) = drawer {

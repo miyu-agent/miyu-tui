@@ -2,7 +2,9 @@
 //! 二三十毫秒）：上次读到的、画首页要用的几样记在终端的缓存里（`<缓存目录>/tui/look/<数据根的路径算的一串>.json`，一个数据根
 //! 一份，同时开着几个数据根的不互相盖；文件里也记着是哪个数据根，对不上的不认），起来时
 //! 连上以前照它画；连上以后照核心给的换，一样的看不出来。记的：引导走过没有、终端自己的配置项（配色、明暗、主色、图标、
-//! 吉祥物和时间线的开关、开局级别）、界面语言、默认人格和人格列表（首页的头像、跟随头像的主色）、壁纸的候选主色。
+//! 吉祥物和时间线的开关、开局级别）、界面语言、默认人格和人格列表（首页的头像、跟随头像的主色）、预设列表、壁纸的候选主色。
+//! 人格、预设两份列表也让新会话开头的框连上就开，不等核心（2026-10-22 项目主人：进界面到人格框出来慢，核心冷启动时列人格
+//! 要近一秒）。
 //! 读到的和记着的不一样时当场写（关窗口时界面是被直接结束的，等不到退出再写）；连上以后什么都没读到的不写。
 
 use std::path::PathBuf;
@@ -29,6 +31,9 @@ pub struct Look {
     persona: Option<String>,
     /// 人格列表；还没读到的是 `None`。
     personas: Option<Vec<Persona>>,
+    /// 预设列表；还没读到的是 `None`（以前记的没有这一格）。
+    #[serde(default)]
+    presets: Option<Vec<Persona>>,
     /// 壁纸的候选主色（跟随壁纸的，找到以前先照它）。
     wallpaper: Vec<u32>,
     /// 最近那个会话用的人格、预设：会话列表到以前首页照它画、框照它停（2026-10-19：无人格也先闪一帧默认人格的头像）。
@@ -92,7 +97,13 @@ impl App {
         };
         // 人格、壁纸先摆好：主题照它们挑主色（跟随头像、跟随壁纸的），不然第一帧照 tokyonight、下一帧才换。
         self.talk.persona.default.clone_from(&look.persona);
-        self.talk.persona.list.clone_from(&look.personas);
+        // 两份列表照核心交回的那样摆（人格前面加「无人格」），连上就开框（`new_session.rs` 的 `picks_configured`）。
+        if let Some(list) = look.personas.clone() {
+            self.listed(super::new_session::Kind::Persona, list);
+        }
+        if let Some(list) = look.presets.clone() {
+            self.listed(super::new_session::Kind::Preset, list);
+        }
         if let Some(last) = &look.last {
             self.talk.persona.last = Some(last.persona.clone());
             self.talk.preset.last = Some(last.preset.clone());
@@ -117,6 +128,8 @@ impl App {
         }
         self.link.look = look;
         self.link.look.written = std::fs::read(file().unwrap_or_default()).unwrap_or_default();
+        // 记着走过引导的：人格框照记下的列表这就开，不等连上（`new_session.rs` 的 `ask_next`）。
+        self.ask_next();
     }
 
     /// 读到的终端配置项记下（`config_asks.rs` 合起来那一条的回应）。
@@ -146,6 +159,12 @@ impl App {
     pub(super) fn note_personas(&mut self, list: &[Persona]) {
         self.boxes.personas_known = true;
         self.link.look.personas = Some(list.to_vec());
+        self.save_look();
+    }
+
+    /// 读到预设列表。
+    pub(super) fn note_presets(&mut self, list: &[Persona]) {
+        self.link.look.presets = Some(list.to_vec());
         self.save_look();
     }
 

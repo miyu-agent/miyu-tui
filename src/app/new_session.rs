@@ -10,6 +10,7 @@ use ratatui::crossterm::event::KeyEvent;
 use super::{App, Panel};
 use crate::core::{Command, Persona};
 use crate::pick_box::{Pressed, usable};
+use crate::transcript::Link;
 
 /// 新会话要选的哪一样。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -148,13 +149,42 @@ impl App {
             .collect();
         crate::transcript::set_names(kind == Kind::Persona, names);
         self.pick_mut(kind).list = Some(list);
+        self.refit_pick(kind);
         self.ask_next();
     }
 
+    /// 框照记下的列表开着、核心的到了：人还没挪过的照上一次选的重新停，挪过的留在原处（新列表短了的停最后一行）。
+    fn refit_pick(&mut self, kind: Kind) {
+        let Some(Panel::Pick {
+            kind: open,
+            selected,
+        }) = self.boxes.panel
+        else {
+            return;
+        };
+        if open != kind {
+            return;
+        }
+        let selected = if self.pick(kind).opened == Some(selected) {
+            let start = self.pick(kind).start(self.last_pick(kind));
+            self.pick_mut(kind).opened = Some(start);
+            start
+        } else {
+            let len = self.pick(kind).list.as_ref().map_or(0, Vec::len);
+            selected.min(len.saturating_sub(1))
+        };
+        self.boxes.panel = Some(Panel::Pick { kind, selected });
+    }
+
     /// 该问的时候开框：还没开会话、没开着别的框；照先后，没选的先问。测具设了的直接用；核心不认的（列表是空的）
-    /// 不问；还没读到的等读到了再问。
+    /// 不问；还没读到的等读到了再问。还没连上也开（照记下的列表，`look.rs`），只要记着走过引导：第一帧就是人格框，选的
+    /// 排进命令里，连上再发（2026-10-22 项目主人：「依旧不是秒开」，照推荐定连上以前就开）。
     pub(super) fn ask_next(&mut self) {
-        if !self.not_opened() || self.boxes.panel.is_some() {
+        let offline = self.talk.transcript.link != Link::Ready;
+        if self.talk.transcript.session.is_some()
+            || (offline && !self.boxes.welcome_known)
+            || self.boxes.panel.is_some()
+        {
             return;
         }
         for kind in ORDER {

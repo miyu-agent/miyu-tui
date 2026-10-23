@@ -118,6 +118,9 @@ fn main() -> io::Result<()> {
     );
     // 初始化原始模式、备用屏及 panic 收尾；自定义 writer 用来收齐一帧。
     drop(ratatui::init());
+    // 进了全屏先藏光标：画第一帧以前要问终端好几样（键盘协议、能不能显示图、配色），这时光标露在左上角，第一帧才藏起来、
+    // 挪到框里（2026-10-22 项目主人：「光标是从左上角移动到输入框」）。
+    execute!(stdout(), cursor::Hide).inspect_err(|_| ratatui::restore())?;
     let mut terminal = screen().inspect_err(|_| ratatui::restore())?;
     let keyboard = match enter() {
         Ok(keyboard) => keyboard,
