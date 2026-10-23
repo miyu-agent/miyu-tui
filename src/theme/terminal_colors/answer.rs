@@ -142,7 +142,8 @@ pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
 
 /// Windows：照 crossterm 的事件读回话（2026-10-23 项目主人在 Windows Terminal 里看 shellhook：跟随终端的配色问不到 16 色，
 /// 退回主题文件里的「蓝」，粗体的蓝暗得难看）。终端的回话在 Windows 上一个字一个按键事件进来：照字拼回字节，`Esc` 是
-/// ESC，`Ctrl+字母` 是那个控制字符（BEL 是 `Ctrl+G`）。不写 unsafe：等输入用 crossterm 的 `poll`。
+/// ESC，`Ctrl+字母` 是那个控制字符（BEL 是 `Ctrl+G`）。不写 unsafe：等输入用 crossterm 的 `poll`。问的时候开控制台的「虚拟终端
+/// 输入」：不开的，终端的回话被控制台吞掉（同一天：Windows Terminal 1.24 认 OSC 4，跟随终端的配色照旧问不到）。
 #[cfg(windows)]
 pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
     use std::io::{IsTerminal, Write};
@@ -153,6 +154,7 @@ pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
     if !std::io::stdout().is_terminal() {
         return None;
     }
+    let _vt = VtInput::on();
     let mut out = std::io::stdout();
     out.write_all(query.as_bytes()).ok()?;
     out.flush().ok()?;
@@ -184,6 +186,35 @@ pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
         }
     }
     Some(got)
+}
+
+/// 问的这一会儿开着控制台的「虚拟终端输入」，丢掉时照原来的设回去。
+#[cfg(windows)]
+struct VtInput {
+    console: crossterm_winapi::ConsoleMode,
+    before: u32,
+}
+
+#[cfg(windows)]
+impl VtInput {
+    /// `ENABLE_VIRTUAL_TERMINAL_INPUT`。
+    const FLAG: u32 = 0x0200;
+
+    fn on() -> Option<Self> {
+        let console = crossterm_winapi::ConsoleMode::from(
+            crossterm_winapi::Handle::current_in_handle().ok()?,
+        );
+        let before = console.mode().ok()?;
+        console.set_mode(before | Self::FLAG).ok()?;
+        Some(Self { console, before })
+    }
+}
+
+#[cfg(windows)]
+impl Drop for VtInput {
+    fn drop(&mut self) {
+        drop(self.console.set_mode(self.before));
+    }
 }
 
 #[cfg(not(any(unix, windows)))]

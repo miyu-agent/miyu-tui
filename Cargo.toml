@@ -65,6 +65,8 @@ rustix = { version = "1", features = ["stdio", "process", "event"] }
 [target.'cfg(windows)'.dependencies]
 filedescriptor = "0.8.3"
 sys-locale = "0.3.2"
+# 问终端颜色时开控制台的「虚拟终端输入」（`theme/terminal_colors/answer.rs`），crossterm 带着的那份。
+crossterm_winapi = "0.9.1"
 
 # 伪终端里的端到端测试（`tests/pty.rs`，蓝图「守着它的」）：测试进程里起一个照剧本回话的核心（和端点的测试同一套），
 # 在伪终端里起真的界面连上去，读屏幕、发按键。只在测试里用。
