@@ -68,6 +68,8 @@ fn build(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
             // 项目主人看网页时说，10-18 定终端一样）。思考的标题就是收起那一行说的，不重复。
             let style = step::style(only, false);
             if matches!(only.kind, crate::transcript::StepKind::Tool { .. }) {
+                // 和收起那一行之间照几步的一样隔一行连接线（2026-10-23 项目主人：「Used 1 tool」和「抖音下载」之间没有空行）。
+                out.push(connector(ctx, false));
                 let (title, links) = step::title(only, style, ctx.width, ctx);
                 let mut head = ctx.row(ctx.blank_slot(), title);
                 head.links = links;
