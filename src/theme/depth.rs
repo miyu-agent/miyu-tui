@@ -28,6 +28,12 @@ const TRUECOLOR_PROGRAMS: [&str; 4] = ["iTerm.app", "WezTerm", "ghostty", "vscod
 impl Depth {
     /// 照环境变量看；`var` 取一个变量，没有的给 `None`。
     pub fn detect(var: impl Fn(&str) -> Option<String>) -> Self {
+        Self::detect_on(var, cfg!(windows))
+    }
+
+    /// 同 [`Depth::detect`]，`windows` 是不是在 Windows 上：那里一般不设 `TERM`，没设的不当成哑终端，照真彩色（Windows
+    /// Terminal、Windows 10 起的控制台都画得出；2026-10-23 项目主人在 Windows 虚拟机里试 shellhook：「样式没有了么。颜色什么的」）。
+    pub fn detect_on(var: impl Fn(&str) -> Option<String>, windows: bool) -> Self {
         if var("NO_COLOR").is_some_and(|v| !v.is_empty()) {
             return Self::Mono;
         }
@@ -44,6 +50,9 @@ impl Depth {
             return Self::True;
         }
         let term = var("TERM").unwrap_or_default().to_ascii_lowercase();
+        if windows && term.is_empty() {
+            return Self::True;
+        }
         if term.is_empty() || term == "dumb" {
             return Self::Mono;
         }
