@@ -79,6 +79,15 @@ pub struct BodyView {
     press: Option<Point>,
     /// 前面拼进了更早的一页，下一帧照条目编号找回原来的位置（[`BodyView::pin_top`]）。
     pub pinned: Option<Pinned>,
+    /// 指针停在滚动条那一列上（`scrollbar.rs`）：滚动条露出来、指针变手。平时藏着（2026-10-23 项目主人）。
+    pub bar_hover: bool,
+    /// 滚动条在哪一列：正文这一栏最右边，贴着侧边栏的竖线、没有侧边栏的贴着窗口右边（2026-10-23 项目主人：原来贴着输入框
+    /// 右边，不合理）；还没画过的照正文区最右一列。
+    pub bar_x: Option<u16>,
+    /// 正抓着滚动条拖：抓的是滑块往下第几格（带小数）。
+    bar_grab: Option<f64>,
+    /// 这一个鼠标事件按像素算的第几行（带小数，`pixel_mouse.rs`）；按格报的是 `None`，照那一格当中算。
+    pub pixel_y: Option<f64>,
 }
 
 /// 拼更早的一页以前记下的位置：条目编号、往下第几行（可以是负的：在它上面的空行）。
@@ -93,6 +102,9 @@ pub struct Pinned {
 impl BodyView {
     /// 处理一个落在正文区上（或者从正文区开始拖）的鼠标事件。
     pub fn mouse(&mut self, event: MouseEvent) -> BodyAction {
+        if self.bar_mouse(event) {
+            return BodyAction::None;
+        }
         let at = self.point(event.column, event.row);
         match event.kind {
             MouseEventKind::Moved => {
@@ -326,6 +338,66 @@ impl BodyView {
             self.first.saturating_sub(step)
         };
         self.scroll_to(first);
+    }
+
+    /// 这一帧的滚动条：内容放不下才有，画在正文区最右一列。
+    pub fn bar(&self) -> Option<crate::scrollbar::Bar> {
+        crate::scrollbar::Bar::new(self.rows.len(), self.area.height, self.first)
+    }
+
+    /// 正抓着滚动条拖（滑块照粗的画）。
+    pub fn bar_held(&self) -> bool {
+        self.bar_grab.is_some()
+    }
+
+    /// 滚动条那一列的鼠标（2026-10-22 项目主人照 Pi 要的：能拖、能点）：悬停变粗；按在滑块上拖着滚，按在轨道别处滑块
+    /// 中间跳过去、接着能拖；松开放手。拿了交回 `true`，别的照正文办。
+    fn bar_mouse(&mut self, event: MouseEvent) -> bool {
+        let bar = self.bar();
+        let a = self.area;
+        let on = bar.is_some() && self.on_bar_column(event.column, event.row);
+        let y = event.row.clamp(a.y, a.bottom().saturating_sub(1)) - a.y;
+        // 带小数的第几行：按像素报的照像素，按格报的照那一格当中。
+        let yf = self
+            .pixel_y
+            .take()
+            .map_or(f64::from(y) + 0.5, |py| py - f64::from(a.y));
+        match (event.kind, bar) {
+            (MouseEventKind::Moved, _) => {
+                self.bar_hover = on;
+                on
+            }
+            (MouseEventKind::Down(MouseButton::Left), Some(bar)) if on => {
+                let grab = if bar.holds(y) {
+                    yf - bar.start
+                } else {
+                    bar.len / 2.0
+                };
+                self.bar_grab = Some(grab);
+                self.scroll_to(bar.first_at(yf, grab));
+                true
+            }
+            (MouseEventKind::Drag(MouseButton::Left), Some(bar)) if self.bar_grab.is_some() => {
+                self.scroll_to(bar.first_at(yf, self.bar_grab.unwrap_or(0.0)));
+                true
+            }
+            (MouseEventKind::Up(MouseButton::Left), _) if self.bar_grab.is_some() => {
+                self.bar_grab = None;
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// 滚动条在第几列。
+    pub fn bar_column(&self) -> u16 {
+        self.bar_x
+            .unwrap_or_else(|| self.area.right().saturating_sub(1))
+    }
+
+    /// `(x, y)` 落在滚动条那一列、正文的那几行上（正文区外面那一列的鼠标也归正文，`app/mouse.rs`）。
+    pub fn on_bar_column(&self, x: u16, y: u16) -> bool {
+        x == self.bar_column() && (self.area.y..self.area.bottom()).contains(&y)
     }
 
     fn scroll_to(&mut self, first: usize) {
