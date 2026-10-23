@@ -95,12 +95,24 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     tui.wait_for("请选择预设");
     tui.key(b"\x1b");
     closed(&mut tui);
-    // `/new` 以后又先问；`Esc` 照默认的。
+    // `/new` 以后又先问。人格框是第一步，`Esc` 不动；预设框 `Esc` 回人格框重选（2026-10-23 项目主人：「esc 不应该是选择
+    // 默认，而应该是返回」）。
     tui.say("/new");
     tui.wait_for("请选择人格");
     tui.key(b"\x1b");
+    tui.pump(std::time::Duration::from_millis(300));
+    assert!(
+        tui.shows("请选择人格"),
+        "人格框 Esc 不关：\n{}",
+        tui.lines().join("\n")
+    );
+    tui.key(b"\r");
     tui.wait_for("请选择预设");
     tui.key(b"\x1b");
+    tui.wait_for("请选择人格");
+    tui.key(b"\r");
+    tui.wait_for("请选择预设");
+    tui.key(b"\r");
     closed(&mut tui);
 }
 
@@ -127,7 +139,7 @@ fn closed(tui: &mut support::Tui) {
 
 #[test]
 fn a_session_needs_a_preset_and_a_broken_default_keeps_the_box_open() {
-    // 核心 Y12：开会话一定要有预设；默认预设指着没有的，`Esc` 不关，选了才能打字。
+    // 核心 Y12：开会话一定要有预设；测具设了人格、没有人格框可回，`Esc` 不关、弹一句，选了才能打字。
     let home = Home::with_settings(
         Script::new([Play::Says("好。")]),
         "[preset]\ndefault = \"nope\"\n",

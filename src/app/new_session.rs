@@ -274,20 +274,13 @@ impl App {
             Pressed::Escape if !self.not_opened() || self.pick(kind).chosen.is_some() => {
                 self.boxes.panel = None;
             }
-            // 照光标起初停的那一个（上一次选的、默认的）；人格都用不了的就是无人格（第一行），不卡住（2026-10-08 项目主人：
-            // 人格允许为空）。
+            // 新会话开头（2026-10-23 项目主人：「esc 不应该是选择默认，而应该是返回。不然我人格选错了就没法返回了」）：预设框
+            // 回人格框重选，光标停在刚选的那个；人格框是第一步，`Esc` 不动。
             Pressed::Escape => {
-                match esc_choice(&list, self.pick(kind).preferred(self.last_pick(kind)), kind) {
-                    Some(id) => {
-                        self.boxes.panel = None;
-                        self.choose(kind, id);
-                        self.ask_next();
-                    }
-                    // 只有预设会到这里：开会话一定要有预设（核心 Y12）。
-                    None => {
-                        let note = self.config.text.persona_box.preset_need.clone();
-                        self.hint(note, false);
-                    }
+                // 没有人格框可回（测具设了人格、核心不认人格）：弹一句先选预设（开会话一定要有预设，核心 Y12）。
+                if kind == Kind::Preset && !self.back_to_persona() {
+                    let note = self.config.text.persona_box.preset_need.clone();
+                    self.hint(note, false);
                 }
             }
             Pressed::Ignored => {}
@@ -301,6 +294,30 @@ impl App {
             Kind::Preset => Command::Preset(id),
         };
         self.link.core.send(command);
+    }
+
+    /// 新会话开头从预设框回人格框：人格的选择清掉重选，光标停在刚选的那个；测具设了人格的、核心不认人格的（列表是空的）
+    /// 没有人格框可回，交回 `false`。
+    fn back_to_persona(&mut self) -> bool {
+        let pick = &self.talk.persona;
+        if pick.env.is_some() {
+            return false;
+        }
+        let Some(list) = pick.list.as_ref().filter(|l| !l.is_empty()) else {
+            return false;
+        };
+        let selected = pick
+            .chosen
+            .as_deref()
+            .and_then(|id| list.iter().position(|p| p.id == id))
+            .unwrap_or_else(|| pick.start(self.last_pick(Kind::Persona)));
+        self.talk.persona.chosen = None;
+        self.talk.persona.opened = Some(selected);
+        self.boxes.panel = Some(Panel::Pick {
+            kind: Kind::Persona,
+            selected,
+        });
+        true
     }
 
     /// 选了：记着，告诉核心开会话时带上。
@@ -383,11 +400,10 @@ impl App {
     }
 }
 
-/// 按 Esc 照哪一个（编号）：光标起初停的那一个（`preferred`：上一次选的、默认的）；人格都用不了的是第一行无人格，
-/// 列表空了（框开着时重读回来是空的）也是无人格，不去取不存在的那一行（review A6，2026-10-11：原来越界崩溃）。
-/// 预设一定要有（核心 Y12）：没有能用的交回 `None`，不关框。
-fn esc_choice(list: &[Persona], preferred: Option<usize>, kind: Kind) -> Option<String> {
-    match preferred.and_then(|i| list.get(i)) {
+/// 不问人格预设时照哪一个（编号）：默认的那一行；没有、用不了的人格是第一行无人格，预设一定要有（核心 Y12），没有能用的
+/// 交回 `None`，照旧开框。
+fn default_choice(list: &[Persona], default: Option<usize>, kind: Kind) -> Option<String> {
+    match default.and_then(|i| list.get(i)) {
         Some(p) => Some(p.id.clone()),
         None => {
             (kind == Kind::Persona).then(|| list.first().map_or_else(String::new, |p| p.id.clone()))
@@ -396,8 +412,11 @@ fn esc_choice(list: &[Persona], preferred: Option<usize>, kind: Kind) -> Option<
 }
 
 #[cfg(test)]
+mod skip_tests;
+
+#[cfg(test)]
 mod tests {
-    use super::{Kind, Pick, esc_choice};
+    use super::Pick;
     use crate::core::Persona;
 
     fn row(id: &str, problem: Option<&str>) -> Persona {
@@ -434,31 +453,5 @@ mod tests {
         );
         assert_eq!(pick.start(Some(Some("gone"))), 1, "上一次的没了：默认的");
         assert_eq!(pick.start(None), 1, "没有会话：默认的");
-    }
-
-    #[test]
-    fn escape_on_an_emptied_list_is_no_persona_instead_of_a_crash() {
-        // review A6（2026-10-11）：框开着时重读人格回来是空的（核心回了错），原来按 Esc 去取第 0 行，越界崩溃。
-        assert_eq!(esc_choice(&[], None, Kind::Persona), Some(String::new()));
-        assert_eq!(
-            esc_choice(&[], Some(3), Kind::Persona),
-            Some(String::new()),
-            "记着的位置过时了"
-        );
-        assert_eq!(
-            esc_choice(&[], None, Kind::Preset),
-            None,
-            "预设一定要有，不关框"
-        );
-        let list = [row("", None), row("cat", None)];
-        assert_eq!(
-            esc_choice(&list, Some(1), Kind::Persona).as_deref(),
-            Some("cat")
-        );
-        assert_eq!(
-            esc_choice(&list, None, Kind::Persona).as_deref(),
-            Some(""),
-            "第一行无人格"
-        );
     }
 }
