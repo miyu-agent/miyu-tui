@@ -146,6 +146,8 @@ fn a_session_needs_a_preset_and_a_broken_default_keeps_the_box_open() {
     );
     let mut tui = home.tui_with("zh_CN.UTF-8", &[ASK_PRESET]);
     tui.wait_for("请选择预设");
+    // 列表读到以前框里写「正在加载…」、按键不进（门禁满载时偶尔先按了 Esc）：等列表出来再按。
+    tui.wait_for("全部功能");
     tui.key(b"\x1b");
     tui.wait_for("请先选择预设");
     assert!(tui.shows("请选择预设"), "框还开着");
