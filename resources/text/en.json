@@ -565,6 +565,11 @@
       "Don't allow"
     ],
     "reason_hint": "Add a reason (optional)",
+    "command_above": "↑ {n} more above",
+    "command_below": "↓ {n} more below",
+    "keys_scroll": "Ctrl+J/K scroll command",
+    "keys_scroll_preview": "Ctrl+J/K scroll preview",
+    "preview_below": "{n} more below",
     "access": {
       "execute": "Run a command",
       "write": "Wants to write {count} file(s)",

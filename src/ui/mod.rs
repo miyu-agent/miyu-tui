@@ -187,6 +187,23 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         }
         (None, None) => app.typing.input.rows(w),
     };
+    // 抽屉这一页的预览比输入框宽：抽屉跟着放宽（最多整栏），选项往左让（2026-10-23 项目主人照 Claude Code，`drawer/preview.rs`）。
+    let widened = open_drawer.and_then(|d| {
+        let base = &app.config.layout;
+        let chrome = layout::box_width(main.width, base) - layout::text_width(main.width, base);
+        let most = main.width.saturating_sub(chrome);
+        let want = drawer::preview_wanted(d, texts, &base.drawer_preview, most)?;
+        if want <= layout::text_width(main.width, base) {
+            return None;
+        }
+        let mut wide = base.clone();
+        let box_w = u32::from(want.min(most) + chrome);
+        wide.width_percent = u16::try_from((box_w * 100).div_ceil(u32::from(main.width.max(1))))
+            .unwrap_or(100)
+            .min(100);
+        Some(wide)
+    });
+    let layout_used = widened.as_ref().unwrap_or(&app.config.layout);
     // 空会话是首页：整组上下居中，吉祥物在中间（`tui.md`「空会话的首页」）。列表占几行交给 `place` 定位。
     let place = |menu_rows: u16| {
         if home {
@@ -200,7 +217,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             home::areas(
                 main,
                 &box_rows,
-                &app.config.layout,
+                layout_used,
                 mascot,
                 menu_rows,
                 agent_rows,
@@ -211,7 +228,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             areas(
                 main,
                 &box_rows,
-                &app.config.layout,
+                layout_used,
                 menu_rows,
                 running,
                 count,
