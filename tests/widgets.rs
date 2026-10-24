@@ -46,7 +46,7 @@ const CONTENT: &str = r#"{
 /// 装扩展 `wx`（批了 `widgets`、开着）：首页一块、底栏一块、侧边栏一块（跟着会话）。程序记下收到的 `widget.watch`、
 /// `method.call`。
 fn install(dir: &Path) {
-    let package = dir.join("home/alice/packages/wx");
+    let package = dir.join("system/packages/wx");
     std::fs::create_dir_all(package.join("bin")).expect("建得了包的目录");
     let program = package
         .join("bin")
@@ -68,7 +68,13 @@ fn install(dir: &Path) {
     std::fs::write(package.join("package.toml"), manifest).expect("写得进去");
     std::fs::write(
         dir.join("system/extensions.json"),
-        r#"{"version":1,"on":{"wx":true},"approved":{"wx":["widgets"]}}"#,
+        r#"{"version":1,"on":{"wx":true}}"#,
+    )
+    .expect("写得进去");
+    // 批过的能力记在组表 `ext.<能力>` 里（核心 Y-5 下上）。
+    std::fs::write(
+        dir.join("system/groups.json"),
+        r#"{"version":1,"groups":{"ext.widgets":["wx"]}}"#,
     )
     .expect("写得进去");
 }

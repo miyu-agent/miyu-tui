@@ -49,7 +49,7 @@ fn installing_a_package_asks_with_what_it_carries() {
     tui.wait_for("装好了。");
     assert!(
         home.root()
-            .join("home/alice/packages/weather/package.toml")
+            .join("system/packages/weather/package.toml")
             .exists(),
         "允许本次就装上了"
     );

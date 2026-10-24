@@ -32,12 +32,13 @@ fn welcomed(settings: &str) -> String {
     }
 }
 
-/// 照用户装软件包那样把终端自己的清单（`tui/package.toml`）装进 alice 的家：核心 S-5 起出厂不再带它，`tui.*` 配置
+/// 照用户装软件包那样把终端自己的清单（`tui/package.toml`）装进系统那一层（`system/packages/`，核心 U23 上上起装的包都在这里，
+/// 以前在机主家目录）：核心 S-5 起出厂不再带它，`tui.*` 配置
 /// 项、终端的状态目录都照它认（README「装上终端」那一步）。程序不放进去：界面的程序不在，配置项照旧在。
 /// `edit` 改一改清单再装（装着旧清单的样子）。
 fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tui/package.toml");
-    let to = dir.join("home/alice/packages/tui");
+    let to = dir.join("system/packages/tui");
     std::fs::create_dir_all(&to).expect("建得了包的目录");
     let text = std::fs::read_to_string(manifest).expect("读得了终端的清单");
     std::fs::write(to.join("package.toml"), edit(text)).expect("装得上终端的清单");
@@ -46,7 +47,7 @@ fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
         let from = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("packages")
             .join(theme);
-        let to = dir.join("home/alice/packages").join(theme);
+        let to = dir.join("system/packages").join(theme);
         std::fs::create_dir_all(&to).expect("建得了主题包的目录");
         for file in ["package.toml", "theme.json"] {
             std::fs::copy(from.join(file), to.join(file)).expect("装得上主题包");
