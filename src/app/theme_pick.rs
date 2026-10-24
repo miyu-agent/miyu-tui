@@ -134,6 +134,7 @@ impl App {
     /// 发一个请求，回应照编号回来。
     fn theme_ask(&mut self, tag: u64, method: &'static str, params: Value) {
         self.link.core.send(Command::Ask {
+            system: false,
             tag,
             method,
             params,

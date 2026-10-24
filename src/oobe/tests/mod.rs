@@ -240,7 +240,7 @@ fn the_semantic_step_shows_only_with_the_package() {
     let (tag, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
         params,
-        json!({"layer": "personal", "changes": [{"key": "models.embedding", "value": "off"}]}),
+        json!({"layer": "system", "changes": [{"key": "models.embedding", "value": "off"}]}),
         "「否」只用关键词"
     );
     oobe.answer(tag, Ok(json!({})), t0, &texts);

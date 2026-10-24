@@ -446,6 +446,13 @@ fn an_item_only_the_system_config_holds_is_written_there() {
         press(&mut page, KeyCode::Char('j'));
     }
     press(&mut page, KeyCode::Enter);
+    // 管理员模式关着：锁着，提示先进管理员模式（「管理员模式」第 3 条）；开了才写得了。
+    page.admin = Some(false);
+    press(&mut page, KeyCode::Enter);
+    assert!(page.popup.is_none(), "锁着不开窗：{:?}", page.popup);
+    let said = format!("{:?}", page.status);
+    assert!(said.contains("管理员模式"), "{said}");
+    page.admin = Some(true);
     press(&mut page, KeyCode::Enter);
     assert!(
         matches!(page.popup, Some(Popup::Choose(_))),

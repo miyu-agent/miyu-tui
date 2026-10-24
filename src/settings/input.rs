@@ -457,9 +457,9 @@ impl Settings {
             Delete::Preset(_) | Delete::Persona(_) | Delete::PersonaSeed(_) => {
                 return Outcome::Stay;
             }
-            // 恢复默认：只去掉个人设置里的这一项（只有系统配置这一层的去掉系统配置里的）。
+            // 恢复默认：去掉个人设置里的这一项（管理员模式开着、能写系统的去掉系统配置里的）。
             Delete::Setting(key) => {
-                self.draft.system = self.system_only(key);
+                self.draft.system = self.writes_system(key);
                 self.draft.unset(key, data);
                 self.refresh();
                 self.save(true, texts);

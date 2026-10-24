@@ -31,6 +31,7 @@ mod push;
 mod replay;
 mod request;
 mod rpc;
+mod scope;
 mod serve;
 mod sessions;
 mod snapshot;
@@ -277,6 +278,8 @@ pub enum Command {
         method: &'static str,
         /// 参数。
         params: serde_json::Value,
+        /// 不管开没开管理员模式都带 `scope`（引导装语义模型，「管理员模式」第 5 条）。
+        system: bool,
     },
     /// 重做最后一轮（`session.redo`，`/redo`、`/edit`）：`text` 换开这一轮的那句字，`files` 换附件（空的是不要附件），
     /// 都是 `None` 的原样重来。
@@ -292,6 +295,8 @@ pub enum Command {
 #[derive(Clone)]
 pub struct Core {
     commands: mpsc::UnboundedSender<Command>,
+    /// 管理员模式开着（蓝图「管理员模式」）：和连核心的线程共用，那边每发一条看一眼。
+    admin: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl Core {
@@ -299,6 +304,16 @@ impl Core {
     pub fn send(&self, command: Command) {
         // 收的一头只在连核心的线程退出时关掉，那时已经报过「断开了」，丢了也无妨。
         if self.commands.send(command).is_err() {}
+    }
+
+    /// 进、退管理员模式：之后发的改系统那一层的请求带不带 `scope`（「管理员模式」第 4 条）。
+    pub fn set_admin(&self, on: bool) {
+        self.admin.store(on, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// 管理员模式开着。
+    pub fn admin(&self) -> bool {
+        self.admin.load(std::sync::atomic::Ordering::Relaxed)
     }
 }
 

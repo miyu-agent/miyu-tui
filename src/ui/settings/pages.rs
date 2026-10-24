@@ -17,7 +17,7 @@ use crate::theme;
 
 /// 主菜单：面包屑，一项两行（项和项之间空 `layout.json` 的 `menu_gap` 行），状态行、细线、按键提示。
 pub(super) fn menu(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &Texts, gap: u16) {
-    crumb(frame, stage, texts, None);
+    crumb(frame, stage, (texts, page.admin_on()), None);
     let entries = page.more.entries();
     let at = page.more.menu_at.min(entries.len().saturating_sub(1));
     let words: Vec<(String, String)> = entries
@@ -61,7 +61,12 @@ pub(super) fn menu(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         );
         page.hits.push((row, Hit::Menu(i)));
     }
-    footer(frame, stage, page, texts, &texts.key_hints[0], None, None);
+    // 管理员多一段「A 管理员模式」（「管理员模式」第 2 条）；不是管理员的不写。
+    let mut hints = texts.key_hints[0].clone();
+    if page.admin.is_some() {
+        hints.push([texts.admin[2].clone(), texts.admin[3].clone()]);
+    }
+    footer(frame, stage, page, texts, &hints, None, None);
 }
 
 /// 主菜单一项写什么：名字、底下暗色一行。
@@ -123,7 +128,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         Section::Personas(_) => (texts.more.personas[0].clone(), &texts.more.hints[5]),
         Section::Presets(_) => (texts.more.presets[0].clone(), &texts.more.hints[5]),
     };
-    crumb(frame, stage, texts, Some(&title));
+    crumb(frame, stage, (texts, page.admin_on()), Some(&title));
     // 包自己那一页：面包屑下面一行暗色写作者、从哪来、上游（第 43a 条），项往下挪一行。
     let origin = match &section {
         Section::Page(id, _) => {

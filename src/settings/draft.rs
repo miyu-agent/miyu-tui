@@ -48,6 +48,11 @@ impl Draft {
     }
 
     /// 改成 `value`；和那一层现在写的一样的不算改动。
+    /// 这一份改了哪几项。
+    pub fn keys(&self) -> impl Iterator<Item = &String> {
+        self.changes.keys()
+    }
+
     pub fn set(&mut self, key: &str, value: Value, data: &Data) {
         if self.written(data).get(key) == Some(&value) {
             self.changes.remove(key);

@@ -262,6 +262,15 @@
       "run": "usage"
     },
     {
+      "name": "admin",
+      "summary": {
+        "zh": "进入、退出管理员模式",
+        "en": "Enter or leave admin mode",
+        "ja": "管理者モードを切り替える"
+      },
+      "run": "admin"
+    },
+    {
       "name": "copy",
       "summary": {
         "zh": "复制上一轮的回答",

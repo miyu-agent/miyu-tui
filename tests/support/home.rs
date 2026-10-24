@@ -143,6 +143,12 @@ impl Home {
             "[packages]\nsource = \"https://source.invalid/\"\n",
         )
         .expect("写得进去");
+        // alice 是机主（核心 Y-12 中上）：握手说她是管理员，配置页有管理员模式（蓝图「管理员模式」）。同核心测具的 `owner()`。
+        std::fs::write(
+            dir.join("system/accounts.json"),
+            r#"{"version":1,"accounts":[{"id":"alice","username":"alice","password":"$argon2id$v=19$m=19456,t=2,p=1$placeholder","changed":"2026-10-23T00:00:00.000Z","owner":true}]}"#,
+        )
+        .expect("写得进去");
         if !settings.is_empty() {
             let file = dir.join("home/alice/settings.toml");
             std::fs::create_dir_all(file.parent().expect("有上一层")).expect("建得了");

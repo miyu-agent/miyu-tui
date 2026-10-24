@@ -16,6 +16,10 @@ impl Settings {
             }
             return;
         }
+        // 写哪一层照管理员模式（「管理员模式」第 3 条）；恢复默认的照删的那一层，已经定好了。
+        if !self.draft.system {
+            self.pick_layer();
+        }
         let Some(data) = self.data.as_ref().filter(|_| self.online) else {
             self.draft.clear();
             self.refresh();
