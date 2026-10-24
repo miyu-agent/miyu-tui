@@ -147,6 +147,7 @@
     "failed": "无法打开：{reason}"
   },
   "esc_hint": "再按一次 Esc 中断",
+  "esc_agents_hint": "再按一次 Esc 停止子代理",
   "stashed": "> 暂存",
   "no_clear_running": "回答进行中，无法清屏",
   "icons_changed": "图标：{name}",

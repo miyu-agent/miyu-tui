@@ -183,6 +183,8 @@ pub struct Texts {
     pub admin: AdminTexts,
     /// 在回答时按第一下 `Esc` 的提示。
     pub esc_hint: String,
+    /// 要停子代理时按第一下 `Esc` 的提示（`app/stop_agents.rs`）。
+    pub esc_agents_hint: String,
     /// 回答进行中按 `Ctrl+L` 的提示。
     pub no_clear_running: String,
     /// 暂存着东西时，输入框第一行最右边的标记。

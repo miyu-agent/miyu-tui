@@ -147,6 +147,7 @@
     "failed": "Can't open it: {reason}"
   },
   "esc_hint": "Press Esc again to interrupt",
+  "esc_agents_hint": "Press Esc again to stop the subagents",
   "stashed": "> stashed",
   "no_clear_running": "Can't clear the screen while a reply is running",
   "icons_changed": "Icons: {name}",

@@ -147,6 +147,7 @@
     "failed": "開けません：{reason}"
   },
   "esc_hint": "もう一度 Esc で中断",
+  "esc_agents_hint": "もう一度 Esc でサブエージェントを停止",
   "stashed": "> 一時保存",
   "no_clear_running": "返信中は画面をクリアできません",
   "icons_changed": "アイコン：{name}",
