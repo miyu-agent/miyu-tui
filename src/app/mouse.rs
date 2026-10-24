@@ -127,19 +127,25 @@ impl App {
         }
     }
 
-    /// 点了链接、附件块、文件块：本机的文本文件在这个终端里用编辑器开，别的用系统的程序打开；开不了的提示一句（「她的
-    /// 回答：Markdown」第 10 条）。
+    /// 点了链接、附件块、文件块：本机的文件、目录和展示的一样，照「展示」第 7 条的退路开（系统给这种文件定的默认程序，
+    /// 没有的交浏览器），网址用系统的打开方式；开不了的提示一句（「她的回答：Markdown」第 10 条）。
     pub(super) fn open_link(&mut self, url: &str) {
+        use crate::launch::{Env, Launched, launch};
         use crate::open::OpenError;
         // 她给人看的文件：照展示的退路开（「展示」第 6、7 条）。
         if self.open_shown_link(url) {
             return;
         }
-        // 本机的文本文件：在这个终端里用编辑器开，主循环让出终端（第 10 条）。
-        if let Some(editor) = self.typing.editor.clone()
-            && let Some(file) = crate::local::resolve(url).filter(|f| crate::editor::is_text(f))
-        {
-            self.typing.edit = Some((editor, file));
+        // 本机的文件、目录：同展示（2026-10-24 项目主人：点 `.html` 进了编辑器，「和 show 用类似点击打开策略」；原来
+        // 文本文件进 `$EDITOR`）。种类照文件本身问，问不到的当不认得的文件。
+        if let Some(file) = crate::open::local(url) {
+            if launch(&file, "application/octet-stream", &Env::current()) == Launched::Nothing {
+                let words = &self.config.text.shown;
+                let note = words
+                    .no_program
+                    .replace("{path}", &file.display().to_string());
+                self.hint(note, false);
+            }
             return;
         }
         let words = &self.config.text.open;
