@@ -16,6 +16,7 @@ pub mod persona;
 pub mod pick;
 pub mod preset;
 pub mod profile;
+pub mod register;
 mod replies;
 pub mod semantic;
 pub mod sheet;
@@ -108,6 +109,8 @@ pub struct Oobe {
     pub badge: Option<(String, Instant)>,
     /// 语言那一步。
     pub language: Pick,
+    /// 注册机主（还没有机主时才有）。
+    pub register: register::RegisterStep,
     /// 操作方式那一步：第 0 行方向键（`arrows`）、第 1 行 Vim（`vim`）。开引导时 App 照现在的按键模式选着。
     pub keys: Pick,
     /// 图标那一步：第 0 行 `nerd`、第 1 行 `plain`。
@@ -162,6 +165,7 @@ impl Oobe {
                 ICON_SETS.iter().map(|s| (*s).to_string()).collect(),
                 icon_row,
             ),
+            register: register::RegisterStep::default(),
             model: model::ModelStep::new(look.catalog_limit),
             persona: persona::PersonaStep::default(),
             theme: theme::ThemeStep::default(),
@@ -202,6 +206,7 @@ impl Oobe {
                 }
             }
             Step::Language => self.pick_key(Step::Language, key, &mut effects),
+            Step::Register => self.register.key(key, &mut self.asker),
             Step::Keys => self.pick_key(Step::Keys, key, &mut effects),
             Step::Icons => self.pick_key(Step::Icons, key, &mut effects),
             Step::Model => self.model.key(key, &mut self.asker, &texts.model),
@@ -242,6 +247,7 @@ impl Oobe {
             Step::Persona => self.persona.paste(text),
             Step::Profile => self.profile.paste(text),
             Step::Preset => self.preset.paste(text),
+            Step::Register => self.register.paste(text),
             _ => {}
         }
     }
@@ -359,7 +365,16 @@ impl Oobe {
                 self.stars = Stars::gather(now, self.seed.wrapping_add(1));
                 self.sliding = None;
             }
-            Step::Language | Step::Keys | Step::Icons => {}
+            Step::Language | Step::Register | Step::Keys | Step::Icons => {}
+        }
+    }
+
+    /// 握手说的：还没有机主的要走注册这一步；在等注册的、握手又说有机主了的往下走（第 5a 条）。
+    pub fn account(&mut self, setup: bool, now: Instant) {
+        if setup {
+            self.register.needed = true;
+        } else if self.register.registered() && self.step == Step::Register {
+            self.moved(Move::Next, now);
         }
     }
 
@@ -367,6 +382,10 @@ impl Oobe {
     /// 主题（配色跟着人格的头像，2026-10-19 项目主人）。
     fn skip(&self, to: Step, back: bool) -> Step {
         let mut to = self.semantic.skip(to, back);
+        // 有机主了（本来就有、注册过了）：跨过注册（第 5a 条）。
+        if to == Step::Register && !self.register.pending() {
+            to = if back { to.previous() } else { to.next() };
+        }
         if to == Step::Theme && self.persona.chosen_id.is_none() {
             to = if back { to.previous() } else { to.next() };
         }

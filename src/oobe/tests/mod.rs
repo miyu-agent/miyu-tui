@@ -5,6 +5,7 @@ mod link;
 mod persona;
 mod preset;
 mod profile;
+mod register;
 mod semantic;
 mod skip;
 mod theme;
@@ -144,11 +145,20 @@ fn esc_goes_back_a_step_and_the_welcome_page_does_not_replay() {
             .finished(t0, &oobe.look.intro, texts.welcome.title.chars().count()),
         "回来不再播开场"
     );
-    assert_eq!(oobe.step.bar(), None);
-    assert_eq!(Step::Language.bar(), Some(0));
-    assert_eq!(Step::Keys.bar(), Some(1));
-    assert_eq!(Step::Theme.bar(), Some(5));
-    assert_eq!(Step::Preset.bar(), Some(7));
+    assert_eq!(oobe.step.bar(false), None);
+    let now = |step: Step, register| step.bar(register).map(|(_, now)| now);
+    assert_eq!(now(Step::Language, false), Some(0));
+    assert_eq!(now(Step::Keys, false), Some(1));
+    assert_eq!(now(Step::Theme, false), Some(5));
+    assert_eq!(now(Step::Preset, false), Some(7));
+    assert_eq!(now(Step::Register, false), None, "有机主的不画注册");
+    // 还没有机主：「注册」排在语言后面，后面的都往后挪一个（第 5a 条）。
+    assert_eq!(now(Step::Register, true), Some(1));
+    assert_eq!(now(Step::Keys, true), Some(2));
+    assert_eq!(
+        Step::Preset.bar(true).map(|(shown, _)| shown.len()),
+        Some(9)
+    );
 }
 
 #[test]

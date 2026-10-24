@@ -1,7 +1,5 @@
-//! 界面这一头记着的会话：正文里的一条条、在不在跑、连没连上、用了多少。
-//!
-//! 只收核心推来的，不自己编：正文照推送一块块接起来，思考和调工具记进时间线的一段（`steps.rs`），
-//! 用量照 `model.called` 加起来。纯状态，不碰终端，好测。
+//! 界面这一头记着的会话：正文里的一条条、在不在跑、连没连上、用了多少。只收核心推来的，不自己编：正文照推送一块块
+//! 接起来，思考和调工具记进时间线的一段（`steps.rs`），用量照 `model.called` 加起来。纯状态，不碰终端，好测。
 
 mod attached;
 mod beat;
@@ -238,7 +236,8 @@ impl Transcript {
             | Update::PackageCallRefused { .. }
             | Update::OpenPage(_)
             | Update::DirChecked(_)
-            | Update::AnswerFilesLost(_) => {}
+            | Update::AnswerFilesLost(_)
+            | Update::Account(_) => {}
             Update::CoolingUntil(until) => self.cooling_until(until),
             Update::CurrentModel(current) => self.current_model(current),
             Update::SessionPersona(persona) => self.persona = Some(persona),

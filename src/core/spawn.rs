@@ -49,9 +49,9 @@ async fn run(
     let mut first = true;
     loop {
         // 连不上一直试；这期间界面发的命令在通道里排着，连上再发（第 1、7 条）。
-        let mut rpc = loop {
+        let (mut rpc, account) = loop {
             match connect().await {
-                Ok(rpc) => break rpc,
+                Ok(connected) => break connected,
                 Err(update) => {
                     if !notify(update) {
                         return;
@@ -61,7 +61,11 @@ async fn run(
             }
         };
         wait.reset();
-        let said = if std::mem::take(&mut first) {
+        if !notify(Update::Account(account)) {
+            return;
+        }
+        // 还没有机主：只能注册，进哪个会话等注册完、重连上再看（核心这时别的都回 `setup_first`）。
+        let said = if !account.setup && std::mem::take(&mut first) {
             match entered(&mut rpc, resume.clone(), recent).await {
                 // 进了已有的会话：先读最新一页再带 `after` 订阅；会话编号先告诉界面。
                 Some(id) => {

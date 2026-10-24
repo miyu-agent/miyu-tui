@@ -137,6 +137,41 @@ pub struct Profile {
     pub saving: String,
 }
 
+/// 注册机主那一步（第 5a 条）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Register {
+    /// 标题、说明。
+    #[serde(flatten)]
+    pub head: Heading,
+    /// 三格的名字：用户名、密码、再输一遍。
+    pub fields: [String; 3],
+    /// 三格空着时暗色写的。
+    pub hints: [String; 3],
+    /// 「注册」。
+    pub submit: String,
+    /// 「正在注册…」。
+    pub busy: String,
+    /// 不合的地方。
+    pub problems: RegisterProblems,
+}
+
+/// 注册那一屏写在格子下面的几句（`register::Problem`）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RegisterProblems {
+    /// 用户名不合写法。
+    pub username: String,
+    /// 密码太短。
+    pub short: String,
+    /// 密码全是空白。
+    pub blank: String,
+    /// 两次不一样。
+    pub mismatch: String,
+    /// 用户名已被使用。
+    pub taken: String,
+}
+
 /// 主题那一步。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -386,12 +421,14 @@ pub struct Done {
 pub struct Texts {
     /// 欢迎页。
     pub welcome: Welcome,
-    /// 顶上进度那一行五步的名字。
+    /// 顶上进度那一行几步的名字（照 `step.rs` 的 `BAR`，「注册」只在还没有机主时画）。
     pub steps: Vec<String>,
     /// 按键提示。
     pub keys: Keys,
     /// 语言。
     pub language: Language,
+    /// 注册机主。
+    pub register: Register,
     /// 图标。
     pub icons: Icons,
     /// 你喜欢的操作方式（`keys` 是每一屏最下面那行按键，这一步叫 `controls`）。

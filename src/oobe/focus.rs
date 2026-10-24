@@ -26,6 +26,7 @@ impl Oobe {
                 p.writing.is_some() || p.editing.is_some() || p.name.editing()
             }
             Step::Profile => self.profile.writing.is_some() || self.profile.name.editing(),
+            Step::Register => self.register.typing(),
             Step::Preset => self.preset.custom_open && self.preset.name.editing(),
             _ => false,
         }

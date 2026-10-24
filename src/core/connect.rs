@@ -11,12 +11,12 @@ use miyu_client::connect::{ConnectError, StartError};
 use miyu_client::places::DataRoot;
 use miyu_client::places::Env;
 
-use super::Update;
 use super::limits::Limits;
 use super::rpc::{Failure, Rpc};
+use super::{Account, Update};
 
-/// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来；没给的只连。
-pub(super) async fn connect() -> Result<Rpc, Update> {
+/// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来；没给的只连。交回握手回应里说的这个人。
+pub(super) async fn connect() -> Result<(Rpc, Account), Update> {
     let env = Env::current();
     let root = DataRoot::locate(&env).map_err(|e| Update::Failed(e.to_string()))?;
     root.prepare().map_err(|e| Update::Failed(e.to_string()))?;
@@ -50,8 +50,12 @@ pub(super) async fn connect() -> Result<Rpc, Update> {
         "caps": {"input": true},
         "token": token,
     });
-    rpc.call("hello", hello).await.map_err(refused)?;
-    Ok(rpc)
+    let said = rpc.call("hello", hello).await.map_err(refused)?;
+    let account = Account {
+        setup: said["setup"] == true,
+        admin: said["admin"] == true,
+    };
+    Ok((rpc, account))
 }
 
 /// 开会话时带上的：`/model` 选的模型、人格框、预设框选的（没选的不写，核心照默认），`/workspace` 换的目录。
