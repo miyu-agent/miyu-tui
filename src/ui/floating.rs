@@ -22,6 +22,8 @@ pub struct Lines<H> {
     pub hints: Vec<[String; 2]>,
     /// 正在改的那一行：第几行、光标在第几列。
     pub caret: Option<(usize, u16)>,
+    /// 光标停在最后一个能选的行上：后面跟着的、光标停不上去的行（预设里写了没装的功能）也露出来，窗口滚到底。
+    pub to_end: bool,
 }
 
 impl<H> Default for Lines<H> {
@@ -34,6 +36,7 @@ impl<H> Default for Lines<H> {
             button: None,
             hints: Vec::new(),
             caret: None,
+            to_end: false,
         }
     }
 }
@@ -183,7 +186,11 @@ fn paint<H: Copy>(
         .map(|e| error_rows(e, usize::from(inner.width)))
         .unwrap_or_default();
     let room = inner.height.saturating_sub(6 + errors.len() as u16) as usize;
-    let focus = lines.body.iter().position(|b| b.focused).unwrap_or(0);
+    let focus = if lines.to_end {
+        lines.body.len().saturating_sub(1)
+    } else {
+        lines.body.iter().position(|b| b.focused).unwrap_or(0)
+    };
     let top = focus
         .saturating_sub(room.saturating_sub(1))
         .min(lines.body.len().saturating_sub(room));

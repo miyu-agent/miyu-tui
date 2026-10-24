@@ -184,7 +184,11 @@ pub(super) fn preset(
     };
     // 存不进去的原话写在窗里（读成了详情以后 `error` 只管这个）。
     lines.error = view.error.clone();
-    let at = fields(detail).get(view.cursor).copied();
+    let fields = fields(detail);
+    let at = fields.get(view.cursor).copied();
+    // 写了没装的功能排在最后、光标停不上去：挪到最后一个能选的行时连它们一起露出来（2026-10-24：功能多了以后
+    // 「没安装」那几行一直在窗外）。
+    lines.to_end = view.cursor + 1 == fields.len();
     // 名字、描述两行，名字那一栏对齐（描述 2026-10-23 加，没写的空着）。正在改的那一行写编辑器里的字、光标停在里面。
     let rows = [
         (Field::Name, "preset.name", &words.detail[0], &detail.name),
