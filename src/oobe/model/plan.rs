@@ -149,7 +149,7 @@ pub enum KeyRef {
     None,
 }
 
-/// 存（`config.set` 系统配置）：这一家的 key 引用或者本机的 `local`（配好了的不写）、自定义的接口和地址、不合写法的 `catalog`、
+/// 存（`config.set` 个人设置）：这一家的 key 引用或者本机的 `local`（配好了的不写）、自定义的接口和地址、不合写法的 `catalog`、
 /// `models.chat`；一个池都没有的另写三个预设的池（`miyu setup` 第 10 条）。
 pub fn save_params(
     target: &Target,
@@ -187,7 +187,8 @@ pub fn save_params(
             set(format!("pools.{pool}.subagent"), json!(true));
         }
     }
-    json!({"layer": "system", "changes": changes})
+    // 引导里接的模型是个人的（2026-10-24 项目主人定，「管理员模式」第 5 条；原来写系统配置）。
+    json!({"layer": "personal", "changes": changes})
 }
 
 #[cfg(test)]
@@ -305,7 +306,7 @@ mod tests {
             false,
         );
         let changes = got["changes"].as_array().unwrap();
-        assert_eq!(got["layer"], "system");
+        assert_eq!(got["layer"], "personal");
         assert!(
             changes.contains(
                 &json!({"key": "providers.deepseek.key", "value": {"secret": "deepseek"}})

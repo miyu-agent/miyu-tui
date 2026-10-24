@@ -181,7 +181,7 @@ fn installing_over_a_written_off_switches_it_back_on() {
         sent(&mut asker),
         [(
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": "models.embedding", "value": "local"}]})
+            json!({"layer": "system", "changes": [{"key": "models.embedding", "value": "local"}]})
         )]
     );
     let got = step.answer(&Waiting::SemanticSave, Ok(json!({})), true, &mut asker);
@@ -236,7 +236,7 @@ fn no_on_a_missing_package_writes_off_like_before() {
         sent(&mut asker),
         [(
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": "models.embedding", "value": "off"}]})
+            json!({"layer": "system", "changes": [{"key": "models.embedding", "value": "off"}]})
         )],
         "选「否」不下载"
     );

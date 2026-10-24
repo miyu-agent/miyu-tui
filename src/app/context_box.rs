@@ -31,12 +31,14 @@ impl App {
             None => self.new_session_params(),
         };
         self.link.core.send(Command::Ask {
+            system: false,
             tag: PARTS_TAG,
             method: "session.context",
             params,
         });
         if let Some(session) = session {
             self.link.core.send(Command::Ask {
+                system: false,
                 tag: USES_TAG,
                 method: "usage.query",
                 params: json!({"session": session, "tree": true, "group": ["use"]}),
@@ -52,6 +54,7 @@ impl App {
         }
         let params = self.new_session_params();
         self.link.core.send(Command::Ask {
+            system: false,
             tag: PREVIEW_TAG,
             method: "session.context",
             params,

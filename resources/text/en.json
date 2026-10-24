@@ -140,6 +140,7 @@
   "exit_hint": "Press Ctrl+D to exit",
   "input_cleared": "Cleared · ↑ to bring it back",
   "editing": " Editing your last message · Esc to cancel ",
+  "admin": {"on": "Admin mode on", "off": "Admin mode off", "denied": "Only admins can enter admin mode", "badge": "admin"},
   "open": {
     "refused": "Won't open this kind of address: {url}",
     "missing": "File not found: {path}",
@@ -768,6 +769,7 @@
     "refuse_no_key": "This model has no key"
   },
   "settings": {
+    "admin": ["admin mode", "Enter admin mode first (Shift+A)", "A", "admin mode"],
     "in_use": {
       "persona": "The persona in use has changed. The next turn will miss the whole cache; compacting the context first is recommended.",
       "preset": "The preset in use has changed. The next turn will miss the whole cache; compacting the context first is recommended.",

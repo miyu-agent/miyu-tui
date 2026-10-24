@@ -53,6 +53,7 @@ impl App {
         let params = json!({ "keys": keys });
         asks.flying.insert(tag, parts);
         self.link.core.send(Command::Ask {
+            system: false,
             tag,
             method: "config.get",
             params,

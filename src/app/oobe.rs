@@ -64,7 +64,7 @@ impl App {
             return;
         };
         for ask in oobe.take_asks() {
-            self.send_ask(ask.tag, ask.method, ask.params);
+            self.send_ask(ask.tag, ask.method, ask.params, ask.system);
         }
     }
 
@@ -240,6 +240,13 @@ impl App {
     /// （「第一次打开的引导」第 1、5a 条）；有机主了的先把引导里记着的语言写进设置（排在连上以后读配置的前面，读到的就是它）。
     fn account(&mut self, account: crate::core::Account) {
         self.link.account = account;
+        // 不是管理员了（换了账号）：管理员模式关掉；开着的配置页（连上以前就开了的）照握手说的换（「管理员模式」第 1 条）。
+        if !account.admin && self.link.core.admin() {
+            self.set_admin(false);
+        }
+        if let Some(page) = self.boxes.settings.as_mut() {
+            page.admin = account.admin.then(|| self.link.core.admin());
+        }
         if account.setup {
             self.boxes.welcome_known = true;
             self.boxes.welcome_checked = true;

@@ -56,6 +56,11 @@ impl Item {
         self.layers.iter().any(|l| l == "personal")
     }
 
+    /// 能写进系统配置（大家共用）：管理员模式开着时写这一层（「管理员模式」第 3 条）。
+    pub fn allows_system(&self) -> bool {
+        self.layers.iter().any(|l| l == "system")
+    }
+
     /// 只能写系统配置（运行日志级别这类，「配置页」第 33 条）。
     pub fn system_only(&self) -> bool {
         !self.personal() && self.layers.iter().any(|l| l == "system")
