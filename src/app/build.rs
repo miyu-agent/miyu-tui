@@ -95,6 +95,8 @@ impl App {
                 look: Default::default(),
                 widgets: Default::default(),
                 service: Default::default(),
+                account: Default::default(),
+                held_language: None,
             },
             typing: super::typing::Typing {
                 input,

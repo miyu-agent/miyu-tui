@@ -41,7 +41,7 @@ mod todos;
 mod types;
 mod undo;
 mod update;
-pub use update::Update;
+pub use update::{Account, Update};
 mod upload;
 mod widgets;
 mod workspace;

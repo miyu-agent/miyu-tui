@@ -1430,6 +1430,7 @@
     },
     "steps": [
       "Language",
+      "Sign up",
       "Controls",
       "Icons",
       "Model",
@@ -1596,6 +1597,7 @@
       "next": "Next",
       "saving": "Saving…"
     },
+    "register": {"title": "Create your account", "sub": "Used to sign in on the web", "fields": ["Username", "Password", "Confirm password"], "hints": ["e.g. alice", "At least 8 characters", "Same as above"], "submit": "Create account", "busy": "Creating account…", "problems": {"username": "Lowercase letters, digits, - and _ only, starting with a letter, up to 32", "short": "At least 8 characters", "blank": "Password can't be only spaces", "mismatch": "Passwords don't match", "taken": "Username taken"}},
     "profile": {
       "title": "How the AI knows you",
       "sub": "Applies to new sessions. You can change this in settings later. All are optional",
