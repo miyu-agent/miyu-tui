@@ -268,9 +268,9 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     let home = Home::with_settings(Script::new([Play::Says("好。")]), RELAY);
     // 出厂不带人格（核心 P-4 下）：放一个自己的。
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", Some("你是海盗。"));
-    // 卸掉出厂的长期目标（家目录记一笔 `<编号>.removed`，核心 F-5 上）：预设里写了它，是「写了没装的」。核心 X-8 上装上它
+    // 卸掉出厂的长期目标（系统那一层记一笔 `<编号>.removed`，核心 F-5 上；U23 上上起在 `system/packages/`）：预设里写了它，是「写了没装的」。核心 X-8 上装上它
     // 以前，出厂的预设里本来就有一样没装。
-    let removed = home.root().join("home/alice/packages/goal.removed");
+    let removed = home.root().join("system/packages/goal.removed");
     std::fs::write(removed, "").expect("记得下");
     // 软件包核心起来时读：重启一次。
     home.stop_core();

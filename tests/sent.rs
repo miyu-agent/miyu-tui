@@ -33,7 +33,7 @@ fn install(dir: &Path) {
     let blob = miyu_store::blob::Blobs::new(dir.join("home/alice/blobs"))
         .put(b"\x89PNG not really a picture")
         .expect("存得进");
-    let package = dir.join("home/alice/packages/memes");
+    let package = dir.join("system/packages/memes");
     std::fs::create_dir_all(package.join("bin")).expect("建得了包的目录");
     let program = package
         .join("bin")
@@ -46,8 +46,13 @@ fn install(dir: &Path) {
     std::fs::write(package.join("package.toml"), manifest).expect("写得进去");
     std::fs::write(
         dir.join("system/extensions.json"),
-        // 登记工具的扩展照实声明 `tools`、批过才拉起（核心 X-30）。
-        r#"{"version":1,"on":{"memes":true},"approved":{"memes":["tools"]}}"#,
+        r#"{"version":1,"on":{"memes":true}}"#,
+    )
+    .expect("写得进去");
+    // 登记工具的扩展照实声明 `tools`、批过才拉起（核心 X-30）；批过的能力记在组表 `ext.<能力>` 里（核心 Y-5 下上）。
+    std::fs::write(
+        dir.join("system/groups.json"),
+        r#"{"version":1,"groups":{"ext.tools":["memes"]}}"#,
     )
     .expect("写得进去");
 }
