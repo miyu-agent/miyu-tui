@@ -3,7 +3,7 @@ name = "miyu-tui"
 version = "0.0.1"
 edition = "2024"
 publish = false
-license = "GPL-3.0-or-later"
+license = "AGPL-3.0-or-later"
 description = "终端界面的演示程序：和后端并行开发，先搭全屏框架和输入框。"
 
 [dependencies]
