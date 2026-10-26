@@ -1,4 +1,4 @@
-//! 思考中那一行接着写估的 token 数（2026-10-24 项目主人定：只写数字，`12.3k`、`1M`、`1B`）。
+//! 思考那一行接着写估的 token 数（2026-10-24 项目主人定：只写数字，`12.3k`、`1M`、`1B`；2026-10-26 起想完的也写）。
 
 use std::time::Instant;
 
@@ -31,11 +31,11 @@ fn a_running_thought_shows_its_estimated_tokens_and_a_finished_one_does_not() {
         .push(Step::new(StepKind::Thought { text: " \n".into() }));
     let first = super::text(&rows(0, &empty, &f.ctx()))[0].clone();
     assert!(!first.trim_end().ends_with('0'), "{first}");
-    // 想完的不写：只在思考中那一刻要。
+    // 想完的也写（2026-10-26 项目主人：原来只在思考中写）。
     let t0 = Instant::now();
     let done = step(StepKind::Thought { text }, t0, 0, 2);
     let seg = segment(vec![done, command(t0, 2, ToolStatus::Ok)], Some(true));
     let lines = super::text(&rows(0, &seg, &f.ctx()));
     let title = lines.iter().find(|l| l.contains("已思考")).unwrap();
-    assert!(!title.contains("12.3k"), "{title}");
+    assert!(title.trim_end().ends_with("· 12.3k"), "{title}");
 }

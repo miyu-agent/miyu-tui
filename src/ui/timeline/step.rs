@@ -60,10 +60,10 @@ pub fn title(
                 crate::sheet::sep(),
                 meter::seconds(step.elapsed())
             );
-            // 思考中：接着写估的 token 数，只写数字（2026-10-24 项目主人定：「12.3k 1M 1B 这样子」）。只给加密思考、
-            // 没有原文的模型没字可估，不写。
+            // 接着写估的 token 数，只写数字（2026-10-24 项目主人定：「12.3k 1M 1B 这样子」）；想完的也写（2026-10-26 项目
+            // 主人）。只给加密思考、没有原文的模型没字可估，不写。
             let tokens = meter::estimate_tokens(thought.trim());
-            if step.busy() && tokens > 0 {
+            if tokens > 0 {
                 label.push_str(&crate::sheet::sep());
                 label.push_str(&meter::short(tokens));
             }

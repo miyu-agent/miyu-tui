@@ -16,7 +16,10 @@ fn an_unfolded_lone_thought_keeps_its_running_look_until_someone_opens_it() {
     let think = f.config.icons.think.clone();
     assert_eq!(
         text(&got),
-        [format!("  {think} 已思考 · 1.0s"), "  │ 先看看目录".into()],
+        [
+            format!("  {think} 已思考 · 1.0s · 4"),
+            "  │ 先看看目录".into()
+        ],
         "没有收起那一行，照进行中的样子"
     );
     assert!(got.iter().all(|r| !r.shade), "没铺开，不铺底色");
