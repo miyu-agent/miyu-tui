@@ -844,6 +844,7 @@
       "off": "关",
       "rotate": "轮换",
       "pin": "固定",
+      "ordered": "照先后",
       "secret": "API Key",
       "env": "环境变量",
       "text": "文字",

@@ -450,7 +450,8 @@ pub fn model(view: &Data, data: &Data, draft: &Draft, provider: &str, model: Opt
 pub fn pool(view: &Data, name: Option<&str>) -> Form {
     let pool = name.and_then(|n| view.pool(n));
     let members = pool.map(|p| p.members.clone()).unwrap_or_default();
-    let strategies = vec!["rotate".to_string(), "pin".to_string()];
+    // 照先后：主力加备用（核心 Q-4上）。
+    let strategies = ["rotate", "pin", "ordered"].map(str::to_string).to_vec();
     let at = pool
         .and_then(|p| p.strategy.as_deref())
         .and_then(|s| strategies.iter().position(|x| x == s))

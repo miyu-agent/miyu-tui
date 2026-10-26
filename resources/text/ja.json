@@ -844,6 +844,7 @@
       "off": "オフ",
       "rotate": "ローテーション",
       "pin": "固定",
+      "ordered": "順番",
       "secret": "API key",
       "env": "環境変数",
       "text": "テキスト",
