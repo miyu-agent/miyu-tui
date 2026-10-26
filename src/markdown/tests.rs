@@ -461,3 +461,16 @@ fn footnotes_show_their_mark_and_their_note() {
     // 2026-10-23 review：原来没开脚注，`[^1]` 成了「a^1」、定义成了一条链接。
     assert_eq!(lines("a[^1]\n\n[^1]: note", 40), ["a[1]", "", "[1] note"]);
 }
+
+#[test]
+fn a_dollar_in_a_link_address_does_not_make_a_formula() {
+    // 2026-10-26 项目主人报：文件名带价格 `$0.11` 的链接，链接文字和地址里的 `$` 凑成一对行内公式，照原样露了出来。
+    let text = "交付：**[z-$0.11.html](/home/s/z-$0.11.html)**（30.6 KB）";
+    let drawn = draw(text, 120);
+    let links: Vec<_> = drawn[0].folded.links.iter().map(|l| l.2.clone()).collect();
+    assert_eq!(links, ["/home/s/z-$0.11.html"], "点开的还是原路径");
+    assert_eq!(
+        lines(text, 120),
+        ["交付：z-$0.11.html </home/s/z-$0.11.html>（30.6 KB）"]
+    );
+}
