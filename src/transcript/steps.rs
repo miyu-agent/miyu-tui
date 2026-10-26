@@ -92,6 +92,9 @@ pub struct Step {
     pub sent: usize,
     /// 给人看的结构化结果（`tool.result` 的 `detail`）：点开照 `timeline.json` 的 `bodies` 画（「时间线」第 8 条）。
     pub detail: Option<Value>,
+    /// 在跑时最新的一行进度（`tool.progress` 里 `miyu-progress: ` 开头的，见 `progress.rs`）：标题后面暗色接着写，
+    /// 有了结果就去掉（「时间线」第 8a 条）。
+    pub progress: Option<String>,
 }
 
 /// 一步的种类。
@@ -166,6 +169,7 @@ impl Step {
             display: BTreeMap::new(),
             sent: 0,
             detail: None,
+            progress: None,
         }
     }
 

@@ -151,6 +151,14 @@ pub fn title(
                     label.push_str(&crate::sheet::sep());
                     label.push_str(&text);
                 }
+                // 在跑的：最新的一行进度接在后面（「时间线」第 8a 条）；有了结果、被打断停了表的不写。
+                if *state == ToolState::Running
+                    && step.took.is_none()
+                    && let Some(progress) = &step.progress
+                {
+                    label.push_str(&crate::sheet::sep());
+                    label.push_str(progress);
+                }
                 // 出错、被拒的编辑没改成：不写加减的行数，和收起那一行一个算法（第 12、17 条；2026-10-13 验收 T-101：
                 // 原来照参数写绿的 `+1`、红的 `-0`，整行红里夹着绿字，看着像写成了）。
                 let extra = if kind == Some(ToolKind::Edit) && !step.failed() {

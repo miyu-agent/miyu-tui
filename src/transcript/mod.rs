@@ -20,10 +20,12 @@ mod jobs;
 mod media;
 mod model;
 mod pages;
+mod progress;
 mod queue;
 mod recap;
 mod redo;
 mod reply;
+mod results;
 mod speed;
 mod spent;
 mod steps;
@@ -94,6 +96,8 @@ pub struct Transcript {
     unnamed: Vec<(usize, usize)>,
     /// 调用编号到那一步。
     calls: HashMap<String, (usize, usize)>,
+    /// 在跑的调用攒着的半行进度（「时间线」第 8a 条）。
+    progress: progress::Lines,
     /// 这一轮从什么时候开始跑；没在跑是 `None`。
     pub running: Option<Instant>,
     /// 发出去了、还没开轮（[`Starting`]）。
@@ -366,35 +370,8 @@ impl Transcript {
                     self.calls.insert(id, at);
                 }
             }
-            Push::ToolResult {
-                call_id,
-                status,
-                text,
-                said: result_said,
-                display,
-                sent,
-                detail,
-            } => {
-                let at = self.calls.get(&call_id).copied();
-                let now = self.clock.now();
-                if let Some(step) = at.and_then(|at| self.step_mut(at)) {
-                    step.stop_at(now);
-                    step.display = display;
-                    step.sent = sent;
-                    step.detail = detail;
-                    if let StepKind::Tool {
-                        state,
-                        output,
-                        said,
-                        ..
-                    } = &mut step.kind
-                    {
-                        *state = ToolState::Done(status);
-                        *output = text;
-                        *said = result_said;
-                    }
-                }
-            }
+            push @ Push::ToolResult { .. } => self.tool_result(push),
+            Push::ToolProgress { call_id, text } => self.tool_progress(&call_id, &text),
             Push::Media(images) => self.sent(images),
             Push::Shown(file) => self.shown(file),
             Push::ToolImages { call_id, blobs } => {
