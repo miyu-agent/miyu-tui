@@ -274,6 +274,7 @@
     "bad_stream": "响应流异常",
     "empty_reply": "回复为空",
     "bad_summary": "无法提取摘要",
+    "quota": "额度用完",
     "compaction_paused": "自动压缩已暂停",
     "other": "模型出错"
   },
