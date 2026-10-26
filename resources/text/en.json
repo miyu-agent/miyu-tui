@@ -844,6 +844,7 @@
       "off": "Off",
       "rotate": "Rotate",
       "pin": "Pin",
+      "ordered": "In order",
       "secret": "API key",
       "env": "Env variable",
       "text": "Text",
