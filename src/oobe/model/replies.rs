@@ -45,13 +45,6 @@ impl ModelStep {
                 }
                 return Move::Stay;
             }
-            Waiting::Pools => {
-                let got = result.unwrap_or_default();
-                let has = got["items"]
-                    .as_object()
-                    .is_some_and(|items| items.keys().any(|k| k.starts_with("pools.")));
-                self.pools = Some(has);
-            }
             Waiting::Test => return self.tested(result, texts),
             Waiting::Secret => return self.secret_saved(result, asker),
             Waiting::SaveModel => return self.saved(result),

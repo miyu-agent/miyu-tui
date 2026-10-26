@@ -1005,6 +1005,7 @@
       "offline": "Not connected to the core",
       "not_custom": "Only models added with n can be deleted",
       "in_system": "This is in the system config and can't be deleted here",
+      "fixed_pool": "Built-in pools can't be deleted; edit their members and strategy instead",
       "members_hint": "Untick members in the pool editor (Enter)",
       "nothing_here": "Nothing to delete on this page",
       "no_new": "Nothing to add on this page",

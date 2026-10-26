@@ -67,7 +67,6 @@ pub struct ModelStep {
     catalog: Option<Value>,
     detect: Option<Value>,
     list: Option<Value>,
-    pools: Option<bool>,
     configured: Vec<String>,
 }
 
@@ -93,7 +92,6 @@ impl ModelStep {
             json!({"featured": true}),
             Waiting::Catalog,
         );
-        asker.ask("config.get", json!({}), Waiting::Pools);
     }
 
     /// 按了一个键。
@@ -443,8 +441,7 @@ impl ModelStep {
             Target::Listed(p) if p.base_url.is_some() => KeyRef::Local,
             _ => KeyRef::None,
         };
-        let pools = self.pools.unwrap_or(false);
-        let params = plan::save_params(target, (&id, catalog.as_deref()), &key_ref, model, pools);
+        let params = plan::save_params(target, (&id, catalog.as_deref()), &key_ref, model);
         asker.ask("config.set", params, Waiting::SaveModel);
     }
 }

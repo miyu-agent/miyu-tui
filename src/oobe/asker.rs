@@ -36,8 +36,6 @@ pub enum Waiting {
     Catalog,
     /// 全目录（「更多供应商…」，`provider.catalog` 不带 `featured`）。
     AllProviders,
-    /// 配置里有没有池（`config.get`）。
-    Pools,
     /// 试一家（`provider.test`）。
     Test,
     /// 存贴的 key（`secret.set`）。
@@ -103,7 +101,6 @@ impl Waiting {
                 | Self::Detect
                 | Self::Catalog
                 | Self::AllProviders
-                | Self::Pools
                 | Self::PersonaDefault
                 | Self::PersonaGet(_)
                 | Self::PersonaRead(..)

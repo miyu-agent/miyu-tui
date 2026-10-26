@@ -148,8 +148,8 @@ fn a_pasted_key_is_needed_tested_and_stored_before_the_config() {
         changes.contains(&json!({"key": "providers.openai.key", "value": {"secret": "openai"}}))
     );
     assert!(
-        changes.contains(&json!({"key": "pools.lite.models", "value": []})),
-        "一个池都没有的写三个预设的池"
+        !params.to_string().contains("pools."),
+        "池不写：三个固定池核心自己有（Q-1）"
     );
 }
 

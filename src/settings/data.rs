@@ -71,6 +71,8 @@ pub struct Pool {
     pub strategy: Option<String>,
     /// 成员，照配置写的先后（认不出的也在）。
     pub members: Vec<String>,
+    /// 固定的池（`lite`、`normal`、`flagship`，核心 Q-1）：一直在，不能删。
+    pub fixed: bool,
 }
 
 impl Data {
@@ -254,6 +256,7 @@ fn pool(p: &Value) -> Pool {
         name: text(&p["name"]),
         strategy: p["strategy"].as_str().map(str::to_string),
         members: strings(&p["models"]),
+        fixed: p["fixed"] == true,
     }
 }
 

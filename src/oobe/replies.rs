@@ -31,7 +31,6 @@ impl Oobe {
             | Waiting::Detect
             | Waiting::Catalog
             | Waiting::AllProviders
-            | Waiting::Pools
             | Waiting::Test
             | Waiting::Secret
             | Waiting::SaveModel => {
