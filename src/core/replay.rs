@@ -23,6 +23,13 @@ impl Replay {
     pub fn read(&mut self, event: &Value) -> Vec<Push> {
         let kind = event["kind"].as_str().unwrap_or_default();
         let mut out = Vec::new();
+        // 这次请求看到第几条为止：看着流出来时照增量里的 `seen` 认排着的话听到了没有，补发不补增量，照落盘的
+        // `model.called` 认，排在这次的回答前面（2026-10-26 项目主人报：重开以后排过的话后面的轮又冒出来）。
+        if kind == "model.called"
+            && let Some(seen) = event["body"]["seen"].as_u64()
+        {
+            out.push(Push::Heard(seen));
+        }
         if let Some(said) = self.pending.take() {
             let called = kind == "model.called" && event["body"]["seen"] == said["body"]["seen"];
             out.extend(answer(&said, called.then_some(event)));
