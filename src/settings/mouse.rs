@@ -78,12 +78,15 @@ impl Settings {
                 }
             }
             Hit::PickRow(i) => {
-                if let Some(Popup::Pick(pick)) = &mut self.popup {
-                    let again = pick.sel == i;
-                    pick.sel = i;
-                    if again || double {
-                        return self.key(enter, texts);
-                    }
+                let sel = match &mut self.popup {
+                    Some(Popup::Pick(pick)) => &mut pick.sel,
+                    Some(Popup::Catalog(pick)) => &mut pick.sel,
+                    _ => return Outcome::Stay,
+                };
+                let again = *sel == i;
+                *sel = i;
+                if again || double {
+                    return self.key(enter, texts);
                 }
             }
             Hit::Button(b) => {

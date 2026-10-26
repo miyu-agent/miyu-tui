@@ -991,6 +991,12 @@
       "Empty pool",
       "/ search"
     ],
+    "catalog": [
+      "More providers…",
+      "Custom…",
+      "Loading…",
+      "No matches"
+    ],
     "confirm": [
       "プロバイダ {name} を削除しますか？",
       "モデル {name} を削除しますか？",

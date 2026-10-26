@@ -4,6 +4,7 @@
 use serde_json::{Value, json};
 
 use super::rows::Provider;
+use crate::settings::forms::{path_name, unique};
 
 /// 自定义的三种接口，照界面上的先后。
 pub const DRIVERS: [&str; 3] = ["openai-chat", "anthropic", "openai-responses"];
@@ -81,18 +82,7 @@ pub fn config_id(target: &Target, existing: &[String]) -> (String, Option<String
         Target::Custom { id: Some(id), .. } => return (id.clone(), None),
         Target::Custom { base_url, .. } => (path_name(&host_name(base_url)), None),
     };
-    if !existing.contains(&base) {
-        return (base, catalog);
-    }
-    // 加了尾巴也不超过 32 个：前面截短（`path_name` 交出来的全是 ASCII）。
-    let id = (2..)
-        .map(|n| {
-            let tail = format!("-{n}");
-            format!("{}{tail}", &base[..base.len().min(32 - tail.len())])
-        })
-        .find(|id| !existing.contains(id))
-        .unwrap_or(base);
-    (id, catalog)
+    (unique(base, existing), catalog)
 }
 
 /// 地址的主机名起编号：本机的（`localhost`、IP）是 `local`；别的取倒数第二段，倒数第二段是通用的二级域名的再往前一段。
@@ -116,26 +106,6 @@ fn host_name(url: &str) -> String {
         [one] => (*one).to_string(),
         [] => "custom".to_string(),
     }
-}
-
-/// 照「路径里的名字」的写法改：小写，别的字换成 `-`，不是字母开头的、是 Windows 保留名的前面加 `p-`，最多 32 个。
-fn path_name(name: &str) -> String {
-    let mut out: String = name
-        .to_lowercase()
-        .chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
-                c
-            } else {
-                '-'
-            }
-        })
-        .collect();
-    if !out.starts_with(|c: char| c.is_ascii_lowercase()) || crate::settings::forms::reserved(&out)
-    {
-        out = format!("p-{out}");
-    }
-    out.chars().take(32).collect()
 }
 
 /// key 怎么写进配置。

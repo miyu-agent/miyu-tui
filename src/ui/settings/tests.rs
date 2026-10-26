@@ -418,6 +418,7 @@ fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
     );
 }
 
+mod catalog;
 mod presets;
 
 #[test]

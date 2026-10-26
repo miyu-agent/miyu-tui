@@ -991,6 +991,12 @@
       "Empty pool",
       "/ search"
     ],
+    "catalog": [
+      "More providers…",
+      "Custom…",
+      "Loading…",
+      "No matches"
+    ],
     "confirm": [
       "Delete provider {name}?",
       "Delete model {name}?",

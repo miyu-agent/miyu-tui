@@ -3,6 +3,7 @@
 //! `ui/settings/pages.rs`。
 
 mod avatar;
+pub mod catalog;
 pub mod choose;
 pub mod combo;
 pub mod dialogs;

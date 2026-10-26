@@ -161,8 +161,7 @@ fn a_new_provider_keeps_its_key_in_the_secret_store_and_an_added_model_can_be_de
     to_models(&mut tui);
     tui.wait_for("cline");
     // 添加供应商：ID、地址、key（ID、显示名称、地址、接口、认证、key）。
-    tui.key(b"a");
-    tui.wait_for("添加供应商");
+    tui.add_custom_provider();
     tui.key(b"\r");
     tui.type_text("zen");
     tui.key(b"\r");
@@ -451,9 +450,7 @@ fn constrained_decoding_is_written_into_the_providers_compat_table() {
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     to_models(&mut tui);
     tui.wait_for("cline");
-    tui.key(b"a");
-    tui.wait_for("添加供应商");
-    tui.wait_for("约束解码");
+    tui.add_custom_provider();
     tui.key(b"\r");
     tui.type_text("strict");
     tui.key(b"\r");

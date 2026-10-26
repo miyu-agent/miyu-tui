@@ -132,6 +132,8 @@ enum Waiting {
     PresetRemove(String),
     /// 同上，人格。
     PersonaRemove(String),
+    /// 供应商目录（`provider.catalog`）：是不是全目录（「配置页」第 11a 条）。
+    Catalog(bool),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -322,6 +324,7 @@ impl Settings {
             Waiting::ExamplesSaved(id) => self.examples_saved(id, result, texts),
             Waiting::PresetRemove(id) => self.preset_remove_read(&id, result, texts),
             Waiting::PersonaRemove(id) => self.persona_remove_read(&id, result, texts),
+            Waiting::Catalog(all) => self.catalog_answer(all, result.ok()),
         }
     }
 
@@ -476,6 +479,7 @@ impl Settings {
         let popup = match &self.popup {
             Some(Popup::Form(form)) => form.editing.is_some(),
             Some(Popup::Pick(pick)) => pick.typing,
+            Some(Popup::Catalog(pick)) => pick.typing,
             Some(Popup::Line(_) | Popup::Pair(_) | Popup::Sheet(_)) => true,
             _ => false,
         };
