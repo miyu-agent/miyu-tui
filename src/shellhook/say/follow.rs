@@ -187,7 +187,8 @@ fn signal(shell: u32) {
     {}
 }
 
-/// shell 退出时叫 `gone`：Linux 上照 `pidfd` 等（不轮询）。别的平台还没做（macOS 的 kqueue），不叫：任务都结束了照样收工。
+/// shell 退出时叫 `gone`：Linux 上照 `pidfd` 等（不轮询）；Windows 上起一个系统自带的 `powershell` 跑 `Wait-Process`
+/// 等它（不写 unsafe、不轮询，2026-10-24 项目主人要 Windows 上也做）。macOS 还没做（kqueue），不叫：任务都结束了照样收工。
 /// shell 已经不在了交回 `false`。
 fn wait_for_exit(shell: u32, gone: impl FnOnce() -> bool + Send + 'static) -> bool {
     #[cfg(target_os = "linux")]
@@ -211,7 +212,33 @@ fn wait_for_exit(shell: u32, gone: impl FnOnce() -> bool + Send + 'static) -> bo
         });
         true
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(windows)]
+    {
+        let wait = format!("Wait-Process -Id {shell} -ErrorAction Stop");
+        let mut command = std::process::Command::new("powershell");
+        command
+            .args([
+                "-NoLogo",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                &wait,
+            ])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+        let Ok(mut child) = command.spawn() else {
+            return shell > 0;
+        };
+        std::thread::spawn(move || {
+            // 等到了（shell 退出）是 0；一开始就找不到这个进程的也算它不在了。
+            if child.wait().is_ok() {
+                gone();
+            }
+        });
+        true
+    }
+    #[cfg(not(any(target_os = "linux", windows)))]
     {
         drop(gone);
         shell > 0
