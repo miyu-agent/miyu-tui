@@ -35,3 +35,9 @@ DEEPSEEK_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核�
 恢复程序 `miyu-tui` 必须在恢复 shell 的 PATH 中，MIYU_HOME、MIYU_RESOURCES、MIYU_CORE_BIN 也须可用；临时写在原启动命令前的环境变量不会被 herdr 保存。试用时可以写一个固定这些环境的启动脚本，放到 PATH 中；独立命名 herdr 会话先试，不停止默认服务。
 
 Linux 隔离验收（需要 herdr）：`cargo test --test herdr_resume -- --ignored`。使用临时数据根、假模型和独立 XDG 配置，验证两窗格各自恢复、/new 清掉旧绑定，不读写真实会话。
+
+### 许可证
+
+这个仓库自己写的代码和资源用 AGPL-3.0-or-later，见 `LICENSE`：改过的终端界面拿去给别人用，包括只在网上提供服务，要把改过的源码交给用它的人。
+
+不是这个仓库自己写的东西照它们原来的许可证，AGPL 只管这里自己写的部分：Rust 依赖照各自的 `license`（`Cargo.lock` 里列着，`cargo metadata` 查得到）；用到的第三方资源照各自的许可证，发行时随包附上原文。
