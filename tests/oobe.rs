@@ -267,7 +267,7 @@ fn a_name_is_required_and_esc_walks_back_a_step() {
     }
     tui.wait_for("下一步 →");
     tui.key(b"\r");
-    tui.wait_for("请填写名称");
+    tui.wait_for("请填写名字");
     assert!(
         !persona_file(&home, "persona.toml").exists(),
         "名字空着不建"
