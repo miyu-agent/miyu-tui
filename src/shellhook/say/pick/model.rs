@@ -58,6 +58,7 @@ impl ModelPick {
                 tag: CONFIGURE_TAG,
                 method: "session.configure",
                 params: json!({ "session": session, "model": choice.reference }),
+                system: false,
             });
             core.send(Command::SetChat(choice.reference.clone()));
         }

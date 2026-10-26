@@ -50,6 +50,7 @@ impl Picker for FreshPick {
                 json!({ "cwd": cwd, "fresh": true }),
                 self.terminal.as_deref(),
             ),
+            system: false,
         });
     }
 

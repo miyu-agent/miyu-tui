@@ -30,3 +30,13 @@ pub(super) fn layout_keys() -> Vec<&'static str> {
     keys.push(crate::config::Layout::KEYS_KEY);
     keys
 }
+
+/// 读几项配置（`config.get`），回应照 `tag` 认。
+pub fn get<K: serde::Serialize>(core: &Core, tag: u64, keys: K) {
+    core.send(Command::Ask {
+        tag,
+        method: "config.get",
+        params: serde_json::json!({ "keys": keys }),
+        system: false,
+    });
+}

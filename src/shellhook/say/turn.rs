@@ -1,7 +1,6 @@
 //! 这一轮的状态：先问终端会话、接上，再说那句话；照推送认出这句话开的那一轮，那一轮结束就收工。
 
 use ratatui::crossterm::event::Event;
-use serde_json::json;
 
 use crate::config::Config;
 use crate::core::{Command, Core, Push, Update};
@@ -183,6 +182,7 @@ impl Turn {
             tag: TERMINAL_TAG,
             method: "session.terminal",
             params: self.terminal.params(self.cwd.as_deref()),
+            system: false,
         });
     }
 
@@ -248,11 +248,7 @@ impl Turn {
             super::pack::Applied::Yes => return,
             // 主题包换上了，`timeline` 照它重读：时间线的配置项再读一遍盖上（同全屏 `apply_layout_settings`）。
             super::pack::Applied::Retimeline => {
-                core.send(Command::Ask {
-                    tag: TIMELINE_TAG,
-                    method: "config.get",
-                    params: json!({ "keys": super::settings::layout_keys() }),
-                });
+                super::settings::get(core, TIMELINE_TAG, super::settings::layout_keys());
                 return;
             }
         }
@@ -293,17 +289,9 @@ impl Turn {
             Update::HeadConfig(head) => {
                 super::settings::language(&head.language, config, core);
                 super::pack::Pack::ask(core);
-                core.send(Command::Ask {
-                    tag: THEME_TAG,
-                    method: "config.get",
-                    params: json!({ "keys": super::look::Look::keys() }),
-                });
+                super::settings::get(core, THEME_TAG, super::look::Look::keys());
                 core.send(Command::ListPersonas);
-                core.send(Command::Ask {
-                    tag: TIMELINE_TAG,
-                    method: "config.get",
-                    params: json!({ "keys": super::settings::layout_keys() }),
-                });
+                super::settings::get(core, TIMELINE_TAG, super::settings::layout_keys());
             }
             Update::Answer { tag, result } if tag == TIMELINE_TAG => {
                 if let Ok(got) = result {

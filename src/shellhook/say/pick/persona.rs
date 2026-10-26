@@ -95,6 +95,7 @@ impl PersonaPick {
                     "layer": "personal",
                     "changes": [{ "key": self.key_name(), "value": row.id }],
                 }),
+                system: false,
             });
         }
         let template = match self.kind {
@@ -119,6 +120,7 @@ impl Picker for PersonaPick {
             tag: READ_TAG,
             method: "config.get",
             params: json!({ "keys": [self.key_name()] }),
+            system: false,
         });
     }
 

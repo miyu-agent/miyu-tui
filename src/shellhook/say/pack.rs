@@ -41,6 +41,7 @@ impl Pack {
             tag: SETTING_TAG,
             method: "config.get",
             params: json!({ "keys": [crate::settings::pages::LOOK] }),
+            system: false,
         });
     }
 
@@ -66,6 +67,7 @@ impl Pack {
                             tag: LIST_TAG,
                             method: "package.list",
                             params: json!({}),
+                            system: false,
                         });
                         Applied::Yes
                     }
@@ -78,6 +80,7 @@ impl Pack {
                         tag: FILE_TAG,
                         method: "package.file",
                         params: json!({ "package": id, "path": path }),
+                        system: false,
                     }),
                     _ => self.loading = None,
                 }
