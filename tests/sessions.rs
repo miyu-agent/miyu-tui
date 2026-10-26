@@ -81,8 +81,9 @@ fn starting_in_the_most_recent_session_draws_what_was_said_before() {
 
 #[test]
 fn switching_draws_the_other_ones_past_without_flashing_an_empty_session() {
-    // 2026-10-01 项目主人：切会话会闪一下空会话的首页。补完了才换上来，中间照旧显示原来那个（第 5 条）。
-    let (_home, mut tui) = sessions(2);
+    // 2026-10-01 项目主人：切会话会闪一下空会话的首页。补完了才换上来，中间照旧显示原来那个（第 5 条）。首页的吉祥物
+    // 出厂关着（2026-10-26），打开：闪没闪照吉祥物认。
+    let (_home, mut tui) = sessions_settings(2, "[tui]\nmascot_home = true\n");
     tui.say("/sessions");
     tui.wait_for("2 个");
     // 打开时选中的是正在用的那个：`❯` 那一列写 `●`，选中了也不让给 `❯`（2026-10-19 项目主人定各个框统一）。

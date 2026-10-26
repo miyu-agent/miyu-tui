@@ -266,15 +266,18 @@ mod tests {
 
     #[test]
     fn the_terminals_mascot_switches_override_the_shipped_layout() {
-        // 2026-10-11 项目主人：吉祥物的开关搬进配置页；没写的照出厂。
+        // 2026-10-11 项目主人：吉祥物的开关搬进配置页；没写的照出厂，出厂都关着（2026-10-26 项目主人：太吃资源）。
         let mut layout = Config::builtin().unwrap().layout;
         layout.apply_mascot(&json!({"items": {}}));
-        assert!(layout.mascot_home && layout.mascot_sidebar, "没写的照出厂");
+        assert!(
+            !layout.mascot_home && !layout.mascot_sidebar,
+            "没写的照出厂"
+        );
         layout.apply_mascot(&json!({"items": {
-            "tui.mascot_home": {"value": false},
-            "tui.mascot_sidebar": {"value": false}
+            "tui.mascot_home": {"value": true},
+            "tui.mascot_sidebar": {"value": true}
         }}));
-        assert!(!layout.mascot_home && !layout.mascot_sidebar);
+        assert!(layout.mascot_home && layout.mascot_sidebar);
     }
 
     #[test]
