@@ -322,6 +322,7 @@
       "usage": "用量",
       "hit": "缓存命中",
       "cost": "花费",
+      "models": "各模型",
       "memory": "记忆"
     },
     "effort": "思考 {effort}",

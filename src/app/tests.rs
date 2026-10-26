@@ -93,3 +93,4 @@ fn the_persona_box_opens_before_connecting_when_the_guide_was_done() {
 
 mod bill;
 mod pools;
+mod status;

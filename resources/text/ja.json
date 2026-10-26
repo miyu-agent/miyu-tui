@@ -322,6 +322,7 @@
       "usage": "使用量",
       "hit": "キャッシュ",
       "cost": "費用",
+      "models": "モデル別",
       "memory": "記憶"
     },
     "effort": "思考 {effort}",

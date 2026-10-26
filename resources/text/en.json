@@ -322,6 +322,7 @@
       "usage": "Usage",
       "hit": "Cache hits",
       "cost": "Spent",
+      "models": "By model",
       "memory": "Memory"
     },
     "effort": "effort {effort}",
