@@ -44,28 +44,35 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
         broken.contains("不认识的键"),
         "写错的后面写核心给的原因：{broken}"
     );
-    // 框开着时打的字不进输入框：选了才能打字。
+    // 框开着时打的字进输入框（2026-10-26 项目主人定，蓝图「新会话：人格、工作区」第 1c 条），框里照旧选。
     tui.type_text("abc");
-    assert!(!input(&tui).contains("abc"), "{}", input(&tui));
     // 第一行「无人格」（2026-10-08 项目主人：人格允许为空），默认人格没设，光标停在它上面；往下挪到海盗（写错的跳过）。
     assert!(tui.shows("无人格"), "{}", tui.lines().join("\n"));
     assert!(picked(&tui).contains("无人格"), "{}", picked(&tui));
-    // 框开着不能打字：直接 j、k 上下（2026-10-11 项目主人）。
+    // 打过字的 j、k 是字，上下用方向键（没打字时 j、k 照旧上下，见 `tests/start_box.rs`）。
     for _ in 0..8 {
         if picked(&tui).contains("海盗") {
             break;
         }
-        tui.key(b"j");
+        tui.key(b"\x1b[B");
     }
     assert!(picked(&tui).contains("海盗"), "{}", tui.lines().join("\n"));
     tui.key(b"\r");
     // 人格选好了接着选预设（2026-10-08 项目主人定先人格、再预设）：照编号排 dev、full（出厂叫「常规开发」「全部功能」，核心 P-4 下；dev 原来叫「基础功能」，核心 2bc0e251 改名），光标停在默认的全部功能上。
     tui.wait_for("请选择预设");
     tui.wait_for("全部功能");
-    tui.key(b"k");
+    tui.key(b"\x1b[A");
     tui.key(b"\r");
     // 选好了框关上、能打字（首页那一行不写人格、预设，2026-10-08 项目主人）；选的照发出去的请求认。
     closed(&mut tui);
+    assert!(
+        input(&tui).contains("abc"),
+        "框开着时打的字还在：{}",
+        input(&tui)
+    );
+    for _ in 0..3 {
+        tui.key(b"\x7f");
+    }
     // 还没说话再打开：选过的那个写 `●`（2026-10-20 项目主人报：空会话选了再打开没有圆点），没有切换前压缩那一行。
     tui.say("/persona");
     tui.wait_for("● 海盗");
@@ -290,14 +297,14 @@ fn the_compaction_note_shows_only_when_there_is_something_to_compact() {
 }
 
 #[test]
-fn the_new_session_pick_takes_the_place_of_the_input_box_and_typing_goes_nowhere() {
-    // 2026-10-21 项目主人：「不是以列表的形式出，而是直接替换掉输入框。因为我刚才发现，如果开启会话加载慢了，还是会导致
-    // 输入框有很短的时间可以输入内容」。
+fn the_new_session_pick_takes_the_place_of_the_input_box_and_typing_waits_in_the_input() {
+    // 2026-10-21 项目主人：「不是以列表的形式出，而是直接替换掉输入框」。打的字原来不进输入框，2026-10-26 项目主人报刚起来
+    // 发的第一句被吞，改成进输入框、选完出来还在（蓝图「新会话：人格、工作区」第 1c 条）。
     let home = Home::new(Script::new([]));
     // 一个人格都没装的核心不问人格（列表是空的），装一个才有人格框。
     home.persona("pirate", "[persona]\nname = { zh = \"海盗\" }\n", None);
     let mut tui = home.tui_with("zh_CN.UTF-8", &[ASK, ASK_PRESET]);
-    // 一起来就打字：列表读回来以前（「正在加载…」）、以后都不进输入框。
+    // 一起来就打字：列表读回来以前（「正在加载…」）、以后都进输入框。
     tui.type_text("abc");
     tui.wait_for("请选择人格");
     tui.type_text("xyz");
@@ -315,8 +322,5 @@ fn the_new_session_pick_takes_the_place_of_the_input_box_and_typing_goes_nowhere
     closed(&mut tui);
     tui.pump(std::time::Duration::from_millis(200));
     let line = input(&tui);
-    assert!(
-        !line.contains("abc") && !line.contains("xyz"),
-        "选完出来的输入框是空的：{line}"
-    );
+    assert!(line.contains("abcxyz"), "选完出来打的字还在：{line}");
 }

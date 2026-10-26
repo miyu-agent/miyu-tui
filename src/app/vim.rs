@@ -15,8 +15,11 @@ impl App {
             || (self.talk.drawers.open()
                 && !self.talk.drawers.editing()
                 && !self.talk.drawers.command_scrolls());
-        // 开着时不能打字的框；抽屉开着时按键先归抽屉（它自己认 vim 键）。
-        let no_typing = !self.talk.drawers.open()
+        // 开着时不能打字的框；抽屉开着时按键先归抽屉（它自己认 vim 键）。新会话开头的框开着、已经打了字的，`j`、`k` 当字
+        // （「新会话：人格、工作区」第 1c 条）。
+        let typed = self.start_box_shown() && !self.typing.input.editor.is_empty();
+        let no_typing = !typed
+            && !self.talk.drawers.open()
             && (self.vim_list_idle()
                 || matches!(
                     self.boxes.panel,
