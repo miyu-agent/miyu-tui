@@ -701,6 +701,7 @@
     "preset_need": "请先选择预设",
     "cant_edit": "这一项不能编辑",
     "preset_chosen": "预设 {name}",
+    "no_tools": "无工具",
     "none": "无人格",
     "none_note": "不使用人格",
     "switch_note": "切换前会先压缩会话避免缓存断裂导致的全量重放",

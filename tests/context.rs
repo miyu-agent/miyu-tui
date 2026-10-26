@@ -68,8 +68,8 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
 #[test]
 fn a_session_opened_with_no_tools_says_so_and_has_no_tools() {
     let home = Home::new(Script::new([Play::Says("好。")]));
-    // `-` 是空的编号：无工具（同无人格）。
-    let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_PRESET", "-")]);
+    // 核心 P-17 起「无功能」是一份出厂的真预设 `none`（原来是编号空的「无工具」）。
+    let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_PRESET", "none")]);
     tui.wait_for("工作区");
     tui.say("在吗");
     tui.wait_for("好。");
@@ -81,7 +81,7 @@ fn a_session_opened_with_no_tools_says_so_and_has_no_tools() {
         .into_iter()
         .find(|l| l.contains("预设"))
         .unwrap_or_default();
-    assert!(row.contains("无工具"), "{}", tui.lines().join("\n"));
+    assert!(row.contains("无功能"), "{}", tui.lines().join("\n"));
     tui.key(b"\x1b");
     until_gone(&mut tui, "会话 ID");
     tui.say("/tool-list");

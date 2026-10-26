@@ -701,6 +701,7 @@
     "preset_need": "Pick a preset first",
     "cant_edit": "This one can't be edited",
     "preset_chosen": "Preset {name}",
+    "no_tools": "No tools",
     "none": "No persona",
     "none_note": "No persona prompt",
     "switch_note": "The session is compacted before switching, so a cache break does not replay everything",
