@@ -15,9 +15,10 @@ fn spots(tui: &Tui, text: &str) -> (usize, Option<usize>) {
     (count, lines.iter().position(|l| l.contains(text)))
 }
 
+// 前台 `sleep` 一段到 2 秒的核心整条拒（核心 62b573846，反馈第 8 条），这里睡 1.5 秒。
 #[test]
 fn a_message_sent_between_steps_is_drawn_once_where_she_heard_it() {
-    let args = serde_json::json!({"command": "sleep 2", "description": "睡两秒"}).to_string();
+    let args = serde_json::json!({"command": "sleep 1.5", "description": "睡一会"}).to_string();
     let script = Script::new([
         Play::Calls(vec![("shell".into(), args)]),
         Play::Says("看到插的那句了。"),
@@ -27,7 +28,7 @@ fn a_message_sent_between_steps_is_drawn_once_where_she_heard_it() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
     tui.say("第一句");
-    tui.wait_for("睡两秒");
+    tui.wait_for("睡一会");
     // 工具还在跑：普通回车发出去，排着。
     tui.say("插一句");
     tui.wait_for("看到插的那句了。");
@@ -62,7 +63,7 @@ fn only_session(home: &Home) -> String {
 #[test]
 fn after_reopening_a_message_sent_between_steps_stays_where_she_heard_it() {
     // 重开以后核心照日志补发，流式的增量不补：听到没听到照落盘的 `model.called` 认（第二张截图：18 小时前排过的话又画成了排队）。
-    let args = serde_json::json!({"command": "sleep 2", "description": "睡两秒"}).to_string();
+    let args = serde_json::json!({"command": "sleep 1.5", "description": "睡一会"}).to_string();
     let script = Script::new([
         Play::Calls(vec![("shell".into(), args)]),
         Play::Thinks {
@@ -75,7 +76,7 @@ fn after_reopening_a_message_sent_between_steps_stays_where_she_heard_it() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
     tui.say("第一句");
-    tui.wait_for("睡两秒");
+    tui.wait_for("睡一会");
     tui.say("插一句");
     tui.wait_for("看到插的那句了。");
     drop(tui);
