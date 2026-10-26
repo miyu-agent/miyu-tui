@@ -102,13 +102,13 @@ pub fn lines(
     let name_w = agents.iter().map(|a| label(a).width()).max().unwrap_or(0);
     for (i, job) in agents.iter().take(most).enumerate() {
         let row = i + 2;
-        // token 不带「Σ」（2026-09-30 项目主人）。
-        let stats = format!(
-            "{}{}{}",
-            meter::short(job.tokens),
-            crate::sheet::sep(),
-            meter::clock(job.elapsed(now).as_secs())
-        );
+        // token 不带「Σ」（2026-09-30 项目主人）；还是 0 的不写，只写用时（2026-10-26 项目主人）。
+        let clock = meter::clock(job.elapsed(now).as_secs());
+        let stats = if job.tokens == 0 {
+            clock
+        } else {
+            format!("{}{}{clock}", meter::short(job.tokens), crate::sheet::sep())
+        };
         let on = tree.viewing.is_some() && job.session.as_deref() == tree.viewing;
         let title = label(job);
         let name = format!("{} {title}{}", dot(on), " ".repeat(name_w - title.width()));
@@ -264,6 +264,7 @@ mod tests {
         assert_eq!(doing(&text[2], "读"), doing(&text[3], "列"));
         assert_eq!(text[2].width(), 70);
         assert_eq!(text[3].width(), 70);
+        assert!(text[3].ends_with("800 · 1m 05s"), "{}", text[3]);
         assert_eq!(height(listed.len(), 5), 4);
         // 超过上限的收成一行。
         assert_eq!(height(listed.len(), 1), 4);
