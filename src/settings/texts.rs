@@ -60,6 +60,8 @@ pub struct Texts {
     pub popup_hints: [Vec<Hint>; 4],
     /// 选模型的窗：池那一段、只列能看图的、有成员不能看图、空池用不了、搜索。
     pub pick: [String; 5],
+    /// 加供应商先弹的目录窗：「更多供应商…」「自定义…」、还没回来、筛不到（「配置页」第 11a 条）。
+    pub catalog: [String; 4],
     /// 问一句：删供应商、删模型、删池（标题），「{list} 在用它」，池的说法，删除按钮，几样之间的分隔。
     pub confirm: [String; 7],
     /// 状态行（照名字取）。

@@ -31,6 +31,8 @@ pub enum Popup {
     Pair(super::pages::dialogs::PairEdit),
     /// 从几个选项里勾的列表（「配置页」第 47a 条）。
     Ticks(super::pages::ticks::TickEdit),
+    /// 加供应商先弹的目录（「配置页」第 11a 条）。
+    Catalog(super::pages::catalog::CatalogPick),
 }
 
 /// 选默认模型的窗。

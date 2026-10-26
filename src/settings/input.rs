@@ -76,6 +76,7 @@ impl Settings {
                 pick.search.push_str(clean);
                 pick.refilter(&self.view);
             }
+            Some(Popup::Catalog(pick)) => Settings::catalog_paste(pick, clean),
             _ => {
                 if let Some(search) = self.nav.search.as_mut().filter(|s| s.typing) {
                     search.text.push_str(clean);
@@ -201,7 +202,7 @@ impl Settings {
     /// `a`：供应商页加供应商，模型池页建池。
     fn add(&mut self, texts: &Texts) {
         match self.nav.page {
-            Page::Providers => self.open_form(|v, d, dr| forms::provider(v, d, dr, None)),
+            Page::Providers => self.open_catalog(),
             Page::Pools => self.popup = Some(Popup::Form(forms::pool(&self.view, None))),
             Page::Defaults => self.say(texts.status("no_new"), Tone::Note),
         }
@@ -313,6 +314,7 @@ impl Settings {
                 FormAction::Save { close } => self.save_form(form, close, texts),
             },
             Some(Popup::Pick(pick)) => self.pick_key(pick, key, texts),
+            Some(Popup::Catalog(pick)) => self.catalog_key(pick, key),
             Some(Popup::Confirm(confirm)) => return self.confirm_key(confirm, key, texts),
             Some(popup) => self.more_popup_key(popup, key, texts),
             None => {}
