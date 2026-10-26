@@ -3,7 +3,7 @@
 
 use serde_json::Value;
 
-use super::{Bill, Cost, JobStart, Level, Usage};
+use super::{Bill, JobStart, Level, Usage};
 
 /// 订阅回应里的三格：核心旧、没有的那一格是 `None`，照事件算的不动。
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -49,19 +49,12 @@ fn spent(usage: &Value) -> Option<Spent> {
     let main = four(&usage["main"])?;
     let all = four(&usage["usage"]).unwrap_or(main);
     let sum = |u: &Usage| u.input() + u.output;
-    let amounts = usage["amounts"]
-        .as_array()
-        .map(|list| list.iter().filter_map(Cost::read).collect())
-        .unwrap_or_default();
     Some(Spent {
         total: Usage {
             aux: sum(&all).saturating_sub(sum(&main)),
             ..main
         },
-        bill: Bill {
-            amounts,
-            unpriced: usage["unpriced"].as_u64().unwrap_or_default(),
-        },
+        bill: Bill::read(usage),
         compactions: usage["compactions"].as_u64().unwrap_or_default(),
         breaks: usage["cache_breaks"].as_u64().unwrap_or_default(),
     })
@@ -124,7 +117,8 @@ mod tests {
                         amount: 0.25,
                         currency: "CNY".into()
                     }],
-                    unpriced: 1
+                    unpriced: 1,
+                    converted: None,
                 },
                 compactions: 2,
                 breaks: 1,

@@ -373,6 +373,7 @@
     "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
   },
   "usage": {
+    "rates": "汇率来自 {source}",
     "title": "用量",
     "tabs": [
       "总览",

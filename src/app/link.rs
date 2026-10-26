@@ -33,4 +33,6 @@ pub struct Link {
     /// 还没有机主时引导里选的界面语言（`ui.language` 的值）：核心这时不让写，注册完、重连上再写（「第一次打开的引导」
     /// 第 5a 条）。
     pub held_language: Option<String>,
+    /// 一轮结束时问了这个会话换算好的金额（`bill_refresh.rs`）：问的是哪个会话。
+    pub bill_asked: Option<String>,
 }

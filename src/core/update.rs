@@ -109,6 +109,8 @@ pub enum Update {
         kind: UsageKind,
         /// 一行行，或者拒绝的原话。
         rows: Result<Vec<UsageRow>, String>,
+        /// 用到的要署名的汇率源（核心 UC-1 的 `rates`）。
+        rates: Vec<String>,
     },
     /// 核心认的斜杠命令（[`Command::Catalog`] 的回应）。
     Catalog(Vec<CoreCommand>),

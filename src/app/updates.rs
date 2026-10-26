@@ -59,6 +59,10 @@ impl App {
         if self.avatar_update(&update) {
             return;
         }
+        // 一轮结束问的换算好的金额归它；一轮结束去问（`bill_refresh.rs`）。
+        if self.bill_update(&update) {
+            return;
+        }
         // 配置页的回应归它；配置变了、断开、连上也告诉它（`settings.rs`）。
         if self.settings_update(&update) {
             return;
@@ -102,8 +106,8 @@ impl App {
         // 配置里的界面语言：照它换（`language.rs`）。
         // 连上核心都会读一次界面语言：顺手要一次模型资料，底栏照它写模型和思考强度（`effort.rs`）。
         // `/usage` 的三样：交给框（`usage.rs`）。
-        if let Update::UsageRows { kind, rows } = update {
-            self.usage_rows(kind, rows);
+        if let Update::UsageRows { kind, rows, rates } = update {
+            self.usage_rows(kind, rows, rates);
             return;
         }
         // 软件包：照终端那一项的状态目录放输入历史（`packages.rs`）。

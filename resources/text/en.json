@@ -373,6 +373,7 @@
     "hint": "↑/↓ scroll · c copy · Esc close"
   },
   "usage": {
+    "rates": "Exchange rates from {source}",
     "title": "Usage",
     "tabs": [
       "Overview",

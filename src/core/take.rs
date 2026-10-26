@@ -55,6 +55,7 @@ pub(super) async fn take(
             Some(Awaiting::Usage(kind)) => notify(Update::UsageRows {
                 kind,
                 rows: Err(message),
+                rates: Vec::new(),
             }),
             // 订阅不上（那个会话已经删了）：不用说。读不了配置（核心旧）：照系统语言，不用说。
             Some(
@@ -143,7 +144,8 @@ pub(super) async fn take(
         }
         Some(Awaiting::Usage(kind)) => {
             let rows = Ok(super::cost::rows(&message["result"]));
-            return notify(Update::UsageRows { kind, rows });
+            let rates = super::cost::rate_sources(&message["result"]);
+            return notify(Update::UsageRows { kind, rows, rates });
         }
         Some(Awaiting::Catalog) => {
             return notify(Update::Catalog(super::catalog::read(&message["result"])));

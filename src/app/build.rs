@@ -96,6 +96,7 @@ impl App {
                 widgets: Default::default(),
                 service: Default::default(),
                 account: Default::default(),
+                bill_asked: None,
                 held_language: None,
             },
             typing: super::typing::Typing {
