@@ -274,6 +274,7 @@
     "bad_stream": "Malformed reply stream",
     "empty_reply": "Empty reply",
     "bad_summary": "Couldn't get a summary",
+    "quota": "Out of quota",
     "compaction_paused": "Auto-compaction is paused",
     "other": "Model error"
   },

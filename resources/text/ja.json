@@ -274,6 +274,7 @@
     "bad_stream": "応答ストリームの形式が不正です",
     "empty_reply": "空の応答",
     "bad_summary": "要約を取得できませんでした",
+    "quota": "利用枠切れ",
     "compaction_paused": "自動圧縮は一時停止中です",
     "other": "モデルエラー"
   },
