@@ -41,6 +41,7 @@ impl Transcript {
         self.failure = None;
         self.turn = Some(turn);
         self.turn_usage = Usage::default();
+        self.turn_speed = super::speed::Speed::default();
         self.turn_level = self.level;
         // 手动压缩那一轮没有 `trigger`，不是哪一句开的（施工 6-8，蓝图「正文」第 9 条）。
         self.manual = trigger.is_none();
@@ -112,7 +113,8 @@ impl Transcript {
                     .replace("{model}", model)
                     .replace("{elapsed}", &crate::meter::seconds(took))
                     .replace("{time}", &time);
-                self.push(Kind::Done, text + &usage);
+                let rate = self.turn_rate(texts);
+                self.push(Kind::Done, text + &usage + &rate);
             }
             // 和收尾行一个样子：`✻ 已中断`（`tui.md`「正文」第 4 条）。
             EndReason::Interrupted => self.push(Kind::Done, texts.interrupted.clone()),

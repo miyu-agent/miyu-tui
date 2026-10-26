@@ -128,6 +128,8 @@ pub struct Transcript {
     pub preset: Option<String>,
     /// 这一轮每次请求的用量加起来：收尾行写它（`tui.md`「正文」第 4 条）。
     turn_usage: Usage,
+    /// 这一轮主请求出字的速度：收尾那一行写（2026-10-26 项目主人，同网页、核心 SP-1）。
+    turn_speed: speed::Speed,
     /// 这一轮开始时的权限级别：收尾行打头的图标照它，之后换了级别也不变。
     turn_level: Level,
     /// 最近一次请求占了多少上下文：输入加输出。
@@ -411,7 +413,7 @@ impl Transcript {
             // 待办归待办表（`app/sessions.rs`）。
             Push::Todos { .. } => {}
             Push::Compactable(on) => self.cache.compactable = Some(on),
-            Push::Speed { output, ms } => self.speed.record(output, ms),
+            Push::Speed { output, ms } => self.sped(output, ms),
             Push::CallFailed(error) => self.call_failed(error),
             // 后来又成了：前面报过的错不算（蓝图「正文」第 4 条）。
             Push::CallOk => self.call_ok(),
