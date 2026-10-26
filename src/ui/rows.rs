@@ -179,6 +179,7 @@ pub fn entry_rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         (None, Kind::Media) => super::media_rows::rows(entry, ctx),
         (None, Kind::Shown) => super::shown_rows::rows(entry, ctx),
         (None, Kind::User) => super::user_rows::rows(i, entry, ctx),
+        (None, Kind::Answered) => super::answered_rows::rows(entry, ctx),
         (None, _) if entry.progress.is_some() => super::compaction_rows::rows(entry, ctx),
         (None, _) => text_rows(entry, ctx),
     }

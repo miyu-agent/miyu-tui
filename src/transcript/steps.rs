@@ -83,8 +83,6 @@ pub struct Step {
     pub call_id: Option<String>,
     /// 结果里的图的内容哈希（读了图片文件的 `read`）：时间线把图接在这一步下面（「时间线」第 8 条）。
     pub images: Vec<String>,
-    /// 提问的回答（`ask_user` 答了以后）：一道一行「问题：回答」，时间线接在这一步下面（「确认和提问的抽屉」第 6 条）。
-    pub answers: Vec<String>,
     /// 调工具的那一步，调用那一刻的显示名（结果里的 `display_name`，核心 9-8 六补）：语言到名字，有的照它写，卸了包、关了
     /// 服务也不变（「时间线」第 3 条）；没有的是空的，照这一刻的工具表（`human.get`）。
     pub display: BTreeMap<String, String>,
@@ -165,7 +163,6 @@ impl Step {
             open: None,
             call_id: None,
             images: Vec::new(),
-            answers: Vec::new(),
             display: BTreeMap::new(),
             sent: 0,
             detail: None,

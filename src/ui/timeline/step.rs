@@ -295,18 +295,6 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
             }
             out
         }
-        // 提问答了：一道一行接在这一步的竖线后面（「确认和提问的抽屉」第 6 条）。
-        StepKind::Tool { .. } if !step.answers.is_empty() => step
-            .answers
-            .iter()
-            .flat_map(|a| pieces(a, width))
-            .map(|(l, joined)| Piece {
-                lead: bar(rail),
-                content: vec![Span::styled(l, style)],
-                joined,
-                links: Vec::new(),
-            })
-            .collect(),
         _ => Vec::new(),
     }
 }
@@ -327,10 +315,6 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
     };
     match &step.kind {
         StepKind::Thought { text } => each(text.trim(), theme::thought()).collect(),
-        // 提问答了：点开也是这几行回答（「确认和提问的抽屉」第 6 条）。
-        StepKind::Tool { .. } if !step.answers.is_empty() => {
-            step.answers.iter().flat_map(|a| each(a, style)).collect()
-        }
         StepKind::Tool {
             output,
             parsed,

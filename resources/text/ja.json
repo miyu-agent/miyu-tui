@@ -659,7 +659,8 @@
     "keys_review": "Enter 送信 · Esc ×2 キャンセル",
     "keys_edit": "Enter 保存 · Esc 編集終了",
     "keys_tabs": " · ←/→ 質問切り替え",
-    "answered_line": "{label}：{answer}",
+    "answered_head": "{n} 件の質問に回答しました",
+    "answered_line": "{label} → {answer}",
     "notes_suffix": "（補足：{notes}）",
     "denied_with": "許可しません · {reason}",
     "cancel_hint": "もう一度 Esc でキャンセル"

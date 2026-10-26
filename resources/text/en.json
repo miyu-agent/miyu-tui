@@ -659,7 +659,8 @@
     "keys_review": "Enter submit · Esc ×2 cancel",
     "keys_edit": "Enter save · Esc stop editing",
     "keys_tabs": " · ←/→ switch question",
-    "answered_line": "{label}: {answer}",
+    "answered_head": "You answered {n} question(s)",
+    "answered_line": "{label} → {answer}",
     "notes_suffix": " (notes: {notes})",
     "denied_with": "Not allowed · {reason}",
     "cancel_hint": "Press Esc again to cancel"
