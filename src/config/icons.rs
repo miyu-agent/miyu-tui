@@ -34,6 +34,9 @@ pub struct Icons {
     /// 要人留意的一句前面的记号，连同它后面的空格（人格、预设框里「切换前会先压缩」，2026-10-23 项目主人定黄字加 ⚠）。
     #[serde(default = "warn_mark")]
     pub warn: String,
+    /// fork 出来的子代理名字前面的分叉记号，连同它后面的空格（2026-10-26 项目主人）；没写的套件不画。
+    #[serde(default)]
+    pub fork: String,
     /// 展示的卡片前面的种类图标：`html`、`markdown`、`code`、`pdf`、`text`、`file`（蓝图「展示」第 4 条，2026-10-17 项目主人
     /// 要的）；没写的这一套不画。
     #[serde(default)]

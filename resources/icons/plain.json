@@ -8,6 +8,7 @@
   "error": "✗",
   "pin": "* ",
   "warn": "! ",
+  "fork": "⑂ ",
   "video": "▶",
   "stash": "▤ "
 }

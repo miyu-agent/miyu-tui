@@ -77,6 +77,7 @@ fn a_message_to_a_subagent_or_the_parent_names_it() {
             title: "查文档".into(),
             session: Some("s-child".into()),
             foreground: false,
+            fork: false,
         },
         None,
         Instant::now(),
