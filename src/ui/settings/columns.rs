@@ -141,7 +141,7 @@ fn items(col: Col, page: &Settings, texts: &Texts) -> (String, Vec<Item>, String
                         .replace("{n}", &p.members.len().to_string())
                 };
                 Item {
-                    text: p.name.clone(),
+                    text: texts.pool_names.get(&p.name).unwrap_or(&p.name).clone(),
                     tag,
                     bad: p.members.is_empty(),
                 }

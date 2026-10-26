@@ -82,10 +82,13 @@ impl Data {
             .as_array()
             .map(|all| all.iter().map(provider).collect())
             .unwrap_or_default();
+        // 固定的三个池排最前，照旗舰、日常、轻量（2026-10-26 项目主人，`pools.rs`）。
         self.pools = list["pools"]
             .as_array()
             .map(|all| all.iter().map(pool).collect())
             .unwrap_or_default();
+        self.pools
+            .sort_by_key(|pool| crate::pools::rank(&pool.name));
         self.chat = list["uses"]["chat"].as_str().map(str::to_string);
         self.vision = list["uses"]["vision"].as_str().map(str::to_string);
     }

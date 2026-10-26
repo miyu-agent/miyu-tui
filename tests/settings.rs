@@ -110,10 +110,10 @@ fn deleting_a_pool_asks_who_uses_it_and_saves_at_once() {
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     to_models(&mut tui);
     tui.wait_for("cline");
-    tui.key(b",");
-    tui.key(b".");
-    tui.key(b".");
+    tui.key(b",..");
     tui.wait_for("duo");
+    // 固定的三个池（旗舰、日常、轻量）排在最前面，duo 在第四行（2026-10-26 项目主人）。
+    tui.key(b"\x1b[B\x1b[B\x1b[B");
     tui.key(b"d");
     tui.wait_for("删除模型池 duo？");
     // 停在「取消」：按 Enter 什么都不做。

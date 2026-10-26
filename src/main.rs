@@ -51,6 +51,7 @@ mod pairs;
 mod pick_box;
 mod pixel_mouse;
 mod pointer;
+mod pools;
 mod pulse;
 mod reader;
 mod rng;
