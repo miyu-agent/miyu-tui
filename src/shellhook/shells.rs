@@ -128,14 +128,53 @@ fn profile(program: &str) -> Option<PathBuf> {
 }
 
 /// 照上一层进程认是哪种 shell（`miyu shellhook install` 是在 shell 里敲的；核心转交时换成这个程序，上一层还是那个 shell），
-/// 认不出的照 `SHELL`。
+/// 认不出的照 `SHELL`；Windows 上照 `PSModulePath`（[`from_module_path`]）。
 pub fn detect() -> Option<Shell> {
-    parent_name().as_deref().and_then(Shell::named).or_else(|| {
-        std::env::var("SHELL")
-            .ok()
-            .as_deref()
-            .and_then(Shell::named)
-    })
+    let env = |name: &str| std::env::var(name).ok();
+    parent_name()
+        .as_deref()
+        .and_then(Shell::named)
+        .or_else(|| env("SHELL").as_deref().and_then(Shell::named))
+        .or_else(|| {
+            cfg!(windows)
+                .then(|| from_module_path(&env("PSModulePath")?, &env))
+                .flatten()
+        })
+}
+
+/// Windows 上认不出上一层进程（没有 `/proc`）：PowerShell 起来时把用户自己「文档」下的模块目录加进 `PSModulePath`，5.1 是
+/// `WindowsPowerShell\Modules`，7 是 `PowerShell\Modules`（2026-10-24 项目主人：Windows 上不写 `--shell` 认不出）。
+/// 系统装的那几个（`Program Files`、系统目录、PowerShell 7 自己的目录下）cmd 里也有，不算。
+pub fn from_module_path(path: &str, env: &impl Fn(&str) -> Option<String>) -> Option<Shell> {
+    let system: Vec<String> = [
+        "ProgramFiles",
+        "ProgramFiles(x86)",
+        "SystemRoot",
+        "ProgramW6432",
+    ]
+    .iter()
+    .filter_map(|name| env(name))
+    .filter(|dir| !dir.is_empty())
+    .map(|dir| dir.to_ascii_lowercase())
+    .collect();
+    let mine = path
+        .split(';')
+        .map(|dir| {
+            dir.trim()
+                .trim_end_matches(['\\', '/'])
+                .to_ascii_lowercase()
+        })
+        .filter(|dir| !dir.is_empty() && !system.iter().any(|root| dir.starts_with(root.as_str())));
+    let mut found = None;
+    for dir in mine {
+        if dir.ends_with("\\windowspowershell\\modules") {
+            found = found.or(Some(Shell::WinPs));
+        } else if dir.ends_with("\\powershell\\modules") {
+            // 7 也把 5.1 的用户目录带着（兼容），见到 7 的就是 7。
+            return Some(Shell::Pwsh);
+        }
+    }
+    found
 }
 
 /// 上一层进程叫什么：Linux 上读 `/proc`，别的平台不认。

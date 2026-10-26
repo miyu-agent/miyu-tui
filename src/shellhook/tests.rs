@@ -280,3 +280,28 @@ fn the_powershell_script_parses_where_powershell_is_installed() {
         }
     }
 }
+
+#[test]
+fn windows_tells_the_powershell_from_its_own_module_folder() {
+    // 2026-10-24：Windows 上认不出上一层进程，照 PowerShell 自己加进 `PSModulePath` 的用户目录认。
+    let env = |name: &str| match name {
+        "ProgramFiles" => Some(r"C:\Program Files".to_string()),
+        "SystemRoot" => Some(r"C:\WINDOWS".to_string()),
+        _ => None,
+    };
+    let system = r"C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules";
+    let from = |path: &str| super::shells::from_module_path(path, &env);
+    assert_eq!(from(system), None, "cmd 里也有的系统目录不算");
+    assert_eq!(
+        from(&format!(
+            r"C:\Users\me\OneDrive\文档\WindowsPowerShell\Modules;{system}"
+        )),
+        Some(Shell::WinPs)
+    );
+    assert_eq!(
+        from(&format!(
+            r"C:\Users\me\Documents\PowerShell\Modules;C:\Program Files\PowerShell\Modules;C:\Program Files\PowerShell\7\Modules;{system}"
+        )),
+        Some(Shell::Pwsh)
+    );
+}
