@@ -50,7 +50,7 @@ fn a_persona_read_cut_off_is_read_again_after_reconnecting() {
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
-    oobe.step = Step::Model;
+    oobe.step = Step::Currency;
     oobe.moved(Move::Next, t0);
     assert_eq!(oobe.step, Step::Persona);
     find(&asks(&mut oobe), "config.get");

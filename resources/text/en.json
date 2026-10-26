@@ -1436,17 +1436,7 @@
       "sub": "Take a minute to set up a model and a persona",
       "start": "Press Enter to start"
     },
-    "steps": [
-      "Language",
-      "Sign up",
-      "Controls",
-      "Icons",
-      "Model",
-      "Persona",
-      "Color scheme",
-      "About you",
-      "Preset"
-    ],
+    "steps": ["Language", "Sign up", "Controls", "Icons", "Model", "Currency", "Persona", "Color scheme", "About you", "Preset"],
     "keys": {
       "searching": "Type to search · Ctrl+J/K select · Enter done · Esc cancel",
       "editing": "Enter done · Esc cancel",
@@ -1481,6 +1471,12 @@
       "arrows_note": "↑↓ to move, type to search",
       "vim": "Vim",
       "vim_note": "j/k to move, / to search"
+    },
+    "currency": {
+      "title": "Which currency should amounts be shown in?",
+      "sub": "What models cost is converted into this currency at recent exchange rates",
+      "default": "USD",
+      "names": {"CNY": "Chinese yuan", "USD": "US dollar", "EUR": "Euro", "JPY": "Japanese yen", "HKD": "Hong Kong dollar", "GBP": "British pound", "TWD": "New Taiwan dollar", "KRW": "South Korean won"}
     },
     "icons": {
       "title": "Icons",
