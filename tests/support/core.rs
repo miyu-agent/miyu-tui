@@ -45,6 +45,9 @@ pub enum Tools {
     None,
     /// 照出厂清单登记（读写文件、跑命令这些）。
     Shipped,
+    /// 同 `Shipped`，`shell` 换成假的（核心 BS-1 中）：她调 `shell` 时参数写 `{"commands": [[工具, 参数原文], …]}`，命令里的
+    /// `miyu pkg` 照先后经通道调这几件（装卸包不在她的工具面上了，只能这样调）。
+    CommandShell,
     /// 只有这几件（带显示名的假工具这类，`miyu_tool::testkit`）。
     Only(Vec<Arc<dyn Tool>>),
 }
@@ -191,6 +194,9 @@ fn build(root: &DataRoot, script: Arc<Script>, tools: Tools, token: String) -> C
     let catalog = match tools {
         // 照出厂的、装了的清单登记（核心 F-2 起：装了的内置包才登记工具）。
         Tools::Shipped => miyu_core::tools(&shipped_root, &found()).expect("工具登记得上"),
+        Tools::CommandShell => {
+            command_shell(miyu_core::tools(&shipped_root, &found()).expect("工具登记得上"))
+        }
         Tools::Only(tools) => Catalog::new(tools).expect("登记得上"),
         Tools::None => Catalog::default(),
     };
@@ -204,4 +210,25 @@ fn build(root: &DataRoot, script: Arc<Script>, tools: Tools, token: String) -> C
         token,
     )
     .with_config(config)
+}
+
+/// 出厂的那一份，`shell` 换成照 `commands` 经通道调工具的假的（同核心 `miyu-endpoint` 测试的 `support/pkg.rs`）。
+fn command_shell(shipped: Catalog) -> Catalog {
+    let package = shipped
+        .package_of("shell")
+        .expect("出厂有 shell")
+        .to_string();
+    let mut tools: Vec<Arc<dyn Tool>> = shipped
+        .specs()
+        .filter(|spec| spec.name != "shell" && shipped.package_of(&spec.name) == Some(&package))
+        .filter_map(|spec| shipped.get(&spec.name).cloned())
+        .collect();
+    tools.push(miyu_tool::testkit::Fake::commanding(
+        "shell",
+        // 读：假的 `shell` 自己不用问人，问的只有它经通道调的那几次。
+        miyu_kernel::tool::Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        miyu_tool::testkit::Act::Commands,
+    ));
+    shipped.placing(&package, tools).expect("登记得上")
 }

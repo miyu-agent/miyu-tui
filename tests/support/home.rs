@@ -77,6 +77,11 @@ impl Home {
         Home::build(script, &welcomed(settings), Tools::Shipped)
     }
 
+    /// 同 [`Home::with_tools`]，`shell` 换成经通道调工具的假的（[`Tools::CommandShell`]）。
+    pub fn with_command_shell(script: Script, settings: &str) -> Home {
+        Home::build(script, &welcomed(settings), Tools::CommandShell)
+    }
+
     /// 同 [`Home::with_settings`]，核心只登记这一件工具（带显示名的假工具这类，`miyu_tool::testkit::Fake`）。
     pub fn with_tool(script: Script, settings: &str, tool: Arc<dyn miyu_tool::Tool>) -> Home {
         Home::build(script, &welcomed(settings), Tools::Only(vec![tool]))
