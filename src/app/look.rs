@@ -47,6 +47,10 @@ pub struct Look {
     /// 默认主题）。连上以后照常读包，改了、卸了再换。
     #[serde(default)]
     theme: Option<Value>,
+    /// 上一次起来进的是已有的会话（`ui.startup` 是 `recent`、有会话可进）：下次连上以前不照记下的列表开人格、预设框
+    /// （`start_entered.rs`，2026-10-26 项目主人报：进最近那个会话还弹预设框）。
+    #[serde(default)]
+    pub(super) entered: bool,
     /// 上一次写下的：一样的不再写。
     #[serde(skip)]
     written: Vec<u8>,
@@ -126,6 +130,8 @@ impl App {
             self.boxes.welcome_known = true;
             self.boxes.personas_known = look.personas.is_some();
         }
+        // 上一回起来进了已有的会话：这一回多半也是，连上以前不开人格、预设框（`start_entered.rs`）。
+        self.boxes.entering |= look.entered;
         self.link.look = look;
         self.link.look.written = std::fs::read(file().unwrap_or_default()).unwrap_or_default();
         // 记着走过引导的：人格框照记下的列表这就开，不等连上（`new_session.rs` 的 `ask_next`）。

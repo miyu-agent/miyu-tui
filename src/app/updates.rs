@@ -18,6 +18,8 @@ impl App {
         if let Update::Ready(session) = &update {
             self.dream_ready(session);
         }
+        // 头一次连上进没进已有的会话：记下来，进了的收掉人格、预设框（`start_entered.rs`）。
+        self.entered_update(&update);
         // 人打的 `/dream` 正在整理：记忆流推来的（`dream.rs`）。
         if let Update::Dream { session, change } = update {
             self.dream_change(&session, change);
