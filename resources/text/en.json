@@ -1555,7 +1555,7 @@
         "Roleplay reminder"
       ],
       "summary": "Short description",
-      "summary_hint": "One line about this persona",
+      "summary_hint": "A short note for yourself; the model doesn't see it",
       "hints": [
         "Give it a name",
         "Who it is, how it talks, how it treats you",
