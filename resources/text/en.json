@@ -6,7 +6,7 @@
     "Shift+Enter starts a new line",
     "↑ brings back what you last sent",
     "Ctrl+S stashes this text, press again to get it back",
-    "Drag to select text, Ctrl+C to copy",
+    "Drag to select text, it copies on release",
     "PgUp and PgDn scroll the conversation",
     "Ctrl+Z suspends, fg brings it back",
     "/undo undoes the last turn, /restore brings it back",

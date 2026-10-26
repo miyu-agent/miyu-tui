@@ -6,7 +6,7 @@
     "Shift+Enter 换行",
     "↑ 上一条输入",
     "Ctrl+S 暂存输入，再按一次取回",
-    "拖选正文，Ctrl+C 复制",
+    "拖选正文，松开即复制",
     "PgUp、PgDn 滚动正文",
     "Ctrl+Z 挂起，fg 恢复",
     "/undo 撤销上一轮，/restore 恢复",
