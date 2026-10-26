@@ -14,7 +14,8 @@ impl App {
     /// 抽屉开着时按键先归它，带 `Ctrl` 的照旧归外面（复制、退出），编辑时的 `Ctrl+J` 换行除外（第 4 条）。
     /// 拿了交回 `true`。
     pub(super) fn drawer_key(&mut self, key: KeyEvent) -> bool {
-        if !self.talk.drawers.open() {
+        // PgUp、PgDn 归正文：翻上去看，抽屉让开（「确认和提问的抽屉」第 4a 条，2026-10-26 项目主人：原来翻不了页）。
+        if !self.talk.drawers.open() || matches!(key.code, KeyCode::PageUp | KeyCode::PageDown) {
             return false;
         }
         let newline = self.talk.drawers.editing() && key.code == KeyCode::Char('j');
