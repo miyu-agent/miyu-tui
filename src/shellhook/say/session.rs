@@ -254,9 +254,17 @@ impl Session {
                 false
             }
             Incoming::Key(event) => {
+                // 输入法也要知道：去了后台的不切（2026-10-26 项目主人：「在非聚焦的情况下弹确认框之类的东西，也会导致
+                // fcitx5 切换输入状态」，原来只告诉了通知）。
                 match event {
-                    Event::FocusGained => self.notifier.focus(true),
-                    Event::FocusLost => self.notifier.focus(false),
+                    Event::FocusGained => {
+                        self.notifier.focus(true);
+                        self.ime.focus(true);
+                    }
+                    Event::FocusLost => {
+                        self.notifier.focus(false);
+                        self.ime.focus(false);
+                    }
                     _ => {}
                 }
                 turn.key(&event, &self.core, &self.config)
