@@ -51,7 +51,10 @@ impl ChoiceState {
 /// `usable` 是假的，旧核心没有这一格的照成员是空的认）：选了核心也只会拒。
 pub fn choices(result: &Value) -> Vec<Choice> {
     let mut out = Vec::new();
-    for pool in result["pools"].as_array().into_iter().flatten() {
+    // 固定的三个池排最前，照旗舰、日常、轻量（2026-10-26 项目主人，`pools.rs`）。
+    let mut pools: Vec<&Value> = result["pools"].as_array().into_iter().flatten().collect();
+    pools.sort_by_key(|pool| crate::pools::rank(pool["name"].as_str().unwrap_or_default()));
+    for pool in pools {
         let Some(name) = pool["name"].as_str() else {
             continue;
         };
@@ -171,6 +174,16 @@ mod tests {
             "providers": []});
         let refs: Vec<String> = choices(&list).into_iter().map(|c| c.reference).collect();
         assert_eq!(refs, ["@duo", "@legacy"]);
+    }
+
+    #[test]
+    fn the_fixed_pools_come_first_flagship_normal_lite() {
+        // 2026-10-26 项目主人：照旗舰、日常、轻量排在所有池最前面。
+        let pool = |name: &str| json!({"name": name, "strategy": "pin", "models": ["dev/m1"], "usable": true});
+        let list = json!({"pools": [pool("duo"), pool("lite"), pool("normal"), pool("mine"), pool("flagship")],
+            "providers": []});
+        let refs: Vec<String> = choices(&list).into_iter().map(|c| c.reference).collect();
+        assert_eq!(refs, ["@flagship", "@normal", "@lite", "@duo", "@mine"]);
     }
 
     #[test]

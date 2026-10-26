@@ -823,6 +823,7 @@
       "img",
       "own"
     ],
+    "pool_names": {"flagship": "Flagship", "normal": "Everyday", "lite": "Lite"},
     "pool_tag": "{how} · {n}",
     "empty_pool": "empty",
     "gone": " (gone)",

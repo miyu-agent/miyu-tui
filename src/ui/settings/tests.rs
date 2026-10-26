@@ -419,3 +419,32 @@ fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
 }
 
 mod presets;
+
+#[test]
+fn the_fixed_pools_are_named_and_listed_first() {
+    // 2026-10-26 项目主人：固定的三个池要有显示名称（旗舰、日常、轻量），排在所有池最前面。
+    let config = Config::builtin().unwrap();
+    let mut list = crate::settings::test_support::model_list();
+    list["pools"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"name": "lite", "strategy": "pin", "models": [], "fixed": true}));
+    let mut p = Settings::open(false, true);
+    for (tag, method, _) in p.take_asks() {
+        let got = match method {
+            "model.list" => list.clone(),
+            "config.get" => crate::settings::test_support::config_all(),
+            _ => json!({"secrets": []}),
+        };
+        p.answer(tag, Ok(got), &config.text.settings);
+    }
+    press(&mut p, &config, KeyCode::Enter);
+    p.nav.page_step(true);
+    p.nav.page_step(true);
+    let (text, _) = screen(&mut p, &config, 120, 30);
+    let lite = text
+        .find("轻量")
+        .unwrap_or_else(|| panic!("写显示名称：\n{text}"));
+    let daily = text.find("daily").unwrap_or_else(|| panic!("{text}"));
+    assert!(lite < daily, "固定的排前面：\n{text}");
+}
