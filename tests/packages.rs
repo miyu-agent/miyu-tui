@@ -28,13 +28,15 @@ fn bundle(tag: &str) -> PathBuf {
 }
 
 /// 2026-10-12 项目主人定：照 `miyu pkg install` 列清楚——问题行是装哪个包、哪一版，下面写包含什么、多大；允许本次就装上。
+/// 核心 BS-1 中起装卸包不在她的工具面上：她在命令里跑 `miyu pkg install`，经通道调 `package`，问人的是那一次嵌套调用。
 #[test]
 fn installing_a_package_asks_with_what_it_carries() {
     let dir = bundle("install");
-    let args = serde_json::json!({"install": dir.display().to_string()}).to_string();
-    let home = Home::with_tools(
+    let install = serde_json::json!({"install": dir.display().to_string()}).to_string();
+    let args = serde_json::json!({"commands": [["package", install]]}).to_string();
+    let home = Home::with_command_shell(
         Script::new([
-            Play::Calls(vec![("package".into(), args)]),
+            Play::Calls(vec![("shell".into(), args)]),
             Play::Says("装好了。"),
         ]),
         "",

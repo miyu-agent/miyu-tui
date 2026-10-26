@@ -364,7 +364,7 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     // 预设不再管默认人格（2026-10-08 项目主人）。
     assert!(!tui.shows("默认人格"), "{}", tui.lines().join("\n"));
     // 功能写给人看的名字，不写编号（2026-10-08 项目主人：「都是英文谁看得懂？」，核心 P-3 补给名字）。
-    tui.wait_for("文件读写");
+    tui.wait_for("改文件");
     assert!(!tui.shows("files"), "{}", tui.lines().join("\n"));
     // 功能多了（核心后来加了展示、Harness 版本这些），写了没装的那一行可能在窗外：往下挪着找。
     for _ in 0..40 {
