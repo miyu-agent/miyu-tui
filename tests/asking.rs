@@ -200,9 +200,9 @@ fn asking_to_run_outside_the_sandbox_shows_the_line_and_allow_once_runs_it() {
     tui.say("试试");
     // 等抽屉里才有的那一句：命令的短标题会先出现在时间线那一步上，那时抽屉还没开（CI 上偶发红过）。
     tui.wait_for("沙盒外运行");
-    let screen = tui.lines().join("\n");
-    assert!(screen.contains("$ echo outside"), "{screen}");
-    assert!(screen.contains("在沙盒外试一下"), "{screen}");
+    // 等抽屉整个画出来再看：只等到标题就读屏，慢的机器上读到的是画到一半的一帧（10-24 起 macOS CI 连着红）。
+    tui.wait_for("$ echo outside");
+    tui.wait_for("在沙盒外试一下");
     tui.key(b"\r");
     tui.wait_for("跑完了。");
 }
