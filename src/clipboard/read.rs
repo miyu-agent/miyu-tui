@@ -7,8 +7,10 @@ use std::io::Read;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-/// 一个剪贴板命令最多等多久。
-pub(super) const WAIT: Duration = Duration::from_secs(1);
+/// 一个剪贴板命令最多等多久：Windows 起一次 PowerShell 冷启动就要一秒（2026-10-26 虚拟机里实测），多等一会儿。
+pub(super) fn wait() -> Duration {
+    Duration::from_secs(if cfg!(windows) { 3 } else { 1 })
+}
 
 /// 读不到：这台机器上没有能用的剪贴板命令，或者都失败了、卡住了。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,7 +22,7 @@ pub struct Unreadable;
 ///
 /// 每个剪贴板命令都读不到（没装、失败、卡住）时交回 [`Unreadable`]。
 pub fn read() -> Result<String, Unreadable> {
-    read_with(&candidates(this_os(), wayland()), WAIT)
+    read_with(&candidates(this_os(), wayland()), wait())
 }
 
 /// 这台机器上读剪贴板依次试的命令名（shellhook 的 `doctor` 照它查在不在）。
@@ -59,7 +61,14 @@ pub(super) fn candidates(os: Os, wayland: bool) -> Vec<(&'static str, &'static [
         Os::Mac => vec![("pbpaste", &[])],
         Os::Windows => vec![(
             "powershell",
-            &["-NoProfile", "-Command", "Get-Clipboard -Raw"],
+            // 照 UTF-8 印（5.1 照控制台代码页印，中文成了 GBK，当读不到；2026-10-26 实测），不带 BOM，后面不添换行。
+            &[
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "[Console]::OutputEncoding = New-Object Text.UTF8Encoding $false; \
+                 [Console]::Out.Write((Get-Clipboard -Raw))",
+            ],
         )],
         Os::Linux => {
             let mut list: Vec<(&str, &[&str])> = Vec::new();

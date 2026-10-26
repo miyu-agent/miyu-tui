@@ -39,6 +39,22 @@ function global:__miyu_is_talk([string] $buffer) {
     if ([string]::IsNullOrWhiteSpace($buffer)) {
         return $false
     }
+    # 头上是这个 shell 贴过的块（`[图片 1]`、`[已粘贴 14 行]`，程序记在信箱目录里）的是话，同别的 shell：PowerShell 把
+    # `[…]` 当类型字面量，照词法判成了命令、执行报错（2026-10-26 Windows 虚拟机里实测）。贴的是字的不记，照原样判。
+    $pasted = Join-Path @SPOOL@ "$PID-pasted.json"
+    if (Test-Path -LiteralPath $pasted) {
+        $start = $buffer.TrimStart()
+        try {
+            $labels = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $pasted | ConvertFrom-Json) | ForEach-Object { $_.label }
+        } catch {
+            $labels = @()
+        }
+        foreach ($label in $labels) {
+            if ($label -and $start.StartsWith([string]$label)) {
+                return $true
+            }
+        }
+    }
     $tokens = $null
     $errors = $null
     [void][System.Management.Automation.Language.Parser]::ParseInput($buffer, [ref]$tokens, [ref]$errors)
@@ -112,7 +128,8 @@ Set-PSReadLineKeyHandler -Key Enter -BriefDescription MiyuAcceptLine -ScriptBloc
 
 # Ctrl+V（同 fish）：程序自己读剪贴板，复制的文件、图收成块（`[图片 1]`），大段的字收成 `[已粘贴 14 行]`，插进命令行；
 # 说这句话时换回原文、带上附件。读不到剪贴板的照 PowerShell 原来的粘贴。
-Set-PSReadLineKeyHandler -Chord Ctrl+v -BriefDescription MiyuPaste -ScriptBlock {
+# Windows Terminal 自己占着 Ctrl+V（剪贴板里只有图时什么都不送进来），Alt+V 绑同一个（同 Claude Code）。
+$__miyu_paste = {
     $got = __miyu_capture paste --shell-pid $PID
     if ($LASTEXITCODE -eq 0 -and $got.Count -gt 0) {
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert(($got -join "`n"))
@@ -120,6 +137,8 @@ Set-PSReadLineKeyHandler -Chord Ctrl+v -BriefDescription MiyuPaste -ScriptBlock 
         [Microsoft.PowerShell.PSConsoleReadLine]::Paste()
     }
 }
+Set-PSReadLineKeyHandler -Chord Ctrl+v -BriefDescription MiyuPaste -ScriptBlock $__miyu_paste
+Set-PSReadLineKeyHandler -Chord Alt+v -BriefDescription MiyuPaste -ScriptBlock $__miyu_paste
 
 # Ctrl+J 在命令行里换行（同 fish），敲多行的话。
 Set-PSReadLineKeyHandler -Chord Ctrl+j -Function AddLine

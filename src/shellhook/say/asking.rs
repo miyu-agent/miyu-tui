@@ -138,7 +138,7 @@ impl Asking {
         // 按键模式开着、没在写字：`j`、`k` 也当 `↓`、`↑`（同全屏）。
         let key = crate::app::vim::plain(key, config.layout.vim && !self.drawers.editing());
         let newline = self.drawers.editing() && key.code == KeyCode::Char('j');
-        if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('v') {
+        if crate::app::is_paste(&key) {
             self.clipboard(config);
             return true;
         }
@@ -160,7 +160,7 @@ impl Asking {
         true
     }
 
-    /// `Ctrl+V`（同全屏 `app/drawer_attach.rs`，2026-10-24 项目主人要 shell 里也能）：剪贴板里复制的图片文件、截图收成这一道
+    /// `Ctrl+V`、`Alt+V`（同全屏 `app/drawer_attach.rs`，2026-10-24 项目主人要 shell 里也能）：剪贴板里复制的图片文件、截图收成这一道
     /// 的图（确认的是「不允许」，收下就是在写理由），块上的字照输入框的编号；没有图的照字粘进正在写的。读不到的不动。
     fn clipboard(&mut self, config: &Config) {
         let rule = crate::app::attach_rule(config);

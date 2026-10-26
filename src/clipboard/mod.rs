@@ -8,6 +8,7 @@ use std::io::{self, Write};
 mod image;
 mod read;
 mod staging;
+mod windows;
 
 pub use image::{read_files, read_image};
 pub use read::{read, tools as read_tools};

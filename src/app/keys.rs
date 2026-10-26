@@ -76,7 +76,7 @@ impl App {
 
     /// 按键：列表开着时，上下、Tab、Enter、Esc 归列表，别的照旧给输入框。
     pub(super) fn key(&mut self, key: KeyEvent) -> Action {
-        // Ctrl+V：读剪贴板，照粘贴处理；列表、抽屉开着时也一样（`tui.md`「按键」）。
+        // Ctrl+V（Alt+V 同）：读剪贴板，照粘贴处理；列表、抽屉开着时也一样（`tui.md`「按键」）。
         if is_paste(&key) {
             self.paste_clipboard();
             return Action::None;
@@ -443,10 +443,12 @@ impl App {
     }
 }
 
-/// 这一下是不是 `Ctrl+V`（认得 kitty 键盘协议的终端里按着 Shift 报成大写的 V，不算：那是终端自己的粘贴）。
-fn is_paste(key: &KeyEvent) -> bool {
+/// 这一下是不是读剪贴板：`Ctrl+V`（认得 kitty 键盘协议的终端里按着 Shift 报成大写的 V，不算：那是终端自己的粘贴），
+/// 或者 `Alt+V`（Windows Terminal 自己占着 `Ctrl+V`，剪贴板里只有图时什么都不送进来，2026-10-26 虚拟机里实测；同 Claude Code）。
+pub(crate) fn is_paste(key: &KeyEvent) -> bool {
     use ratatui::crossterm::event::KeyModifiers;
-    key.code == KeyCode::Char('v') && key.modifiers == KeyModifiers::CONTROL
+    key.code == KeyCode::Char('v')
+        && (key.modifiers == KeyModifiers::CONTROL || key.modifiers == KeyModifiers::ALT)
 }
 
 /// 这一下是不是轮换权限级别：`Shift+Tab` 什么时候都是；`Tab` 在命令列表没开时是（开着时补全命令）。
@@ -488,5 +490,6 @@ mod tests {
             KeyModifiers::CONTROL | KeyModifiers::SHIFT
         )));
         assert!(!is_paste(&key(KeyCode::Char('v'), KeyModifiers::NONE)));
+        assert!(is_paste(&key(KeyCode::Char('v'), KeyModifiers::ALT)));
     }
 }

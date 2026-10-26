@@ -493,7 +493,7 @@
       ],
       [
         "Ctrl+V",
-        "Paste; an image on the clipboard becomes an attachment"
+        "Paste; an image on the clipboard becomes an attachment (in Windows Terminal use Alt+V for images)"
       ],
       [
         "↓ (empty input)",
