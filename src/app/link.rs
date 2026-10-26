@@ -35,4 +35,6 @@ pub struct Link {
     pub held_language: Option<String>,
     /// 一轮结束时问了这个会话换算好的金额（`bill_refresh.rs`）：问的是哪个会话。
     pub bill_asked: Option<String>,
+    /// 包的编号到名字（`package.list`）：预设的功能照包分组时写组名（`features.rs`）。
+    pub package_names: std::collections::HashMap<String, String>,
 }

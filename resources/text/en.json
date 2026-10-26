@@ -1152,6 +1152,7 @@
         "Presets",
         "Decides which features are on"
       ],
+      "package_mine": "Mine",
       "preset_detail": [
         "Features {on}/{all}",
         "Not installed",
@@ -1577,6 +1578,7 @@
       "avatar_set": "Set"
     },
     "preset": {
+      "mine": "Mine",
       "title": "Choose a preset",
       "sub": "A preset decides which features are on. You can change it in settings or per session",
       "custom": "Custom",

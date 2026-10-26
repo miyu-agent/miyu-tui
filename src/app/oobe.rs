@@ -34,6 +34,7 @@ impl App {
         if let Some(oobe) = self.boxes.oobe.as_mut() {
             oobe.keys.selected = usize::from(self.config.layout.vim);
         }
+        self.share_package_names();
         self.send_oobe_asks();
     }
 

@@ -10,6 +10,17 @@ use crate::input::{Saved, place};
 const PACKAGE: &str = "tui";
 
 impl App {
+    /// 包的名字交给开着的配置页、引导。
+    pub(super) fn share_package_names(&mut self) {
+        let names = &self.link.package_names;
+        if let Some(page) = self.boxes.settings.as_mut() {
+            page.package_names.clone_from(names);
+        }
+        if let Some(oobe) = self.boxes.oobe.as_mut() {
+            oobe.preset.package_names.clone_from(names);
+        }
+    }
+
     /// 连上了、工具目录变了：去要软件包。
     pub(super) fn ask_packages(&mut self) {
         self.link.core.send(Command::ListPackages);
@@ -26,6 +37,12 @@ impl App {
             self.link.human.set_icons(icons);
             *self.media.row_cache.borrow_mut() = Default::default();
         }
+        // 包的名字：预设的功能照包分组时写组名（`features.rs`）；开着的配置页、引导跟着换。
+        self.link.package_names = packages
+            .iter()
+            .filter_map(|p| Some((p.id.clone(), p.name.clone()?)))
+            .collect();
+        self.share_package_names();
         if self.typing.history_placed {
             return;
         }

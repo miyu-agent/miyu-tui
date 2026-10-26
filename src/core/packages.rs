@@ -18,6 +18,8 @@ pub struct PackageEntry {
     pub state: Option<PathBuf>,
     /// 清单 `[package] icon` 写的 Lucide 图标名；没写的是 `None`。
     pub icon: Option<String>,
+    /// 给人看的名字（照连接的语言）；没有的是 `None`。
+    pub name: Option<String>,
 }
 
 /// 读 `package.list` 的回应；没有编号的那一项不要。
@@ -34,6 +36,7 @@ pub(super) fn listed(result: &Value) -> Vec<PackageEntry> {
                     .as_str()
                     .filter(|i| !i.is_empty())
                     .map(str::to_string),
+                name: p["name"].as_str().map(str::to_string),
             })
         })
         .collect()
@@ -111,16 +114,19 @@ mod tests {
                     id: "tui".into(),
                     state: Some("/s/tui".into()),
                     icon: None,
+                    name: None,
                 },
                 PackageEntry {
                     id: "miyu-memes".into(),
                     state: None,
                     icon: Some("face-slightly-smiling".into()),
+                    name: None,
                 },
                 PackageEntry {
                     id: "odd".into(),
                     state: None,
                     icon: None,
+                    name: None,
                 },
             ]
         );
