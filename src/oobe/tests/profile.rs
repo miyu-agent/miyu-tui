@@ -104,6 +104,10 @@ fn the_reply_language_is_picked_from_the_suggestions_or_typed_after_other() {
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert!(oobe.profile.language.editing(), "「其他…」在格子里写");
+    assert!(
+        oobe.editing(),
+        "手写回复语言算在打字，输入法照编辑里的开（2026-10-26 项目主人）"
+    );
     assert_eq!(oobe.profile.language.text(), "");
     typed(&mut oobe, "粤语", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);

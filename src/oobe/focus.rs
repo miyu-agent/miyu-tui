@@ -21,11 +21,17 @@ impl Oobe {
                 Phase::Models(models) => models.filter.editing(),
                 _ => false,
             },
+            // 每一格回车进去写字都算（2026-10-26 项目主人报：名字算了、简单描述没算，进第二格输入法停在英文）。
             Step::Persona => {
                 let p = &self.persona;
-                p.writing.is_some() || p.editing.is_some() || p.name.editing()
+                p.writing.is_some()
+                    || p.editing.is_some()
+                    || [&p.name, &p.summary, &p.avatar].iter().any(|f| f.editing())
             }
-            Step::Profile => self.profile.writing.is_some() || self.profile.name.editing(),
+            Step::Profile => {
+                let p = &self.profile;
+                p.writing.is_some() || p.name.editing() || p.language.editing()
+            }
             Step::Register => self.register.typing(),
             Step::Preset => self.preset.custom_open && self.preset.name.editing(),
             _ => false,
