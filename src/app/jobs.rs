@@ -68,6 +68,11 @@ pub enum Panel {
         /// 往下滚了几行。
         scroll: usize,
     },
+    /// 点目标那一行开的长期目标浮窗（`goal_box.rs`）：往下滚了几行。
+    Goal {
+        /// 往下滚了几行。
+        scroll: usize,
+    },
     /// 工具（`/tool-list`，`tool_list.rs`）：往下滚了几行；读回来的在 `boxes.tools` 上。
     Tools {
         /// 往下滚了几行。
@@ -200,6 +205,7 @@ impl App {
             }
             Panel::Pick { kind, selected } => return self.pick_key(kind, selected, key),
             Panel::Status { scroll } => return self.status_key(scroll, key),
+            Panel::Goal { scroll } => return self.goal_key(scroll, key),
             Panel::Tools { scroll } => return self.tool_list_key(scroll, key),
             Panel::Context { scroll } => return self.context_key(scroll, key),
             Panel::Changed {

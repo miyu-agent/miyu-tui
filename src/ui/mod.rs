@@ -21,7 +21,8 @@ mod figure_rows;
 mod floating;
 mod footer;
 mod foreign_rows;
-mod goal_tag;
+pub(crate) mod goal_box;
+pub(crate) mod goal_tag;
 pub mod help;
 pub mod hint_keys;
 mod history;
@@ -374,7 +375,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .talk
         .viewing_title()
         .is_none()
-        .then(|| goal_tag::goal(app.talk.transcript.goal.as_ref(), &app.config))
+        .then(|| {
+            let now = jiff::Timestamp::now();
+            goal_tag::goal(app.talk.transcript.goal.as_ref(), &app.config, now)
+        })
         .flatten()
         .filter(|_| !home);
     if let Some(goal) = goal {

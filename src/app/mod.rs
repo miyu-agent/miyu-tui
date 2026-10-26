@@ -20,6 +20,7 @@ mod dream;
 mod effort;
 mod frame;
 mod goal;
+mod goal_box;
 mod jobs;
 mod jump;
 mod widget_page;

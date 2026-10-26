@@ -65,6 +65,9 @@ fn a_changed_goal_is_read_as_its_state_round_and_limit() {
             state: GoalState::Running,
             round: 2,
             limit: Some(5),
+            text: "把测试修绿".into(),
+            since: "2026-10-12T07:00:00Z".parse().ok(),
+            ..Goal::default()
         }))]
     );
     let waiting = json!({"text": "t", "state": "waiting", "round": 1, "since": "x", "usage": {}});
@@ -74,6 +77,8 @@ fn a_changed_goal_is_read_as_its_state_round_and_limit() {
             state: GoalState::Waiting,
             round: 1,
             limit: None,
+            text: "t".into(),
+            ..Goal::default()
         }))]
     );
     assert_eq!(
@@ -81,4 +86,29 @@ fn a_changed_goal_is_read_as_its_state_round_and_limit() {
         [Push::Goal(None)],
         "清掉了"
     );
+}
+
+#[test]
+fn a_goals_usage_and_reason_are_read_for_its_box() {
+    // 2026-10-26 项目主人：点开目标那一行的浮窗写用量；卡住的写为什么。
+    use crate::core::push::Goal;
+    let goal = json!({"text": "t", "state": "blocked", "round": 3, "reason": "缺权限",
+        "since": "2026-10-12T07:00:00Z",
+        "usage": {"usage": {"uncached": 100, "cache_read": 900, "cache_write": 0, "output": 50},
+            "amounts": [{"currency": "CNY", "amount": 0.2}]}});
+    let pushes = read_mine(&changed(goal));
+    let [
+        Push::Goal(Some(Goal {
+            reason,
+            tokens,
+            bill,
+            ..
+        })),
+    ] = pushes.as_slice()
+    else {
+        panic!("读成一份目标");
+    };
+    assert_eq!(reason.as_deref(), Some("缺权限"));
+    assert_eq!(*tokens, 1050);
+    assert_eq!(bill.amounts.len(), 1);
 }

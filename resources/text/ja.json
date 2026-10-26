@@ -220,7 +220,12 @@
     "paused": "一時停止中",
     "blocked": "行き詰まり",
     "rounds": "{round} ラウンド目",
-    "rounds_limited": "{round}/{limit} ラウンド目"
+    "rounds_limited": "{round}/{limit} ラウンド目",
+    "completed": "完了",
+    "box_title": "長期目標",
+    "box_hint": "↑/↓ スクロール · Esc 閉じる",
+    "box_keys": ["目標", "状態", "ラウンド", "経過時間", "使用量"],
+    "box_tokens": "{tokens} トークン"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {
