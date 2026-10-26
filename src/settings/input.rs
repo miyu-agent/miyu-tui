@@ -249,6 +249,10 @@ impl Settings {
                 let Some(pool) = self.nav.pool(&self.view) else {
                     return;
                 };
+                // 固定的三个池一直在（核心 Q-1）：不删，成员、分法照旧能改。
+                if pool.fixed {
+                    return self.say(texts.status("fixed_pool"), Tone::Note);
+                }
                 let reference = format!("@{}", pool.name);
                 (
                     texts.confirm[2].replace("{name}", &pool.name),

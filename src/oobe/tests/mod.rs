@@ -119,16 +119,12 @@ fn a_key_during_the_intro_only_skips_it_then_enter_walks_through_language_keys_a
         params,
         json!({"layer": "personal", "changes": [{"key": "tui.icons", "value": "nerd"}]})
     );
-    // 进了接模型：要三份回应和配置里有没有池。
+    // 进了接模型：要三份回应；不再问配置里有没有池（三个固定池核心自己有，核心 Q-1）。
     assert_eq!(oobe.step, Step::Model);
-    for method in [
-        "model.list",
-        "provider.detect",
-        "provider.catalog",
-        "config.get",
-    ] {
+    for method in ["model.list", "provider.detect", "provider.catalog"] {
         find(&sent, method);
     }
+    assert!(sent.iter().all(|(_, m, _)| *m != "config.get"), "{sent:?}");
     assert_eq!(find(&sent, "provider.catalog").1, json!({"featured": true}));
 }
 

@@ -152,13 +152,13 @@ pub enum KeyRef {
 }
 
 /// 存（`config.set` 个人设置）：这一家的 key 引用或者本机的 `local`（配好了的不写）、自定义的接口和地址、不合写法的 `catalog`、
-/// `models.chat`；一个池都没有的另写三个预设的池（`miyu setup` 第 10 条）。
+/// `models.chat`。池不写：`lite`、`normal`、`flagship` 三个固定池配置里一个字没写也在（核心 Q-1；原来一个池都没有的另写
+/// 三个预设的池，`standard` 改名 `normal` 以后照旧写会多出一个人建的 `standard`）。
 pub fn save_params(
     target: &Target,
     (id, catalog): (&str, Option<&str>),
     key: &KeyRef,
     model: &str,
-    pools: bool,
 ) -> Value {
     let mut changes = Vec::new();
     let mut set = |key: String, value: Value| changes.push(json!({"key": key, "value": value}));
@@ -189,12 +189,6 @@ pub fn save_params(
         }
     }
     set("models.chat".to_string(), json!(format!("{id}/{model}")));
-    if !pools {
-        for pool in ["lite", "standard", "flagship"] {
-            set(format!("pools.{pool}.models"), json!([]));
-            set(format!("pools.{pool}.subagent"), json!(true));
-        }
-    }
     // 引导里接的模型是个人的（2026-10-24 项目主人定，「管理员模式」第 5 条；原来写系统配置）。
     json!({"layer": "personal", "changes": changes})
 }
@@ -306,14 +300,13 @@ mod tests {
     }
 
     #[test]
-    fn saving_writes_the_key_reference_the_chat_model_and_pools_once() {
+    fn saving_writes_the_key_reference_and_the_chat_model_but_no_pools() {
         let pasted = Target::Listed(listed("deepseek"));
         let got = save_params(
             &pasted,
             ("deepseek", None),
             &KeyRef::Secret,
             "deepseek-flash",
-            false,
         );
         let changes = got["changes"].as_array().unwrap();
         assert_eq!(got["layer"], "personal");
@@ -325,14 +318,15 @@ mod tests {
         assert!(
             changes.contains(&json!({"key": "models.chat", "value": "deepseek/deepseek-flash"}))
         );
-        assert!(changes.contains(&json!({"key": "pools.lite.subagent", "value": true})));
-        let again = save_params(&pasted, ("deepseek", None), &KeyRef::Secret, "m", true);
-        assert!(!again.to_string().contains("pools."), "有池的不写");
+        assert!(
+            !got.to_string().contains("pools."),
+            "池不写：三个固定池核心自己有（Q-1）"
+        );
         let configured = Target::Listed(Provider {
             configured: Some("zen".into()),
             ..listed("opencode")
         });
-        let only = save_params(&configured, ("zen", None), &KeyRef::None, "m", true);
+        let only = save_params(&configured, ("zen", None), &KeyRef::None, "m");
         assert_eq!(
             only["changes"],
             json!([{"key": "models.chat", "value": "zen/m"}]),
@@ -344,7 +338,7 @@ mod tests {
             id: None,
             name: None,
         };
-        let got = save_params(&custom, ("example", None), &KeyRef::None, "m", true);
+        let got = save_params(&custom, ("example", None), &KeyRef::None, "m");
         assert!(
             got["changes"]
                 .as_array()
@@ -365,7 +359,7 @@ mod tests {
             id: None,
             name: Some("中转站".into()),
         };
-        let got = save_params(&named, ("example", None), &KeyRef::None, "m", true);
+        let got = save_params(&named, ("example", None), &KeyRef::None, "m");
         assert!(
             got["changes"]
                 .as_array()
@@ -377,7 +371,7 @@ mod tests {
             base_url: Some("http://127.0.0.1:11434/v1".into()),
             ..listed("ollama")
         });
-        let got = save_params(&local, ("ollama", None), &KeyRef::Local, "qwen3", true);
+        let got = save_params(&local, ("ollama", None), &KeyRef::Local, "qwen3");
         let changes = got["changes"].as_array().unwrap();
         assert!(
             changes.contains(&json!({"key": "providers.ollama.local", "value": true})),

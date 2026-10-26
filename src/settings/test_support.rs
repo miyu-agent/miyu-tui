@@ -10,7 +10,7 @@ pub fn model_list() -> Value {
         "uses": {"chat": "@daily", "vision": "relay/zhipu/glm-5v"},
         "pools": [
             {"name": "daily", "strategy": "rotate", "models": ["dev/flash", "relay/cline/deepseek-v4"]},
-            {"name": "empty", "strategy": "pin", "models": []}
+            {"name": "lite", "strategy": "pin", "models": [], "fixed": true}
         ],
         "providers": [
             {"id": "dev", "name": {"value": "dev", "from": "id"}, "driver": "openai-chat",

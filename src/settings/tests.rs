@@ -8,6 +8,7 @@ use crate::config::Config;
 use crate::core::Refusal;
 
 mod cleared;
+mod fixed_pool;
 mod rename;
 mod search;
 
