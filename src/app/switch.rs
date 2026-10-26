@@ -283,7 +283,7 @@ impl App {
             self.talk.asks.forget(&session);
             self.talk.drawers.drop_held(&session);
             let mut fresh = Transcript::default();
-            fresh.session = Some(session.clone());
+            fresh.opening(session.clone());
             fresh.link = self.talk.transcript.link.clone();
             fresh.level = self.talk.transcript.level;
             let parked = Parked {

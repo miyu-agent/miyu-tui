@@ -209,7 +209,7 @@ impl Transcript {
             Update::Limits(limits) => self.limits = limits,
             Update::Ready(session) => {
                 self.link = Link::Ready;
-                self.session = Some(session);
+                self.opening(session);
             }
             Update::NoCoreBin => self.link = Link::Down(texts.no_core_bin.clone()),
             Update::Missing(path) => {
@@ -308,7 +308,7 @@ impl Transcript {
             }
             Push::Workspace(cwd) => self.workspace_changed(cwd, texts),
             Push::Policy { level, read_only } => {
-                self.level = if read_only { Level::ReadOnly } else { level };
+                self.set_level(if read_only { Level::ReadOnly } else { level });
             }
             Push::Reverted(turns) => {
                 self.cache.reverted();
@@ -476,8 +476,8 @@ impl Transcript {
         let turn = if user { None } else { self.turn };
         // 你说的话记发出去时的级别（竖线的颜色）；收尾行记这一轮开始时的（打头的图标）。
         let level = match kind {
-            Kind::User => Some(self.level),
-            Kind::Done | Kind::Cut => Some(self.turn_level),
+            Kind::User => self.known(self.level),
+            Kind::Done | Kind::Cut => self.known(self.turn_level),
             _ => None,
         };
         let id = self.fresh_id();
