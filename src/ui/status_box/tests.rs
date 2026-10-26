@@ -29,6 +29,7 @@ fn opened() -> Facts {
             ..Usage::default()
         },
         spent: Some("¥0.83".into()),
+        models: Vec::new(),
         memory: (4, 2),
     }
 }
@@ -118,5 +119,40 @@ fn a_value_too_long_wraps_under_its_own_column() {
         text.lines()
             .all(|l| unicode_width::UnicodeWidthStr::width(l) <= 48),
         "{text}"
+    );
+}
+
+#[test]
+fn a_session_that_changed_models_lists_each_model_under_usage() {
+    // 2026-10-26 项目主人：中途换过模型的分不出每个模型的用量。一个模型一行：引用、token、花费；只用过一个的不写。
+    let config = Config::builtin().unwrap();
+    let mut facts = opened();
+    facts.models = vec![
+        (
+            "magpie/deepseek-v4.1-flash".into(),
+            92_000,
+            Some("¥0.61".into()),
+        ),
+        ("relay/glm-5".into(), 16_700, None),
+    ];
+    let text = plain(&facts, &config, 100);
+    let lines: Vec<&str> = text.lines().collect();
+    let at = lines
+        .iter()
+        .position(|l| l.contains("各模型"))
+        .unwrap_or_else(|| panic!("{text}"));
+    assert!(
+        lines[at].contains("magpie/deepseek-v4.1-flash · 92k · ¥0.61"),
+        "{text}"
+    );
+    assert!(lines[at + 1].contains("relay/glm-5 · 16.7k"), "{text}");
+    assert!(
+        !lines[at + 1].contains("各模型"),
+        "第二行不再写名字：{text}"
+    );
+    facts.models.truncate(1);
+    assert!(
+        !plain(&facts, &config, 100).contains("各模型"),
+        "只用过一个的不写"
     );
 }

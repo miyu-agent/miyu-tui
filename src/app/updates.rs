@@ -60,7 +60,7 @@ impl App {
             return;
         }
         // 一轮结束问的换算好的金额归它（`bill_refresh.rs`）。
-        if self.bill_answer(&update) {
+        if self.bill_answer(&update) || self.status_update(&update) {
             return;
         }
         // 配置页的回应归它；配置变了、断开、连上也告诉它（`settings.rs`）。

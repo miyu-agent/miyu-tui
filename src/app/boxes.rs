@@ -39,6 +39,8 @@ pub struct Boxes {
     /// 人格列表到了（或者连不上核心）：首页的头像、跟随头像的主色照它，这以前也不画首页，免得先闪一下吉祥物和 tokyonight
     /// （2026-10-15 冷启动查出）。
     pub personas_known: bool,
+    /// `/status` 开着时问来的这个会话每个模型的用量（`app/status.rs`）。
+    pub status_models: Vec<crate::core::UsageRow>,
     /// 这一回在等进已有的会话（`--resume`，或者上一回起来进了已有的会话、头一次连上进了的）：开头不问人格、预设，照常
     /// 画输入框（`start_entered.rs`）。
     pub entering: bool,
