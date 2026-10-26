@@ -99,7 +99,9 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     session.drive(&mut turn, |t| {
         t.terminal.renewed.map(|since| renewed_line(since, words))
     })?;
-    if turn.terminal.none {
+    if turn.unregistered {
+        session.note(note(&words.not_registered))?;
+    } else if turn.terminal.none {
         session.note(note(&words.no_session))?;
     }
     session.finish()?;
@@ -203,7 +205,9 @@ pub fn pick(which: Pick<'_>, words: &Words, shell: Option<u32>) -> io::Result<Ex
         )),
     };
     session.pick(&mut turn, picker.as_mut())?;
-    if turn.terminal.none && picker.needs_session() {
+    if turn.unregistered {
+        session.note(note(&words.not_registered))?;
+    } else if turn.terminal.none && picker.needs_session() {
         session.note(note(&words.no_session))?;
     }
     session.finish()?;

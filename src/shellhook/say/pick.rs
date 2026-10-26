@@ -167,7 +167,8 @@ impl Session {
                 break end;
             }
             // 这个终端还没说过话（只问不开）：用不着会话的照常办。
-            if turn.done && !(turn.terminal.none && !picker.needs_session()) {
+            if turn.done && (turn.unregistered || !(turn.terminal.none && !picker.needs_session()))
+            {
                 break Picked::Done(None);
             }
             turn.look.apply(&self.config);

@@ -30,6 +30,10 @@ pub struct Words {
     pub ps_policy: String,
     /// 这个终端还没和她说过话：斜杠命令没有会话可办。
     pub no_session: String,
+    /// 核心还没有机主：先去全屏的引导里注册。
+    pub not_registered: String,
+    /// doctor：核心连上了，还没有机主。
+    pub doctor_core_setup: String,
     /// 闲置久了换了新会话（`{ago}` 是隔了多久）。
     pub renewed: String,
     /// 隔了多久的写法。
