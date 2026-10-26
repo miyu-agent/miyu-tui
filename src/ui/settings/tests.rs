@@ -429,6 +429,8 @@ fn the_fixed_pools_are_named_and_listed_first() {
         .as_array_mut()
         .unwrap()
         .push(json!({"name": "lite", "strategy": "pin", "models": [], "fixed": true}));
+    // 旁路请求登记（核心 Q-2）：起标题走轻量。
+    list["side"] = json!([{"id": "core/title", "tier": "lite", "name": "起标题", "summary": "", "resolved": "session"}]);
     let mut p = Settings::open(false, true);
     for (tag, method, _) in p.take_asks() {
         let got = match method {
@@ -447,4 +449,12 @@ fn the_fixed_pools_are_named_and_listed_first() {
         .unwrap_or_else(|| panic!("写显示名称：\n{text}"));
     let daily = text.find("daily").unwrap_or_else(|| panic!("{text}"));
     assert!(lite < daily, "固定的排前面：\n{text}");
+    let row = text
+        .lines()
+        .find(|l| l.contains("轻量"))
+        .unwrap_or_default();
+    assert!(
+        row.contains("用于：起标题"),
+        "走这一档的旁路请求写在池右边：{row}"
+    );
 }

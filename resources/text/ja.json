@@ -827,6 +827,7 @@
       "手動"
     ],
     "pool_names": {"flagship": "フラッグシップ", "normal": "日常", "lite": "ライト"},
+    "pool_uses": "用途：{names}",
     "pool_tag": "{how} · {n}",
     "empty_pool": "空",
     "gone": "（存在しない）",

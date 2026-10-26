@@ -132,7 +132,7 @@ fn items(col: Col, page: &Settings, texts: &Texts) -> (String, Vec<Item>, String
         Col::Pool => {
             let rows = page.nav.pools(view).into_iter().map(|p| {
                 let how = texts.option(p.strategy.as_deref().unwrap_or_default());
-                let tag = if p.members.is_empty() {
+                let mut tag = if p.members.is_empty() {
                     texts.empty_pool.clone()
                 } else {
                     texts
@@ -140,6 +140,12 @@ fn items(col: Col, page: &Settings, texts: &Texts) -> (String, Vec<Item>, String
                         .replace("{how}", how)
                         .replace("{n}", &p.members.len().to_string())
                 };
+                // 走这一档的旁路请求（核心 Q-2）：「用于：起标题」。
+                if !p.uses.is_empty() {
+                    let sep = crate::sheet::sep();
+                    let names = p.uses.join(&sep);
+                    tag = format!("{tag}{sep}{}", texts.pool_uses.replace("{names}", &names));
+                }
                 Item {
                     text: texts.pool_names.get(&p.name).unwrap_or(&p.name).clone(),
                     tag,
