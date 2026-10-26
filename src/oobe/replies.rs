@@ -18,7 +18,11 @@ impl Oobe {
         texts: &Texts,
     ) {
         let moved = match &waiting {
-            Waiting::Icons | Waiting::Keys => Move::Stay,
+            Waiting::Icons | Waiting::Keys | Waiting::CurrencySave => Move::Stay,
+            Waiting::CurrencyRead => {
+                self.currency.answer(&result, &texts.currency.default);
+                Move::Stay
+            }
             Waiting::Welcomed => {
                 self.marked = Some(
                     result

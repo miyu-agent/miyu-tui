@@ -85,7 +85,7 @@ fn a_found_key_is_tested_right_away_and_the_chosen_model_is_saved_by_reference()
     );
     assert!(changes.contains(&json!({"key": "models.chat", "value": "deepseek/deepseek-v4-pro"})));
     oobe.answer(tag, Ok(json!({})), t0, &texts);
-    assert_eq!(oobe.step, Step::Persona);
+    assert_eq!(oobe.step, Step::Currency, "接模型后面是货币那一步");
     assert_eq!(oobe.summary().model, "deepseek-v4-pro");
 }
 
@@ -276,7 +276,7 @@ fn an_existing_chat_model_can_be_kept_with_one_enter() {
     assert!(matches!(oobe.model.phase, Phase::Ready(true)));
     assert_eq!(oobe.model.chat.as_deref(), Some("Big Model"), "写显示名");
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    assert_eq!(oobe.step, Step::Persona);
+    assert_eq!(oobe.step, Step::Currency, "接模型后面是货币那一步");
     assert_eq!(oobe.summary().model, "Big Model");
 }
 
@@ -415,7 +415,7 @@ fn a_failed_test_can_still_be_saved_and_asks_for_a_model_name_first() {
     let changes = params["changes"].as_array().unwrap();
     assert!(changes.contains(&json!({"key": "models.chat", "value": "openai/gpt-x"})));
     oobe.answer(tag, Ok(json!({})), t0, &texts);
-    assert_eq!(oobe.step, Step::Persona, "存好往下走");
+    assert_eq!(oobe.step, Step::Currency, "存好往下走");
 }
 
 #[test]

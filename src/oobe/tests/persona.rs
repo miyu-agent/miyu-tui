@@ -11,7 +11,7 @@ use crate::oobe::{Move, Oobe, Step, Texts};
 /// 走到建人格：默认人格没设。
 fn at_persona(t0: Instant, texts: &Texts, default: Option<&str>) -> Oobe {
     let mut oobe = fresh(t0);
-    oobe.step = Step::Model;
+    oobe.step = Step::Currency;
     oobe.moved(Move::Next, t0);
     assert_eq!(oobe.step, Step::Persona);
     let sent = asks(&mut oobe);

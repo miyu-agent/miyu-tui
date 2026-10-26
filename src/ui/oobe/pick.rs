@@ -48,6 +48,25 @@ pub fn controls(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
     c
 }
 
+/// 金额用什么货币显示（2026-10-26 项目主人）：一种一行，名字后面暗色写代码。
+pub fn currency(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
+    let words = &texts.currency;
+    let mut c = Content::new(width);
+    c.heading(&words.head.title, &words.head.sub);
+    for (i, code) in crate::oobe::currency::CURRENCIES.iter().enumerate() {
+        let name = words.names.get(*code).map_or(*code, String::as_str);
+        c.row(
+            i == oobe.currency.pick.selected,
+            vec![
+                Span::raw(name.to_string()),
+                Span::styled(format!("  {code}"), theme::dim()),
+            ],
+            None,
+        );
+    }
+    c
+}
+
 /// 图标：中间一行间隔着的几个图标（照 `nerd` 那一套，窄得放不下的照放得下的个数），下面两行选项。
 pub fn icons(oobe: &Oobe, texts: &Texts, nerd: Option<&Icons>, width: u16) -> Content {
     let words = &texts.icons;

@@ -4,6 +4,7 @@
 //! `app/oobe.rs`。
 
 pub mod asker;
+pub mod currency;
 pub mod field;
 pub mod figure;
 mod focus;
@@ -117,6 +118,8 @@ pub struct Oobe {
     pub icons: Pick,
     /// 接模型。
     pub model: model::ModelStep,
+    /// 金额用什么货币显示。
+    pub currency: currency::CurrencyStep,
     /// 建人格。
     pub persona: persona::PersonaStep,
     /// 主题。
@@ -167,6 +170,7 @@ impl Oobe {
             ),
             register: register::RegisterStep::default(),
             model: model::ModelStep::new(look.catalog_limit),
+            currency: currency::CurrencyStep::default(),
             persona: persona::PersonaStep::default(),
             theme: theme::ThemeStep::default(),
             profile: profile::ProfileStep::default(),
@@ -210,6 +214,7 @@ impl Oobe {
             Step::Keys => self.pick_key(Step::Keys, key, &mut effects),
             Step::Icons => self.pick_key(Step::Icons, key, &mut effects),
             Step::Model => self.model.key(key, &mut self.asker, &texts.model),
+            Step::Currency => self.currency.key(key, &mut self.asker),
             Step::Persona => self
                 .persona
                 .key(key, &mut self.asker, &texts.persona, &mut effects),
@@ -346,6 +351,7 @@ impl Oobe {
                 self.sliding = None;
             }
             Step::Model => self.model.enter(&mut self.asker),
+            Step::Currency => self.currency.enter(&mut self.asker),
             Step::Persona => self.persona.enter(&mut self.asker),
             Step::Theme => {
                 let follow = self.persona.colors().is_some();
@@ -431,7 +437,12 @@ impl Oobe {
     pub fn wanted_figure(&self, avatar: bool) -> figure::Shown {
         let early = matches!(
             self.step,
-            Step::Welcome | Step::Language | Step::Keys | Step::Icons | Step::Model
+            Step::Welcome
+                | Step::Language
+                | Step::Keys
+                | Step::Icons
+                | Step::Model
+                | Step::Currency
         );
         if early {
             return figure::Shown::Mascot;

@@ -116,6 +116,18 @@ pub struct Controls {
     pub vim_note: String,
 }
 
+/// 金额用什么货币显示那一步。
+#[derive(Debug, Clone, Deserialize)]
+pub struct Currency {
+    /// 标题、说明。
+    #[serde(flatten)]
+    pub head: Heading,
+    /// 没人设过时光标停的那一种（照界面语言）。
+    pub default: String,
+    /// 每一种的名字：代码 → 名字。
+    pub names: std::collections::HashMap<String, String>,
+}
+
 /// AI 怎么认识你那一步。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -435,6 +447,8 @@ pub struct Texts {
     pub icons: Icons,
     /// 你喜欢的操作方式（`keys` 是每一屏最下面那行按键，这一步叫 `controls`）。
     pub controls: Controls,
+    /// 金额用什么货币显示。
+    pub currency: Currency,
     /// 接模型。
     pub model: Model,
     /// 建人格。

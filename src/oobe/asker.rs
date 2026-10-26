@@ -28,6 +28,10 @@ pub enum Waiting {
     Icons,
     /// 写了按键模式（`config.set tui.keys`）。
     Keys,
+    /// 读金额用的货币（`config.get usage.currency`，`currency.rs`）。
+    CurrencyRead,
+    /// 写了金额用的货币（`config.set usage.currency`）。
+    CurrencySave,
     /// 模型和默认用途（`model.list`）。
     Models,
     /// 环境里的 key、本机的服务（`provider.detect`）。
