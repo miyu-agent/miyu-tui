@@ -225,7 +225,8 @@
     "box_title": "长期目标",
     "box_hint": "↑/↓ 滚动 · Esc 关闭",
     "box_keys": ["目标", "状态", "轮数", "用时", "用量"],
-    "box_tokens": "{tokens} token"
+    "box_tokens": "{tokens} token",
+    "resumes": "恢复 {n} 次"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {

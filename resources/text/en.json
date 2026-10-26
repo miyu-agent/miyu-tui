@@ -225,7 +225,8 @@
     "box_title": "Goal",
     "box_hint": "↑/↓ scroll · Esc close",
     "box_keys": ["Goal", "State", "Rounds", "Elapsed", "Usage"],
-    "box_tokens": "{tokens} tokens"
+    "box_tokens": "{tokens} tokens",
+    "resumes": "resumed {n}×"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {
