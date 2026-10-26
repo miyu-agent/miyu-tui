@@ -184,6 +184,7 @@ impl App {
         let offline = self.talk.transcript.link != Link::Ready;
         if self.talk.transcript.session.is_some()
             || (offline && !self.boxes.welcome_known)
+            || self.seen().entering()
             || self.boxes.panel.is_some()
         {
             return;
@@ -222,14 +223,14 @@ impl App {
 
     /// 新会话开头要选、列表还没读回来（框还没开）：输入框的位置写「正在加载…」，按键、粘贴不进输入框。
     pub(super) fn start_loading(&self) -> bool {
-        start_pick(&self.talk).is_some() && !matches!(self.boxes.panel, Some(Panel::Pick { .. }))
+        self.seen().start_pick().is_some() && !matches!(self.boxes.panel, Some(Panel::Pick { .. }))
     }
 
     /// 新会话开头那个换掉输入框的框画着（开着的人格、预设框，或者列表还在读时写「正在加载…」的那个；不问人格预设的等默认
     /// 时照旧画输入框，不算）。
     pub(super) fn start_box_shown(&self) -> bool {
         let open = matches!(self.boxes.panel, Some(Panel::Pick { .. }));
-        start_pick(&self.talk).is_some() && (open || !self.config.layout.skip_pick)
+        self.seen().start_pick().is_some() && (open || !self.config.layout.skip_pick)
     }
 
     /// 上一次选的：最近那个会话用的（`Some(None)` 是它没带）；会话列表还没到、一个会话都没有的是 `None`。
