@@ -81,6 +81,8 @@ pub struct Job {
     pub asked: Option<Instant>,
     /// 读输出的请求发出去了、还没回来：不再发第二个。
     pub waiting: bool,
+    /// fork 出来的子代理（核心 A-F 补）。
+    pub fork: bool,
 }
 
 impl Job {
@@ -168,6 +170,7 @@ impl Board {
             output: None,
             asked: None,
             waiting: false,
+            fork: start.fork,
         });
         self.next_id
     }

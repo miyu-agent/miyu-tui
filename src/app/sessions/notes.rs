@@ -303,6 +303,7 @@ mod tests {
             title: "查文档".into(),
             session: agent.then(|| format!("s-{job}")),
             foreground: false,
+            fork: false,
         };
         let end = |job: &str, reason, exit_code| JobEnd {
             job: job.into(),
@@ -390,6 +391,7 @@ mod tests {
             title: String::new(),
             session: Some(session.into()),
             foreground: false,
+            fork: false,
         };
         let mut main = Board::default();
         main.start(&start("j1", "s1"), None, t0);

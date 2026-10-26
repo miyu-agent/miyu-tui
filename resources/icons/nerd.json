@@ -234,6 +234,7 @@
   "error": "",
   "pin": " ",
   "warn": "\uf071 ",
+  "fork": "\uf126 ",
   "video": "▶",
   "stash": " "
 }

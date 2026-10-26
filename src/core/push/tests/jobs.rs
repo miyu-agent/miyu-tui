@@ -23,6 +23,7 @@ fn job_effects_reports_and_foreign_messages_are_read() {
             title: "查文档".into(),
             session: Some("s-child".into()),
             foreground: false,
+            fork: false,
         })
     );
     assert_eq!(got[1], Push::JobMessaged("j1".into()));
@@ -141,4 +142,23 @@ fn a_foreground_subagent_is_marked() {
     let listed =
         crate::core::push::JobStart::listed(&json!({"job": "j3", "what": "agent", "title": "x"}));
     assert!(!listed.foreground, "不写的是后台的");
+}
+
+#[test]
+fn a_forked_subagent_is_marked_in_both_shapes() {
+    // 核心 A-F 补：fork 出来的子代理 `job.started` 和订阅回应的 `jobs` 都带 `fork: true`；别的不写。
+    let result = json!({"seq": 9, "kind": "tool.result", "by": {"kind": "tool", "call_id": "call_1"},
+        "body": {"call_id": "call_1", "status": "ok", "blocks": [{"type": "text", "text": "好了"}],
+            "effects": [{"kind": "job.started", "job": "j4", "what": "agent", "title": "分头查",
+                "session": "s-fork", "fork": true}]}});
+    let Push::JobStarted(start) = &read_mine(&result)[0] else {
+        panic!("派了一个任务");
+    };
+    assert!(start.fork);
+    let listed = crate::core::push::JobStart::listed(
+        &json!({"job": "j4", "what": "agent", "title": "x", "fork": true}),
+    );
+    assert!(listed.fork);
+    let plain = crate::core::push::JobStart::listed(&json!({"job": "j3", "what": "agent"}));
+    assert!(!plain.fork, "不写的不是 fork");
 }
