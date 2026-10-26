@@ -361,7 +361,9 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     let pieces = match entry.kind {
         // 收尾行只在 ` · ` 处折（「窗口小的时候」第 5 条）。
         Kind::Done | Kind::Cut => {
-            done_row::pieces(&done_row::line(entry.level, &entry.text, layout), width)
+            // 没记级别的（读最新一页时还不知道）照现在的。
+            let level = entry.level.or(Some(ctx.level));
+            done_row::pieces(&done_row::line(level, &entry.text, layout), width)
         }
         // 模型的回答常以换行开头、结尾，前后的空行不画。
         _ => pieces(entry.text.trim_matches('\n'), width),
