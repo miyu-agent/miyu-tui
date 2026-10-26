@@ -75,7 +75,10 @@ pub fn choices(result: &Value) -> Vec<Choice> {
             let Some(reference) = model["ref"].as_str() else {
                 continue;
             };
-            let named = model["facts"]["name"]["value"].as_str();
+            // 名字写模型自己的（2026-10-26 项目主人：`deepseek-flash` 写成了目录里对上的「Deepseek V4.1 Flash 1017」）；
+            // 配置里给它起了名字的照起的写。
+            let name = &model["facts"]["name"];
+            let named = name["value"].as_str().filter(|_| name["from"] == "config");
             let name = named.or(model["model"].as_str()).unwrap_or(reference);
             let window = model["facts"]["window"]["value"].as_u64();
             // 写引用不只写供应商：同一个显示名常有好几个（配置里写的、目录里自带的），只写供应商分不出来。
@@ -179,23 +182,27 @@ mod tests {
                 {"name": "lite", "strategy": "pin", "models": [], "subagent": true, "description": null}],
             "providers": [{"id": "dev", "models": [
                 {"model": "m1", "ref": "dev/m1", "state": "ok",
-                 "facts": {"window": {"value": 300000}, "name": {"value": "DeepSeek V4.1 Flash"}}},
+                 "facts": {"window": {"value": 300000}, "name": {"value": "DeepSeek V4.1 Flash", "from": "catalog"}}},
                 {"model": "m2", "ref": "dev/m2", "state": "cooling", "until": "2026-10-01T08:02:00Z", "facts": {}},
-                {"model": "m3", "ref": "dev/m3", "state": "no_key", "facts": {}}]}]});
+                {"model": "m3", "ref": "dev/m3", "state": "no_key", "facts": {}},
+                {"model": "m4", "ref": "dev/m4", "state": "ok",
+                 "facts": {"name": {"value": "我的模型", "from": "config", "layer": "personal"}}}]}]});
         let got = choices(&list);
         let refs: Vec<&str> = got.iter().map(|c| c.reference.as_str()).collect();
         assert_eq!(
             refs,
-            ["@duo", "dev/m1", "dev/m2", "dev/m3"],
+            ["@duo", "dev/m1", "dev/m2", "dev/m3", "dev/m4"],
             "没有挡位，空的池不列"
         );
         assert_eq!(got[0].detail, "pin · 2");
         assert_eq!(
             (got[1].name.as_str(), got[1].detail.as_str()),
-            ("DeepSeek V4.1 Flash", "dev/m1 · 300k")
+            ("m1", "dev/m1 · 300k"),
+            "写模型自己的名字，不写目录里对上的（2026-10-26 项目主人）"
         );
         assert!(matches!(got[2].state, ChoiceState::Cooling(Some(_))));
         assert_eq!(got[3].state, ChoiceState::NoKey);
         assert_eq!(got[3].name, "m3", "没有显示名的写模型名");
+        assert_eq!(got[4].name, "我的模型", "配置里起了名字的照起的写");
     }
 }
