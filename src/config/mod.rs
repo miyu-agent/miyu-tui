@@ -191,8 +191,7 @@ pub struct Texts {
     pub stashed: String,
     /// 收尾行后面的本轮用量，`{tokens}` 输入加输出，`{percent}` 命中率。
     pub done_usage: String,
-    /// 请求被拒时，认得的原因码（`data.reason`）写的短话：只弹提示框，不写进正文（蓝图「正文」第 6、9 条；
-    /// 2026-10-01 项目主人：命令没生效、什么都没变的，弹通知就行）。认不得的才照核心的原话写进正文。
+    /// 请求被拒时，认得的原因码（`data.reason`）写的短话：只弹提示框，不写进正文，认不得的才照核心的原话写（蓝图「正文」第 6、9 条）。
     pub refusal_hints: HashMap<String, String>,
     /// 回顾（`/recap`，蓝图「回顾」）。
     pub recap: RecapTexts,
@@ -406,8 +405,7 @@ impl Config {
         })
     }
 
-    /// 时间线收起那一行照哪种语言写（`text.summary` 是哪一份）：自动时是语言表的 `auto_summary`（英文），手动选了哪种
-    /// 是哪种（蓝图「时间线」第 17 条）。
+    /// 时间线收起那一行照哪种语言写：自动时是语言表的 `auto_summary`（英文），手动选了哪种是哪种（蓝图「时间线」第 17 条）。
     pub fn summary_language(&self) -> &str {
         if self.auto
             && self
