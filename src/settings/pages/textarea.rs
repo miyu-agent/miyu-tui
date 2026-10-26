@@ -19,6 +19,9 @@ pub struct SheetEdit {
     pub title: String,
     /// 字、光标、折行。
     pub sheet: Sheet,
+    /// 写到哪：`None` 是配置项（`write_setting`）；预设的描述写进那个预设（`preset_write`，2026-10-26 项目主人：
+    /// 描述一行不够）。
+    pub to: Option<super::target::Target>,
 }
 
 impl Settings {
@@ -29,6 +32,7 @@ impl Settings {
             key: item.key.clone(),
             title: item.name.clone(),
             sheet: Sheet::open(text),
+            to: None,
         }));
     }
 
@@ -50,7 +54,12 @@ impl Settings {
                 } else {
                     Value::String(text)
                 };
-                self.write_setting(&edit.key, value, texts);
+                match edit.to {
+                    Some(target) => {
+                        self.preset_write(target, &edit.key, value);
+                    }
+                    None => self.write_setting(&edit.key, value, texts),
+                }
             }
         }
     }
