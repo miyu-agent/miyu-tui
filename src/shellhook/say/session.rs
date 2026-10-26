@@ -181,7 +181,15 @@ impl Session {
                 })?;
             }
             // 写字时上面的正文停住（计时、转圈不再走）：不然每一拍都重画，光标回上面再跳回来（2026-10-22 验收）。
-            let fresh = self.painter.lines(width, &lines[tail..])?;
+            // 长过的：最上面那一行留空，和提示符那一行隔开，同没长过时开头空的那一行（2026-10-26 项目主人看截图：
+            // 「这里如果能留一个空行就更好了」，原来那一行跟着截掉了，正文贴着提示符）。
+            let fresh = if tail > 0 && room > 1 {
+                let mut shown = vec![Line::default()];
+                shown.extend_from_slice(&lines[tail + 1..]);
+                self.painter.lines(width, &shown)?
+            } else {
+                self.painter.lines(width, &lines[tail..])?
+            };
             let mut live = match (caret, &mut frozen) {
                 (Some(_), Some(kept)) => kept.clone(),
                 (Some(_), slot) => slot.insert(fresh).clone(),
