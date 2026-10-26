@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use super::choose::{Choose, LineEdit, PersonaView, PresetView, Pressed};
 use super::packages::PACKAGES;
 use super::schema::{Row, Schema};
-use super::{Entry, Section, choices, current, is_named, personas, presets};
+use super::{Entry, Section, choices, current, is_named, personas};
 use crate::core::Refusal;
 use crate::settings::popup::{Confirm, Delete, Popup};
 use crate::settings::{Outcome, Settings, Texts, Tone, Waiting};
@@ -54,11 +54,12 @@ impl Settings {
                 self.more.looks = Some(super::mascots::looks(&got));
             }
             (Waiting::PresetDetail(id), result) => {
+                let detail = result.map(|got| self.preset_detail(&got));
                 if let Some(Popup::Preset(view)) = &mut self.popup
                     && view.id == id
                 {
-                    match result {
-                        Ok(got) => view.detail = Some(presets::detail(&got)),
+                    match detail {
+                        Ok(detail) => view.detail = Some(detail),
                         Err(refusal) => view.error = Some(refusal.message),
                     }
                 }

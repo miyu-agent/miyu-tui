@@ -147,6 +147,13 @@ impl Settings {
         self.popup = Some(popup);
     }
 
+    /// 读 `preset.get` 的回应，照 `package.list` 填上每个功能的包名（组名那一行写它，`features.rs`）。
+    pub(in crate::settings) fn preset_detail(&self, got: &Value) -> Detail {
+        let mut detail = presets::detail(got);
+        features::name_packages(&mut detail.features, &self.package_names);
+        detail
+    }
+
     /// 选择窗、编辑窗选好了：照写到哪办；不是预设的交回 `false`。
     pub(in crate::settings) fn preset_write(
         &mut self,
@@ -207,7 +214,7 @@ impl Settings {
                 return self.say(said(&refusal), Tone::Bad);
             }
         };
-        let detail = presets::detail(&got);
+        let detail = self.preset_detail(&got);
         match &mut self.popup {
             Some(Popup::Preset(view)) if view.id == detail.id => {
                 view.detail = Some(detail);

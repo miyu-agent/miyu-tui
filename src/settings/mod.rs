@@ -146,6 +146,8 @@ enum Load {
 pub struct Settings {
     /// 照 `--page config` 起来的：主菜单按 `Esc` 退出程序。
     pub standalone: bool,
+    /// 包的编号到名字（App 照 `package.list` 交来）：预设的功能照包分组写组名（`features.rs`）。
+    pub package_names: std::collections::HashMap<String, String>,
     /// 管理员模式（「管理员模式」第 3 条）：不是管理员的是 `None`，管理员的是开没开；App 进、退时改它。
     pub admin: Option<bool>,
     /// 这一帧包页面上画着的上游网址（[`Hit::Link`]）。

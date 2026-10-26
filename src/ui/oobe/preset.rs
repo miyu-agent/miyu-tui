@@ -84,7 +84,7 @@ pub fn popup(
         let shown = rows.len().min(step.view_top + room);
         for &row in &rows[step.view_top..shown] {
             let mut spans = vec![Span::raw("  ")];
-            spans.extend(feature_spans(list, row));
+            spans.extend(feature_spans(list, row, &words.mine));
             c.lines.push(ratatui::text::Line::from(spans));
         }
         if shown < rows.len() {
@@ -112,7 +112,7 @@ pub fn popup(
     for (i, row) in step.rows().into_iter().enumerate() {
         c.row(
             step.inner == i + 1,
-            feature_spans(&step.features, row),
+            feature_spans(&step.features, row, &words.mine),
             None,
         );
     }
@@ -139,8 +139,13 @@ pub fn popup(
 }
 
 /// 平铺的一行：功能那一行勾在前、加粗，工具缩进两格。
-fn feature_spans(list: &[Feature], row: Row) -> Vec<Span<'static>> {
+fn feature_spans(list: &[Feature], row: Row, mine: &str) -> Vec<Span<'static>> {
     match row {
+        // 组名（核心 ENV-1）：暗色加粗。
+        Row::Group(f) => vec![Span::styled(
+            features::group_name(&list[f], mine).to_string(),
+            theme::dim().add_modifier(Modifier::BOLD),
+        )],
         Row::Feature(f) => {
             let feature = &list[f];
             let mark = features::mark(feature);

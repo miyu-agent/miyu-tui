@@ -267,6 +267,8 @@ pub struct Texts {
     pub presets: [String; 2],
     /// 预设的窗：功能（`{on}/{all}`）、没安装。
     pub preset_detail: [String; 3],
+    /// 功能照包分组时，机主私人的那一组（`~home`）的组名：「我的」（核心 ENV-1）。
+    pub package_mine: String,
     /// 来自哪一层：`default`、`system`、`personal`、`project`。
     pub origins: HashMap<String, String>,
     /// 开关的两种：开、关。
