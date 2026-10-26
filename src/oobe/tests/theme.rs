@@ -271,6 +271,12 @@ fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offe
             {"key": "tui.mascot_sidebar", "value": false}
         ])
     );
+    // 出厂关着、没人设过的：引导照旧停在显示（2026-10-26 项目主人：吉祥物默认关，引导里的照旧）。
+    let mut shipped = fresh(t0);
+    let mut items = defaults();
+    items["tui.mascot_home"] = json!({"value": false, "origin": {"layer": "default"}});
+    at_theme(&mut shipped, t0, &texts, items);
+    assert!(!shipped.theme.mascot_off);
     // 写过不显示的：重走引导停在不显示。
     let mut again = fresh(t0);
     let mut items = defaults();

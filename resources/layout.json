@@ -115,8 +115,8 @@
     "status_cells": 3,
     "status_width": 40
   },
-  "mascot_home": true,
-  "mascot_sidebar": true,
+  "mascot_home": false,
+  "mascot_sidebar": false,
   "vim": false,
   "skip_pick": false,
   "dream": {

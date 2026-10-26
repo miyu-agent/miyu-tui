@@ -428,8 +428,13 @@ impl ThemeStep {
                 if let Some(at) = mode.and_then(|m| MODES.iter().position(|v| *v == m)) {
                     self.mode = at;
                 }
-                // 吉祥物照首页那一项停（没有的照默认显示）；铺底色没有的照默认开。
-                self.mascot_off = items[MASCOT_KEYS[0]]["value"].as_bool() == Some(false);
+                // 吉祥物照首页那一项停：人设过关的停在不显示；没人设过的照引导自己的默认显示（出厂值 2026-10-26 起是关，
+                // 项目主人：引导里的照旧）。铺底色没有的照默认开。
+                let mascot = &items[MASCOT_KEYS[0]];
+                let set = mascot["origin"]["layer"]
+                    .as_str()
+                    .is_some_and(|layer| layer != "default");
+                self.mascot_off = set && mascot["value"].as_bool() == Some(false);
                 self.ground = items[GROUND_KEY]["value"].as_bool() != Some(false);
                 let layer = items["tui.theme"]["origin"]["layer"].as_str();
                 self.unset = layer.is_none_or(|l| l == "default");

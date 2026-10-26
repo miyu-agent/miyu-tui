@@ -60,17 +60,17 @@ name = { en = "Limit timeline area height", zh = "限制时间线区域高度", 
 description = { en = "Show only the latest lines of the running steps.", zh = "进行中的步骤只显示最新的几行。", ja = "実行中のステップは最新の数行だけ表示する。" }
 
 # 吉祥物的两个开关（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-11 项目主人：搬进配置页）。
-# 出厂值同 `resources/layout.json`；人格设了头像的照样画头像，不受这两项管（「空会话的首页」第 10 条）。
+# 出厂值同 `resources/layout.json`，都关着（2026-10-26 项目主人：太吃资源；引导里摆姿势的那只照旧画）；人格设了头像的照样画头像，不受这两项管（「空会话的首页」第 10 条）。
 [settings.mascot_home]
 type = "bool"
-default = true
+default = false
 applies = "now"
 name = { en = "Show the mascot on the home screen", zh = "首页显示吉祥物", ja = "ホーム画面にマスコットを表示" }
 description = { en = "Show the mascot above the input box of an empty session. A persona's avatar shows regardless.", zh = "在空会话的输入框上方显示吉祥物。人格设了头像的照样显示头像。", ja = "空のセッションの入力欄の上にマスコットを表示する。ペルソナのアバターは設定に関わらず表示される。" }
 
 [settings.mascot_sidebar]
 type = "bool"
-default = true
+default = false
 applies = "now"
 name = { en = "Show the mascot in the sidebar", zh = "侧边栏显示吉祥物", ja = "サイドバーにマスコットを表示" }
 description = { en = "Show the mascot at the top of the sidebar. A persona's avatar shows regardless.", zh = "在侧边栏顶部显示吉祥物。人格设了头像的照样显示头像。", ja = "サイドバーの上部にマスコットを表示する。ペルソナのアバターは設定に関わらず表示される。" }
