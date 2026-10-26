@@ -28,3 +28,18 @@ fn code_escapes_and_unfinished_ones_are_left_alone() {
         "代码块后面的照换"
     );
 }
+
+#[test]
+fn dollars_in_a_link_address_are_escaped() {
+    assert_eq!(
+        dollars("[a-$1.html](/x/a-$1.html) 后面"),
+        "[a-$1.html](/x/a-\\$1.html) 后面",
+        "地址里的转义，链接文字不动"
+    );
+    assert_eq!(
+        dollars("价格 $0.11 和 $0.25"),
+        "价格 $0.11 和 $0.25",
+        "没有链接的不动"
+    );
+    assert_eq!(dollars("`[a](/$x)`"), "`[a](/$x)`", "行内代码不动");
+}
