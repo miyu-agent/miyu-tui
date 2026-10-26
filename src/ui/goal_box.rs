@@ -1,6 +1,7 @@
 //! 长期目标的浮窗（蓝图 `tui.md`「长期目标」第 5a 条，2026-10-26 项目主人定：点目标那一行开，同 `/status` 的浮窗）：
 //! 一行一项，左边一列名字对齐，右边写值，放不下的折到下一行、照值那一列对齐：目标全文、状态（卡住的接为什么）、
-//! 轮数（有上限的写「2/5」）、用时、用量（token 和花费）。`↑` `↓` `PgUp` `PgDn` 滚，`Esc` 关。核心没给的不写。
+//! 轮数（有上限的写「2/5」）、用时、用量（token 和花费）；状态后面接恢复次数（核心 GOAL-1，0 次不写）。`↑` `↓` `PgUp`
+//! `PgDn` 滚，`Esc` 关。核心没给的不写。
 
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
@@ -63,10 +64,16 @@ pub(crate) fn rows(
         GoalState::Completed => &t.completed,
         GoalState::Other => &t.some_round,
     };
-    let state = match &goal.reason {
-        Some(reason) => format!("{state}{}{reason}", crate::sheet::sep()),
+    let sep = crate::sheet::sep();
+    let mut state = match &goal.reason {
+        Some(reason) => format!("{state}{sep}{reason}"),
         None => state.clone(),
     };
+    // 停了又续上过的接「· 恢复 N 次」，0 次不写（核心 GOAL-1，同网页的说法）。
+    if goal.resumes > 0 {
+        state.push_str(&sep);
+        state.push_str(&t.resumes.replace("{n}", &goal.resumes.to_string()));
+    }
     let rounds = match goal.limit {
         Some(limit) => format!("{}/{limit}", goal.round),
         None => goal.round.to_string(),

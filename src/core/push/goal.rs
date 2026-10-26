@@ -37,6 +37,8 @@ pub struct Goal {
     pub text: String,
     /// 卡住的为什么；别的没有。
     pub reason: Option<String>,
+    /// 停了又续上过几次（核心 GOAL-1 的 `resumes`）；旧核心没有这一格的是 0，不写。
+    pub resumes: u32,
     /// 设下的时刻：目标那一行右边、浮窗里的用时照它算（2026-10-26 项目主人）。
     pub since: Option<jiff::Timestamp>,
     /// 这个目标花了多少：四项加起来的 token、金额（写法同会话的 `usage`）。
@@ -90,6 +92,7 @@ pub(crate) fn read(goal: &Value) -> Option<Goal> {
         limit: number(&goal["limit"]),
         text: goal["text"].as_str().unwrap_or_default().to_string(),
         reason: goal["reason"].as_str().map(str::to_string),
+        resumes: number(&goal["resumes"]).unwrap_or_default(),
         since: goal["since"].as_str().and_then(|t| t.parse().ok()),
         tokens,
         bill: crate::core::Bill::read(usage),

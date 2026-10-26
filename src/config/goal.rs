@@ -37,4 +37,6 @@ pub struct GoalTexts {
     pub box_keys: [String; 5],
     /// 用量那一格，`{tokens}`。
     pub box_tokens: String,
+    /// 浮窗里状态后面接的恢复次数，`{n}`（核心 GOAL-1，同网页的说法）。
+    pub resumes: String,
 }
