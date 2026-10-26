@@ -25,6 +25,8 @@ use crate::{money, theme};
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
+    /// 用到要署名的汇率源时框底下写的，`{source}`（核心 UC-1）。
+    pub rates: String,
     /// 四个标签：总览、最近 30 天、按模型、按会话。
     pub tabs: Vec<String>,
     /// 右上角的合计，`{amounts}`。
@@ -123,6 +125,15 @@ pub fn lines(
     out.extend(body.into_iter().skip(start).take(room));
     let high = 2 + tallest.min(room);
     out.resize(out.len().max(high), Line::default());
+    // 用到要署名的汇率源（open.er-api.com）：底下暗色注明来源（核心 UC-1，那一家要求署名）。
+    if !data.rates.is_empty() {
+        let source = data.rates.join(crate::sheet::sep().as_str());
+        out.push(Line::default());
+        out.push(Line::styled(
+            texts.rates.replace("{source}", &source),
+            crate::theme::dim(),
+        ));
+    }
     (chrome, out)
 }
 

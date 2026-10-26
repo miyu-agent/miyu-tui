@@ -1,5 +1,6 @@
-//! 金额怎么写（蓝图 `tui.md`「配置与模型」第 5 条，照核心 `session_usage` 的写法）：三位有效数字、至少两位小数，
-//! 几种币并排「$0.42 + ¥1.30」，不换算；`usage.currency` 那一种排最前，别的照币种代码的字母先后。
+//! 金额怎么写（蓝图 `tui.md`「配置与模型」第 5 条，照核心 `session_usage` 的写法）：三位有效数字、至少两位小数。
+//! 核心换算好了的（UC-1）写那一个数，没换成的接在后面「¥12.30 + $0.40」；没换算的几种币并排「$0.42 + ¥1.30」。
+//! `usage.currency` 那一种排最前，别的照币种代码的字母先后。
 
 use std::collections::HashMap;
 
@@ -33,15 +34,24 @@ pub fn one(cost: &Cost, symbols: &HashMap<String, String>) -> String {
 
 /// 一份账的金额：`first` 那种币排最前，别的照字母先后，用 ` + ` 连；一笔都没有的是 `None`。
 pub fn amounts(bill: &Bill, first: &str, symbols: &HashMap<String, String>) -> Option<String> {
+    if let Some(converted) = &bill.converted {
+        let mut parts = vec![one(&converted.total, symbols)];
+        parts.extend(listed(&converted.rest, first, symbols));
+        return Some(parts.join(" + "));
+    }
     if bill.amounts.is_empty() {
         return None;
     }
-    let mut sorted: Vec<&Cost> = bill.amounts.iter().collect();
+    Some(listed(&bill.amounts, first, symbols).join(" + "))
+}
+
+/// 几种币一笔笔：`first` 那种排最前，别的照字母先后。
+fn listed(costs: &[Cost], first: &str, symbols: &HashMap<String, String>) -> Vec<String> {
+    let mut sorted: Vec<&Cost> = costs.iter().collect();
     sorted.sort_by(|a, b| {
         (a.currency != first, &a.currency).cmp(&(b.currency != first, &b.currency))
     });
-    let parts: Vec<String> = sorted.iter().map(|c| one(c, symbols)).collect();
-    Some(parts.join(" + "))
+    sorted.iter().map(|c| one(c, symbols)).collect()
 }
 
 #[cfg(test)]
@@ -75,6 +85,7 @@ mod tests {
         let bill = Bill {
             amounts: vec![cost(1.3, "CNY"), cost(2.0, "HKD"), cost(0.42, "USD")],
             unpriced: 0,
+            converted: None,
         };
         assert_eq!(
             amounts(&bill, "USD", &symbols).as_deref(),
@@ -85,5 +96,22 @@ mod tests {
             Some("¥1.30 + 2.00 HKD + $0.42")
         );
         assert!(amounts(&Bill::default(), "USD", &symbols).is_none());
+    }
+
+    #[test]
+    fn a_converted_bill_shows_one_amount_and_what_could_not_be_converted_after_it() {
+        // 核心 UC-1：换好的一个数，不标「≈」；没换成的照币种接在后面「¥12.30 + $0.40」。
+        let symbols = HashMap::from([
+            ("USD".to_string(), "$".to_string()),
+            ("CNY".to_string(), "¥".to_string()),
+        ]);
+        let bill = Bill::read(&serde_json::json!({
+            "amounts": [{"currency": "USD", "amount": 1.9}, {"currency": "HKD", "amount": 2.0}],
+            "converted": {"currency": "CNY", "amount": 12.3,
+                "rest": [{"currency": "HKD", "amount": 2.0}, {"currency": "USD", "amount": 0.4}]}}));
+        assert_eq!(
+            amounts(&bill, "CNY", &symbols).as_deref(),
+            Some("¥12.30 + 2.00 HKD + $0.40")
+        );
     }
 }

@@ -5,6 +5,7 @@ mod ask_elsewhere;
 mod asking;
 mod attachments;
 mod avatars;
+mod bill_refresh;
 mod boxes;
 mod build;
 mod cards;

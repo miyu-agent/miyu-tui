@@ -1,7 +1,11 @@
 //! 花了多少钱（核心 8-15，蓝图 `tui.md`「配置与模型」第 5 条）：一次请求冻结在 `model.called` 的 `cost`，
-//! `usage.query` 交回一行行合计。头不自己算金额，几种币各加各的、不换算。
+//! `usage.query` 交回一行行合计。头不自己算金额：几种币各加各的；核心换算好的一个数（UC-1）另记着（`converted.rs`）。
 
 use serde_json::Value;
+
+mod converted;
+
+pub use converted::Converted;
 
 /// 一笔钱：多少、什么币。相等照位比（和核心的 `Real` 一样），所以能放进要 `Eq` 的推送里。
 #[derive(Debug, Clone)]
@@ -37,34 +41,67 @@ pub struct Bill {
     pub amounts: Vec<Cost>,
     /// 没有价格的几次。
     pub unpriced: u64,
+    /// 核心换算成 `usage.currency` 的（UC-1）；一笔都没换成的、旧核心的是 `None`，照 `amounts` 显示。
+    pub converted: Option<Converted>,
 }
 
 impl Bill {
-    /// 记一次请求：有金额的加进它的币种，没有的算一次没价格。
+    /// 读一份合计：`usage.query` 的一行、订阅回应的 `usage`（`amounts`、`unpriced`、`converted`）。
+    pub fn read(value: &Value) -> Self {
+        Self {
+            amounts: value["amounts"]
+                .as_array()
+                .map(|list| list.iter().filter_map(Cost::read).collect())
+                .unwrap_or_default(),
+            unpriced: value["unpriced"].as_u64().unwrap_or_default(),
+            converted: Converted::read(&value["converted"]),
+        }
+    }
+
+    /// 记一次请求：有金额的加进它的币种（换算好的那个数照 [`Converted::put`] 跟着加），没有的算一次没价格。
     pub fn add(&mut self, cost: Option<&Cost>) {
         match cost {
-            Some(cost) => self.put(cost),
+            Some(cost) => {
+                add_to(&mut self.amounts, cost);
+                if let Some(converted) = &mut self.converted {
+                    converted.put(cost);
+                }
+            }
             None => self.unpriced += 1,
         }
     }
 
-    /// 把另一份账（子代理的）加进来。
+    /// 把另一份账（子代理的）加进来。换算好的两份同一个币种的加总数；只有一份换算过的，另一份没换的接进它。
     pub fn merge(&mut self, other: &Bill) {
+        self.converted = match (self.converted.take(), &other.converted) {
+            (Some(mut mine), Some(theirs)) => {
+                mine.put(&theirs.total);
+                theirs.rest.iter().for_each(|c| mine.put(c));
+                Some(mine)
+            }
+            (Some(mut mine), None) => {
+                other.amounts.iter().for_each(|c| mine.put(c));
+                Some(mine)
+            }
+            (None, Some(theirs)) => {
+                let mut theirs = theirs.clone();
+                self.amounts.iter().for_each(|c| theirs.put(c));
+                Some(theirs)
+            }
+            (None, None) => None,
+        };
         for cost in &other.amounts {
-            self.put(cost);
+            add_to(&mut self.amounts, cost);
         }
         self.unpriced += other.unpriced;
     }
+}
 
-    fn put(&mut self, cost: &Cost) {
-        match self
-            .amounts
-            .iter_mut()
-            .find(|c| c.currency == cost.currency)
-        {
-            Some(have) => have.amount += cost.amount,
-            None => self.amounts.push(cost.clone()),
-        }
+/// 一笔加进照币种各加各的那一份。
+fn add_to(list: &mut Vec<Cost>, cost: &Cost) {
+    match list.iter_mut().find(|c| c.currency == cost.currency) {
+        Some(have) => have.amount += cost.amount,
+        None => list.push(cost.clone()),
     }
 }
 
@@ -146,6 +183,16 @@ pub struct Split {
     pub output: u64,
 }
 
+/// `usage.query` 的回应用到的汇率源（顶上的 `rates`，核心 UC-1：只在用到要署名的兜底源时写）：来源的名字。
+pub fn rate_sources(result: &Value) -> Vec<String> {
+    result["rates"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|rate| rate["source"].as_str().map(str::to_string))
+        .collect()
+}
+
 /// 读 `usage.query` 的回应：一行行。
 pub fn rows(result: &Value) -> Vec<UsageRow> {
     let Some(rows) = result["rows"].as_array() else {
@@ -161,10 +208,6 @@ pub fn rows(result: &Value) -> Vec<UsageRow> {
                 cache_write: n("cache_write"),
                 output: n("output"),
             };
-            let amounts = row["amounts"]
-                .as_array()
-                .map(|list| list.iter().filter_map(Cost::read).collect())
-                .unwrap_or_default();
             UsageRow {
                 day: row["day"].as_str().map(str::to_string),
                 model: row["model"].as_str().map(str::to_string),
@@ -174,10 +217,7 @@ pub fn rows(result: &Value) -> Vec<UsageRow> {
                 requests: row["requests"].as_u64().unwrap_or_default(),
                 tokens: split.uncached + split.cache_read + split.cache_write + split.output,
                 split,
-                bill: Bill {
-                    amounts,
-                    unpriced: row["unpriced"].as_u64().unwrap_or_default(),
-                },
+                bill: Bill::read(row),
             }
         })
         .collect()
@@ -204,6 +244,53 @@ mod tests {
         assert!((bill.amounts[0].amount - 0.5).abs() < 1e-12);
         assert_eq!(bill.unpriced, 1);
         assert!(Cost::read(&json!(null)).is_none(), "算不出的没有");
+    }
+
+    #[test]
+    fn a_converted_total_takes_live_costs_and_merges_with_other_bills() {
+        // 核心 UC-1：订阅回应、`usage.query` 给换好的数；之后实时来的原币种，币种对得上的加进总数，对不上的接进 rest。
+        let usd = |amount: f64| Cost {
+            amount,
+            currency: "USD".into(),
+        };
+        let cny = |amount: f64| Cost {
+            amount,
+            currency: "CNY".into(),
+        };
+        let mut bill = Bill::read(&json!({
+            "amounts": [{"currency": "USD", "amount": 1.0}], "unpriced": 2,
+            "converted": {"currency": "CNY", "amount": 7.0}}));
+        assert_eq!(bill.unpriced, 2);
+        bill.add(Some(&cny(0.5)));
+        bill.add(Some(&usd(0.25)));
+        bill.add(Some(&usd(0.25)));
+        let converted = bill.converted.clone().expect("换好的还在");
+        assert!(
+            (converted.total.amount - 7.5).abs() < 1e-12,
+            "同币种加进总数"
+        );
+        assert_eq!(converted.rest, [usd(0.5)], "别的币种接在后面，不自己换算");
+        assert_eq!(bill.amounts.len(), 2, "原币种照旧各加各的");
+        // 合并：两份都换好的加总数；一份没换的（旧核心、换不成）整个接进 rest。
+        let mut child = Bill::read(&json!({"amounts": [{"currency": "CNY", "amount": 1.0}],
+            "converted": {"currency": "CNY", "amount": 1.0, "rest": [{"currency": "HKD", "amount": 3.0}]}}));
+        child.add(Some(&usd(0.1)));
+        bill.merge(&child);
+        let merged = bill.converted.clone().unwrap();
+        assert!((merged.total.amount - 8.5).abs() < 1e-12);
+        assert_eq!(merged.rest.len(), 2, "{:?}", merged.rest);
+        let mut plain = Bill::default();
+        plain.add(Some(&usd(2.0)));
+        plain.merge(&Bill::read(
+            &json!({"converted": {"currency": "CNY", "amount": 3.0}}),
+        ));
+        let got = plain.converted.unwrap();
+        assert!((got.total.amount - 3.0).abs() < 1e-12);
+        assert_eq!(got.rest, [usd(2.0)], "没换算的那一份接进 rest");
+        assert!(
+            Bill::read(&json!({"amounts": []})).converted.is_none(),
+            "没有这一格的照旧"
+        );
     }
 
     #[test]
