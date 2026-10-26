@@ -174,11 +174,12 @@ fn ask_user_opens_the_question_drawer_and_the_answers_reach_her() {
     tui.wait_for("测试：不要");
     tui.key(b"\r");
     tui.wait_for("好，照你说的写。");
-    tui.wait_for("│ 语言：Rust（推荐）");
+    // 回答不进时间线，照你说的话的样子另起一块（2026-10-26 项目主人）：头一行「你回答了 N 个问题」，一题一行「问题 → 答案」。
+    tui.wait_for("┃ 你回答了 2 个问题");
     let screen = tui.lines().join("\n");
-    assert!(!screen.contains("已回答"), "不另起引用块：{screen}");
+    assert!(screen.contains("┃ 语言 → Rust（推荐）"), "{screen}");
     assert!(
-        screen.contains("│ 测试：不要（补充：以后再说）"),
+        screen.contains("┃ 测试 → 不要（补充：以后再说）"),
         "{screen}"
     );
 }
@@ -260,7 +261,7 @@ fn switching_to_a_session_with_an_answered_question_draws_the_answer() {
     tui.say("帮我写个小工具");
     tui.wait_for("用哪种语言写？");
     tui.key(b"\r");
-    tui.wait_for("语言：Rust");
+    tui.wait_for("语言 → Rust");
     tui.key(b"\r");
     tui.wait_for("好，用 Rust。");
     tui.say("/new");
@@ -272,7 +273,7 @@ fn switching_to_a_session_with_an_answered_question_draws_the_answer() {
     tui.key(DOWN);
     tui.key(b"\r");
     tui.wait_for("好，用 Rust。");
-    tui.wait_for("│ 语言：Rust");
+    tui.wait_for("┃ 语言 → Rust");
     assert!(
         !tui.lines().iter().any(|l| l.contains("在问")),
         "{}",

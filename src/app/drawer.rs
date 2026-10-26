@@ -151,8 +151,8 @@ impl App {
     }
 }
 
-/// 在 `transcript` 里写一问的结果：回答挂到时间线里「提问」那一步下面，找不到那一步的（按页读更早的一页时那一步不在这一份
-/// 里）写在末尾；不允许的末尾一行红 `✗`（第 6 条）。按页读更早的一页时写进那一份临时的正文（`pages.rs`）。
+/// 在 `transcript` 里写一问的结果：回答不进时间线，另起一块照你说的话的样子画（`ui/answered_rows.rs`，2026-10-26 项目
+/// 主人定）；不允许的末尾一行红 `✗`（第 6 条）。按页读更早的一页时写进那一份临时的正文（`pages.rs`）。
 pub(super) fn report_into(
     transcript: &mut crate::transcript::Transcript,
     drawer: &Drawer,
@@ -161,9 +161,12 @@ pub(super) fn report_into(
 ) {
     match drawer.report(outcome, texts) {
         Report::Answers(lines) => {
-            if !transcript.answered(&drawer.call_id, lines.clone()) {
-                transcript.note(Kind::Answered, lines.join("\n"));
-            }
+            let head = texts.answered_head.replace("{n}", &lines.len().to_string());
+            let text = std::iter::once(head)
+                .chain(lines)
+                .collect::<Vec<_>>()
+                .join("\n");
+            transcript.note(Kind::Answered, text);
         }
         Report::Denied(text, full) => transcript.job(JobMark::Failed, text, full),
         Report::Nothing => {}

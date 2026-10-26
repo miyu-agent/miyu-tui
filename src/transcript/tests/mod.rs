@@ -4,7 +4,6 @@ use super::{Kind, StepKind, ToolState, Transcript};
 use crate::config::Config;
 use crate::core::{Block, CallError, Push, Update};
 
-mod answers;
 mod beat;
 mod cache;
 mod chips;

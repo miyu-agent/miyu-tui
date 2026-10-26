@@ -279,7 +279,7 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
     if let Some(segment) = &entry.segment {
         (segment.finished, segment.open, segment.steps.len()).hash(&mut h);
         for step in &segment.steps {
-            (step.took, step.open, &step.answers).hash(&mut h);
+            (step.took, step.open).hash(&mut h);
             match &step.kind {
                 StepKind::Thought { text } => text.len().hash(&mut h),
                 StepKind::Tool {

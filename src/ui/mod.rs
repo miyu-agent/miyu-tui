@@ -15,6 +15,7 @@ mod drawer;
 mod dream_rows;
 mod dreamt_rows;
 pub use drawer::PreviewLook;
+mod answered_rows;
 pub mod effort_list;
 mod figure_rows;
 mod floating;
