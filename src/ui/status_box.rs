@@ -133,7 +133,10 @@ pub fn facts(seen: &Seen) -> Facts {
             "" => text.persona_box.none.clone(),
             name => name.to_string(),
         }),
-        preset: preset.map(|id| seen.talk.preset.name(id).to_string()),
+        preset: preset.map(|id| match seen.talk.preset.name(id) {
+            "" => text.persona_box.no_tools.clone(),
+            name => name.to_string(),
+        }),
         level: text.levels.get(&t.level).cloned(),
         cwd: crate::local::home_short(seen.current_workspace()),
         model: t.shown_model().map(|(m, e)| (m.to_string(), e.to_string())),

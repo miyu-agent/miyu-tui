@@ -134,11 +134,11 @@ impl<'a> Seen<'a> {
             out.push(texts.chosen.replace("{name}", self.talk.persona.name(id)));
         }
         if let Some(id) = preset {
-            out.push(
-                texts
-                    .preset_chosen
-                    .replace("{name}", self.talk.preset.name(id)),
-            );
+            let name = match self.talk.preset.name(id) {
+                "" => texts.no_tools.as_str(),
+                name => name,
+            };
+            out.push(texts.preset_chosen.replace("{name}", name));
         }
         out
     }
