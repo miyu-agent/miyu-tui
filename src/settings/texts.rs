@@ -40,6 +40,8 @@ pub struct Texts {
     pub empty_pool: String,
     /// 固定的三个池给人看的名字：池名 → 名字（`flagship` 旗舰、`normal` 日常、`lite` 轻量，`pools.rs`）。
     pub pool_names: std::collections::HashMap<String, String>,
+    /// 池栏右边接在后面的「用于：{names}」：走这一档的旁路请求（核心 Q-2）。
+    pub pool_uses: String,
     /// 引用失效时接在后面的。
     pub gone: String,
     /// 选项的说法：选项值 → 给人看的（`rotate`、`pin`、驱动的「自动」、`secret`、`env`、思考的「默认」、`text` 这些）。

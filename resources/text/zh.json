@@ -827,6 +827,7 @@
       "自定义"
     ],
     "pool_names": {"flagship": "旗舰", "normal": "日常", "lite": "轻量"},
+    "pool_uses": "用于：{names}",
     "pool_tag": "{how} · {n}",
     "empty_pool": "空池",
     "gone": "（不存在）",
