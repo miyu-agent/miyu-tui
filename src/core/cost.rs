@@ -97,6 +97,19 @@ impl Bill {
     }
 }
 
+impl Bill {
+    /// 原币种的金额和另一份一样（每种币差不过百亿分之一）：核心的账本记全了这边见过的每一笔（`app/bill_refresh.rs`）。
+    pub fn same_amounts(&self, other: &Bill) -> bool {
+        let close = |a: f64, b: f64| (a - b).abs() <= 1e-10 * a.abs().max(b.abs()).max(1.0);
+        self.amounts.len() == other.amounts.len()
+            && self.amounts.iter().all(|mine| {
+                other.amounts.iter().any(|theirs| {
+                    theirs.currency == mine.currency && close(theirs.amount, mine.amount)
+                })
+            })
+    }
+}
+
 /// 一笔加进照币种各加各的那一份。
 fn add_to(list: &mut Vec<Cost>, cost: &Cost) {
     match list.iter_mut().find(|c| c.currency == cost.currency) {

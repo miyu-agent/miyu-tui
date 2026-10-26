@@ -59,8 +59,8 @@ impl App {
         if self.avatar_update(&update) {
             return;
         }
-        // 一轮结束问的换算好的金额归它；一轮结束去问（`bill_refresh.rs`）。
-        if self.bill_update(&update) {
+        // 一轮结束问的换算好的金额归它（`bill_refresh.rs`）。
+        if self.bill_answer(&update) {
             return;
         }
         // 配置页的回应归它；配置变了、断开、连上也告诉它（`settings.rs`）。
@@ -200,6 +200,8 @@ impl App {
         let Some(update) = self.route(update) else {
             return;
         };
+        // 正在看的会话一轮结束：问一次换算好的金额（`bill_refresh.rs`）。
+        self.bill_turn_ended(&update);
         if let Update::Push(push) = &update
             && self.visible_push(push)
         {
