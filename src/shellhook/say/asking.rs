@@ -14,6 +14,9 @@ use crate::core::{Asking as Asked, Command, Core, Push};
 use crate::drawer::{Answered, Approval, Asks, Decided, Drawer, Drawers, Outcome, Report, Step};
 use crate::transcript::{JobMark, Kind, Transcript};
 
+/// 剪贴板里的图算哪一种附件（同全屏 `app/paste.rs`）。
+const IMAGE: &str = "image";
+
 /// 开着的、排着的抽屉，问过了哪些。
 #[derive(Default)]
 pub struct Asking {
@@ -135,6 +138,10 @@ impl Asking {
         // 按键模式开着、没在写字：`j`、`k` 也当 `↓`、`↑`（同全屏）。
         let key = crate::app::vim::plain(key, config.layout.vim && !self.drawers.editing());
         let newline = self.drawers.editing() && key.code == KeyCode::Char('j');
+        if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('v') {
+            self.clipboard(config);
+            return true;
+        }
         if key.modifiers.contains(KeyModifiers::CONTROL) && !newline {
             return false;
         }
@@ -151,6 +158,44 @@ impl Asking {
             self.settle(&outcome, core, transcript, config);
         }
         true
+    }
+
+    /// `Ctrl+V`（同全屏 `app/drawer_attach.rs`，2026-10-24 项目主人要 shell 里也能）：剪贴板里复制的图片文件、截图收成这一道
+    /// 的图（确认的是「不允许」，收下就是在写理由），块上的字照输入框的编号；没有图的照字粘进正在写的。读不到的不动。
+    fn clipboard(&mut self, config: &Config) {
+        let rule = crate::app::attach_rule(config);
+        let home = std::env::var("HOME").ok();
+        let mut files: Vec<std::path::PathBuf> = crate::clipboard::read_files()
+            .and_then(|list| crate::input::dropped(&list, home.as_deref(), &rule))
+            .into_iter()
+            .flatten()
+            .filter_map(|item| match item {
+                crate::input::Dropped::File(path, kind) if kind == IMAGE => Some(path),
+                _ => None,
+            })
+            .collect();
+        if files.is_empty() {
+            // 截图暂存在全屏同一处，照这个进程的编号分开：进程不在了，下次起全屏时清掉。
+            let dir = miyu_client::places::cache_root(&miyu_client::places::Env::current())
+                .ok()
+                .map(|root| {
+                    crate::clipboard::staging_root(&root).join(std::process::id().to_string())
+                });
+            files.extend(dir.as_deref().and_then(crate::clipboard::read_image));
+        }
+        let Some(drawer) = self.drawers.current.as_mut() else {
+            return;
+        };
+        if files.is_empty() {
+            if let Ok(text) = crate::clipboard::read() {
+                self.paste(&text);
+            }
+            return;
+        }
+        for file in files {
+            let label = rule.label(IMAGE, drawer.pasted_count() + 1);
+            drawer.attach(crate::drawer::Pasted { label, file });
+        }
     }
 
     /// 粘贴：正在写的（其他答案、补充、理由）接进去。
