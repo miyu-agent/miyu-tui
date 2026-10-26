@@ -28,6 +28,7 @@ impl Default for Transcript {
             persona: None,
             preset: None,
             turn_usage: Usage::default(),
+            turn_speed: super::speed::Speed::default(),
             turn_level: Level::Workspace,
             context: 0,
             cache: CacheWatch::default(),

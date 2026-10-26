@@ -162,3 +162,36 @@ fn the_last_reply_is_still_read_after_the_turn_ends_until_something_follows() {
     apply(&mut t, vec![Push::TurnEnded(EndReason::Completed)]);
     assert_eq!(t.reading(), None, "最后一段不是回答");
 }
+
+#[test]
+fn the_done_line_ends_with_how_fast_this_turn_wrote() {
+    // 2026-10-26 项目主人：收尾那一行接这一轮的出字速度「· 46 tok/s」（同网页、核心 SP-1）：这一轮主请求出的 token ÷ 用时。
+    let mut t = Transcript::default();
+    apply(
+        &mut t,
+        vec![
+            Push::TurnStarted(1, None),
+            Push::Speed {
+                output: 100,
+                ms: 1000,
+            },
+            Push::Speed {
+                output: 300,
+                ms: 1000,
+            },
+            Push::TurnEnded(EndReason::Completed),
+        ],
+    );
+    let done = t.entries.last().unwrap();
+    assert!(done.text.ends_with(" · 200 tok/s"), "{}", done.text);
+    // 下一轮从头算；一次都没记下的不写。
+    apply(
+        &mut t,
+        vec![
+            Push::TurnStarted(2, None),
+            Push::TurnEnded(EndReason::Completed),
+        ],
+    );
+    let done = t.entries.last().unwrap();
+    assert!(!done.text.contains("tok/s"), "{}", done.text);
+}
