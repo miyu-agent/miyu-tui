@@ -21,6 +21,8 @@ pub enum Target {
         base_url: String,
         /// 人起的编号；没起的照地址的主机名自动起（2026-10-13 项目主人定：默认是自动起的那个，可以改）。
         id: Option<String>,
+        /// 显示名称；没填的不写，照编号显示。
+        name: Option<String>,
     },
 }
 
@@ -170,11 +172,17 @@ pub fn save_params(
             KeyRef::None => {}
         }
         if let Target::Custom {
-            driver, base_url, ..
+            driver,
+            base_url,
+            name,
+            ..
         } = target
         {
             set(format!("providers.{id}.driver"), json!(DRIVERS[*driver]));
             set(format!("providers.{id}.base_url"), json!(base_url));
+            if let Some(name) = name {
+                set(format!("providers.{id}.name"), json!(name));
+            }
         }
         if let Some(catalog) = catalog {
             set(format!("providers.{id}.catalog"), json!(catalog));
@@ -234,6 +242,7 @@ mod tests {
             driver: 1,
             base_url: "https://api.example.invalid/v1".into(),
             id: None,
+            name: None,
         };
         assert_eq!(
             test_params(&custom, Some(""), None),
@@ -253,6 +262,7 @@ mod tests {
             driver: 0,
             base_url: u.into(),
             id: None,
+            name: None,
         };
         assert_eq!(
             config_id(&custom("https://api.example.invalid/v1"), &[]).0,
@@ -332,6 +342,7 @@ mod tests {
             driver: 0,
             base_url: "https://api.example.invalid/v1".into(),
             id: None,
+            name: None,
         };
         let got = save_params(&custom, ("example", None), &KeyRef::None, "m", true);
         assert!(
@@ -343,6 +354,24 @@ mod tests {
         assert!(
             !got.to_string().contains("providers.example.key\""),
             "没贴 key 的不写 key（核心 8-25）"
+        );
+        assert!(
+            !got.to_string().contains("providers.example.name"),
+            "没填显示名称的不写"
+        );
+        let named = Target::Custom {
+            driver: 0,
+            base_url: "https://api.example.invalid/v1".into(),
+            id: None,
+            name: Some("中转站".into()),
+        };
+        let got = save_params(&named, ("example", None), &KeyRef::None, "m", true);
+        assert!(
+            got["changes"]
+                .as_array()
+                .unwrap()
+                .contains(&json!({"key": "providers.example.name", "value": "中转站"})),
+            "填了显示名称的写进去（2026-10-26 项目主人）"
         );
         let local = Target::Listed(Provider {
             base_url: Some("http://127.0.0.1:11434/v1".into()),

@@ -350,6 +350,7 @@ impl ModelStep {
             driver: form.driver,
             base_url,
             id: None,
+            name: None,
         };
         Some(plan::config_id(&target, &self.configured).0)
     }

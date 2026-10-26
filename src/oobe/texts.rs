@@ -307,8 +307,10 @@ pub struct Model {
     pub custom_head: Heading,
     /// 「地址」。
     pub url: String,
-    /// 地址空着时暗色写的例子。
-    pub url_example: String,
+    /// 「显示名称」（自定义）。
+    pub name: String,
+    /// 显示名称空着时暗色写的：「留空时显示 ID」。
+    pub name_hint: String,
     /// 地址不是 http、https 开头。
     pub url_bad: String,
     /// 「接口」。

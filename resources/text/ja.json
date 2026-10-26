@@ -1518,8 +1518,9 @@
         "title": "カスタム",
         "sub": "互換 API ならつなげます"
       },
+      "name": "表示名",
+      "name_hint": "空欄なら ID を表示",
       "url": "アドレス",
-      "url_example": "https://api.example.com/v1",
       "url_bad": "http:// か https:// で始めてください",
       "driver": "API",
       "drivers": [

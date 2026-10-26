@@ -171,6 +171,12 @@ fn a_custom_endpoint_needs_a_good_address_and_asks_for_a_model_name_when_it_cann
         Some(Slot::Id),
         "编号在最上面，光标先停在它上面"
     );
+    // 编号下面是显示名称（2026-10-26 项目主人），再下面是地址。
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    let Phase::Form(form) = &oobe.model.phase else {
+        panic!()
+    };
+    assert_eq!(form.slot(), Some(Slot::Name));
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     typed(&mut oobe, "api.example.invalid", t0, &texts);
@@ -423,6 +429,7 @@ fn a_custom_provider_takes_the_id_someone_types_and_checks_it() {
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     typed(&mut oobe, "https://api.example.invalid/v1", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -436,10 +443,11 @@ fn a_custom_provider_takes_the_id_someone_types_and_checks_it() {
     );
     // 编号那一格（最上面）：写法不对的不试，红字照配置页那一句。
     oobe.key(key(KeyCode::Char('k')), t0, &texts);
+    oobe.key(key(KeyCode::Char('k')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     typed(&mut oobe, "Bad_ID", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    for _ in 0..4 {
+    for _ in 0..5 {
         oobe.key(key(KeyCode::Char('j')), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -461,6 +469,11 @@ fn a_custom_provider_takes_the_id_someone_types_and_checks_it() {
     }
     typed(&mut oobe, "my-relay", t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
+    // 显示名称填上的，存的时候一起写（2026-10-26 项目主人）。
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    typed(&mut oobe, "我的中转", t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
     for _ in 0..4 {
         oobe.key(key(KeyCode::Char('j')), t0, &texts);
     }
@@ -477,4 +490,11 @@ fn a_custom_provider_takes_the_id_someone_types_and_checks_it() {
     let text = params.to_string();
     assert!(text.contains("providers.my-relay."), "{text}");
     assert!(text.contains("\"my-relay/m1\""), "{text}");
+    assert!(
+        params["changes"]
+            .as_array()
+            .unwrap()
+            .contains(&json!({"key": "providers.my-relay.name", "value": "我的中转"})),
+        "{text}"
+    );
 }
