@@ -29,9 +29,10 @@ pub(super) fn border(
     })
 }
 
-/// 框上面那一行写的：长期目标在跑、在等人开口、停着、卡住的写「◎ 目标 · 在哪一步 · 第几轮」，还没开过轮的不写第几轮；
-/// 做完了、没有目标的不写。看着子会话时不写（调用的那一处管）。
-pub(super) fn goal(goal: Option<&Goal>, config: &Config) -> Option<String> {
+/// 框上面那一行写的：长期目标在跑、在等人开口、停着、卡住的写「◎ 目标 · 在哪一步 · 第几轮 · 用时」，还没开过轮的不写
+/// 第几轮；用时照设下的时刻算到 `now`（2026-10-26 项目主人：右边加计时），画一帧算一次，空闲时不另起表重画。做完了、
+/// 没有目标的不写。看着子会话时不写（调用的那一处管）。点它开浮窗（`goal_box.rs`）。
+pub(crate) fn goal(goal: Option<&Goal>, config: &Config, now: jiff::Timestamp) -> Option<String> {
     let goal = goal?;
     let texts = &config.text.goal;
     let state = match goal.state {
@@ -49,11 +50,19 @@ pub(super) fn goal(goal: Option<&Goal>, config: &Config) -> Option<String> {
         };
         words.push(rounds.replace("{round}", &goal.round.to_string()));
     }
+    if let Some(since) = goal.since {
+        words.push(crate::meter::clock(elapsed(since, now)));
+    }
     Some(format!(
         "{}{}",
         config.layout.goal_mark,
         words.join(&crate::sheet::sep())
     ))
+}
+
+/// 从 `since` 到 `now` 过了几秒；钟往回拨了的算 0。
+pub(crate) fn elapsed(since: jiff::Timestamp, now: jiff::Timestamp) -> u64 {
+    u64::try_from(now.as_second() - since.as_second()).unwrap_or_default()
 }
 
 /// 画在框上面那一行，右对齐、暗色：右端和框下面那一行的用量对齐（`area` 是框里放字那么宽的一行）。
@@ -75,6 +84,7 @@ mod tests {
             state,
             round,
             limit,
+            ..Goal::default()
         }
     }
 
@@ -82,7 +92,8 @@ mod tests {
     fn a_goal_shows_where_it_is_and_which_round() {
         // 2026-10-12 项目主人定：「目标 · 进行中 · 第 2/5 轮」，没上限的「第 2 轮」；2026-10-14 打头加 `◎`。
         let config = Config::builtin().unwrap();
-        let shown = |g: Goal| goal(Some(&g), &config);
+        let now = jiff::Timestamp::UNIX_EPOCH;
+        let shown = |g: Goal| goal(Some(&g), &config, now);
         assert_eq!(
             shown(made(GoalState::Running, 2, Some(5))).as_deref(),
             Some("◎ 目标 · 进行中 · 第 2/5 轮")
@@ -100,14 +111,23 @@ mod tests {
             Some("◎ 目标 · 已暂停"),
             "还没开过轮的不写第 0 轮"
         );
+        // 右边接用时，照设下的时刻算（2026-10-26 项目主人）。
+        let mut timed = made(GoalState::Running, 2, Some(5));
+        timed.since = Some(jiff::Timestamp::UNIX_EPOCH);
+        let later = jiff::Timestamp::from_second(65).unwrap();
+        assert_eq!(
+            goal(Some(&timed), &config, later).as_deref(),
+            Some("◎ 目标 · 进行中 · 第 2/5 轮 · 1m 05s")
+        );
     }
 
     #[test]
     fn a_finished_or_missing_goal_shows_nothing() {
         let config = Config::builtin().unwrap();
         let done = made(GoalState::Completed, 3, None);
-        assert_eq!(goal(Some(&done), &config), None);
-        assert_eq!(goal(None, &config), None);
+        let now = jiff::Timestamp::UNIX_EPOCH;
+        assert_eq!(goal(Some(&done), &config, now), None);
+        assert_eq!(goal(None, &config, now), None);
     }
 
     #[test]

@@ -220,7 +220,12 @@
     "paused": "Paused",
     "blocked": "Blocked",
     "rounds": "Round {round}",
-    "rounds_limited": "Round {round}/{limit}"
+    "rounds_limited": "Round {round}/{limit}",
+    "completed": "Completed",
+    "box_title": "Goal",
+    "box_hint": "↑/↓ scroll · Esc close",
+    "box_keys": ["Goal", "State", "Rounds", "Elapsed", "Usage"],
+    "box_tokens": "{tokens} tokens"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {

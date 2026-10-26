@@ -33,6 +33,7 @@ impl App {
                             | Panel::Help { .. }
                             | Panel::Usage { .. }
                             | Panel::Status { .. }
+                            | Panel::Goal { .. }
                             | Panel::Tools { .. }
                             | Panel::Context { .. }
                     )
