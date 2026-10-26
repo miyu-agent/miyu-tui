@@ -477,8 +477,8 @@ impl Settings {
         let Some(data) = self.data.as_ref() else {
             return;
         };
-        // 选了「无人格」这类空的：从个人设置里去掉这一项。
-        if value.is_null() {
+        // 选了「无人格」这类空的、填的字清空了的：去掉这一项（2026-10-26 项目主人报：「用户名称」删空了存不进，核心不收空字）。
+        if value.is_null() || value.as_str().is_some_and(|t| t.trim().is_empty()) {
             self.draft.unset(key, data);
         } else {
             self.draft.set(key, value, data);

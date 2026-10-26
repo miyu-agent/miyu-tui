@@ -7,6 +7,7 @@ use super::{Outcome, Settings, Texts, Tone};
 use crate::config::Config;
 use crate::core::Refusal;
 
+mod cleared;
 mod rename;
 mod search;
 
