@@ -61,7 +61,10 @@ pub struct View<'a> {
 impl View<'_> {
     /// 照 `scope` 排的几条排成行，一条之间空一行，和全屏一样；你说的话 fish 已经重放过了，不排。还在等她的第一个字的，
     /// 末尾转着。
-    pub fn rows(&self, transcript: &Transcript, scope: Scope) -> Vec<Row> {
+    ///
+    /// 另交回前几行定下来了：从第一段还没收好的时间线（进行中只露最新几步，收好了收成一行）、末尾转着的
+    /// 起，往下的还会变，不能先印进终端的滚动历史（图纸「怎么印」第 2 条）。
+    pub fn rows_held(&self, transcript: &Transcript, scope: Scope) -> (Vec<Row>, usize) {
         let ctx = self.ctx(transcript);
         let first = match &scope {
             Scope::Turns(turns) => turns.iter().min().copied(),
@@ -79,6 +82,7 @@ impl View<'_> {
                 .unwrap_or(transcript.entries.len()),
         };
         let mut rows = Vec::new();
+        let mut held = None;
         // 排进来一轮不在里面的（她说的、收尾行带着回合号）就停：不带回合号的（任务结束的那几行）照样排。
         let outside = |e: &crate::transcript::Entry| match (&scope, e.turn) {
             (Scope::Turns(turns), Some(t)) => {
@@ -100,20 +104,39 @@ impl View<'_> {
             if !rows.is_empty() {
                 rows.push(ctx.row(ctx.blank_slot(), Vec::new()));
             }
+            if held.is_none() && entry.segment.as_ref().is_some_and(|s| !s.settled()) {
+                held = Some(rows.len());
+            }
             rows.extend(entry_rows(i, entry, &ctx));
         }
+        let held = held.unwrap_or(rows.len());
         if transcript.waiting() {
             rows.extend(crate::ui::tail_rows(&ctx));
         }
-        rows
+        (rows, held)
     }
 
     /// 排好的行只要画出来的样子，前面空一行和提示符那一行隔开（2026-10-20 项目主人验收）。展示的卡片在 shell 里点不开：
     /// 「点击打开」那一行换成文件的路径（同一天项目主人：点不开的不必印）。`todos` 时末尾接待办。
     pub fn lines(&self, transcript: &Transcript, scope: Scope, todos: bool) -> Vec<Line<'static>> {
+        self.lines_held(transcript, scope, todos).0
+    }
+
+    /// 同 [`View::lines`]，另交回前几行定下来了（[`View::rows_held`]；末尾接的待办不算）。
+    pub fn lines_held(
+        &self,
+        transcript: &Transcript,
+        scope: Scope,
+        todos: bool,
+    ) -> (Vec<Line<'static>>, usize) {
         let open = &self.config.text.shown.open;
         let mut lines: Vec<Line<'static>> = Vec::new();
-        for row in self.rows(transcript, scope) {
+        let (rows, held_rows) = self.rows_held(transcript, scope);
+        let mut held = None;
+        for (i, row) in rows.into_iter().enumerate() {
+            if i == held_rows {
+                held = Some(lines.len());
+            }
             if row.plain.trim() == open.trim() {
                 if let Some(path) = shown_path(transcript, row.target) {
                     let indent = " ".repeat(usize::from(row.content_x));
@@ -124,11 +147,13 @@ impl View<'_> {
             lines.push(row.line);
         }
         // 开头的空行（只有缩进、两格槽的也算）去掉，再空一行：不然等第一个字时空两行（2026-10-20 项目主人验收）。
+        let mut held = held.unwrap_or(lines.len());
         while lines
             .first()
             .is_some_and(|l| l.spans.iter().all(|s| s.content.trim().is_empty()))
         {
             lines.remove(0);
+            held = held.saturating_sub(1);
         }
         if todos {
             let list = crate::ui::todo_lines(
@@ -149,8 +174,9 @@ impl View<'_> {
         }
         if !lines.is_empty() {
             lines.insert(0, Line::default());
+            held += 1;
         }
-        lines
+        (lines, held)
     }
 
     /// 打的 `/dream` 整理时的那一块（同终端界面接在正文末尾的，`ui::dream_rows`），前面空一行和提示符那一行隔开。

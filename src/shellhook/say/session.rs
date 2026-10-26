@@ -110,6 +110,8 @@ impl Session {
         let mut lingered: Option<Instant> = None;
         // 抽屉里写字时停住的上面那段正文。
         let mut frozen: Option<Vec<String>> = None;
+        // 已经印进终端滚动历史的前几行（[`View::lines_held`] 排出来的那些里的前几行）：不再画、收工时不再印。
+        let mut committed = 0;
         // 先不露光标（2026-10-20 验收）：活动区原地刷新时光标跟着跳；留出输入那一行以后亮在那一行（`paint.rs` 的 `Caret`），
         // 收工时还回来。
         ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Hide)?;
@@ -144,7 +146,7 @@ impl Session {
                 usize::try_from(started.elapsed().as_millis() / u128::from(spinner)).unwrap_or(0);
             let view = self.view(turn, width, height, frame);
             // 不印运行状态行（词、用时）：shell 里只要转圈（2026-10-20 项目主人验收：不要文字进度条）。
-            let mut lines = view.lines(&turn.transcript, turn.scope(), true);
+            let (mut lines, held) = view.lines_held(&turn.transcript, turn.scope(), true);
             if let Some(dream) = &turn.dream {
                 lines.extend(view.dream_lines(&turn.transcript, dream));
             }
@@ -168,9 +170,8 @@ impl Session {
             let (typing, typed_col) =
                 super::typing::lines(turn, &self.config, width, !settled_open);
             lines.extend(typing);
-            // 活动区最多占终端高减一行：长过的只露最新的那一截，这一轮结束时整段印出来（「怎么印」第 2 条）。
+            // 活动区最多占终端高减一行（「怎么印」第 2 条）。
             let room = usize::from(height.saturating_sub(1 + drawer)).max(1);
-            let tail = lines.len().saturating_sub(room);
             // 抽屉里写字的那一格（抽屉里第几行、第几列）：光标停在那里，输入法的候选框跟着它。
             let mut caret = None;
             let mut box_lines = Vec::new();
@@ -180,16 +181,32 @@ impl Session {
                     caret = asking.draw(frame, frame.area(), config);
                 })?;
             }
-            // 写字时上面的正文停住（计时、转圈不再走）：不然每一拍都重画，光标回上面再跳回来（2026-10-22 验收）。
-            // 长过的：最上面那一行留空，和提示符那一行隔开，同没长过时开头空的那一行（2026-10-26 项目主人看截图：
-            // 「这里如果能留一个空行就更好了」，原来那一行跟着截掉了，正文贴着提示符）。
-            let fresh = if tail > 0 && room > 1 {
+            // 滚出去的、定下来了的先印进终端的滚动历史，往上翻得到（「怎么印」第 2 条，2026-10-26 项目主人：「正文输出也会
+            // 被限制在滚动区域里。全部输出完之后才会完整显示出来」）；还会变的（没收好的时间线、末尾转着的）留在活动区。抽屉里
+            // 写字时正文停住，不印。
+            let mut scrolled = Vec::new();
+            if caret.is_none() {
+                let over = lines.len().saturating_sub(committed + room);
+                let more = over.min(held.saturating_sub(committed));
+                if more > 0 {
+                    scrolled = self
+                        .painter
+                        .lines(width, &lines[committed..committed + more])?;
+                    committed += more;
+                }
+            }
+            let rest = &lines[committed.min(lines.len())..];
+            let tail = rest.len().saturating_sub(room);
+            // 还是长过的：最上面那一行留空，和提示符那一行隔开，同没长过时开头空的那一行（2026-10-26 项目主人看截图：
+            // 「这里如果能留一个空行就更好了」，原来那一行跟着截掉了，正文贴着提示符）。印进历史以后提示符已经滚上去了，不留。
+            let fresh = if tail > 0 && room > 1 && committed == 0 {
                 let mut shown = vec![Line::default()];
-                shown.extend_from_slice(&lines[tail + 1..]);
+                shown.extend_from_slice(&rest[tail + 1..]);
                 self.painter.lines(width, &shown)?
             } else {
-                self.painter.lines(width, &lines[tail..])?
+                self.painter.lines(width, &rest[tail..])?
             };
+            // 写字时上面的正文停住（计时、转圈不再走）：不然每一拍都重画，光标回上面再跳回来（2026-10-22 验收）。
             let mut live = match (caret, &mut frozen) {
                 (Some(_), Some(kept)) => kept.clone(),
                 (Some(_), slot) => slot.insert(fresh).clone(),
@@ -203,13 +220,14 @@ impl Session {
             let caret = caret
                 .map(|(x, y)| (above + usize::from(y), x))
                 .or_else(|| typed_col.map(|col| (above.saturating_sub(1), col)));
-            let settled = match banner(turn).filter(|_| !bannered) {
+            let mut settled = match banner(turn).filter(|_| !bannered) {
                 Some(line) => {
                     bannered = true;
                     self.painter.lines(width, &[Line::default(), line])?
                 }
                 None => Vec::new(),
             };
+            settled.extend(scrolled);
             self.painter.frame_at(&settled, &live, caret)?;
             // 新开了一个抽屉：弹「在等你确认」「在等你回答」。
             let current = current.filter(|_| settled_open);
@@ -240,7 +258,9 @@ impl Session {
         let (width, height) = size();
         let view = self.view(turn, width, height, 0);
         let lines = view.lines(&turn.transcript, turn.scope(), turn.todos_changed);
-        let settled = self.painter.lines(width, &lines)?;
+        let settled = self
+            .painter
+            .lines(width, &lines[committed.min(lines.len())..])?;
         self.painter.finish()?;
         self.painter.frame(&settled, &[])?;
         if !self.hooked {
