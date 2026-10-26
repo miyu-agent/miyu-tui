@@ -20,15 +20,29 @@ pub struct Unreadable;
 ///
 /// 每个剪贴板命令都读不到（没装、失败、卡住）时交回 [`Unreadable`]。
 pub fn read() -> Result<String, Unreadable> {
-    let os = if cfg!(target_os = "macos") {
+    read_with(&candidates(this_os(), wayland()), WAIT)
+}
+
+/// 这台机器上读剪贴板依次试的命令名（shellhook 的 `doctor` 照它查在不在）。
+pub fn tools() -> Vec<&'static str> {
+    candidates(this_os(), wayland())
+        .into_iter()
+        .map(|(tool, _)| tool)
+        .collect()
+}
+
+fn this_os() -> Os {
+    if cfg!(target_os = "macos") {
         Os::Mac
     } else if cfg!(windows) {
         Os::Windows
     } else {
         Os::Linux
-    };
-    let wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
-    read_with(&candidates(os, wayland), WAIT)
+    }
+}
+
+fn wayland() -> bool {
+    std::env::var_os("WAYLAND_DISPLAY").is_some()
 }
 
 /// 哪种系统。

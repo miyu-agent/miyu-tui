@@ -57,7 +57,13 @@ pub fn run(words: &Words) -> io::Result<ExitCode> {
     );
     match clipboard() {
         Some(tool) => say(true, fill(&words.doctor_clip_ok, &[("tool", tool)])),
-        None => say(false, words.doctor_clip_bad.clone()),
+        None => say(
+            false,
+            fill(
+                &words.doctor_clip_bad,
+                &[("tools", &crate::clipboard::read_tools().join("/"))],
+            ),
+        ),
     }
     Ok(if good {
         ExitCode::SUCCESS
@@ -98,22 +104,21 @@ fn colors() -> bool {
     ground.is_some() && sixteen.is_some()
 }
 
-/// `Ctrl+V` 读剪贴板用哪个命令（同 `clipboard::read` 的先后）：Wayland 下的 `wl-paste`，再 `xclip`、`xsel`；macOS 的
-/// `pbpaste`。都没有的是 `None`。
+/// `Ctrl+V` 读剪贴板用哪个命令：照 `clipboard::read` 试的那几个、同一个先后（Wayland 下的 `wl-paste`，再 `xclip`、`xsel`；
+/// macOS 的 `pbpaste`；Windows 的 `powershell`，2026-10-24 Windows 上原来照 Linux 的查，说找不到）。都没有的是 `None`。
 fn clipboard() -> Option<&'static str> {
-    let wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
-    let candidates: &[&'static str] = if cfg!(target_os = "macos") {
-        &["pbpaste"]
-    } else if wayland {
-        &["wl-paste", "xclip", "xsel"]
-    } else {
-        &["xclip", "xsel"]
-    };
-    candidates.iter().copied().find(|tool| on_path(tool))
+    crate::clipboard::read_tools()
+        .into_iter()
+        .find(|tool| on_path(tool))
 }
 
-/// `PATH` 里有没有这个命令。
+/// `PATH` 里有没有这个命令（Windows 上照 `.exe` 找）。
 fn on_path(tool: &str) -> bool {
+    let file = if cfg!(windows) {
+        format!("{tool}.exe")
+    } else {
+        tool.to_string()
+    };
     std::env::var_os("PATH")
-        .is_some_and(|path| std::env::split_paths(&path).any(|dir| dir.join(tool).is_file()))
+        .is_some_and(|path| std::env::split_paths(&path).any(|dir| dir.join(&file).is_file()))
 }

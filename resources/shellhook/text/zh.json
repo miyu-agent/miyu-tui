@@ -39,6 +39,6 @@
   "doctor_colors_ok": "问得到终端的颜色：配色跟随终端时照它生成真彩色的一套",
   "doctor_colors_bad": "问不到终端的颜色：配色跟随终端时只用终端的 16 色（tmux 这类要开透传）",
   "doctor_clip_ok": "Ctrl+V 读剪贴板用 {tool}",
-  "doctor_clip_bad": "找不到读剪贴板的命令（wl-paste、xclip、xsel）：Ctrl+V 只能用终端自己的粘贴",
+  "doctor_clip_bad": "找不到读剪贴板的命令（{tools}）：Ctrl+V 只能用终端自己的粘贴",
   "slash_restored": "恢复了刚才撤销的那一轮"
 }

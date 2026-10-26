@@ -10,7 +10,7 @@ mod read;
 mod staging;
 
 pub use image::{read_files, read_image};
-pub use read::read;
+pub use read::{read, tools as read_tools};
 pub use staging::{Staging, is_staged, root as staging_root};
 
 /// 把 `text` 放进系统剪贴板。
