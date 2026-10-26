@@ -12,6 +12,7 @@ impl Default for Transcript {
             blocks: HashMap::new(),
             unnamed: Vec::new(),
             calls: HashMap::new(),
+            progress: super::progress::Lines::default(),
             running: None,
             starting: super::Starting::No,
             clock: clock::Clock::default(),
