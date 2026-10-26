@@ -55,6 +55,7 @@ impl Oobe {
             Waiting::ProfileRead | Waiting::ProfileSave | Waiting::ProfileSchema => {
                 self.profile.answer(&waiting, result)
             }
+            Waiting::Register => self.register.answer(result),
             Waiting::SemanticSchema
             | Waiting::SemanticRead
             | Waiting::SemanticSave

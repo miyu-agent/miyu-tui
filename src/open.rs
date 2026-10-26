@@ -55,6 +55,14 @@ fn target(url: &str) -> Result<String, OpenError> {
     }
 }
 
+/// 本机的路径（不是网址、不带协议的；和图片同一套认法，`local.rs`）、文件或目录真在的：交回完整的路径。
+pub fn local(url: &str) -> Option<std::path::PathBuf> {
+    if has_scheme(url) {
+        return None;
+    }
+    crate::local::resolve(url).filter(|path| path.exists())
+}
+
 /// 开头是「协议:」：字母打头、两个字以上（`C:` 这种盘符不算），只有字母、数字、`+`、`-`、`.`。
 fn has_scheme(url: &str) -> bool {
     url.split_once(':').is_some_and(|(head, _)| {
@@ -128,5 +136,21 @@ mod tests {
             Err(OpenError::Missing)
         ));
         assert!(matches!(target("mailto:a@b.c"), Err(OpenError::Scheme)));
+    }
+
+    #[test]
+    fn local_files_and_folders_are_told_apart_from_addresses() {
+        // 本机的文件、目录交给「展示」的退路开（`app/mouse.rs`），网址、别的协议不算（2026-10-24）。
+        use super::local;
+        let here = std::env::current_dir().unwrap();
+        assert_eq!(local("Cargo.toml"), Some(here.join("Cargo.toml")));
+        assert_eq!(
+            local(here.join("src").to_str().unwrap()),
+            Some(here.join("src")),
+            "目录也算"
+        );
+        assert_eq!(local("https://a.com/x.html"), None);
+        assert_eq!(local("file:///etc/hosts"), None, "带协议的照网址开");
+        assert_eq!(local("/没有/这个/文件.html"), None);
     }
 }

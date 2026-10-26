@@ -58,6 +58,8 @@ fn the_row_only_says_whether_it_is_set() {
 #[test]
 fn enter_stores_the_secret_first_then_writes_the_reference() {
     let mut page = opened(json!({"secret": "old"}));
+    // 只有系统配置这一层的项：管理员模式开着才写得了（「管理员模式」第 3 条）。
+    page.admin = Some(true);
     let it = item(&page);
     page.open_secret(&it);
     let Some(Popup::Line(edit)) = &page.popup else {

@@ -348,6 +348,7 @@ impl App {
             Run::Connect => self.open_connect(),
             Run::Effort => self.open_effort(),
             Run::Copy => self.copy_reply(),
+            Run::Admin => self.toggle_admin(),
             Run::Usage => self.open_usage(),
             Run::Status => self.open_status(),
             Run::ToolList => self.open_tool_list(),

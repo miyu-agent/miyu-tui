@@ -98,6 +98,7 @@ pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<
             tag,
             method,
             params,
+            ..
         } => (*method, params.clone(), Some(Awaiting::Ask(*tag))),
         _ => return None,
     })

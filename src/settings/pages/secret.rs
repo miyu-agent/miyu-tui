@@ -42,7 +42,6 @@ impl Settings {
         if text.is_empty() {
             return true;
         }
-        self.draft.system = self.system_only(key);
         self.draft.set_secret_at(key, text.to_string());
         self.save(false, texts);
         true

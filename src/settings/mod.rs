@@ -1,6 +1,7 @@
 //! 全屏的配置页（蓝图 `tui.md`「配置页」）：主菜单、「供应商和模型」三页、悬浮窗。这里只有数据和按键；画在
 //! `ui/settings/`，和 App 接在 `app/settings.rs`。和核心说话照 `Command::Ask`：要发的攒在 `asks`，回应照编号认。
 
+mod admin;
 pub mod data;
 pub mod draft;
 mod form_keys;
@@ -145,6 +146,8 @@ enum Load {
 pub struct Settings {
     /// 照 `--page config` 起来的：主菜单按 `Esc` 退出程序。
     pub standalone: bool,
+    /// 管理员模式（「管理员模式」第 3 条）：不是管理员的是 `None`，管理员的是开没开；App 进、退时改它。
+    pub admin: Option<bool>,
     /// 这一帧包页面上画着的上游网址（[`Hit::Link`]）。
     pub link: Option<String>,
     /// 指针停在哪：上游悬停加下划线、指针变手（第 43a 条）。

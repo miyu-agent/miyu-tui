@@ -23,6 +23,7 @@ mod memory;
 mod message;
 mod settled;
 mod tabs;
+mod thought_tokens;
 mod web;
 
 /// 一步：从 `start` 秒开始，用了 `took` 秒。

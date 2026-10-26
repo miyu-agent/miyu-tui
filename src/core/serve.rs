@@ -79,7 +79,12 @@ pub(super) async fn serve(
                 let Some(command) = command else { return Served::Quit };
                 // 不对着会话的请求（列会话、置顶、删、模型资料、给人看的字、写配置、读输出）：照 `asides.rs` 的表发。
                 if let Some((method, params, kind)) = asides::request(&command) {
-                    match rpc.send(method, params).await {
+                    let sent = if matches!(command, Command::Ask { system: true, .. }) {
+                        rpc.send_scoped(method, params).await
+                    } else {
+                        rpc.send(method, params).await
+                    };
+                    match sent {
                         Ok(id) => {
                             if let Some(kind) = kind {
                                 awaiting.insert(id, kind);

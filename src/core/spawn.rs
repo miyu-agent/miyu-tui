@@ -10,18 +10,25 @@ pub fn spawn(
     notify: impl Fn(Update) -> bool + Send + 'static,
 ) -> Core {
     let (commands, receiver) = mpsc::unbounded_channel();
+    let admin = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let shared = std::sync::Arc::clone(&admin);
     thread::spawn(move || {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build();
         match runtime {
-            Ok(runtime) => runtime.block_on(run(receiver, Backoff::new(reconnect), start, &notify)),
+            Ok(runtime) => runtime.block_on(run(
+                receiver,
+                (Backoff::new(reconnect), shared),
+                start,
+                &notify,
+            )),
             Err(e) => {
                 notify(Update::Failed(e.to_string()));
             }
         }
     });
-    Core { commands }
+    Core { commands, admin }
 }
 
 /// 一条连接用到头了：界面关了，或者连接断了。
@@ -34,7 +41,7 @@ pub(super) enum Served {
 /// 补）是收发那一头的事（`serve.rs`）。
 async fn run(
     mut commands: mpsc::UnboundedReceiver<Command>,
-    mut wait: Backoff,
+    (mut wait, admin): (Backoff, std::sync::Arc<std::sync::atomic::AtomicBool>),
     start: Start,
     notify: &impl Fn(Update) -> bool,
 ) {
@@ -49,9 +56,9 @@ async fn run(
     let mut first = true;
     loop {
         // 连不上一直试；这期间界面发的命令在通道里排着，连上再发（第 1、7 条）。
-        let mut rpc = loop {
-            match connect().await {
-                Ok(rpc) => break rpc,
+        let (mut rpc, account) = loop {
+            match connect(std::sync::Arc::clone(&admin)).await {
+                Ok(connected) => break connected,
                 Err(update) => {
                     if !notify(update) {
                         return;
@@ -61,7 +68,11 @@ async fn run(
             }
         };
         wait.reset();
-        let said = if std::mem::take(&mut first) {
+        if !notify(Update::Account(account)) {
+            return;
+        }
+        // 还没有机主：只能注册，进哪个会话等注册完、重连上再看（核心这时别的都回 `setup_first`）。
+        let said = if !account.setup && std::mem::take(&mut first) {
             match entered(&mut rpc, resume.clone(), recent).await {
                 // 进了已有的会话：先读最新一页再带 `after` 订阅；会话编号先告诉界面。
                 Some(id) => {

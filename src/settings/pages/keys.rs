@@ -236,8 +236,8 @@ impl Settings {
             return;
         };
         let words = &texts.more;
-        if !item.writable() {
-            self.say(words.no_editor.clone(), Tone::Note);
+        if let Some(note) = self.blocked(&item, texts) {
+            self.say(note, Tone::Note);
             return;
         }
         // 主色：候选的色块列表，不开编辑窗（2026-10-14 项目主人定）。
@@ -271,7 +271,6 @@ impl Settings {
             }
             "toggle" => {
                 let on = value.as_bool().unwrap_or(false);
-                self.draft.system = item.system_only();
                 self.draft.set(&item.key, Value::Bool(!on), data);
                 self.refresh();
                 self.save(false, texts);
@@ -325,7 +324,7 @@ impl Settings {
             }));
             return;
         }
-        let system = item.system_only();
+        let system = self.writes_system(&item.key);
         let written = if system { &data.system } else { &data.personal };
         if !written.contains_key(&item.key) {
             self.say(words.nothing_to_unset.clone(), Tone::Note);
@@ -473,9 +472,8 @@ impl Settings {
         }
     }
 
-    /// 写一项进个人设置（只有系统配置这一层的写系统配置），当场存（关窗；没存成的原因写在状态行）。
+    /// 写一项（写哪一层照管理员模式，「管理员模式」第 3 条），当场存（关窗；没存成的原因写在状态行）。
     pub(in crate::settings) fn write_setting(&mut self, key: &str, value: Value, texts: &Texts) {
-        self.draft.system = self.system_only(key);
         let Some(data) = self.data.as_ref() else {
             return;
         };
@@ -487,14 +485,5 @@ impl Settings {
         }
         self.refresh();
         self.save(false, texts);
-    }
-
-    /// 清单里这一项只有系统配置这一层（「配置页」第 33 条）。
-    pub(in crate::settings) fn system_only(&self, key: &str) -> bool {
-        self.more
-            .schema
-            .as_ref()
-            .and_then(|s| s.items.iter().find(|i| i.key == key))
-            .is_some_and(super::schema::Item::system_only)
     }
 }

@@ -140,12 +140,14 @@
   "exit_hint": "按 Ctrl+D 退出",
   "input_cleared": "已清空 · ↑ 恢复",
   "editing": " 编辑上一条 · Esc 取消 ",
+  "admin": {"on": "已进入管理员模式", "off": "已退出管理员模式", "denied": "只有管理员能进入管理员模式", "badge": "管理员"},
   "open": {
     "refused": "不支持打开此地址：{url}",
     "missing": "文件不存在：{path}",
     "failed": "无法打开：{reason}"
   },
   "esc_hint": "再按一次 Esc 中断",
+  "esc_agents_hint": "再按一次 Esc 停止子代理",
   "stashed": "> 暂存",
   "no_clear_running": "回答进行中，无法清屏",
   "icons_changed": "图标：{name}",
@@ -770,6 +772,7 @@
     "refuse_no_key": "该模型未设置 key"
   },
   "settings": {
+    "admin": ["管理员模式", "要先进入管理员模式（Shift+A）", "A", "管理员模式"],
     "in_use": {
       "persona": "当前使用的人格发生变化，下一轮对话缓存全部失效，建议提前压缩上下文。",
       "preset": "当前使用的预设发生变化，下一轮对话缓存全部失效，建议提前压缩上下文。",
@@ -1432,6 +1435,7 @@
     },
     "steps": [
       "语言",
+      "注册",
       "操作方式",
       "图标",
       "模型",
@@ -1598,6 +1602,7 @@
       "next": "下一步",
       "saving": "正在保存…"
     },
+    "register": {"title": "创建账号", "sub": "用于登录网页端", "fields": ["用户名", "密码", "再输一遍"], "hints": ["例如：alice", "至少 8 个字符", "与上面相同"], "submit": "注册", "busy": "正在注册…", "problems": {"username": "仅限小写字母、数字、- 和 _，以字母开头，最多 32 位", "short": "密码至少 8 个字符", "blank": "密码不能全是空格", "mismatch": "两次输入的密码不一致", "taken": "用户名已被使用"}},
     "profile": {
       "title": "AI 怎么认识你",
       "sub": "新会话生效，以后可以在设置里改。都可以不填",

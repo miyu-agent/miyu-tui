@@ -1,5 +1,6 @@
 //! 程序的状态，和把终端事件、核心的消息分给各块。按键在 `keys.rs`，鼠标在 `mouse.rs`。
 
+mod admin;
 mod ask_elsewhere;
 mod asking;
 mod attachments;
@@ -64,6 +65,7 @@ mod sessions;
 mod settings;
 mod shown;
 mod status;
+mod stop_agents;
 mod switch;
 mod takeback;
 mod talk;
@@ -204,7 +206,18 @@ impl App {
         let action = match event {
             // Windows 上松开键也报一次，只认按下和按住。
             Event::Key(key) if key.kind == KeyEventKind::Release => Action::None,
-            // 在子会话里看：输入框空着时 Esc 回主会话（「切进子会话」第 4 条）；打断它按 Ctrl+C。
+            // 两下 Esc 停子代理（`stop_agents.rs`）：看着在跑的子代理，或者主会话闲着、还有子代理在跑。停完留在原处。
+            Event::Key(key)
+                if key.code == KeyCode::Esc
+                    && self.esc_for_input(menu_open)
+                    && self.typing.input.editor.is_empty()
+                    && !self.dreaming_here()
+                    && !self.agents_to_stop().is_empty() =>
+            {
+                self.esc_agents();
+                Action::None
+            }
+            // 在子会话里看、它已经停了或报完了：输入框空着时 Esc 回主会话（「切进子会话」第 4 条）。
             Event::Key(key)
                 if key.code == KeyCode::Esc
                     && self.talk.home.is_some()
@@ -263,6 +276,8 @@ impl App {
             Action::Copy(text) => self.copy(&text),
             Action::Quit => self.quit = true,
             // Ctrl+C 分级：输入框空着时，在回答就打断（排着队的退回输入框），不在回答才提示用 Ctrl+D 退出。
+            // 看着在跑的子代理、或者主会话闲着还有子代理在跑：停掉它们（`stop_agents.rs`），留在原处。
+            Action::ExitHint if !self.agents_to_stop().is_empty() => self.stop_agents(),
             Action::ExitHint if self.talk.transcript.running.is_some() => self.interrupt(),
             Action::ExitHint => self.hint(self.config.text.exit_hint.clone(), false),
             Action::Cleared => self.hint(self.config.text.input_cleared.clone(), false),

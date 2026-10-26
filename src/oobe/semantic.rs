@@ -127,23 +127,25 @@ impl SemanticStep {
     fn start(&mut self, asker: &mut Asker) {
         self.phase = Phase::Installing { done: 0, total: 0 };
         self.error = None;
-        asker.ask(
+        // 装到系统那一层、大家共用（「管理员模式」第 5 条）。
+        asker.ask_system(
             "package.install",
             download::install(),
             Waiting::SemanticInstall,
         );
     }
 
-    /// 定下第 `at` 行：和现在写的一样的不写、直接到好了，不一样的写个人设置。
+    /// 定下第 `at` 行：和现在写的一样的不写、直接到好了，不一样的写系统配置（大家共用，成员的记忆、知识库也用得上；
+    /// 「管理员模式」第 5 条，2026-10-24 项目主人定，原来写个人设置）。
     fn choose(&mut self, at: usize, asker: &mut Asker) -> Move {
         if at == self.current {
             return Move::Next;
         }
         let value = VALUES[at.min(VALUES.len() - 1)];
-        let params = json!({"layer": "personal", "changes": [{"key": KEY, "value": value}]});
+        let params = json!({"layer": "system", "changes": [{"key": KEY, "value": value}]});
         self.error = None;
         self.busy = true;
-        asker.ask("config.set", params, Waiting::SemanticSave);
+        asker.ask_system("config.set", params, Waiting::SemanticSave);
         Move::Stay
     }
 
@@ -168,7 +170,7 @@ impl SemanticStep {
                 let installed = result.ok().is_some_and(|got| installed(&got));
                 self.installed = Some(installed);
                 if !installed {
-                    asker.ask(
+                    asker.ask_system(
                         "package.install",
                         download::preview(),
                         Waiting::SemanticPreview,

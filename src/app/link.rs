@@ -28,4 +28,9 @@ pub struct Link {
     pub widgets: crate::widgets::Widgets,
     /// 开机启动核心：在后台跑 `miyu service`（配置页「开机启动」，`crate::service`）。
     pub service: crate::service::Service,
+    /// 最近一次握手说的这个人：还没有机主、是不是管理员（核心 Y-12）。
+    pub account: crate::core::Account,
+    /// 还没有机主时引导里选的界面语言（`ui.language` 的值）：核心这时不让写，注册完、重连上再写（「第一次打开的引导」
+    /// 第 5a 条）。
+    pub held_language: Option<String>,
 }

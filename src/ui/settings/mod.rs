@@ -105,7 +105,7 @@ fn models(
     look: &Look,
     caret: &mut Caret,
 ) {
-    crumb(frame, stage, texts, Some(&texts.entry));
+    crumb(frame, stage, (texts, page.admin_on()), Some(&texts.entry));
     if stage.height < 8 {
         return;
     }
@@ -156,8 +156,13 @@ fn models(
     }
 }
 
-/// 面包屑：`● 配置`，进了一页再接 ` — ◉ 页名`。
-pub(super) fn crumb(frame: &mut Frame, stage: Rect, texts: &Texts, inside: Option<&str>) {
+/// 面包屑：`● 配置`，进了一页再接 ` — ◉ 页名`；管理员模式开着的后面再接 ` · 管理员模式`（「管理员模式」第 2 条）。
+pub(super) fn crumb(
+    frame: &mut Frame,
+    stage: Rect,
+    (texts, admin): (&Texts, bool),
+    inside: Option<&str>,
+) {
     let (on, now, dash) = crate::sheet::read(|s| {
         let m = &s.marks;
         (m.on.clone(), m.now.clone(), m.dash.clone())
@@ -176,6 +181,10 @@ pub(super) fn crumb(frame: &mut Frame, stage: Rect, texts: &Texts, inside: Optio
             texts.title.as_str(),
             theme::accent().add_modifier(Modifier::BOLD),
         ));
+    }
+    if admin {
+        spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
+        spans.push(Span::styled(texts.admin[0].clone(), theme::warn()));
     }
     frame
         .buffer_mut()
