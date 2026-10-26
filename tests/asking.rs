@@ -279,3 +279,53 @@ fn switching_to_a_session_with_an_answered_question_draws_the_answer() {
         tui.lines().join("\n")
     );
 }
+
+#[test]
+fn page_up_with_a_drawer_open_scrolls_the_body_and_the_drawer_steps_aside() {
+    // 「确认和提问的抽屉」第 4a 条（2026-10-26 项目主人：有确认框时 PgUp、PgDn 翻不了页；往上翻是要看正文，抽屉不用钉在底下）。
+    let outside = outside("asking-page");
+    let target = outside.join("note.txt");
+    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
+    let long: &'static str = Box::leak(
+        (1..=60)
+            .map(|n| format!("第{n}行"))
+            .collect::<Vec<_>>()
+            .join("\n\n")
+            .into_boxed_str(),
+    );
+    let script = Script::new([
+        Play::Says(long),
+        Play::Calls(vec![("write".into(), args)]),
+        Play::Says("写好了。"),
+    ]);
+    let home = Home::with_tools(script, "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("说长一点");
+    tui.wait_for("第60行");
+    tui.say("写个文件");
+    tui.wait_for("允许本次");
+    // PgUp 翻正文：抽屉让开。
+    tui.key(b"\x1b[5~");
+    tui.key(b"\x1b[5~");
+    let end = Instant::now() + support::WAIT;
+    while tui.shows("允许本次") {
+        assert!(
+            Instant::now() < end,
+            "抽屉没让开：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(50));
+    }
+    assert!(
+        !tui.shows("第60行"),
+        "翻上去了：\n{}",
+        tui.lines().join("\n")
+    );
+    // 回到底部：抽屉回来，还能答。
+    tui.key(b"\x1b[1;5F");
+    tui.wait_for("允许本次");
+    tui.key(b"\r");
+    wait(&mut tui, "文件写出来", || target.exists());
+    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
+}

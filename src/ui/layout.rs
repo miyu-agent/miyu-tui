@@ -67,8 +67,8 @@ pub fn areas(
     let pad_left = m.pad_left;
     let text_width = width.saturating_sub(2 + pad_left + m.pad_right).max(1);
     let rows = rows(text_width);
-    // 上下两条边和文字。
-    let height = rows + 2;
+    // 上下两条边和文字；一行都没有的（抽屉让开了）连边也不要。
+    let height = if rows == 0 { 0 } else { rows + 2 };
     let footer_y = area.bottom().saturating_sub(1 + agent_rows);
     let frame = Rect::new(x, footer_y.saturating_sub(height), width, height).intersection(area);
     let inner_x = frame.x + 1 + pad_left;

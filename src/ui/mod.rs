@@ -164,7 +164,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     // 框里占几行：抽屉开着时是抽屉的行数，连边框最高半屏；带文字画的放得下整张为止，屏幕顶上留几行
     // （`tui.md`「确认和提问的抽屉」第 2 条）。
     let texts = &app.config.text.drawer;
-    let open_drawer = app.talk.drawers.current.as_ref();
+    // 正文翻上去了（没在跟着最新的）：抽屉让开，正文用满它的位置，回到底部再出来（「确认和提问的抽屉」第 4a 条，
+    // 2026-10-26 项目主人：往上翻是要看正文）。
+    let aside = !home && app.talk.drawers.current.is_some() && app.screen.view.top.is_some();
+    let open_drawer = app.talk.drawers.current.as_ref().filter(|_| !aside);
     let half = (main.height / 2).saturating_sub(2).max(3);
     let drawer_max = match open_drawer {
         Some(d) if d.has_preview() => main
@@ -180,6 +183,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         && !matches!(app.boxes.panel, Some(crate::app::Panel::Pick { .. }));
     let start = app.seen().start_pick().filter(|_| !skip);
     let box_rows = |w: u16| match (open_drawer, start) {
+        _ if aside => 0,
         (Some(d), _) => drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max),
         (None, Some(kind)) => {
             let rows = start_pick::content(&app.seen(), kind, w, usize::from(half))
@@ -325,6 +329,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             body::draw(frame, areas, &seen, screen);
         });
         section("input", || {
+            if aside {
+                return;
+            }
             let facts = input_box::Facts::of(&app.seen(), home);
             let pick = start.map(|kind| {
                 let max = usize::from(areas.text.height);
