@@ -1,8 +1,9 @@
 # miyu shellhook 的 fish 脚本：每次 fish 起来时由 `miyu shellhook script --shell fish` 现印，conf.d 里只有调它的那一行，
-# 所以升级以后自动是新的。底子是旧版的 fish 配置（设计 22 第七节）。@PROGRAM@ 在印的时候换成装的时候记下的程序。
+# 所以升级以后自动是新的。底子是旧版的 fish 配置（设计 22 第七节）。@PROGRAM@ 在印的时候换成装的时候记下的程序，
+# @HOOK@ 换成这一版脚本的记号（开着的 fish 升级以后还是旧脚本：程序看记号对不上的说一声重开）。
 
 function __miyu_shellhook
-    @PROGRAM@ shellhook $argv
+    @PROGRAM@ shellhook --hook @HOOK@ $argv
 end
 
 function __miyu_insert_newline

@@ -34,6 +34,8 @@ pub struct Words {
     pub not_registered: String,
     /// doctor：核心连上了，还没有机主。
     pub doctor_core_setup: String,
+    /// 这个 shell 里的脚本是升级以前印的：重开终端。
+    pub stale_hook: String,
     /// 闲置久了换了新会话（`{ago}` 是隔了多久）。
     pub renewed: String,
     /// 隔了多久的写法。

@@ -1,8 +1,9 @@
 # miyu shellhook 的 bash 脚本：每次 bash 起来时由 `miyu shellhook script --shell bash` 现印。bash 找不到命令时把这一行交给
-# 她（设计 22 第七节）。@PROGRAM@ 在印的时候换成装的时候记下的程序。
+# 她（设计 22 第七节）。@PROGRAM@ 在印的时候换成装的时候记下的程序，
+# @HOOK@ 换成这一版脚本的记号（开着的 shell 升级以后还是旧脚本：程序看记号对不上的说一声重开）。
 
 __miyu_shellhook() {
-    @PROGRAM@ shellhook "$@"
+    @PROGRAM@ shellhook --hook @HOOK@ "$@"
 }
 
 command_not_found_handle() {

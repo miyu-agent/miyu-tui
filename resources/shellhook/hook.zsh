@@ -1,8 +1,9 @@
 # miyu shellhook 的 zsh 脚本：每次 zsh 起来时由 `miyu shellhook script --shell zsh` 现印。zsh 找不到命令时把这一行交给她
-# （设计 22 第七节）。@PROGRAM@ 在印的时候换成装的时候记下的程序。
+# （设计 22 第七节）。@PROGRAM@ 在印的时候换成装的时候记下的程序，
+# @HOOK@ 换成这一版脚本的记号（开着的 shell 升级以后还是旧脚本：程序看记号对不上的说一声重开）。
 
 __miyu_shellhook() {
-    @PROGRAM@ shellhook "$@"
+    @PROGRAM@ shellhook --hook @HOOK@ "$@"
 }
 
 command_not_found_handler() {

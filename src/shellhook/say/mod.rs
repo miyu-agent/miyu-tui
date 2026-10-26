@@ -48,6 +48,8 @@ pub struct Ask {
     pub shell: Option<u32>,
     /// 这一句是 `/edit` 放回命令行、改过的：替换上一轮重来（`session.redo`，同终端界面的 `/edit`）。
     pub redo: bool,
+    /// 这个 shell 里的脚本是升级以前印的（`shellhook/script.rs`）：答完说一声重开终端。
+    pub stale: bool,
 }
 
 /// 说一句、印这一轮，交回退出码。
@@ -103,6 +105,9 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         session.note(note(&words.not_registered))?;
     } else if turn.terminal.none {
         session.note(note(&words.no_session))?;
+    }
+    if ask.stale {
+        session.note(note(&words.stale_hook))?;
     }
     session.finish()?;
     if let Some(path) = &ask.leftover

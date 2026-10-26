@@ -147,7 +147,8 @@ pub fn status(words: &Words) -> io::Result<()> {
     Ok(())
 }
 
-/// 默认调哪个程序：这个程序旁边的 `miyu`（随 Miyu 装的界面放在它旁边，设计 32 第六节），没有的调自己。
+/// 默认调哪个程序：这个程序旁边的 `miyu`（随 Miyu 装的界面放在它旁边，设计 32 第六节），没有的调自己。PATH 上有
+/// 指着同一个文件的，记 PATH 上那个（[`on_path`]）。
 ///
 /// # Errors
 ///
@@ -155,7 +156,27 @@ pub fn status(words: &Words) -> io::Result<()> {
 pub fn default_program() -> io::Result<PathBuf> {
     let me = std::env::current_exe()?;
     let miyu = me.with_file_name(if cfg!(windows) { "miyu.exe" } else { "miyu" });
-    Ok(if miyu.is_file() { miyu } else { me })
+    let program = if miyu.is_file() { miyu } else { me };
+    Ok(on_path(&program, std::env::var_os("PATH").as_deref()).unwrap_or(program))
+}
+
+/// PATH（`path`）上同名、指着同一个文件的另一个路径。认自己在哪会解开链接（Linux 读 `/proc/self/exe`）：Homebrew 这类
+/// 把程序放在带版本号的目录里（`Cellar/miyu/<版本>/bin/miyu`）、在 `bin` 里放链接的，记真路径的升级、清掉旧版以后
+/// 装进去的那一行就不起作用了，链接还在。只认同一个文件：PATH 上别的 `miyu`（并行期的旧版，设计 27）不算。它自己就在
+/// PATH 上的照旧（Arch 的 `/bin` 是 `/usr/bin` 的链接，不换成 `/bin/miyu`）。
+pub(super) fn on_path(program: &Path, path: Option<&std::ffi::OsStr>) -> Option<PathBuf> {
+    let real = fs::canonicalize(program).ok()?;
+    let name = program.file_name()?;
+    let found: Vec<PathBuf> = std::env::split_paths(path?)
+        .filter(|dir| dir.is_absolute())
+        .map(|dir| dir.join(name))
+        .collect();
+    if found.iter().any(|f| f == program) {
+        return None;
+    }
+    found
+        .into_iter()
+        .find(|f| fs::canonicalize(f).is_ok_and(|f| f == real))
 }
 
 /// 装进去的那一段。

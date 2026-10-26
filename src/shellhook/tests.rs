@@ -183,6 +183,53 @@ fn a_symlinked_rc_file_stays_a_symlink() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn the_program_is_recorded_by_its_link_on_path_not_its_versioned_real_path() {
+    let dir = Dir::new("on-path");
+    let cellar = dir.0.join("Cellar/miyu/0.7.0/bin");
+    let bin = dir.0.join("bin");
+    let old = dir.0.join("old");
+    for d in [&cellar, &bin, &old] {
+        fs::create_dir_all(d).unwrap();
+    }
+    let real = cellar.join("miyu");
+    fs::write(&real, "new").unwrap();
+    fs::write(old.join("miyu"), "old").unwrap();
+    std::os::unix::fs::symlink(&real, bin.join("miyu")).unwrap();
+    let path = std::env::join_paths([&old, &bin]).unwrap();
+    assert_eq!(
+        super::install::on_path(&real, Some(&path)),
+        Some(bin.join("miyu")),
+        "PATH 上前面那个旧版不是同一个文件，不算"
+    );
+    assert_eq!(
+        super::install::on_path(&real, Some(&std::env::join_paths([&old]).unwrap())),
+        None
+    );
+    let itself = std::env::join_paths([&cellar, &bin]).unwrap();
+    assert_eq!(
+        super::install::on_path(&real, Some(&itself)),
+        None,
+        "自己就在 PATH 上的照旧"
+    );
+}
+
+#[test]
+fn old_shells_are_told_to_reopen_when_the_script_changed() {
+    let (hook, rest) = super::hook(args(&["--hook", "abc", "say", "--shell", "fish"]));
+    assert_eq!(hook.as_deref(), Some("abc"));
+    assert_eq!(rest, args(&["say", "--shell", "fish"]));
+    assert_eq!(super::hook(args(&["status"])), (None, args(&["status"])));
+    let stamp = script::stamp();
+    assert_eq!(stamp.len(), 16);
+    for shell in ALL {
+        let text = script::render(shell, Path::new("/x/miyu"));
+        assert!(!text.contains("@HOOK@"), "{}", shell.name());
+        assert!(text.contains(&stamp), "{}", shell.name());
+    }
+}
+
 #[test]
 fn every_script_calls_the_recorded_program_and_parses() {
     let program = Path::new("/opt/it's/miyu");

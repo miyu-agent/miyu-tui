@@ -67,6 +67,27 @@ pub fn main(args: Vec<String>) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    let (hook, args) = hook(args);
+    // 开着的 shell 里是升级以前印的脚本（`script.rs`）：说话时、旧脚本调的参数这一版不认时说一声重开终端。
+    let stale = hook.is_some_and(|hook| hook != script::stamp());
+    let code = run(args, &words, stale);
+    if stale && code == ExitCode::from(BAD_USAGE) {
+        eprintln!("{}", words.stale_hook);
+    }
+    code
+}
+
+/// 脚本调的头上带的 `--hook <记号>` 拿出来，剩下的照原样。
+fn hook(mut args: Vec<String>) -> (Option<String>, Vec<String>) {
+    if args.len() >= 2 && args[0] == "--hook" {
+        let stamp = args.remove(1);
+        args.remove(0);
+        return (Some(stamp), args);
+    }
+    (None, args)
+}
+
+fn run(args: Vec<String>, words: &Words, stale: bool) -> ExitCode {
     let (command, options) = match args.split_first() {
         None => {
             println!("{USAGE}");
@@ -84,7 +105,7 @@ pub fn main(args: Vec<String>) -> ExitCode {
             .chain(options.iter().cloned())
             .collect::<Vec<_>>()
             .join(" ");
-        match slash::run(&line, &words, None, None) {
+        match slash::run(&line, words, None, None) {
             Some(Ok(code)) => return code,
             Some(Err(e)) => {
                 eprintln!("{e}");
@@ -101,13 +122,13 @@ pub fn main(args: Vec<String>) -> ExitCode {
         }
     };
     let result = match command {
-        "install" => with_shell(&options, &words, |shell| {
-            install::install(shell, options.program.clone(), &words)
+        "install" => with_shell(&options, words, |shell| {
+            install::install(shell, options.program.clone(), words)
         }),
-        "uninstall" => with_shell(&options, &words, |shell| install::uninstall(shell, &words)),
-        "status" => install::status(&words),
+        "uninstall" => with_shell(&options, words, |shell| install::uninstall(shell, words)),
+        "status" => install::status(words),
         "doctor" => {
-            return match doctor::run(&words) {
+            return match doctor::run(words) {
                 Ok(code) => code,
                 Err(e) => {
                     eprintln!("{e}");
@@ -132,7 +153,8 @@ pub fn main(args: Vec<String>) -> ExitCode {
                 options.leftover,
                 options.shell_pid,
                 options.redo,
-                &words,
+                stale,
+                words,
             );
         }
         "follow" => match &options.watch {
@@ -270,6 +292,7 @@ fn say(
     leftover: Option<PathBuf>,
     shell: Option<u32>,
     redo: bool,
+    stale: bool,
     words: &Words,
 ) -> ExitCode {
     let read = match input {
@@ -298,6 +321,7 @@ fn say(
             leftover,
             shell,
             redo,
+            stale,
         },
         words,
     ) {

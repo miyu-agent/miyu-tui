@@ -1,6 +1,7 @@
 # miyu shellhook 的 PowerShell 脚本（pwsh 和 Windows PowerShell 5.1 共用）：每次 PowerShell 起来时由
 # `miyu shellhook script --shell pwsh`（或 `powershell`）现印。回车先判是命令还是一句话，话当场交给她（设计 22 第七节）。
-# @PROGRAM@ 在印的时候换成装的时候记下的程序，@SHELL@ 换成 shell 的名字，@SPOOL@ 换成后台回报的信箱目录。
+# @PROGRAM@ 在印的时候换成装的时候记下的程序，@SHELL@ 换成 shell 的名字，@SPOOL@ 换成后台回报的信箱目录，
+# @HOOK@ 换成这一版脚本的记号（开着的 PowerShell 升级以后还是旧脚本：程序看记号对不上的说一声重开）。
 # 要 PSReadLine（5.1 自带 2.0，pwsh 自带新的）：没有的不接管回车，照 PowerShell 原样。
 
 if (-not (Get-Module PSReadLine)) {
@@ -15,7 +16,7 @@ function global:__miyu_capture {
     $saved = [Console]::OutputEncoding
     try {
         [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
-        $out = & @PROGRAM@ shellhook @args
+        $out = & @PROGRAM@ shellhook --hook @HOOK@ @args
         return , @($out)
     } finally {
         [Console]::OutputEncoding = $saved
@@ -26,7 +27,7 @@ function global:__miyu_capture {
 # 控制台；它拉起的核心继承了那根管道，PowerShell 等管道关上，一直卡着（2026-10-23 在 Windows 虚拟机里实测）。
 function global:__miyu_run([string[]] $arguments) {
     $quoted = $arguments | ForEach-Object { '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"' }
-    $info = [Diagnostics.ProcessStartInfo]::new(@PROGRAM@, ((@('shellhook') + $quoted) -join ' '))
+    $info = [Diagnostics.ProcessStartInfo]::new(@PROGRAM@, ((@('shellhook', '--hook', '@HOOK@') + $quoted) -join ' '))
     $info.UseShellExecute = $false
     $process = [Diagnostics.Process]::Start($info)
     $process.WaitForExit()
