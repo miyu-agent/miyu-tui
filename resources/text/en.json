@@ -777,7 +777,8 @@
     "cooling": "cooling {n}m",
     "cooling_bare": "cooling",
     "no_key": "no key",
-    "refuse_no_key": "This model has no key"
+    "refuse_no_key": "This model has no key",
+    "copies": ["Personal", "Shared"]
   },
   "settings": {
     "admin": ["admin mode", "Enter admin mode first (Shift+A)", "A", "admin mode"],
@@ -998,6 +999,7 @@
       "Loading…",
       "No matches"
     ],
+    "copies": ["Personal", "Shared"],
     "confirm": [
       "Delete provider {name}?",
       "Delete model {name}?",

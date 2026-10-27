@@ -26,6 +26,8 @@ pub struct Choice {
     pub detail: String,
     /// 能不能选。
     pub state: ChoiceState,
+    /// 同一家有自用、共用两份时这一份是不是共用的（核心 PL-1，`copies.rs`）；只有一份、池是 `None`。
+    pub shared: Option<bool>,
 }
 
 /// 一行能不能选。
@@ -71,9 +73,18 @@ pub fn choices(result: &Value) -> Vec<Choice> {
                 crate::sheet::sep()
             ),
             state: ChoiceState::Ok,
+            shared: None,
         });
     }
-    for provider in result["providers"].as_array().into_iter().flatten() {
+    let providers: Vec<&Value> = result["providers"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .collect();
+    let ids = || providers.iter().filter_map(|p| p["id"].as_str());
+    for provider in &providers {
+        let id = provider["id"].as_str().unwrap_or_default();
+        let shared = crate::copies::shared(id, ids());
         for model in provider["models"].as_array().into_iter().flatten() {
             let Some(reference) = model["ref"].as_str() else {
                 continue;
@@ -84,14 +95,19 @@ pub fn choices(result: &Value) -> Vec<Choice> {
             let named = name["value"].as_str().filter(|_| name["from"] == "config");
             let name = named.or(model["model"].as_str()).unwrap_or(reference);
             let window = model["facts"]["window"]["value"].as_u64();
-            // 写引用不只写供应商：同一个显示名常有好几个（配置里写的、目录里自带的），只写供应商分不出来。
+            // 写引用不只写供应商：同一个显示名常有好几个（配置里写的、目录里自带的），只写供应商分不出来。两份的共用那份
+            // 去掉 `@system`，后面另写「共用」（`ui/model_list.rs`）。
+            let shown = match shared {
+                Some(true) => reference.replacen("@system/", "/", 1),
+                _ => reference.to_string(),
+            };
             let detail = match window {
                 Some(window) => format!(
-                    "{reference}{}{}",
+                    "{shown}{}{}",
                     crate::sheet::sep(),
                     crate::meter::short(window)
                 ),
-                None => reference.to_string(),
+                None => shown,
             };
             let state = match model["state"].as_str() {
                 Some("cooling") => {
@@ -105,6 +121,7 @@ pub fn choices(result: &Value) -> Vec<Choice> {
                 name: name.to_string(),
                 detail,
                 state,
+                shared,
             });
         }
     }
@@ -174,6 +191,28 @@ mod tests {
             "providers": []});
         let refs: Vec<String> = choices(&list).into_iter().map(|c| c.reference).collect();
         assert_eq!(refs, ["@duo", "@legacy"]);
+    }
+
+    #[test]
+    fn a_provider_listed_twice_tags_each_copy_and_keeps_the_reference() {
+        // 核心 PL-1：两层都配了的那一家列两份，`relay@system` 是共用的；引用原样发回，看的写法去掉 `@system`。
+        let list = json!({"providers": [
+            {"id": "relay", "layer": "personal", "models": [{"model": "v4", "ref": "relay/v4"}]},
+            {"id": "relay@system", "layer": "system", "models": [{"model": "v4", "ref": "relay@system/v4"}]},
+            {"id": "solo", "layer": "system", "models": [{"model": "m", "ref": "solo/m"}]}
+        ]});
+        let got: Vec<_> = super::choices(&list)
+            .into_iter()
+            .map(|c| (c.reference, c.detail, c.shared))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                ("relay/v4".into(), "relay/v4".into(), Some(false)),
+                ("relay@system/v4".into(), "relay/v4".into(), Some(true)),
+                ("solo/m".into(), "solo/m".into(), None),
+            ]
+        );
     }
 
     #[test]
