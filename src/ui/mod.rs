@@ -118,7 +118,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         return;
     }
     // 不在首页、够宽时右边分出侧边栏，别的都画在主列里（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。
-    let home = app.talk.blank();
+    let home = app.seen().home();
     let (main, sidebar) = if home {
         let area = frame.area();
         (area, Rect::new(area.right(), area.y, 0, area.height))

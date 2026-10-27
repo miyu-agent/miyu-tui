@@ -110,3 +110,41 @@ fn what_the_core_says_wins_over_what_was_remembered() {
     tui.wait_for("Tab 切换权限级别");
     tui.wait_for("@@");
 }
+
+#[test]
+fn entering_the_recent_session_never_flashes_the_empty_home() {
+    // 2026-10-27 项目主人报：机器忙、起来进最近的会话时，先闪一下空会话的首页（输入框在正中）才跳过去。核心冻住就是
+    // 「会话迟迟打不开」：这段时间照会话的样子画，输入框在最下面，正文空着。
+    let home = Home::with_settings(
+        Script::new([Play::Says("第一句的回答。")]),
+        "[ui]\nstartup = \"recent\"\n",
+    );
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("Tab 切换权限级别");
+    tui.say("你好");
+    tui.wait_for("第一句的回答。");
+    tui.pump(Duration::from_millis(500));
+    drop(tui);
+    // 再起来一趟进了最近的会话：记下「上一回进了已有的会话」。
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("第一句的回答。");
+    tui.pump(Duration::from_millis(500));
+    drop(tui);
+    home.freeze_core();
+    let mut tui = home.tui("zh_CN.UTF-8");
+    let start = tui.record_from_here();
+    tui.pump(Duration::from_millis(1500));
+    let frames = support::frames(start, &tui.recorded());
+    assert!(!frames.is_empty(), "核心冻住也照记下的先画");
+    for frame in &frames {
+        let top = frame.iter().position(|l| l.contains('╭'));
+        assert!(
+            top.is_some_and(|row| row + 5 >= frame.len()),
+            "输入框在最下面，不画首页：\n{}",
+            frame.join("\n")
+        );
+    }
+    home.stop_core();
+    home.restart_core();
+    tui.wait_for("第一句的回答。");
+}
