@@ -836,7 +836,7 @@
     "pool_names": {"flagship": "Flagship", "normal": "Everyday", "lite": "Lite"},
     "pool_uses": "Used for: {names}",
     "pool_tag": "{how} · {n}",
-    "empty_pool": "empty",
+    "pool_uses_head": "Used for",
     "gone": " (gone)",
     "options": {
       "": "Auto",

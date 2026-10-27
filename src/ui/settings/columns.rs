@@ -54,6 +54,9 @@ pub fn draw(frame: &mut Frame, body: Rect, page: &mut Settings, texts: &Texts, l
             &items,
             &empty,
         );
+        if *col == Col::Member {
+            uses(frame, area, page, texts, items.len());
+        }
         x += width + look.column_gap;
     }
     if focus == Col::Use && x < body.right() {
@@ -145,20 +148,22 @@ fn items(col: Col, page: &Settings, texts: &Texts) -> (String, Vec<Item>, String
         Col::Pool => {
             let rows = page.nav.pools(view).into_iter().map(|p| {
                 let how = texts.option(p.strategy.as_deref().unwrap_or_default());
-                let mut tag = if p.members.is_empty() {
-                    texts.empty_pool.clone()
-                } else {
-                    texts
-                        .pool_tag
-                        .replace("{how}", how)
-                        .replace("{n}", &p.members.len().to_string())
-                };
-                // 走这一档的旁路请求（核心 Q-2）：「用于：起标题」。
-                if !p.uses.is_empty() {
-                    let sep = crate::sheet::sep();
-                    let names = p.uses.join(&sep);
-                    tag = format!("{tag}{sep}{}", texts.pool_uses.replace("{names}", &names));
+                // 空池不写「空池」，名字照旧红（2026-10-27 项目主人：「空池去掉」）。
+                let mut parts = Vec::new();
+                if !p.members.is_empty() {
+                    parts.push(
+                        texts
+                            .pool_tag
+                            .replace("{how}", how)
+                            .replace("{n}", &p.members.len().to_string()),
+                    );
                 }
+                // 走这一档的旁路请求（核心 Q-2）：「用于：起标题」；放不下截掉加「…」，写全的在成员栏下面（`uses`）。
+                if !p.uses.is_empty() {
+                    let names = p.uses.join(&crate::sheet::sep());
+                    parts.push(texts.pool_uses.replace("{names}", &names));
+                }
+                let tag = parts.join(&crate::sheet::sep());
                 Item {
                     text: texts.pool_names.get(&p.name).unwrap_or(&p.name).clone(),
                     tag,
@@ -258,10 +263,44 @@ fn column(
     }
 }
 
+/// 成员栏下面：选中的池走它的旁路请求，空一行、暗色的「用于」，一项一行写全（2026-10-27 项目主人：池那一行放不下截掉，
+/// 这里写全）。`listed` 是成员有几行；放不下的不画。
+fn uses(frame: &mut Frame, area: Rect, page: &Settings, texts: &Texts, listed: usize) {
+    let Some(pool) = page.nav.pool(&page.view).filter(|p| !p.uses.is_empty()) else {
+        return;
+    };
+    let rows = usize::from(area.height.saturating_sub(2));
+    let below = listed.max(1).min(rows) + 1;
+    let width = usize::from(area.width.saturating_sub(2));
+    let lines = std::iter::once(texts.pool_uses_head.clone())
+        .chain(pool.uses.iter().map(|u| format!("  {u}")));
+    for (i, line) in lines.enumerate() {
+        let Some(y) = u16::try_from(below + i)
+            .ok()
+            .filter(|&off| usize::from(off) < rows)
+            .map(|off| area.y + 2 + off)
+        else {
+            break;
+        };
+        frame
+            .buffer_mut()
+            .set_string(area.x + 2, y, fit(&line, width), theme::dim());
+    }
+}
+
 /// 一行的字，右边暗着写的靠右。
 fn row(frame: &mut Frame, rect: Rect, item: &Item) {
     let inner = rect.width.saturating_sub(3) as usize;
-    let tag_width = item.tag.width();
+    // 右边的字放不下时截掉加「…」，名字至少留一半（2026-10-27 项目主人：「用于」多了放不下）。
+    let tag = if item.tag.width() + 1 + item.text.width().min(inner / 2) > inner {
+        fit(
+            &item.tag,
+            inner.saturating_sub(item.text.width().min(inner / 2) + 1),
+        )
+    } else {
+        item.tag.clone()
+    };
+    let tag_width = tag.width();
     let room = inner.saturating_sub(if tag_width > 0 { tag_width + 1 } else { 0 });
     let style = if item.bad {
         theme::error()
@@ -279,9 +318,7 @@ fn row(frame: &mut Frame, rect: Rect, item: &Item) {
         } else {
             theme::dim()
         };
-        frame
-            .buffer_mut()
-            .set_string(x, rect.y, &item.tag, tag_style);
+        frame.buffer_mut().set_string(x, rect.y, &tag, tag_style);
     }
 }
 
