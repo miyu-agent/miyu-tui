@@ -36,8 +36,8 @@ pub struct Texts {
     pub tags: [String; 2],
     /// 池栏右边：「{how} · {n}」。
     pub pool_tag: String,
-    /// 空池（红）。
-    pub empty_pool: String,
+    /// 成员栏下面「用于」那一段的标题：选中的池走它的旁路请求一项一行写全（2026-10-27 项目主人）。
+    pub pool_uses_head: String,
     /// 固定的三个池给人看的名字：池名 → 名字（`flagship` 旗舰、`normal` 日常、`lite` 轻量，`pools.rs`）。
     pub pool_names: std::collections::HashMap<String, String>,
     /// 池栏右边接在后面的「用于：{names}」：走这一档的旁路请求（核心 Q-2）。
