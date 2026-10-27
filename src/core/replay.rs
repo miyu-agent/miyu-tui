@@ -43,8 +43,11 @@ impl Replay {
         let undo = self.undo_events(event);
         match kind {
             "message.assistant" => self.pending = Some(event.clone()),
-            // 人发的算你说的（哪个头发的补发时认不出来）；别的会话、别的 harness 发的照平常画成别处来的话。
-            "message.user" if event["by"]["kind"] == "person" => {
+            // 人发的算你说的（哪个头发的补发时认不出来），到点的定时任务、循环交进来的也是（`push/jobs.rs` 的 `said`）；别的会话、
+            // 别的 harness 发的照平常画成别处来的话。
+            "message.user"
+                if matches!(event["by"]["kind"].as_str(), Some("person" | "schedule")) =>
+            {
                 tick(&mut out, at(event));
                 out.push(Push::Said {
                     seq: event["seq"].as_u64().unwrap_or_default(),
