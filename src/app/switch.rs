@@ -283,6 +283,11 @@ impl App {
         if self.talk.transcript.session.as_deref() == Some(session.as_str()) {
             return;
         }
+        // 正在补发的就是它（点了以后还没换上来又点一下）：等补完换上来，不把停放着的空正文提前换上（2026-10-27 项目主人报：
+        // 侧边栏切会话有时一闪空会话的画面；伪终端连点两下复现）。
+        if self.talk.opening(&session) {
+            return;
+        }
         let keep = self.talk.busy_here();
         self.link.core.send(Command::Open {
             session: session.clone(),
