@@ -187,3 +187,38 @@ fn todo_clear_folds_the_list_at_once() {
     tui.pump(std::time::Duration::from_millis(300));
     assert!(!tui.shows("待办 0/2"), "{}", tui.lines().join("\n"));
 }
+
+#[test]
+fn with_a_sidebar_and_its_mascot_the_items_still_show_above_the_input() {
+    // 2026-10-27 用户报（测试包 1，Arch、foot）：让她写待办，只看得到「待办 1/3」、看不到每一项，有时整块都没有，重开才有。
+    // 窗口宽、有侧边栏时待办原来在侧边栏最底下，吉祥物、会话那几段占满了高，剩不下几行。待办挪到输入框上面（第 4a 条）以后
+    // 不受侧边栏多高管。
+    let args = serde_json::json!({"todos": [
+        {"content": "读一遍代码", "status": "completed"},
+        {"content": "改掉那个错", "status": "in_progress"},
+        {"content": "跑测试", "status": "pending"}
+    ]})
+    .to_string();
+    let script = Script::new([
+        Play::Calls(vec![("todowrite".into(), args)]),
+        Play::Says("列好了。"),
+    ]);
+    let home = Home::with_tools(script, "[tui]\nmascot_home = true\nmascot_sidebar = true\n");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+    tui.wait_for("工作区");
+    tui.say("排一下要做的");
+    tui.wait_for("列好了。");
+    tui.wait_for("待办 1/3");
+    tui.wait_for("跑测试");
+    let lines = tui.lines();
+    let main = |word: &str| {
+        lines
+            .iter()
+            .any(|l| l.find(word).is_some_and(|at| at < 100))
+    };
+    assert!(
+        main("待办 1/3") && main("改掉那个错") && main("跑测试"),
+        "每一项都在主列、输入框上面：\n{}",
+        lines.join("\n")
+    );
+}
