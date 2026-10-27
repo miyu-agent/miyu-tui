@@ -65,12 +65,26 @@ pub(crate) fn elapsed(since: jiff::Timestamp, now: jiff::Timestamp) -> u64 {
     u64::try_from(now.as_second() - since.as_second()).unwrap_or_default()
 }
 
-/// 画在框上面那一行，右对齐、暗色：右端和框下面那一行的用量对齐（`area` 是框里放字那么宽的一行）。
-pub(super) fn draw(frame: &mut Frame, area: Rect, text: &str) {
+/// 画在框上面那一行，右对齐、暗色：右端和框下面那一行的用量对齐（`area` 是框里放字那么宽的一行）。点得动（开浮窗），
+/// 指针停在字上时加下划线（2026-10-27 项目主人报：原来悬停没下划线、指针不变手）。
+pub(super) fn draw(frame: &mut Frame, area: Rect, text: &str, hover: bool) {
+    let style = if hover {
+        theme::dim().add_modifier(ratatui::style::Modifier::UNDERLINED)
+    } else {
+        theme::dim()
+    };
     frame.render_widget(
-        Paragraph::new(Line::styled(text.to_string(), theme::dim()).right_aligned()),
+        Paragraph::new(Line::styled(text.to_string(), style).right_aligned()),
         area,
     );
+}
+
+/// 字占的那一截：右对齐、一行（点它、悬停照它认）。
+pub(crate) fn spot(area: Rect, text: &str) -> Rect {
+    let width = u16::try_from(unicode_width::UnicodeWidthStr::width(text))
+        .unwrap_or(u16::MAX)
+        .min(area.width);
+    Rect::new(area.right() - width, area.y, width, area.height.min(1))
 }
 
 #[cfg(test)]
@@ -147,5 +161,24 @@ mod tests {
         let long = "很长".repeat(30);
         let shown = border(None, Some(&long), &config).unwrap();
         assert!(shown.ends_with("… "), "{shown}");
+    }
+
+    #[test]
+    fn hovering_the_goal_underlines_it() {
+        // 2026-10-27 项目主人报：原来悬停没下划线。字占的那一截右对齐；悬停时整截加下划线。
+        use ratatui::layout::Rect;
+        use ratatui::style::Modifier;
+        let area = Rect::new(0, 0, 30, 1);
+        let spot = super::spot(area, "目标 2/5");
+        assert_eq!((spot.x, spot.width), (22, 8), "右对齐");
+        for hover in [false, true] {
+            let backend = ratatui::backend::TestBackend::new(30, 1);
+            let mut terminal = ratatui::Terminal::new(backend).unwrap();
+            terminal
+                .draw(|f| super::draw(f, area, "目标 2/5", hover))
+                .unwrap();
+            let cell = &terminal.backend().buffer()[(22, 0)];
+            assert_eq!(cell.modifier.contains(Modifier::UNDERLINED), hover);
+        }
     }
 }

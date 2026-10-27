@@ -374,8 +374,13 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         })
         .flatten()
         .filter(|_| !home);
+    app.screen.areas.goal_text = goal
+        .as_deref()
+        .map_or(Rect::default(), |g| goal_tag::spot(areas.goal, g));
     if let Some(goal) = goal {
-        goal_tag::draw(frame, areas.goal, &goal);
+        let spot = app.screen.areas.goal_text;
+        let hover = app.screen.pointer.is_some_and(|p| spot.contains(p));
+        goal_tag::draw(frame, areas.goal, &goal, hover);
     }
     if let Some(matches) = &matches {
         let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);

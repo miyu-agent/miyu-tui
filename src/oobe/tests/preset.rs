@@ -53,7 +53,11 @@ fn the_default_is_chosen_first_and_enter_makes_it_the_default() {
     assert_eq!(oobe.preset.cursor, 1, "选着现在的默认预设");
     let card = &oobe.preset.cards[0];
     assert_eq!(card.features.as_ref().map(Vec::len), Some(2), "没装的不算");
-    assert_eq!(card.summary.as_deref(), Some("写代码用"), "描述照 preset.list 的 summary");
+    assert_eq!(
+        card.summary.as_deref(),
+        Some("写代码用"),
+        "描述照 preset.list 的 summary"
+    );
     assert_eq!(oobe.preset.cards[1].summary, None, "没写的没有");
     oobe.key(key(KeyCode::Up), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);

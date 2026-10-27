@@ -386,6 +386,8 @@ impl App {
             || over(self.screen.areas.session_id)
             || over(self.screen.areas.todo)
             || over(self.screen.areas.recent)
+            // 长期目标那一截字（点了开浮窗，`goal_box.rs`）。
+            || over(self.screen.areas.goal_text)
             || over(self.screen.areas.bottom)
             // 正文的滚动条（`body_view.rs`）。
             || self.screen.view.bar_hover
