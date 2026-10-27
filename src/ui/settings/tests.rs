@@ -459,3 +459,34 @@ fn the_fixed_pools_are_named_and_listed_first() {
         "走这一档的旁路请求写在池右边：{row}"
     );
 }
+
+#[test]
+fn a_provider_configured_twice_says_which_copy_each_row_is() {
+    // 核心 PL-1：系统配置、个人设置都配了的那一家列两份，名字后面写自用、共用；只有一份的不写（2026-10-27 项目主人定）。
+    let config = Config::builtin().unwrap();
+    let mut list = crate::settings::test_support::model_list();
+    let providers = list["providers"].as_array_mut().unwrap();
+    let mut shared = providers
+        .iter()
+        .find(|p| p["id"] == "relay")
+        .cloned()
+        .unwrap();
+    shared["id"] = json!("relay@system");
+    providers.push(shared);
+    let mut p = Settings::open(false, true);
+    for (tag, method, _) in p.take_asks() {
+        let got = match method {
+            "model.list" => list.clone(),
+            "config.get" => crate::settings::test_support::config_all(),
+            _ => json!({"secrets": []}),
+        };
+        p.answer(tag, Ok(got), &config.text.settings);
+    }
+    press(&mut p, &config, KeyCode::Enter);
+    let (text, _) = screen(&mut p, &config, 120, 30);
+    assert!(
+        text.contains("中转站 · 自用") && text.contains("中转站 · 共用"),
+        "{text}"
+    );
+    assert!(!text.contains("dev · "), "只有一份的不写：\n{text}");
+}

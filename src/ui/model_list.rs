@@ -41,6 +41,8 @@ pub struct Texts {
     pub no_key: String,
     /// 选了没有 key 的。
     pub refuse_no_key: String,
+    /// 同一家两份时接在引用后面的：自用、共用（核心 PL-1，`copies.rs`）。
+    pub copies: [String; 2],
 }
 
 /// 框（标题、提示）、排好的行、每一行是对得上的第几个；`current` 是会话现在用的引用。
@@ -109,6 +111,13 @@ pub fn lines(
                 &list.query,
                 detail_style,
             ));
+            if let Some(shared) = choice.shared {
+                let tag = &texts.copies[usize::from(shared)];
+                content.push(Span::styled(
+                    format!("{}{tag}", crate::sheet::sep()),
+                    detail_style,
+                ));
+            }
             let right = right(choice, now, texts);
             // 会话现在用的那一个行首写 `●`，选中了也照旧（2026-10-19 项目主人）。
             let on = current == Some(choice.reference.as_str());
@@ -159,6 +168,7 @@ mod tests {
             name: name.into(),
             detail: "dev · 300k".into(),
             state,
+            shared: None,
         }
     }
 

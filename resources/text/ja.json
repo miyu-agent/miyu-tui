@@ -777,7 +777,8 @@
     "cooling": "クールダウン {n}m",
     "cooling_bare": "クールダウン中",
     "no_key": "キーなし",
-    "refuse_no_key": "このモデルにはキーがありません"
+    "refuse_no_key": "このモデルにはキーがありません",
+    "copies": ["自分用", "共用"]
   },
   "settings": {
     "admin": ["管理者モード", "先に管理者モードに入ってください（Shift+A）", "A", "管理者モード"],
@@ -998,6 +999,7 @@
       "Loading…",
       "No matches"
     ],
+    "copies": ["自分用", "共用"],
     "confirm": [
       "プロバイダ {name} を削除しますか？",
       "モデル {name} を削除しますか？",

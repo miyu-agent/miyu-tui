@@ -10,6 +10,7 @@ mod cells;
 mod clipboard;
 mod commands;
 mod config;
+mod copies;
 mod core;
 mod crash;
 mod diagrams;

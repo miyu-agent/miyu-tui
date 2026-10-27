@@ -777,7 +777,8 @@
     "cooling": "冷却 {n}m",
     "cooling_bare": "冷却中",
     "no_key": "未设置 key",
-    "refuse_no_key": "该模型未设置 key"
+    "refuse_no_key": "该模型未设置 key",
+    "copies": ["自用", "共用"]
   },
   "settings": {
     "admin": ["管理员模式", "要先进入管理员模式（Shift+A）", "A", "管理员模式"],
@@ -998,6 +999,7 @@
       "正在读取…",
       "无匹配结果"
     ],
+    "copies": ["自用", "共用"],
     "confirm": [
       "删除供应商 {name}？",
       "删除模型 {name}？",
