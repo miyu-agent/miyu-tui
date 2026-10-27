@@ -1494,7 +1494,7 @@
       "title": "Which currency should amounts be shown in?",
       "sub": "What models cost is converted into this currency at recent exchange rates",
       "default": "USD",
-      "names": {"CNY": "Chinese yuan", "USD": "US dollar", "EUR": "Euro", "JPY": "Japanese yen", "HKD": "Hong Kong dollar", "GBP": "British pound", "TWD": "New Taiwan dollar", "KRW": "South Korean won"}
+      "names": {"CNY": "Chinese yuan", "USD": "US dollar", "EUR": "Euro", "JPY": "Japanese yen", "HKD": "Hong Kong dollar", "GBP": "British pound", "TWD": "New Taiwan dollar", "KRW": "South Korean won", "SGD": "Singapore dollar", "AUD": "Australian dollar", "CAD": "Canadian dollar", "CHF": "Swiss franc", "NZD": "New Zealand dollar", "INR": "Indian rupee", "THB": "Thai baht", "MYR": "Malaysian ringgit", "IDR": "Indonesian rupiah", "VND": "Vietnamese dong", "PHP": "Philippine peso", "RUB": "Russian ruble"}, "other": ["Other…", "Currency code", "Three letters, e.g. SGD", "Enter a three-letter currency code"]
     },
     "icons": {
       "title": "Icons",

@@ -44,3 +44,45 @@ fn enter_writes_the_personal_setting_and_moves_on() {
     );
     assert_eq!(step.key(key(KeyCode::Esc), &mut asker), Move::Back);
 }
+
+#[test]
+fn other_takes_a_three_letter_code_and_refuses_anything_else() {
+    // 2026-10-27 项目主人：「列更多常见的，然后加其他」。
+    let mut step = CurrencyStep::default();
+    let mut asker = Asker::default();
+    for _ in 0..CURRENCIES.len() {
+        step.key(key(KeyCode::Down), &mut asker);
+    }
+    assert_eq!(step.pick.selected, step.other_row(), "最后一行是「其他…」");
+    assert_eq!(step.key(key(KeyCode::Enter), &mut asker), Move::Stay);
+    assert!(step.other.editing(), "回车开始填");
+    for c in "sgdx".chars() {
+        step.key(key(KeyCode::Char(c)), &mut asker);
+    }
+    assert_eq!(step.key(key(KeyCode::Enter), &mut asker), Move::Stay);
+    assert!(
+        step.invalid && step.other.editing(),
+        "四个字母：红字，接着改"
+    );
+    step.key(key(KeyCode::Backspace), &mut asker);
+    assert_eq!(step.key(key(KeyCode::Enter), &mut asker), Move::Next);
+    let sent = asker.take();
+    let params = sent
+        .iter()
+        .find(|a| a.method == "config.set")
+        .map(|a| a.params.clone())
+        .expect("写个人设置");
+    assert_eq!(params["changes"][0]["value"], "SGD", "转大写");
+}
+
+#[test]
+fn a_code_not_in_the_list_opens_on_other() {
+    let mut step = CurrencyStep::default();
+    let set =
+        json!({"items": {"usage.currency": {"value": "BRL", "origin": {"layer": "personal"}}}});
+    step.answer(&Ok(set), "CNY");
+    assert_eq!(step.pick.selected, step.other_row());
+    assert_eq!(step.other.text(), "BRL");
+    assert_eq!(super::code(" brl "), Some("BRL".into()));
+    assert_eq!(super::code("B1L"), None);
+}
