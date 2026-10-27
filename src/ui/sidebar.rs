@@ -193,23 +193,6 @@ pub(super) fn wrap_path(path: &str, room: usize) -> Vec<String> {
     lines
 }
 
-/// 一段：第一行是标题（蓝色），别的行缩进两格。
-pub fn section(lines: Vec<Line<'static>>) -> Vec<Line<'static>> {
-    lines
-        .into_iter()
-        .enumerate()
-        .map(|(i, line)| {
-            if i == 0 {
-                line.style(theme::side_title())
-            } else {
-                let mut spans = vec![Span::raw("  ")];
-                spans.extend(line.spans);
-                Line::from(spans).style(line.style)
-            }
-        })
-        .collect()
-}
-
 /// 画侧边栏：竖线、吉祥物（开着的话）、会话那几段，一段之间空一行。
 pub fn draw(
     frame: &mut Frame,
@@ -280,8 +263,13 @@ pub fn draw(
     let list = seen.talk.sessions_seen.as_deref().unwrap_or_default();
     let count = seen.config.layout.sidebar_sessions;
     let frame_at = (inner, super::spin_frame(seen));
-    let (recent, ids) = super::recent::recent_lines(list, current, count, frame_at, seen.config);
-    let recent = section(recent);
+    let (mut recent, ids) =
+        super::recent::recent_lines(list, current, count, frame_at, seen.config);
+    // 记号挂在缩进那两格里，名字和别的几段的内容对齐（2026-10-27 项目主人：「最近会话的缩进有待优化」）：不套 `section`
+    // 的缩进，只给标题上色。
+    if let Some(title) = recent.first_mut() {
+        *title = std::mem::take(title).style(theme::side_title());
+    }
     let room = area.bottom().saturating_sub(top);
     let tall = u16::try_from(recent.len()).unwrap_or(u16::MAX).min(room);
     let block = Rect::new(area.x + 1, top, inner, tall);

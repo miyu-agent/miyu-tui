@@ -18,8 +18,8 @@ struct Row<'a> {
     waiting: bool,
 }
 
-/// 「最近会话」那一段：标题加一行行（还没起 [`super::sidebar::section`] 的缩进），一并交回每一行是哪个会话（标题那一行是
-/// `None`）。`count` 是一共列几个，0 和没有可列的是空的。`current` 是正在看的会话和它的名字（没有标题的照列表里的写）。
+/// 「最近会话」那一段：标题加一行行，一行是两格记号接名字（记号就挂在别的几段缩进的那两格里，名字和它们的内容对齐），
+/// 一并交回每一行是哪个会话（标题那一行是 `None`）。`count` 是一共列几个，0 和没有可列的是空的。`current` 是正在看的会话和它的名字（没有标题的照列表里的写）。
 pub fn recent_lines(
     list: &[SessionInfo],
     current: Option<(&str, Option<&str>)>,
@@ -57,8 +57,8 @@ pub fn recent_lines(
     }
     let mut lines = vec![Line::raw(config.text.side_recent.clone())];
     let mut ids = vec![None];
-    // 缩进两格、记号两格。
-    let room = width.saturating_sub(4);
+    // 记号两格（挂在缩进里）。
+    let room = width.saturating_sub(2);
     for row in rows {
         let (mark, mark_style) = mark(&row, frame, config);
         let text = super::rows::clip(row.name, room);
