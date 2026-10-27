@@ -124,9 +124,10 @@ fn pausing_without_a_goal_only_pops_the_cores_words() {
     assert!(!tui.shows("核心拒绝"), "{}", tui.lines().join("\n"));
 }
 
-/// 长期目标没装：照核心的 `data.why` 说为什么（第 2 条）。
+/// 长期目标没装：核心 BS-1下下 起没有这条命令（项目主人 10-27 定）；列表里不列，打了核心说不认得，同别的不存在的命令不放回
+/// 输入框（2026-10-23 项目主人）。
 #[test]
-fn a_goal_that_cannot_be_used_says_why() {
+fn a_goal_without_its_package_is_no_command() {
     let home = Home::with_tools(Script::new([Play::Says("你好。")]), "");
     // 卸掉出厂的长期目标（系统那一层记一笔，核心 F-5 上；U23 上上起在 `system/packages/`）；软件包核心起来时读，重启一次。
     let removed = home.root().join("system/packages/goal.removed");
@@ -138,8 +139,13 @@ fn a_goal_that_cannot_be_used_says_why() {
     tui.say("你好");
     tui.wait_for("你好。");
     tui.say("/goal 把测试写完");
-    tui.wait_for("长期目标未安装");
+    tui.wait_for("命令不存在");
     assert!(!tui.shows("核心拒绝"), "{}", tui.lines().join("\n"));
+    assert!(
+        !tui.shows("❯ /goal 把测试写完"),
+        "不放回输入框：\n{}",
+        tui.lines().join("\n")
+    );
 }
 
 /// 改目标的用法（2026-10-17 项目主人：打 /goal 按 `↑` 调出之前那句改了回车，核心 X-8 再补起再发就是改）：命令列表开着时
