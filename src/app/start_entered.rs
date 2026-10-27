@@ -16,6 +16,12 @@ impl Seen<'_> {
     pub fn entering(&self) -> bool {
         self.boxes.entering && self.talk.transcript.session.is_none()
     }
+
+    /// 画首页（输入框居中、吉祥物、工作区那一行）：正文是空的，而且不是在等进已有的会话（2026-10-27 项目主人报：机器忙、
+    /// 起来进最近的会话时，先闪一下空会话的首页才跳过去）。在等的照会话的样子画，正文先空着。
+    pub fn home(&self) -> bool {
+        self.talk.blank() && !self.entering()
+    }
 }
 
 impl App {

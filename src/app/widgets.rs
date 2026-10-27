@@ -24,7 +24,7 @@ impl App {
                 page: Some(page.target.clone()),
             });
         }
-        if self.talk.blank() {
+        if self.seen().home() {
             return Some(View {
                 session: None,
                 showing: vec![Place::Home, Place::Status],
