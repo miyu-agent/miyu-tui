@@ -101,3 +101,26 @@ fn up_and_ctrl_k_move_the_command_list_and_never_recall_input_history() {
         );
     }
 }
+
+#[test]
+fn loop_from_the_core_is_listed_and_taken_by_the_core() {
+    // 核心 J-2：`/loop` 是核心的命令，照 `command.catalog` 列出来；打了整行交给 `command.run`，核心收下（2026-10-27 项目主人：
+    // 终端只做 loop）。工具面上要有 `schedule_wakeup`：测具登记出厂的工具。
+    let home = Home::with_tools(Script::new([]), "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.type_text("/lo");
+    tui.wait_for("/loop [<间隔>] <要说的话> | off");
+    tui.key(b"\x7f\x7f\x7f");
+    let start = tui.record_from_here();
+    tui.say("/loop 10m 看一眼 CI");
+    tui.pump(Duration::from_millis(1500));
+    let frames = support::frames(start, &tui.recorded());
+    assert!(
+        frames
+            .iter()
+            .all(|f| !f.iter().any(|l| l.contains("命令不存在"))),
+        "核心收下了，不弹「命令不存在」"
+    );
+    assert!(!tui.input().contains("/loop"), "交出去了：{}", tui.input());
+}

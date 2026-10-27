@@ -208,6 +208,27 @@ fn asking_to_run_outside_the_sandbox_shows_the_line_and_allow_once_runs_it() {
 }
 
 #[test]
+fn a_command_outside_the_sandbox_offers_to_stop_asking_for_its_prefix() {
+    // 核心 SB-3：越过沙盒的规则带命令前缀，「不再询问」写清是哪种命令开头的（反馈第 23 条）。
+    let args = serde_json::json!({
+        "command": "echo outside", "description": "在沙盒外试一下", "outside_sandbox": true
+    })
+    .to_string();
+    let script = Script::new([
+        Play::Calls(vec![("shell".into(), args)]),
+        Play::Says("跑完了。"),
+    ]);
+    let home = Home::with_tools(script, "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("试试");
+    tui.wait_for("$ echo outside");
+    tui.wait_for("以后 `echo` 开头的命令在这个目录不再询问");
+    tui.key(b"\r");
+    tui.wait_for("跑完了。");
+}
+
+#[test]
 fn the_same_call_id_in_a_new_session_still_asks() {
     // 调用编号只在一个会话里唯一：前一个会话了结过的 `call_…`，`/new` 以后新会话又问同一个编号，照样开抽屉
     // （2026-10-07 项目主人报：接上旧会话、`/new` 以后让她在沙盒外跑一条 echo，没弹确认，看着卡住了）。

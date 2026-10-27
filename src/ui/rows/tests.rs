@@ -4,6 +4,31 @@ use super::cache_key;
 use crate::theme;
 
 #[test]
+fn in_a_narrow_window_the_done_icon_hangs_in_the_slot() {
+    // 紧凑版面（「输入框」第 10 条，2026-10-27 项目主人：「左侧留一列给标记和盲文」）：收尾行的图标在第 0 列，字和别的字
+    // 一样从第 2 列起；常规版面照旧图标打头、多空一格。
+    use crate::core::Level;
+    use crate::transcript::{Kind, Transcript};
+    use crate::ui::test_support::Fixture;
+    let f = Fixture::new();
+    let mut t = Transcript::default();
+    t.note(Kind::Done, "20:32 · deepseek/deepseek-v4 · 0.0s".into());
+    t.entries[0].level = Some(Level::Workspace);
+    let icon = &f.config.layout.level_icons[&Level::Workspace];
+    let mut ctx = f.ctx();
+    ctx.edge = true;
+    let rows = super::entry_rows(0, &t.entries[0], &ctx);
+    assert_eq!(
+        rows[0].line.to_string(),
+        format!("{icon}20:32 · deepseek/deepseek-v4 · 0.0s")
+    );
+    assert_eq!(rows[0].content_x, 2);
+    let rows = super::entry_rows(0, &t.entries[0], &f.ctx());
+    let line = rows[0].line.to_string();
+    assert!(line.starts_with(&format!("  {icon} 20:32")), "{line:?}");
+}
+
+#[test]
 fn a_turn_cut_off_by_the_core_looks_like_an_interrupted_one_in_red() {
     use crate::core::Level;
     use crate::transcript::{Kind, Transcript};

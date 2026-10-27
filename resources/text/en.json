@@ -43,7 +43,11 @@
     "replied": "Reply finished",
     "failed": "Something went wrong",
     "approving": "Waiting for you to confirm",
-    "asking": "Waiting for your answer"
+    "asking": "Waiting for your answer",
+    "schedule_ran": "Scheduled task done",
+    "schedule_failed": "Scheduled task didn't finish",
+    "schedules_reset": "The schedule table was broken; all scheduled tasks are gone",
+    "open": "Open"
   },
   "refused": "The core refused: {reason}",
   "interrupted": "Interrupted",
@@ -609,6 +613,7 @@
       "Don't ask again for this folder",
       "Don't allow"
     ],
+    "decision_prefix": "Don't ask again for commands starting with `{prefix}` in this folder",
     "reason_hint": "Add a reason (optional)",
     "reason_key": "n write a reason",
     "command_above": "↑ {n} more above",

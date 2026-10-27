@@ -64,7 +64,8 @@ pub(super) async fn take(
                 | Awaiting::Human
                 | Awaiting::Models
                 | Awaiting::SessionsStream
-                | Awaiting::PackagesStream,
+                | Awaiting::PackagesStream
+                | Awaiting::NoticesStream,
             ) => true,
             Some(Awaiting::Choices) => notify(Update::Choices(Vec::new())),
             Some(Awaiting::Efforts) => notify(Update::Efforts(super::EffortList::default())),
@@ -205,7 +206,7 @@ pub(super) async fn take(
         Some(Awaiting::List | Awaiting::SessionsStream) => {
             return notify(Update::Sessions(sessions::read(&message["result"])));
         }
-        Some(Awaiting::PackagesStream) => return true,
+        Some(Awaiting::PackagesStream | Awaiting::NoticesStream) => return true,
         // 最新一页到了：画进去，再带 `after` 订阅（`page.rs`）。
         Some(Awaiting::Page(session)) => {
             return super::page::take_latest(
@@ -315,6 +316,16 @@ pub(super) async fn take(
     if super::widgets::lost(message) {
         if super::widgets::rejoin(rpc, link, awaiting).await.is_err() {
             // 发不出去是连接断了：下一条读不到，照断开重连，重连时照样再订阅。
+        }
+        return true;
+    }
+    // 给人的通知（核心 J-3 中）：交给界面弹；掉了队重新订（不补以前的）。
+    if let Some(notice) = super::notices::read(message) {
+        return notify(Update::Notice(notice));
+    }
+    if super::notices::lost(message) {
+        if let Ok(id) = super::notices::follow(rpc).await {
+            awaiting.insert(id, Awaiting::NoticesStream);
         }
         return true;
     }

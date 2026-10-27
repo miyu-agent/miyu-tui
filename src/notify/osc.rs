@@ -7,7 +7,14 @@ use base64::engine::general_purpose::STANDARD;
 /// base64（`e=1`），`s=silent` 音由界面自己放（kitty 的 `s=` 只认声音主题里的名字）。标题、正文两段用同一个 `id`，
 /// 同一个界面的新通知顶掉旧的；两段要一次写完，不能被别的输出劈开。照旧版 09-18 验过的写法。
 /// 有图标（PNG 的内容，第 3 条）的，标题和正文中间多一段 `p=icon`，`g=` 照内容算，kitty 照它缓存。
-pub fn kitty(id: &str, app: &str, title: &str, body: &str, icon: Option<&[u8]>) -> String {
+/// `report` 的（点了要切会话的，第 8 条）点一下 kitty 还往输入里回一句 `99;i=<编号>;`（`a=focus,report`）。
+pub fn kitty(
+    (id, report): (&str, bool),
+    app: &str,
+    (title, body): (&str, &str),
+    icon: Option<&[u8]>,
+) -> String {
+    let action = if report { "focus,report" } else { "focus" };
     let b = |text: &str| STANDARD.encode(text);
     let picture = icon.map_or_else(String::new, |data| {
         use std::hash::{DefaultHasher, Hash, Hasher};
@@ -20,7 +27,7 @@ pub fn kitty(id: &str, app: &str, title: &str, body: &str, icon: Option<&[u8]>) 
         )
     });
     format!(
-        "\x1b]99;i={id}:e=1:d=0:a=focus:o=unfocused:u=1:f={}:s={}:p=title;{}\x1b\\{picture}\x1b]99;i={id}:e=1:d=1:p=body;{}\x1b\\",
+        "\x1b]99;i={id}:e=1:d=0:a={action}:o=unfocused:u=1:f={}:s={}:p=title;{}\x1b\\{picture}\x1b]99;i={id}:e=1:d=1:p=body;{}\x1b\\",
         b(app),
         b("silent"),
         b(title),
@@ -46,7 +53,12 @@ mod tests {
 
     #[test]
     fn kitty_gets_two_base64_parts_that_jump_back_and_stay_quiet() {
-        let seq = kitty("miyu-42", "Miyu", "Miyu", "回答好了 · 3.2s", None);
+        let seq = kitty(
+            ("miyu-42", false),
+            "Miyu",
+            ("Miyu", "回答好了 · 3.2s"),
+            None,
+        );
         let parts: Vec<&str> = seq.split("\x1b\\").filter(|p| !p.is_empty()).collect();
         assert_eq!(parts.len(), 2, "标题、正文两段：{seq:?}");
         let head = parts[0].strip_prefix("\x1b]99;").unwrap();

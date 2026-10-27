@@ -71,8 +71,11 @@ impl Session {
         }
         // 终端在不在前台：不在时回答好了、在等你确认弹通知（同全屏「系统通知」，2026-10-20 项目主人验收要的）。
         ratatui::crossterm::execute!(io::stdout(), EnableFocusChange)?;
-        let reader =
-            crate::reader::Reader::spawn(move |event| sender.send(Incoming::Key(event)).is_ok());
+        let reader = crate::reader::Reader::spawn(move |read| match read {
+            crate::reader::Read::Event(event) => sender.send(Incoming::Key(event)).is_ok(),
+            // 终端往输入里回的话（`reader/replies.rs`）：shell 里用不上，不当按键。
+            crate::reader::Read::Reply(_) => true,
+        });
         core.send(Command::FetchHuman(config.language.code().to_string()));
         let depth = crate::theme::Depth::detect(|name| std::env::var(name).ok());
         let ime = crate::ime::Ime::start(&config.layout.ime, |name| std::env::var(name).ok());

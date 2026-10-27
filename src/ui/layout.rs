@@ -79,7 +79,14 @@ pub fn areas(
     let frame = Rect::new(x, footer_y.saturating_sub(height), width, height).intersection(area);
     let inner_x = frame.x + 1 + pad_left;
     let text = Rect::new(inner_x, frame.y + 1, text_width, rows).intersection(frame);
-    let footer = Rect::new(inner_x, footer_y, text_width, 1).intersection(area);
+    // 框外面的几行（底栏、运行状态行、排队的、目标、子代理、待办）从第几列起、多宽：同框里的字；紧凑版面贴着窗口两边，
+    // 记号在第 0 列（「输入框」第 10 条，2026-10-27 项目主人：「字也贴边，左侧留一列给标记和盲文」）。
+    let (side_x, side_width) = if m.compact {
+        (area.x, area.width)
+    } else {
+        (inner_x, text_width)
+    };
+    let footer = Rect::new(side_x, footer_y, side_width, 1).intersection(area);
     // 列表是覆盖层：贴着输入框、盖在正文底部上，正文和下面那几样照没开框时的位置（`tui.md`「斜杠命令列表」第 1 条，
     // 2026-10-02 项目主人定：原来把正文往上推，高度一变正文就上下跳）。只用输入框上面剩下的行（「窗口小的时候」
     // 第 1 条）。
@@ -93,11 +100,11 @@ pub fn areas(
     let block = if running { 3 + queued } else { 1 };
     let block_y = todo_y.saturating_sub(block).max(area.y);
     // 运行状态行那一块放不下的不画，不盖到下面去。
-    let free = Rect::new(inner_x, area.y, text_width, todo_y.saturating_sub(area.y));
+    let free = Rect::new(side_x, area.y, side_width, todo_y.saturating_sub(area.y));
     let pulse_y = if running { block_y + 1 } else { block_y };
-    let pulse = Rect::new(inner_x, pulse_y, text_width, 1).intersection(free);
+    let pulse = Rect::new(side_x, pulse_y, side_width, 1).intersection(free);
     let queued_rows = if running { queued } else { 0 };
-    let queued = Rect::new(inner_x, pulse_y + 1, text_width, queued_rows).intersection(free);
+    let queued = Rect::new(side_x, pulse_y + 1, side_width, queued_rows).intersection(free);
     // 正文和输入框一样宽，上面空出 top_gap 行。
     let top = (area.y + layout.top_gap).min(block_y);
     let body = Rect::new(frame.x, top, frame.width, block_y.saturating_sub(top));
@@ -110,15 +117,15 @@ pub fn areas(
         footer,
         pulse,
         queued,
-        goal: Rect::new(inner_x, frame.y.saturating_sub(1), text_width, 1).intersection(Rect::new(
+        goal: Rect::new(side_x, frame.y.saturating_sub(1), side_width, 1).intersection(Rect::new(
             area.x,
             area.y,
             area.width,
             frame.y.saturating_sub(area.y),
         )),
-        agents: agents_area(inner_x, text_width, footer_y + 1, agent_rows, layout)
+        agents: agents_area(side_x, side_width, footer_y + 1, agent_rows, layout)
             .intersection(area),
-        todo: Rect::new(inner_x, todo_y, text_width, todo_rows).intersection(area),
+        todo: Rect::new(side_x, todo_y, side_width, todo_rows).intersection(area),
         ..Areas::default()
     }
 }

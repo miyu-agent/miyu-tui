@@ -51,6 +51,7 @@ mod mention;
 mod models;
 mod mouse;
 pub mod new_session;
+mod notices;
 mod notify;
 mod oobe;
 mod output;

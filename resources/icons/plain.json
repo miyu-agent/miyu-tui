@@ -1,7 +1,11 @@
 {
   "tools": {
     "shell": "$",
-    "load_tools": "⇣"
+    "load_tools": "⇣",
+    "cron_create": "◷",
+    "cron_delete": "◷",
+    "cron_list": "◷",
+    "schedule_wakeup": "◷"
   },
   "tool": "⚙",
   "think": "✳",

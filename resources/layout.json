@@ -28,7 +28,7 @@
   "top_gap": 1,
   "pad_left": 3,
   "pad_right": 2,
-  "compact_below": 80,
+  "compact_below": 100,
   "compact_pad_left": 2,
   "compact_pad_right": 1,
   "paste_fold_lines": 10,
