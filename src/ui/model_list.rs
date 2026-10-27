@@ -41,7 +41,7 @@ pub struct Texts {
     pub no_key: String,
     /// 选了没有 key 的。
     pub refuse_no_key: String,
-    /// 同一家两份时接在引用后面的：自用、共用（核心 PL-1，`copies.rs`）。
+    /// 同一家两份时接在引用后面的：用户、系统（2026-10-27 项目主人改叫法；核心 PL-1，`copies.rs`）。
     pub copies: [String; 2],
 }
 
