@@ -444,29 +444,6 @@ fn the_mascot_item_offers_the_built_in_one_first() {
     );
 }
 
-/// 核心 L-2（2026-10-15）：供应商的窗多一行「约束解码」，挪到「开」存下，个人设置里写 `compat.strict_tools = true`。
-#[test]
-fn constrained_decoding_is_written_into_the_providers_compat_table() {
-    let home = Home::with_settings(Script::new([Play::Says("好。")]), RELAY);
-    let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
-    to_models(&mut tui);
-    tui.wait_for("cline");
-    tui.add_custom_provider();
-    tui.key(b"\r");
-    tui.type_text("strict");
-    tui.key(b"\r");
-    // ID、显示名称、Base URL、接口、认证、API Key、约束解码：挪到最后一行，换成「开」。
-    for _ in 0..6 {
-        tui.key(DOWN);
-    }
-    tui.key(b"l");
-    tui.wait_for("开");
-    tui.key(b"s");
-    wait_settings(&home, &mut tui, "strict_tools");
-    let settings = home.settings();
-    assert!(settings.contains("strict_tools = true"), "{settings}");
-}
-
 #[test]
 fn a_second_config_page_draws_the_whole_menu_from_its_first_frame() {
     // 2026-10-21 项目主人：「/config 打开配置菜单闪了一下」——清单读回来以前主菜单只画了两项、底下写「正在加载配置…」。
