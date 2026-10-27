@@ -126,6 +126,8 @@ pub struct Currency {
     pub default: String,
     /// 每一种的名字：代码 → 名字。
     pub names: std::collections::HashMap<String, String>,
+    /// 最后一行「其他…」、填代码那一格的名字、空着时暗色写的、填错了的红字（2026-10-27）。
+    pub other: [String; 4],
 }
 
 /// AI 怎么认识你那一步。

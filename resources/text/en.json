@@ -780,7 +780,7 @@
     "cooling_bare": "cooling",
     "no_key": "no key",
     "refuse_no_key": "This model has no key",
-    "copies": ["Personal", "Shared"]
+    "copies": ["User", "System"]
   },
   "settings": {
     "admin": ["admin mode", "Enter admin mode first (Shift+A)", "A", "admin mode"],
@@ -838,7 +838,7 @@
     "pool_names": {"flagship": "Flagship", "normal": "Everyday", "lite": "Lite"},
     "pool_uses": "Used for: {names}",
     "pool_tag": "{how} · {n}",
-    "empty_pool": "empty",
+    "pool_uses_head": "Used for",
     "gone": " (gone)",
     "options": {
       "": "Auto",
@@ -1001,7 +1001,7 @@
       "Loading…",
       "No matches"
     ],
-    "copies": ["Personal", "Shared"],
+    "copies": ["User", "System"],
     "confirm": [
       "Delete provider {name}?",
       "Delete model {name}?",
@@ -1496,7 +1496,7 @@
       "title": "Which currency should amounts be shown in?",
       "sub": "What models cost is converted into this currency at recent exchange rates",
       "default": "USD",
-      "names": {"CNY": "Chinese yuan", "USD": "US dollar", "EUR": "Euro", "JPY": "Japanese yen", "HKD": "Hong Kong dollar", "GBP": "British pound", "TWD": "New Taiwan dollar", "KRW": "South Korean won"}
+      "names": {"CNY": "Chinese yuan", "USD": "US dollar", "EUR": "Euro", "JPY": "Japanese yen", "HKD": "Hong Kong dollar", "GBP": "British pound", "TWD": "New Taiwan dollar", "KRW": "South Korean won", "SGD": "Singapore dollar", "AUD": "Australian dollar", "CAD": "Canadian dollar", "CHF": "Swiss franc", "NZD": "New Zealand dollar", "INR": "Indian rupee", "THB": "Thai baht", "MYR": "Malaysian ringgit", "IDR": "Indonesian rupiah", "VND": "Vietnamese dong", "PHP": "Philippine peso", "RUB": "Russian ruble"}, "other": ["Other…", "Currency code", "Three letters, e.g. SGD", "Enter a three-letter currency code"]
     },
     "icons": {
       "title": "Icons",

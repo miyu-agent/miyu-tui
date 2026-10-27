@@ -59,11 +59,14 @@ fn it_shows_who_asks_the_tabs_the_pointer_and_the_keys() {
         "当前那个反色（两边空一格），没有短名的写问题，最后是「确认」"
     );
     assert_eq!(got[3], "第一道？");
-    assert_eq!(got[5], "› 选项0", "选中的行首 ›");
-    assert_eq!(got[6], "  说明", "说明和标题对齐");
-    assert_eq!(got[7], "  选项1");
     assert_eq!(
-        got[9], "  输入其他答案",
+        got[5], "› 1. 选项0",
+        "选中的行首 ›，接序号（2026-10-27 项目主人）"
+    );
+    assert_eq!(got[6], "     说明", "说明和标题对齐");
+    assert_eq!(got[7], "  2. 选项1");
+    assert_eq!(
+        got[9], "  3. 输入其他答案",
         "最后一项是「输入其他答案」，没有「不回答」"
     );
     assert_eq!(
@@ -92,19 +95,19 @@ fn other_edits_in_place_and_the_keys_say_only_save_and_leave() {
     let (row, col) = v.cursor.expect("编辑时有光标");
     assert_eq!(
         text(&v.lines[row]),
-        "› 输入其他答案",
+        "› 2. 输入其他答案",
         "还没打字：暗色写提示"
     );
-    assert_eq!(col, 2, "光标落在 › 后面");
+    assert_eq!(col, 5, "光标落在 › 和序号后面");
     assert_eq!(text(v.lines.last().unwrap()), "Enter 保存 · Esc 退出编辑");
     press(&mut d, KeyCode::Char('好'));
     let v = view(&d, &texts(), &look(), 60, false);
     let (row, col) = v.cursor.unwrap();
-    assert_eq!((text(&v.lines[row]).as_str(), col), ("› 好", 4));
+    assert_eq!((text(&v.lines[row]).as_str(), col), ("› 2. 好", 7));
     // 退出编辑：照写的字，不加「自定义：」（2026-10-20 项目主人）。
     press(&mut d, KeyCode::Esc);
     assert!(
-        lines(&d, 60).contains(&"› 好".to_string()),
+        lines(&d, 60).contains(&"› 2. 好".to_string()),
         "{:?}",
         lines(&d, 60)
     );
@@ -150,7 +153,7 @@ fn a_tall_drawer_scrolls_the_options_and_pins_the_question_and_keys() {
     assert_eq!(got[9], keys, "按键提示钉在最下面");
     assert_eq!(got[2], "第一道？", "问题钉在上面，不滚走");
     assert!(
-        got.contains(&"› 输入其他答案".to_string()),
+        got.contains(&"› 13. 输入其他答案".to_string()),
         "选中的那一项露出来"
     );
     assert!(scroll > 0);
@@ -383,7 +386,15 @@ fn a_short_drawer_shows_fewer_command_rows_but_keeps_the_blank_lines() {
     let mut term = ratatui::Terminal::new(ratatui::backend::TestBackend::new(60, 14)).unwrap();
     let mut caret = crate::caret::Caret::default();
     term.draw(|f| {
-        super::draw(f, f.area(), &mut d, &texts(), &look(), false, &mut caret);
+        super::draw(
+            f,
+            (f.area(), 0),
+            &mut d,
+            &texts(),
+            &look(),
+            false,
+            &mut caret,
+        );
     })
     .unwrap();
     let buf = term.backend().buffer();

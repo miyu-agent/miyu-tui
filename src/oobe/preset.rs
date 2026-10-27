@@ -20,6 +20,8 @@ pub struct Card {
     pub id: String,
     /// 名字。
     pub name: String,
+    /// 一句描述（`preset.list` 的 `summary`）；没写的是 `None`（2026-10-27 项目主人报：原来只有「自定义」有描述）。
+    pub summary: Option<String>,
     /// 装了的功能；`preset.get` 回来以前是 `None`。
     pub features: Option<Vec<Feature>>,
 }
@@ -248,9 +250,14 @@ impl PresetStep {
                     .filter_map(|p| {
                         let id = p["preset"].as_str()?.to_string();
                         let name = p["name"].as_str().unwrap_or(&id).to_string();
+                        let summary = p["summary"]
+                            .as_str()
+                            .filter(|s| !s.trim().is_empty())
+                            .map(str::to_string);
                         Some(Card {
                             id,
                             name,
+                            summary,
                             features: None,
                         })
                     })

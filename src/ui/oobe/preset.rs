@@ -24,11 +24,12 @@ pub fn content(step: &PresetStep, texts: &Texts, width: u16) -> Content {
     for (i, card) in step.cards.iter().enumerate() {
         let selected = i == step.cursor;
         let mark = selected.then(|| Span::styled(crate::sheet::mark(|m| &m.ok), theme::accent()));
-        c.row(
-            selected,
-            vec![Span::styled(card.name.clone(), bold())],
-            mark,
-        );
+        // 名字后面暗色接描述，同「自定义」那一行（2026-10-27 项目主人报：原来只有自定义有描述）。
+        let mut spans = vec![Span::styled(card.name.clone(), bold())];
+        if let Some(summary) = &card.summary {
+            spans.push(Span::styled(format!("  {summary}"), theme::dim()));
+        }
+        c.row(selected, spans, mark);
     }
     let custom = step.custom();
     c.row(
@@ -58,6 +59,14 @@ pub fn popup(
         let card = step.cards.get(step.cursor)?;
         let list = card.features.as_deref().unwrap_or_default();
         let rows = features::rows(list);
+        let mut c = Content::new(width);
+        // 最上面先写描述、空一行，再列功能（2026-10-27 项目主人报：空格打开的详情没有描述）。
+        let mut height = height;
+        if let Some(summary) = &card.summary {
+            c.note(summary, theme::dim());
+            c.blank();
+            height = height.saturating_sub(u16::try_from(c.lines.len()).unwrap_or(u16::MAX));
+        }
         // 放不下的上下各留一行暗色「还有 N 个」，滚到底就停（照搜模型的列表）。
         let height = usize::from(height.max(3));
         let room = if rows.len() > height {
@@ -73,7 +82,6 @@ pub fn popup(
                 theme::faint(),
             )
         };
-        let mut c = Content::new(width);
         if rows.len() > height {
             c.lines.push(if step.view_top > 0 {
                 note(above, step.view_top)

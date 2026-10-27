@@ -26,6 +26,10 @@ pub struct Areas {
     pub queued: Rect,
     /// 框上面紧挨着的那一行（和框里的字一样宽）：长期目标的进度右对齐写在这里（`goal_tag.rs`）；放不下的高是 0。
     pub goal: Rect,
+    /// 那一行里长期目标的字占的那一截（点它开浮窗、悬停变手）；没写的是空的（`goal_tag.rs`）。
+    pub goal_text: Rect,
+    /// 抽屉往下滑了几行（`body_view/slide.rs`）：框的下边不画，抽屉底下这么多行减一行裁掉；0 是在原位。
+    pub slid: u16,
     /// 首页的吉祥物；不在首页、放不下时高是 0（`tui.md`「空会话的首页」）。
     pub mascot: Rect,
     /// 框下面那一行中间的后台按钮；没有时宽是 0（`tui.md`「后台命令、子代理和侧边栏」第 1 条）。

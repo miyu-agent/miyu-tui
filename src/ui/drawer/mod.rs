@@ -261,7 +261,7 @@ pub fn fit(v: View, height: usize, scroll: &mut usize) -> View {
 /// 画在输入框的字的地方（`area`）；交回每一行是第几项，鼠标照它认。
 pub fn draw(
     frame: &mut Frame,
-    area: Rect,
+    (area, cut): (Rect, u16),
     d: &mut Drawer,
     texts: &Texts,
     look: &PreviewLook,
@@ -284,8 +284,12 @@ pub fn draw(
         d.command_window = COMMAND_ROWS.saturating_sub(over).max(2);
         v = view(d, texts, look, area.width, vim);
     }
-    let v = fit(v, usize::from(area.height), &mut d.scroll);
-    if let Some((row, col)) = v.cursor {
+    // 往下滑着的（`cut` 是底下裁掉几行）：照整个的高排，只画上面露出来的那几行。
+    let mut v = fit(v, usize::from(area.height + cut), &mut d.scroll);
+    let shown = usize::from(area.height);
+    v.lines.truncate(shown);
+    v.items.truncate(shown);
+    if let Some((row, col)) = v.cursor.filter(|(row, _)| *row < shown) {
         let x = area.x + col.min(area.width.saturating_sub(1));
         caret.put(
             Position::new(x, area.y + u16::try_from(row).unwrap_or(0)),

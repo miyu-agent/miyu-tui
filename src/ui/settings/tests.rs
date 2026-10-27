@@ -419,6 +419,7 @@ fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
 }
 
 mod catalog;
+mod pools;
 mod presets;
 
 #[test]
@@ -462,7 +463,7 @@ fn the_fixed_pools_are_named_and_listed_first() {
 
 #[test]
 fn a_provider_configured_twice_says_which_copy_each_row_is() {
-    // 核心 PL-1：系统配置、个人设置都配了的那一家列两份，名字后面写自用、共用；只有一份的不写（2026-10-27 项目主人定）。
+    // 核心 PL-1：系统配置、个人设置都配了的那一家列两份，名字后面写用户、系统（2026-10-27 项目主人改叫法）；只有一份的不写（2026-10-27 项目主人定）。
     let config = Config::builtin().unwrap();
     let mut list = crate::settings::test_support::model_list();
     let providers = list["providers"].as_array_mut().unwrap();
@@ -485,7 +486,7 @@ fn a_provider_configured_twice_says_which_copy_each_row_is() {
     press(&mut p, &config, KeyCode::Enter);
     let (text, _) = screen(&mut p, &config, 120, 30);
     assert!(
-        text.contains("中转站 · 自用") && text.contains("中转站 · 共用"),
+        text.contains("中转站 · 用户") && text.contains("中转站 · 系统"),
         "{text}"
     );
     assert!(!text.contains("dev · "), "只有一份的不写：\n{text}");

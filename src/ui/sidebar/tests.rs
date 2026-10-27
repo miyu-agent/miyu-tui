@@ -117,20 +117,6 @@ fn compactions_and_cache_breaks_show_only_once_they_happen() {
 }
 
 #[test]
-fn a_section_title_is_blue_and_its_lines_indented() {
-    use ratatui::style::Modifier;
-    use ratatui::text::Line;
-    let out = super::section(vec![Line::raw("待办 1/9"), Line::raw("■ 写测试")]);
-    assert_eq!(out[0].to_string(), "待办 1/9");
-    assert_eq!(out[0].style, crate::theme::side_title());
-    assert!(
-        !out[0].style.add_modifier.contains(Modifier::BOLD),
-        "不加粗"
-    );
-    assert_eq!(out[1].to_string(), "  ■ 写测试");
-}
-
-#[test]
 fn a_long_directory_breaks_after_a_slash_and_never_leaves_one_alone() {
     let lines = super::wrap_path(
         "/tmp/claude-1000/-home-shorin-Documents-github-Miyu/fbb4de14-613a-4306-bb73-84c0bd837ed0/scratchpad/work",

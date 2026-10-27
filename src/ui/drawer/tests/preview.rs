@@ -19,18 +19,19 @@ fn a_preview_sits_on_the_right_under_a_dim_title_and_below_when_narrow() {
     .unwrap();
     let d = Drawer::question(None, asked);
     let wide = lines(&d, 100);
-    // 选项只占自己要的宽（这里最窄的 16 列），竖线在第 17 列，预览从第 19 列起，和选项顶上对齐：第一行暗色「预览」，下面是图；
+    // 选项只占自己要的宽（这里最宽的「  3. 输入其他答案」17 列），竖线在第 18 列，预览从第 20 列起，和选项顶上对齐：第一行暗色
+    // 「预览」，下面是图；
     // 不铺底色，中间一条竖线（2026-10-07 项目主人；2026-10-23 照 Claude Code 改成选项往左让、预览拿剩下的，原来竖线在中线）。
-    assert!(wide[2].starts_with("› 左右"), "{wide:?}");
+    assert!(wide[2].starts_with("› 1. 左右"), "{wide:?}");
     let title = wide[2].find("预览").expect("第一行写预览");
-    assert_eq!(wide[2][..title].width(), 19);
+    assert_eq!(wide[2][..title].width(), 20);
     let at = wide[3].find('┌').expect("图在下一行");
-    assert_eq!(wide[3][..at].width(), 19);
+    assert_eq!(wide[3][..at].width(), 20);
     assert!(wide[5].contains("└──┴──┘"));
     assert!(!wide.iter().any(|l| l.contains('╭')), "不描边");
     for row in &wide[2..6] {
         let bar = row.find('│').expect("每行都有竖线");
-        assert_eq!(row[..bar].width(), 17, "竖线紧跟在选项那一列后面：{row}");
+        assert_eq!(row[..bar].width(), 18, "竖线紧跟在选项那一列后面：{row}");
     }
     let v = view(&d, &texts(), &look(), 100, false);
     assert!(
@@ -40,7 +41,7 @@ fn a_preview_sits_on_the_right_under_a_dim_title_and_below_when_narrow() {
     );
     // 窄了：挪到选项下面，中间空一行。
     let narrow = lines(&d, 50);
-    assert_eq!(narrow[2], "› 左右");
+    assert_eq!(narrow[2], "› 1. 左右");
     let title = narrow.iter().position(|l| l == "预览").expect("有预览");
     assert_eq!(narrow[title - 1], "", "{narrow:?}");
     assert_eq!(narrow[title + 1], "┌──┬──┐", "{narrow:?}");
@@ -105,8 +106,8 @@ fn a_wide_preview_asks_for_a_wider_drawer() {
     .unwrap();
     let d = Drawer::question(None, asked);
     let want = super::super::preview_wanted(&d, &texts(), &look(), 200).expect("有预览");
-    // 选项那一列最窄 16 列，空 3 列，预览 120 列。
-    assert_eq!(want, 16 + 3 + 120);
+    // 选项那一列照最宽的「  3. 输入其他答案」17 列（带序号，2026-10-27），空 3 列，预览 120 列。
+    assert_eq!(want, 17 + 3 + 120);
     let plain: Asked = serde_json::from_value(serde_json::json!({
         "call_id": "c", "questions": [{"question": "哪种？", "options": [{"label": "甲"}]}]
     }))

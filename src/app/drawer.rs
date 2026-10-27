@@ -27,6 +27,12 @@ impl App {
         if key.modifiers.contains(KeyModifiers::CONTROL) && !newline && !scroll {
             return false;
         }
+        // 抽屉滑下去了、让开了（正文翻上去看，`body_view/slide.rs`）：这一下先回到最底下、抽屉回原位，不当答案用掉，免得
+        // 看不见时按到「1」就选了（「确认和提问的抽屉」第 4a 条）。
+        if self.screen.view.top.is_some() || self.screen.view.slide.by > 0 {
+            self.screen.view.follow();
+            return true;
+        }
         let window = self.esc_window();
         let step = self
             .talk

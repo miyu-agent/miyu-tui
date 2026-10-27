@@ -3,25 +3,17 @@
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Position;
-use unicode_width::UnicodeWidthStr;
 
 use super::{App, Panel};
 
 impl App {
     /// 点在目标那一行写着的字上（右对齐的那一截）：交回 `true`，浮窗开了。
     pub(super) fn goal_clicked(&mut self, at: Position) -> bool {
-        let area = self.screen.areas.goal;
-        if at.y != area.y || !area.contains(at) || self.talk.viewing_title().is_some() {
-            return false;
-        }
-        let now = jiff::Timestamp::now();
-        let Some(text) =
-            crate::ui::goal_tag::goal(self.talk.transcript.goal.as_ref(), &self.config, now)
-        else {
-            return false;
-        };
-        let width = u16::try_from(text.width()).unwrap_or(u16::MAX);
-        if at.x < area.right().saturating_sub(width) {
+        // 上一帧画出来的那一截字（`ui/goal_tag.rs` 的 `spot`），和悬停变手照同一块认；目标刚清掉、还没重画的不开。
+        if !self.screen.areas.goal_text.contains(at)
+            || self.talk.viewing_title().is_some()
+            || self.talk.transcript.goal.is_none()
+        {
             return false;
         }
         self.boxes.panel = Some(Panel::Goal { scroll: 0 });

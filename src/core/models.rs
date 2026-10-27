@@ -95,11 +95,14 @@ pub fn choices(result: &Value) -> Vec<Choice> {
             let named = name["value"].as_str().filter(|_| name["from"] == "config");
             let name = named.or(model["model"].as_str()).unwrap_or(reference);
             let window = model["facts"]["window"]["value"].as_u64();
-            // 写引用不只写供应商：同一个显示名常有好几个（配置里写的、目录里自带的），只写供应商分不出来。两份的共用那份
-            // 去掉 `@system`，后面另写「共用」（`ui/model_list.rs`）。
-            let shown = match shared {
-                Some(true) => reference.replacen("@system/", "/", 1),
-                _ => reference.to_string(),
+            // 配置里起了名字的写完整的引用：同一个名字常有好几个，只写供应商分不出来。没起名字的名字就是模型编号，右边只写
+            // 供应商，不把编号再写一遍（2026-10-27 项目主人：「这里是不是只要显示一个就好了？两者重复了」）。两份的系统那份
+            // 去掉 `@system`，后面另写「系统」（`ui/model_list.rs`）。
+            let provider = crate::copies::base(id);
+            let shown = match (named, shared) {
+                (None, _) => provider.to_string(),
+                (Some(_), Some(true)) => reference.replacen("@system/", "/", 1),
+                (Some(_), _) => reference.to_string(),
             };
             let detail = match window {
                 Some(window) => format!(
@@ -208,9 +211,9 @@ mod tests {
         assert_eq!(
             got,
             [
-                ("relay/v4".into(), "relay/v4".into(), Some(false)),
-                ("relay@system/v4".into(), "relay/v4".into(), Some(true)),
-                ("solo/m".into(), "solo/m".into(), None),
+                ("relay/v4".into(), "relay".into(), Some(false)),
+                ("relay@system/v4".into(), "relay".into(), Some(true)),
+                ("solo/m".into(), "solo".into(), None),
             ]
         );
     }
@@ -249,12 +252,16 @@ mod tests {
         assert_eq!(got[0].detail, "pin · 2");
         assert_eq!(
             (got[1].name.as_str(), got[1].detail.as_str()),
-            ("m1", "dev/m1 · 300k"),
-            "写模型自己的名字，不写目录里对上的（2026-10-26 项目主人）"
+            ("m1", "dev · 300k"),
+            "写模型自己的名字，不写目录里对上的（2026-10-26 项目主人）；右边只写供应商，不把编号再写一遍（10-27）"
         );
         assert!(matches!(got[2].state, ChoiceState::Cooling(Some(_))));
         assert_eq!(got[3].state, ChoiceState::NoKey);
         assert_eq!(got[3].name, "m3", "没有显示名的写模型名");
         assert_eq!(got[4].name, "我的模型", "配置里起了名字的照起的写");
+        assert_eq!(
+            got[4].detail, "dev/m4",
+            "起了名字的右边写完整的引用，好分辨"
+        );
     }
 }

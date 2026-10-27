@@ -48,21 +48,38 @@ pub fn controls(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
     c
 }
 
-/// 金额用什么货币显示（2026-10-26 项目主人）：一种一行，名字后面暗色写代码。
+/// 金额用什么货币显示（2026-10-26 项目主人）：一种一行，名字后面暗色写代码；最后一行「其他…」，填过的后面暗色接代码，
+/// 在填的下面一格代码，填错了再下面红字（2026-10-27）。
 pub fn currency(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
     let words = &texts.currency;
+    let step = &oobe.currency;
     let mut c = Content::new(width);
     c.heading(&words.head.title, &words.head.sub);
     for (i, code) in crate::oobe::currency::CURRENCIES.iter().enumerate() {
         let name = words.names.get(*code).map_or(*code, String::as_str);
         c.row(
-            i == oobe.currency.pick.selected,
+            i == step.pick.selected,
             vec![
                 Span::raw(name.to_string()),
                 Span::styled(format!("  {code}"), theme::dim()),
             ],
             None,
         );
+    }
+    let [other, label, hint, invalid] = &words.other;
+    let typed = step.other.trimmed().to_ascii_uppercase();
+    let mut spans = vec![Span::raw(other.clone())];
+    if !typed.is_empty() && !step.other.editing() {
+        spans.push(Span::styled(format!("  {typed}"), theme::dim()));
+    }
+    c.row(step.pick.selected == step.other_row(), spans, None);
+    if step.other.editing() {
+        c.blank();
+        let label_w = unicode_width::UnicodeWidthStr::width(label.as_str());
+        c.field(label, label_w, &step.other, hint, true);
+        if step.invalid {
+            c.note(invalid, theme::error());
+        }
     }
     c
 }

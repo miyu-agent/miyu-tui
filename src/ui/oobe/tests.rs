@@ -102,3 +102,32 @@ fn the_semantic_step_shows_the_size_the_bar_and_a_failure() {
     assert!(says(&c, "连不上软件源") && says(&c, "timed out"));
     assert!(says(&c, "重试") && says(&c, "跳过") && !says(&c, "推荐"));
 }
+
+#[test]
+fn each_preset_says_what_it_is_in_the_list_and_in_its_window() {
+    // 2026-10-27 项目主人报：引导「选择预设」只有「自定义」有描述，空格打开的详情也没有。
+    let texts = Config::builtin().unwrap().text.oobe;
+    let mut step = crate::oobe::preset::PresetStep::default();
+    step.cards = vec![crate::oobe::preset::Card {
+        id: "dev".into(),
+        name: "常规开发".into(),
+        summary: Some("在极简开发的基础上增加记忆".into()),
+        features: Some(Vec::new()),
+    }];
+    let text = |c: &super::content::Content| -> Vec<String> {
+        c.lines.iter().map(|l| l.to_string()).collect()
+    };
+    let list = text(&super::preset::content(&step, &texts, 80));
+    assert!(
+        list.iter()
+            .any(|l| l.contains("常规开发  在极简开发的基础上增加记忆")),
+        "{list:?}"
+    );
+    step.viewing = true;
+    let (_, window, _) = super::preset::popup(&mut step, &texts, (60, 10)).expect("开着");
+    assert_eq!(
+        text(&window)[0],
+        "在极简开发的基础上增加记忆",
+        "详情最上面是描述"
+    );
+}

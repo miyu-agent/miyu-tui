@@ -18,6 +18,8 @@ pub struct ModelList {
     pub loaded: bool,
     /// 鼠标钉住的露出的那一段（照会话列表）。
     pub pinned: Option<usize>,
+    /// 上一帧从第几个露起：选中的碰到上下边才挪（`menu::edge`，2026-10-27 项目主人）。
+    pub top: std::cell::Cell<usize>,
 }
 
 impl ModelList {

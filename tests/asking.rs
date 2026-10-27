@@ -377,3 +377,52 @@ fn a_session_waiting_for_an_answer_shows_a_question_mark_in_the_sidebar() {
     assert!(!target.exists(), "没答，没写");
     std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
 }
+
+/// 抽屉跟着正文滚（「确认和提问的抽屉」第 4a 条，2026-10-27 项目主人：滚一格抽屉就消失再出现，Claude Code 能无级滚动）：
+/// 在正文上滚轮往上一格，抽屉往下滑三行、还看得见；往下一格滑回来；已经在最底下再往下滚，抽屉不动。
+#[test]
+fn the_drawer_slides_with_the_wheel_instead_of_vanishing() {
+    let outside = outside("slide");
+    let target = outside.join("note.txt");
+    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
+    let script = Script::new([
+        Play::Calls(vec![("write".into(), args)]),
+        Play::Says("写好了。"),
+    ]);
+    let home = Home::with_tools(script, "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("写个文件");
+    tui.wait_for("允许本次");
+    let row = |lines: &[String], word: &str| lines.iter().position(|l| l.contains(word));
+    let before = tui.lines();
+    let wheel = |up: bool| format!("\x1b[<{};10;3M", if up { 64 } else { 65 });
+    tui.key(wheel(true).as_bytes());
+    let slid = tui.lines();
+    assert_eq!(
+        row(&slid, "允许本次"),
+        row(&before, "允许本次").map(|r| r + 3),
+        "往下滑三行、还看得见：\n{}",
+        slid.join("\n")
+    );
+    assert!(
+        row(&slid, "Esc ×2").is_none(),
+        "底下那几行滑出去了：\n{}",
+        slid.join("\n")
+    );
+    tui.key(wheel(false).as_bytes());
+    let back = tui.lines();
+    assert_eq!(row(&back, "允许本次"), row(&before, "允许本次"), "滑回来");
+    assert!(row(&back, "Esc ×2").is_some(), "{}", back.join("\n"));
+    // 已经在最底下再往下滚：抽屉不动（原来一滚就让开、下一帧又出来，闪一下）。
+    tui.send(wheel(false).as_bytes());
+    for _ in 0..10 {
+        tui.pump(std::time::Duration::from_millis(15));
+        assert!(
+            tui.shows("Esc ×2"),
+            "在底下往下滚，抽屉不让开：\n{}",
+            tui.lines().join("\n")
+        );
+    }
+    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
+}

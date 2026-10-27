@@ -76,15 +76,24 @@ pub(super) fn draw_box(
         return;
     }
     if let Some(d) = drawer {
+        // 往下滑着的：下边那条线滑出去了，不画（「确认和提问的抽屉」第 4a 条）。
+        let borders = if areas.slid > 0 {
+            ratatui::widgets::Borders::TOP
+                | ratatui::widgets::Borders::LEFT
+                | ratatui::widgets::Borders::RIGHT
+        } else {
+            ratatui::widgets::Borders::ALL
+        };
         frame.render_widget(
             Block::bordered()
+                .borders(borders)
                 .border_set(crate::sheet::read(|s| s.frame.input.set()))
                 .border_style(theme::dim()),
             areas.frame,
         );
         screen.drawer_rows = drawer::draw(
             frame,
-            areas.text,
+            (areas.text, areas.slid.saturating_sub(1)),
             d,
             &config.text.drawer,
             &config.layout.drawer_preview,

@@ -312,7 +312,9 @@ impl App {
     /// 第 7 条，「空会话的首页」第 10 条）。
     fn mascot_shown(&self) -> bool {
         let layout = &self.config.layout;
-        (self.talk.blank() && layout.mascot_home && self.seen().avatar(Place::Home) == Avatar::None)
+        (self.seen().home()
+            && layout.mascot_home
+            && self.seen().avatar(Place::Home) == Avatar::None)
             || (self.screen.areas.sidebar.width > 0
                 && layout.mascot_sidebar
                 && self.seen().avatar(Place::Sidebar) == Avatar::None)
@@ -320,7 +322,7 @@ impl App {
 
     /// 首页吉祥物那一块在：吉祥物或者头像（被顶上去、走下来照它）。
     fn home_slot_shown(&self) -> bool {
-        self.talk.blank()
+        self.seen().home()
             && (self.config.layout.mascot_home || self.seen().avatar(Place::Home) != Avatar::None)
     }
 

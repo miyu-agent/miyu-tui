@@ -170,6 +170,8 @@ pub struct Settings {
     pub nav: Nav,
     /// 开着的悬浮窗。
     pub popup: Option<Popup>,
+    /// 悬浮窗里从第几行露起，上一帧的（`ui/floating.rs`）。
+    pub popup_top: usize,
     /// 通用、权限、高级、人格这几页（`pages/`）。
     pub more: pages::More,
     /// 状态行那一句。
