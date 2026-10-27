@@ -84,7 +84,14 @@ pub fn lines(
     }
     let now = jiff::Timestamp::now();
     let shown = config.layout.session_rows.max(1);
-    let top = crate::menu::top(list.selected, list.pinned, found.len(), shown);
+    let top = crate::menu::edge(
+        list.selected,
+        list.pinned,
+        list.top.get(),
+        found.len(),
+        shown,
+    );
+    list.top.set(top);
     let column = found
         .iter()
         .map(|c| c.name.width())
@@ -195,5 +202,45 @@ mod tests {
         assert!(text[1].trim_end().ends_with("冷却 2m"), "{text:#?}");
         assert!(text[2].trim_end().ends_with("未设置 key"), "{text:#?}");
         assert!(text.iter().all(|l| l.contains("dev · 300k")));
+    }
+
+    #[test]
+    fn going_back_up_does_not_scroll_until_the_top_edge() {
+        // 2026-10-27 项目主人：模型列表触底往下以后，往上一下立刻往上翻，要碰到上边才翻（`menu::edge`）。
+        let config = Config::builtin().unwrap();
+        let shown = config.layout.session_rows.max(1);
+        let mut list = ModelList::default();
+        let all = (0..shown + 6)
+            .map(|i| {
+                choice(
+                    &format!("dev/m{i}"),
+                    &format!("model{i:02}"),
+                    ChoiceState::Ok,
+                )
+            })
+            .collect();
+        list.replace(all, None);
+        let first = |list: &ModelList| {
+            let (_, rows, _) = lines(list, None, &config, 80, 40);
+            rows[0].to_string()
+        };
+        // 一路往下到底：露出最后 `shown` 个，第一行是第 6 个。
+        for selected in 0..shown + 6 {
+            list.selected = selected;
+            first(&list);
+        }
+        let bottom = first(&list);
+        assert!(bottom.contains("model06"), "{bottom}");
+        // 往回走到窗口最上面那一行：窗里不挪（居中滚动的话早往上翻了）。
+        for selected in (6..shown + 5).rev() {
+            list.selected = selected;
+            let top = first(&list);
+            assert!(
+                top.contains("model06"),
+                "往回第 {selected} 个：窗里不挪：{top}"
+            );
+        }
+        list.selected = 5;
+        assert!(first(&list).contains("model05"), "碰到上边才挪");
     }
 }

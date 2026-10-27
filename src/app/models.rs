@@ -93,6 +93,8 @@ impl App {
         };
         let count = list.matches().len();
         if by != 0 {
+            // 从现在露出的那一段起挪（`menu::edge` 记着的）。
+            list.pinned = list.pinned.or(Some(list.top.get()));
             crate::menu::pin(list.selected, &mut list.pinned, count, rows, by);
             return true;
         }

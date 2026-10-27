@@ -72,6 +72,9 @@ pub fn draw(frame: &mut Frame, page: &mut Settings, config: &Config, caret: &mut
         let buf = frame.buffer_mut();
         buf.set_style(area, Style::new().add_modifier(Modifier::DIM));
         popup::draw(frame, area, page, texts, look, caret);
+    } else {
+        // 下一个窗从头露起（`popup.rs` 照上一帧接着露）。
+        page.popup_top = 0;
     }
 }
 

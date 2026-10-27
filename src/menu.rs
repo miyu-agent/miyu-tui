@@ -76,6 +76,29 @@ pub fn pin(selected: usize, pinned: &mut Option<usize>, matches: usize, rows: us
     *pinned = Some(moved);
 }
 
+/// 露出哪一段，照上一帧露的 `prev` 接着：选中的还在里面就不挪，碰到上边、下边才跟着挪（2026-10-27 项目主人：模型列表
+/// 触底往下滚会翻页，往回一下立刻往上翻，要触顶才往上翻）；鼠标钉住的照它。两头不留空。
+pub fn edge(
+    selected: usize,
+    pinned: Option<usize>,
+    prev: usize,
+    matches: usize,
+    rows: usize,
+) -> usize {
+    if let Some(top) = pinned {
+        return top.min(matches.saturating_sub(rows));
+    }
+    let rows = rows.max(1);
+    let top = if selected < prev {
+        selected
+    } else if selected >= prev + rows {
+        selected + 1 - rows
+    } else {
+        prev
+    };
+    top.min(matches.saturating_sub(rows))
+}
+
 /// 露出哪一段：第一条露出的是第几条。选中的停在正中间，两头不留空。
 pub fn window(selected: usize, matches: usize, rows: usize) -> usize {
     let top = selected.saturating_sub(rows / 2);
@@ -84,7 +107,30 @@ pub fn window(selected: usize, matches: usize, rows: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::{Menu, window};
+    use super::{Menu, edge, window};
+
+    #[test]
+    fn edge_scrolling_moves_only_when_the_selection_hits_an_edge() {
+        // 2026-10-27 项目主人：模型列表往下到底以后往回一下立刻往上翻，要碰到上边才翻。13 条露 5 条。
+        let mut top = 0;
+        let mut tops = Vec::new();
+        for s in (0..13).chain((0..12).rev()) {
+            top = edge(s, None, top, 13, 5);
+            tops.push(top);
+        }
+        assert_eq!(
+            &tops[..13],
+            [0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8],
+            "往下碰到下边才挪"
+        );
+        assert_eq!(
+            &tops[13..],
+            [8, 8, 8, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+            "往回在窗里不挪，碰到上边才挪"
+        );
+        assert_eq!(edge(3, Some(6), 0, 13, 5), 6, "鼠标钉住的照它");
+        assert_eq!(edge(12, None, 0, 3, 5), 0, "放得下的不滚");
+    }
 
     #[test]
     fn the_selection_scrolls_from_the_middle() {
