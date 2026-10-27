@@ -18,6 +18,19 @@ fn clicking_the_goal_text_opens_its_box_and_esc_closes_it() {
         ..Goal::default()
     });
     app.screen.areas.goal = Rect::new(0, 20, 80, 1);
+    // 画的时候记下右对齐的那一截字（`ui/goal_tag.rs`）。
+    let text = crate::ui::goal_tag::goal(
+        app.talk.transcript.goal.as_ref(),
+        &app.config,
+        jiff::Timestamp::now(),
+    )
+    .expect("有目标");
+    app.screen.areas.goal_text = crate::ui::goal_tag::spot(app.screen.areas.goal, &text);
+    // 悬停在字上指针变手（2026-10-27 项目主人报：原来不变）。
+    app.screen.pointer = Some(Position::new(79, 20));
+    assert!(app.pointing(), "悬停在字上：手");
+    app.screen.pointer = Some(Position::new(5, 20));
+    assert!(!app.pointing(), "左边空白：不是手");
     assert!(
         !app.goal_clicked(Position::new(5, 20)),
         "点在左边空白：不开"
