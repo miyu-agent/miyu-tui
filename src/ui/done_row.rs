@@ -16,7 +16,7 @@ pub fn line(level: Option<Level>, text: &str, layout: &Layout) -> String {
 }
 
 /// 收尾行打头的符号：这一轮开始时的权限级别的图标；没记着级别的用兜底的 `✻`（`tui.md`「正文」第 4 条）。
-fn mark(level: Option<Level>, layout: &Layout) -> &str {
+pub(super) fn mark(level: Option<Level>, layout: &Layout) -> &str {
     level
         .and_then(|l| layout.level_icons.get(&l))
         .unwrap_or(&layout.done_icon)

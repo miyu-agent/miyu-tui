@@ -19,12 +19,20 @@ use crate::theme;
 pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     let area = areas.body;
     let spinner_ms = seen.config.timeline.spinner_ms.max(1);
+    // 两格槽紧贴在输入框里的字的左边，和提示符同一列；紧凑版面（框外面那几行贴着窗口左边，`layout.rs`）槽贴着窗口左边、
+    // 字写到最右边（「输入框」第 10 条，2026-10-27 项目主人）。
+    let edge = areas.footer.x <= area.x;
+    let (indent, width) = if edge {
+        (0, area.width.saturating_sub(2))
+    } else {
+        (areas.text.x.saturating_sub(area.x + 2), areas.text.width)
+    };
     let ctx = Ctx {
         config: seen.config,
         human: &seen.link.human,
-        // 两格槽紧贴在输入框里的字的左边，和提示符同一列。
-        indent: " ".repeat(usize::from(areas.text.x.saturating_sub(area.x + 2))),
-        width: areas.text.width,
+        indent: " ".repeat(usize::from(indent)),
+        edge,
+        width,
         hover: screen.view.hover,
         level: seen.talk.transcript.level,
         // 图最多占窗口高度的几分之几：照窗口的高，不照正文区（开关列表时正文区变矮，照它算每次都要重做）。
