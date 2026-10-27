@@ -58,6 +58,17 @@ pub struct Approval {
     pub detail: Option<Detail>,
 }
 
+impl Approval {
+    /// 越过沙盒的命令，「此目录不再询问」记的命令前缀（核心 SB-3 的 `rule.prefix`，例如 `docker ps`）；没有的照旧只写目录。
+    pub fn prefix(&self) -> Option<&str> {
+        self.rule
+            .as_ref()?
+            .get("prefix")?
+            .as_str()
+            .filter(|p| !p.trim().is_empty())
+    }
+}
+
 /// 确认的细节。
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct Detail {
