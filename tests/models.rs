@@ -45,7 +45,7 @@ fn a_model_picked_by_hand_shows_its_effort_at_once_and_becomes_the_new_session_d
     tui.say("在吗");
     tui.wait_for("▣  ");
     tui.say("/model");
-    tui.wait_for("deepseek/deepseek-v5");
+    tui.wait_for("deepseek-v5");
     tui.type_text("v5");
     tui.pump(Duration::from_millis(300));
     tui.key(b"\r");
@@ -92,7 +92,7 @@ fn choosing_a_model_shows_no_notice() {
     tui.say("在吗");
     tui.wait_for("▣  ");
     tui.say("/model");
-    tui.wait_for("dev/beta");
+    tui.wait_for("dev · 64k");
     // 按键模式出厂是方向键：打字就搜，`Enter` 一下就选（2026-10-21 项目主人：「新用户默认不开 vimkey」）。
     tui.wait_for("↑/↓ 选择");
     tui.type_text("beta");
@@ -219,7 +219,7 @@ fn with_vim_keys_a_slash_searches_and_enter_keeps_the_filter() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("/model");
-    tui.wait_for("dev/beta");
+    tui.wait_for("dev · 64k");
     tui.wait_for("/ 搜索 · j/k 选择");
     tui.type_text("bet");
     assert!(!tui.shows("搜索：bet"), "没按 / 打的字不进搜索");
@@ -229,16 +229,16 @@ fn with_vim_keys_a_slash_searches_and_enter_keeps_the_filter() {
     tui.key(b"\r");
     tui.wait_for("/ 搜索 · j/k 选择");
     assert!(tui.shows("搜索：bet"), "Enter 收起，筛的留着");
-    assert!(!tui.shows("dev/alpha"), "{}", tui.lines().join("\n"));
+    assert!(!tui.shows("dev · 128k"), "{}", tui.lines().join("\n"));
     tui.type_text("/");
-    tui.wait_for("dev/alpha");
+    tui.wait_for("dev · 128k");
     assert!(!tui.shows("搜索：bet"), "再按 / 清空了重打");
     tui.type_text("al");
     tui.key(b"\r");
     tui.key(b"\x1b");
-    tui.wait_for("dev/beta");
-    assert!(tui.shows("dev/alpha"), "Esc 先去掉筛的，框还开着");
+    tui.wait_for("dev · 64k");
+    assert!(tui.shows("dev · 128k"), "Esc 先去掉筛的，框还开着");
     tui.key(b"\x1b");
     tui.pump(Duration::from_millis(300));
-    assert!(!tui.shows("dev/beta"), "再按 Esc 关框");
+    assert!(!tui.shows("dev · 64k"), "再按 Esc 关框");
 }
