@@ -1,5 +1,5 @@
 //! 输入框的留白，按窗口宽度定（蓝图 `tui.md`「输入框」第 1、2、10 条）：够宽时两边留白、框里左右留几列；
-//! 少于 `compact_below` 列（手机上 ssh 连过来）换紧凑版面，框贴着两边，框里只留提示符和光标的地方。
+//! 少于 `compact_below` 列（手机上 ssh 连过来）换紧凑版面，两边只留 `compact_side_gap` 列，框里只留提示符和光标的地方。
 
 use crate::config::Layout;
 
@@ -20,7 +20,7 @@ pub struct Margins {
 pub fn margins(layout: &Layout, width: u16) -> Margins {
     if width < layout.compact_below {
         Margins {
-            side_gap: 0,
+            side_gap: layout.compact_side_gap,
             pad_left: layout.compact_pad_left,
             pad_right: layout.compact_pad_right,
             compact: true,

@@ -99,27 +99,27 @@ fn the_narrow_todo_list_sits_above_the_box_with_a_blank_between() {
 
 #[test]
 fn a_narrow_window_drops_the_margins() {
-    // 少于 100 列换紧凑版面：框贴着两边，`❯` 紧挨左边线，右边只留光标一列（`tui.md`「输入框」第 10 条）；框外面那几行也贴着
-    // 窗口两边，记号在第 0 列（2026-10-27 项目主人：「字也贴边，左侧留一列给标记和盲文」，分界从 80 列提到 100 列）。
+    // 少于 100 列换紧凑版面（`tui.md`「输入框」第 10 条）：两边各留一列，`❯` 紧挨左边线，右边只留光标一列；框外面那几行
+    // 照框的左右边，记号在框左边那一列（2026-10-27 项目主人：分界从 80 列提到 100 列；「左右至少还是要给一列的边距」）。
     let layout = Config::builtin().unwrap().layout;
     let input = InputBox::new(8, Duration::from_millis(400));
     let rows = |w: u16| input.rows(w);
     let a = areas(Rect::new(0, 0, 44, 30), &rows, &layout, 0, false, 0, 0, 0);
-    assert_eq!((a.frame.x, a.frame.width), (0, 44), "框贴着两边");
-    assert_eq!(a.text.x, 3, "边线一列，提示符两列");
-    assert_eq!(a.text.width, 44 - 3 - 2, "右边只留光标一列和边线");
+    assert_eq!((a.frame.x, a.frame.width), (1, 42), "两边各留一列");
+    assert_eq!(a.text.x, 4, "边线一列，提示符两列");
+    assert_eq!(a.text.width, 42 - 3 - 2, "右边只留光标一列和边线");
     assert_eq!(
         (a.footer.x, a.footer.width),
-        (0, 44),
-        "框下面那一行贴着两边"
+        (1, 42),
+        "框下面那一行照框的左右边"
     );
     let r = areas(Rect::new(0, 0, 44, 30), &rows, &layout, 0, true, 0, 0, 0);
-    assert_eq!((r.pulse.x, r.pulse.width), (0, 44), "运行状态行同");
+    assert_eq!((r.pulse.x, r.pulse.width), (1, 42), "运行状态行同");
     let h = super::home::areas(Rect::new(0, 0, 44, 30), &rows, &layout, (0, 0), 0, 0, 0, 0);
-    assert_eq!((h.frame.x, h.text.x, h.text.width), (0, 3, 39), "首页一样");
+    assert_eq!((h.frame.x, h.text.x, h.text.width), (1, 4, 37), "首页一样");
     // 99 列还是紧凑的；100 列起照旧留白，框下面那一行跟着框里的字对齐。
     let c = areas(Rect::new(0, 0, 99, 30), &rows, &layout, 0, false, 0, 0, 0);
-    assert_eq!((c.frame.x, c.text.x, c.footer.x), (0, 3, 0), "99 列紧凑");
+    assert_eq!((c.frame.x, c.text.x, c.footer.x), (1, 4, 1), "99 列紧凑");
     let b = areas(Rect::new(0, 0, 100, 30), &rows, &layout, 0, false, 0, 0, 0);
     assert_eq!(b.text.x, b.frame.x + 1 + layout.pad_left);
     assert_eq!((b.footer.x, b.footer.width), (b.text.x, b.text.width));

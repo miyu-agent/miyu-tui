@@ -79,10 +79,10 @@ pub fn areas(
     let frame = Rect::new(x, footer_y.saturating_sub(height), width, height).intersection(area);
     let inner_x = frame.x + 1 + pad_left;
     let text = Rect::new(inner_x, frame.y + 1, text_width, rows).intersection(frame);
-    // 框外面的几行（底栏、运行状态行、排队的、目标、子代理、待办）从第几列起、多宽：同框里的字；紧凑版面贴着窗口两边，
-    // 记号在第 0 列（「输入框」第 10 条，2026-10-27 项目主人：「字也贴边，左侧留一列给标记和盲文」）。
+    // 框外面的几行（底栏、运行状态行、排队的、目标、子代理、待办）从第几列起、多宽：同框里的字；紧凑版面照框的左右边，
+    // 记号在框左边那一列（「输入框」第 10 条，2026-10-27 项目主人：「字也贴边，左侧留一列给标记和盲文」，又定两边各留一列）。
     let (side_x, side_width) = if m.compact {
-        (area.x, area.width)
+        (x, width)
     } else {
         (inner_x, text_width)
     };
@@ -170,7 +170,7 @@ pub(crate) fn above(bottom: u16, top: u16, rows: u16) -> (u16, u16) {
 pub(crate) fn box_width(area_width: u16, layout: &Layout) -> u16 {
     let m = super::margins::margins(layout, area_width);
     if m.compact {
-        return area_width;
+        return area_width.saturating_sub(m.side_gap * 2).max(1);
     }
     let room = area_width.saturating_sub(m.side_gap * 2);
     let wanted = u16::try_from(u32::from(area_width) * u32::from(layout.width_percent) / 100)
