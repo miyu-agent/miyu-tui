@@ -609,6 +609,7 @@
       "Don't ask again for this folder",
       "Don't allow"
     ],
+    "decision_prefix": "Don't ask again for commands starting with `{prefix}` in this folder",
     "reason_hint": "Add a reason (optional)",
     "command_above": "↑ {n} more above",
     "command_below": "↓ {n} more below",

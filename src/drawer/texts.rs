@@ -36,6 +36,8 @@ pub struct Texts {
     pub notes_label: String,
     /// 确认的几项，照 `Decision::ALL` 的先后。
     pub decisions: [String; 3],
+    /// 记命令前缀的「此目录不再询问」（核心 SB-3），`{prefix}`。
+    pub decision_prefix: String,
     /// 写「不允许」的理由时，还没打字暗色写的。
     pub reason_hint: String,
     /// 要跑的命令往上滚过了：上面还有几行，`{n}`。

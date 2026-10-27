@@ -609,6 +609,7 @@
       "このフォルダでは今後確認しない",
       "許可しない"
     ],
+    "decision_prefix": "このフォルダでは `{prefix}` で始まるコマンドを今後確認しない",
     "reason_hint": "理由を入力（任意）",
     "command_above": "↑ 上にあと {n} 行",
     "command_below": "↓ あと {n} 行",

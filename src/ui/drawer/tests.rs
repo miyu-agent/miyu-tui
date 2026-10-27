@@ -424,4 +424,5 @@ fn a_short_drawer_shows_fewer_command_rows_but_keeps_the_blank_lines() {
     assert!(d.command_scrolls(), "照收窄的窗口算能滚");
 }
 
+mod approval;
 mod preview;
