@@ -34,7 +34,11 @@
     "skip_reply": "\uf05e",
     "load_tools": "\uf019",
     "web_search": "\uf0ac",
-    "web_fetch": "\uf0c1"
+    "web_fetch": "\uf0c1",
+    "cron_create": "\uf017",
+    "cron_delete": "\uf017",
+    "cron_list": "\uf017",
+    "schedule_wakeup": "\uf017"
   },
   "lucide": {
     "face-slightly-smiling": "\uf118",
