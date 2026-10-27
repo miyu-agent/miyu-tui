@@ -174,8 +174,9 @@ mod tests {
     fn every_tool_the_core_ships_has_a_nerd_icon() {
         // 2026-10-07 项目主人：工具的图标别忘了加。核心基础系统的每件工具（钉住的那份核心检出里的 `resources/software/basesystem/tools/`）在
         // Nerd Font 那一套里都要有自己的一个，核心加了新工具这里当场红。
-        let dir = std::path::Path::new(miyu_client::WORKSPACE_ROOT)
-            .join("resources/software/basesystem/tools");
+        let root = std::path::Path::new(miyu_client::WORKSPACE_ROOT).join("resources/software");
+        // 定时、循环两个包（核心 J-2）也是核心自带、清单里不写图标的：一起查（2026-10-27 和网页头对齐：一律时钟）。
+        let dirs = ["basesystem", "schedule", "loop"].map(|p| root.join(p).join("tools"));
         let nerd = &builtin().unwrap()[0];
         // 内核当场答的（`load_tools`，核心 L-1）不在那个目录里，在基础系统给人看的字里登记着显示名：一起查。改了名的旧名
         // （`agent`、`message_agent`）蓝图定了不认，不查。
@@ -188,8 +189,9 @@ mod tests {
             .into_iter()
             .flat_map(|t| t.keys().cloned())
             .filter(|n| !["agent", "message_agent"].contains(&n.as_str()));
-        let mut missing: Vec<String> = std::fs::read_dir(&dir)
-            .unwrap()
+        let mut missing: Vec<String> = dirs
+            .iter()
+            .flat_map(|dir| std::fs::read_dir(dir).unwrap())
             .filter_map(|e| e.ok()?.path().file_stem()?.to_str().map(str::to_string))
             .chain(named)
             .filter(|name| !nerd.tools.contains_key(name))
