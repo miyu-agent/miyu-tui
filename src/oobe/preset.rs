@@ -29,8 +29,8 @@ pub struct Card {
 pub struct PresetStep {
     /// 一个预设一块，照 `preset.list` 的先后。
     pub cards: Vec<Card>,
-    /// 包的编号到名字（App 照 `package.list` 交来）：功能照包分组写组名（`features.rs`）。
-    pub package_names: std::collections::HashMap<String, String>,
+    /// 包的名字、在哪个组（App 照 `package.list` 交来）：功能照组、包分组写组名（`features.rs`）。
+    pub package_names: crate::features::Packages,
     /// 光标在第几块；等于 `cards.len()` 的是「自定义」。
     pub cursor: usize,
     /// 自定义的名字。
