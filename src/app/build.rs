@@ -62,6 +62,7 @@ impl App {
             screen: super::screen::Screen::new(theme),
             talk: super::talk::Talk {
                 preview: None,
+                tree_bill: None,
                 default_level: crate::core::Level::Workspace,
                 level_picked: false,
                 dream: None,
