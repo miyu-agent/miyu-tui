@@ -37,11 +37,17 @@ impl App {
             self.link.human.set_icons(icons);
             *self.media.row_cache.borrow_mut() = Default::default();
         }
-        // 包的名字：预设的功能照包分组时写组名（`features.rs`）；开着的配置页、引导跟着换。
-        self.link.package_names = packages
-            .iter()
-            .filter_map(|p| Some((p.id.clone(), p.name.clone()?)))
-            .collect();
+        // 包的名字、组：预设的功能照组、包分组时写组名（`features.rs`）；开着的配置页、引导跟着换。
+        self.link.package_names = crate::features::Packages {
+            names: packages
+                .iter()
+                .filter_map(|p| Some((p.id.clone(), p.name.clone()?)))
+                .collect(),
+            groups: packages
+                .iter()
+                .filter_map(|p| Some((p.id.clone(), p.group.clone()?)))
+                .collect(),
+        };
         self.share_package_names();
         if self.typing.history_placed {
             return;

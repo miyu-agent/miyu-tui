@@ -3,8 +3,8 @@
 use serde_json::json;
 
 use super::{
-    Feature, Mark, Row, apply, group_name, mark, name_packages, offs, read, rows, selectable,
-    toggle, toggle_all,
+    Feature, Mark, Packages, Row, apply, group_name, mark, name_packages, offs, read, rows,
+    selectable, toggle, toggle_all,
 };
 
 /// 文件读写（几件工具）、运行命令（一件）、人设防失忆提醒（没有工具）、没装的联网。
@@ -122,7 +122,10 @@ fn features_group_under_their_package_and_lone_packages_get_no_heading() {
         {"id": "mine2", "name": "我的命令", "on": true, "package": "~home"}
     ]});
     let mut list = read(&got);
-    let names = std::collections::HashMap::from([("env".to_string(), "注入环境信息".to_string())]);
+    let names = Packages {
+        names: std::collections::HashMap::from([("env".to_string(), "注入环境信息".to_string())]),
+        ..Packages::default()
+    };
     name_packages(&mut list, &names);
     let rows = rows(&list);
     assert_eq!(
@@ -151,4 +154,38 @@ fn features_group_under_their_package_and_lone_packages_get_no_heading() {
 
 fn rows_of(list: &[Feature]) -> Vec<Row> {
     rows(list)
+}
+
+#[test]
+fn packages_in_a_group_gather_under_the_groups_name() {
+    // 核心 BS-1下上：出厂的十八个包在「基础系统」组里，一包一个功能，照组收在一起、写组名；不在组里的照包。
+    let got = serde_json::json!({"features": [
+        {"id": "read", "name": "读取", "on": true, "package": "read"},
+        {"id": "weather", "name": "天气", "on": true, "package": "weather"},
+        {"id": "shell", "name": "跑命令", "on": true, "package": "shell"}
+    ]});
+    let mut list = read(&got);
+    let group = |id: &str| {
+        (
+            id.to_string(),
+            ("basesystem".to_string(), "基础系统".to_string()),
+        )
+    };
+    let packages = Packages {
+        names: std::collections::HashMap::from([("weather".to_string(), "天气包".to_string())]),
+        groups: std::collections::HashMap::from([group("read"), group("shell")]),
+    };
+    name_packages(&mut list, &packages);
+    assert_eq!(
+        rows(&list),
+        [
+            Row::Group(0),
+            Row::Feature(0),
+            Row::Feature(2),
+            Row::Feature(1)
+        ],
+        "同组的收在一起；只有一个功能的包照旧不写组名"
+    );
+    assert_eq!(group_name(&list[0], "我的"), "基础系统");
+    assert_eq!(group_name(&list[1], "我的"), "天气包");
 }
