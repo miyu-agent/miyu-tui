@@ -21,8 +21,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     let spinner_ms = seen.config.timeline.spinner_ms.max(1);
     // 两格槽紧贴在输入框里的字的左边，和提示符同一列；紧凑版面（框外面那几行贴着窗口左边，`layout.rs`）槽贴着窗口左边、
     // 字写到最右边（「输入框」第 10 条，2026-10-27 项目主人）。
-    let edge = areas.footer.x <= area.x;
-    let (indent, width) = if edge {
+    let (indent, width) = if areas.footer.x <= area.x {
         (0, area.width.saturating_sub(2))
     } else {
         (areas.text.x.saturating_sub(area.x + 2), areas.text.width)
@@ -31,7 +30,6 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
         config: seen.config,
         human: &seen.link.human,
         indent: " ".repeat(usize::from(indent)),
-        edge,
         width,
         hover: screen.view.hover,
         level: seen.talk.transcript.level,

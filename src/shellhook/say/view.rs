@@ -198,7 +198,6 @@ impl View<'_> {
             config: self.config,
             human: self.human,
             indent: String::new(),
-            edge: false,
             width: self.width,
             hover: None,
             frame: self.frame,

@@ -46,7 +46,6 @@ impl Fixture {
             config: &self.config,
             human: &self.human,
             indent: String::new(),
-            edge: false,
             width: 60,
             hover: None,
             frame: 0,

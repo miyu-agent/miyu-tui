@@ -94,9 +94,6 @@ pub struct Ctx<'a> {
     pub human: &'a Human,
     /// 内容前面的缩进：正文区左边到两格槽。
     pub indent: String,
-    /// 紧凑版面（窄窗口，「输入框」第 10 条）：槽贴着窗口左边，收尾行的级别图标也挂进槽里（2026-10-27 项目主人：「左侧
-    /// 留一列给标记和盲文」）。
-    pub edge: bool,
     /// 内容多宽，和输入框里的字一样宽。
     pub width: u16,
     /// 鼠标悬在哪。
@@ -362,19 +359,12 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     };
     let mark_width = u16::try_from(mark.width()).unwrap_or(0);
     let width = ctx.width.saturating_sub(mark_width).max(1);
-    // 没记级别的收尾行（读最新一页时还不知道）照现在的。
-    let level = entry.level.or(Some(ctx.level));
-    // 紧凑版面：收尾行的图标挂进槽里，字和别的字对齐（`Ctx::edge`）。
-    let hung = ctx.edge && matches!(entry.kind, Kind::Done | Kind::Cut);
-    let slot = if hung {
-        Span::styled(done_row::mark(level, layout).to_string(), style)
-    } else {
-        slot
-    };
     let pieces = match entry.kind {
-        // 收尾行只在 ` · ` 处折（「窗口小的时候」第 5 条）。
-        Kind::Done | Kind::Cut if hung => done_row::pieces(&entry.text, width),
+        // 收尾行只在 ` · ` 处折（「窗口小的时候」第 5 条）。图标打头、和正文同一缩进，紧凑版面也一样（2026-10-27 项目主人：
+        // 挂到第 0 列「有点丑」）。
         Kind::Done | Kind::Cut => {
+            // 没记级别的（读最新一页时还不知道）照现在的。
+            let level = entry.level.or(Some(ctx.level));
             done_row::pieces(&done_row::line(level, &entry.text, layout), width)
         }
         // 模型的回答常以换行开头、结尾，前后的空行不画。

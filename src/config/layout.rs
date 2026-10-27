@@ -63,6 +63,8 @@ pub struct Layout {
     pub compact_pad_left: u16,
     /// 紧凑版面框里右边几列（光标的一列）。
     pub compact_pad_right: u16,
+    /// 紧凑版面窗口两边各留几列：框、正文、框外面那几行都在里面（2026-10-27 项目主人：「左右至少还是要给一列的边距」）。
+    pub compact_side_gap: u16,
     /// 一次粘贴超过这么多行，输入框里收成一块（蓝图「输入框」第 11 条）。
     pub paste_fold_lines: usize,
     /// 一次粘贴超过这么多字，收成一块。

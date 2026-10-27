@@ -82,3 +82,44 @@ fn the_sidebar_lists_recent_sessions_and_a_click_switches() {
         tui.pump(std::time::Duration::from_millis(50));
     }
 }
+
+#[test]
+fn clicking_a_recent_session_twice_never_flashes_an_empty_session() {
+    // 2026-10-27 项目主人报：侧边栏切会话有时一闪空会话的画面。点了还没换上来又点一下，第二下把停放着、还在补发的空正文
+    // 提前换了上来：一帧首页，等补完才有字。
+    let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
+    let home = Home::with_settings(script, "");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+    tui.wait_for("工作区");
+    tui.say("topic-one");
+    tui.wait_for("answer-one");
+    tui.say("/new");
+    tui.say("topic-two");
+    tui.wait_for("answer-two");
+    tui.wait_for("最近会话");
+    let lines = tui.lines();
+    let row = lines
+        .iter()
+        .position(|l| l.find("topic-one").is_some_and(|at| at > 100))
+        .expect("列着 topic-one");
+    let col = lines[row].find("topic-one").expect("在") + 1;
+    let click = format!("\x1b[<0;{col};{}M\x1b[<0;{col};{}m", row + 1, row + 1);
+    let start = tui.record_from_here();
+    tui.key(format!("{click}{click}").as_bytes());
+    tui.wait_for("answer-one");
+    tui.pump(std::time::Duration::from_millis(300));
+    let frames = support::frames(start, &tui.recorded());
+    assert!(!frames.is_empty());
+    for frame in &frames {
+        let body = |word: &str| {
+            frame
+                .iter()
+                .any(|l| l.find(word).is_some_and(|at| at < 100))
+        };
+        assert!(
+            body("answer-one") || body("answer-two"),
+            "一帧空会话：\n{}",
+            frame.join("\n")
+        );
+    }
+}
