@@ -12,6 +12,9 @@ use crate::caret::Caret;
 use crate::settings::pages::choose::Choose;
 use crate::theme;
 
+#[cfg(test)]
+mod tests;
+
 /// 窗里的一行行，画之前先排好。
 pub struct Lines<H> {
     pub title: Option<(String, String)>,
@@ -24,6 +27,9 @@ pub struct Lines<H> {
     pub caret: Option<(usize, u16)>,
     /// 光标停在最后一个能选的行上：后面跟着的、光标停不上去的行（预设里写了没装的功能）也露出来，窗口滚到底。
     pub to_end: bool,
+    /// 窗里从第几行露起：画之前填上一帧的，画完是这一帧的（叫的人记着，下一帧再交回来）。选中的碰到上下边才挪（`menu::edge`，
+    /// 2026-10-27 项目主人：往下滚到底以后往回一下就整页往上翻，要碰到上边才翻）。
+    pub top: usize,
 }
 
 impl<H> Default for Lines<H> {
@@ -37,6 +43,7 @@ impl<H> Default for Lines<H> {
             hints: Vec::new(),
             caret: None,
             to_end: false,
+            top: 0,
         }
     }
 }
@@ -191,14 +198,19 @@ fn paint<H: Copy>(
     } else {
         lines.body.iter().position(|b| b.focused).unwrap_or(0)
     };
-    let top = focus
-        .saturating_sub(room.saturating_sub(1))
-        .min(lines.body.len().saturating_sub(room));
+    let top = if lines.to_end {
+        focus
+            .saturating_sub(room.saturating_sub(1))
+            .min(lines.body.len().saturating_sub(room))
+    } else {
+        crate::menu::edge(focus, None, lines.top, lines.body.len(), room)
+    };
     let top = if lines.caret.is_some_and(|(row, _)| row == 0) {
         0
     } else {
         top
     };
+    lines.top = top;
     for (offset, body) in lines.body.iter().skip(top).take(room).enumerate() {
         let y = inner.y + 2 + offset as u16;
         let row = Rect::new(inner.x, y, inner.width, 1);

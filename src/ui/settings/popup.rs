@@ -93,6 +93,8 @@ pub fn draw(
         Popup::Pair(edit) => super::dialog_popups::pair(&mut lines, edit, texts),
         Popup::Catalog(pick) => super::catalog::lines(&mut lines, pick, texts, width),
     }
+    // 窗里从第几行露起照上一帧接着（选中的碰到上下边才挪，`floating.rs`）。
+    lines.top = page.popup_top;
     floating::centered(
         frame,
         area,
@@ -101,6 +103,7 @@ pub fn draw(
         (&mut page.hits, Hit::Button),
         caret,
     );
+    page.popup_top = lines.top;
     page.popup = Some(popup);
 }
 
