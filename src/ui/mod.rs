@@ -159,9 +159,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     // 框里占几行：抽屉开着时是抽屉的行数，连边框最高半屏；带文字画的放得下整张为止，屏幕顶上留几行
     // （`tui.md`「确认和提问的抽屉」第 2 条）。
     let texts = &app.config.text.drawer;
-    // 正文翻上去了（没在跟着最新的）：抽屉让开，正文用满它的位置，回到底部再出来（「确认和提问的抽屉」第 4a 条，
-    // 2026-10-26 项目主人：往上翻是要看正文）。
-    let aside = !home && app.talk.drawers.current.is_some() && app.screen.view.top.is_some();
+    // 抽屉跟着正文滚（「确认和提问的抽屉」第 4a 条，`body_view/slide.rs`）：往上滚先往下滑 `slid` 行，整个滑出去了、正文
+    // 翻上去了（没在跟着最新的）就让开，正文用满它的位置。
+    let slide = app.screen.view.slide;
+    let aside = !home
+        && app.talk.drawers.current.is_some()
+        && (app.screen.view.top.is_some() || slide.away());
+    let slid = if home || aside { 0 } else { slide.by };
+    // 这一帧抽屉排出来几行（照框里的字宽算，排的时候才知道）。
+    let drawer_rows = std::cell::Cell::new(None);
     let open_drawer = app.talk.drawers.current.as_ref().filter(|_| !aside);
     let half = (main.height / 2).saturating_sub(2).max(3);
     let drawer_max = match open_drawer {
@@ -179,7 +185,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let start = app.seen().start_pick().filter(|_| !skip);
     let box_rows = |w: u16| match (open_drawer, start) {
         _ if aside => 0,
-        (Some(d), _) => drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max),
+        (Some(d), _) => {
+            let rows = drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max);
+            drawer_rows.set(Some(rows));
+            // 滑下去的那几行：框照少占这么多行排，上面几块跟着往下挪（下边不画，见下面）。
+            rows.saturating_sub(slid).max(1)
+        }
         (None, Some(kind)) => {
             let rows = start_pick::content(&app.seen(), kind, w, usize::from(half))
                 .1
@@ -281,6 +292,20 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     let menu_rows = panel::height(u16::try_from(items).unwrap_or(u16::MAX), room);
     let mut areas = place(menu_rows);
+    // 记下抽屉几行，滚的时候照它滑；没开抽屉的回原位。滑着的：框的下边不画，放字的那一块往下多一行（`input_box.rs`）。
+    match (
+        app.talk.drawers.current.is_some() && !home,
+        drawer_rows.get(),
+    ) {
+        (true, Some(rows)) => app.screen.view.drawer(rows),
+        (false, _) => app.screen.view.drawer(0),
+        (true, None) => {}
+    }
+    if slid > 0 && drawer_rows.get().is_some() {
+        areas.slid = slid;
+        areas.text.height =
+            (areas.text.height + 1).min(areas.frame.bottom().saturating_sub(areas.text.y));
+    }
     if pad {
         areas.menu_text = panel::padded(areas.menu_text);
     }
