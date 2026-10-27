@@ -4,6 +4,7 @@
 //! 弹不弹、怎么弹、响不响由 [`plan`] 定（纯函数，好测）；[`Notifier`] 记着终端在不在前台，照它做。要写给终端的转义
 //! 序列攒在 [`Notifier::outbox`]，主循环画完一帧再写出去。
 
+mod click;
 pub mod herdr;
 mod icon;
 mod mascot_icon;
@@ -14,6 +15,7 @@ mod system;
 use std::path::PathBuf;
 
 use crate::config::{NotifyLook, NotifyTexts};
+pub use click::{Clicked, Wake, clicked};
 pub use herdr::State;
 
 /// 通知从哪条路出去（第 4 条）。
@@ -113,6 +115,8 @@ pub struct Notifier {
     avatar: Option<PathBuf>,
     /// 没有头像时画成图标的吉祥物（第 3 条，2026-10-19）。
     mascot: Option<icon::Mascot>,
+    /// 点了的通知要切过去的会话（第 8 条，`click.rs`）。
+    clicked: Clicked,
 }
 
 impl Notifier {
@@ -140,6 +144,7 @@ impl Notifier {
             title: None,
             avatar: None,
             mascot: None,
+            clicked: Clicked::default(),
             look,
             texts,
         }
@@ -177,33 +182,74 @@ impl Notifier {
 
     /// 出了一件要通知的事：标题是会话标题，正文只写为什么，图标照人格头像（第 3 条）。
     pub fn tell(&mut self, event: Event) {
-        let plan = plan(&self.look, self.route, self.focused, self.herdr.is_some());
         let body = match event {
             Event::Replied => self.texts.replied.clone(),
             Event::Failed => self.texts.failed.clone(),
             Event::Approving => self.texts.approving.clone(),
             Event::Asking => self.texts.asking.clone(),
         };
-        let title = self.title.as_deref().unwrap_or(&self.texts.title);
-        let pose = pose(event);
+        let title = self
+            .title
+            .clone()
+            .unwrap_or_else(|| self.texts.title.clone());
+        let avatar = self.avatar.clone();
+        self.send((&title, &body), (avatar.as_deref(), pose(event)), None);
+    }
+
+    /// 给人的通知（核心 J-3 中，第 8 条）：标题照传进来的（空的写 Miyu），图标是站着的吉祥物（不是正在看的会话的头像）；
+    /// 带了 `session` 的点了切过去。
+    pub fn tell_notice(&mut self, title: Option<String>, body: &str, session: Option<String>) {
+        let title = title
+            .filter(|t| !t.trim().is_empty())
+            .unwrap_or_else(|| self.texts.title.clone());
+        let pose = mascot_icon::Icon::Standing;
+        self.send((&title, body), (None, pose), session);
+    }
+
+    /// 照 [`plan`] 弹、响。`session` 是点了切过去的会话：kitty 要它回话，`notify-send` 带动作等着。
+    fn send(
+        &mut self,
+        (title, body): (&str, &str),
+        (avatar, pose): (Option<&std::path::Path>, mascot_icon::Icon),
+        session: Option<String>,
+    ) {
+        let plan = plan(&self.look, self.route, self.focused, self.herdr.is_some());
         let icon = || {
             let mascot = self.mascot.as_ref().map(|look| (look, pose));
             self.icons
                 .as_deref()
-                .and_then(|dir| icon::pick(self.avatar.as_deref(), mascot, dir))
+                .and_then(|dir| icon::pick(avatar, mascot, dir))
         };
         match plan.route {
             Some(Route::Kitty) => {
                 let picture = icon().and_then(|p| std::fs::read(p).ok());
-                let seq = osc::kitty(&self.id, &self.look.app, title, &body, picture.as_deref());
+                let id = session
+                    .as_deref()
+                    .map_or_else(|| self.id.clone(), click::kitty_id);
+                let seq = osc::kitty(
+                    (&id, session.is_some()),
+                    &self.look.app,
+                    (title, body),
+                    picture.as_deref(),
+                );
                 self.outbox.push(seq);
             }
-            Some(Route::Osc9) => self.outbox.push(osc::osc9(title, &body)),
+            Some(Route::Osc9) => self.outbox.push(osc::osc9(title, body)),
             Some(Route::System) => {
                 let picture = icon();
-                let (program, args) =
-                    system::command(&self.look.app, title, &body, picture.as_deref());
-                system::spawn(&program, &args);
+                let (program, plain) =
+                    system::command(&self.look.app, title, body, picture.as_deref());
+                match session.filter(|_| !cfg!(target_os = "macos")) {
+                    Some(session) => {
+                        let mut args = click::action_args(&self.texts.open).to_vec();
+                        args.extend(plain.iter().cloned());
+                        let clicked = (self.clicked.clone(), session);
+                        click::spawn_waiting(program, args, plain, clicked);
+                    }
+                    None => {
+                        system::spawn(&program, &plain);
+                    }
+                }
             }
             None => {}
         }
@@ -212,6 +258,16 @@ impl Notifier {
         {
             sound::play(self.look.players.here(), &file);
         }
+    }
+
+    /// 点了的通知要叫醒主循环（`click.rs`）。
+    pub fn set_wake(&mut self, wake: Wake) {
+        self.clicked.set_wake(wake);
+    }
+
+    /// 拿走点了的通知要切过去的会话。
+    pub fn take_clicked(&self) -> Vec<String> {
+        self.clicked.take()
     }
 
     /// 先欠着这一件（长期目标还在跑，后面多半还有续轮）：接着开了一轮的 [`Notifier::forgive`]，目标停下来的

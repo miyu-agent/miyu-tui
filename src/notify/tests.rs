@@ -106,6 +106,38 @@ fn kitty_gets_its_sequence_in_the_outbox_with_what_happened() {
 }
 
 #[test]
+fn a_schedule_notice_asks_kitty_to_report_the_click_and_names_its_session() {
+    // 核心 J-3 中：每次新开会话的定时跑完了，点开切到那个会话（「系统通知」第 8 条）；平常的通知照旧只跳回窗口。
+    use base64::Engine;
+    let config = Config::builtin().unwrap();
+    let mut n = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        env(&[("TERM", "xterm-kitty")]),
+        None,
+    );
+    n.tell_notice(Some("早报".into()), "定时任务跑完了", Some("s-1".into()));
+    let out = n.outbox().concat();
+    assert!(out.contains("i=miyu-s-s-1:"), "{out:?}");
+    assert!(out.contains("a=focus,report:"), "{out:?}");
+    let b = |t: &str| base64::engine::general_purpose::STANDARD.encode(t);
+    assert!(out.contains(&b("早报")) && out.contains(&b("定时任务跑完了")));
+    // 唤醒表坏了的不切会话：标题写 Miyu，不要回话。
+    n.tell_notice(None, "定时任务表坏了", None);
+    let out = n.outbox().concat();
+    assert!(
+        out.contains("a=focus:") && !out.contains("report"),
+        "{out:?}"
+    );
+    assert!(out.contains(&b("Miyu")));
+    n.tell(Event::Replied);
+    assert!(
+        !n.outbox().concat().contains("report"),
+        "平常的通知不要回话"
+    );
+}
+
+#[test]
 fn herdr_keeps_desktop_notifications_and_owns_only_sound() {
     let look = Config::builtin().unwrap().notify;
     assert_eq!(

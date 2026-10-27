@@ -43,7 +43,11 @@
     "replied": "回答が終わりました",
     "failed": "エラーが発生しました",
     "approving": "確認を待っています",
-    "asking": "回答を待っています"
+    "asking": "回答を待っています",
+    "schedule_ran": "定期タスクが終わりました",
+    "schedule_failed": "定期タスクが終わりませんでした",
+    "schedules_reset": "定期タスクの表が壊れたため、登録した定期タスクはすべて消えました",
+    "open": "開く"
   },
   "refused": "コアに拒否されました：{reason}",
   "interrupted": "中断しました",

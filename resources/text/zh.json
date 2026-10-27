@@ -43,7 +43,11 @@
     "replied": "回答完了",
     "failed": "出错",
     "approving": "等你确认",
-    "asking": "等你回答"
+    "asking": "等你回答",
+    "schedule_ran": "定时任务跑完了",
+    "schedule_failed": "定时任务没跑完",
+    "schedules_reset": "定时任务表坏了，原来的定时都没了",
+    "open": "打开"
   },
   "refused": "核心拒绝：{reason}",
   "interrupted": "已中断",
