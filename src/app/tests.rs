@@ -96,3 +96,4 @@ mod goal;
 mod notices;
 mod pools;
 mod status;
+mod switching;
