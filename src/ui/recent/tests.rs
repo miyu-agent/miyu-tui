@@ -76,7 +76,7 @@ fn a_long_name_is_cut_to_the_sidebar() {
     let row = lines[1].to_string();
     assert!(row.ends_with('…'), "{row}");
     assert!(
-        unicode_width::UnicodeWidthStr::width(row.as_str()) <= 18,
-        "缩进两格以后放得下：{row}"
+        unicode_width::UnicodeWidthStr::width(row.as_str()) <= 20,
+        "记号挂在缩进里，整行放得下：{row}"
     );
 }

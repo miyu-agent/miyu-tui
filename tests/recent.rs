@@ -35,6 +35,19 @@ fn the_sidebar_lists_recent_sessions_and_a_click_switches() {
         "当前这个在第一行：\n{}",
         lines.join("\n")
     );
+    // 记号挂在缩进那两格里，名字和别的几段的内容对齐（2026-10-27 项目主人：缩进有待优化）。
+    let col = |row: usize, word: &str| {
+        lines[row][..lines[row].find(word).expect("在")]
+            .chars()
+            .count()
+    };
+    let usage = side(&lines, "共 ").expect("有用量那一段");
+    assert_eq!(
+        col(one.expect("列着"), "topic-one"),
+        col(usage, "共 "),
+        "\n{}",
+        lines.join("\n")
+    );
     // 点 topic-one 那一行：切过去，正文换成它的。
     let row = one.expect("列着 topic-one");
     let col = lines[row].find("topic-one").expect("在") + 1;
