@@ -34,6 +34,7 @@ fn info(session: &str, title: Option<&str>, cwd: &str) -> SessionInfo {
         tokens: 0,
         context: None,
         terminal: false,
+        waiting: false,
     }
 }
 

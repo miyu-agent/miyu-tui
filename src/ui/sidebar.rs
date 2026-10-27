@@ -1,4 +1,5 @@
-//! 侧边栏（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 6 条）：窗口够宽时右边一栏，吉祥物在上，待办在下；
+//! 侧边栏（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 7 条）：窗口够宽时右边一栏，吉祥物在上，会话那几段在下（待办 2026-10-26
+//! 起在输入框上面）；
 //! 和主列之间一根暗色竖线。
 
 use ratatui::Frame;
@@ -10,9 +11,8 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::{MascotState, Screen, Seen};
-use crate::config::{Config, Layout, TodoMarks};
+use crate::config::{Config, Layout};
 use crate::core::Usage;
-use crate::jobs::{Board, Todo, TodoState};
 use crate::side_select::TextRow;
 use crate::transcript::Transcript;
 use crate::{meter, theme};
@@ -26,104 +26,6 @@ pub fn split(area: Rect, layout: &Layout) -> (Rect, Rect) {
     let main = Rect::new(area.x, area.y, area.width - side - 1, area.height);
     let sidebar = Rect::new(area.right() - side, area.y, side, area.height);
     (main, sidebar)
-}
-
-/// 待办那一段：`待办 2/5`，每一项一个记号。没有待办、全做完了是空的。没做完的照她写的先后排在前面，做完的排到末尾
-/// （2026-10-17 项目主人）。`full` 时全部列出、长的折行；不然项目最多 `rows` 行：做完了两项及以上的，先是没做完的，放不下的
-/// 收成一行，长的截掉加 `…`，做完的收成最底下一行「已完成 N 项」（同一天项目主人定：不等放不下才收，只做完一项的不收）；
-/// 只做完一项的放得下就一项一行（`tui.md`「后台命令、子代理和侧边栏」第 4 条）。
-pub fn todo_lines(
-    board: &Board,
-    config: &Config,
-    width: u16,
-    rows: usize,
-    full: bool,
-) -> Vec<Line<'static>> {
-    let words = &config.text.jobs;
-    let marks = &config.layout.todo_marks;
-    let Some((done, total)) = board.todo_shown() else {
-        return Vec::new();
-    };
-    let title = words
-        .todo
-        .replace("{done}", &done.to_string())
-        .replace("{total}", &total.to_string());
-    let mut out = vec![Line::styled(title, theme::dim())];
-    let (open, finished): (Vec<&Todo>, Vec<&Todo>) =
-        board.todos.iter().partition(|t| t.state != TodoState::Done);
-    if full || (board.todos.len() <= rows && done <= 1) {
-        for todo in open.iter().chain(&finished) {
-            out.extend(item(todo, marks, width, full));
-        }
-        return out;
-    }
-    // 没做完的在前，放不下的收成一行，做完的收成最后一行。
-    let folded = usize::from(done > 0);
-    let room = rows.saturating_sub(folded);
-    let shown = if open.len() <= room {
-        open.len()
-    } else {
-        room.saturating_sub(1)
-    };
-    for todo in &open[..shown] {
-        out.extend(item(todo, marks, width, false));
-    }
-    if shown < open.len() {
-        let more = words
-            .todo_more
-            .replace("{count}", &(open.len() - shown).to_string());
-        out.push(Line::styled(more, theme::dim()));
-    }
-    if done > 0 {
-        let text = words.todo_folded.replace("{count}", &done.to_string());
-        out.push(Line::from(vec![
-            Span::styled(marks.done.clone(), theme::dim()),
-            Span::styled(text, theme::dim()),
-        ]));
-    }
-    out
-}
-
-/// 一项：记号加字。`wrap` 时长的折行、和字对齐，不然截掉加 `…`。
-fn item(todo: &Todo, marks: &TodoMarks, width: u16, wrap: bool) -> Vec<Line<'static>> {
-    let (mark, style) = match todo.state {
-        TodoState::Pending => (&marks.pending, theme::dim()),
-        TodoState::Active => (&marks.active, theme::accent().add_modifier(Modifier::BOLD)),
-        TodoState::Done => (
-            &marks.done,
-            theme::dim().add_modifier(Modifier::CROSSED_OUT),
-        ),
-    };
-    let room = usize::from(width).saturating_sub(mark.width()).max(1);
-    let lead_style = style.remove_modifier(Modifier::CROSSED_OUT);
-    if !wrap {
-        let text = super::rows::clip(&todo.text, u16::try_from(room).unwrap_or(1));
-        return vec![Line::from(vec![
-            Span::styled(mark.clone(), lead_style),
-            Span::styled(text, style),
-        ])];
-    }
-    let indent = " ".repeat(mark.width());
-    wrap_text(&todo.text, room)
-        .into_iter()
-        .enumerate()
-        .map(|(i, piece)| {
-            let (lead, lead_style) = if i == 0 {
-                (mark.clone(), lead_style)
-            } else {
-                (indent.clone(), Style::new())
-            };
-            Line::from(vec![
-                Span::styled(lead, lead_style),
-                Span::styled(piece, style),
-            ])
-        })
-        .collect()
-}
-
-/// 按显示宽度折行。
-fn wrap_text(text: &str, width: usize) -> Vec<String> {
-    crate::cells::wrap(text, width)
 }
 
 /// 会话、工作目录、上下文、用量几段（`tui.md`「后台命令、子代理和侧边栏」第 7 条）：小标题加粗、内容缩进两格、
@@ -308,7 +210,7 @@ pub fn section(lines: Vec<Line<'static>>) -> Vec<Line<'static>> {
         .collect()
 }
 
-/// 画侧边栏：竖线、吉祥物（开着的话）、会话那一段、待办，一段之间空一行。
+/// 画侧边栏：竖线、吉祥物（开着的话）、会话那几段，一段之间空一行。
 pub fn draw(
     frame: &mut Frame,
     area: Rect,
@@ -371,49 +273,45 @@ pub fn draw(
         let y = at.y + u16::try_from(row).unwrap_or(0);
         Rect::new(at.x, y, inner, 1).intersection(at)
     });
-    // 待办：一段，标题加粗、项目缩进两格；侧边栏剩下多高就露多少行。这一块能点，点了展开全部、再点收起（第 4 条）。
+    // 「最近会话」：接在会话那几段后面，空一行；待办 2026-10-26 起不在侧边栏（第 4a 条）。点一行切过去。
     let top = at.bottom() + 1;
-    let below = Rect::new(area.x + 1, top, inner, area.bottom().saturating_sub(top));
-    let rows = usize::from(below.height.saturating_sub(1));
-    let todo = section(todo_lines(
-        &seen.talk.board,
-        seen.config,
-        below.width.saturating_sub(2),
-        rows,
-        seen.talk.todo_full,
-    ));
-    let tall = u16::try_from(todo.len())
-        .unwrap_or(u16::MAX)
-        .min(below.height);
-    screen.areas.todo = Rect {
-        height: tall,
-        ..below
-    };
-    text_rows.extend(todo.iter().enumerate().map(|(i, line)| TextRow {
-        y: below.y + u16::try_from(i).unwrap_or(0),
-        x: below.x,
+    let current = seen.talk.transcript.session.as_deref();
+    let current = current.map(|id| (id, seen.talk.transcript.title.as_deref()));
+    let list = seen.talk.sessions_seen.as_deref().unwrap_or_default();
+    let count = seen.config.layout.sidebar_sessions;
+    let frame_at = (inner, super::spin_frame(seen));
+    let (recent, ids) = super::recent::recent_lines(list, current, count, frame_at, seen.config);
+    let recent = section(recent);
+    let room = area.bottom().saturating_sub(top);
+    let tall = u16::try_from(recent.len()).unwrap_or(u16::MAX).min(room);
+    let block = Rect::new(area.x + 1, top, inner, tall);
+    text_rows.extend(recent.iter().enumerate().map(|(i, line)| TextRow {
+        y: top + u16::try_from(i).unwrap_or(0),
+        x: block.x,
         text: line.to_string(),
     }));
-    frame.render_widget(Paragraph::new(todo), below);
-    // 扩展包放的界面块：接在待办后面，空一行（蓝图「界面块」第 2 条）。
-    let after = if tall > 0 {
-        below.y + tall + 1
-    } else {
-        below.y
+    frame.render_widget(Paragraph::new(recent), block);
+    // 标题那一行不算：从第二行起一行一个会话。
+    screen.areas.recent = Rect {
+        y: block.y + 1,
+        height: tall.saturating_sub(1),
+        ..block
     };
+    screen.recent = ids.into_iter().skip(1).flatten().collect();
+    // 扩展包放的界面块：接在后面，空一行（蓝图「界面块」第 2 条）。
+    let after = if tall > 0 { block.bottom() + 1 } else { top };
     let rest = Rect::new(
-        below.x,
+        area.x + 1,
         after,
-        below.width,
-        below.bottom().saturating_sub(after),
+        inner,
+        area.bottom().saturating_sub(after),
     );
     let pointer = screen.pointer;
     let rows = super::widget::sidebar(frame, rest, seen, pointer, &mut screen.widget_spots);
-    text_rows.extend(rows.into_iter().map(|(y, text)| TextRow {
-        y,
-        x: below.x,
-        text,
-    }));
+    text_rows.extend(
+        rows.into_iter()
+            .map(|(y, text)| TextRow { y, x: rest.x, text }),
+    );
     // 选中的反色。
     for row in &text_rows {
         if let Some((from, to)) = screen.side_select.cols(row.y) {

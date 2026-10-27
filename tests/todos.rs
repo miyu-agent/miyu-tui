@@ -26,7 +26,22 @@ fn todowrite_shows_up_as_the_todo_list() {
     tui.wait_for("待办 1/3");
     tui.wait_for("改掉那个错");
     tui.wait_for("跑测试");
-    // 做完的排到末尾（2026-10-17 项目主人）：待办那一块在输入框上面，照最后出现的那一处找。
+    // 收着时做完的不露（2026-10-26 项目主人，第 4a 条）：待办那一块在输入框上面，照最后出现的那一处找。
+    let lines = tui.lines();
+    let row = |word: &str| lines.iter().rposition(|l| l.contains(word));
+    let title = row("待办 1/3").expect("有标题");
+    assert!(
+        row("读一遍代码").is_none_or(|r| r < title),
+        "收着时做完的不露：\n{}",
+        lines.join("\n")
+    );
+    // 点标题展开：做完的排到末尾（2026-10-17 项目主人）。
+    let col = lines[title]
+        .find("待办")
+        .map_or(0, |b| lines[title][..b].chars().count())
+        + 1;
+    tui.key(format!("\x1b[<0;{col};{}M\x1b[<0;{col};{}m", title + 1, title + 1).as_bytes());
+    tui.wait_for("读一遍代码");
     let lines = tui.lines();
     let row = |word: &str| lines.iter().rposition(|l| l.contains(word));
     assert!(
@@ -102,9 +117,11 @@ fn a_finished_list_goes_away_at_once() {
 }
 
 #[test]
-fn what_is_done_folds_into_the_bottom_line() {
-    // 2026-10-17 项目主人：「已完成 N 项」挪到底部，不放顶部。
-    let names = ["一号", "二号", "三号", "四号", "五号", "六号", "七号"];
+fn folded_it_shows_what_is_in_progress_and_the_next_two() {
+    // 2026-10-26 项目主人（反馈第 1 条）：只露进行中的一条、待进行的两条，标题写总数，底下不再接「还有」「已完成」。
+    let names = [
+        "一号", "二号", "三号", "四号", "五号", "六号", "七号", "八号",
+    ];
     let todos: Vec<_> = names
         .iter()
         .enumerate()
@@ -127,18 +144,21 @@ fn what_is_done_folds_into_the_bottom_line() {
     tui.wait_for("工作区");
     tui.say("排一下要做的");
     tui.wait_for("列好了。");
-    tui.wait_for("已完成 4 项");
+    tui.wait_for("待办 4/8");
+    tui.wait_for("七号");
     let lines = tui.lines();
     let row = |word: &str| lines.iter().position(|l| l.contains(word));
-    let (title, active, last, folded) = (
-        row("待办 4/7"),
-        row("五号"),
-        row("七号"),
-        row("已完成 4 项"),
+    assert!(
+        row("待办 4/8") < row("五号") && row("五号") < row("六号") && row("六号") < row("七号"),
+        "{}",
+        lines.join("\n")
     );
     assert!(
-        title < active && active < last && last < folded && row("一号").is_none(),
-        "没做完的在前，做完的收成最底下一行：\n{}",
+        row("八号").is_none()
+            && row("一号").is_none()
+            && row("已完成").is_none()
+            && row("还有").is_none(),
+        "只露三项：\n{}",
         lines.join("\n")
     );
 }
