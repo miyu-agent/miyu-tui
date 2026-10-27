@@ -21,6 +21,9 @@ fn short_mascot(home: &Home) -> String {
     path.display().to_string()
 }
 
+/// 吉祥物出厂关着（2026-10-26 项目主人：太吃资源），这里测的就是它：首页、侧边栏都打开。
+const MASCOT_ON: &str = "[tui]\nmascot_home = true\nmascot_sidebar = true\n";
+
 /// 等醒着的那一阵、哈欠、转回正前方都过去，再量 [`QUIET`] 这么久：一个字节都不写，线程一次都不醒。
 fn assert_quiet(tui: &mut Tui, what: &str) {
     tui.pump(Duration::from_secs(3));
@@ -42,7 +45,7 @@ fn assert_quiet(tui: &mut Tui, what: &str) {
 
 #[test]
 fn the_home_screen_settles_and_stays_silent_until_something_happens() {
-    let home = Home::new(Script::new([]));
+    let home = Home::with_settings(Script::new([]), MASCOT_ON);
     let mascot = short_mascot(&home);
     let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_MASCOT", mascot.as_str())]);
     tui.wait_for("Tab 切换权限级别");
@@ -61,7 +64,7 @@ fn the_home_screen_settles_and_stays_silent_until_something_happens() {
 
 #[test]
 fn a_finished_turn_with_the_sidebar_mascot_stays_silent() {
-    let home = Home::new(Script::new([Play::Says("好。")]));
+    let home = Home::with_settings(Script::new([Play::Says("好。")]), MASCOT_ON);
     let mascot = short_mascot(&home);
     let mut tui = home.tui_wide_with("zh_CN.UTF-8", 130, &[("MIYU_TUI_MASCOT", mascot.as_str())]);
     tui.wait_for("Tab 切换权限级别");

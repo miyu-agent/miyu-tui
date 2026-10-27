@@ -14,6 +14,7 @@ fn row(day: &str, tokens: u64, usd: f64) -> UsageRow {
                 currency: "USD".into(),
             }],
             unpriced: 0,
+            converted: None,
         },
         ..UsageRow::default()
     }

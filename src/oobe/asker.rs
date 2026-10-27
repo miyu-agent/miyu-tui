@@ -28,6 +28,10 @@ pub enum Waiting {
     Icons,
     /// 写了按键模式（`config.set tui.keys`）。
     Keys,
+    /// 读金额用的货币（`config.get usage.currency`，`currency.rs`）。
+    CurrencyRead,
+    /// 写了金额用的货币（`config.set usage.currency`）。
+    CurrencySave,
     /// 模型和默认用途（`model.list`）。
     Models,
     /// 环境里的 key、本机的服务（`provider.detect`）。
@@ -36,8 +40,6 @@ pub enum Waiting {
     Catalog,
     /// 全目录（「更多供应商…」，`provider.catalog` 不带 `featured`）。
     AllProviders,
-    /// 配置里有没有池（`config.get`）。
-    Pools,
     /// 试一家（`provider.test`）。
     Test,
     /// 存贴的 key（`secret.set`）。
@@ -103,7 +105,6 @@ impl Waiting {
                 | Self::Detect
                 | Self::Catalog
                 | Self::AllProviders
-                | Self::Pools
                 | Self::PersonaDefault
                 | Self::PersonaGet(_)
                 | Self::PersonaRead(..)

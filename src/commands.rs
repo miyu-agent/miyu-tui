@@ -42,6 +42,13 @@ pub struct Spec {
     /// 几种写法（核心清单的 `usage`，O-6 四补）：`/help` 一行一种；命令列表照旧一条一行（2026-10-17 项目主人定）。
     #[serde(skip)]
     pub usage: Vec<(String, String)>,
+    /// 跟着核心的包的命令（`/goal` 跟着长期目标那个包）：核心清单回来了却没列它（包卸掉了，核心 BS-1下下），列表里不列，
+    /// 打了交给核心说不认得（同别的不存在的命令，不放回输入框）。
+    #[serde(default)]
+    pub follows_core: bool,
+    /// 照上一条藏起来了（[`Commands::take_core`]）。
+    #[serde(skip)]
+    pub gone: bool,
 }
 
 /// 回车时输入框里那一行是什么（蓝图「斜杠命令列表」第 4、5 条）。
@@ -160,7 +167,7 @@ impl Commands {
 
     /// 全部：终端自己的在前，核心认的接在后面。
     pub fn all(&self) -> impl Iterator<Item = &Spec> + Clone {
-        self.commands.iter().chain(&self.core)
+        self.commands.iter().filter(|s| !s.gone).chain(&self.core)
     }
 
     /// 照核心认的那一份换上（`command.catalog` 的回应）：终端自己有的名字、别名不要，能接参数。终端自己有、又交给核心办
@@ -168,6 +175,7 @@ impl Commands {
     pub fn take_core(&mut self, listed: &[crate::core::CoreCommand]) {
         for spec in &mut self.commands {
             let same = listed.iter().find(|c| c.name == spec.name);
+            spec.gone = spec.follows_core && same.is_none();
             spec.argument = same.and_then(|c| c.argument.clone());
             spec.usage = same.map(|c| c.usage.clone()).unwrap_or_default();
         }
@@ -188,6 +196,8 @@ impl Commands {
                 argument: c.argument.clone(),
                 opens: c.opens.clone(),
                 usage: c.usage.clone(),
+                follows_core: false,
+                gone: false,
             })
             .collect();
         self.core = core;
@@ -202,10 +212,13 @@ impl Commands {
         };
         // 名字后面的字：`typed` 认过的名字就在 `/` 后面。
         let words = text[1 + name.len()..].trim();
+        // 藏起来的那几条带着参数也交给核心：不当一句话发给她（核心 BS-1下下回 `unknown_command`）。
+        let gone = self.commands.iter().any(|s| s.gone && s.name == name);
         match (self.find(name), words.is_empty()) {
             (Some(spec), true) => Line::Command(spec, None),
             (Some(spec), false) if spec.args => Line::Command(spec, Some(words)),
             (None, true) => Line::Unknown,
+            (None, false) if gone => Line::Unknown,
             _ => Line::Talk,
         }
     }
@@ -416,9 +429,15 @@ mod tests {
         );
         assert_eq!(ours.usage.len(), 2);
         assert!(c.core.is_empty(), "核心那条不另列");
-        // 核心不再给（旧核心）：拿掉借来的。
+        // 核心清单里没有（长期目标那个包卸掉了，核心 BS-1下下）：列表里不列，打了交给核心，带参数的也不当一句话。
         c.take_core(&[]);
-        assert!(c.find("goal").unwrap().argument.is_none());
+        assert!(c.find("goal").is_none());
+        assert!(!c.filter("go").iter().any(|s| s.name == "goal"));
+        assert!(matches!(c.read("/goal"), Line::Unknown));
+        assert!(matches!(c.read("/goal 写完报告"), Line::Unknown));
+        // 又装上了：回来。
+        c.take_core(std::slice::from_ref(&goal));
+        assert!(c.find("goal").is_some());
     }
 
     #[test]

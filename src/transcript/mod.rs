@@ -20,10 +20,12 @@ mod jobs;
 mod media;
 mod model;
 mod pages;
+mod progress;
 mod queue;
 mod recap;
 mod redo;
 mod reply;
+mod results;
 mod speed;
 mod spent;
 mod steps;
@@ -94,6 +96,8 @@ pub struct Transcript {
     unnamed: Vec<(usize, usize)>,
     /// 调用编号到那一步。
     calls: HashMap<String, (usize, usize)>,
+    /// 在跑的调用攒着的半行进度（「时间线」第 8a 条）。
+    progress: progress::Lines,
     /// 这一轮从什么时候开始跑；没在跑是 `None`。
     pub running: Option<Instant>,
     /// 发出去了、还没开轮（[`Starting`]）。
@@ -124,6 +128,8 @@ pub struct Transcript {
     pub preset: Option<String>,
     /// 这一轮每次请求的用量加起来：收尾行写它（`tui.md`「正文」第 4 条）。
     turn_usage: Usage,
+    /// 这一轮主请求出字的速度：收尾那一行写（2026-10-26 项目主人，同网页、核心 SP-1）。
+    turn_speed: speed::Speed,
     /// 这一轮开始时的权限级别：收尾行打头的图标照它，之后换了级别也不变。
     turn_level: Level,
     /// 最近一次请求占了多少上下文：输入加输出。
@@ -211,7 +217,7 @@ impl Transcript {
             Update::Limits(limits) => self.limits = limits,
             Update::Ready(session) => {
                 self.link = Link::Ready;
-                self.session = Some(session);
+                self.opening(session);
             }
             Update::NoCoreBin => self.link = Link::Down(texts.no_core_bin.clone()),
             Update::Missing(path) => {
@@ -302,7 +308,7 @@ impl Transcript {
             }
             Push::Workspace(cwd) => self.workspace_changed(cwd, texts),
             Push::Policy { level, read_only } => {
-                self.level = if read_only { Level::ReadOnly } else { level };
+                self.set_level(if read_only { Level::ReadOnly } else { level });
             }
             Push::Reverted(turns) => {
                 self.cache.reverted();
@@ -360,35 +366,8 @@ impl Transcript {
                     self.calls.insert(id, at);
                 }
             }
-            Push::ToolResult {
-                call_id,
-                status,
-                text,
-                said: result_said,
-                display,
-                sent,
-                detail,
-            } => {
-                let at = self.calls.get(&call_id).copied();
-                let now = self.clock.now();
-                if let Some(step) = at.and_then(|at| self.step_mut(at)) {
-                    step.stop_at(now);
-                    step.display = display;
-                    step.sent = sent;
-                    step.detail = detail;
-                    if let StepKind::Tool {
-                        state,
-                        output,
-                        said,
-                        ..
-                    } = &mut step.kind
-                    {
-                        *state = ToolState::Done(status);
-                        *output = text;
-                        *said = result_said;
-                    }
-                }
-            }
+            push @ Push::ToolResult { .. } => self.tool_result(push),
+            Push::ToolProgress { call_id, text } => self.tool_progress(&call_id, &text),
             Push::Media(images) => self.sent(images),
             Push::Shown(file) => self.shown(file),
             Push::ToolImages { call_id, blobs } => {
@@ -432,7 +411,7 @@ impl Transcript {
             // 待办归待办表（`app/sessions.rs`）。
             Push::Todos { .. } => {}
             Push::Compactable(on) => self.cache.compactable = Some(on),
-            Push::Speed { output, ms } => self.speed.record(output, ms),
+            Push::Speed { output, ms } => self.sped(output, ms),
             Push::CallFailed(error) => self.call_failed(error),
             // 后来又成了：前面报过的错不算（蓝图「正文」第 4 条）。
             Push::CallOk => self.call_ok(),
@@ -474,8 +453,8 @@ impl Transcript {
         let turn = if user { None } else { self.turn };
         // 你说的话记发出去时的级别（竖线的颜色）；收尾行记这一轮开始时的（打头的图标）。
         let level = match kind {
-            Kind::User => Some(self.level),
-            Kind::Done | Kind::Cut => Some(self.turn_level),
+            Kind::User => self.known(self.level),
+            Kind::Done | Kind::Cut => self.known(self.turn_level),
             _ => None,
         };
         let id = self.fresh_id();

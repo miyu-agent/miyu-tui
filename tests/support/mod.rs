@@ -318,6 +318,21 @@ impl Tui {
         panic!("主菜单上挪不到「{name}」：\n{}", self.lines().join("\n"));
     }
 
+    /// 供应商页 `a` 先弹目录（「配置页」第 11a 条）：等常用的几家读到，挪到底选「自定义…」，开空的编辑窗。
+    pub fn add_custom_provider(&mut self) {
+        self.key(b"a");
+        self.wait_for("自定义…");
+        let end = Instant::now() + WAIT;
+        while self.shows("正在读取…") && Instant::now() < end {
+            self.pump(Duration::from_millis(50));
+        }
+        // 往下挪不绕回：多按几下停在最后一行。
+        self.send(&b"\x1b[B".repeat(40));
+        self.pump(Duration::from_millis(300));
+        self.key(b"\r");
+        self.wait_for("约束解码");
+    }
+
     /// 光标在哪：（行, 列），从 0 数。
     pub fn cursor(&self) -> (u16, u16) {
         self.screen.screen().cursor_position()

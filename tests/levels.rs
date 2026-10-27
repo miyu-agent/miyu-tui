@@ -4,6 +4,8 @@
 
 mod support;
 
+use std::time::Duration;
+
 use miyu_session::testkit::{Play, Script};
 use support::{Home, Tui};
 
@@ -125,4 +127,48 @@ fn a_resumed_session_comes_back_at_the_level_it_was_left_at() {
         resumed.wait_for("好。");
         wait_level(&mut resumed, "开放权限");
     }
+}
+
+/// 写着 `text` 的那一行左边竖线的颜色。
+fn bar_color(tui: &Tui, text: &str) -> vt100::Color {
+    let lines = tui.lines();
+    let row = lines.iter().position(|l| l.contains(text)).expect("在屏上");
+    let col = lines[row].chars().position(|c| c == '┃').expect("有竖线");
+    tui.foreground(
+        u16::try_from(row).expect("行号"),
+        u16::try_from(col).expect("列号"),
+    )
+}
+
+#[test]
+fn a_resumed_session_keeps_the_bar_color_of_the_level_it_was_sent_at() {
+    // 2026-10-26 项目主人报：开放权限发的话竖线是红的，退出重开 resume 以后变成了工作区的颜色。会话中途切到开放权限，
+    // 切换那一条在更早的页里，读最新一页（默认 20 轮）时不知道这一页开头的级别。
+    let mut plays = vec![Play::Says("好。")];
+    plays.extend((0..21).map(|_| Play::Says("嗯。")));
+    let home = Home::new(Script::new(plays));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("第一句");
+    tui.wait_for("好。");
+    press_until(&mut tui, b"\t", "开放权限");
+    for n in 0..21 {
+        let text = format!("第{n}句红线");
+        tui.say(&text);
+        tui.wait_for(&text);
+        tui.pump(Duration::from_millis(400));
+    }
+    let sent = bar_color(&tui, "第20句红线");
+    drop(tui);
+    let id = only_session(&home);
+    let mut resumed = home.tui_args("zh_CN.UTF-8", &["--resume", &id]);
+    resumed.wait_for("第20句红线");
+    wait_level(&mut resumed, "开放权限");
+    resumed.pump(Duration::from_millis(300));
+    assert_eq!(
+        bar_color(&resumed, "第20句红线"),
+        sent,
+        "{}",
+        resumed.lines().join("\n")
+    );
 }

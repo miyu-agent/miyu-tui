@@ -44,6 +44,10 @@ impl App {
             }
             return Action::None;
         }
+        // 点目标那一行：开长期目标的浮窗（`goal_box.rs`，2026-10-26 项目主人）。
+        if !captured && matches!(mouse.kind, MouseEventKind::Down(_)) && self.goal_clicked(at) {
+            return Action::None;
+        }
         // 回到底部的按钮（`ui/bottom_button.rs`）。
         if !captured && self.screen.areas.bottom.contains(at) {
             if matches!(mouse.kind, MouseEventKind::Down(_)) {

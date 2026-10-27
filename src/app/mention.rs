@@ -24,9 +24,11 @@ impl App {
         let editor = &self.typing.input.editor;
         let (text, cursor) = (editor.text().to_string(), editor.cursor());
         let found = self.typing.mention.find(&text, cursor)?;
-        // 词变了、清单在建到点了：问核心（`cwd` 是界面所在的工作目录）。
+        // 词变了、清单在建到点了：问核心。`cwd` 是现在用的工作区：开着的会话照会话的，还没开的照 `/workspace` 换过的，
+        // 都没有的照界面所在的目录（2026-10-26 项目主人报：切了工作区 `@` 还列旧的；原来一直照界面所在的目录）。
         if let Some((word, ask)) = self.typing.mention.next_ask(Instant::now()) {
-            let cwd = std::env::current_dir().unwrap_or_default();
+            let shown = self.seen().current_workspace().to_string();
+            let cwd = crate::local::expand_home(shown.into(), std::env::home_dir().as_deref());
             let (method, params) = ask.request(&cwd.to_string_lossy());
             self.link.core.send(Command::Files {
                 word,

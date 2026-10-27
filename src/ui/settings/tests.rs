@@ -418,4 +418,75 @@ fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
     );
 }
 
+mod catalog;
 mod presets;
+
+#[test]
+fn the_fixed_pools_are_named_and_listed_first() {
+    // 2026-10-26 项目主人：固定的三个池要有显示名称（旗舰、日常、轻量），排在所有池最前面。
+    let config = Config::builtin().unwrap();
+    let mut list = crate::settings::test_support::model_list();
+    list["pools"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"name": "lite", "strategy": "pin", "models": [], "fixed": true}));
+    // 旁路请求登记（核心 Q-2）：起标题走轻量。
+    list["side"] = json!([{"id": "core/title", "tier": "lite", "name": "起标题", "summary": "", "resolved": "session"}]);
+    let mut p = Settings::open(false, true);
+    for (tag, method, _) in p.take_asks() {
+        let got = match method {
+            "model.list" => list.clone(),
+            "config.get" => crate::settings::test_support::config_all(),
+            _ => json!({"secrets": []}),
+        };
+        p.answer(tag, Ok(got), &config.text.settings);
+    }
+    press(&mut p, &config, KeyCode::Enter);
+    p.nav.page_step(true);
+    p.nav.page_step(true);
+    let (text, _) = screen(&mut p, &config, 120, 30);
+    let lite = text
+        .find("轻量")
+        .unwrap_or_else(|| panic!("写显示名称：\n{text}"));
+    let daily = text.find("daily").unwrap_or_else(|| panic!("{text}"));
+    assert!(lite < daily, "固定的排前面：\n{text}");
+    let row = text
+        .lines()
+        .find(|l| l.contains("轻量"))
+        .unwrap_or_default();
+    assert!(
+        row.contains("用于：起标题"),
+        "走这一档的旁路请求写在池右边：{row}"
+    );
+}
+
+#[test]
+fn a_provider_configured_twice_says_which_copy_each_row_is() {
+    // 核心 PL-1：系统配置、个人设置都配了的那一家列两份，名字后面写自用、共用；只有一份的不写（2026-10-27 项目主人定）。
+    let config = Config::builtin().unwrap();
+    let mut list = crate::settings::test_support::model_list();
+    let providers = list["providers"].as_array_mut().unwrap();
+    let mut shared = providers
+        .iter()
+        .find(|p| p["id"] == "relay")
+        .cloned()
+        .unwrap();
+    shared["id"] = json!("relay@system");
+    providers.push(shared);
+    let mut p = Settings::open(false, true);
+    for (tag, method, _) in p.take_asks() {
+        let got = match method {
+            "model.list" => list.clone(),
+            "config.get" => crate::settings::test_support::config_all(),
+            _ => json!({"secrets": []}),
+        };
+        p.answer(tag, Ok(got), &config.text.settings);
+    }
+    press(&mut p, &config, KeyCode::Enter);
+    let (text, _) = screen(&mut p, &config, 120, 30);
+    assert!(
+        text.contains("中转站 · 自用") && text.contains("中转站 · 共用"),
+        "{text}"
+    );
+    assert!(!text.contains("dev · "), "只有一份的不写：\n{text}");
+}

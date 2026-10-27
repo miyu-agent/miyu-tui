@@ -39,6 +39,8 @@ fn to_persona(home: &Home) -> Tui {
     tui.key(b"\r");
     tui.wait_for("已配置");
     tui.key(b"\r");
+    tui.wait_for("希望金额以什么货币显示");
+    tui.key(b"\r");
     tui.wait_for("创建人格");
     tui
 }
@@ -228,6 +230,9 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     until(&mut tui, "默认预设", || {
         home.settings().contains("[preset]")
     });
+    until(&mut tui, "货币照界面语言写下人民币", || {
+        home.settings().contains("currency = \"CNY\"")
+    });
     until(&mut tui, "主题写下深色", || {
         home.settings().contains("theme_mode = \"dark\"")
     });
@@ -267,11 +272,13 @@ fn a_name_is_required_and_esc_walks_back_a_step() {
     }
     tui.wait_for("下一步 →");
     tui.key(b"\r");
-    tui.wait_for("请填写名称");
+    tui.wait_for("请填写名字");
     assert!(
         !persona_file(&home, "persona.toml").exists(),
         "名字空着不建"
     );
+    tui.key(b"\x1b");
+    tui.wait_for("希望金额以什么货币显示");
     tui.key(b"\x1b");
     tui.wait_for("已配置");
     tui.key(b"\x1b");
@@ -381,6 +388,8 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     tui.key(b"\r");
     tui.wait_for("已配置");
     tui.key(b"\r");
+    tui.wait_for("希望金额以什么货币显示");
+    tui.key(b"\r");
     tui.wait_for("创建人格");
     tui.key(b"\r");
     tui.type_text("小助手");
@@ -423,6 +432,7 @@ fn to_theme_wide(home: &Home) -> Tui {
         ("你喜欢的操作方式", b"\r"),
         ("方块或乱码", b"\r"),
         ("已配置", b"\r"),
+        ("希望金额以什么货币显示", b"\r"),
         ("创建人格", b"\r"),
     ] {
         tui.wait_for(wait);

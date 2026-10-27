@@ -23,6 +23,8 @@ pub struct Texts {
     pub default_mark: String,
     /// 不带人格那一行的名字（2026-10-08 项目主人定叫「无人格」）。
     pub none: String,
+    /// 老会话的「无工具」（核心 P-17 以前开的，订阅回应里 `preset: null`）：列表里已经没有它，查不到名字时写这个。
+    pub no_tools: String,
     /// 它后面暗色写的。
     pub none_note: String,
     /// 开了会话再打 `/persona`、`/preset`：框最上面暗色写的（第 2a 条，项目主人原话）。

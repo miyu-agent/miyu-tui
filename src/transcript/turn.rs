@@ -42,6 +42,7 @@ impl Transcript {
         self.turn = Some(turn);
         self.seen = 0;
         self.turn_usage = Usage::default();
+        self.turn_speed = super::speed::Speed::default();
         self.turn_level = self.level;
         // 手动压缩那一轮没有 `trigger`，不是哪一句开的（施工 6-8，蓝图「正文」第 9 条）。
         self.manual = trigger.is_none();
@@ -115,7 +116,8 @@ impl Transcript {
                     .replace("{model}", model)
                     .replace("{elapsed}", &crate::meter::seconds(took))
                     .replace("{time}", &time);
-                self.push(Kind::Done, text + &usage);
+                let rate = self.turn_rate(texts);
+                self.push(Kind::Done, text + &usage + &rate);
             }
             // 和收尾行一个样子：`✻ 已中断`（`tui.md`「正文」第 4 条）。
             EndReason::Interrupted => self.push(Kind::Done, texts.interrupted.clone()),
@@ -173,21 +175,6 @@ impl Transcript {
                 StepKind::Tool { parsed, .. } => Some(parsed),
                 StepKind::Thought { .. } => None,
             })
-    }
-
-    /// 提问答了：回答挂到调用编号是 `call_id` 的那一步上（「确认和提问的抽屉」第 6 条）；找不到那一步的交回 `false`。
-    pub fn answered(&mut self, call_id: &str, lines: Vec<String>) -> bool {
-        let segments = self.entries.iter_mut().filter_map(|e| e.segment.as_mut());
-        let step = segments
-            .flat_map(|s| s.steps.iter_mut())
-            .find(|step| step.call_id.as_deref() == Some(call_id));
-        match step {
-            Some(step) => {
-                step.answers = lines;
-                true
-            }
-            None => false,
-        }
     }
 
     /// 这一轮结束了还没有结果的步骤（被打断的）：停表、不再转圈。

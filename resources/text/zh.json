@@ -6,7 +6,7 @@
     "Shift+Enter 换行",
     "↑ 上一条输入",
     "Ctrl+S 暂存输入，再按一次取回",
-    "拖选正文，Ctrl+C 复制",
+    "拖选正文，松开即复制",
     "PgUp、PgDn 滚动正文",
     "Ctrl+Z 挂起，fg 恢复",
     "/undo 撤销上一轮，/restore 恢复",
@@ -16,6 +16,7 @@
   "queued_withdraw": "点击撤回",
   "side_id": "#{id}",
   "side_cwd": "工作区",
+  "side_recent": "最近会话",
   "side_context": "上下文",
   "side_context_value": "{used} / {window} · {percent}%",
   "side_usage": "用量",
@@ -220,7 +221,13 @@
     "paused": "已暂停",
     "blocked": "受阻",
     "rounds": "第 {round} 轮",
-    "rounds_limited": "第 {round}/{limit} 轮"
+    "rounds_limited": "第 {round}/{limit} 轮",
+    "completed": "已完成",
+    "box_title": "长期目标",
+    "box_hint": "↑/↓ 滚动 · Esc 关闭",
+    "box_keys": ["目标", "状态", "轮数", "用时", "用量"],
+    "box_tokens": "{tokens} token",
+    "resumes": "恢复 {n} 次"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {
@@ -268,6 +275,7 @@
     "bad_stream": "响应流异常",
     "empty_reply": "回复为空",
     "bad_summary": "无法提取摘要",
+    "quota": "额度用完",
     "compaction_paused": "自动压缩已暂停",
     "other": "模型出错"
   },
@@ -322,6 +330,7 @@
       "usage": "用量",
       "hit": "缓存命中",
       "cost": "花费",
+      "models": "各模型",
       "memory": "记忆"
     },
     "effort": "思考 {effort}",
@@ -373,6 +382,7 @@
     "hint": "↑/↓ 滚动 · c 复制 · Esc 关闭"
   },
   "usage": {
+    "rates": "汇率来自 {source}",
     "title": "用量",
     "tabs": [
       "总览",
@@ -548,8 +558,6 @@
     "ok_mark": "● ",
     "fail_mark": "✗ ",
     "stop_mark": "● ",
-    "todo_folded": "已完成 {count} 项",
-    "todo_more": "… 还有 {count} 项",
     "killed": "（失败 · 信号 {signal}）",
     "undone": "（撤销时已停止）",
     "restarted": "（核心重启时已停止）",
@@ -660,7 +668,8 @@
     "keys_edit": "Enter 保存 · Esc 退出编辑",
     "keys_reason": "Enter 提交 · Esc 退出编辑",
     "keys_tabs": " · ←/→ 换题",
-    "answered_line": "{label}：{answer}",
+    "answered_head": "你回答了 {n} 个问题",
+    "answered_line": "{label} → {answer}",
     "notes_suffix": "（补充：{notes}）",
     "denied_with": "不允许 · {reason}",
     "cancel_hint": "再按一次 Esc 取消"
@@ -700,6 +709,7 @@
     "preset_need": "请先选择预设",
     "cant_edit": "这一项不能编辑",
     "preset_chosen": "预设 {name}",
+    "no_tools": "无工具",
     "none": "无人格",
     "none_note": "不使用人格",
     "switch_note": "切换前会先压缩会话避免缓存断裂导致的全量重放",
@@ -769,7 +779,8 @@
     "cooling": "冷却 {n}m",
     "cooling_bare": "冷却中",
     "no_key": "未设置 key",
-    "refuse_no_key": "该模型未设置 key"
+    "refuse_no_key": "该模型未设置 key",
+    "copies": ["自用", "共用"]
   },
   "settings": {
     "admin": ["管理员模式", "要先进入管理员模式（Shift+A）", "A", "管理员模式"],
@@ -824,6 +835,8 @@
       "图",
       "自定义"
     ],
+    "pool_names": {"flagship": "旗舰", "normal": "日常", "lite": "轻量"},
+    "pool_uses": "用于：{names}",
     "pool_tag": "{how} · {n}",
     "empty_pool": "空池",
     "gone": "（不存在）",
@@ -833,6 +846,7 @@
       "off": "关",
       "rotate": "轮换",
       "pin": "固定",
+      "ordered": "照先后",
       "secret": "API Key",
       "env": "环境变量",
       "text": "文字",
@@ -981,6 +995,13 @@
       "空池不可用",
       "/ 搜索"
     ],
+    "catalog": [
+      "更多供应商…",
+      "自定义…",
+      "正在读取…",
+      "无匹配结果"
+    ],
+    "copies": ["自用", "共用"],
     "confirm": [
       "删除供应商 {name}？",
       "删除模型 {name}？",
@@ -1007,6 +1028,7 @@
       "offline": "核心未连接",
       "not_custom": "只能删除手动添加的模型",
       "in_system": "此项位于系统配置，无法在此删除",
+      "fixed_pool": "固定的模型池无法删除，可在编辑窗中修改成员和调用方式",
       "members_hint": "在模型池编辑窗中移除成员（Enter）",
       "nothing_here": "此页没有可删除的项",
       "no_new": "此页不支持新建",
@@ -1147,6 +1169,7 @@
         "预设",
         "决定开关哪些功能"
       ],
+      "package_mine": "我的",
       "preset_detail": [
         "功能 {on}/{all}",
         "未安装",
@@ -1417,7 +1440,7 @@
       "own_groups": {"look": "主题", "theme": "配色方案", "timeline": "时间线", "mascot": "吉祥物", "icons": "图标", "keys": "交互"},
       "appearance": "外观",
       "service": {"group": "启动", "name": "开机启动核心", "enabling": "正在设为开机启动…", "disabling": "正在取消开机启动…", "enabled": "已设为开机启动：{file}", "disabled": "已取消开机启动", "failed": "没成：{step}：{said}", "no_home": "找不到家目录", "windows": "设了 MIYU_HOME 时 Windows 上装不了"},
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}, "tui.keys": {"arrows": "方向键", "vim": "Vim"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}, "tui.sidebar_sessions": {"0": "不显示"}, "tui.keys": {"arrows": "方向键", "vim": "Vim"}},
       "unavailable": "未安装",
       "custom_model": "输入模型…",
       "combo": ["不设", "其他…"],
@@ -1433,17 +1456,7 @@
       "sub": "花一分钟配置模型和人格",
       "start": "按 Enter 开始"
     },
-    "steps": [
-      "语言",
-      "注册",
-      "操作方式",
-      "图标",
-      "模型",
-      "人格",
-      "配色方案",
-      "关于你",
-      "预设"
-    ],
+    "steps": ["语言", "注册", "操作方式", "图标", "模型", "货币", "人格", "配色方案", "关于你", "预设"],
     "keys": {
       "searching": "输入以搜索 · Ctrl+J/K 选择 · Enter 完成 · Esc 取消",
       "editing": "Enter 完成 · Esc 取消",
@@ -1478,6 +1491,12 @@
       "arrows_note": "↑↓ 上下，打字直接搜",
       "vim": "Vim",
       "vim_note": "j/k 上下，按 / 搜索"
+    },
+    "currency": {
+      "title": "希望金额以什么货币显示",
+      "sub": "模型的金额消耗会根据近期汇率自动换算为此货币显示",
+      "default": "CNY",
+      "names": {"CNY": "人民币", "USD": "美元", "EUR": "欧元", "JPY": "日元", "HKD": "港币", "GBP": "英镑", "TWD": "新台币", "KRW": "韩元"}
     },
     "icons": {
       "title": "图标",
@@ -1520,8 +1539,9 @@
         "title": "自定义",
         "sub": "支持兼容接口"
       },
+      "name": "显示名称",
+      "name_hint": "留空时显示 ID",
       "url": "地址",
-      "url_example": "https://api.example.com/v1",
       "url_bad": "须以 http:// 或 https:// 开头",
       "driver": "接口",
       "drivers": [
@@ -1551,15 +1571,15 @@
       "title": "创建人格",
       "sub": "人格决定 AI 的说话方式和记忆，可在设置中修改",
       "fields": [
-        "名称",
+        "名字",
         "具体人格提示词",
         "示范对话",
         "人设提醒短语"
       ],
       "summary": "简单描述",
-      "summary_hint": "一句话介绍这个人格",
+      "summary_hint": "给你自己看的一句简单介绍，模型不看",
       "hints": [
-        "输入名称",
+        "输入名字",
         "这个人格是谁、怎么说话、怎么待你",
         "按 Enter 添加",
         "一句简短的提醒，不定期提醒 AI 遵循人格设定"
@@ -1567,7 +1587,7 @@
       "examples_some": "{n} 轮",
       "next": "下一步",
       "skip": "跳过",
-      "name_needed": "请填写名称",
+      "name_needed": "请填写名字",
       "existing": "已创建，可继续编辑",
       "saving": "正在保存…",
       "avatar": "头像",
@@ -1575,6 +1595,7 @@
       "avatar_set": "已设置"
     },
     "preset": {
+      "mine": "我的",
       "title": "选择预设",
       "sub": "预设决定启用哪些功能，可在设置中修改，也可为每个会话单独选择",
       "custom": "自定义",

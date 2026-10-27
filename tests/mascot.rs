@@ -8,9 +8,9 @@ use std::time::Duration;
 use miyu_session::testkit::Script;
 use support::Home;
 
-/// 写一份模型文件，起界面停在首页。
+/// 写一份模型文件，起界面停在首页（首页的吉祥物出厂关着，2026-10-26 起；这里打开）。
 fn home_with_model(model: &str) -> (Home, support::Tui) {
-    let home = Home::new(Script::new([]));
+    let home = Home::with_settings(Script::new([]), "[tui]\nmascot_home = true\n");
     let path = home.work.join("mascot.json");
     std::fs::write(&path, model).expect("写模型文件");
     let path = path.display().to_string();

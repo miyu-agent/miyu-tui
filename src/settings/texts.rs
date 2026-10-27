@@ -38,6 +38,10 @@ pub struct Texts {
     pub pool_tag: String,
     /// 空池（红）。
     pub empty_pool: String,
+    /// 固定的三个池给人看的名字：池名 → 名字（`flagship` 旗舰、`normal` 日常、`lite` 轻量，`pools.rs`）。
+    pub pool_names: std::collections::HashMap<String, String>,
+    /// 池栏右边接在后面的「用于：{names}」：走这一档的旁路请求（核心 Q-2）。
+    pub pool_uses: String,
     /// 引用失效时接在后面的。
     pub gone: String,
     /// 选项的说法：选项值 → 给人看的（`rotate`、`pin`、驱动的「自动」、`secret`、`env`、思考的「默认」、`text` 这些）。
@@ -56,6 +60,10 @@ pub struct Texts {
     pub popup_hints: [Vec<Hint>; 4],
     /// 选模型的窗：池那一段、只列能看图的、有成员不能看图、空池用不了、搜索。
     pub pick: [String; 5],
+    /// 加供应商先弹的目录窗：「更多供应商…」「自定义…」、还没回来、筛不到（「配置页」第 11a 条）。
+    pub catalog: [String; 4],
+    /// 同一家自用、共用两份时名字后面接的：自用、共用（核心 PL-1，`copies.rs`）。
+    pub copies: [String; 2],
     /// 问一句：删供应商、删模型、删池（标题），「{list} 在用它」，池的说法，删除按钮，几样之间的分隔。
     pub confirm: [String; 7],
     /// 状态行（照名字取）。

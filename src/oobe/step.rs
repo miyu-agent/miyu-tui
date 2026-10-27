@@ -15,6 +15,8 @@ pub enum Step {
     Icons,
     /// 接模型。
     Model,
+    /// 金额用什么货币显示（2026-10-26 项目主人定，放在接模型后面）。
+    Currency,
     /// 建人格。
     Persona,
     /// 主题：明暗、配色（2026-10-13 项目主人定，放在人格后面：配色跟着头像）。
@@ -29,13 +31,14 @@ pub enum Step {
     Done,
 }
 
-const ORDER: [Step; 12] = [
+const ORDER: [Step; 13] = [
     Step::Welcome,
     Step::Language,
     Step::Register,
     Step::Keys,
     Step::Icons,
     Step::Model,
+    Step::Currency,
     Step::Persona,
     Step::Theme,
     Step::Profile,
@@ -71,12 +74,13 @@ impl Step {
 }
 
 /// 进度那一行的几步，照先后；和字表 `oobe.steps` 的名字一一对着。
-const BAR: [Step; 9] = [
+const BAR: [Step; 10] = [
     Step::Language,
     Step::Register,
     Step::Keys,
     Step::Icons,
     Step::Model,
+    Step::Currency,
     Step::Persona,
     Step::Theme,
     Step::Profile,

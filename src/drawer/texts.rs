@@ -78,7 +78,9 @@ pub struct Texts {
     pub keys_reason: String,
     /// 见 `keys`。
     pub keys_tabs: String,
-    /// 回答在时间线里一道一行，`{label}` `{answer}`。
+    /// 回答了以后正文里那一块的第一行，`{n}`：「你回答了 N 个问题」（`ui/answered_rows.rs`）。
+    pub answered_head: String,
+    /// 回答一道一行，`{label}` `{answer}`：「问题 → 答案」。
     pub answered_line: String,
     /// 补充的话接在那一行后面，`{notes}`。
     pub notes_suffix: String,

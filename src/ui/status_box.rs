@@ -66,6 +66,7 @@ pub struct Keys {
     pub usage: String,
     pub hit: String,
     pub cost: String,
+    pub models: String,
     pub memory: String,
 }
 
@@ -98,6 +99,8 @@ pub struct Facts {
     /// 用量（连同子代理的）、花费。
     pub usage: Usage,
     pub spent: Option<String>,
+    /// 这个会话（连子代理）每个模型用了多少：引用、token、花费（`usage.query` 按模型分，开框时问；没回来、没用过的是空的）。
+    pub models: Vec<(String, u64, Option<String>)>,
     /// 回忆、记住各几次。
     pub memory: (usize, usize),
 }
@@ -130,7 +133,10 @@ pub fn facts(seen: &Seen) -> Facts {
             "" => text.persona_box.none.clone(),
             name => name.to_string(),
         }),
-        preset: preset.map(|id| seen.talk.preset.name(id).to_string()),
+        preset: preset.map(|id| match seen.talk.preset.name(id) {
+            "" => text.persona_box.no_tools.clone(),
+            name => name.to_string(),
+        }),
         level: text.levels.get(&t.level).cloned(),
         cwd: crate::local::home_short(seen.current_workspace()),
         model: t.shown_model().map(|(m, e)| (m.to_string(), e.to_string())),
@@ -143,6 +149,19 @@ pub fn facts(seen: &Seen) -> Facts {
         breaks: t.cache.breaks,
         usage: seen.talk.usage_total(),
         spent: seen.spent(),
+        models: seen
+            .boxes
+            .status_models
+            .iter()
+            .map(|row| {
+                let spent = crate::money::amounts(
+                    &row.bill,
+                    &seen.link.currency,
+                    &seen.config.layout.currencies,
+                );
+                (row.model.clone().unwrap_or_default(), row.tokens, spent)
+            })
+            .collect(),
         memory: memory_calls(t),
     }
 }
@@ -230,6 +249,21 @@ pub fn items(f: &Facts, words: &Texts, bar: &Bar, room: usize) -> Vec<Item> {
     }
     if let Some(spent) = f.spent.clone().filter(|_| opened) {
         second.push((keys.cost.clone(), plain(spent)));
+    }
+    // 中途换过模型的：一个模型一行，用了多少、花了多少（2026-10-26 项目主人：分不出每个模型的用量）。只用过一个的不写。
+    if opened && f.models.len() > 1 {
+        for (i, (model, tokens, spent)) in f.models.iter().enumerate() {
+            let mut value = vec![Span::raw(model.clone()), tail(meter::short(*tokens))];
+            if let Some(spent) = spent {
+                value.push(tail(spent.clone()));
+            }
+            let key = if i == 0 {
+                keys.models.clone()
+            } else {
+                String::new()
+            };
+            second.push((key, value));
+        }
     }
 
     // 第三段：记忆（这个会话里做成了的回忆、记住各几次）。

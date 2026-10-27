@@ -59,6 +59,7 @@ fn the_goal_is_kept_as_it_was_last_pushed() {
         state: GoalState::Running,
         round: 1,
         limit: None,
+        ..Goal::default()
     };
     apply(&mut t, vec![Push::Goal(Some(running.clone()))]);
     assert_eq!(t.goal, Some(running));

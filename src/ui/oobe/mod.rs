@@ -63,6 +63,7 @@ fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> 
     match step {
         Step::Language => pick::language(oobe, texts, width),
         Step::Keys => pick::controls(oobe, texts, width),
+        Step::Currency => pick::currency(oobe, texts, width),
         Step::Icons => {
             let nerd = p.config.icon_sets.iter().find(|s| s.name == "nerd");
             pick::icons(oobe, texts, nerd, width)

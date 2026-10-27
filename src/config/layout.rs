@@ -35,6 +35,8 @@ pub struct Layout {
     pub dream: super::DreamLook,
     /// 侧边栏画不画吉祥物。
     pub mascot_sidebar: bool,
+    /// 侧边栏「最近会话」列几个（算上当前这个），0 是不画（`tui.sidebar_sessions`，「后台命令、子代理和侧边栏」第 7 条）。
+    pub sidebar_sessions: usize,
     /// 按键模式是 Vim（蓝图「按键」表「按键模式」那一行）：会话列表、`/model` 里 `j`、`k` 挪，`/` 才搜；`false` 是方向键。
     pub vim: bool,
     /// 新会话不问人格、预设，直接用默认的（`tui.skip_pick`，「新会话：人格、工作区」第 1a 条）。
@@ -47,8 +49,6 @@ pub struct Layout {
     pub todo_marks: TodoMarks,
     /// 界面块：每个位置的上限、列表的记号（蓝图「界面块」第 4 条）。
     pub widgets: super::WidgetLayout,
-    /// 待办默认最多露几行项目（不算标题）；侧边栏照它剩下的高度。
-    pub todo_rows: usize,
     /// 输入框和屏幕左右边之间至少留几列。
     pub side_gap: u16,
     /// 正文上面空几行，不贴着屏幕顶。
@@ -172,6 +172,17 @@ impl Layout {
         }
     }
 
+    /// 侧边栏「最近会话」几个在终端软件包里的名字（`[settings.sidebar_sessions]`，值是 `0`、`3`、`5`、`8`、`10` 这样的字）。
+    pub const SIDEBAR_SESSIONS_KEY: &'static str = "tui.sidebar_sessions";
+
+    /// 照 `config.get` 读来的「最近会话」几个改：写了的盖过 `layout.json`，没有的（旧清单）、读不成数的照原样。
+    pub fn apply_sidebar_sessions(&mut self, got: &serde_json::Value) {
+        let value = &got["items"][Self::SIDEBAR_SESSIONS_KEY]["value"];
+        if let Some(n) = value.as_str().and_then(|v| v.parse().ok()) {
+            self.sidebar_sessions = n;
+        }
+    }
+
     /// 按键模式在终端软件包里的名字（`[settings.keys]`：`arrows` 方向键、`vim`，2026-10-21 项目主人）。
     pub const KEYS_KEY: &'static str = "tui.keys";
 
@@ -266,15 +277,18 @@ mod tests {
 
     #[test]
     fn the_terminals_mascot_switches_override_the_shipped_layout() {
-        // 2026-10-11 项目主人：吉祥物的开关搬进配置页；没写的照出厂。
+        // 2026-10-11 项目主人：吉祥物的开关搬进配置页；没写的照出厂，出厂都关着（2026-10-26 项目主人：太吃资源）。
         let mut layout = Config::builtin().unwrap().layout;
         layout.apply_mascot(&json!({"items": {}}));
-        assert!(layout.mascot_home && layout.mascot_sidebar, "没写的照出厂");
+        assert!(
+            !layout.mascot_home && !layout.mascot_sidebar,
+            "没写的照出厂"
+        );
         layout.apply_mascot(&json!({"items": {
-            "tui.mascot_home": {"value": false},
-            "tui.mascot_sidebar": {"value": false}
+            "tui.mascot_home": {"value": true},
+            "tui.mascot_sidebar": {"value": true}
         }}));
-        assert!(!layout.mascot_home && !layout.mascot_sidebar);
+        assert!(layout.mascot_home && layout.mascot_sidebar);
     }
 
     #[test]
@@ -287,5 +301,18 @@ mod tests {
         assert!(layout.vim);
         layout.apply_keys(&json!({"items": {"tui.keys": {"value": "arrows"}}}));
         assert!(!layout.vim);
+    }
+
+    #[test]
+    fn the_sidebar_lists_five_recent_sessions_until_the_setting_says_otherwise() {
+        // 2026-10-26 项目主人（反馈第 21 条）：默认 5 个、个数可配、整个功能可关（`0`）。
+        let mut layout = Config::builtin().unwrap().layout;
+        assert_eq!(layout.sidebar_sessions, 5, "出厂 5 个");
+        layout.apply_sidebar_sessions(&json!({"items": {}}));
+        assert_eq!(layout.sidebar_sessions, 5, "没写的照出厂");
+        layout.apply_sidebar_sessions(&json!({"items": {"tui.sidebar_sessions": {"value": "0"}}}));
+        assert_eq!(layout.sidebar_sessions, 0);
+        layout.apply_sidebar_sessions(&json!({"items": {"tui.sidebar_sessions": {"value": "8"}}}));
+        assert_eq!(layout.sidebar_sessions, 8);
     }
 }

@@ -13,6 +13,8 @@ pub enum Slot {
     Driver,
     /// 编号（自定义）：空着的照地址自动起（2026-10-13 项目主人定：默认是自动起的那个，可以改）。
     Id,
+    /// 显示名称（自定义）：空着的不写，照编号显示（2026-10-26 项目主人）。
+    Name,
     /// 密钥。
     Key,
     /// 模型名（列不出模型时）。
@@ -34,6 +36,8 @@ pub struct Form {
     pub driver: usize,
     /// 编号（自定义）：空着的照地址自动起。
     pub id: Field,
+    /// 显示名称（自定义）。
+    pub name: Field,
     /// 密钥。
     pub key: Field,
     /// 模型名。
@@ -53,6 +57,7 @@ impl Default for Form {
             url: Field::url(),
             driver: 0,
             id: Field::line(),
+            name: Field::line(),
             key: Field::secret(),
             model: Field::line(),
             needs_model: false,
@@ -66,8 +71,8 @@ impl Form {
     /// 有哪几格，照画的先后；有格子的最后一行是「测试连接」。
     pub fn slots(&self) -> Vec<Slot> {
         let mut out = match &self.provider {
-            // 编号在最上面（2026-10-14 项目主人定，同配置页「添加供应商」ID 排第一）。
-            None => vec![Slot::Id, Slot::Url, Slot::Driver, Slot::Key],
+            // 编号在最上面（2026-10-14 项目主人定，同配置页「添加供应商」ID 排第一），显示名称跟在它下面（同配置页）。
+            None => vec![Slot::Id, Slot::Name, Slot::Url, Slot::Driver, Slot::Key],
             Some(p) if p.ready() => Vec::new(),
             Some(_) => vec![Slot::Key],
         };
@@ -86,8 +91,10 @@ impl Form {
     /// 光标那一格正在编辑。
     pub fn editing(&self) -> bool {
         self.slot().is_some_and(|s| {
-            matches!(s, Slot::Url | Slot::Id | Slot::Key | Slot::Model)
-                && self.field_ref(s).is_some_and(Field::editing)
+            matches!(
+                s,
+                Slot::Url | Slot::Id | Slot::Name | Slot::Key | Slot::Model
+            ) && self.field_ref(s).is_some_and(Field::editing)
         })
     }
 
@@ -95,6 +102,7 @@ impl Form {
         match slot {
             Slot::Url => Some(&self.url),
             Slot::Id => Some(&self.id),
+            Slot::Name => Some(&self.name),
             Slot::Key => Some(&self.key),
             Slot::Model => Some(&self.model),
             Slot::Driver | Slot::Test | Slot::Anyway => None,
@@ -110,6 +118,7 @@ impl Form {
         match slot {
             Slot::Url => Some(&mut self.url),
             Slot::Id => Some(&mut self.id),
+            Slot::Name => Some(&mut self.name),
             Slot::Key => Some(&mut self.key),
             Slot::Model => Some(&mut self.model),
             Slot::Driver | Slot::Test | Slot::Anyway => None,
@@ -124,6 +133,7 @@ impl Form {
                 driver: self.driver,
                 base_url,
                 id: Some(self.id.trimmed()).filter(|id| !id.is_empty()),
+                name: Some(self.name.trimmed()).filter(|name| !name.is_empty()),
             }),
         }
     }

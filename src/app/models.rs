@@ -23,7 +23,24 @@ impl App {
     }
 
     /// 核心交回了一行行。
-    pub(super) fn models_listed(&mut self, all: Vec<Choice>) {
+    pub(super) fn models_listed(&mut self, mut all: Vec<Choice>) {
+        // 固定的三个池写给人看的名字，原来的 `@名字` 挪到暗色那一截前面（2026-10-26 项目主人，`pools.rs`）。
+        let names = &self.config.text.settings.pool_names;
+        for choice in &mut all {
+            if let Some(name) = choice
+                .reference
+                .strip_prefix('@')
+                .and_then(|n| names.get(n))
+            {
+                choice.detail = format!(
+                    "{}{}{}",
+                    choice.reference,
+                    crate::sheet::sep(),
+                    choice.detail
+                );
+                choice.name.clone_from(name);
+            }
+        }
         let current = self.talk.transcript.current_ref();
         if let Some(list) = &mut self.boxes.model_list {
             list.replace(all, current.as_deref());

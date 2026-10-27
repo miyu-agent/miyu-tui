@@ -199,6 +199,13 @@ pub enum Push {
         /// 给人看的结构化结果（`detail`，形状由那件工具定：翻记忆、查知识库、读文档）；没有的（老日志、出错的）是 `None`。
         detail: Option<serde_json::Value>,
     },
+    /// 在跑的工具推来的一段输出（瞬时 `tool.progress`，核心 X-45 补）：时间线照它写进度（蓝图「时间线」第 8a 条）。
+    ToolProgress {
+        /// 调用编号。
+        call_id: String,
+        /// 一段输出。
+        text: String,
+    },
     /// 结果里的图（读了图片文件的 `read`）：这一次调用、每张图的内容哈希（蓝图「时间线」第 8 条）。
     ToolImages {
         /// 调用编号。
@@ -450,6 +457,10 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         | "question.answered"
         | "tool.approval_decided") => out.extend(Asking::read(kind, body).map(Push::Asking)),
         "tool.result" => result::read(body, &mut out),
+        "tool.progress" => out.push(Push::ToolProgress {
+            call_id: text(&body["call_id"]),
+            text: text(&body["text"]),
+        }),
         "model.called" => called::read(body, &mut out),
         "status" if body["retry"].is_object() => {
             let retry = &body["retry"];

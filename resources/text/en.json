@@ -6,7 +6,7 @@
     "Shift+Enter starts a new line",
     "↑ brings back what you last sent",
     "Ctrl+S stashes this text, press again to get it back",
-    "Drag to select text, Ctrl+C to copy",
+    "Drag to select text, it copies on release",
     "PgUp and PgDn scroll the conversation",
     "Ctrl+Z suspends, fg brings it back",
     "/undo undoes the last turn, /restore brings it back",
@@ -16,6 +16,7 @@
   "queued_withdraw": "click to take back",
   "side_id": "#{id}",
   "side_cwd": "Workspace",
+  "side_recent": "Recent sessions",
   "side_context": "Context",
   "side_context_value": "{used} / {window} · {percent}%",
   "side_usage": "Usage",
@@ -220,7 +221,13 @@
     "paused": "Paused",
     "blocked": "Blocked",
     "rounds": "Round {round}",
-    "rounds_limited": "Round {round}/{limit}"
+    "rounds_limited": "Round {round}/{limit}",
+    "completed": "Completed",
+    "box_title": "Goal",
+    "box_hint": "↑/↓ scroll · Esc close",
+    "box_keys": ["Goal", "State", "Rounds", "Elapsed", "Usage"],
+    "box_tokens": "{tokens} tokens",
+    "resumes": "resumed {n}×"
   },
   "done_usage": " · {tokens}(C{percent}%)",
   "menu": {
@@ -268,6 +275,7 @@
     "bad_stream": "Malformed reply stream",
     "empty_reply": "Empty reply",
     "bad_summary": "Couldn't get a summary",
+    "quota": "Out of quota",
     "compaction_paused": "Auto-compaction is paused",
     "other": "Model error"
   },
@@ -322,6 +330,7 @@
       "usage": "Usage",
       "hit": "Cache hits",
       "cost": "Spent",
+      "models": "By model",
       "memory": "Memory"
     },
     "effort": "effort {effort}",
@@ -373,6 +382,7 @@
     "hint": "↑/↓ scroll · c copy · Esc close"
   },
   "usage": {
+    "rates": "Exchange rates from {source}",
     "title": "Usage",
     "tabs": [
       "Overview",
@@ -548,8 +558,6 @@
     "ok_mark": "● ",
     "fail_mark": "✗ ",
     "stop_mark": "● ",
-    "todo_folded": "{count} done",
-    "todo_more": "… {count} more",
     "killed": "(failed · signal {signal})",
     "undone": "(stopped by undo)",
     "restarted": "(stopped when the core restarted)",
@@ -660,7 +668,8 @@
     "keys_edit": "Enter save · Esc stop editing",
     "keys_reason": "Enter submit · Esc stop editing",
     "keys_tabs": " · ←/→ switch question",
-    "answered_line": "{label}: {answer}",
+    "answered_head": "You answered {n} question(s)",
+    "answered_line": "{label} → {answer}",
     "notes_suffix": " (notes: {notes})",
     "denied_with": "Not allowed · {reason}",
     "cancel_hint": "Press Esc again to cancel"
@@ -700,6 +709,7 @@
     "preset_need": "Pick a preset first",
     "cant_edit": "This one can't be edited",
     "preset_chosen": "Preset {name}",
+    "no_tools": "No tools",
     "none": "No persona",
     "none_note": "No persona prompt",
     "switch_note": "The session is compacted before switching, so a cache break does not replay everything",
@@ -769,7 +779,8 @@
     "cooling": "cooling {n}m",
     "cooling_bare": "cooling",
     "no_key": "no key",
-    "refuse_no_key": "This model has no key"
+    "refuse_no_key": "This model has no key",
+    "copies": ["Personal", "Shared"]
   },
   "settings": {
     "admin": ["admin mode", "Enter admin mode first (Shift+A)", "A", "admin mode"],
@@ -824,6 +835,8 @@
       "img",
       "own"
     ],
+    "pool_names": {"flagship": "Flagship", "normal": "Everyday", "lite": "Lite"},
+    "pool_uses": "Used for: {names}",
     "pool_tag": "{how} · {n}",
     "empty_pool": "empty",
     "gone": " (gone)",
@@ -833,6 +846,7 @@
       "off": "Off",
       "rotate": "Rotate",
       "pin": "Pin",
+      "ordered": "In order",
       "secret": "API key",
       "env": "Env variable",
       "text": "Text",
@@ -981,6 +995,13 @@
       "Empty pool",
       "/ search"
     ],
+    "catalog": [
+      "More providers…",
+      "Custom…",
+      "Loading…",
+      "No matches"
+    ],
+    "copies": ["Personal", "Shared"],
     "confirm": [
       "Delete provider {name}?",
       "Delete model {name}?",
@@ -1007,6 +1028,7 @@
       "offline": "Not connected to the core",
       "not_custom": "Only models added with n can be deleted",
       "in_system": "This is in the system config and can't be deleted here",
+      "fixed_pool": "Built-in pools can't be deleted; edit their members and strategy instead",
       "members_hint": "Untick members in the pool editor (Enter)",
       "nothing_here": "Nothing to delete on this page",
       "no_new": "Nothing to add on this page",
@@ -1147,6 +1169,7 @@
         "Presets",
         "Decides which features are on"
       ],
+      "package_mine": "Mine",
       "preset_detail": [
         "Features {on}/{all}",
         "Not installed",
@@ -1417,7 +1440,7 @@
       "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons", "keys": "Interaction"},
       "appearance": "Appearance",
       "service": {"group": "Startup", "name": "Start the core at login", "enabling": "Turning on start at login…", "disabling": "Turning off start at login…", "enabled": "Starts at login: {file}", "disabled": "No longer starts at login", "failed": "Failed: {step}: {said}", "no_home": "Home directory not found", "windows": "Not available on Windows with MIYU_HOME set"},
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.sidebar_sessions": {"0": "Off"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
       "unavailable": "Not installed",
       "custom_model": "Enter a model…",
       "combo": ["Not set", "Other…"],
@@ -1433,17 +1456,7 @@
       "sub": "Take a minute to set up a model and a persona",
       "start": "Press Enter to start"
     },
-    "steps": [
-      "Language",
-      "Sign up",
-      "Controls",
-      "Icons",
-      "Model",
-      "Persona",
-      "Color scheme",
-      "About you",
-      "Preset"
-    ],
+    "steps": ["Language", "Sign up", "Controls", "Icons", "Model", "Currency", "Persona", "Color scheme", "About you", "Preset"],
     "keys": {
       "searching": "Type to search · Ctrl+J/K select · Enter done · Esc cancel",
       "editing": "Enter done · Esc cancel",
@@ -1478,6 +1491,12 @@
       "arrows_note": "↑↓ to move, type to search",
       "vim": "Vim",
       "vim_note": "j/k to move, / to search"
+    },
+    "currency": {
+      "title": "Which currency should amounts be shown in?",
+      "sub": "What models cost is converted into this currency at recent exchange rates",
+      "default": "USD",
+      "names": {"CNY": "Chinese yuan", "USD": "US dollar", "EUR": "Euro", "JPY": "Japanese yen", "HKD": "Hong Kong dollar", "GBP": "British pound", "TWD": "New Taiwan dollar", "KRW": "South Korean won"}
     },
     "icons": {
       "title": "Icons",
@@ -1520,8 +1539,9 @@
         "title": "Custom",
         "sub": "Any compatible API works"
       },
+      "name": "Display name",
+      "name_hint": "Shows the ID when empty",
       "url": "Address",
-      "url_example": "https://api.example.com/v1",
       "url_bad": "Must start with http:// or https://",
       "driver": "API",
       "drivers": [
@@ -1557,7 +1577,7 @@
         "Roleplay reminder"
       ],
       "summary": "Short description",
-      "summary_hint": "One line about this persona",
+      "summary_hint": "A short note for yourself; the model doesn't see it",
       "hints": [
         "Give it a name",
         "Who it is, how it talks, how it treats you",
@@ -1575,6 +1595,7 @@
       "avatar_set": "Set"
     },
     "preset": {
+      "mine": "Mine",
       "title": "Choose a preset",
       "sub": "A preset decides which features are on. You can change it in settings or per session",
       "custom": "Custom",

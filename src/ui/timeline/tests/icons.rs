@@ -46,7 +46,7 @@ fn the_plain_set_draws_plain_icons() {
     assert_eq!(
         titles,
         [
-            "✳ 已思考 · 1.0s",
+            "✳ 已思考 · 1.0s · 4",
             "$ shell · 列目录",
             "✗ shell · 列目录",
             "⚙ read"

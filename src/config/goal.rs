@@ -28,4 +28,15 @@ pub struct GoalTexts {
     pub rounds: String,
     /// 有上限的第几轮，`{round}`、`{limit}`。
     pub rounds_limited: String,
+    /// 做完了（只在浮窗里写）。
+    pub completed: String,
+    /// 点目标那一行开的浮窗（`ui/goal_box.rs`）：标题、下边框的按键提示。
+    pub box_title: String,
+    pub box_hint: String,
+    /// 浮窗左边一列的名字：目标、状态、轮数、用时、用量。
+    pub box_keys: [String; 5],
+    /// 用量那一格，`{tokens}`。
+    pub box_tokens: String,
+    /// 浮窗里状态后面接的恢复次数，`{n}`（核心 GOAL-1，同网页的说法）。
+    pub resumes: String,
 }

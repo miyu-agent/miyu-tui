@@ -99,3 +99,24 @@ fn before_the_first_word_the_workspace_is_where_the_new_session_opens() {
     assert!(!screen.contains("输入路径"), "{screen}");
     drop(std::fs::remove_dir_all(&other));
 }
+
+#[test]
+fn the_at_list_follows_the_workspace_that_was_switched_to() {
+    // 2026-10-26 项目主人报：切了工作区，`@` 还列旧工作区的文件（原来一直照界面所在的目录问）。
+    let home = Home::new(Script::new([]));
+    std::fs::write(home.work.join("old_only.rs"), b"").unwrap();
+    let other = scratch("ws-at");
+    std::fs::write(other.join("new_only.rs"), b"").unwrap();
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say(&format!("/workspace {}", other.display()));
+    tui.wait_for("新会话的工作区");
+    tui.type_text("@new_only");
+    tui.wait_for("new_only.rs");
+    tui.key(b"\x1b");
+    tui.key(b"\x03");
+    tui.pump(Duration::from_millis(300));
+    tui.type_text("@old_only");
+    tui.wait_for("无匹配项");
+    drop(std::fs::remove_dir_all(&other));
+}

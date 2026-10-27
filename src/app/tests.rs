@@ -90,3 +90,8 @@ fn the_persona_box_opens_before_connecting_when_the_guide_was_done() {
     );
     assert!(matches!(sent.try_recv(), Ok(crate::core::Command::Persona(id)) if id == "pirate"));
 }
+
+mod bill;
+mod goal;
+mod pools;
+mod status;

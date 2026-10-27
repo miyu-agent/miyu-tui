@@ -71,6 +71,10 @@ pub struct Pool {
     pub strategy: Option<String>,
     /// 成员，照配置写的先后（认不出的也在）。
     pub members: Vec<String>,
+    /// 固定的池（`lite`、`normal`、`flagship`，核心 Q-1）：一直在，不能删。
+    pub fixed: bool,
+    /// 走这一档的旁路请求的名字（`model.list` 的 `side`，核心 Q-2：起标题走轻量、整理记忆走日常），照连接的语言。
+    pub uses: Vec<String>,
 }
 
 impl Data {
@@ -80,10 +84,22 @@ impl Data {
             .as_array()
             .map(|all| all.iter().map(provider).collect())
             .unwrap_or_default();
+        // 固定的三个池排最前，照旗舰、日常、轻量（2026-10-26 项目主人，`pools.rs`）。
         self.pools = list["pools"]
             .as_array()
             .map(|all| all.iter().map(pool).collect())
             .unwrap_or_default();
+        self.pools
+            .sort_by_key(|pool| crate::pools::rank(&pool.name));
+        // 旁路请求挂到它要的那一档池上（2026-10-26 项目主人：配置页池右边写「用于：起标题」）。
+        for side in list["side"].as_array().into_iter().flatten() {
+            let (Some(tier), Some(name)) = (side["tier"].as_str(), side["name"].as_str()) else {
+                continue;
+            };
+            if let Some(pool) = self.pools.iter_mut().find(|p| p.name == tier) {
+                pool.uses.push(name.to_string());
+            }
+        }
         self.chat = list["uses"]["chat"].as_str().map(str::to_string);
         self.vision = list["uses"]["vision"].as_str().map(str::to_string);
     }
@@ -254,6 +270,8 @@ fn pool(p: &Value) -> Pool {
         name: text(&p["name"]),
         strategy: p["strategy"].as_str().map(str::to_string),
         members: strings(&p["models"]),
+        fixed: p["fixed"] == true,
+        uses: Vec::new(),
     }
 }
 

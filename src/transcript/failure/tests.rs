@@ -59,3 +59,18 @@ fn a_known_wait_goes_into_the_sentence_and_without_it_nothing_changes() {
         "模型都在冷却"
     );
 }
+
+#[test]
+fn running_out_of_quota_has_its_own_words() {
+    // 核心 Q-4中：额度、余额用完单独一类（以前归在 auth）。
+    let texts = Config::builtin().unwrap().text;
+    assert_eq!(reason(&error("quota", "", None, None), &texts), "额度用完");
+    assert_eq!(
+        reason(
+            &error("quota", "insufficient_quota", Some(402), None),
+            &texts
+        ),
+        "额度已用完：insufficient_quota",
+        "有状态码、原话的照旧接原话"
+    );
+}

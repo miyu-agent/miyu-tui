@@ -132,6 +132,8 @@ enum Waiting {
     PresetRemove(String),
     /// 同上，人格。
     PersonaRemove(String),
+    /// 供应商目录（`provider.catalog`）：是不是全目录（「配置页」第 11a 条）。
+    Catalog(bool),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -146,6 +148,8 @@ enum Load {
 pub struct Settings {
     /// 照 `--page config` 起来的：主菜单按 `Esc` 退出程序。
     pub standalone: bool,
+    /// 包的名字、在哪个组（App 照 `package.list` 交来）：预设的功能照组、包分组写组名（`features.rs`）。
+    pub package_names: crate::features::Packages,
     /// 管理员模式（「管理员模式」第 3 条）：不是管理员的是 `None`，管理员的是开没开；App 进、退时改它。
     pub admin: Option<bool>,
     /// 这一帧包页面上画着的上游网址（[`Hit::Link`]）。
@@ -320,6 +324,7 @@ impl Settings {
             Waiting::ExamplesSaved(id) => self.examples_saved(id, result, texts),
             Waiting::PresetRemove(id) => self.preset_remove_read(&id, result, texts),
             Waiting::PersonaRemove(id) => self.persona_remove_read(&id, result, texts),
+            Waiting::Catalog(all) => self.catalog_answer(all, result.ok()),
         }
     }
 
@@ -474,6 +479,7 @@ impl Settings {
         let popup = match &self.popup {
             Some(Popup::Form(form)) => form.editing.is_some(),
             Some(Popup::Pick(pick)) => pick.typing,
+            Some(Popup::Catalog(pick)) => pick.typing,
             Some(Popup::Line(_) | Popup::Pair(_) | Popup::Sheet(_)) => true,
             _ => false,
         };

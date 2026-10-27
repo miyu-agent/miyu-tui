@@ -60,10 +60,10 @@ pub fn title(
                 crate::sheet::sep(),
                 meter::seconds(step.elapsed())
             );
-            // 思考中：接着写估的 token 数，只写数字（2026-10-24 项目主人定：「12.3k 1M 1B 这样子」）。只给加密思考、
-            // 没有原文的模型没字可估，不写。
+            // 接着写估的 token 数，只写数字（2026-10-24 项目主人定：「12.3k 1M 1B 这样子」）；想完的也写（2026-10-26 项目
+            // 主人）。只给加密思考、没有原文的模型没字可估，不写。
             let tokens = meter::estimate_tokens(thought.trim());
-            if step.busy() && tokens > 0 {
+            if tokens > 0 {
                 label.push_str(&crate::sheet::sep());
                 label.push_str(&meter::short(tokens));
             }
@@ -150,6 +150,14 @@ pub fn title(
                 {
                     label.push_str(&crate::sheet::sep());
                     label.push_str(&text);
+                }
+                // 在跑的：最新的一行进度接在后面（「时间线」第 8a 条）；有了结果、被打断停了表的不写。
+                if *state == ToolState::Running
+                    && step.took.is_none()
+                    && let Some(progress) = &step.progress
+                {
+                    label.push_str(&crate::sheet::sep());
+                    label.push_str(progress);
                 }
                 // 出错、被拒的编辑没改成：不写加减的行数，和收起那一行一个算法（第 12、17 条；2026-10-13 验收 T-101：
                 // 原来照参数写绿的 `+1`、红的 `-0`，整行红里夹着绿字，看着像写成了）。
@@ -287,18 +295,6 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
             }
             out
         }
-        // 提问答了：一道一行接在这一步的竖线后面（「确认和提问的抽屉」第 6 条）。
-        StepKind::Tool { .. } if !step.answers.is_empty() => step
-            .answers
-            .iter()
-            .flat_map(|a| pieces(a, width))
-            .map(|(l, joined)| Piece {
-                lead: bar(rail),
-                content: vec![Span::styled(l, style)],
-                joined,
-                links: Vec::new(),
-            })
-            .collect(),
         _ => Vec::new(),
     }
 }
@@ -319,10 +315,6 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
     };
     match &step.kind {
         StepKind::Thought { text } => each(text.trim(), theme::thought()).collect(),
-        // 提问答了：点开也是这几行回答（「确认和提问的抽屉」第 6 条）。
-        StepKind::Tool { .. } if !step.answers.is_empty() => {
-            step.answers.iter().flat_map(|a| each(a, style)).collect()
-        }
         StepKind::Tool {
             output,
             parsed,

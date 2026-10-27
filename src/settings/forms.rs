@@ -3,13 +3,19 @@
 
 mod apply;
 
-pub use apply::{apply, name_ok, reserved};
+pub use apply::apply;
 use serde_json::Value;
 
 use super::data::{Data, Model};
 use super::draft::Draft;
 use super::keys;
 use crate::input::Editor;
+
+mod names;
+mod values;
+
+pub use names::{name_ok, path_name, unique};
+pub use values::{plain, window_text, window_value};
 
 /// 改的是哪一样。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -203,6 +209,8 @@ pub struct Form {
     pub initial: Vec<Row>,
     /// 「确定」不收时的原因。
     pub error: Option<String>,
+    /// 照供应商目录新建的一家：目录里的编号，存的时候写 `providers.<id>.catalog`（`pages/catalog.rs`）。
+    pub catalog: Option<String>,
 }
 
 impl Form {
@@ -220,6 +228,7 @@ impl Form {
             cursor: 0,
             members,
             error: None,
+            catalog: None,
         }
     }
 
@@ -255,6 +264,17 @@ impl Form {
         };
         find(&self.rows) != find(&self.initial)
     }
+}
+
+/// 照目录新加一家（`pages/catalog.rs`）：编号先填好 `id`，存的时候和目录的编号不一样的另写 `catalog`。
+pub fn listed(view: &Data, data: &Data, draft: &Draft, id: &str, catalog: &str) -> Form {
+    let mut form = provider(view, data, draft, None);
+    if let Some(row) = form.rows.iter_mut().find(|r| r.field == Field::Id) {
+        *row = Row::text(Field::Id, id);
+    }
+    form.initial = form.rows.clone();
+    form.catalog = Some(catalog.to_string());
+    form
 }
 
 /// 编辑一家供应商（`None` 是新加）。
@@ -430,7 +450,8 @@ pub fn model(view: &Data, data: &Data, draft: &Draft, provider: &str, model: Opt
 pub fn pool(view: &Data, name: Option<&str>) -> Form {
     let pool = name.and_then(|n| view.pool(n));
     let members = pool.map(|p| p.members.clone()).unwrap_or_default();
-    let strategies = vec!["rotate".to_string(), "pin".to_string()];
+    // 照先后：主力加备用（核心 Q-4上）。
+    let strategies = ["rotate", "pin", "ordered"].map(str::to_string).to_vec();
     let at = pool
         .and_then(|p| p.strategy.as_deref())
         .and_then(|s| strategies.iter().position(|x| x == s))
@@ -469,31 +490,6 @@ fn member(reference: &str, sees: bool, gone: bool) -> Row {
             gone,
         },
     )
-}
-
-/// 一个值写成字：字照写，数照写，别的（`null`、表）是空的。
-pub fn plain(v: &Value) -> String {
-    match v {
-        Value::String(s) => s.clone(),
-        Value::Number(n) => n.to_string(),
-        _ => String::new(),
-    }
-}
-
-/// 窗口写成人看的：和用量那一行一样写短（`128k`、`1M`、`1.4M`）。
-pub fn window_text(n: u64) -> String {
-    crate::meter::short(n)
-}
-
-/// 人敲的窗口读成数：`128k`、`1M`、`131072`；读不懂的是 `None`。
-pub fn window_value(text: &str) -> Option<u64> {
-    let t = text.trim().to_lowercase();
-    let (digits, times) = match t.strip_suffix('m') {
-        Some(d) => (d, 1_000_000),
-        None => t.strip_suffix('k').map_or((t.as_str(), 1), |d| (d, 1_000)),
-    };
-    let n: f64 = digits.trim().parse().ok()?;
-    (n > 0.0).then(|| (n * f64::from(times)).round() as u64)
 }
 
 #[cfg(test)]

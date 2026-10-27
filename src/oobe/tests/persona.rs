@@ -11,7 +11,7 @@ use crate::oobe::{Move, Oobe, Step, Texts};
 /// 走到建人格：默认人格没设。
 fn at_persona(t0: Instant, texts: &Texts, default: Option<&str>) -> Oobe {
     let mut oobe = fresh(t0);
-    oobe.step = Step::Model;
+    oobe.step = Step::Currency;
     oobe.moved(Move::Next, t0);
     assert_eq!(oobe.step, Step::Persona);
     let sent = asks(&mut oobe);
@@ -235,6 +235,19 @@ fn the_input_method_switches_only_while_a_field_is_being_edited() {
     assert!(oobe.editing(), "回车进编辑");
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert!(!oobe.editing());
+    // 名字下面的简单描述、头像路径一样（2026-10-26 项目主人报：进第二格输入法停在英文，编辑里的状态没记住）。
+    for slot in [
+        crate::oobe::persona::Slot::Summary,
+        crate::oobe::persona::Slot::Avatar,
+    ] {
+        oobe.key(key(KeyCode::Down), t0, &texts);
+        assert_eq!(oobe.persona.focus, slot);
+        assert!(!oobe.editing(), "停着不算");
+        oobe.key(key(KeyCode::Enter), t0, &texts);
+        assert!(oobe.editing(), "{slot:?} 回车进编辑算在打字");
+        oobe.key(key(KeyCode::Enter), t0, &texts);
+        assert!(!oobe.editing());
+    }
 }
 
 #[test]

@@ -110,10 +110,10 @@ fn deleting_a_pool_asks_who_uses_it_and_saves_at_once() {
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     to_models(&mut tui);
     tui.wait_for("cline");
-    tui.key(b",");
-    tui.key(b".");
-    tui.key(b".");
+    tui.key(b",..");
     tui.wait_for("duo");
+    // 固定的三个池（旗舰、日常、轻量）排在最前面，duo 在第四行（2026-10-26 项目主人）。
+    tui.key(b"\x1b[B\x1b[B\x1b[B");
     tui.key(b"d");
     tui.wait_for("删除模型池 duo？");
     // 停在「取消」：按 Enter 什么都不做。
@@ -161,8 +161,7 @@ fn a_new_provider_keeps_its_key_in_the_secret_store_and_an_added_model_can_be_de
     to_models(&mut tui);
     tui.wait_for("cline");
     // 添加供应商：ID、地址、key（ID、显示名称、地址、接口、认证、key）。
-    tui.key(b"a");
-    tui.wait_for("添加供应商");
+    tui.add_custom_provider();
     tui.key(b"\r");
     tui.type_text("zen");
     tui.key(b"\r");
@@ -364,8 +363,9 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     tui.wait_for("功能");
     // 预设不再管默认人格（2026-10-08 项目主人）。
     assert!(!tui.shows("默认人格"), "{}", tui.lines().join("\n"));
-    // 功能写给人看的名字，不写编号（2026-10-08 项目主人：「都是英文谁看得懂？」，核心 P-3 补给名字）。
-    tui.wait_for("文件读写");
+    // 出厂的十八个包照组收在「基础系统」下面（核心 BS-1下上）。功能写给人看的名字，不写编号（2026-10-08 项目主人：「都是英文谁看得懂？」，核心 P-3 补给名字）。
+    tui.wait_for("改文件");
+    tui.wait_for("基础系统");
     assert!(!tui.shows("files"), "{}", tui.lines().join("\n"));
     // 功能多了（核心后来加了展示、Harness 版本这些），写了没装的那一行可能在窗外：往下挪着找。
     for _ in 0..40 {
@@ -451,9 +451,7 @@ fn constrained_decoding_is_written_into_the_providers_compat_table() {
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     to_models(&mut tui);
     tui.wait_for("cline");
-    tui.key(b"a");
-    tui.wait_for("添加供应商");
-    tui.wait_for("约束解码");
+    tui.add_custom_provider();
     tui.key(b"\r");
     tui.type_text("strict");
     tui.key(b"\r");

@@ -88,7 +88,9 @@ fn an_answer_waits_for_its_call_and_each_block_takes_the_time_it_took() {
         ]
     );
     assert!(out.iter().any(|p| matches!(p, Push::Usage(_))), "用量照记");
-    assert!(matches!(out[0], Push::Clock(_)));
+    // 先认听到了哪一条（排着的话照它落到原处），再走表。
+    assert!(matches!(out[0], Push::Heard(_)));
+    assert!(matches!(out[1], Push::Clock(_)));
     let _ = Block::Text;
 }
 

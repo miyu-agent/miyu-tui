@@ -14,7 +14,8 @@ impl App {
     /// 抽屉开着时按键先归它，带 `Ctrl` 的照旧归外面（复制、退出），编辑时的 `Ctrl+J` 换行除外（第 4 条）。
     /// 拿了交回 `true`。
     pub(super) fn drawer_key(&mut self, key: KeyEvent) -> bool {
-        if !self.talk.drawers.open() {
+        // PgUp、PgDn 归正文：翻上去看，抽屉让开（「确认和提问的抽屉」第 4a 条，2026-10-26 项目主人：原来翻不了页）。
+        if !self.talk.drawers.open() || matches!(key.code, KeyCode::PageUp | KeyCode::PageDown) {
             return false;
         }
         let newline = self.talk.drawers.editing() && key.code == KeyCode::Char('j');
@@ -150,8 +151,8 @@ impl App {
     }
 }
 
-/// 在 `transcript` 里写一问的结果：回答挂到时间线里「提问」那一步下面，找不到那一步的（按页读更早的一页时那一步不在这一份
-/// 里）写在末尾；不允许的末尾一行红 `✗`（第 6 条）。按页读更早的一页时写进那一份临时的正文（`pages.rs`）。
+/// 在 `transcript` 里写一问的结果：回答不进时间线，另起一块照你说的话的样子画（`ui/answered_rows.rs`，2026-10-26 项目
+/// 主人定）；不允许的末尾一行红 `✗`（第 6 条）。按页读更早的一页时写进那一份临时的正文（`pages.rs`）。
 pub(super) fn report_into(
     transcript: &mut crate::transcript::Transcript,
     drawer: &Drawer,
@@ -160,9 +161,12 @@ pub(super) fn report_into(
 ) {
     match drawer.report(outcome, texts) {
         Report::Answers(lines) => {
-            if !transcript.answered(&drawer.call_id, lines.clone()) {
-                transcript.note(Kind::Answered, lines.join("\n"));
-            }
+            let head = texts.answered_head.replace("{n}", &lines.len().to_string());
+            let text = std::iter::once(head)
+                .chain(lines)
+                .collect::<Vec<_>>()
+                .join("\n");
+            transcript.note(Kind::Answered, text);
         }
         Report::Denied(text, full) => transcript.job(JobMark::Failed, text, full),
         Report::Nothing => {}

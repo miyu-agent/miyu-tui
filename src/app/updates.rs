@@ -18,6 +18,8 @@ impl App {
         if let Update::Ready(session) = &update {
             self.dream_ready(session);
         }
+        // 头一次连上进没进已有的会话：记下来，进了的收掉人格、预设框（`start_entered.rs`）。
+        self.entered_update(&update);
         // 人打的 `/dream` 正在整理：记忆流推来的（`dream.rs`）。
         if let Update::Dream { session, change } = update {
             self.dream_change(&session, change);
@@ -55,6 +57,10 @@ impl App {
         }
         // 人格头像的回应归它（`avatars.rs`）。
         if self.avatar_update(&update) {
+            return;
+        }
+        // 一轮结束问的换算好的金额归它（`bill_refresh.rs`）。
+        if self.bill_answer(&update) || self.status_update(&update) {
             return;
         }
         // 配置页的回应归它；配置变了、断开、连上也告诉它（`settings.rs`）。
@@ -100,8 +106,8 @@ impl App {
         // 配置里的界面语言：照它换（`language.rs`）。
         // 连上核心都会读一次界面语言：顺手要一次模型资料，底栏照它写模型和思考强度（`effort.rs`）。
         // `/usage` 的三样：交给框（`usage.rs`）。
-        if let Update::UsageRows { kind, rows } = update {
-            self.usage_rows(kind, rows);
+        if let Update::UsageRows { kind, rows, rates } = update {
+            self.usage_rows(kind, rows, rates);
             return;
         }
         // 软件包：照终端那一项的状态目录放输入历史（`packages.rs`）。
@@ -194,6 +200,8 @@ impl App {
         let Some(update) = self.route(update) else {
             return;
         };
+        // 正在看的会话一轮结束：问一次换算好的金额（`bill_refresh.rs`）。
+        self.bill_turn_ended(&update);
         if let Update::Push(push) = &update
             && self.visible_push(push)
         {

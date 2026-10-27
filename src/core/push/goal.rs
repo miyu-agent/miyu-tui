@@ -25,7 +25,7 @@ fn number(cause: &str) -> Option<u32> {
 }
 
 /// 长期目标现在的样子（订阅回应里的 `goal`、推来的 `goal.changed`，核心 X-8 补）：只读界面要的几格。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Goal {
     /// 在哪一步。
     pub state: GoalState,
@@ -33,10 +33,21 @@ pub struct Goal {
     pub round: u32,
     /// 轮数上限；不限的没有。
     pub limit: Option<u32>,
+    /// 目标的全文（点开目标那一行的浮窗里写，`ui/goal_box.rs`）。
+    pub text: String,
+    /// 卡住的为什么；别的没有。
+    pub reason: Option<String>,
+    /// 停了又续上过几次（核心 GOAL-1 的 `resumes`）；旧核心没有这一格的是 0，不写。
+    pub resumes: u32,
+    /// 设下的时刻：目标那一行右边、浮窗里的用时照它算（2026-10-26 项目主人）。
+    pub since: Option<jiff::Timestamp>,
+    /// 这个目标花了多少：四项加起来的 token、金额（写法同会话的 `usage`）。
+    pub tokens: u64,
+    pub bill: crate::core::Bill,
 }
 
 /// 在哪一步（核心 `view.md`「会话状态」的 `goal.state`）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum GoalState {
     /// 跑着。
     Running,
@@ -49,6 +60,7 @@ pub enum GoalState {
     /// 做完了。
     Completed,
     /// 认不得的（新版本才有的）。
+    #[default]
     Other,
 }
 
@@ -63,9 +75,26 @@ pub(crate) fn read(goal: &Value) -> Option<Goal> {
         _ => GoalState::Other,
     };
     let number = |v: &Value| v.as_u64().and_then(|n| u32::try_from(n).ok());
+    let usage = &goal["usage"];
+    // 用量写法同会话的 `usage`：四项在 `usage` 那一格里（老一点的写在外面一层）。
+    let four = if usage["usage"].is_object() {
+        &usage["usage"]
+    } else {
+        usage
+    };
+    let tokens = ["uncached", "cache_read", "cache_write", "output"]
+        .iter()
+        .map(|k| four[*k].as_u64().unwrap_or_default())
+        .sum();
     Some(Goal {
         state,
         round: number(&goal["round"]).unwrap_or_default(),
         limit: number(&goal["limit"]),
+        text: goal["text"].as_str().unwrap_or_default().to_string(),
+        reason: goal["reason"].as_str().map(str::to_string),
+        resumes: number(&goal["resumes"]).unwrap_or_default(),
+        since: goal["since"].as_str().and_then(|t| t.parse().ok()),
+        tokens,
+        bill: crate::core::Bill::read(usage),
     })
 }

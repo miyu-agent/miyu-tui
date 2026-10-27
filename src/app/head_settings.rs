@@ -26,6 +26,8 @@ const CHAT_TAG: u64 = TAG_BASE - 11;
 const VIM_TAG: u64 = TAG_BASE - 12;
 /// 读「新会话不问人格、预设」的请求编号：单问，同按键模式（`TAG_BASE - 13` 到 `- 15` 是 `theme_pick.rs` 的）。
 const SKIP_PICK_TAG: u64 = TAG_BASE - 16;
+/// 读侧边栏「最近会话」几个的请求编号：单问，同按键模式。
+const SIDEBAR_SESSIONS_TAG: u64 = TAG_BASE - 23;
 /// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
 const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
 
@@ -39,6 +41,7 @@ impl App {
                 self.ask_config(MASCOT_TAG, &Layout::MASCOT_KEYS);
                 self.ask_config(VIM_TAG, &[Layout::KEYS_KEY]);
                 self.ask_config(SKIP_PICK_TAG, &[Layout::SKIP_PICK_KEY]);
+                self.ask_config(SIDEBAR_SESSIONS_TAG, &[Layout::SIDEBAR_SESSIONS_KEY]);
                 let mut keys = crate::theme::choice::Choice::KEYS.to_vec();
                 keys.push(crate::theme::choice::SEED_KEY);
                 self.ask_config(THEME_TAG, &keys);
@@ -66,6 +69,12 @@ impl App {
             Update::Answer { tag, result } if *tag == MASCOT_TAG => {
                 if let Ok(got) = result {
                     self.config.layout.apply_mascot(got);
+                }
+                true
+            }
+            Update::Answer { tag, result } if *tag == SIDEBAR_SESSIONS_TAG => {
+                if let Ok(got) = result {
+                    self.config.layout.apply_sidebar_sessions(got);
                 }
                 true
             }

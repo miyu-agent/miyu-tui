@@ -251,3 +251,25 @@ fn ids_follow_the_cores_rule_of_32_characters_and_no_windows_reserved_names() {
     assert!(name_ok("console"));
     assert!(!name_ok("1st"));
 }
+
+#[test]
+fn a_pool_can_be_ordered_and_opens_on_its_strategy() {
+    // 核心 Q-4上：池能照先后用（主力加备用）。
+    let mut data = sample();
+    data.pools[0].strategy = Some("ordered".into());
+    let form = pool(&data, Some("daily"));
+    let row = form
+        .rows
+        .iter()
+        .find(|r| r.field == Field::Strategy)
+        .unwrap();
+    let Val::Choice { options, at } = &row.val else {
+        panic!("分法是选的：{:?}", row.val);
+    };
+    assert_eq!(options, &["rotate", "pin", "ordered"]);
+    assert_eq!(
+        at.map(|i| options[i].as_str()),
+        Some("ordered"),
+        "停在现在的分法上"
+    );
+}

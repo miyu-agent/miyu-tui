@@ -53,8 +53,9 @@ impl App {
     /// 粘贴进来的字（终端送来的、`Ctrl+V` 读剪贴板的）：历史列表开着的进「历史：」，抽屉开着的进抽屉里写的字，
     /// 别的进输入框（大段的收成一块，`tui.md`「输入框」第 11 条）。
     pub(super) fn paste(&mut self, text: &str) {
-        // 新会话开头选人格、预设时没有输入框（「新会话：人格、工作区」第 1 条）：粘贴不收。
-        if crate::app::new_session::start_pick(&self.talk).is_some() {
+        // 新会话开头选人格、预设时框换掉了输入框：粘贴照样进输入框，框关了字还在（「新会话：人格、工作区」第 1c 条）。
+        if self.seen().start_pick().is_some() {
+            self.typing.input.paste(text);
             return;
         }
         if self.typing.history.open {

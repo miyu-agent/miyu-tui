@@ -15,7 +15,7 @@
     "provider_width": 24,
     "org_width": 15,
     "use_width": 30,
-    "pool_width": 26,
+    "pool_width": 36,
     "column_gap": 3,
     "popup_width": 66,
     "popup_wide": 78,
@@ -99,6 +99,7 @@
   "icons": "nerd",
   "sidebar_from": 120,
   "sidebar_width": 38,
+  "sidebar_sessions": 5,
   "agent_rows": 5,
   "output": {
     "panel_rows": 12,
@@ -106,7 +107,6 @@
     "poll_ms": 1000,
     "tab": 4
   },
-  "todo_rows": 5,
   "widgets": {
     "home_blocks": 3,
     "home_rows": 6,
@@ -115,8 +115,8 @@
     "status_cells": 3,
     "status_width": 40
   },
-  "mascot_home": true,
-  "mascot_sidebar": true,
+  "mascot_home": false,
+  "mascot_sidebar": false,
   "vim": false,
   "skip_pick": false,
   "dream": {

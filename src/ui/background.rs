@@ -39,6 +39,7 @@ pub fn lines(
             | Panel::Effort { .. }
             | Panel::Usage { .. }
             | Panel::Status { .. }
+            | Panel::Goal { .. }
             | Panel::Tools { .. }
             | Panel::Context { .. }
             | Panel::Pick { .. }
@@ -212,6 +213,7 @@ mod tests {
             title: String::new(),
             session: None,
             foreground: false,
+            fork: false,
         };
         board.start(&start("j1"), Some("cargo test".into()), t0);
         board.start(&start("j2"), Some("npm run build".into()), t0);
@@ -349,6 +351,7 @@ mod tests {
             title: String::new(),
             session: None,
             foreground: false,
+            fork: false,
         };
         board.start(&start, Some("ls".into()), t0);
         let done = JobEnd {

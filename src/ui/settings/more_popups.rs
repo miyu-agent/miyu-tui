@@ -235,7 +235,11 @@ pub(super) fn preset(
     ));
     for row in features::rows(&detail.features) {
         lines.body.push(Body {
-            line: feature_line(&detail.features, row, &words.preset_detail[1]),
+            line: feature_line(
+                &detail.features,
+                row,
+                (&words.preset_detail[1], &words.package_mine),
+            ),
             focused: at == Some(Field::Row(row)),
             hit: None,
         });
@@ -245,6 +249,7 @@ pub(super) fn preset(
 /// 一行对应的工具名：工具那一行写它自己；功能那一行写它下面的几件，` · ` 隔开（同一天项目主人照推荐定）。
 fn tool_names(list: &[features::Feature], row: features::Row) -> String {
     match row {
+        features::Row::Group(_) => String::new(),
         features::Row::Tool(i, j) => list[i].tools[j].name.clone(),
         features::Row::Feature(i) => {
             let names: Vec<_> = list[i].tools.iter().map(|t| t.name.as_str()).collect();
@@ -255,7 +260,11 @@ fn tool_names(list: &[features::Feature], row: features::Row) -> String {
 
 /// 平铺的一行（「配置页」第 38 条）：功能那一行勾在前、名字加粗；工具缩进两格；关着的、功能关着时的工具暗着；没装的
 /// 暗着、名字后面黄字「没安装」。
-fn feature_line(list: &[features::Feature], row: features::Row, missing: &str) -> Line<'static> {
+fn feature_line(
+    list: &[features::Feature],
+    row: features::Row,
+    (missing, mine): (&str, &str),
+) -> Line<'static> {
     let checked = |on: bool| {
         if on {
             ("[*]", theme::accent(), Style::new())
@@ -264,6 +273,11 @@ fn feature_line(list: &[features::Feature], row: features::Row, missing: &str) -
         }
     };
     match row {
+        // 组名（核心 ENV-1）：暗色，和功能那一行的勾对齐。
+        features::Row::Group(i) => Line::styled(
+            format!("  {}", features::group_name(&list[i], mine)),
+            theme::dim().add_modifier(Modifier::BOLD),
+        ),
         features::Row::Feature(i) => {
             let feature = &list[i];
             if !feature.installed {

@@ -62,6 +62,7 @@ impl App {
             screen: super::screen::Screen::new(theme),
             talk: super::talk::Talk {
                 preview: None,
+                tree_bill: None,
                 default_level: crate::core::Level::Workspace,
                 level_picked: false,
                 dream: None,
@@ -96,6 +97,8 @@ impl App {
                 widgets: Default::default(),
                 service: Default::default(),
                 account: Default::default(),
+                bill_asked: None,
+                package_names: Default::default(),
                 held_language: None,
             },
             typing: super::typing::Typing {

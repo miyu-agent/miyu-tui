@@ -30,8 +30,10 @@ pub struct Areas {
     pub mascot: Rect,
     /// 框下面那一行中间的后台按钮；没有时宽是 0（`tui.md`「后台命令、子代理和侧边栏」第 1 条）。
     pub button: Rect,
-    /// 窄屏时输入框上面常驻的待办；没有时高是 0（第 4 条）。
+    /// 输入框上面常驻的待办；没有时高是 0（第 4、4a 条）。
     pub todo: Rect,
+    /// 侧边栏「最近会话」一行一个会话的那几行（不含标题）；没有时高是 0（第 7 条）。哪一行是哪个会话在 `Screen::recent`。
+    pub recent: Rect,
     /// 首页框下面那一行再下面（空一行）的工作目录；不在首页是空的（「空会话的首页」第 2 条）。
     pub cwd: Rect,
     /// 子代理状态行（连上面的空行）；没有时高是 0（第 5 条）。
@@ -67,8 +69,8 @@ pub fn areas(
     let pad_left = m.pad_left;
     let text_width = width.saturating_sub(2 + pad_left + m.pad_right).max(1);
     let rows = rows(text_width);
-    // 上下两条边和文字。
-    let height = rows + 2;
+    // 上下两条边和文字；一行都没有的（抽屉让开了）连边也不要。
+    let height = if rows == 0 { 0 } else { rows + 2 };
     let footer_y = area.bottom().saturating_sub(1 + agent_rows);
     let frame = Rect::new(x, footer_y.saturating_sub(height), width, height).intersection(area);
     let inner_x = frame.x + 1 + pad_left;

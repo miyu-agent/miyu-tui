@@ -133,15 +133,25 @@ impl Settings {
                 let edit = LineEdit::open("preset.name", &words.detail[0], false, &current);
                 Popup::Line(edit.to(Target::Preset(Box::new(view))))
             }
-            Some(Field::Summary) => {
-                let current = detail.summary.clone().map_or(Value::Null, Value::String);
-                let label = &words.preset_detail[2];
-                let edit = LineEdit::open("preset.summary", label, false, &current);
-                Popup::Line(edit.to(Target::Preset(Box::new(view))))
-            }
+            // 描述开多行编辑窗（2026-10-26 项目主人：一行不够），`Esc` 收起时写进这个预设。
+            Some(Field::Summary) => Popup::Sheet(super::textarea::SheetEdit {
+                key: "preset.summary".into(),
+                title: words.preset_detail[2].clone(),
+                sheet: crate::oobe::sheet::Sheet::open(
+                    detail.summary.as_deref().unwrap_or_default(),
+                ),
+                to: Some(Target::Preset(Box::new(view))),
+            }),
             _ => Popup::Preset(view),
         };
         self.popup = Some(popup);
+    }
+
+    /// 读 `preset.get` 的回应，照 `package.list` 填上每个功能的包名（组名那一行写它，`features.rs`）。
+    pub(in crate::settings) fn preset_detail(&self, got: &Value) -> Detail {
+        let mut detail = presets::detail(got);
+        features::name_packages(&mut detail.features, &self.package_names);
+        detail
     }
 
     /// 选择窗、编辑窗选好了：照写到哪办；不是预设的交回 `false`。
@@ -204,7 +214,7 @@ impl Settings {
                 return self.say(said(&refusal), Tone::Bad);
             }
         };
-        let detail = presets::detail(&got);
+        let detail = self.preset_detail(&got);
         match &mut self.popup {
             Some(Popup::Preset(view)) if view.id == detail.id => {
                 view.detail = Some(detail);
@@ -386,7 +396,6 @@ mod tests {
     #[test]
     fn the_description_row_writes_the_presets_summary() {
         // 2026-10-23 项目主人定预设要有描述（核心转来）：名字下面一行，回车开编辑窗，存的是 `preset.summary`。
-        use crate::settings::pages::target::Target;
         use crate::settings::popup::Popup;
         let texts = crate::config::Config::builtin().unwrap().text.settings;
         let got =
@@ -403,18 +412,24 @@ mod tests {
             KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
             &texts,
         );
-        let Some(Popup::Line(edit)) = &page.popup else {
-            panic!("开编辑窗：{:?}", page.popup);
+        // 开多行编辑窗（2026-10-26 项目主人：一行不够）；写两行，`Esc` 收起时写进这个预设。
+        let Some(Popup::Sheet(mut edit)) = page.popup.take() else {
+            panic!("开多行编辑窗");
         };
-        assert_eq!(edit.editor.text(), "旧的");
-        assert!(page.preset_write(
-            Target::Preset(Box::new(view)),
-            "preset.summary",
-            json!("写代码用")
-        ));
+        assert_eq!(edit.sheet.text(), "旧的");
+        edit.sheet.replace("写代码用\n第二行");
+        page.sheet_key(
+            edit,
+            KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+            &texts,
+        );
         assert_eq!(
             page.take_asks()[0].2["changes"],
-            json!([{"key": "preset.summary", "value": "写代码用"}])
+            json!([{"key": "preset.summary", "value": "写代码用\n第二行"}])
+        );
+        assert!(
+            matches!(&page.popup, Some(Popup::Preset(v)) if v.id == view.id),
+            "回到预设的窗"
         );
     }
 

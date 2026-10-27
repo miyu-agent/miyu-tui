@@ -28,6 +28,8 @@ pub struct UsageData {
     pub purposes: Loaded,
     /// 打开时本机的今天。
     pub today: jiff::civil::Date,
+    /// 用到的要署名的汇率源（核心 UC-1）：框底下注明。
+    pub rates: Vec<String>,
 }
 
 impl App {
@@ -42,6 +44,7 @@ impl App {
             sessions: None,
             purposes: None,
             today: now.date(),
+            rates: Vec::new(),
         });
         let kinds = [
             UsageKind::Total,
@@ -67,10 +70,20 @@ impl App {
     }
 
     /// 核心交回了一样：记下，框照它画；框关了的不要。
-    pub(super) fn usage_rows(&mut self, kind: UsageKind, rows: Result<Vec<UsageRow>, String>) {
+    pub(super) fn usage_rows(
+        &mut self,
+        kind: UsageKind,
+        rows: Result<Vec<UsageRow>, String>,
+        rates: Vec<String>,
+    ) {
         let Some(data) = self.boxes.usage.as_mut() else {
             return;
         };
+        for rate in rates {
+            if !data.rates.contains(&rate) {
+                data.rates.push(rate);
+            }
+        }
         let slot = match kind {
             UsageKind::Total => &mut data.total,
             UsageKind::Days => &mut data.days,

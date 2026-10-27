@@ -18,10 +18,21 @@ pub struct PackageEntry {
     pub state: Option<PathBuf>,
     /// 清单 `[package] icon` 写的 Lucide 图标名；没写的是 `None`。
     pub icon: Option<String>,
+    /// 给人看的名字（照连接的语言）；没有的是 `None`。
+    pub name: Option<String>,
+    /// 它在的组（核心 BS-1下上，出厂的十八个在「基础系统」里）：编号、名字（照连接的语言，回应顶上的 `groups` 查）；不在组里的、
+    /// 旧核心的是 `None`。在几个组里的取第一个。
+    pub group: Option<(String, String)>,
 }
 
 /// 读 `package.list` 的回应；没有编号的那一项不要。
 pub(super) fn listed(result: &Value) -> Vec<PackageEntry> {
+    let names: std::collections::HashMap<&str, &str> = result["groups"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|g| Some((g["id"].as_str()?, g["name"].as_str().or(g["id"].as_str())?)))
+        .collect();
     result["packages"]
         .as_array()
         .into_iter()
@@ -34,6 +45,11 @@ pub(super) fn listed(result: &Value) -> Vec<PackageEntry> {
                     .as_str()
                     .filter(|i| !i.is_empty())
                     .map(str::to_string),
+                name: p["name"].as_str().map(str::to_string),
+                group: p["groups"][0].as_str().map(|g| {
+                    let name = names.get(g).copied().unwrap_or(g);
+                    (g.to_string(), name.to_string())
+                }),
             })
         })
         .collect()
@@ -111,18 +127,44 @@ mod tests {
                     id: "tui".into(),
                     state: Some("/s/tui".into()),
                     icon: None,
+                    name: None,
+                    group: None,
                 },
                 PackageEntry {
                     id: "miyu-memes".into(),
                     state: None,
                     icon: Some("face-slightly-smiling".into()),
+                    name: None,
+                    group: None,
                 },
                 PackageEntry {
                     id: "odd".into(),
                     state: None,
                     icon: None,
+                    name: None,
+                    group: None,
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn a_package_in_a_group_carries_the_groups_name() {
+        // 核心 BS-1下上：回应顶上列组，每一项写它在哪几个组里。
+        let got = json!({"groups": [{"id": "basesystem", "name": "基础系统"}], "packages": [
+            {"package": "shell", "name": "跑命令", "groups": ["basesystem"]},
+            {"package": "odd", "groups": ["lonely"]},
+            {"package": "weather"}
+        ]});
+        let groups: Vec<_> = listed(&got).into_iter().map(|p| p.group).collect();
+        assert_eq!(
+            groups,
+            [
+                Some(("basesystem".into(), "基础系统".into())),
+                Some(("lonely".into(), "lonely".into())),
+                None
+            ],
+            "顶上没列的组照编号写"
         );
     }
 

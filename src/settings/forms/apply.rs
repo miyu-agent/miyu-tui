@@ -3,7 +3,7 @@
 
 use serde_json::{Value, json};
 
-use super::{Field, Form, Target, Val, window_value};
+use super::{Field, Form, Target, Val, name_ok, window_value};
 use crate::settings::data::Data;
 use crate::settings::draft::Draft;
 use crate::settings::keys;
@@ -63,6 +63,10 @@ fn provider(
     }
     if new {
         draft.new_providers.push(id.clone());
+    }
+    // 照目录加的：编号和目录的不一样（改成了合写法的、错开的、自己改了的）才写 `catalog`，同引导（`oobe/model/plan.rs`）。
+    if let Some(catalog) = form.catalog.as_deref().filter(|c| new && *c != id) {
+        draft.set(&key("catalog"), json!(catalog), data);
     }
     if new || form.moved(Field::Name) {
         text_or_unset(draft, data, &key("name"), form.text(Field::Name));
@@ -283,26 +287,6 @@ fn pool(
 
 fn name_new(form: &Form) -> bool {
     form.target == Target::Pool(None)
-}
-
-/// 供应商、池的编号的写法（核心 `miyu_config::key::ID`）：小写字母打头，只有小写字母、数字、`-`、`_`，最长 32 个字符，
-/// 不是 Windows 的保留名（核心拿它当文件名）。引导里起编号也照它。
-pub fn name_ok(name: &str) -> bool {
-    name.len() <= 32
-        && !reserved(name)
-        && name.starts_with(|c: char| c.is_ascii_lowercase())
-        && name
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
-}
-
-/// Windows 上建不了同名文件的名字（核心 `miyu_config::key` 的同一张表）。
-pub fn reserved(name: &str) -> bool {
-    const NAMES: [&str; 22] = [
-        "con", "nul", "aux", "prn", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8",
-        "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
-    ];
-    NAMES.contains(&name)
 }
 
 fn text_or_unset(draft: &mut Draft, data: &Data, key: &str, text: &str) {

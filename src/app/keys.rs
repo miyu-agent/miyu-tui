@@ -96,7 +96,11 @@ impl App {
             self.quit = true;
             return Action::None;
         }
-        // 新会话开头还没选人格、预设，列表还在读：输入框的位置写「正在加载…」，按键哪都不进，只认退出、挂起
+        // 新会话开头的框开着、在读时打的字进输入框（「新会话：人格、工作区」第 1c 条）。
+        if self.start_box_typed(key) {
+            return Action::None;
+        }
+        // 新会话开头还没选人格、预设，列表还在读：输入框的位置写「正在加载…」，别的按键哪都不进，只认退出、挂起
         // （「新会话：人格、工作区」第 1 条，2026-10-21 项目主人：会话开得慢时输入框能打几个字）。
         if self.start_loading() && !leaves(&key) {
             return Action::None;

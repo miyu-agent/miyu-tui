@@ -15,6 +15,7 @@ mod drawer;
 mod dream_rows;
 mod dreamt_rows;
 pub use drawer::PreviewLook;
+mod answered_rows;
 // shellhook 把抽屉画在 shell 里，照同一套（图纸 `shellhook.md`「确认和提问」）。
 pub use drawer::{draw as draw_drawer, rows as drawer_rows};
 pub mod effort_list;
@@ -22,7 +23,8 @@ mod figure_rows;
 mod floating;
 mod footer;
 mod foreign_rows;
-mod goal_tag;
+pub(crate) mod goal_box;
+pub(crate) mod goal_tag;
 pub mod help;
 pub mod hint_keys;
 mod history;
@@ -44,6 +46,7 @@ mod panel;
 pub use panel::{Chrome, PAD as PANEL_PAD, draw as draw_panel, padded as panel_padded};
 mod panels;
 pub mod persona_list;
+mod recent;
 pub mod session_list;
 pub mod settings;
 mod sidebar;
@@ -62,12 +65,13 @@ mod start_pick;
 mod status;
 pub mod status_box;
 mod timeline;
+mod todos;
 pub mod tool_list;
 mod undo_rows;
 pub use timeline::release_on_fold;
 // shellhook 照同一套画等第一个字的转圈、待办（图纸 `shellhook.md`）。
 pub use dream_rows::rows as dream_rows;
-pub use sidebar::todo_lines;
+pub use todos::todo_lines;
 pub use timeline::tail_rows;
 mod user_rows;
 pub mod wide;
@@ -139,24 +143,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .collect();
     let count = u16::try_from(queued.len()).unwrap_or(u16::MAX);
     let agent_rows = agents::height(app.talk.listed_agents().len(), app.config.layout.agent_rows);
-    // 没有侧边栏（窄屏、首页）时，待办常驻在输入框上面（第 4 条）；有侧边栏时在侧边栏里。
-    let todo_lines = if sidebar.width == 0 {
-        // 首页的框收窄了：照首页框里的字宽排，不然长的一项被裁掉、没有「…」。
-        let width = if home {
-            home::text_width(main.width, &app.config.layout)
-        } else {
-            text_width(main.width, &app.config.layout)
-        };
-        sidebar::todo_lines(
-            &app.talk.board,
-            &app.config,
-            width,
-            app.config.layout.todo_rows,
-            app.talk.todo_full,
-        )
+    // 待办一律常驻在输入框上面（第 4a 条，2026-10-26 起侧边栏不放待办）。
+    // 首页的框收窄了：照首页框里的字宽排，不然长的一项被裁掉、没有「…」。
+    let todo_width = if home {
+        home::text_width(main.width, &app.config.layout)
     } else {
-        Vec::new()
+        text_width(main.width, &app.config.layout)
     };
+    let todo_lines =
+        todos::todo_lines(&app.talk.board, &app.config, todo_width, app.talk.todo_full);
     let todo_rows = u16::try_from(todo_lines.len()).unwrap_or(u16::MAX);
     // 首页的界面块照首页框里的字宽排好，要几行交给 `place` 定位（蓝图「界面块」第 4 条）。
     let home_blocks = if home {
@@ -171,7 +166,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     // 框里占几行：抽屉开着时是抽屉的行数，连边框最高半屏；带文字画的放得下整张为止，屏幕顶上留几行
     // （`tui.md`「确认和提问的抽屉」第 2 条）。
     let texts = &app.config.text.drawer;
-    let open_drawer = app.talk.drawers.current.as_ref();
+    // 正文翻上去了（没在跟着最新的）：抽屉让开，正文用满它的位置，回到底部再出来（「确认和提问的抽屉」第 4a 条，
+    // 2026-10-26 项目主人：往上翻是要看正文）。
+    let aside = !home && app.talk.drawers.current.is_some() && app.screen.view.top.is_some();
+    let open_drawer = app.talk.drawers.current.as_ref().filter(|_| !aside);
     let half = (main.height / 2).saturating_sub(2).max(3);
     let drawer_max = match open_drawer {
         Some(d) if d.has_preview() => main
@@ -187,6 +185,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         && !matches!(app.boxes.panel, Some(crate::app::Panel::Pick { .. }));
     let start = app.seen().start_pick().filter(|_| !skip);
     let box_rows = |w: u16| match (open_drawer, start) {
+        _ if aside => 0,
         (Some(d), _) => drawer::rows(d, texts, &app.config.layout.drawer_preview, w, drawer_max),
         (None, Some(kind)) => {
             let rows = start_pick::content(&app.seen(), kind, w, usize::from(half))
@@ -332,6 +331,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             body::draw(frame, areas, &seen, screen);
         });
         section("input", || {
+            if aside {
+                return;
+            }
             let facts = input_box::Facts::of(&app.seen(), home);
             let pick = start.map(|kind| {
                 let max = usize::from(areas.text.height);
@@ -373,7 +375,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .talk
         .viewing_title()
         .is_none()
-        .then(|| goal_tag::goal(app.talk.transcript.goal.as_ref(), &app.config))
+        .then(|| {
+            let now = jiff::Timestamp::now();
+            goal_tag::goal(app.talk.transcript.goal.as_ref(), &app.config, now)
+        })
         .flatten()
         .filter(|_| !home);
     if let Some(goal) = goal {

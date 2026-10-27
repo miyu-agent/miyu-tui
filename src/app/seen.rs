@@ -65,7 +65,7 @@ impl App {
 impl<'a> Seen<'a> {
     /// 新会话开头必须选的那一样（`new_session.rs`）：画在输入框的位置。
     pub fn start_pick(&self) -> Option<Kind> {
-        super::new_session::start_pick(self.talk)
+        super::new_session::start_pick(self.talk).filter(|_| !self.entering())
     }
 
     /// 框下面那一行现在有哪些按钮（从左到右）：有在跑的命令时的后台按钮。
@@ -134,11 +134,11 @@ impl<'a> Seen<'a> {
             out.push(texts.chosen.replace("{name}", self.talk.persona.name(id)));
         }
         if let Some(id) = preset {
-            out.push(
-                texts
-                    .preset_chosen
-                    .replace("{name}", self.talk.preset.name(id)),
-            );
+            let name = match self.talk.preset.name(id) {
+                "" => texts.no_tools.as_str(),
+                name => name,
+            };
+            out.push(texts.preset_chosen.replace("{name}", name));
         }
         out
     }

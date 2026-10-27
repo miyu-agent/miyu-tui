@@ -90,25 +90,30 @@ pub fn lines(
             ),
         ]),
     ];
-    // 名字连着「（+N）」算宽，对齐成一列。
+    // 名字连着「（+N）」算宽，对齐成一列；fork 出来的名字前面接分叉记号（2026-10-26 项目主人）。
     let label = |job: &Job| {
         let nested = job.session.as_deref().map_or(0, |s| (tree.nested)(s));
-        if nested > 0 {
-            format!("{}（+{nested}）", job.title)
+        let fork = if job.fork {
+            config.icons.fork.as_str()
         } else {
-            job.title.clone()
+            ""
+        };
+        if nested > 0 {
+            format!("{fork}{}（+{nested}）", job.title)
+        } else {
+            format!("{fork}{}", job.title)
         }
     };
     let name_w = agents.iter().map(|a| label(a).width()).max().unwrap_or(0);
     for (i, job) in agents.iter().take(most).enumerate() {
         let row = i + 2;
-        // token 不带「Σ」（2026-09-30 项目主人）。
-        let stats = format!(
-            "{}{}{}",
-            meter::short(job.tokens),
-            crate::sheet::sep(),
-            meter::clock(job.elapsed(now).as_secs())
-        );
+        // token 不带「Σ」（2026-09-30 项目主人）；还是 0 的不写，只写用时（2026-10-26 项目主人）。
+        let clock = meter::clock(job.elapsed(now).as_secs());
+        let stats = if job.tokens == 0 {
+            clock
+        } else {
+            format!("{}{}{clock}", meter::short(job.tokens), crate::sheet::sep())
+        };
         let on = tree.viewing.is_some() && job.session.as_deref() == tree.viewing;
         let title = label(job);
         let name = format!("{} {title}{}", dot(on), " ".repeat(name_w - title.width()));
@@ -206,6 +211,7 @@ mod tests {
             title: title.into(),
             session: Some(session.into()),
             foreground: false,
+            fork: false,
         };
         board.start(&start, None, t0);
         let row = board.agent_mut(session).unwrap();
@@ -264,11 +270,37 @@ mod tests {
         assert_eq!(doing(&text[2], "读"), doing(&text[3], "列"));
         assert_eq!(text[2].width(), 70);
         assert_eq!(text[3].width(), 70);
+        assert!(text[3].ends_with("800 · 1m 05s"), "{}", text[3]);
         assert_eq!(height(listed.len(), 5), 4);
         // 超过上限的收成一行。
         assert_eq!(height(listed.len(), 1), 4);
         let short = lines(&listed, &config, 70, 1, &main, t0);
         assert_eq!(short.last().unwrap().to_string(), "  还有 1 个");
+    }
+
+    #[test]
+    fn a_forked_agent_has_the_fork_mark_before_its_name() {
+        // 2026-10-26 项目主人：fork 出来的子代理名字前面加分叉图标，别的照旧。
+        let config = Config::builtin().unwrap();
+        let mut board = Board::default();
+        let t0 = Instant::now();
+        agent(&mut board, "j1", "查旧版缓存", "s1", t0, "", 0);
+        agent(&mut board, "j2", "分头查", "s2", t0, "", 0);
+        board.agent_mut("s2").unwrap().fork = true;
+        let none = |_: &str| 0;
+        let main = Tree {
+            viewing: None,
+            nested: &none,
+            hover: None,
+            focus: None,
+        };
+        let text = texts(&lines(&board.listed(None), &config, 70, 5, &main, t0));
+        let fork = &config.icons.fork;
+        assert!(
+            text[3].starts_with(&format!("  ○ {fork}分头查")),
+            "{text:?}"
+        );
+        assert!(text[2].starts_with("  ○ 查旧版缓存"), "别的照旧：{text:?}");
     }
 
     #[test]

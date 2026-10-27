@@ -16,6 +16,9 @@ pub struct Older {
     loading: bool,
     /// 每一轮最后是撤掉（`true`）还是恢复：更早的页拼上来时照它藏起、显示回来（新的页说了算）。
     undone: HashMap<u64, bool>,
+    /// 读一个会话的最新一页、还不知道这一页开头时的权限级别（切换权限那一条多半在更早的页里）：这期间你说的话、收尾行
+    /// 不记级别，画的时候照现在的（2026-10-26 项目主人报：开放权限发的话重开 resume 以后竖线变成了工作区的颜色）。
+    level_unknown: bool,
 }
 
 impl Transcript {
@@ -55,6 +58,23 @@ impl Transcript {
         for &turn in turns {
             self.older.undone.insert(turn, hidden);
         }
+    }
+
+    /// 开始读会话 `session` 的最新一页：这一页开头的权限级别还不知道（[`Older::level_unknown`]）。
+    pub fn opening(&mut self, session: String) {
+        self.session = Some(session);
+        self.older.level_unknown = true;
+    }
+
+    /// 权限级别变了（日志里切换权限的那一条、订阅回应里的现在的级别）：之后照它记。
+    pub(super) fn set_level(&mut self, level: Level) {
+        self.level = level;
+        self.older.level_unknown = false;
+    }
+
+    /// 这一刻记进条目的级别：还不知道的不记（画的时候照现在的）。
+    pub(super) fn known(&self, level: Level) -> Option<Level> {
+        (!self.older.level_unknown).then_some(level)
     }
 
     /// 读更早的一页用的一份空正文：会话、连接、权限级别照这一份。
@@ -131,7 +151,7 @@ impl Transcript {
             self.cache.breaks = spent.breaks;
         }
         if let Some(level) = level {
-            self.level = level;
+            self.set_level(level);
         }
     }
 }

@@ -29,6 +29,8 @@ pub struct Card {
 pub struct PresetStep {
     /// 一个预设一块，照 `preset.list` 的先后。
     pub cards: Vec<Card>,
+    /// 包的名字、在哪个组（App 照 `package.list` 交来）：功能照组、包分组写组名（`features.rs`）。
+    pub package_names: crate::features::Packages,
     /// 光标在第几块；等于 `cards.len()` 的是「自定义」。
     pub cursor: usize,
     /// 自定义的名字。
@@ -272,10 +274,11 @@ impl PresetStep {
             }
             Waiting::PresetGet(id) => {
                 let got = result.unwrap_or_default();
-                let list: Vec<Feature> = features::read(&got)
+                let mut list: Vec<Feature> = features::read(&got)
                     .into_iter()
                     .filter(|f| f.installed)
                     .collect();
+                features::name_packages(&mut list, &self.package_names);
                 // 自定义的先照全开：功能、工具都开着。
                 if self.features.is_empty() {
                     self.features = list

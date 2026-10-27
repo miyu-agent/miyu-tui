@@ -42,8 +42,8 @@ fn a_current_manifest_reads_every_setting() {
     tui.pump(Duration::from_millis(500));
     let screen = tui.lines().join("\n");
     assert!(!screen.contains("@@"), "{screen}");
-    // 对照：没关的画着吉祥物。
-    let shown = Home::new(Script::new([]));
+    // 对照：开着的画着吉祥物（出厂关着，2026-10-26 起）。
+    let shown = Home::with_settings(Script::new([]), "[tui]\nmascot_home = true\n");
     let mut tui = shown.tui("zh_CN.UTF-8");
     tui.wait_for("Tab 切换权限级别");
     tui.pump(Duration::from_millis(500));

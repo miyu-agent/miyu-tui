@@ -201,7 +201,7 @@ fn an_open_segment_lists_its_steps_with_icons_and_connectors() {
         [
             "  Ran 2 commands · 1 thought · 1 err · 3s".to_string(),
             "  │".into(),
-            format!("  {} 已思考 · 1.0s", icons.think),
+            format!("  {} 已思考 · 1.0s · 4", icons.think),
             "  │ 先看看目录".into(),
             "  │".into(),
             format!("  {shell} shell · 列目录"),
@@ -287,7 +287,7 @@ fn a_running_segment_has_no_head_and_a_command_without_text_has_no_preview() {
     assert_eq!(
         lines,
         [
-            format!("  {} 已思考 · 1.0s", icons.think),
+            format!("  {} 已思考 · 1.0s · 4", icons.think),
             "  │ 先看看目录".into(),
             "  │".into(),
             format!("⠋ {} 准备shell", icons.tool("shell")),
@@ -475,7 +475,6 @@ fn folding_and_opening_follow_the_config_until_someone_clicks() {
 }
 
 mod agent;
-mod answers;
 mod edits;
 mod icons;
 mod live;

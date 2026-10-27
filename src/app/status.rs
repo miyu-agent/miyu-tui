@@ -2,13 +2,42 @@
 //! 左上角框线上写会话标题，一行一项。`↑` `↓` `PgUp` `PgDn` 滚，`c` 照纯文字复制整个框，`Esc` 关。画在 `ui/status_box.rs`。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
+use serde_json::json;
 
 use super::{App, Panel};
+use crate::core::{Command, Update};
+use crate::oobe::asker::TAG_BASE;
+
+/// 问这个会话每个模型用了多少的那一次。
+const MODELS_TAG: u64 = TAG_BASE - 22;
 
 impl App {
-    /// 打开 `/status`。
+    /// 打开 `/status`；开着的会话另问一次每个模型用了多少（`usage.query` 照模型分，连子代理），回来了照它写「各模型」。
     pub(super) fn open_status(&mut self) {
+        self.boxes.status_models.clear();
+        if let Some(session) = self.talk.transcript.session.clone() {
+            self.link.core.send(Command::Ask {
+                system: false,
+                tag: MODELS_TAG,
+                method: "usage.query",
+                params: json!({"session": session, "tree": true, "group": ["model"]}),
+            });
+        }
         self.boxes.panel = Some(Panel::Status { scroll: 0 });
+    }
+
+    /// 每个模型的用量回来了：记下，框照它画（框关了的也记着，下次开时先清掉）；回应归这里交回 `true`。
+    pub(super) fn status_update(&mut self, update: &Update) -> bool {
+        let Update::Answer { tag, result } = update else {
+            return false;
+        };
+        if *tag != MODELS_TAG {
+            return false;
+        }
+        if let Ok(result) = result {
+            self.boxes.status_models = crate::core::usage_rows(result);
+        }
+        true
     }
 
     /// 框开着时的按键。

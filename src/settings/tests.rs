@@ -7,6 +7,9 @@ use super::{Outcome, Settings, Texts, Tone};
 use crate::config::Config;
 use crate::core::Refusal;
 
+mod catalog;
+mod cleared;
+mod fixed_pool;
 mod rename;
 mod search;
 
@@ -90,8 +93,7 @@ fn escape_from_the_menu_quits_only_when_started_for_the_config_page() {
 #[test]
 fn saving_stores_new_keys_first_then_writes_the_config_with_their_names() {
     let mut page = opened(false);
-    press(&mut page, KeyCode::Char('a'));
-    assert!(matches!(page.popup, Some(Popup::Form(_))));
+    catalog::custom(&mut page);
     press(&mut page, KeyCode::Enter);
     for c in "zen".chars() {
         press(&mut page, KeyCode::Char(c));

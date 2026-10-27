@@ -156,6 +156,7 @@ fn form_lines(
         &words.url,
         &words.driver,
         &words.id,
+        &words.name,
         &words.key,
         &words.model_name,
     ];
@@ -177,7 +178,9 @@ fn form_lines(
         }
         let focused = focus == Some(slot);
         match slot {
-            Slot::Url => c.field(&words.url, label_w, &form.url, &words.url_example, focused),
+            // 空着什么都不写（2026-10-26 项目主人去掉示例地址）。
+            Slot::Url => c.field(&words.url, label_w, &form.url, "", focused),
+            Slot::Name => c.field(&words.name, label_w, &form.name, &words.name_hint, focused),
             // 空着的暗色写照地址自动起的编号：不改就用它（2026-10-13 项目主人定）。
             Slot::Id => c.field(
                 &words.id,

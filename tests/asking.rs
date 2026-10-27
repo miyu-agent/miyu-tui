@@ -173,11 +173,12 @@ fn ask_user_opens_the_question_drawer_and_the_answers_reach_her() {
     tui.wait_for("测试：不要");
     tui.key(b"\r");
     tui.wait_for("好，照你说的写。");
-    tui.wait_for("│ 语言：Rust（推荐）");
+    // 回答不进时间线，照你说的话的样子另起一块（2026-10-26 项目主人）：头一行「你回答了 N 个问题」，一题一行「问题 → 答案」。
+    tui.wait_for("┃ 你回答了 2 个问题");
     let screen = tui.lines().join("\n");
-    assert!(!screen.contains("已回答"), "不另起引用块：{screen}");
+    assert!(screen.contains("┃ 语言 → Rust（推荐）"), "{screen}");
     assert!(
-        screen.contains("│ 测试：不要（补充：以后再说）"),
+        screen.contains("┃ 测试 → 不要（补充：以后再说）"),
         "{screen}"
     );
 }
@@ -259,7 +260,7 @@ fn switching_to_a_session_with_an_answered_question_draws_the_answer() {
     tui.say("帮我写个小工具");
     tui.wait_for("用哪种语言写？");
     tui.key(b"\r");
-    tui.wait_for("语言：Rust");
+    tui.wait_for("语言 → Rust");
     tui.key(b"\r");
     tui.wait_for("好，用 Rust。");
     tui.say("/new");
@@ -271,10 +272,108 @@ fn switching_to_a_session_with_an_answered_question_draws_the_answer() {
     tui.key(DOWN);
     tui.key(b"\r");
     tui.wait_for("好，用 Rust。");
-    tui.wait_for("│ 语言：Rust");
+    tui.wait_for("┃ 语言 → Rust");
     assert!(
         !tui.lines().iter().any(|l| l.contains("在问")),
         "{}",
         tui.lines().join("\n")
     );
+}
+
+#[test]
+fn page_up_with_a_drawer_open_scrolls_the_body_and_the_drawer_steps_aside() {
+    // 「确认和提问的抽屉」第 4a 条（2026-10-26 项目主人：有确认框时 PgUp、PgDn 翻不了页；往上翻是要看正文，抽屉不用钉在底下）。
+    let outside = outside("asking-page");
+    let target = outside.join("note.txt");
+    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
+    let long: &'static str = Box::leak(
+        (1..=60)
+            .map(|n| format!("第{n}行"))
+            .collect::<Vec<_>>()
+            .join("\n\n")
+            .into_boxed_str(),
+    );
+    let script = Script::new([
+        Play::Says(long),
+        Play::Calls(vec![("write".into(), args)]),
+        Play::Says("写好了。"),
+    ]);
+    let home = Home::with_tools(script, "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("说长一点");
+    tui.wait_for("第60行");
+    tui.say("写个文件");
+    tui.wait_for("允许本次");
+    // PgUp 翻正文：抽屉让开。
+    tui.key(b"\x1b[5~");
+    tui.key(b"\x1b[5~");
+    let end = Instant::now() + support::WAIT;
+    while tui.shows("允许本次") {
+        assert!(
+            Instant::now() < end,
+            "抽屉没让开：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(50));
+    }
+    assert!(
+        !tui.shows("第60行"),
+        "翻上去了：\n{}",
+        tui.lines().join("\n")
+    );
+    // 回到底部：抽屉回来，还能答。
+    tui.key(b"\x1b[1;5F");
+    tui.wait_for("允许本次");
+    tui.key(b"\r");
+    wait(&mut tui, "文件写出来", || target.exists());
+    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
+}
+
+/// 侧边栏「最近会话」（「后台命令、子代理和侧边栏」第 7 条，反馈第 21 条）：在问人的那个会话写黄色的 `?`（核心 SL-1 的
+/// `waiting`）。会话二里她往工作区外写、等人答；点侧边栏切回会话一，会话二那一行是 `?`。
+#[test]
+fn a_session_waiting_for_an_answer_shows_a_question_mark_in_the_sidebar() {
+    let outside = outside("recent-waiting");
+    let target = outside.join("note.txt");
+    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
+    let script = Script::new([
+        Play::Says("answer-one"),
+        Play::Calls(vec![("write".into(), args)]),
+    ]);
+    let home = Home::with_tools(script, "");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+    tui.wait_for("工作区");
+    tui.say("topic-one");
+    tui.wait_for("answer-one");
+    tui.say("/new");
+    tui.say("topic-two");
+    tui.wait_for("允许本次");
+    // 点侧边栏里的会话一切回去：会话二留着等人。
+    let side = |lines: &[String], word: &str| {
+        lines
+            .iter()
+            .position(|l| l.find(word).is_some_and(|at| at > 100))
+    };
+    let lines = tui.lines();
+    let row = side(&lines, "topic-one").expect("列着会话一");
+    let col = lines[row].find("topic-one").expect("在") + 1;
+    tui.key(format!("\x1b[<0;{col};{}M\x1b[<0;{col};{}m", row + 1, row + 1).as_bytes());
+    tui.wait_for("answer-one");
+    let end = Instant::now() + support::WAIT;
+    loop {
+        let lines = tui.lines();
+        let waiting = side(&lines, "topic-two").is_some_and(|r| lines[r].contains("? topic-two"));
+        if waiting {
+            break;
+        }
+        assert!(
+            Instant::now() < end,
+            "等不到 `? topic-two`：\n{}",
+            lines.join("\n")
+        );
+        tui.pump(Duration::from_millis(100));
+    }
+    assert!(!target.exists(), "没答，没写");
+    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
 }

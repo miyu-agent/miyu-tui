@@ -26,6 +26,8 @@ pub struct Choice {
     pub detail: String,
     /// 能不能选。
     pub state: ChoiceState,
+    /// 同一家有自用、共用两份时这一份是不是共用的（核心 PL-1，`copies.rs`）；只有一份、池是 `None`。
+    pub shared: Option<bool>,
 }
 
 /// 一行能不能选。
@@ -51,7 +53,10 @@ impl ChoiceState {
 /// `usable` 是假的，旧核心没有这一格的照成员是空的认）：选了核心也只会拒。
 pub fn choices(result: &Value) -> Vec<Choice> {
     let mut out = Vec::new();
-    for pool in result["pools"].as_array().into_iter().flatten() {
+    // 固定的三个池排最前，照旗舰、日常、轻量（2026-10-26 项目主人，`pools.rs`）。
+    let mut pools: Vec<&Value> = result["pools"].as_array().into_iter().flatten().collect();
+    pools.sort_by_key(|pool| crate::pools::rank(pool["name"].as_str().unwrap_or_default()));
+    for pool in pools {
         let Some(name) = pool["name"].as_str() else {
             continue;
         };
@@ -68,24 +73,41 @@ pub fn choices(result: &Value) -> Vec<Choice> {
                 crate::sheet::sep()
             ),
             state: ChoiceState::Ok,
+            shared: None,
         });
     }
-    for provider in result["providers"].as_array().into_iter().flatten() {
+    let providers: Vec<&Value> = result["providers"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .collect();
+    let ids = || providers.iter().filter_map(|p| p["id"].as_str());
+    for provider in &providers {
+        let id = provider["id"].as_str().unwrap_or_default();
+        let shared = crate::copies::shared(id, ids());
         for model in provider["models"].as_array().into_iter().flatten() {
             let Some(reference) = model["ref"].as_str() else {
                 continue;
             };
-            let named = model["facts"]["name"]["value"].as_str();
+            // 名字写模型自己的（2026-10-26 项目主人：`deepseek-flash` 写成了目录里对上的「Deepseek V4.1 Flash 1017」）；
+            // 配置里给它起了名字的照起的写。
+            let name = &model["facts"]["name"];
+            let named = name["value"].as_str().filter(|_| name["from"] == "config");
             let name = named.or(model["model"].as_str()).unwrap_or(reference);
             let window = model["facts"]["window"]["value"].as_u64();
-            // 写引用不只写供应商：同一个显示名常有好几个（配置里写的、目录里自带的），只写供应商分不出来。
+            // 写引用不只写供应商：同一个显示名常有好几个（配置里写的、目录里自带的），只写供应商分不出来。两份的共用那份
+            // 去掉 `@system`，后面另写「共用」（`ui/model_list.rs`）。
+            let shown = match shared {
+                Some(true) => reference.replacen("@system/", "/", 1),
+                _ => reference.to_string(),
+            };
             let detail = match window {
                 Some(window) => format!(
-                    "{reference}{}{}",
+                    "{shown}{}{}",
                     crate::sheet::sep(),
                     crate::meter::short(window)
                 ),
-                None => reference.to_string(),
+                None => shown,
             };
             let state = match model["state"].as_str() {
                 Some("cooling") => {
@@ -99,6 +121,7 @@ pub fn choices(result: &Value) -> Vec<Choice> {
                 name: name.to_string(),
                 detail,
                 state,
+                shared,
             });
         }
     }
@@ -171,6 +194,38 @@ mod tests {
     }
 
     #[test]
+    fn a_provider_listed_twice_tags_each_copy_and_keeps_the_reference() {
+        // 核心 PL-1：两层都配了的那一家列两份，`relay@system` 是共用的；引用原样发回，看的写法去掉 `@system`。
+        let list = json!({"providers": [
+            {"id": "relay", "layer": "personal", "models": [{"model": "v4", "ref": "relay/v4"}]},
+            {"id": "relay@system", "layer": "system", "models": [{"model": "v4", "ref": "relay@system/v4"}]},
+            {"id": "solo", "layer": "system", "models": [{"model": "m", "ref": "solo/m"}]}
+        ]});
+        let got: Vec<_> = super::choices(&list)
+            .into_iter()
+            .map(|c| (c.reference, c.detail, c.shared))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                ("relay/v4".into(), "relay/v4".into(), Some(false)),
+                ("relay@system/v4".into(), "relay/v4".into(), Some(true)),
+                ("solo/m".into(), "solo/m".into(), None),
+            ]
+        );
+    }
+
+    #[test]
+    fn the_fixed_pools_come_first_flagship_normal_lite() {
+        // 2026-10-26 项目主人：照旗舰、日常、轻量排在所有池最前面。
+        let pool = |name: &str| json!({"name": name, "strategy": "pin", "models": ["dev/m1"], "usable": true});
+        let list = json!({"pools": [pool("duo"), pool("lite"), pool("normal"), pool("mine"), pool("flagship")],
+            "providers": []});
+        let refs: Vec<String> = choices(&list).into_iter().map(|c| c.reference).collect();
+        assert_eq!(refs, ["@flagship", "@normal", "@lite", "@duo", "@mine"]);
+    }
+
+    #[test]
     fn choices_list_pools_with_members_then_models_with_their_state() {
         // 「配置与模型」第 1 条，核心 8-7 到 8-9；8-8 补起没有挡位（2026-10-01 项目主人定），空的池不列。
         let list = json!({
@@ -179,23 +234,27 @@ mod tests {
                 {"name": "lite", "strategy": "pin", "models": [], "subagent": true, "description": null}],
             "providers": [{"id": "dev", "models": [
                 {"model": "m1", "ref": "dev/m1", "state": "ok",
-                 "facts": {"window": {"value": 300000}, "name": {"value": "DeepSeek V4.1 Flash"}}},
+                 "facts": {"window": {"value": 300000}, "name": {"value": "DeepSeek V4.1 Flash", "from": "catalog"}}},
                 {"model": "m2", "ref": "dev/m2", "state": "cooling", "until": "2026-10-01T08:02:00Z", "facts": {}},
-                {"model": "m3", "ref": "dev/m3", "state": "no_key", "facts": {}}]}]});
+                {"model": "m3", "ref": "dev/m3", "state": "no_key", "facts": {}},
+                {"model": "m4", "ref": "dev/m4", "state": "ok",
+                 "facts": {"name": {"value": "我的模型", "from": "config", "layer": "personal"}}}]}]});
         let got = choices(&list);
         let refs: Vec<&str> = got.iter().map(|c| c.reference.as_str()).collect();
         assert_eq!(
             refs,
-            ["@duo", "dev/m1", "dev/m2", "dev/m3"],
+            ["@duo", "dev/m1", "dev/m2", "dev/m3", "dev/m4"],
             "没有挡位，空的池不列"
         );
         assert_eq!(got[0].detail, "pin · 2");
         assert_eq!(
             (got[1].name.as_str(), got[1].detail.as_str()),
-            ("DeepSeek V4.1 Flash", "dev/m1 · 300k")
+            ("m1", "dev/m1 · 300k"),
+            "写模型自己的名字，不写目录里对上的（2026-10-26 项目主人）"
         );
         assert!(matches!(got[2].state, ChoiceState::Cooling(Some(_))));
         assert_eq!(got[3].state, ChoiceState::NoKey);
         assert_eq!(got[3].name, "m3", "没有显示名的写模型名");
+        assert_eq!(got[4].name, "我的模型", "配置里起了名字的照起的写");
     }
 }

@@ -160,7 +160,6 @@ impl View<'_> {
                 self.board,
                 self.config,
                 self.width.saturating_sub(2),
-                usize::from(self.height / 3),
                 false,
             );
             if !list.is_empty() {

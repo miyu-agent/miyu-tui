@@ -4,6 +4,7 @@
 use serde_json::{Value, json};
 
 use super::rows::Provider;
+use crate::settings::forms::{path_name, unique};
 
 /// 自定义的三种接口，照界面上的先后。
 pub const DRIVERS: [&str; 3] = ["openai-chat", "anthropic", "openai-responses"];
@@ -21,6 +22,8 @@ pub enum Target {
         base_url: String,
         /// 人起的编号；没起的照地址的主机名自动起（2026-10-13 项目主人定：默认是自动起的那个，可以改）。
         id: Option<String>,
+        /// 显示名称；没填的不写，照编号显示。
+        name: Option<String>,
     },
 }
 
@@ -79,18 +82,7 @@ pub fn config_id(target: &Target, existing: &[String]) -> (String, Option<String
         Target::Custom { id: Some(id), .. } => return (id.clone(), None),
         Target::Custom { base_url, .. } => (path_name(&host_name(base_url)), None),
     };
-    if !existing.contains(&base) {
-        return (base, catalog);
-    }
-    // 加了尾巴也不超过 32 个：前面截短（`path_name` 交出来的全是 ASCII）。
-    let id = (2..)
-        .map(|n| {
-            let tail = format!("-{n}");
-            format!("{}{tail}", &base[..base.len().min(32 - tail.len())])
-        })
-        .find(|id| !existing.contains(id))
-        .unwrap_or(base);
-    (id, catalog)
+    (unique(base, existing), catalog)
 }
 
 /// 地址的主机名起编号：本机的（`localhost`、IP）是 `local`；别的取倒数第二段，倒数第二段是通用的二级域名的再往前一段。
@@ -116,26 +108,6 @@ fn host_name(url: &str) -> String {
     }
 }
 
-/// 照「路径里的名字」的写法改：小写，别的字换成 `-`，不是字母开头的、是 Windows 保留名的前面加 `p-`，最多 32 个。
-fn path_name(name: &str) -> String {
-    let mut out: String = name
-        .to_lowercase()
-        .chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
-                c
-            } else {
-                '-'
-            }
-        })
-        .collect();
-    if !out.starts_with(|c: char| c.is_ascii_lowercase()) || crate::settings::forms::reserved(&out)
-    {
-        out = format!("p-{out}");
-    }
-    out.chars().take(32).collect()
-}
-
 /// key 怎么写进配置。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyRef {
@@ -150,13 +122,13 @@ pub enum KeyRef {
 }
 
 /// 存（`config.set` 个人设置）：这一家的 key 引用或者本机的 `local`（配好了的不写）、自定义的接口和地址、不合写法的 `catalog`、
-/// `models.chat`；一个池都没有的另写三个预设的池（`miyu setup` 第 10 条）。
+/// `models.chat`。池不写：`lite`、`normal`、`flagship` 三个固定池配置里一个字没写也在（核心 Q-1；原来一个池都没有的另写
+/// 三个预设的池，`standard` 改名 `normal` 以后照旧写会多出一个人建的 `standard`）。
 pub fn save_params(
     target: &Target,
     (id, catalog): (&str, Option<&str>),
     key: &KeyRef,
     model: &str,
-    pools: bool,
 ) -> Value {
     let mut changes = Vec::new();
     let mut set = |key: String, value: Value| changes.push(json!({"key": key, "value": value}));
@@ -170,23 +142,23 @@ pub fn save_params(
             KeyRef::None => {}
         }
         if let Target::Custom {
-            driver, base_url, ..
+            driver,
+            base_url,
+            name,
+            ..
         } = target
         {
             set(format!("providers.{id}.driver"), json!(DRIVERS[*driver]));
             set(format!("providers.{id}.base_url"), json!(base_url));
+            if let Some(name) = name {
+                set(format!("providers.{id}.name"), json!(name));
+            }
         }
         if let Some(catalog) = catalog {
             set(format!("providers.{id}.catalog"), json!(catalog));
         }
     }
     set("models.chat".to_string(), json!(format!("{id}/{model}")));
-    if !pools {
-        for pool in ["lite", "standard", "flagship"] {
-            set(format!("pools.{pool}.models"), json!([]));
-            set(format!("pools.{pool}.subagent"), json!(true));
-        }
-    }
     // 引导里接的模型是个人的（2026-10-24 项目主人定，「管理员模式」第 5 条；原来写系统配置）。
     json!({"layer": "personal", "changes": changes})
 }
@@ -234,6 +206,7 @@ mod tests {
             driver: 1,
             base_url: "https://api.example.invalid/v1".into(),
             id: None,
+            name: None,
         };
         assert_eq!(
             test_params(&custom, Some(""), None),
@@ -253,6 +226,7 @@ mod tests {
             driver: 0,
             base_url: u.into(),
             id: None,
+            name: None,
         };
         assert_eq!(
             config_id(&custom("https://api.example.invalid/v1"), &[]).0,
@@ -296,14 +270,13 @@ mod tests {
     }
 
     #[test]
-    fn saving_writes_the_key_reference_the_chat_model_and_pools_once() {
+    fn saving_writes_the_key_reference_and_the_chat_model_but_no_pools() {
         let pasted = Target::Listed(listed("deepseek"));
         let got = save_params(
             &pasted,
             ("deepseek", None),
             &KeyRef::Secret,
             "deepseek-flash",
-            false,
         );
         let changes = got["changes"].as_array().unwrap();
         assert_eq!(got["layer"], "personal");
@@ -315,14 +288,15 @@ mod tests {
         assert!(
             changes.contains(&json!({"key": "models.chat", "value": "deepseek/deepseek-flash"}))
         );
-        assert!(changes.contains(&json!({"key": "pools.lite.subagent", "value": true})));
-        let again = save_params(&pasted, ("deepseek", None), &KeyRef::Secret, "m", true);
-        assert!(!again.to_string().contains("pools."), "有池的不写");
+        assert!(
+            !got.to_string().contains("pools."),
+            "池不写：三个固定池核心自己有（Q-1）"
+        );
         let configured = Target::Listed(Provider {
             configured: Some("zen".into()),
             ..listed("opencode")
         });
-        let only = save_params(&configured, ("zen", None), &KeyRef::None, "m", true);
+        let only = save_params(&configured, ("zen", None), &KeyRef::None, "m");
         assert_eq!(
             only["changes"],
             json!([{"key": "models.chat", "value": "zen/m"}]),
@@ -332,8 +306,9 @@ mod tests {
             driver: 0,
             base_url: "https://api.example.invalid/v1".into(),
             id: None,
+            name: None,
         };
-        let got = save_params(&custom, ("example", None), &KeyRef::None, "m", true);
+        let got = save_params(&custom, ("example", None), &KeyRef::None, "m");
         assert!(
             got["changes"]
                 .as_array()
@@ -344,11 +319,29 @@ mod tests {
             !got.to_string().contains("providers.example.key\""),
             "没贴 key 的不写 key（核心 8-25）"
         );
+        assert!(
+            !got.to_string().contains("providers.example.name"),
+            "没填显示名称的不写"
+        );
+        let named = Target::Custom {
+            driver: 0,
+            base_url: "https://api.example.invalid/v1".into(),
+            id: None,
+            name: Some("中转站".into()),
+        };
+        let got = save_params(&named, ("example", None), &KeyRef::None, "m");
+        assert!(
+            got["changes"]
+                .as_array()
+                .unwrap()
+                .contains(&json!({"key": "providers.example.name", "value": "中转站"})),
+            "填了显示名称的写进去（2026-10-26 项目主人）"
+        );
         let local = Target::Listed(Provider {
             base_url: Some("http://127.0.0.1:11434/v1".into()),
             ..listed("ollama")
         });
-        let got = save_params(&local, ("ollama", None), &KeyRef::Local, "qwen3", true);
+        let got = save_params(&local, ("ollama", None), &KeyRef::Local, "qwen3");
         let changes = got["changes"].as_array().unwrap();
         assert!(
             changes.contains(&json!({"key": "providers.ollama.local", "value": true})),

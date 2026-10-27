@@ -119,16 +119,12 @@ fn a_key_during_the_intro_only_skips_it_then_enter_walks_through_language_keys_a
         params,
         json!({"layer": "personal", "changes": [{"key": "tui.icons", "value": "nerd"}]})
     );
-    // 进了接模型：要三份回应和配置里有没有池。
+    // 进了接模型：要三份回应；不再问配置里有没有池（三个固定池核心自己有，核心 Q-1）。
     assert_eq!(oobe.step, Step::Model);
-    for method in [
-        "model.list",
-        "provider.detect",
-        "provider.catalog",
-        "config.get",
-    ] {
+    for method in ["model.list", "provider.detect", "provider.catalog"] {
         find(&sent, method);
     }
+    assert!(sent.iter().all(|(_, m, _)| *m != "config.get"), "{sent:?}");
     assert_eq!(find(&sent, "provider.catalog").1, json!({"featured": true}));
 }
 
@@ -149,15 +145,17 @@ fn esc_goes_back_a_step_and_the_welcome_page_does_not_replay() {
     let now = |step: Step, register| step.bar(register).map(|(_, now)| now);
     assert_eq!(now(Step::Language, false), Some(0));
     assert_eq!(now(Step::Keys, false), Some(1));
-    assert_eq!(now(Step::Theme, false), Some(5));
-    assert_eq!(now(Step::Preset, false), Some(7));
+    // 接模型后面是货币（2026-10-26 项目主人）。
+    assert_eq!(now(Step::Currency, false), Some(4));
+    assert_eq!(now(Step::Theme, false), Some(6));
+    assert_eq!(now(Step::Preset, false), Some(8));
     assert_eq!(now(Step::Register, false), None, "有机主的不画注册");
     // 还没有机主：「注册」排在语言后面，后面的都往后挪一个（第 5a 条）。
     assert_eq!(now(Step::Register, true), Some(1));
     assert_eq!(now(Step::Keys, true), Some(2));
     assert_eq!(
         Step::Preset.bar(true).map(|(shown, _)| shown.len()),
-        Some(9)
+        Some(10)
     );
 }
 

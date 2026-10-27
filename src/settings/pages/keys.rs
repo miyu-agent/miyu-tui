@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use super::choose::{Choose, LineEdit, PersonaView, PresetView, Pressed};
 use super::packages::PACKAGES;
 use super::schema::{Row, Schema};
-use super::{Entry, Section, choices, current, is_named, personas, presets};
+use super::{Entry, Section, choices, current, is_named, personas};
 use crate::core::Refusal;
 use crate::settings::popup::{Confirm, Delete, Popup};
 use crate::settings::{Outcome, Settings, Texts, Tone, Waiting};
@@ -54,11 +54,12 @@ impl Settings {
                 self.more.looks = Some(super::mascots::looks(&got));
             }
             (Waiting::PresetDetail(id), result) => {
+                let detail = result.map(|got| self.preset_detail(&got));
                 if let Some(Popup::Preset(view)) = &mut self.popup
                     && view.id == id
                 {
-                    match result {
-                        Ok(got) => view.detail = Some(presets::detail(&got)),
+                    match detail {
+                        Ok(detail) => view.detail = Some(detail),
                         Err(refusal) => view.error = Some(refusal.message),
                     }
                 }
@@ -477,8 +478,8 @@ impl Settings {
         let Some(data) = self.data.as_ref() else {
             return;
         };
-        // 选了「无人格」这类空的：从个人设置里去掉这一项。
-        if value.is_null() {
+        // 选了「无人格」这类空的、填的字清空了的：去掉这一项（2026-10-26 项目主人报：「用户名称」删空了存不进，核心不收空字）。
+        if value.is_null() || value.as_str().is_some_and(|t| t.trim().is_empty()) {
             self.draft.unset(key, data);
         } else {
             self.draft.set(key, value, data);
