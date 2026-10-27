@@ -866,7 +866,6 @@
       "driver": "API",
       "auth": "Auth",
       "key": "API key",
-      "strict_tools": "Constrained decoding",
       "env_key": "Variable",
       "model": "Model",
       "inputs": "Inputs",
