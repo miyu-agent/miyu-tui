@@ -33,6 +33,8 @@ pub struct SessionInfo {
     pub context: Option<(u64, Option<u64>)>,
     /// 终端集成开的（核心 `origin: "terminal"`，2026-10-21 起开的才有）：会话列表多写一格「终端集成」。
     pub terminal: bool,
+    /// 在等人确认、等回答（核心 SL-1 的 `waiting`，嵌套调用的确认也算）：侧边栏「最近会话」写黄色的 `?`。旧核心没有这一格。
+    pub waiting: bool,
 }
 
 /// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话、整理会话不要，照核心交回的先后（新的
@@ -68,6 +70,7 @@ fn entry(s: &Value) -> Option<SessionInfo> {
             .as_u64()
             .map(|used| (used, s["context"]["window"].as_u64().filter(|w| *w > 0))),
         terminal: s["origin"] == "terminal",
+        waiting: s["waiting"] == true,
     })
 }
 
@@ -243,10 +246,15 @@ mod tests {
         apply(&mut list, renamed.unwrap());
         assert_eq!(list[1].title.as_deref(), Some("看代码"), "整项换");
         let new = change(
-            &json!({"session":"c","entry":{"session":"c","parent":null,"oneshot":false,"busy":true}}),
+            &json!({"session":"c","entry":{"session":"c","parent":null,"oneshot":false,"busy":true,"waiting":true}}),
         );
         apply(&mut list, new.unwrap());
         assert_eq!(list[0].session, "c", "新的排到前面");
+        assert!(
+            list[0].busy && list[0].waiting,
+            "等人照核心 SL-1 的 waiting"
+        );
+        assert!(!list[1].waiting, "没写的是不等");
         apply(
             &mut list,
             change(&json!({"session":"a","removed":true})).unwrap(),

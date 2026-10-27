@@ -43,6 +43,7 @@ pub use oobe::idle_look as oobe_idle_look;
 mod panel;
 mod panels;
 pub mod persona_list;
+mod recent;
 pub mod session_list;
 pub mod settings;
 mod sidebar;
@@ -61,6 +62,7 @@ mod start_pick;
 mod status;
 pub mod status_box;
 mod timeline;
+mod todos;
 pub mod tool_list;
 mod undo_rows;
 pub use timeline::release_on_fold;
@@ -134,24 +136,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .collect();
     let count = u16::try_from(queued.len()).unwrap_or(u16::MAX);
     let agent_rows = agents::height(app.talk.listed_agents().len(), app.config.layout.agent_rows);
-    // 没有侧边栏（窄屏、首页）时，待办常驻在输入框上面（第 4 条）；有侧边栏时在侧边栏里。
-    let todo_lines = if sidebar.width == 0 {
-        // 首页的框收窄了：照首页框里的字宽排，不然长的一项被裁掉、没有「…」。
-        let width = if home {
-            home::text_width(main.width, &app.config.layout)
-        } else {
-            text_width(main.width, &app.config.layout)
-        };
-        sidebar::todo_lines(
-            &app.talk.board,
-            &app.config,
-            width,
-            app.config.layout.todo_rows,
-            app.talk.todo_full,
-        )
+    // 待办一律常驻在输入框上面（第 4a 条，2026-10-26 起侧边栏不放待办）。
+    // 首页的框收窄了：照首页框里的字宽排，不然长的一项被裁掉、没有「…」。
+    let todo_width = if home {
+        home::text_width(main.width, &app.config.layout)
     } else {
-        Vec::new()
+        text_width(main.width, &app.config.layout)
     };
+    let todo_lines =
+        todos::todo_lines(&app.talk.board, &app.config, todo_width, app.talk.todo_full);
     let todo_rows = u16::try_from(todo_lines.len()).unwrap_or(u16::MAX);
     // 首页的界面块照首页框里的字宽排好，要几行交给 `place` 定位（蓝图「界面块」第 4 条）。
     let home_blocks = if home {

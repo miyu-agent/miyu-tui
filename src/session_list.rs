@@ -187,6 +187,7 @@ mod tests {
             tokens: 0,
             context: None,
             terminal: false,
+            waiting: false,
         }
     }
 

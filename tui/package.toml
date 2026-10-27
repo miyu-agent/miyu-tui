@@ -75,6 +75,16 @@ applies = "now"
 name = { en = "Show the mascot in the sidebar", zh = "侧边栏显示吉祥物", ja = "サイドバーにマスコットを表示" }
 description = { en = "Show the mascot at the top of the sidebar. A persona's avatar shows regardless.", zh = "在侧边栏顶部显示吉祥物。人格设了头像的照样显示头像。", ja = "サイドバーの上部にマスコットを表示する。ペルソナのアバターは設定に関わらず表示される。" }
 
+# 侧边栏「最近会话」列几个（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人：默认 5 个、
+# 个数可配、整个功能可关，放在通用页终端自己那几项里）。0 是不显示。
+[settings.sidebar_sessions]
+type = "option"
+choices = ["0", "3", "5", "8", "10"]
+default = "5"
+applies = "now"
+name = { en = "Recent sessions in the sidebar", zh = "侧边栏最近会话", ja = "サイドバーの最近のセッション" }
+description = { en = "How many sessions the sidebar lists, the current one included. Off hides the list.", zh = "侧边栏列几个会话，算上当前这个。选不显示就不列。", ja = "サイドバーに並べるセッションの数（今のセッションを含む）。表示しないにすると並べない。" }
+
 # 按键模式（终端蓝图 `docs/blueprint/tui.md`「按键」表「按键模式」那一行，2026-10-21 项目主人）：`vim` 时会话列表、`/model`
 # 里 `j`、`k` 挪，`/` 才开始搜；`arrows` 照方向键的用法，打字就搜。配置页排在「通用」页「按键模式」一组；出厂方向键，引导里「你喜欢的操作方式」那一步选。
 [settings.keys]

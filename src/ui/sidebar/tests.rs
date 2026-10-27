@@ -1,11 +1,9 @@
-//! 侧边栏（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 4、7 条）：分栏、待办的收法、会话那几段的写法。
+//! 侧边栏（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 7 条）：分栏、会话那几段的写法。
 
 use ratatui::layout::Rect;
-use ratatui::style::Modifier;
 
-use super::{spent_lines, split, todo_lines};
+use super::{spent_lines, split};
 use crate::config::Config;
-use crate::jobs::{Board, Todo, TodoState};
 
 #[test]
 fn only_wide_windows_get_a_sidebar() {
@@ -16,133 +14,6 @@ fn only_wide_windows_get_a_sidebar() {
     assert_eq!(side.width, layout.sidebar_width);
     assert_eq!(main.width + 1 + side.width, 160, "中间一根竖线");
     assert_eq!(side.right(), 160);
-}
-
-/// 一份待办：前 `done` 项做完、下一项在做、别的没做。
-fn todos(items: &[&str], done: usize) -> Board {
-    let mut board = Board::default();
-    board.todos = items
-        .iter()
-        .enumerate()
-        .map(|(i, text)| Todo {
-            text: (*text).to_string(),
-            state: match i.cmp(&done) {
-                std::cmp::Ordering::Less => TodoState::Done,
-                std::cmp::Ordering::Equal => TodoState::Active,
-                std::cmp::Ordering::Greater => TodoState::Pending,
-            },
-        })
-        .collect();
-    board
-}
-
-const ITEMS: [&str; 4] = [
-    "读蓝图",
-    "照蓝图改侧边栏的待办，长的一项折到下一行",
-    "跑测试",
-    "提交",
-];
-
-#[test]
-fn the_full_list_marks_each_state_and_wraps_under_the_text() {
-    let config = Config::builtin().unwrap();
-    assert!(todo_lines(&Board::default(), &config, 30, 5, false).is_empty());
-    let board = todos(&ITEMS, 1);
-    let lines = todo_lines(&board, &config, 12, 5, true);
-    let text: Vec<String> = lines.iter().map(|l| l.to_string()).collect();
-    assert_eq!(text[0], format!("待办 1/{}", ITEMS.len()));
-    let last = text.len() - 1;
-    assert!(
-        text[last].starts_with("☑ 读蓝图"),
-        "做完的排到末尾（2026-10-17 项目主人）：{text:?}"
-    );
-    assert!(
-        lines[last].spans[1]
-            .style
-            .add_modifier
-            .contains(Modifier::CROSSED_OUT),
-        "做完的划掉"
-    );
-    let active = text.iter().position(|t| t.starts_with("■ ")).unwrap();
-    assert!(text[active + 1].starts_with("  "), "折下来的和字对齐");
-    assert!(text.iter().any(|t| t.starts_with("☐ ")));
-}
-
-#[test]
-fn a_finished_list_goes_away() {
-    let config = Config::builtin().unwrap();
-    let n = ITEMS.len();
-    assert!(
-        !todo_lines(&todos(&ITEMS, n - 1), &config, 30, 5, false).is_empty(),
-        "还剩一项：还在"
-    );
-    let board = todos(&ITEMS, n);
-    assert_eq!(board.todo_progress(), Some((n, n)));
-    assert!(
-        todo_lines(&board, &config, 30, 5, false).is_empty(),
-        "全做完了：收掉"
-    );
-}
-
-fn long_board(done: usize, pending: usize) -> Board {
-    let mut board = Board::default();
-    let state = |i: usize| match i.cmp(&done) {
-        std::cmp::Ordering::Less => TodoState::Done,
-        std::cmp::Ordering::Equal => TodoState::Active,
-        std::cmp::Ordering::Greater => TodoState::Pending,
-    };
-    board.todos = (0..=done + pending)
-        .map(|i| Todo {
-            text: format!("第 {i} 项，改时间线的连接线，让出错的那一步一路红到下一步的标题"),
-            state: state(i),
-        })
-        .collect();
-    board
-}
-
-#[test]
-fn a_long_list_shows_only_what_is_in_progress() {
-    let config = Config::builtin().unwrap();
-    // 20 项：做完 12，在做 1，还有 7。
-    let board = long_board(12, 7);
-    let lines = todo_lines(&board, &config, 30, 5, false);
-    let text: Vec<String> = lines.iter().map(|l| l.to_string()).collect();
-    assert_eq!(text.len(), 6, "标题加 5 行：{text:?}");
-    assert_eq!(text[0], "待办 12/20");
-    assert!(text[1].starts_with("■ 第 12 项"), "先是在做的那项");
-    assert!(text[1].ends_with('…'), "长的截掉加 …");
-    assert!(text[2].starts_with("☐ 第 13 项"));
-    assert!(text[3].starts_with("☐ 第 14 项"));
-    assert_eq!(text[4], "… 还有 5 项");
-    assert_eq!(text[5], "☑ 已完成 12 项", "做完的收成最底下一行");
-    // 点开：全部，长的折行。
-    let full = todo_lines(&board, &config, 30, 5, true);
-    assert!(full.len() > 21, "全部 20 项、还折行");
-}
-
-#[test]
-fn a_short_list_folds_what_is_done_once_two_are_done() {
-    // 2026-10-17 项目主人：做完的四项一直划着线挂着，只剩一项没做；做完两项就收进「已完成」，不等放不下。
-    let config = Config::builtin().unwrap();
-    let lines = |board: &Board| -> Vec<String> {
-        todo_lines(board, &config, 30, 5, false)
-            .iter()
-            .map(|l| l.to_string())
-            .collect()
-    };
-    let text = lines(&long_board(2, 2));
-    assert!(text[1].starts_with("■ 第 2 项"), "{text:?}");
-    assert_eq!(text[4], "☑ 已完成 2 项", "同一天又定挪到最底下：{text:?}");
-    assert_eq!(text.len(), 5, "标题、已完成、没做完的三项");
-    // 只做完一项：不收，照原样一行打勾（同一天项目主人补）。
-    let text = lines(&long_board(1, 3));
-    assert!(text[1].starts_with("■ 第 1 项"), "{text:?}");
-    assert!(text[5].starts_with("☑ 第 0 项"), "排到末尾：{text:?}");
-    assert_eq!(text.len(), 6, "标题和五项");
-    // 一项都没做完：放得下的一项一行。
-    let text = lines(&long_board(0, 4));
-    assert_eq!(text.len(), 6, "标题和五项");
-    assert!(text[1].starts_with("■ 第 0 项"));
 }
 
 #[test]

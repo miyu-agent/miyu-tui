@@ -26,6 +26,8 @@ pub struct Screen {
     pub drawer_rows: Vec<Option<usize>>,
     /// 后台面板每一行是第几条命令（点哪一行点中哪一条）；上一帧排出来的。
     pub panel_rows: Vec<Option<usize>>,
+    /// 侧边栏「最近会话」每一行是哪个会话，照 `areas.recent` 从上往下；上一帧排出来的。
+    pub recent: Vec<String>,
     /// 鼠标悬停在子代理状态行的第几行（第 0 行是上面的空行）。
     pub agents_hover: Option<usize>,
     /// 鼠标最后在哪一格；还没动过是 `None`。
@@ -83,6 +85,7 @@ impl Screen {
             caret: crate::caret::Caret::default(),
             drawer_rows: Vec::new(),
             panel_rows: Vec::new(),
+            recent: Vec::new(),
             agents_hover: None,
             pointer: None,
             grab: None,

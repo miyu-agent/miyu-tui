@@ -99,6 +99,7 @@
   "icons": "nerd",
   "sidebar_from": 120,
   "sidebar_width": 38,
+  "sidebar_sessions": 5,
   "agent_rows": 5,
   "output": {
     "panel_rows": 12,
@@ -106,7 +107,6 @@
     "poll_ms": 1000,
     "tab": 4
   },
-  "todo_rows": 5,
   "widgets": {
     "home_blocks": 3,
     "home_rows": 6,

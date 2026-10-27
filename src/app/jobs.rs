@@ -334,7 +334,7 @@ impl App {
         false
     }
 
-    /// 侧边栏里按下、拖、松开：拖了是选字，只点不拖的照点的来（点编号复制完整编号、点待办展开收起）；
+    /// 侧边栏里按下、拖、松开：拖了是选字，只点不拖的照点的来（点编号复制完整编号、点「最近会话」的一行切过去）；
     /// 在别处按下，侧边栏的选区作废（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。
     fn sidebar_mouse(&mut self, mouse: MouseEvent, at: Position) -> bool {
         let areas = self.screen.areas;
@@ -358,8 +358,8 @@ impl App {
                         && let Some(session) = self.talk.transcript.session.clone()
                     {
                         self.copy(&session);
-                    } else if areas.todo.contains(at) {
-                        self.talk.todo_full = !self.talk.todo_full;
+                    } else if areas.recent.contains(at) {
+                        self.recent_clicked(at.y - areas.recent.y);
                     }
                 } else {
                     let text = self.screen.side_select.text();
@@ -385,6 +385,7 @@ impl App {
             || over(self.screen.areas.button)
             || over(self.screen.areas.session_id)
             || over(self.screen.areas.todo)
+            || over(self.screen.areas.recent)
             || over(self.screen.areas.bottom)
             // 正文的滚动条（`body_view.rs`）。
             || self.screen.view.bar_hover

@@ -55,6 +55,16 @@ impl App {
         self.repoint_pick();
     }
 
+    /// 点了侧边栏「最近会话」的第 `row` 行（不算标题）：切过去；当前这个不动（「后台命令、子代理和侧边栏」第 7 条）。
+    pub(super) fn recent_clicked(&mut self, row: u16) {
+        let Some(session) = self.screen.recent.get(usize::from(row)).cloned() else {
+            return;
+        };
+        if self.talk.transcript.session.as_deref() != Some(session.as_str()) {
+            self.switch_session(session);
+        }
+    }
+
     /// 核心交回了列表。
     pub(super) fn sessions_listed(&mut self, all: Vec<SessionInfo>) {
         self.talk.sessions_seen = Some(all.clone());

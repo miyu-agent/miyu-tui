@@ -1,0 +1,63 @@
+//! 出厂资源读得进来、几句提示的写法。
+
+use super::Config;
+
+#[test]
+fn builtin_resources_parse() {
+    let config = Config::builtin().unwrap();
+    assert!(config.layout.pad_right >= 1, "行尾的光标要有地方待");
+    assert!(config.layout.max_rows >= 1);
+    assert!((1..=100).contains(&config.layout.width_percent));
+    // 每一档都有图标；只读是暂停符号（蓝图「权限级别」第 3 条）。
+    let icons = &config.layout.level_icons;
+    assert!(
+        config
+            .layout
+            .level_cycle
+            .iter()
+            .all(|l| icons.contains_key(l))
+    );
+    assert_eq!(
+        icons.get(&crate::core::Level::ReadOnly).map(String::as_str),
+        Some("⏸ ")
+    );
+}
+
+#[test]
+fn a_sealed_session_says_so_in_a_hint() {
+    // 核心 C-8 下（2026-10-11）：分叉出来的会话跑满轮数以后封存，往它发话拒 `session_sealed`。
+    let text = Config::builtin().unwrap().text;
+    assert_eq!(
+        text.refusal_hints.get("session_sealed").map(String::as_str),
+        Some("会话已封存")
+    );
+}
+
+#[test]
+fn nothing_to_compact_is_a_short_hint_not_a_line() {
+    // 2026-09-30 项目主人：没必要在正文里打一行，给个简短的通知就行。
+    let text = Config::builtin().unwrap().text;
+    assert_eq!(
+        text.refusal_hints
+            .get("nothing_to_compact")
+            .map(String::as_str),
+        Some("没有可压缩的内容")
+    );
+}
+
+#[test]
+fn only_the_new_tool_names_are_known() {
+    // 2026-10-01 核心改名 agent → subagent、message_agent → send_message，同一天项目主人定不认旧名、不留兼容。
+    let config = Config::builtin().unwrap();
+    let kinds = &config.timeline.kinds;
+    assert!(kinds.get("subagent").is_some() && kinds.get("send_message").is_some());
+    assert!(kinds.get("agent").is_none() && kinds.get("message_agent").is_none());
+    assert_eq!(
+        config.icons.tool("agent"),
+        config.icons.tool("没登记的工具")
+    );
+    assert_ne!(
+        config.icons.tool("subagent"),
+        config.icons.tool("没登记的工具")
+    );
+}
