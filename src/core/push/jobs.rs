@@ -175,22 +175,34 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
             None => Push::UserMessage(seq),
         });
     }
+    let text = || {
+        let text: Vec<&str> = event["body"]["blocks"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|b| b["text"].as_str())
+            .collect();
+        text.join("\n")
+    };
+    // 到点的定时任务、循环交进来的（核心 J-1 上）：照你说的话画（2026-10-27 项目主人：「不用有什么特别的显示，正常和用户
+    // 消息类似发出去就行」）。
+    if by["kind"] == "schedule" {
+        return Some(Push::Said {
+            seq,
+            text: typed.unwrap_or_else(text),
+            attached: super::read_attached(&event["body"]),
+        });
+    }
     let from = match by["kind"].as_str() {
         Some("person") => Sender::Person,
         Some("harness") => Sender::Harness(by["name"].as_str().unwrap_or_default().to_string()),
         Some("session") => Sender::Session(by["id"].as_str().unwrap_or_default().to_string()),
         _ => Sender::Other,
     };
-    let text: Vec<&str> = event["body"]["blocks"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|b| b["text"].as_str())
-        .collect();
     Some(Push::Foreign(Said {
         seq,
         from,
-        text: typed.unwrap_or_else(|| text.join("\n")),
+        text: typed.unwrap_or_else(text),
         attached: super::read_attached(&event["body"]),
     }))
 }
