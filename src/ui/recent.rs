@@ -1,5 +1,6 @@
-//! 侧边栏「最近会话」（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人）：当前这个排第一行、行首实心
-//! 圆点，下面照会话列表的先后列别的；在跑的转圈，等人确认、等回答的写黄色 `?`。一共几个照 `tui.sidebar_sessions`。
+//! 侧边栏「最近会话」（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人）：照会话列表的先后列，当前这个
+//! 在原位、行首实心圆点（2026-10-27 项目主人：切过去就顶到最上面，难找）；在跑的转圈，等人确认、等回答的写黄色 `?`。一共几个
+//! 照 `tui.sidebar_sessions`。
 
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
@@ -27,30 +28,43 @@ pub fn recent_lines(
     (width, frame): (u16, usize),
     config: &Config,
 ) -> (Vec<Line<'static>>, Vec<Option<String>>) {
-    let listed = |id: &str| list.iter().find(|s| s.session == id);
-    let mut rows: Vec<Row> = Vec::new();
-    if let Some((id, title)) = current {
-        let info = listed(id);
-        rows.push(Row {
-            id,
-            name: title
-                .or(info.and_then(name))
-                .unwrap_or(&config.text.untitled),
-            current: true,
-            busy: info.is_some_and(|s| s.busy),
-            waiting: info.is_some_and(|s| s.waiting),
-        });
-    }
-    let others = list
+    let me = current.map(|c| c.0);
+    let mut rows: Vec<Row> = list
         .iter()
-        .filter(|s| Some(s.session.as_str()) != current.map(|c| c.0));
-    rows.extend(others.map(|s| Row {
-        id: &s.session,
-        name: name(s).unwrap_or(&config.text.untitled),
-        current: false,
-        busy: s.busy,
-        waiting: s.waiting,
-    }));
+        .map(|s| Row {
+            id: &s.session,
+            name: name(s).unwrap_or(&config.text.untitled),
+            current: Some(s.session.as_str()) == me,
+            busy: s.busy,
+            waiting: s.waiting,
+        })
+        .collect();
+    if let Some((id, title)) = current {
+        match rows.iter().position(|r| r.current) {
+            // 正文里有标题的照它（列表里的可能还是旧的）。
+            Some(at) => rows[at].name = title.unwrap_or(rows[at].name),
+            // 还没进列表（刚开的）：它最新，排第一行。
+            None => rows.insert(
+                0,
+                Row {
+                    id,
+                    name: title.unwrap_or(&config.text.untitled),
+                    current: true,
+                    busy: false,
+                    waiting: false,
+                },
+            ),
+        }
+    }
+    // 当前这个排在名额以外的：前面的少列一个，它接在最后（先后不乱，自己也看得见）。
+    if let Some(at) = rows.iter().position(|r| r.current)
+        && count > 0
+        && at >= count
+    {
+        let mine = rows.remove(at);
+        rows.truncate(count - 1);
+        rows.push(mine);
+    }
     rows.truncate(count);
     if rows.is_empty() {
         return (Vec::new(), Vec::new());
