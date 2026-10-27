@@ -103,11 +103,16 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
     let lit = active || (checked && d.multiple(tab));
     let style = if lit { theme::picked() } else { Style::new() };
     let label_style = style.add_modifier(Modifier::BOLD);
-    let mut spans = vec![Span::styled(pointer.clone(), theme::picked())];
+    // 序号：按 1–9 直接选这一项（`drawer/keys.rs`；2026-10-27 项目主人：选项加上序号，照 Claude Code）。
+    let number = format!("{}. ", index + 1);
+    let mut spans = vec![
+        Span::styled(pointer.clone(), theme::picked()),
+        Span::styled(number.clone(), style),
+    ];
     if let Some(marker) = marker {
         spans.push(Span::styled(marker.clone(), style));
     }
-    let lead = pointer.width() + marker.map_or(0, |m| m.width());
+    let lead = pointer.width() + number.width() + marker.map_or(0, |m| m.width());
     let room = usize::from(width).saturating_sub(lead);
     // 在写的那一项：标题换成写的字（「其他」），或者标题后面空两格接写的字（理由）；光标跟在字后面。
     let editing = active
