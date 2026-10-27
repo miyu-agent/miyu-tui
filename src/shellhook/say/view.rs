@@ -156,12 +156,8 @@ impl View<'_> {
             held = held.saturating_sub(1);
         }
         if todos {
-            let list = crate::ui::todo_lines(
-                self.board,
-                self.config,
-                self.width.saturating_sub(2),
-                false,
-            );
+            let list =
+                crate::ui::todo_lines(self.board, self.config, self.width.saturating_sub(2), false);
             if !list.is_empty() {
                 lines.push(Line::default());
                 lines.extend(list.into_iter().map(|l| {

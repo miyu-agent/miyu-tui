@@ -11,8 +11,8 @@ use serde_json::json;
 
 use crate::config::Config;
 use crate::core::{Asking as Asked, Command, Core, Push};
-use crate::drawer::{Answered, Approval, Asks, Decided, Drawer, Drawers, Outcome, Report, Step};
-use crate::transcript::{JobMark, Kind, Transcript};
+use crate::drawer::{Answered, Approval, Asks, Decided, Drawer, Drawers, Outcome, Step};
+use crate::transcript::Transcript;
 
 /// 剪贴板里的图算哪一种附件（同全屏 `app/paste.rs`）。
 const IMAGE: &str = "image";
@@ -284,9 +284,10 @@ impl Asking {
             area.height.saturating_sub(2),
         );
         let mut caret = crate::caret::Caret::default();
+        // shell 里的抽屉不跟正文滚，上面不裁。
         crate::ui::draw_drawer(
             frame,
-            text,
+            (text, 0),
             d,
             &config.text.drawer,
             &config.layout.drawer_preview,
@@ -297,16 +298,7 @@ impl Asking {
     }
 }
 
-/// 一问的结果写进正文：回答挂到「提问」那一步下面，找不到那一步的写在末尾；不允许的末尾一行红 ✗（同全屏 `app/drawer.rs`
-/// 的 `report_into`）。
+/// 一问的结果写进正文：同全屏（`app/drawer.rs` 的 `report_into`）。
 fn report(transcript: &mut Transcript, drawer: &Drawer, outcome: &Outcome, config: &Config) {
-    match drawer.report(outcome, &config.text.drawer) {
-        Report::Answers(lines) => {
-            if !transcript.answered(&drawer.call_id, lines.clone()) {
-                transcript.note(Kind::Answered, lines.join("\n"));
-            }
-        }
-        Report::Denied(text, full) => transcript.job(JobMark::Failed, text, full),
-        Report::Nothing => {}
-    }
+    crate::app::report_into(transcript, drawer, outcome, &config.text.drawer);
 }

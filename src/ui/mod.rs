@@ -4,6 +4,7 @@
 //! 框下面一行左边是模式和模型，右边是临时的状态和用量。
 
 mod agents;
+mod answered_rows;
 mod avatar_view;
 mod background;
 mod body;
@@ -14,10 +15,8 @@ mod done_row;
 mod drawer;
 mod dream_rows;
 mod dreamt_rows;
-pub use drawer::PreviewLook;
-mod answered_rows;
-// shellhook 把抽屉画在 shell 里，照同一套（图纸 `shellhook.md`「确认和提问」）。
-pub use drawer::{draw as draw_drawer, rows as drawer_rows};
+// shellhook 照同一套画抽屉、等第一个字的转圈、待办（图纸 `shellhook.md`）。
+pub use drawer::{PreviewLook, draw as draw_drawer, rows as drawer_rows};
 pub mod effort_list;
 mod figure_rows;
 mod floating;
@@ -68,11 +67,8 @@ mod timeline;
 mod todos;
 pub mod tool_list;
 mod undo_rows;
-pub use timeline::release_on_fold;
-// shellhook 照同一套画等第一个字的转圈、待办（图纸 `shellhook.md`）。
-pub use dream_rows::rows as dream_rows;
-pub use todos::todo_lines;
-pub use timeline::tail_rows;
+pub use timeline::{release_on_fold, tail_rows};
+pub use {dream_rows::rows as dream_rows, todos::todo_lines};
 mod user_rows;
 pub mod wide;
 

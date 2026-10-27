@@ -67,6 +67,7 @@ fn facts(turn: &Turn, presets: &[crate::core::Persona], config: &Config) -> Fact
         breaks: t.cache.breaks,
         usage: t.total,
         spent: None,
+        models: Vec::new(),
         memory: crate::ui::status_box::memory_calls(t),
     }
 }

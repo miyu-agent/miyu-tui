@@ -27,7 +27,7 @@ mod widget_page;
 mod widgets;
 
 pub use avatars::{Avatar, Place};
-pub(crate) use drawer::answer_files;
+pub(crate) use drawer::{answer_files, report_into};
 pub use frame::Lists;
 pub use jobs::Panel;
 pub use mascot::MascotState;

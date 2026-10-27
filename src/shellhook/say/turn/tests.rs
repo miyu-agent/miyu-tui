@@ -95,3 +95,30 @@ fn the_turn_woken_right_after_ours_is_followed_but_not_one_someone_else_started(
     )));
     assert_eq!(turn.ended, Some(crate::core::EndReason::Completed));
 }
+
+#[test]
+fn the_done_line_carries_how_fast_this_turn_wrote_like_the_full_screen() {
+    // 2026-10-27 项目主人：终端的收尾行接了「· 200 tok/s」，shellhook 的没有；收尾行照同一份正文写（`transcript/speed.rs`）。
+    let mut config = crate::config::Config::builtin().unwrap();
+    let (core, _sent) = crate::core::detached();
+    let mut turn = Turn::new("你好".into(), None, Look::new(None));
+    turn.sent = true;
+    for update in [
+        Push::UserMessage(1),
+        Push::TurnStarted(2, Some(1)),
+        Push::Speed {
+            output: 400,
+            ms: 2000,
+        },
+        Push::TurnEnded(crate::core::EndReason::Completed),
+    ] {
+        turn.core(Update::Push(update), &mut config, &core);
+    }
+    let done = turn
+        .transcript
+        .entries
+        .iter()
+        .rfind(|e| e.kind == crate::transcript::Kind::Done)
+        .expect("有收尾行");
+    assert!(done.text.ends_with(" · 200 tok/s"), "{}", done.text);
+}

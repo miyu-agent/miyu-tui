@@ -11,6 +11,7 @@ fn start(job: &str, agent: bool) -> JobStart {
         title: format!("任务 {job}"),
         session: None,
         foreground: false,
+        fork: false,
     }
 }
 

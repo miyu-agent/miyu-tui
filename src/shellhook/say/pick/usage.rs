@@ -41,6 +41,7 @@ impl UsageShow {
                 sessions: None,
                 purposes: None,
                 today: jiff::Zoned::now().date(),
+                rates: Vec::new(),
             },
             tab: 0,
             scroll: 0,
@@ -91,7 +92,13 @@ impl Picker for UsageShow {
 
     fn core(&mut self, update: &Update, _turn: &Turn) {
         match update {
-            Update::UsageRows { kind, rows } => {
+            Update::UsageRows { kind, rows, rates } => {
+                // 用到的汇率源框底下注明（同全屏 `app/usage.rs`）。
+                for rate in rates {
+                    if !self.data.rates.contains(rate) {
+                        self.data.rates.push(rate.clone());
+                    }
+                }
                 let slot = match kind {
                     UsageKind::Total => &mut self.data.total,
                     UsageKind::Days => &mut self.data.days,
