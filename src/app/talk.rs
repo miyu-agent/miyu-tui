@@ -12,6 +12,9 @@ use crate::transcript::Transcript;
 pub struct Talk {
     /// 还没开会话：照选了的人格、预设预览的上下文，用了多少、窗口（核心 CX-1 下，底栏写，`context_box.rs`）。
     pub preview: Option<(u64, Option<u64>)>,
+    /// 核心换算好的整棵会话树的合计（`usage.query` 带 `tree`，`bill_refresh.rs`）：哪个会话的、那一份账。原币种和这边一笔笔
+    /// 加的对得上时，[`Talk::bill_total`] 照它写一个数。
+    pub tree_bill: Option<(String, Bill)>,
     /// 会话：正文、在不在跑、用量。
     pub transcript: Transcript,
     /// 后台任务表和待办。
@@ -129,8 +132,23 @@ impl Talk {
         super::sessions::notes::tree_usage(self.transcript.total, &self.board, &self.parked)
     }
 
-    /// 花了多少：连同子代理的，和 [`Talk::usage_total`] 一个算法（蓝图「配置与模型」第 5 条）。
+    /// 花了多少：连同子代理的，和 [`Talk::usage_total`] 一个算法（蓝图「配置与模型」第 5 条）。核心换算好的那一份还对得上
+    /// 这边一笔笔加的原币种的，照它（一个数）；对不上的（又来了钱、换了会话）照这边加的，别的币种接在后面。
     pub fn bill_total(&self) -> Bill {
+        let raw = self.bill_raw();
+        match &self.tree_bill {
+            Some((session, converted))
+                if self.transcript.session.as_deref() == Some(session.as_str())
+                    && converted.same_amounts(&raw) =>
+            {
+                converted.clone()
+            }
+            _ => raw,
+        }
+    }
+
+    /// 这边一笔笔加的：正在看的会话连同子代理的，原币种。
+    pub fn bill_raw(&self) -> Bill {
         super::sessions::notes::tree_bill(&self.transcript.bill, &self.board, &self.parked)
     }
 

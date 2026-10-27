@@ -37,6 +37,8 @@ impl App {
                 if self.talk.transcript.session.as_deref() == Some(session.as_str()) {
                     return Some(*update);
                 }
+                // 子代理一轮结束、来钱：底栏的合计连同它，再问一次换算好的（`bill_refresh.rs`）。
+                self.bill_child(&session, &update);
                 self.park_update(&session, *update);
                 None
             }

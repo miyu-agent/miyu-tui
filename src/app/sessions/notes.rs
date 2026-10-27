@@ -218,6 +218,22 @@ pub(in crate::app) fn tree_bill(own: &Bill, board: &Board, parked: &super::Lot) 
     total
 }
 
+/// `session` 是不是 `board` 里派出去的子代理（一层层往下）之一：照任务表记的会话编号认，往下一层照停放着的那一份的任务表。
+pub(in crate::app) fn in_tree(session: &str, board: &Board, parked: &super::Lot) -> bool {
+    let mut boards = vec![board];
+    while let Some(board) = boards.pop() {
+        for child in board.jobs.iter().filter_map(|j| j.session.as_deref()) {
+            if child == session {
+                return true;
+            }
+            if let Some(p) = parked.get(child) {
+                boards.push(&p.board);
+            }
+        }
+    }
+    false
+}
+
 /// `board` 里派出去的子代理（一层层往下）停放着的正文。
 fn tree<'a>(board: &'a Board, parked: &'a super::Lot) -> Vec<&'a Transcript> {
     let mut out = Vec::new();
