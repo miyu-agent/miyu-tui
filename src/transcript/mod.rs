@@ -231,6 +231,7 @@ impl Transcript {
             | Update::HeadConfig(_)
             | Update::Human(_)
             | Update::ToolsChanged
+            | Update::Notice(_)
             | Update::PackageProgress(_)
             | Update::Older { .. }
             | Update::Workspace { .. }

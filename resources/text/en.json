@@ -43,7 +43,11 @@
     "replied": "Reply finished",
     "failed": "Something went wrong",
     "approving": "Waiting for you to confirm",
-    "asking": "Waiting for your answer"
+    "asking": "Waiting for your answer",
+    "schedule_ran": "Scheduled task done",
+    "schedule_failed": "Scheduled task didn't finish",
+    "schedules_reset": "The schedule table was broken; all scheduled tasks are gone",
+    "open": "Open"
   },
   "refused": "The core refused: {reason}",
   "interrupted": "Interrupted",

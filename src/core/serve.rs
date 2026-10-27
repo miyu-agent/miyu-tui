@@ -7,15 +7,14 @@ use std::io;
 use serde_json::json;
 use tokio::sync::mpsc;
 
+use super::asides;
 use super::awaiting::Awaiting;
 use super::connect::{create, subscribe};
 use super::link::Link;
 use super::request::request;
 use super::rpc::Rpc;
-use super::sessions;
 use super::spawn::Served;
 use super::{Command, Update, page, upload};
-use super::{asides, config};
 
 /// 在一条连接上收发，直到界面关了或者连接断了。
 pub(super) async fn serve(
@@ -44,21 +43,10 @@ pub(super) async fn serve(
             Err(_) => return Served::Lost,
         };
     }
-    // 订阅配置流、读一次界面语言（「界面语言」）。
-    match config::follow(rpc).await {
-        Ok(id) => awaiting.insert(id, Awaiting::UiLanguage),
-        Err(_) => return Served::Lost,
-    };
-    // 订阅会话列表（核心 9-5）：`/sessions`、别处来的话写来处都照这一份，变了推过来（「会话列表」）。
-    match sessions::follow(rpc).await {
-        Ok(id) => awaiting.insert(id, Awaiting::SessionsStream),
-        Err(_) => return Served::Lost,
-    };
-    // 订阅软件包列表，只为听工具目录变了：变了重取给人看的字（`packages.rs`，核心 9-8 七补）。
-    match super::packages::follow(rpc).await {
-        Ok(id) => awaiting.insert(id, Awaiting::PackagesStream),
-        Err(_) => return Served::Lost,
-    };
+    // 订阅配置、会话列表、软件包、给人的通知几条流（`streams.rs`）。
+    if super::streams::follow(rpc, &mut awaiting).await.is_err() {
+        return Served::Lost;
+    }
     // 界面块照记着的再订阅（「界面块」第 8 条）：重连以前屏上有的，接着推。
     if super::widgets::rejoin(rpc, link, &mut awaiting)
         .await

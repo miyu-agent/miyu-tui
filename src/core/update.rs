@@ -85,6 +85,8 @@ pub enum Update {
     Human(crate::human::Human),
     /// 工具目录变了（`package.changed`、`mcp.changed`）：界面照这种语言重取给人看的字。
     ToolsChanged,
+    /// 给人的通知（核心 J-3 中，`notices.rs`）：每次新开会话的定时跑完了、唤醒表换了新的。
+    Notice(super::Notice),
     /// 装包的下载进度（`package.progress`，核心 G-4 上）。
     PackageProgress(Progress),
     /// 配置里头要的几项（界面语言、金额排最前的币种）：连上时读一次，别处改了再读（「界面语言」）。

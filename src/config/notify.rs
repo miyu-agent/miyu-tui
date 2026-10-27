@@ -53,4 +53,11 @@ pub struct NotifyTexts {
     pub approving: String,
     /// 在等你回答。
     pub asking: String,
+    /// 每次新开会话的定时跑完了、没跑完（出错、被打断，核心 J-3 中）。
+    pub schedule_ran: String,
+    pub schedule_failed: String,
+    /// 唤醒表坏了换了一份空的：原来的定时都没了。
+    pub schedules_reset: String,
+    /// 系统通知上点开的那个按钮（`notify-send` 的默认动作）。
+    pub open: String,
 }

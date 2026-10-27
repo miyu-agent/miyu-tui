@@ -217,6 +217,8 @@ fn leave(keyboard: bool) -> io::Result<()> {
 /// 主循环等的东西：终端的事件，或者核心的消息。
 enum Incoming {
     Terminal(Event),
+    /// 终端往输入里回的一句话（OSC，`reader/replies.rs`）：点了的通知这类。
+    Reply(String),
     Core(Update),
     Figure(figures::Done),
     /// 只是叫醒：跟随壁纸盯着的文件变了，这一拍再找（`theme/wallpaper.rs`）。
@@ -256,7 +258,13 @@ fn run(
         to_main.send(Incoming::Figure(done)).is_ok()
     });
     // 读按键的线程：让出终端给编辑器时停下（`reader.rs`）。
-    let reader = reader::Reader::spawn(move |event| sender.send(Incoming::Terminal(event)).is_ok());
+    let reader = reader::Reader::spawn(move |read| {
+        let incoming = match read {
+            reader::Read::Event(event) => Incoming::Terminal(event),
+            reader::Read::Reply(text) => Incoming::Reply(text),
+        };
+        sender.send(incoming).is_ok()
+    });
     let human = human::Human::default();
     let mut app = App::new(config, core, human, figures);
     app.screen.pixel.cell = cell;
@@ -266,7 +274,9 @@ fn run(
         std::sync::Arc::new(move || if to_wake.send(Incoming::Wake).is_err() {});
     app.screen.wallpaper.set_wake(wake.clone());
     app.screen.seeds.set_wake(wake.clone());
-    app.link.service.set_wake(wake);
+    app.link.service.set_wake(wake.clone());
+    // 系统通知点了（`notify-send` 在另一个线程里等着）：叫醒主循环切过去（「系统通知」第 8 条）。
+    app.notifier.set_wake(wake);
     // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）；问到的终端颜色在挑主题以前装上（终端配色照它推底色）。
     let depth = theme::Depth::detect(|name| std::env::var(name).ok());
     theme::terminal_colors::install(colors, ground, depth);
@@ -366,6 +376,7 @@ fn run(
 fn dispatch(app: &mut App, message: Incoming) {
     match message {
         Incoming::Terminal(event) => app.handle(event),
+        Incoming::Reply(text) => app.terminal_reply(&text),
         Incoming::Core(update) => app.core(update),
         Incoming::Figure(done) => app.media.figures.borrow_mut().done(done),
         Incoming::Wake => app.woken(),

@@ -88,6 +88,11 @@ impl App {
         {
             self.link.core.send(Command::ListModels);
         }
+        // 给人的通知（核心 J-3 中）：弹系统通知，不进正文（`notices.rs`）。
+        if let Update::Notice(notice) = &update {
+            self.notice(notice);
+            return;
+        }
         // 工具目录变了：照现在的语言重取给人看的字，新装的脚本、MCP、扩展工具的显示名跟着换（核心 9-8 七补）；重取软件包
         // 列表，包的图标跟着换（`packages.rs`）。
         if matches!(update, Update::ToolsChanged) {

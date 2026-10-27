@@ -54,6 +54,7 @@ impl App {
 
     /// 后台做好了叫醒主循环：开机启动的命令跑完了交给配置页（`settings/service.rs`）。
     pub fn woken(&mut self) {
+        self.clicked_notices();
         if let Some(reply) = self.link.service.take()
             && let Some(page) = self.boxes.settings.as_mut()
         {
