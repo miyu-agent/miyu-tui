@@ -88,6 +88,8 @@ pub struct BodyView {
     bar_grab: Option<f64>,
     /// 这一个鼠标事件按像素算的第几行（带小数，`pixel_mouse.rs`）；按格报的是 `None`，照那一格当中算。
     pub pixel_y: Option<f64>,
+    /// 抽屉往下滑了几行（`slide.rs`）。
+    pub slide: slide::Slide,
 }
 
 /// 拼更早的一页以前记下的位置：条目编号、往下第几行（可以是负的：在它上面的空行）。
@@ -152,8 +154,8 @@ impl BodyView {
                     return BodyAction::Toggle(target);
                 }
             }
-            MouseEventKind::ScrollUp => self.scroll_to(self.first.saturating_sub(WHEEL)),
-            MouseEventKind::ScrollDown => self.scroll_to(self.first + WHEEL),
+            MouseEventKind::ScrollUp => self.scroll_by(true, WHEEL),
+            MouseEventKind::ScrollDown => self.scroll_by(false, WHEEL),
             _ => {}
         }
         BodyAction::None
@@ -231,6 +233,7 @@ impl BodyView {
     pub fn follow(&mut self) {
         self.top = None;
         self.auto = false;
+        self.slide.by = 0;
     }
 
     /// `/jump`：第 `row` 行顶到视口第一行，停在那里不跟着新的字走（和 `PgUp` 翻上去一样）；条目 `id` 的竖线亮到
@@ -332,12 +335,7 @@ impl BodyView {
     /// PgUp、PgDn：往上、往下翻半屏（`tui.md`「按键」）。翻到底由画的时候改回跟着最新的。
     pub fn page(&mut self, down: bool) {
         let step = usize::from((self.area.height / 2).max(1));
-        let first = if down {
-            self.first + step
-        } else {
-            self.first.saturating_sub(step)
-        };
-        self.scroll_to(first);
+        self.scroll_by(!down, step);
     }
 
     /// 这一帧的滚动条：内容放不下才有，画在正文区最右一列。
@@ -468,6 +466,8 @@ pub(crate) fn slice(text: &str, from: u16, to: u16) -> String {
     }
     out
 }
+
+mod slide;
 
 #[cfg(test)]
 mod tests;

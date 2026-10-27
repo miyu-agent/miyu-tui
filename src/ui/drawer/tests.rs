@@ -384,7 +384,15 @@ fn a_short_drawer_shows_fewer_command_rows_but_keeps_the_blank_lines() {
     let mut term = ratatui::Terminal::new(ratatui::backend::TestBackend::new(60, 14)).unwrap();
     let mut caret = crate::caret::Caret::default();
     term.draw(|f| {
-        super::draw(f, f.area(), &mut d, &texts(), &look(), false, &mut caret);
+        super::draw(
+            f,
+            (f.area(), 0),
+            &mut d,
+            &texts(),
+            &look(),
+            false,
+            &mut caret,
+        );
     })
     .unwrap();
     let buf = term.backend().buffer();
