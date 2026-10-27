@@ -28,6 +28,7 @@ mod glyph_guard;
 mod history;
 mod human;
 mod ime;
+mod incoming;
 mod input;
 mod jobs;
 mod language;
@@ -82,8 +83,8 @@ use std::time::{Duration, Instant};
 
 use ratatui::crossterm::event::{
     DisableBracketedPaste, DisableFocusChange, DisableMouseCapture, EnableBracketedPaste,
-    EnableFocusChange, EnableMouseCapture, Event, KeyboardEnhancementFlags,
-    PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    EnableFocusChange, EnableMouseCapture, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags,
+    PushKeyboardEnhancementFlags,
 };
 use ratatui::crossterm::{cursor, execute, terminal};
 
@@ -91,7 +92,7 @@ use miyu_client::places::Env;
 
 use app::App;
 use config::Config;
-use core::Update;
+use incoming::{Incoming, dispatch};
 
 /// 全屏终端：每一帧的输出由 frame_output 暂存到准备完成；宽度认不准的字照 glyph_guard 送。
 type Screen = ratatui::Terminal<
@@ -223,17 +224,6 @@ fn leave(keyboard: bool) -> io::Result<()> {
         DisableBracketedPaste,
         DisableFocusChange
     )
-}
-
-/// 主循环等的东西：终端的事件，或者核心的消息。
-enum Incoming {
-    Terminal(Event),
-    /// 终端往输入里回的一句话（OSC，`reader/replies.rs`）：点了的通知这类。
-    Reply(String),
-    Core(Update),
-    Figure(figures::Done),
-    /// 只是叫醒：跟随壁纸盯着的文件变了，这一拍再找（`theme/wallpaper.rs`）。
-    Wake,
 }
 
 /// 主循环：画一帧，等事件；一次把攒着的都处理完再画，空闲时不重画。
@@ -381,17 +371,6 @@ fn run(
     }
     app.finish();
     Ok(())
-}
-
-/// 收一条：终端的事件、核心的消息、做好的图。
-fn dispatch(app: &mut App, message: Incoming) {
-    match message {
-        Incoming::Terminal(event) => app.handle(event),
-        Incoming::Reply(text) => app.terminal_reply(&text),
-        Incoming::Core(update) => app.core(update),
-        Incoming::Figure(done) => app.media.figures.borrow_mut().done(done),
-        Incoming::Wake => app.woken(),
-    }
 }
 
 /// Ctrl+Z：还原终端、挂起自己；`fg` 回来以后重新进全屏，下一帧整屏重画（蓝图 `tui.md`「按键」）。
