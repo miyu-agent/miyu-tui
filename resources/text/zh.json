@@ -644,7 +644,6 @@
       "page": "后台页",
       "mascot": "吉祥物",
       "connection": "接入 {platform}",
-      "system_account": "系统账号",
       "settings": ["1 项设置", "{n} 项设置"],
       "mcp": "MCP 服务 {name}",
       "skill": "技能 {name}",
