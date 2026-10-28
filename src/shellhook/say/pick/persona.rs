@@ -1,6 +1,6 @@
 //! `/persona`、`/preset`（设计 22 第七节「终端会话」：终端会话用哪位人格、哪个预设是 `terminal.persona`、`terminal.preset`）：
 //! 列表、按键、画法用终端界面的选择框（`pick_box`、`ui::persona_list`，2026-10-20 和终端界面会话对的：选了写到哪由用它的
-//! 一方定）。选了写进个人设置，之后新开的终端会话照它；正在说的这一个不换。`/persona 名字` 不弹列表直接写。
+//! 一方定）。选了写进系统配置（核心 SU-3 上起设置只剩这一份，不写 `layer`），之后新开的终端会话照它；正在说的这一个不换。`/persona 名字` 不弹列表直接写。
 //! 按 `e` 编辑那一项要整个配置页，shell 里先不做。
 
 use ratatui::crossterm::event::KeyEvent;
@@ -82,7 +82,7 @@ impl PersonaPick {
             .unwrap_or(0);
     }
 
-    /// 选定第 `index` 个：写进个人设置，留一行。
+    /// 选定第 `index` 个：写进系统配置，留一行。
     fn choose(&self, index: usize, core: &Core) -> Picked {
         let Some(row) = self.list.as_ref().and_then(|l| l.get(index)) else {
             return Picked::Stay;
@@ -92,7 +92,6 @@ impl PersonaPick {
                 tag: WRITE_TAG,
                 method: "config.set",
                 params: json!({
-                    "layer": "personal",
                     "changes": [{ "key": self.key_name(), "value": row.id }],
                 }),
             });
@@ -220,3 +219,6 @@ impl Picker for PersonaPick {
         (chrome.hint(&config.text.themes.hint), lines)
     }
 }
+
+#[cfg(test)]
+mod tests;

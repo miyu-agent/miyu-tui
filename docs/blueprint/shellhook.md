@@ -164,7 +164,7 @@
    - `/theme`（`pick/theme.rs`）：排法用 `ui::themes`；挪到哪种当场换成哪种的样子，`Enter` 写 `tui.theme`（和终端界面共一项），`Esc` 换回。参数认值和照界面语言的名字。
    - `/effort`（`pick/effort.rs`）：终端会话读回来、知道用的哪个模型再问几级，排法用 `ui::effort_list`；用的是模型池的说一句不让改（同终端界面）。参数认档名、`default`。
    - `/sessions`（`pick/sessions.rs`）：列表、筛、画法用 `session_list`；选了 `session.set_terminal`，之后说进它。置顶、删除到终端界面去做。
-   - `/persona`、`/preset`（`pick/persona.rs`）：按键用 `pick_box::press`，排法用 `ui::persona_list`；选了写 `terminal.persona`、`terminal.preset`（个人设置），之后新开的终端会话照它，正在说的不换。按 `e` 编辑要整个配置页，先不做。
+   - `/persona`、`/preset`（`pick/persona.rs`）：按键用 `pick_box::press`，排法用 `ui::persona_list`；选了写 `terminal.persona`、`terminal.preset`（系统配置，`config.set` 不写 `layer`：核心 SU-3 上起设置只剩这一份），之后新开的终端会话照它，正在说的不换。按 `e` 编辑要整个配置页，先不做。
    - `/status`（`pick/status.rs`）：等终端会话读回来，照 `ui::status_box` 印一个框留在滚动区；数照终端会话的最新一页填（`status_box::memory_calls` 导出给这里），终端界面才有的（连同子代理的用量、花费）不写。
    - `/usage`（`pick/usage.rs`）：排法用终端界面的 `ui::usage::page_lines`（2026-10-20 和终端界面会话商定从 `lines` 拆出来，不碰界面：`Sources` 收配置、币种、知道的会话），自己发五次 `usage.query` 收齐；`Tab` `←` `→` 换页、`↑` `↓` 滚、`t` 切 token、花费；`Esc` 收掉，正看着的那一页（去掉补齐的空行）留在滚动区。
    - `/edit`（`pick/edit.rs`）：向核心要终端会话的最新一页（`view.page`），最后一句人说的话写进 `--leftover`，脚本放回命令行，旁边放一份 `.redo` 标记；fish、zsh、bash 照它记着「在编辑」，下一次回车带 `--redo` 交给她，替换上一轮重来（`session.redo`，同终端界面的 `/edit`，2026-10-21 项目主人：「发出去的内容是会进历史的……/edit 命令如果没有 /undo 重发的效果的话没有存在的意义」）；中途执行了别的命令（`fish_preexec`）、`Ctrl+C` 清了命令行（`fish_cancel`）就不算在编辑（zsh、bash 见「shell 的脚本」里 zsh、bash 那两条）。不照借来的 `Turn` 的正文找：终端界面读回的那一页是先停放、再由界面换上来的，借来的不换，正文是空的（同一天实测）。
