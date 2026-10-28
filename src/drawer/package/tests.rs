@@ -20,7 +20,9 @@ fn installing_lists_what_it_carries_what_it_cannot_read_needs_and_size() {
         "program": "process", "mcp": ["weather"], "skills": ["forecast"], "scripts": ["radar"],
         "settings": 2, "capabilities": [{"id": "net", "name": "联网", "summary": "连外网"}],
         "skipped": [{"file": "skills/bad/SKILL.md", "why": "missing name"}],
-        "files": 12, "size": 1_468_006}}),
+        "files": 12, "size": 1_468_006,
+        // 核心 SU-4 中以前的预览还带这一格，只给一个人用以后不写。
+        "system_account": true}}),
     );
     assert_eq!(
         got,

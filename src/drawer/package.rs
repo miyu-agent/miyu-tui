@@ -32,8 +32,6 @@ pub struct PackageTexts {
     pub mascot: String,
     /// 接的平台，`{platform}`。
     pub connection: String,
-    /// 带系统账号。
-    pub system_account: String,
     /// 几项设置，`{n}`：一项的、几项的。
     pub settings: [String; 2],
     /// MCP 服务、技能、脚本，`{name}`。
@@ -142,7 +140,7 @@ pub fn plan(detail: &Detail, texts: &PackageTexts) -> Option<Plan> {
     Some(Plan { title, rows })
 }
 
-/// 「包含」那一行：程序、子命令、后台页、吉祥物、接的平台、系统账号、MCP 服务、技能、脚本、几项设置（卸的时候设置算在
+/// 「包含」那一行：程序、子命令、后台页、吉祥物、接的平台、MCP 服务、技能、脚本、几项设置（卸的时候设置算在
 /// 「一并删除」里）。照命令行的先后。
 fn included(preview: &Value, doing: Doing, texts: &PackageTexts) -> Vec<String> {
     let mut items = Vec::new();
@@ -166,9 +164,6 @@ fn included(preview: &Value, doing: Doing, texts: &PackageTexts) -> Vec<String> 
     }
     if let Some(platform) = preview["connection"].as_str() {
         items.push(texts.connection.replace("{platform}", platform));
-    }
-    if preview["system_account"] == true {
-        items.push(texts.system_account.clone());
     }
     for (key, template) in [
         ("mcp", &texts.mcp),
