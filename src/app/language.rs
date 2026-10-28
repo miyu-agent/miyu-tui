@@ -1,6 +1,6 @@
 //! `/language`：开一个框选界面语言（蓝图 `tui.md`「界面语言」）。第一行是自动（跟随系统），下面一种一行是手动选。
 //! `↑` `↓` 选，`Enter` 换成选中的那一档，`Esc` 关；鼠标悬停选中、点一下等于 `Enter`。换了以后界面上的字、命令的说明、运行状态行的词、工具的显示名照新语言；已经画在正文里的不改，
-//! 新画的照新语言。选的写进个人设置的 `ui.language`；启动时、别的头改了照配置换（2026-10-01 项目主人定 A）。
+//! 新画的照新语言。选的写进系统配置的 `ui.language`；启动时、别的头改了照配置换（2026-10-01 项目主人定 A）。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
@@ -69,7 +69,7 @@ impl App {
         self.switch_language(index, true);
     }
 
-    /// 换成第 `index` 行那一档并写进个人设置；`announce` 时提示一句（引导里换的不提示）。
+    /// 换成第 `index` 行那一档并写进系统配置；`announce` 时提示一句（引导里换的不提示）。
     pub(super) fn switch_language(&mut self, index: usize, announce: bool) {
         let table = &self.config.language_table;
         let (next, auto) = if index == 0 {
@@ -83,7 +83,7 @@ impl App {
         if next == self.config.language && auto == self.config.auto {
             return;
         }
-        // 写进个人设置的 `ui.language`：这个人所有的头都照它（2026-10-01 项目主人定 A）。当场换，不等回应。
+        // 写进系统配置的 `ui.language`：这个人所有的头都照它（2026-10-01 项目主人定 A）。当场换，不等回应。
         let code = if auto { "auto" } else { next.code() };
         self.link.core.send(Command::SetLanguage(code.to_string()));
         self.use_language(next, auto, announce);

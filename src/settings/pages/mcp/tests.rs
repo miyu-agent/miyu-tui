@@ -9,14 +9,14 @@ use crate::core::Refusal;
 use crate::settings::test_support::{config_all, model_list};
 use crate::settings::{Settings, Tone};
 
-/// 个人设置里两个服务：`notes` 要登录，`ctx` 在跑、两件工具。
+/// 系统配置里两个服务：`notes` 要登录，`ctx` 在跑、两件工具。
 fn home() -> Value {
     json!({"servers": [
         {"name": "notes", "url": "https://notes.invalid/mcp", "state": "stopped", "reason": "needs_login"},
         {"name": "ctx", "command": ["ctx-mcp"], "state": "running", "tools": ["mcp__ctx__a", "mcp__ctx__b"]}]})
 }
 
-/// 包里带两个：同名的 `ctx` 被个人设置里的盖住，`fs` 在跑。
+/// 包里带两个：同名的 `ctx` 被系统配置里的盖住，`fs` 在跑。
 fn packages() -> Value {
     json!({"packages": [{"package": "files", "name": "文件", "mcp": [
         {"name": "ctx", "state": "stopped", "reason": "failed_repeatedly"},
@@ -32,7 +32,7 @@ fn opened(mcp: Result<Value, Refusal>) -> (Settings, Config) {
             "config.get" => Ok(config_all()),
             "config.schema" => Ok(json!({"pages": [{"id": "packages", "name": "软件包"}],
                 "groups": [{"id": "files", "name": "文件", "page": "packages"}],
-                "items": [{"key": "files.x", "control": "text", "layers": ["personal"], "name": "x",
+                "items": [{"key": "files.x", "control": "text", "layers": ["system"], "name": "x",
                            "page": "packages", "group": "files"}]})),
             "package.list" => Ok(packages()),
             "mcp.list" => mcp.clone(),
@@ -74,7 +74,7 @@ fn servers_from_settings_and_packages_are_one_list_above_packages() {
             ("ctx".to_string(), false),
             ("fs".to_string(), false),
         ],
-        "个人设置里的在前，包里同名的 ctx 不再列"
+        "系统配置里的在前，包里同名的 ctx 不再列"
     );
     let entries = page.more.entries();
     let mcp = entries.iter().position(|e| *e == Entry::Mcp).unwrap();

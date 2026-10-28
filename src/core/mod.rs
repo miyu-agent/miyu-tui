@@ -142,12 +142,12 @@ pub enum Command {
     FetchBlob(String),
     /// 把一张 mermaid 图的源码交给核心画成 SVG（`mermaid.render`，核心 W-4）。
     RenderMermaid(String),
-    /// 手动换的模型也记成新会话的默认：写个人设置的 `models.chat`（2026-10-02 项目主人定，`models.md`「头的约定」）。
+    /// 手动换的模型也记成新会话的默认：写系统配置的 `models.chat`（2026-10-02 项目主人定，`models.md`「头的约定」）。
     SetChat(String),
     /// `/effort`、底栏要的：每个模型有哪几级、配置的默认、配置键（`model.list`，核心 8-18 补）。给了的只要这几个模型
     /// （`models`，核心 V-6 上），`None` 要整份。
     ListEfforts(Option<Vec<String>>),
-    /// 写个人设置里一个模型的思考强度：配置键、哪一级（`None` 是去掉这一项，回到供应商定）。
+    /// 写系统配置里一个模型的思考强度：配置键、哪一级（`None` 是去掉这一项，回到供应商定）。
     SetEffort {
         /// 配置键（照 `facts.effort.key` 抄）。
         key: String,
@@ -169,9 +169,9 @@ pub enum Command {
     ListModels,
     /// 要这种语言的给人看的字（`human.get`，核心 W-1）：语言代码。回 [`Update::Human`]。
     FetchHuman(String),
-    /// 界面语言写进个人设置（`ui.language`，`auto` 或者语言代码；蓝图「界面语言」）。
+    /// 界面语言写进系统配置（`ui.language`，`auto` 或者语言代码；蓝图「界面语言」）。
     SetLanguage(String),
-    /// 写个人设置的配色（`tui.theme`，`/theme` 的框里定下的）。
+    /// 写系统配置的配色（`tui.theme`，`/theme` 的框里定下的）。
     SetTheme(String),
     /// 另外订阅一个会话：子代理的会话（「后台命令、子代理和侧边栏」、「切进子会话」）。它推来的包成 [`Update::Elsewhere`]。
     Watch(String),

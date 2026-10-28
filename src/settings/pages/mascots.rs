@@ -46,7 +46,7 @@ mod tests {
         let got = json!({"packages": [
             {"package": "tui", "kind": "ui", "name": "终端界面"},
             {"package": "pudding", "kind": "mascot", "name": "布丁", "mascot": {"model": "mascot.json"}},
-            {"package": "broken", "layer": "personal", "code": "bad_toml", "problem": "写错了"}
+            {"package": "broken", "layer": "system", "code": "bad_toml", "problem": "写错了"}
         ]});
         let list = read(&got);
         assert_eq!(list.len(), 1);

@@ -88,7 +88,7 @@ fn enter_stores_the_secret_first_then_writes_the_reference() {
         .iter()
         .find(|(_, m, _)| *m == "config.set")
         .expect("再写引用");
-    assert_eq!(sent["layer"], "system", "只有系统配置这一层的写系统配置");
+    assert!(sent.get("layer").is_none(), "不写层：就是系统配置");
     assert_eq!(
         sent["changes"][0],
         json!({"key": "im.token", "value": {"secret": name},

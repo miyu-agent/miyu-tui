@@ -105,7 +105,7 @@ fn a_key_during_the_intro_only_skips_it_then_enter_walks_through_language_keys_a
     let (_, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
         params,
-        json!({"layer": "personal", "changes": [{"key": "tui.keys", "value": "vim"}]})
+        json!({"changes": [{"key": "tui.keys", "value": "vim"}]})
     );
     assert_eq!(oobe.step, Step::Icons);
     assert_eq!(oobe.icons.selected, 1, "开的时候选着现在用的 plain");
@@ -116,7 +116,7 @@ fn a_key_during_the_intro_only_skips_it_then_enter_walks_through_language_keys_a
     let (_, params) = find(&sent, "config.set");
     assert_eq!(
         params,
-        json!({"layer": "personal", "changes": [{"key": "tui.icons", "value": "nerd"}]})
+        json!({"changes": [{"key": "tui.icons", "value": "nerd"}]})
     );
     // 进了接模型：要三份回应；不再问配置里有没有池（三个固定池核心自己有，核心 Q-1）。
     assert_eq!(oobe.step, Step::Model);
@@ -230,7 +230,7 @@ fn the_semantic_step_shows_only_with_the_package() {
     let (tag, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
         params,
-        json!({"layer": "system", "changes": [{"key": "models.embedding", "value": "off"}]}),
+        json!({"changes": [{"key": "models.embedding", "value": "off"}]}),
         "「否」只用关键词"
     );
     oobe.answer(tag, Ok(json!({})), t0, &texts);
@@ -239,7 +239,7 @@ fn the_semantic_step_shows_only_with_the_package() {
 
 #[test]
 fn keeping_the_semantic_setting_as_it_is_writes_nothing() {
-    // 同网页（2026-10-18 shorin-ee）：选的和现在的一样不写个人设置；没写过的算「是」。
+    // 同网页（2026-10-18 shorin-ee）：选的和现在的一样不写系统配置；没写过的算「是」。
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);

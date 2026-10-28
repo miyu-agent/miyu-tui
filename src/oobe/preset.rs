@@ -226,8 +226,7 @@ impl PresetStep {
     fn pick(&mut self, asker: &mut Asker, id: &str) {
         self.busy = true;
         self.error = None;
-        let params =
-            json!({"layer": "personal", "changes": [{"key": "preset.default", "value": id}]});
+        let params = json!({"changes": [{"key": "preset.default", "value": id}]});
         asker.ask("config.set", params, Waiting::PresetPick(id.to_string()));
     }
 

@@ -5,8 +5,8 @@
 //! 走 `mcp.logout`，服务重起、停回要登录，核心推 `mcp.changed` 再重读（2026-10-22 项目主人验收时问「要怎么登出」）。
 //! 先只做列表、登录、登出，加、改、删服务以后再做。
 //!
-//! 服务两处合成一份（同网页的 MCP 页）：个人设置里写的（`mcp.list`）在前，再是包里带的（`package.list` 每个包的
-//! `mcp`），个人设置里同名的盖住包里的，包里那一个不再列。
+//! 服务两处合成一份（同网页的 MCP 页）：系统配置里写的（`mcp.list`）在前，再是包里带的（`package.list` 每个包的
+//! `mcp`），系统配置里同名的盖住包里的，包里那一个不再列。
 
 use std::collections::HashMap;
 
@@ -84,7 +84,7 @@ fn server(v: &Value) -> Option<Server> {
     })
 }
 
-/// 读 `mcp.list` 的回应：个人设置里的服务。
+/// 读 `mcp.list` 的回应：系统配置里的服务。
 pub fn home(got: &Value) -> Vec<Server> {
     let list = got["servers"].as_array().into_iter().flatten();
     list.filter_map(server).collect()
@@ -98,7 +98,7 @@ pub fn bundled(got: &Value) -> Vec<Server> {
 }
 
 impl More {
-    /// 页上列的服务：个人设置里的在前，包里带的同名的不列。
+    /// 页上列的服务：系统配置里的在前，包里带的同名的不列。
     pub fn servers(&self) -> Vec<Server> {
         let mut out = self.mcp_home.clone();
         for one in &self.mcp_bundled {

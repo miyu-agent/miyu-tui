@@ -47,7 +47,7 @@ pub struct Texts {
     pub fields: std::collections::HashMap<String, String>,
     /// 空着时暗着写的：字段名 → 字。
     pub hints: std::collections::HashMap<String, String>,
-    /// 来源：`catalog`、`provider`、`system`、`personal`、`default`。
+    /// 来源：`catalog`、`provider`、`system`、`default`；自己写了的是 `own`。
     pub sources: std::collections::HashMap<String, String>,
     /// 悬浮窗的标题：添加供应商、编辑供应商、添加模型、新建池、编辑池。
     pub titles: [String; 5],
@@ -59,8 +59,6 @@ pub struct Texts {
     pub pick: [String; 5],
     /// 加供应商先弹的目录窗：「更多供应商…」「自定义…」、还没回来、筛不到（「配置页」第 11a 条）。
     pub catalog: [String; 4],
-    /// 同一家自用、共用两份时名字后面接的：用户、系统（2026-10-27 项目主人改叫法；核心 PL-1，`copies.rs`）。
-    pub copies: [String; 2],
     /// 问一句：删供应商、删模型、删池（标题），「{list} 在用它」，池的说法，删除按钮，几样之间的分隔。
     pub confirm: [String; 7],
     /// 状态行（照名字取）。

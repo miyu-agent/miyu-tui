@@ -107,7 +107,7 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     let (tag, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
         params,
-        json!({"layer": "personal", "changes": [
+        json!({"changes": [
             {"key": "tui.theme_mode", "value": "dark"},
             {"key": "tui.theme", "value": "terminal"},
             {"key": "tui.theme_background", "value": true},
@@ -158,8 +158,8 @@ fn with_an_avatar_the_colors_start_on_follow_the_avatar_unless_already_chosen() 
     let mut chosen = fresh(t0);
     chosen.persona.avatar = Field::line().with(&file.display().to_string());
     let items = json!({
-        "tui.theme": {"value": "terminal", "origin": {"layer": "personal"}},
-        "tui.theme_mode": {"value": "light", "origin": {"layer": "personal"}}
+        "tui.theme": {"value": "terminal", "origin": {"layer": "system"}},
+        "tui.theme_mode": {"value": "light", "origin": {"layer": "system"}}
     });
     at_theme(&mut chosen, t0, &texts, items);
     assert_eq!(
@@ -280,7 +280,7 @@ fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offe
     // 写过不显示的：重走引导停在不显示。
     let mut again = fresh(t0);
     let mut items = defaults();
-    items["tui.mascot_home"] = json!({"value": false, "origin": {"layer": "personal"}});
+    items["tui.mascot_home"] = json!({"value": false, "origin": {"layer": "system"}});
     at_theme(&mut again, t0, &texts, items);
     assert!(again.theme.mascot_off);
     // 人格有头像：不列这一格，往下三下就是「下一步」，不写那两项。

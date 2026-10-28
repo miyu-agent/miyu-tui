@@ -2,7 +2,7 @@
 //! 「AI 用什么语言回复」写 `profile.preferred_reply_language`（核心 P-9 补：下拉加「其他」手写，同配置页，
 //! `settings/pages/combo.rs`；2026-10-16 项目主人定排第一），「AI 怎么称呼你」写 `profile.name`，「更多描述（可选）」写
 //! `profile.about`（长文，在大编辑浮窗里写，`sheet.rs`）。
-//! 都写个人设置，都可以不填：一个字没改的不写，清空了原来有的去掉。
+//! 都写系统配置，都可以不填：一个字没改的不写，清空了原来有的去掉。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
@@ -213,7 +213,7 @@ impl ProfileStep {
         self.now().iter().all(String::is_empty)
     }
 
-    /// 「下一步」：改了的写进个人设置（清空了原来有的去掉），一个字没改的直接下一步。
+    /// 「下一步」：改了的写进系统配置（清空了原来有的去掉），一个字没改的直接下一步。
     fn save(&mut self, asker: &mut Asker) -> Move {
         // 三项都空着的是「跳过」：什么都不写（原来有的也不去掉，2026-10-19 项目主人）。
         if self.blank() {
@@ -238,7 +238,7 @@ impl ProfileStep {
         self.busy = true;
         asker.ask(
             "config.set",
-            json!({"layer": "personal", "changes": changes}),
+            json!({"changes": changes}),
             Waiting::ProfileSave,
         );
         Move::Stay

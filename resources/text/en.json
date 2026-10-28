@@ -781,8 +781,7 @@
     "cooling": "cooling {n}m",
     "cooling_bare": "cooling",
     "no_key": "no key",
-    "refuse_no_key": "This model has no key",
-    "copies": ["User", "System"]
+    "refuse_no_key": "This model has no key"
   },
   "settings": {
     "in_use": {
@@ -907,7 +906,7 @@
       "catalog": "catalog",
       "provider": "provider list",
       "system": "system",
-      "personal": "yours",
+      "own": "custom",
       "default": "default",
       "id": "ID"
     },
@@ -1001,7 +1000,6 @@
       "Loading…",
       "No matches"
     ],
-    "copies": ["User", "System"],
     "confirm": [
       "Delete provider {name}?",
       "Delete model {name}?",
@@ -1027,7 +1025,6 @@
       "conflict": "Changed elsewhere just now (now {current}); your changes are kept, reopen and save again",
       "offline": "Not connected to the core",
       "not_custom": "Only models added with n can be deleted",
-      "in_system": "This is in the system config and can't be deleted here",
       "fixed_pool": "Built-in pools can't be deleted; edit their members and strategy instead",
       "members_hint": "Untick members in the pool editor (Enter)",
       "nothing_here": "Nothing to delete on this page",
@@ -1178,7 +1175,6 @@
       "origins": {
         "default": "default",
         "system": "system config",
-        "personal": "personal settings",
         "project": "project config"
       },
       "toggle": [

@@ -156,7 +156,7 @@ impl LineEdit {
         }
     }
 
-    /// 存的时候写到 `target`（默认写个人设置）。
+    /// 存的时候写到 `target`（默认写系统配置）。
     pub fn to(self, target: Target) -> Self {
         Self { target, ..self }
     }

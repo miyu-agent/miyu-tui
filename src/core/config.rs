@@ -1,5 +1,5 @@
 //! 头这边用的配置（蓝图 `tui.md`「界面语言」，核心 8-2、8-3、8-4）：读 `ui.language`、`usage.currency`（金额哪种币排
-//! 最前，核心 8-15）的最终值、写进个人设置、订阅配置流跟着变。
+//! 最前，核心 8-15）的最终值、写进系统配置、订阅配置流跟着变。
 
 use std::io;
 
@@ -78,23 +78,23 @@ pub(super) fn touches(params: &Value) -> bool {
             .is_some_and(|keys| keys.keys().any(|k| k.starts_with(OWN)))
 }
 
-/// 新会话默认用哪个（手动换的模型，`/model`）：写进个人设置的 `models.chat`。
+/// 新会话默认用哪个（手动换的模型，`/model`）：写进系统配置的 `models.chat`。
 pub(super) fn set_chat(reference: &str) -> Value {
-    json!({"layer": "personal", "changes": [{"key": "models.chat", "value": reference}]})
+    json!({"changes": [{"key": "models.chat", "value": reference}]})
 }
 
-/// 把一个模型的思考强度写进个人设置（`key` 照 `facts.effort.key` 抄）；`level` 是 `None` 的去掉这一项（回到供应商定）。
+/// 把一个模型的思考强度写进系统配置（`key` 照 `facts.effort.key` 抄）；`level` 是 `None` 的去掉这一项（回到供应商定）。
 pub(super) fn set_effort(key: &str, level: Option<&str>) -> Value {
     let change = match level {
         Some(level) => json!({"key": key, "value": level}),
         None => json!({"key": key, "unset": true}),
     };
-    json!({"layer": "personal", "changes": [change]})
+    json!({"changes": [change]})
 }
 
-/// 把界面语言写进个人设置（`code` 是 `auto` 或者语言代码）。
+/// 把界面语言写进系统配置（`code` 是 `auto` 或者语言代码）。
 pub(super) fn set_language(code: &str) -> Value {
-    json!({"layer": "personal", "changes": [{"key": LANGUAGE, "value": code}]})
+    json!({"changes": [{"key": LANGUAGE, "value": code}]})
 }
 
 #[cfg(test)]
@@ -105,26 +105,23 @@ mod tests {
 
     #[test]
     fn the_language_is_read_written_and_noticed_by_its_key() {
-        let got = json!({"items":{"ui.language":{"origin":{"layer":"personal"},"value":"ja"}}});
+        let got = json!({"items":{"ui.language":{"origin":{"layer":"system"},"value":"ja"}}});
         assert_eq!(head(&got).language, "ja");
         assert_eq!(head(&json!({"items":{}})).language, "auto", "没有的当自动");
         assert_eq!(head(&json!({"items":{}})).currency, "USD");
         let cny = json!({"items":{"usage.currency":{"value":"CNY"}}});
         assert_eq!(head(&cny).currency, "CNY");
         assert!(touches(
-            &json!({"keys":{"ui.language":{"value":"en"}},"layer":"personal"})
+            &json!({"keys":{"ui.language":{"value":"en"}},"layer":"system"})
         ));
-        assert!(
-            !touches(&json!({"keys":{},"layer":"personal"})),
-            "只改了注释"
-        );
+        assert!(!touches(&json!({"keys":{},"layer":"system"})), "只改了注释");
         // 终端自己的配置项（`tui.*`）改了也重读（2026-10-10 项目主人报：时间线的开关调了没生效）。
         assert!(touches(
-            &json!({"keys":{"tui.timeline_fold":{"value":false}},"layer":"personal"})
+            &json!({"keys":{"tui.timeline_fold":{"value":false}},"layer":"system"})
         ));
         assert_eq!(
             set_language("auto"),
-            json!({"layer":"personal","changes":[{"key":"ui.language","value":"auto"}]})
+            json!({"changes":[{"key":"ui.language","value":"auto"}]})
         );
     }
 }

@@ -57,7 +57,7 @@ fn the_seed_row_follows_the_colors_and_writes_where_the_colors_come_from() {
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
     let mut items = defaults();
-    items["tui.theme"] = json!({"value": "wallpaper", "origin": {"layer": "personal"}});
+    items["tui.theme"] = json!({"value": "wallpaper", "origin": {"layer": "system"}});
     at_theme(&mut oobe, t0, &texts, items);
     assert!(
         !oobe.theme.slots().contains(&Slot::Seed),
@@ -76,7 +76,7 @@ fn the_seed_row_follows_the_colors_and_writes_where_the_colors_come_from() {
     assert_eq!(oobe.theme_preview().and_then(|p| p.seed), Some(0x44_55_66));
     oobe.key(key(KeyCode::Esc), t0, &texts);
     assert_eq!(oobe.theme_preview().and_then(|p| p.seed), None);
-    // 再挑第二个，「下一步」写个人设置的 tui.theme_seed。
+    // 再挑第二个，「下一步」写系统配置的 tui.theme_seed。
     oobe.key(key(KeyCode::Enter), t0, &texts);
     oobe.key(key(KeyCode::Down), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -101,7 +101,7 @@ fn a_seed_picked_while_following_the_avatar_is_written_to_the_persona() {
     let mut oobe = fresh(t0);
     oobe.persona.chosen_id = Some("persona-1".into());
     let mut items = defaults();
-    items["tui.theme"] = json!({"value": "persona", "origin": {"layer": "personal"}});
+    items["tui.theme"] = json!({"value": "persona", "origin": {"layer": "system"}});
     at_theme(&mut oobe, t0, &texts, items);
     oobe.theme.seeds = vec![0xaa_bb_cc, 0x12_34_56];
     oobe.theme.seed = Some(0xaa_bb_cc);
@@ -114,7 +114,7 @@ fn a_seed_picked_while_following_the_avatar_is_written_to_the_persona() {
     let (tag, params) = find(&asks(&mut oobe), "config.set");
     assert!(
         !params.to_string().contains("tui.theme_seed"),
-        "跟随头像的不写个人设置的主色：{params}"
+        "跟随头像的不写系统配置的主色：{params}"
     );
     oobe.answer(tag, Ok(json!({})), t0, &texts);
     assert_eq!(oobe.step, Step::Theme, "还要写人格");
@@ -131,8 +131,8 @@ fn terminal_colors_hide_the_background_row_and_keep_its_value() {
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
     let mut items = defaults();
-    items["tui.theme"] = json!({"value": "terminal", "origin": {"layer": "personal"}});
-    items["tui.theme_background"] = json!({"value": false, "origin": {"layer": "personal"}});
+    items["tui.theme"] = json!({"value": "terminal", "origin": {"layer": "system"}});
+    items["tui.theme_background"] = json!({"value": false, "origin": {"layer": "system"}});
     at_theme(&mut oobe, t0, &texts, items);
     assert!(
         !oobe.theme.slots().contains(&Slot::Ground),
@@ -153,12 +153,12 @@ fn terminal_colors_hide_the_background_row_and_keep_its_value() {
 
 #[test]
 fn terminal_colors_with_candidates_list_the_seed_row_and_write_the_pick() {
-    // 2026-10-19 项目主人定：终端配色照终端 16 色里的主色生成 MD3，主色能换，写个人设置的 tui.theme_seed。
+    // 2026-10-19 项目主人定：终端配色照终端 16 色里的主色生成 MD3，主色能换，写系统配置的 tui.theme_seed。
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
     let mut items = defaults();
-    items["tui.theme"] = json!({"value": "terminal", "origin": {"layer": "personal"}});
+    items["tui.theme"] = json!({"value": "terminal", "origin": {"layer": "system"}});
     at_theme(&mut oobe, t0, &texts, items);
     assert!(
         !oobe.theme.slots().contains(&Slot::Seed),

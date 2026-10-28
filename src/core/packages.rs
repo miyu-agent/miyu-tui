@@ -1,5 +1,5 @@
 //! 软件包列表的推送（核心 F-8 三补、9-8 七补）：订阅 `packages` 流，只听「工具目录变了」：装、卸、改了包（`package.changed`，
-//! 包里的脚本、MCP 服务跟着变），个人设置里的 MCP 服务（`mcp.changed`）。变了重取给人看的字（`human.get`）和软件包列表
+//! 包里的脚本、MCP 服务跟着变），系统配置里的 MCP 服务（`mcp.changed`）。变了重取给人看的字（`human.get`）和软件包列表
 //! （`package.list`），新工具的显示名、包的图标跟着换。
 
 use std::io;

@@ -16,14 +16,14 @@ fn texts() -> Texts {
 /// 「用户」页只有「回复语言」那一项（核心 P-9 补）。
 fn schema() -> Value {
     json!({"pages": [{"id": "user", "name": "用户"}], "groups": [{"id": "profile", "name": "关于你", "page": "user"}],
-        "items": [{"key": "profile.preferred_reply_language", "type": "text", "control": "combo", "layers": ["personal"],
+        "items": [{"key": "profile.preferred_reply_language", "type": "text", "control": "combo", "layers": ["system"],
             "suggestions": ["简体中文", "English", "日本語"], "name": "回复语言", "page": "user", "group": "profile"}]})
 }
 
-/// 个人设置里回复语言写的是 `value`（`None` 是没写）。
+/// 系统配置里回复语言写的是 `value`（`None` 是没写）。
 fn config(value: Option<&str>) -> Value {
     let layers: Vec<Value> = value
-        .map(|v| json!({"origin": {"layer": "personal", "line": 1}, "value": v, "used": true}))
+        .map(|v| json!({"origin": {"layer": "system", "line": 1}, "value": v, "used": true}))
         .into_iter()
         .collect();
     let value = value.map_or(Value::Null, |v| json!(v));

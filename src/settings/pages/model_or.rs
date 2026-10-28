@@ -51,7 +51,7 @@ impl Settings {
         self.popup = Some(Popup::Choose(choose));
     }
 
-    /// 选择窗选好了：「填一个模型…」开编辑窗（原来写的模型留着），交回 `true`；别的交回 `false`，照旧写个人设置。
+    /// 选择窗选好了：「填一个模型…」开编辑窗（原来写的模型留着），交回 `true`；别的交回 `false`，照旧写系统配置。
     pub(in crate::settings) fn model_or_write(
         &mut self,
         target: &Target,

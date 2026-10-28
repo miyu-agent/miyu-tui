@@ -42,8 +42,6 @@ impl Settings {
         if text.is_empty() {
             return true;
         }
-        // 只能写系统配置的项（im 的令牌这类）引用写系统那一层（`saving.rs` 的 `system_only`）。
-        self.draft.system = self.system_only(key);
         self.draft.set_secret_at(key, text.to_string());
         self.save(false, texts);
         true

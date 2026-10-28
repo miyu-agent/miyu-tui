@@ -84,7 +84,7 @@ fn overlay_facts(model: &mut Model, draft: &Draft) {
             continue;
         };
         if matches!(item, "window" | "inputs") {
-            model.facts[item] = json!({"value": value, "from": "config", "layer": "personal"});
+            model.facts[item] = json!({"value": value, "from": "config", "layer": "system"});
         }
     }
 }
@@ -136,14 +136,14 @@ mod tests {
     }
 
     #[test]
-    fn a_provider_whose_personal_keys_are_all_unset_is_not_listed() {
+    fn a_provider_whose_written_keys_are_all_unset_is_not_listed() {
         let data = sample();
         let mut draft = Draft::default();
         draft.unset_all("providers.relay", &data);
         let view = merge(&data, &draft);
         assert!(
             view.provider("relay").is_none(),
-            "个人层写的都删了：照删了显示（写在系统层的，删除时先拦下，不会走到这里）"
+            "系统配置写的都删了：照删了显示"
         );
     }
 }

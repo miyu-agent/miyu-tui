@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::{Row, Schema};
+use super::{Item, Row, Schema};
 
 fn sample() -> Schema {
     Schema::read(&json!({
@@ -11,13 +11,13 @@ fn sample() -> Schema {
                    {"id": "sessions", "name": "会话", "page": "permissions"}, {"id": "empty", "name": "空", "page": "general"},
                    {"id": "providers", "name": "供应商", "page": "models"}],
         "items": [
-            {"key": "ui.startup", "control": "select", "layers": ["system", "personal"], "name": "启动时", "page": "general", "group": "display",
+            {"key": "ui.startup", "control": "select", "layers": ["system", "project"], "name": "启动时", "page": "general", "group": "display",
              "options": [{"value": "new", "name": "新会话"}, {"value": "recent", "name": "最近的"}], "default": "new"},
-            {"key": "ui.language", "control": "select", "layers": ["system", "personal"], "name": "界面语言", "page": "general", "group": "display", "common": true},
-            {"key": "persona.default", "control": "select", "layers": ["system", "personal"], "name": "默认人格", "page": "general", "group": "persona"},
+            {"key": "ui.language", "control": "select", "layers": ["system", "project"], "name": "界面语言", "page": "general", "group": "display", "common": true},
+            {"key": "persona.default", "control": "select", "layers": ["system", "project"], "name": "默认人格", "page": "general", "group": "persona"},
             {"key": "permission.start_read_only", "control": "toggle", "layers": ["system"], "name": "只读开始", "page": "permissions", "group": "sessions"},
-            {"key": "providers.<id>.base_url", "control": "text", "layers": ["personal"], "name": "地址", "page": "models", "group": "providers"},
-            {"key": "web.theme", "control": "select", "layers": ["personal"], "name": "网页主题", "page": "general", "group": "display"},
+            {"key": "providers.<id>.base_url", "control": "text", "layers": ["system"], "name": "地址", "page": "models", "group": "providers"},
+            {"key": "web.theme", "control": "select", "layers": ["system"], "name": "网页主题", "page": "general", "group": "display"},
             {"key": "ui.ticket", "control": "text", "layers": ["system"], "name": "票据", "page": "general", "group": "display", "hidden": true}
         ]
     }))
@@ -43,7 +43,12 @@ fn pages_list_their_groups_with_common_items_first_and_models_stay_out() {
         ["general", "permissions"],
         "模型那一页不另列"
     );
-    assert!(!s.items[3].personal(), "只能写系统配置");
+    assert!(s.items[3].writable(), "写得进系统配置的终端改得了");
+    let project_only = Item {
+        layers: vec!["project".to_string()],
+        ..s.items[3].clone()
+    };
+    assert!(!project_only.writable(), "只能写项目配置的终端不写");
     assert_eq!(s.page_name("permissions"), Some("权限"));
 }
 
@@ -56,9 +61,9 @@ fn the_terminals_own_items_sit_on_the_general_page() {
                    {"id": "im", "name": "接入通讯平台", "page": "packages"},
                    {"id": "tui", "name": "终端界面", "page": "packages"}],
         "items": [
-            {"key": "ui.language", "control": "select", "layers": ["personal"], "name": "界面语言", "page": "general", "group": "display"},
+            {"key": "ui.language", "control": "select", "layers": ["system"], "name": "界面语言", "page": "general", "group": "display"},
             {"key": "im.listen", "control": "number", "layers": ["system"], "name": "端口", "page": "packages", "group": "im"},
-            {"key": "tui.timeline_fold", "control": "toggle", "layers": ["system", "personal"], "name": "做完收起", "page": "packages", "group": "tui"}
+            {"key": "tui.timeline_fold", "control": "toggle", "layers": ["system", "project"], "name": "做完收起", "page": "packages", "group": "tui"}
         ]
     }));
     assert_eq!(s.group_names("general"), ["显示", "终端界面"]);
@@ -69,13 +74,13 @@ fn the_terminals_own_items_sit_on_the_general_page() {
 fn the_terminals_look_items_move_to_an_appearance_page_after_general() {
     // 「配置页」第 33 条（2026-10-11 项目主人：时间线相关的配置项单独一个标题，吉祥物也分出去；2026-10-14 照推荐定：
     // 主题、吉祥物、图标单开一页「外观」，排在通用后面，时间线留在通用）。
-    let item = |key: &str, name: &str| json!({"key": key, "control": "toggle", "layers": ["personal"], "name": name, "page": "packages", "group": "tui"});
+    let item = |key: &str, name: &str| json!({"key": key, "control": "toggle", "layers": ["system"], "name": name, "page": "packages", "group": "tui"});
     let mut s = Schema::read(&json!({
         "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
         "groups": [{"id": "display", "name": "显示", "page": "general"},
                    {"id": "tui", "name": "终端界面", "page": "packages"}],
         "items": [
-            {"key": "ui.language", "control": "select", "layers": ["personal"], "name": "界面语言", "page": "general", "group": "display"},
+            {"key": "ui.language", "control": "select", "layers": ["system"], "name": "界面语言", "page": "general", "group": "display"},
             item("tui.icons", "图标"),
             item("tui.theme", "配色"),
             item("tui.theme_mode", "明暗"),
@@ -130,7 +135,7 @@ fn the_terminals_look_items_move_to_an_appearance_page_after_general() {
 #[test]
 fn skip_pick_joins_the_cores_new_session_group_when_there_is_one() {
     // 2026-10-23 项目主人：默认人格、默认预设、不问人格预设、开局只读做成「新会话」一组；核心的组是 `new_session`。
-    let item = |key: &str, page: &str, group: &str| json!({"key": key, "control": "toggle", "layers": ["personal"], "name": key, "page": page, "group": group});
+    let item = |key: &str, page: &str, group: &str| json!({"key": key, "control": "toggle", "layers": ["system"], "name": key, "page": page, "group": group});
     let mut s = Schema::read(&json!({
         "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
         "groups": [{"id": "new_session", "name": "新会话", "page": "general"},

@@ -11,14 +11,14 @@ fn texts() -> Texts {
     Config::builtin().unwrap().text.settings
 }
 
-/// 「用户」页只有「更多描述」那一项（核心 P-9 三补），个人设置里写的是 `value`。
+/// 「用户」页只有「更多描述」那一项（核心 P-9 三补），系统配置里写的是 `value`。
 fn opened(value: Option<&str>) -> Settings {
     let schema = json!({"pages": [{"id": "user", "name": "用户"}],
         "groups": [{"id": "profile", "name": "关于你", "page": "user"}],
-        "items": [{"key": "profile.about", "type": "text", "control": "textarea", "layers": ["personal"],
+        "items": [{"key": "profile.about", "type": "text", "control": "textarea", "layers": ["system"],
             "name": "更多描述", "page": "user", "group": "profile"}]});
     let layers: Vec<Value> = value
-        .map(|v| json!({"origin": {"layer": "personal", "line": 1}, "value": v, "used": true}))
+        .map(|v| json!({"origin": {"layer": "system", "line": 1}, "value": v, "used": true}))
         .into_iter()
         .collect();
     let config = json!({"items": {"profile.about": {"value": value, "layers": layers}}});

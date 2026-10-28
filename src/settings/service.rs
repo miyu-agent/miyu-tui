@@ -66,7 +66,7 @@ pub fn add_row(schema: &mut Schema, words: &Words, known: bool) {
         element: String::new(),
         suggestions: Vec::new(),
         options: Vec::new(),
-        layers: vec!["personal".to_string()],
+        layers: vec!["system".to_string()],
         default: Value::Bool(false),
         name: words.name.clone(),
         page,
@@ -106,7 +106,7 @@ impl Settings {
                 ..
             } => {
                 if let Some(data) = self.data.as_mut() {
-                    let origin = if *installed { "personal" } else { "default" };
+                    let origin = if *installed { "system" } else { "default" };
                     data.values.insert(
                         KEY.to_string(),
                         (Value::Bool(*installed), origin.to_string()),

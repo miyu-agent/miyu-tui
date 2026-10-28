@@ -1,5 +1,5 @@
 //! `/theme` 的配色框（蓝图 `tui.md`「主题」第 6 条，2026-10-15 项目主人：出列表选，选好写进设置）：和界面语言的框一个位置、
-//! 一个样子。挪到哪一种当场换成哪一种的样子（和引导、配置页选配色一个规矩），`Enter` 写进个人设置的 `tui.theme`，`Esc`
+//! 一个样子。挪到哪一种当场换成哪一种的样子（和引导、配置页选配色一个规矩），`Enter` 写进系统配置的 `tui.theme`，`Esc`
 //! 换回打开以前的。框被别的方式关掉（开了别的框）也换回去，不留一个没写进设置的样子。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
@@ -86,7 +86,7 @@ impl App {
         self.show_colors(value);
     }
 
-    /// 定下第 `index` 种：写进个人设置（和配置页外观页一样），关框；选的就是原来的只关框。
+    /// 定下第 `index` 种：写进系统配置（和配置页外观页一样），关框；选的就是原来的只关框。
     fn choose_theme(&mut self, index: usize) {
         let Some(open) = self.boxes.theme_box.take() else {
             return;

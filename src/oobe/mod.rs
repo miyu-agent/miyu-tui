@@ -297,16 +297,14 @@ impl Oobe {
             }
             KeyCode::Enter if step == Step::Keys => {
                 let mode = KEY_MODES[pick.selected.min(KEY_MODES.len() - 1)];
-                let params =
-                    json!({"layer": "personal", "changes": [{"key": "tui.keys", "value": mode}]});
+                let params = json!({"changes": [{"key": "tui.keys", "value": mode}]});
                 // 写成了核心推配置变了，终端照常重读 `tui.keys` 换过去（`head_settings.rs`），不另交 App。
                 self.asker.ask("config.set", params, Waiting::Keys);
                 Move::Next
             }
             KeyCode::Enter => {
                 let set = ICON_SETS[pick.selected.min(ICON_SETS.len() - 1)].to_string();
-                let params =
-                    json!({"layer": "personal", "changes": [{"key": "tui.icons", "value": set}]});
+                let params = json!({"changes": [{"key": "tui.icons", "value": set}]});
                 self.asker.ask("config.set", params, Waiting::Icons);
                 effects.push(Effect::Icons(set));
                 Move::Next
@@ -384,8 +382,7 @@ impl Oobe {
         self.leaving = Some(now);
         self.stars.scatter(now);
         if self.online {
-            let params =
-                json!({"layer": "personal", "changes": [{"key": "ui.welcomed", "value": true}]});
+            let params = json!({"changes": [{"key": "ui.welcomed", "value": true}]});
             self.asker.ask("config.set", params, Waiting::Welcomed);
         } else {
             self.marked = Some(Some(String::new()));

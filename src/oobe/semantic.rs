@@ -1,6 +1,6 @@
 //! 内置语义模型那一步（蓝图 `tui.md`「第一次打开的引导」第 26b 条，2026-10-18 项目主人定）：预设后面、好了前面，问开不开
 //! 语义模型的包（embed）。装没装照 `config.schema` 里 `models.embedding` 的 `local` 那一档带不带 `available: false`。
-//! 「是」写个人设置的 `models.embedding = "local"`，「否」写 `"off"`（只用关键词）；没写时默认就是 `local`。
+//! 「是」写系统配置的 `models.embedding = "local"`，「否」写 `"off"`（只用关键词）；没写时默认就是 `local`。
 //!
 //! 没装的（2026-10-19 核心 G-8、项目主人定）：看一眼软件源里有没有、要下多大，有的照样出这一屏，选「是」当场下、画进度条，
 //! 装不上的照原话写、给「重试」「跳过」（`download.rs`）；软件源里没有、没有这台机器能用的，往前、往回都跨过去。
@@ -136,13 +136,13 @@ impl SemanticStep {
     }
 
     /// 定下第 `at` 行：和现在写的一样的不写、直接到好了，不一样的写系统配置（大家共用，成员的记忆、知识库也用得上；
-    /// 「管理员模式」第 5 条，2026-10-24 项目主人定，原来写个人设置）。
+    /// 「管理员模式」第 5 条，2026-10-24 项目主人定，原来写系统配置）。
     fn choose(&mut self, at: usize, asker: &mut Asker) -> Move {
         if at == self.current {
             return Move::Next;
         }
         let value = VALUES[at.min(VALUES.len() - 1)];
-        let params = json!({"layer": "system", "changes": [{"key": KEY, "value": value}]});
+        let params = json!({"changes": [{"key": KEY, "value": value}]});
         self.error = None;
         self.busy = true;
         asker.ask("config.set", params, Waiting::SemanticSave);

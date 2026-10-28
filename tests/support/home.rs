@@ -21,7 +21,7 @@ pub struct Home {
     core: Running,
 }
 
-/// 个人设置里记上「第一次引导走过了」：已经有 `[ui]` 的接在它下面（TOML 一张表只能写一次），没有的另起一张。
+/// 系统配置里记上「第一次引导走过了」：已经有 `[ui]` 的接在它下面（TOML 一张表只能写一次），没有的另起一张。
 fn welcomed(settings: &str) -> String {
     match settings.find("[ui]\n") {
         Some(at) => {
@@ -61,7 +61,7 @@ impl Home {
         Home::with_settings(script, "")
     }
 
-    /// 同 [`Home::new`]，核心起来以前先写好 alice 的个人设置（`home/alice/settings.toml`，TOML）。都记着第一次引导走过了
+    /// 同 [`Home::new`]，核心起来以前先写好系统配置（`system/config.toml`，TOML；核心 SU-3 上起设置只剩这一份）。都记着第一次引导走过了
     /// （`ui.welcomed`，核心 8-11 四补），不然一起来就进引导；要引导的用 [`Home::unwelcomed`]。
     pub fn with_settings(script: Script, settings: &str) -> Home {
         Home::build(script, &welcomed(settings), Tools::None)
@@ -140,12 +140,12 @@ impl Home {
         root.prepare().expect("临时目录里建得了骨架");
         install_the_terminal(&dir, manifest);
         // 软件源指到连不上的地方：测试不碰网，引导看一眼语义模型的包时是「连不上」（第 26b 条，2026-10-19 实测原来
-        // 照默认地址去了 GitHub）。
+        // 照默认地址去了 GitHub）。接在测试写的设置后面：设置里可能有不在表里的键。
         let system = dir.join("system/config.toml");
         std::fs::create_dir_all(system.parent().expect("有上一层")).expect("建得了");
         std::fs::write(
             &system,
-            "[packages]\nsource = \"https://source.invalid/\"\n",
+            format!("{settings}\n[packages]\nsource = \"https://source.invalid/\"\n"),
         )
         .expect("写得进去");
         // alice 是机主（核心 Y-12 中上）。同核心测具的 `owner()`。
@@ -154,11 +154,6 @@ impl Home {
             r#"{"version":1,"accounts":[{"id":"alice","username":"alice","password":"$argon2id$v=19$m=19456,t=2,p=1$placeholder","changed":"2026-10-23T00:00:00.000Z","owner":true}]}"#,
         )
         .expect("写得进去");
-        if !settings.is_empty() {
-            let file = dir.join("home/alice/settings.toml");
-            std::fs::create_dir_all(file.parent().expect("有上一层")).expect("建得了");
-            std::fs::write(&file, settings).expect("写得进去");
-        }
         prepare(&dir);
         let core = Running::start(root, script, tools);
         Home { dir, work, core }
@@ -199,9 +194,14 @@ impl Home {
         }
     }
 
-    /// alice 的个人设置现在写着什么（没有的是空的）。
+    /// 系统配置现在写着什么（没有的是空的）。
     pub fn settings(&self) -> String {
-        std::fs::read_to_string(self.dir.join("home/alice/settings.toml")).unwrap_or_default()
+        std::fs::read_to_string(self.settings_file()).unwrap_or_default()
+    }
+
+    /// 系统配置那个文件：测试手改了再重起核心。
+    pub fn settings_file(&self) -> PathBuf {
+        self.dir.join("system/config.toml")
     }
 
     /// 在伪终端里起界面，连这份核心；`lang` 是系统语言（`LANG`）。

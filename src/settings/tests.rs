@@ -331,7 +331,7 @@ fn q_on_a_page_goes_back_like_escape() {
 /// 配置清单里只有「语义模型」那一项（4a 的 R-5 补：`model_or`，带 `options`，没有默认值）。
 fn embedding_schema() -> serde_json::Value {
     json!({"pages": [{"id": "models", "name": "模型"}], "groups": [{"id": "uses", "name": "用途", "page": "models"}],
-        "items": [{"key": "models.embedding", "type": "model_or", "control": "text", "layers": ["system", "personal"],
+        "items": [{"key": "models.embedding", "type": "model_or", "control": "text", "layers": ["system", "project"],
             "options": [{"name": "内置模型", "value": "local", "note": "bge-m3", "available": false},
                         {"name": "关", "value": "off"}],
             "name": "语义模型", "page": "models", "group": "uses"}]})
@@ -466,7 +466,7 @@ fn an_item_only_the_system_config_holds_is_written_there() {
         .expect("当场存");
     assert_eq!(
         params,
-        &json!({"layer": "system", "changes": [{"key": "log.level", "value": "debug", "expect": {"value": "info"}}]})
+        &json!({"changes": [{"key": "log.level", "value": "debug", "expect": {"value": "info"}}]})
     );
 }
 
