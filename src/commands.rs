@@ -110,8 +110,6 @@ pub enum Run {
     Usage,
     /// 这个会话的状态（蓝图「会话状态 `/status`」）。
     Status,
-    /// 进、退管理员模式（蓝图「管理员模式」）。
-    Admin,
     /// 这个会话（还没开的照选的人格、预设）能用哪些工具（`/tool-list`，`tool_list.rs`）。
     ToolList,
     /// 这个会话的上下文一块块各占多少、按用途的累计（`/context`，`context_box.rs`）。

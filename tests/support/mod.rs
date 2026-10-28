@@ -330,7 +330,7 @@ impl Tui {
         self.send(&b"\x1b[B".repeat(40));
         self.pump(Duration::from_millis(300));
         self.key(b"\r");
-        self.wait_for("约束解码");
+        self.wait_for("认证");
     }
 
     /// 光标在哪：（行, 列），从 0 数。

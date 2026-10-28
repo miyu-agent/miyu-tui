@@ -32,7 +32,6 @@ impl Oobe {
                 let p = &self.profile;
                 p.writing.is_some() || p.name.editing() || p.language.editing()
             }
-            Step::Register => self.register.typing(),
             Step::Preset => self.preset.custom_open && self.preset.name.editing(),
             _ => false,
         }

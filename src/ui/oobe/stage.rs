@@ -60,10 +60,9 @@ pub fn places(area: Rect, look: &Look, mascot: &MascotLook) -> Places {
 }
 
 /// 进度：`● 语言 ── ● 图标 ── ◉ 模型 ── ○ 人格 ── ○ 预设`，走过的暗、这一步强调色加粗、没到的最暗。放不下的逐级收窄
-/// （第 6 条，2026-10-14 项目主人定）：先把间隔缩成 ` ─ `，还放不下的只有这一步写名字。`register`：还要注册机主，
-/// 「注册」画进去（第 5a 条）。
-pub fn bar(frame: &mut Frame, rect: Rect, (step, register): (Step, bool), names: &[String]) {
-    let Some((shown, now)) = step.bar(register) else {
+/// （第 6 条，2026-10-14 项目主人定）：先把间隔缩成 ` ─ `，还放不下的只有这一步写名字。
+pub fn bar(frame: &mut Frame, rect: Rect, step: Step, names: &[String]) {
+    let Some((shown, now)) = step.bar() else {
         return;
     };
     let names: Vec<String> = shown

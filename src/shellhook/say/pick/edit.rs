@@ -93,7 +93,6 @@ impl Picker for EditPick {
                 tag: PAGE_TAG,
                 method: "view.page",
                 params: json!({ "session": session }),
-                system: false,
             });
         }
         let Some(found) = self.found.take() else {

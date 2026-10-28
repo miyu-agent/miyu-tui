@@ -245,8 +245,7 @@ impl Transcript {
             | Update::PackageCallRefused { .. }
             | Update::OpenPage(_)
             | Update::DirChecked(_)
-            | Update::AnswerFilesLost(_)
-            | Update::Account(_) => {}
+            | Update::AnswerFilesLost(_) => {}
             Update::CoolingUntil(until) => self.cooling_until(until),
             Update::CurrentModel(current) => self.current_model(current),
             Update::SessionPersona(persona) => self.persona = Some(persona),

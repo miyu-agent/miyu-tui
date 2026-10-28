@@ -151,7 +151,6 @@ fn open_tui(config: &crate::config::Config, shell: Option<u32>) -> io::Result<Ex
             tag: 1,
             method: "session.terminal",
             params: asked.params(cwd.as_deref()),
-            system: false,
         });
     };
     ask(&asked);

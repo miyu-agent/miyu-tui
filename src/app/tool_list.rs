@@ -21,7 +21,6 @@ impl App {
             None => self.new_session_params(),
         };
         self.link.core.send(Command::Ask {
-            system: false,
             tag: TOOLS_TAG,
             method: "session.tools",
             params,

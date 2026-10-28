@@ -7,8 +7,6 @@ pub enum Step {
     Welcome,
     /// 界面语言。
     Language,
-    /// 注册机主：只在还没有机主时有（第 5a 条，2026-10-24 项目主人定，放在语言后面）。
-    Register,
     /// 你喜欢的操作方式：方向键、Vim（2026-10-21 项目主人定，放在语言后面）。
     Keys,
     /// 图标。
@@ -31,10 +29,9 @@ pub enum Step {
     Done,
 }
 
-const ORDER: [Step; 13] = [
+const ORDER: [Step; 12] = [
     Step::Welcome,
     Step::Language,
-    Step::Register,
     Step::Keys,
     Step::Icons,
     Step::Model,
@@ -63,20 +60,16 @@ impl Step {
     }
 
     /// 进度那一行画哪几步（字表 `oobe.steps` 里第几个名字）、这一步是其中第几个；欢迎、好了不画进度（第 6 条）。
-    /// `register`：还要注册机主，「注册」那一步画进去（第 5a 条）。
-    pub fn bar(self, register: bool) -> Option<(Vec<usize>, usize)> {
-        let shown: Vec<usize> = (0..BAR.len())
-            .filter(|i| register || BAR[*i] != Step::Register)
-            .collect();
+    pub fn bar(self) -> Option<(Vec<usize>, usize)> {
+        let shown: Vec<usize> = (0..BAR.len()).collect();
         let now = shown.iter().position(|i| BAR[*i] == self)?;
         Some((shown, now))
     }
 }
 
 /// 进度那一行的几步，照先后；和字表 `oobe.steps` 的名字一一对着。
-const BAR: [Step; 10] = [
+const BAR: [Step; 9] = [
     Step::Language,
-    Step::Register,
     Step::Keys,
     Step::Icons,
     Step::Model,

@@ -54,7 +54,6 @@ impl App {
     fn ask_bill(&mut self) {
         if let Some(session) = self.talk.transcript.session.clone() {
             self.link.core.send(Command::Ask {
-                system: false,
                 tag: BILL_TAG,
                 method: "usage.query",
                 params: json!({ "session": session, "tree": true }),

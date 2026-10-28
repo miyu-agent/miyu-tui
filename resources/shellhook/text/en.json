@@ -13,8 +13,6 @@
   "no_program": "Can't find the program to call from the script: {program}",
   "ps_policy": "PowerShell's execution policy is {policy}, so it won't load the profile and the hook has no effect: run Set-ExecutionPolicy -Scope CurrentUser RemoteSigned in PowerShell, then open a new window",
   "no_session": "This terminal hasn't talked to her yet: say something first, then use this command",
-  "not_registered": "Not registered yet: run miyu to open the full-screen interface and set a username and password in the setup, then come back",
-  "doctor_core_setup": "Connected to the core, but nobody has registered yet: run miyu to open the full-screen interface and set a username and password in the setup",
   "renewed": "The last message was {ago} ago: started a new session so an expired cache doesn't cost extra",
   "stale_hook": "This terminal still has the old hook; reopen the terminal to use the new one",
   "units": {

@@ -11,14 +11,12 @@ use miyu_client::connect::{ConnectError, StartError};
 use miyu_client::places::DataRoot;
 use miyu_client::places::Env;
 
+use super::Update;
 use super::limits::Limits;
 use super::rpc::{Failure, Rpc};
-use super::{Account, Update};
 
-/// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来；没给的只连。交回握手回应里说的这个人。
-pub(super) async fn connect(
-    admin: std::sync::Arc<std::sync::atomic::AtomicBool>,
-) -> Result<(Rpc, Account), Update> {
+/// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来；没给的只连。
+pub(super) async fn connect() -> Result<Rpc, Update> {
     let env = Env::current();
     let root = DataRoot::locate(&env).map_err(|e| Update::Failed(e.to_string()))?;
     root.prepare().map_err(|e| Update::Failed(e.to_string()))?;
@@ -42,23 +40,18 @@ pub(super) async fn connect(
             }),
     };
     let (connection, token) = connected?;
-    let mut rpc = Rpc::new(connection, admin);
+    let mut rpc = Rpc::new(connection);
     // 有确认、提问的抽屉：说这一头有人能当场回答（核心 D-1，`session.answer`）。
     let hello = json!({
         "protocol": [1, 1],
         "head": {"kind": "tui", "version": env!("CARGO_PKG_VERSION")},
         // 系统的语言（核心 8-2：`ui.language` 是 `auto` 时核心照它说话），照 `miyu_client::places::locale`，和命令行认的一样。
         "locale": miyu_client::places::locale().unwrap_or_default(),
-        // 认识管理员模式（核心 Y-12 下上）：改系统那一层的要带 `scope`（「管理员模式」第 1、4 条）。
-        "caps": {"input": true, "scope": true},
+        "caps": {"input": true},
         "token": token,
     });
-    let said = rpc.call("hello", hello).await.map_err(refused)?;
-    let account = Account {
-        setup: said["setup"] == true,
-        admin: said["admin"] == true,
-    };
-    Ok((rpc, account))
+    rpc.call("hello", hello).await.map_err(refused)?;
+    Ok(rpc)
 }
 
 /// 开会话时带上的：`/model` 选的模型、人格框、预设框选的（没选的不写，核心照默认），`/workspace` 换的目录。

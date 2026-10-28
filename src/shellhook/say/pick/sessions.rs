@@ -81,7 +81,6 @@ impl Picker for SessionsPick {
                             json!({ "session": picked.session }),
                             turn.terminal.key.as_deref(),
                         ),
-                        system: false,
                     });
                 }
                 let title = picked

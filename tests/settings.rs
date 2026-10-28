@@ -187,9 +187,10 @@ fn a_new_provider_keeps_its_key_in_the_secret_store_and_an_added_model_can_be_de
     let settings = home.settings();
     assert!(settings.contains("[providers.zen]"), "{settings}");
     assert!(!settings.contains("sk-test-zen"), "明文不进个人设置");
+    // 只有一个主人（核心 SU-1）：`secret.set` 不写层的，主人存系统那一份（原来没开管理员模式时存自己那一份）。
     let secrets =
-        std::fs::read_to_string(home.root().join("home/alice/secrets.toml")).unwrap_or_default();
-    assert!(secrets.contains("zen-key"), "没开管理员模式：存自己那一份");
+        std::fs::read_to_string(home.root().join("system/secrets.toml")).unwrap_or_default();
+    assert!(secrets.contains("zen-key"), "存进系统那一份密钥库");
     // 给它手加一个模型，存下；再删掉，存下。每一步等界面跟上再按下一个键：文件写进去了，供应商的窗不一定已经关上，
     // 键快过界面会落到别的地方（Windows 上见过：回车落在列表上，开了供应商的窗）。
     gone(&mut tui, "[ 保存 ]");
@@ -442,29 +443,6 @@ fn the_mascot_item_offers_the_built_in_one_first() {
         "选择窗第一行「内置」：\n{}",
         tui.lines().join("\n")
     );
-}
-
-/// 核心 L-2（2026-10-15）：供应商的窗多一行「约束解码」，挪到「开」存下，个人设置里写 `compat.strict_tools = true`。
-#[test]
-fn constrained_decoding_is_written_into_the_providers_compat_table() {
-    let home = Home::with_settings(Script::new([Play::Says("好。")]), RELAY);
-    let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
-    to_models(&mut tui);
-    tui.wait_for("cline");
-    tui.add_custom_provider();
-    tui.key(b"\r");
-    tui.type_text("strict");
-    tui.key(b"\r");
-    // ID、显示名称、Base URL、接口、认证、API Key、约束解码：挪到最后一行，换成「开」。
-    for _ in 0..6 {
-        tui.key(DOWN);
-    }
-    tui.key(b"l");
-    tui.wait_for("开");
-    tui.key(b"s");
-    wait_settings(&home, &mut tui, "strict_tools");
-    let settings = home.settings();
-    assert!(settings.contains("strict_tools = true"), "{settings}");
 }
 
 #[test]

@@ -60,14 +60,7 @@ pub(super) fn sidebar_persona(session: Option<&str>) -> Option<&str> {
 impl App {
     /// 配置页、引导的一条请求交给核心。传头像（`blob.put`，只有它带本机路径）先在后台缩到核心收的大小，缩好了由后台线程
     /// 发（review D2，2026-10-11：原来在界面线程里解码、重编码，大照片卡界面）；别的当场发。
-    /// `system`：不管开没开管理员模式都带 `scope`（引导装语义模型，「管理员模式」第 5 条）。
-    pub(super) fn send_ask(
-        &self,
-        tag: u64,
-        method: &'static str,
-        params: serde_json::Value,
-        system: bool,
-    ) {
+    pub(super) fn send_ask(&self, tag: u64, method: &'static str, params: serde_json::Value) {
         if method == "blob.put"
             && let Some(path) = params["path"].as_str()
         {
@@ -75,7 +68,6 @@ impl App {
             crate::avatars::shrink::in_background(PathBuf::from(path), move |ready| {
                 let params = json!({"path": ready.display().to_string()});
                 core.send(Command::Ask {
-                    system,
                     tag,
                     method,
                     params,
@@ -84,7 +76,6 @@ impl App {
             return;
         }
         self.link.core.send(Command::Ask {
-            system,
             tag,
             method,
             params,
@@ -107,7 +98,6 @@ impl App {
             .collect();
         if let Some(persona) = self.media.avatars.next(&refs) {
             self.link.core.send(Command::Ask {
-                system: false,
                 tag: AVATAR_TAG,
                 method: "persona.avatar",
                 params: json!({ "persona": persona }),

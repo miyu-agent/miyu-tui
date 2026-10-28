@@ -30,8 +30,7 @@ pub fn run(words: &Words) -> io::Result<ExitCode> {
         println!("{mark} {text}");
     };
     match core() {
-        Ok(true) => say(true, words.doctor_core_ok.clone()),
-        Ok(false) => say(false, words.doctor_core_setup.clone()),
+        Ok(()) => say(true, words.doctor_core_ok.clone()),
         Err(e) => say(
             false,
             fill(&words.doctor_core_bad, &[("reason", &e.to_string())]),
@@ -73,8 +72,8 @@ pub fn run(words: &Words) -> io::Result<ExitCode> {
     })
 }
 
-/// 连一次核心（不进会话）：头的配置推来了就算连上；还没有机主的（核心 Y-12，只能注册）交回 `false`。
-fn core() -> io::Result<bool> {
+/// 连一次核心（不进会话）：头的配置推来了就算连上。
+fn core() -> io::Result<()> {
     let config = super::say::config()?;
     let (sender, incoming) = std::sync::mpsc::channel();
     let _core = crate::core::spawn(config.layout.reconnect_ms, Start::Bare, move |update| {
@@ -82,8 +81,7 @@ fn core() -> io::Result<bool> {
     });
     loop {
         match incoming.recv_timeout(CORE_WAIT) {
-            Ok(Update::HeadConfig(_)) => return Ok(true),
-            Ok(Update::Account(account)) if account.setup => return Ok(false),
+            Ok(Update::HeadConfig(_)) => return Ok(()),
             Ok(Update::NoCoreBin) => return Err(io::Error::other("no core program")),
             Ok(Update::Failed(reason)) => return Err(io::Error::other(reason)),
             Ok(_) => {}

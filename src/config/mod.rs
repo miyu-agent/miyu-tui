@@ -48,7 +48,7 @@ pub use open::OpenTexts;
 pub use panels::{HistoryTexts, MenuTexts};
 pub use timeline::{Body, Summary, Timeline, ToolKind};
 pub use widgets::{WidgetLayout, WidgetMarks};
-pub use words::{AdminTexts, JobTexts, ModelTexts, RecapTexts, RenameTexts, UndoFileTexts};
+pub use words::{JobTexts, ModelTexts, RecapTexts, RenameTexts, UndoFileTexts};
 
 /// 界面上给人看的字。`{count}` 这样的占位由代码填。
 #[derive(Debug, Clone, Deserialize)]
@@ -181,8 +181,6 @@ pub struct Texts {
     pub editing: String,
     /// 开不了链接、文件时的提示。
     pub open: OpenTexts,
-    /// 管理员模式（蓝图「管理员模式」）。
-    pub admin: AdminTexts,
     /// 在回答时按第一下 `Esc` 的提示。
     pub esc_hint: String,
     /// 要停子代理时按第一下 `Esc` 的提示（`app/stop_agents.rs`）。

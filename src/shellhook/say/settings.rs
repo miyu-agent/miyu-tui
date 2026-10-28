@@ -37,6 +37,5 @@ pub fn get<K: serde::Serialize>(core: &Core, tag: u64, keys: K) {
         tag,
         method: "config.get",
         params: serde_json::json!({ "keys": keys }),
-        system: false,
     });
 }

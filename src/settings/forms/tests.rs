@@ -164,31 +164,16 @@ fn inputs_offer_audio_and_video_too() {
 }
 
 #[test]
-fn constrained_decoding_is_auto_on_or_off_and_auto_writes_nothing() {
-    // 核心 L-2（2026-10-15）：供应商多一项 `compat.strict_tools`，自动照档案（不写），开、关写布尔。
+fn the_provider_form_has_no_constrained_decoding_any_more() {
+    // 核心 FL-1 下（2026-10-27 项目主人定工具一律全量，懒加载整套拆了）：配置清单里没有 `compat.strict_tools`，供应商的窗
+    // 不再有「约束解码」这一行，存的时候也不写它。
     let data = sample();
-    let pick = |at: usize| {
-        let mut draft = Draft::default();
-        let mut form = provider(&data, &data, &draft, Some("relay"));
-        let row = form
-            .rows
-            .iter_mut()
-            .find(|r| r.field == Field::StrictTools)
-            .expect("有约束解码这一行");
-        assert!(
-            matches!(&row.val, Val::Choice { at: Some(0), .. }),
-            "没写的停在自动"
-        );
-        if let Val::Choice { at: a, .. } = &mut row.val {
-            *a = Some(at);
-        }
-        apply(&form, &data, &data, &mut draft).unwrap();
-        draft
-    };
-    let key = "providers.relay.compat.strict_tools";
-    assert_eq!(pick(1).value(key, &data), Some(&json!(true)));
-    assert_eq!(pick(2).value(key, &data), Some(&json!(false)));
-    assert!(!pick(0).changed(key), "自动不写");
+    let mut draft = Draft::default();
+    let form = provider(&data, &data, &draft, Some("relay"));
+    let names: Vec<&str> = form.rows.iter().map(|r| r.field.name()).collect();
+    assert!(!names.contains(&"strict_tools"), "{names:?}");
+    apply(&form, &data, &data, &mut draft).unwrap();
+    assert!(!draft.changed("providers.relay.compat.strict_tools"));
 }
 
 #[test]

@@ -88,8 +88,6 @@ pub struct Turn {
     pub ended: Option<crate::core::EndReason>,
     /// 收尾了。
     pub done: bool,
-    /// 核心还没有机主（核心 Y-12）：什么都办不了，说一声去全屏的引导里注册（`say/mod.rs`）。
-    pub unregistered: bool,
 }
 
 impl Turn {
@@ -175,7 +173,6 @@ impl Turn {
             interrupted: false,
             ended: None,
             done: false,
-            unregistered: false,
         }
     }
 
@@ -185,7 +182,6 @@ impl Turn {
             tag: TERMINAL_TAG,
             method: "session.terminal",
             params: self.terminal.params(self.cwd.as_deref()),
-            system: false,
         });
     }
 
@@ -239,11 +235,6 @@ impl Turn {
                 *update
             }
             Update::Elsewhere { .. } => return,
-            Update::Account(account) if account.setup => {
-                self.unregistered = true;
-                self.done = true;
-                return;
-            }
             update => update,
         };
         if super::dreaming::update(self, &update, core) {

@@ -17,7 +17,6 @@ impl App {
         self.boxes.status_models.clear();
         if let Some(session) = self.talk.transcript.session.clone() {
             self.link.core.send(Command::Ask {
-                system: false,
                 tag: MODELS_TAG,
                 method: "usage.query",
                 params: json!({"session": session, "tree": true, "group": ["model"]}),
