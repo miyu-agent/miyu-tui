@@ -643,7 +643,6 @@
       "page": "admin page",
       "mascot": "mascot",
       "connection": "{platform} connection",
-      "system_account": "system account",
       "settings": ["1 setting", "{n} settings"],
       "mcp": "MCP server {name}",
       "skill": "skill {name}",

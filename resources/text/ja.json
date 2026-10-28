@@ -643,7 +643,6 @@
       "page": "管理ページ",
       "mascot": "マスコット",
       "connection": "{platform} 接続",
-      "system_account": "システムアカウント",
       "settings": ["設定 1 項目", "設定 {n} 項目"],
       "mcp": "MCP サーバー {name}",
       "skill": "スキル {name}",
