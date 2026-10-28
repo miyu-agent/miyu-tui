@@ -121,7 +121,7 @@ pub enum KeyRef {
     None,
 }
 
-/// 存（`config.set` 个人设置）：这一家的 key 引用或者本机的 `local`（配好了的不写）、自定义的接口和地址、不合写法的 `catalog`、
+/// 存（`config.set` 系统配置）：这一家的 key 引用或者本机的 `local`（配好了的不写）、自定义的接口和地址、不合写法的 `catalog`、
 /// `models.chat`。池不写：`lite`、`normal`、`flagship` 三个固定池配置里一个字没写也在（核心 Q-1；原来一个池都没有的另写
 /// 三个预设的池，`standard` 改名 `normal` 以后照旧写会多出一个人建的 `standard`）。
 pub fn save_params(
@@ -160,7 +160,7 @@ pub fn save_params(
     }
     set("models.chat".to_string(), json!(format!("{id}/{model}")));
     // 引导里接的模型是个人的（2026-10-24 项目主人定，「管理员模式」第 5 条；原来写系统配置）。
-    json!({"layer": "personal", "changes": changes})
+    json!({"changes": changes})
 }
 
 #[cfg(test)]
@@ -279,7 +279,7 @@ mod tests {
             "deepseek-flash",
         );
         let changes = got["changes"].as_array().unwrap();
-        assert_eq!(got["layer"], "personal");
+        assert!(got.get("layer").is_none(), "不写层：就是系统配置");
         assert!(
             changes.contains(
                 &json!({"key": "providers.deepseek.key", "value": {"secret": "deepseek"}})

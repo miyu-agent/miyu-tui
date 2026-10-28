@@ -123,12 +123,12 @@ pub(super) fn value(
     }
 }
 
-/// 右边写的来源：自己写了的黄字「个人」，继承的暗着写从哪来；成员写「图」。
+/// 右边写的来源：自己写了的黄字「自定义」，继承的暗着写从哪来；成员写「图」。
 pub(super) fn source(row: &Row, texts: &Texts) -> (String, Style) {
     if let Val::Member { sees: true, .. } = row.val {
         return (texts.tags[0].clone(), theme::dim());
     }
-    // 价格那几行不写「默认」也不写「个人」（2026-10-19 项目主人）：一列一样的字没有信息。
+    // 价格那几行不写「默认」也不写「自定义」（2026-10-19 项目主人）：一列一样的字没有信息。
     let priced = matches!(
         row.field,
         Field::Input
@@ -142,7 +142,7 @@ pub(super) fn source(row: &Row, texts: &Texts) -> (String, Style) {
         if priced {
             return (String::new(), Style::new());
         }
-        return (texts.source("personal").to_string(), theme::warn());
+        return (texts.source("own").to_string(), theme::warn());
     }
     match &row.source {
         Some(from) if priced && from == "default" => (String::new(), Style::new()),

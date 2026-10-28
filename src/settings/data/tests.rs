@@ -33,16 +33,27 @@ fn only_models_listed_by_the_config_alone_are_custom() {
 }
 
 #[test]
-fn the_personal_layer_and_system_keys_are_remembered_for_expect_and_deletes() {
+fn what_the_system_config_has_is_remembered_for_expect_and_deletes() {
+    // 核心 SU-3 上起只剩系统配置一层能写：项目配置写的不算写着的。
     let data = sample();
     assert_eq!(
-        data.personal.get("providers.relay.key"),
+        data.system.get("providers.relay.key"),
         Some(&json!({"secret": "relay-key"}))
     );
-    assert!(data.in_system("providers.relay"), "地址写在系统层");
-    assert!(!data.in_system("providers.dev"));
+    assert!(
+        !data.system.contains_key("permission.level"),
+        "项目配置的不算"
+    );
     assert_eq!(
-        data.personal_under("pools.daily"),
+        data.written_under("providers.relay"),
+        vec![
+            "providers.relay.base_url",
+            "providers.relay.key",
+            "providers.relay.name"
+        ]
+    );
+    assert_eq!(
+        data.written_under("pools.daily"),
         vec!["pools.daily.models", "pools.daily.strategy"]
     );
     assert!(data.secrets.contains("relay-key"));
@@ -52,7 +63,7 @@ fn the_personal_layer_and_system_keys_are_remembered_for_expect_and_deletes() {
 fn a_fact_from_the_config_says_which_layer() {
     let data = sample();
     let (_, flash) = data.model("dev/flash").unwrap();
-    assert_eq!(flash.from("window"), "config:personal");
+    assert_eq!(flash.from("window"), "config:system");
     assert_eq!(flash.from("inputs"), "default");
     assert_eq!(flash.from("nothing"), "default");
 }

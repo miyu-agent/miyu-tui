@@ -51,19 +51,9 @@ pub struct Item {
 }
 
 impl Item {
-    /// 能写进个人设置。
-    pub fn personal(&self) -> bool {
-        self.layers.iter().any(|l| l == "personal")
-    }
-
-    /// 只能写系统配置（运行日志级别这类，「配置页」第 33 条）。
-    pub fn system_only(&self) -> bool {
-        !self.personal() && self.layers.iter().any(|l| l == "system")
-    }
-
-    /// 终端改得了：个人设置、系统配置有一层能写。
+    /// 终端改得了：能写进系统配置（核心 SU-3 上起只剩这一层，项目配置的终端不写）。
     pub fn writable(&self) -> bool {
-        self.personal() || self.system_only()
+        self.layers.iter().any(|l| l == "system")
     }
 }
 

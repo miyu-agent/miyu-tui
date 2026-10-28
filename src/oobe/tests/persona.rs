@@ -91,7 +91,7 @@ fn a_new_persona_is_created_in_one_go_and_becomes_the_default() {
     let (tag, params) = find(&sent, "config.set");
     assert_eq!(
         params,
-        json!({"layer": "personal", "changes": [{"key": "persona.default", "value": "persona-1"}]})
+        json!({"changes": [{"key": "persona.default", "value": "persona-1"}]})
     );
     oobe.answer(tag, Ok(json!({})), t0, &texts);
     assert_eq!(oobe.step, Step::Theme, "人格后面是主题（配色跟着头像）");

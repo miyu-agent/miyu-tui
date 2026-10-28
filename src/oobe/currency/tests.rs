@@ -19,14 +19,13 @@ fn it_stops_on_what_was_set_or_on_the_languages_default() {
         CURRENCIES[step.pick.selected], "CNY",
         "没人设过：照界面语言"
     );
-    let set =
-        json!({"items": {"usage.currency": {"value": "EUR", "origin": {"layer": "personal"}}}});
+    let set = json!({"items": {"usage.currency": {"value": "EUR", "origin": {"layer": "system"}}}});
     step.answer(&Ok(set), "CNY");
     assert_eq!(CURRENCIES[step.pick.selected], "EUR", "设过的停在那一种");
 }
 
 #[test]
-fn enter_writes_the_personal_setting_and_moves_on() {
+fn enter_writes_the_setting_and_moves_on() {
     let mut step = CurrencyStep::default();
     let mut asker = Asker::default();
     step.key(key(KeyCode::Down), &mut asker);
@@ -36,11 +35,11 @@ fn enter_writes_the_personal_setting_and_moves_on() {
         .iter()
         .map(|a| (a.tag, a.method, a.params.clone()))
         .find(|(_, m, _)| *m == "config.set")
-        .expect("写个人设置");
+        .expect("写系统配置");
     assert_eq!(method, "config.set");
     assert_eq!(
         params,
-        json!({"layer": "personal", "changes": [{"key": "usage.currency", "value": "USD"}]})
+        json!({"changes": [{"key": "usage.currency", "value": "USD"}]})
     );
     assert_eq!(step.key(key(KeyCode::Esc), &mut asker), Move::Back);
 }
@@ -71,15 +70,14 @@ fn other_takes_a_three_letter_code_and_refuses_anything_else() {
         .iter()
         .find(|a| a.method == "config.set")
         .map(|a| a.params.clone())
-        .expect("写个人设置");
+        .expect("写系统配置");
     assert_eq!(params["changes"][0]["value"], "SGD", "转大写");
 }
 
 #[test]
 fn a_code_not_in_the_list_opens_on_other() {
     let mut step = CurrencyStep::default();
-    let set =
-        json!({"items": {"usage.currency": {"value": "BRL", "origin": {"layer": "personal"}}}});
+    let set = json!({"items": {"usage.currency": {"value": "BRL", "origin": {"layer": "system"}}}});
     step.answer(&Ok(set), "CNY");
     assert_eq!(step.pick.selected, step.other_row());
     assert_eq!(step.other.text(), "BRL");

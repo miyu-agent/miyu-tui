@@ -44,7 +44,7 @@ fn both_can_be_left_empty_and_nothing_is_written() {
 }
 
 #[test]
-fn what_is_typed_is_written_to_personal_settings_and_a_cleared_one_is_unset() {
+fn what_is_typed_is_written_to_the_settings_and_a_cleared_one_is_unset() {
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = at_profile(
@@ -72,7 +72,7 @@ fn what_is_typed_is_written_to_personal_settings_and_a_cleared_one_is_unset() {
     let (tag, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
         params,
-        json!({"layer": "personal", "changes": [
+        json!({"changes": [
             {"key": "profile.name", "value": "小林"},
             {"key": "profile.about", "unset": true}
         ]})
@@ -116,7 +116,7 @@ fn the_reply_language_is_picked_from_the_suggestions_or_typed_after_other() {
     let (_, params) = find(&asks(&mut oobe), "config.set");
     assert_eq!(
         params,
-        json!({"layer": "personal", "changes": [
+        json!({"changes": [
             {"key": "profile.preferred_reply_language", "value": "粤语"}
         ]})
     );

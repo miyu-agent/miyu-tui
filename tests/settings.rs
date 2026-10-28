@@ -1,4 +1,4 @@
-//! 伪终端里的端到端测试：配置页（蓝图 `tui.md`「配置页」）。真界面连一份真核心，改了存下，看个人设置文件。
+//! 伪终端里的端到端测试：配置页（蓝图 `tui.md`「配置页」）。真界面连一份真核心，改了存下，看系统配置文件。
 
 mod support;
 
@@ -53,7 +53,7 @@ fn gone(tui: &mut Tui, text: &str) {
     }
 }
 
-/// 等个人设置文件里出现 `want`。
+/// 等系统配置文件里出现 `want`。
 fn wait_settings(home: &Home, tui: &mut Tui, want: &str) {
     let end = Instant::now() + support::WAIT;
     while !home.settings().contains(want) {
@@ -68,7 +68,7 @@ fn wait_settings(home: &Home, tui: &mut Tui, want: &str) {
 }
 
 #[test]
-fn the_config_page_starts_on_its_own_edits_a_model_and_saves_to_personal_settings() {
+fn the_config_page_starts_on_its_own_edits_a_model_and_saves_to_the_settings() {
     let home = Home::with_settings(Script::new([Play::Says("好。")]), RELAY);
     let mut tui = home.tui_args("zh_CN.UTF-8", &["--page", "config"]);
     to_models(&mut tui);
@@ -186,7 +186,7 @@ fn a_new_provider_keeps_its_key_in_the_secret_store_and_an_added_model_can_be_de
     wait_settings(&home, &mut tui, "zen-key");
     let settings = home.settings();
     assert!(settings.contains("[providers.zen]"), "{settings}");
-    assert!(!settings.contains("sk-test-zen"), "明文不进个人设置");
+    assert!(!settings.contains("sk-test-zen"), "明文不进系统配置");
     // 只有一个主人（核心 SU-1）：`secret.set` 不写层的，主人存系统那一份（原来没开管理员模式时存自己那一份）。
     let secrets =
         std::fs::read_to_string(home.root().join("system/secrets.toml")).unwrap_or_default();

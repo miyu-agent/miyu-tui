@@ -66,15 +66,10 @@ fn install(dir: &Path) {
         format!("record:{}", record.display()),
     );
     std::fs::write(package.join("package.toml"), manifest).expect("写得进去");
+    // 批过的能力和开关记在一起（`approved`，核心 SU-2 中起；原来在组表 `system/groups.json`）。
     std::fs::write(
         dir.join("system/extensions.json"),
-        r#"{"version":1,"on":{"wx":true}}"#,
-    )
-    .expect("写得进去");
-    // 批过的能力记在组表 `ext.<能力>` 里（核心 Y-5 下上）。
-    std::fs::write(
-        dir.join("system/groups.json"),
-        r#"{"version":1,"groups":{"ext.widgets":["wx"]}}"#,
+        r#"{"version":1,"on":{"wx":true},"approved":{"wx":["widgets"]}}"#,
     )
     .expect("写得进去");
 }

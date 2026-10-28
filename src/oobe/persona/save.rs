@@ -268,6 +268,6 @@ impl PersonaStep {
 
 /// 写成默认人格。
 fn pick(asker: &mut Asker, id: &str) {
-    let params = json!({"layer": "personal", "changes": [{"key": "persona.default", "value": id}]});
+    let params = json!({"changes": [{"key": "persona.default", "value": id}]});
     asker.ask("config.set", params, Waiting::PersonaPick(id.to_string()));
 }

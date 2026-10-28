@@ -182,10 +182,10 @@ fn opening_a_long_session_is_quick_and_has_no_memory_spike() {
     let env = desktop(&home);
     assert_flat("打开长会话", open(&home, &id, &env));
     // 跟随壁纸：头一次解一次、记进缓存；以后同一张不再解。
-    let settings = home.root().join("home/alice/settings.toml");
-    let text = std::fs::read_to_string(&settings).expect("有个人设置");
+    let settings = home.settings_file();
+    let text = std::fs::read_to_string(&settings).expect("有系统配置");
     std::fs::write(&settings, format!("{text}\n[tui]\ntheme = \"wallpaper\"\n")).expect("写得了");
-    // 核心起来时读个人设置：停掉再起来，读新写的。
+    // 核心起来时读系统配置：停掉再起来，读新写的。
     home.stop_core();
     home.restart_core();
     let (peak, steady, _) = open(&home, &id, &env);

@@ -1,6 +1,6 @@
 //! 草稿（蓝图「配置页」第 16、24 条）：悬浮窗「确定」记进这里，`s` 一起存。草稿就是要发的那条 `config.set`：键 → 改成什么
-//! 或删掉；另记要存进密钥库的明文（照要写引用的那一项记：供应商的 key、包的密钥项，存的时候才起名字）。平常写个人设置；只有系统配置这一层的项（运行日志
-//! 级别这类，第 33 条）当场存，那一次写系统配置。
+//! 或删掉；另记要存进密钥库的明文（照要写引用的那一项记：供应商的 key、包的密钥项，存的时候才起名字）。写系统配置（核心 SU-3
+//! 上起只剩这一层，`config.set` 不写 `layer`）。
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -14,7 +14,7 @@ use super::keys;
 pub enum Change {
     /// 写成这个值。
     Set(Value),
-    /// 从个人层删掉，回到下面一层的。
+    /// 从系统配置删掉，回到出厂默认。
     Unset,
 }
 
@@ -31,49 +31,33 @@ pub struct Draft {
     pub new_models: Vec<(String, String)>,
     /// 新建的池，照建的先后。
     pub new_pools: Vec<String>,
-    /// 这一份写系统配置（不是个人设置）：改只有系统配置这一层的项时设上，存完、扔掉时回到个人设置。
-    pub system: bool,
     /// 供应商改编号（旧、新）：别的改动照旧编号存完再改（`provider.rename`，`saving.rs`）。
     pub rename: Option<(String, String)>,
 }
 
 impl Draft {
-    /// 写到的那一层现在写着的：个人设置，或者系统配置（[`Draft::system`]）。
-    fn written<'a>(&self, data: &'a Data) -> &'a BTreeMap<String, Value> {
-        if self.system {
-            &data.system
-        } else {
-            &data.personal
-        }
-    }
-
-    /// 改成 `value`；和那一层现在写的一样的不算改动。
-    /// 这一份改了哪几项。
-    pub fn keys(&self) -> impl Iterator<Item = &String> {
-        self.changes.keys()
-    }
-
+    /// 改成 `value`；和系统配置现在写的一样的不算改动。
     pub fn set(&mut self, key: &str, value: Value, data: &Data) {
-        if self.written(data).get(key) == Some(&value) {
+        if data.system.get(key) == Some(&value) {
             self.changes.remove(key);
         } else {
             self.changes.insert(key.to_string(), Change::Set(value));
         }
     }
 
-    /// 从那一层删掉；本来就没写的不算改动。
+    /// 从系统配置删掉；本来就没写的不算改动。
     pub fn unset(&mut self, key: &str, data: &Data) {
-        if self.written(data).contains_key(key) {
+        if data.system.contains_key(key) {
             self.changes.insert(key.to_string(), Change::Unset);
         } else {
             self.changes.remove(key);
         }
     }
 
-    /// 删掉个人层里这张表下面写的每一项（删供应商、模型、池），连同草稿里新加的。
+    /// 删掉系统配置里这张表下面写的每一项（删供应商、模型、池），连同草稿里新加的。
     pub fn unset_all(&mut self, prefix: &str, data: &Data) {
         self.changes.retain(|k, _| !keys::under(k, prefix));
-        for key in data.personal_under(prefix) {
+        for key in data.written_under(prefix) {
             self.changes.insert(key, Change::Unset);
         }
         if let Some(id) = prefix
@@ -100,12 +84,12 @@ impl Draft {
         self.secrets.insert(key.to_string(), value);
     }
 
-    /// 草稿里这一项是什么：写了的值，删了的 `None`，没改的照那一层。
+    /// 草稿里这一项是什么：写了的值，删了的 `None`，没改的照系统配置。
     pub fn value<'a>(&'a self, key: &str, data: &'a Data) -> Option<&'a Value> {
         match self.changes.get(key) {
             Some(Change::Set(v)) => Some(v),
             Some(Change::Unset) => None,
-            None => self.written(data).get(key),
+            None => data.system.get(key),
         }
     }
 
@@ -114,9 +98,9 @@ impl Draft {
         self.changes.contains_key(key)
     }
 
-    /// 草稿把这张表在个人层写的全删了（个人层原来写了东西的才算）。
+    /// 草稿把这张表在系统配置写的全删了（原来写了东西的才算）。
     pub fn removes(&self, prefix: &str, data: &Data) -> bool {
-        let written = data.personal_under(prefix);
+        let written = data.written_under(prefix);
         !written.is_empty()
             && written
                 .iter()
@@ -200,7 +184,7 @@ impl Draft {
             .collect()
     }
 
-    /// 要发的 `config.set` 参数：个人层（或系统配置），每项带 `expect`（那一层原来写的什么）；`named` 是存好了的密钥
+    /// 要发的 `config.set` 参数：不写 `layer`（就是系统配置），每项带 `expect`（原来写的什么）；`named` 是存好了的密钥
     /// （写引用的那一项、名字），引用写进那一项。
     pub fn request(&self, data: &Data, named: &[(String, String)]) -> Value {
         let mut all = self.changes.clone();
@@ -210,8 +194,8 @@ impl Draft {
         let changes: Vec<Value> = all
             .iter()
             .map(|(key, change)| {
-                let expect = self
-                    .written(data)
+                let expect = data
+                    .system
                     .get(key)
                     .map_or_else(|| json!({}), |v| json!({"value": v}));
                 match change {
@@ -220,8 +204,7 @@ impl Draft {
                 }
             })
             .collect();
-        let layer = if self.system { "system" } else { "personal" };
-        json!({"layer": layer, "changes": changes})
+        json!({"changes": changes})
     }
 }
 

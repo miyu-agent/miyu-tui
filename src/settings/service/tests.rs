@@ -34,7 +34,7 @@ fn the_row_goes_last_on_the_general_page_once() {
             {"id": "display", "name": "显示", "page": "general"},
             {"id": "logs", "name": "日志", "page": "advanced"}
         ],
-        "items": [{"key": "display.language", "control": "select", "layers": ["personal"],
+        "items": [{"key": "display.language", "control": "select", "layers": ["system"],
                    "name": "语言", "page": "general", "group": "display"}]
     }));
     let words = &texts().more.service;

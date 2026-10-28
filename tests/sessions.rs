@@ -59,7 +59,7 @@ fn wait_rows(tui: &mut Tui, count: usize) {
 #[test]
 fn starting_in_the_most_recent_session_draws_what_was_said_before() {
     // 2026-10-01 项目主人要的：启动时进最近的那个会话（第 8 条），以前的对话照补发来的画出来。配置项 `ui.startup`
-    // （核心 8-3 登记，8-28 起从 `tui.startup` 改名，几个头共用），照个人设置读。
+    // （核心 8-3 登记，8-28 起从 `tui.startup` 改名，几个头共用），照系统配置读。
     let home = Home::with_settings(
         Script::new([Play::Thinks {
             thinking: "想一想。",

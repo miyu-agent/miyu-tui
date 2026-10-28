@@ -139,7 +139,7 @@ mod tests {
                 {"model": "alpha", "ref": "dev/alpha", "facts": {
                     "name": {"value": "Alpha"},
                     "reasoning": {"value": ["off", "low", "high"]},
-                    "effort": {"value": "high", "from": "personal", "key": "providers.dev.models.alpha.effort"}}},
+                    "effort": {"value": "high", "from": "system", "key": "providers.dev.models.alpha.effort"}}},
                 {"model": "beta", "ref": "dev/beta", "facts": {
                     "reasoning": {"value": []},
                     "effort": {"value": null, "from": "default", "key": "providers.dev.models.beta.effort"}}}]}]}))

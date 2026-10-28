@@ -1,5 +1,5 @@
 //! 配置页读来的数据（蓝图「配置页」第 23、25 条）：`model.list` 的供应商、模型、池、默认用途，`config.get`（`all`）里
-//! 个人层、系统层各写了哪几项，`secret.list` 的名字。只读；改的东西在草稿里（`draft.rs`）。
+//! 系统配置写了哪几项（核心 SU-3 上起只剩这一层能写），`secret.list` 的名字。只读；改的东西在草稿里（`draft.rs`）。
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -18,13 +18,11 @@ pub struct Data {
     pub chat: Option<String>,
     /// 默认的视觉模型（`uses.vision`）。
     pub vision: Option<String>,
-    /// 个人层写着的每一项：键 → 值（存的时候做 `expect`）。
-    pub personal: BTreeMap<String, Value>,
-    /// 系统层写着的每一项：键 → 值（删供应商、池时看写没写在这里；只有系统配置这一层的项存的时候做 `expect`）。
+    /// 系统配置写着的每一项：键 → 值（存的时候做 `expect`，恢复默认、删供应商、池照它）。
     pub system: BTreeMap<String, Value>,
     /// 密钥库里已有的名字：新存的 key 不撞它们。
     pub secrets: BTreeSet<String>,
-    /// 每一项的最终值和来自哪一层（`default`、`system`、`personal`、`project`）：通用这类的页照它写。
+    /// 每一项的最终值和来自哪一层（`default`、`system`、`project`、`env`）：通用这类的页照它写。
     pub values: BTreeMap<String, (Value, String)>,
 }
 
@@ -104,9 +102,8 @@ impl Data {
         self.vision = list["uses"]["vision"].as_str().map(str::to_string);
     }
 
-    /// 照 `config.get`（`all: true`）的回应记下个人层写着的值、系统层写了的键。
+    /// 照 `config.get`（`all: true`）的回应记下系统配置写着的值。
     pub fn read_config(&mut self, got: &Value) {
-        self.personal.clear();
         self.system.clear();
         self.values.clear();
         let Some(items) = got["items"].as_object() else {
@@ -117,14 +114,8 @@ impl Data {
             self.values
                 .insert(key.clone(), (item["value"].clone(), origin.to_string()));
             for layer in item["layers"].as_array().into_iter().flatten() {
-                match layer["origin"]["layer"].as_str() {
-                    Some("personal") => {
-                        self.personal.insert(key.clone(), layer["value"].clone());
-                    }
-                    Some("system") => {
-                        self.system.insert(key.clone(), layer["value"].clone());
-                    }
-                    _ => {}
+                if layer["origin"]["layer"] == "system" {
+                    self.system.insert(key.clone(), layer["value"].clone());
                 }
             }
         }
@@ -160,14 +151,9 @@ impl Data {
         self.pools.iter().find(|p| p.name == name)
     }
 
-    /// 这个前缀下面，系统层写了东西：这里删不掉。
-    pub fn in_system(&self, prefix: &str) -> bool {
-        self.system.keys().any(|k| keys::under(k, prefix))
-    }
-
-    /// 这个前缀下面个人层写着的键。
-    pub fn personal_under(&self, prefix: &str) -> Vec<String> {
-        self.personal
+    /// 这个前缀下面系统配置写着的键。
+    pub fn written_under(&self, prefix: &str) -> Vec<String> {
+        self.system
             .keys()
             .filter(|k| keys::under(k, prefix))
             .cloned()
@@ -188,7 +174,7 @@ impl Model {
         &self.facts[name]["value"]
     }
 
-    /// 一格资料从哪来：`catalog`、`provider`、`default`，配置里写的是 `config` 加层（`config:personal`）。
+    /// 一格资料从哪来：`catalog`、`provider`、`default`，配置里写的是 `config` 加层（`config:system`）。
     pub fn from(&self, name: &str) -> String {
         let fact = &self.facts[name];
         match (fact["from"].as_str(), fact["layer"].as_str()) {

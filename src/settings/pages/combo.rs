@@ -61,7 +61,7 @@ impl Settings {
         self.popup = Some(Popup::Choose(choose));
     }
 
-    /// 选择窗选好了：「其他…」开编辑窗（原来写的不在建议里的留着），交回 `true`；别的交回 `false`，照旧写个人设置（「不设」
+    /// 选择窗选好了：「其他…」开编辑窗（原来写的不在建议里的留着），交回 `true`；别的交回 `false`，照旧写系统配置（「不设」
     /// 是空的，去掉这一项）。
     pub(in crate::settings) fn combo_write(
         &mut self,

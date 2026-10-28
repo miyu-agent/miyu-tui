@@ -26,8 +26,6 @@ pub struct Choice {
     pub detail: String,
     /// 能不能选。
     pub state: ChoiceState,
-    /// 同一家有自用、共用两份时这一份是不是共用的（核心 PL-1，`copies.rs`）；只有一份、池是 `None`。
-    pub shared: Option<bool>,
 }
 
 /// 一行能不能选。
@@ -73,18 +71,10 @@ pub fn choices(result: &Value) -> Vec<Choice> {
                 crate::sheet::sep()
             ),
             state: ChoiceState::Ok,
-            shared: None,
         });
     }
-    let providers: Vec<&Value> = result["providers"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .collect();
-    let ids = || providers.iter().filter_map(|p| p["id"].as_str());
-    for provider in &providers {
-        let id = provider["id"].as_str().unwrap_or_default();
-        let shared = crate::copies::shared(id, ids());
+    for provider in result["providers"].as_array().into_iter().flatten() {
+        let provider_id = provider["id"].as_str().unwrap_or_default();
         for model in provider["models"].as_array().into_iter().flatten() {
             let Some(reference) = model["ref"].as_str() else {
                 continue;
@@ -96,13 +86,10 @@ pub fn choices(result: &Value) -> Vec<Choice> {
             let name = named.or(model["model"].as_str()).unwrap_or(reference);
             let window = model["facts"]["window"]["value"].as_u64();
             // 配置里起了名字的写完整的引用：同一个名字常有好几个，只写供应商分不出来。没起名字的名字就是模型编号，右边只写
-            // 供应商，不把编号再写一遍（2026-10-27 项目主人：「这里是不是只要显示一个就好了？两者重复了」）。两份的系统那份
-            // 去掉 `@system`，后面另写「系统」（`ui/model_list.rs`）。
-            let provider = crate::copies::base(id);
-            let shown = match (named, shared) {
-                (None, _) => provider.to_string(),
-                (Some(_), Some(true)) => reference.replacen("@system/", "/", 1),
-                (Some(_), _) => reference.to_string(),
+            // 供应商，不把编号再写一遍（2026-10-27 项目主人：「这里是不是只要显示一个就好了？两者重复了」）。
+            let shown = match named {
+                None => provider_id.to_string(),
+                Some(_) => reference.to_string(),
             };
             let detail = match window {
                 Some(window) => format!(
@@ -124,7 +111,6 @@ pub fn choices(result: &Value) -> Vec<Choice> {
                 name: name.to_string(),
                 detail,
                 state,
-                shared,
             });
         }
     }
@@ -197,28 +183,6 @@ mod tests {
     }
 
     #[test]
-    fn a_provider_listed_twice_tags_each_copy_and_keeps_the_reference() {
-        // 核心 PL-1：两层都配了的那一家列两份，`relay@system` 是共用的；引用原样发回，看的写法去掉 `@system`。
-        let list = json!({"providers": [
-            {"id": "relay", "layer": "personal", "models": [{"model": "v4", "ref": "relay/v4"}]},
-            {"id": "relay@system", "layer": "system", "models": [{"model": "v4", "ref": "relay@system/v4"}]},
-            {"id": "solo", "layer": "system", "models": [{"model": "m", "ref": "solo/m"}]}
-        ]});
-        let got: Vec<_> = super::choices(&list)
-            .into_iter()
-            .map(|c| (c.reference, c.detail, c.shared))
-            .collect();
-        assert_eq!(
-            got,
-            [
-                ("relay/v4".into(), "relay".into(), Some(false)),
-                ("relay@system/v4".into(), "relay".into(), Some(true)),
-                ("solo/m".into(), "solo".into(), None),
-            ]
-        );
-    }
-
-    #[test]
     fn the_fixed_pools_come_first_flagship_normal_lite() {
         // 2026-10-26 项目主人：照旗舰、日常、轻量排在所有池最前面。
         let pool = |name: &str| json!({"name": name, "strategy": "pin", "models": ["dev/m1"], "usable": true});
@@ -241,7 +205,7 @@ mod tests {
                 {"model": "m2", "ref": "dev/m2", "state": "cooling", "until": "2026-10-01T08:02:00Z", "facts": {}},
                 {"model": "m3", "ref": "dev/m3", "state": "no_key", "facts": {}},
                 {"model": "m4", "ref": "dev/m4", "state": "ok",
-                 "facts": {"name": {"value": "我的模型", "from": "config", "layer": "personal"}}}]}]});
+                 "facts": {"name": {"value": "我的模型", "from": "config", "layer": "system"}}}]}]});
         let got = choices(&list);
         let refs: Vec<&str> = got.iter().map(|c| c.reference.as_str()).collect();
         assert_eq!(

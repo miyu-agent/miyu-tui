@@ -234,7 +234,7 @@ pub enum Delete {
     Model(String, String),
     /// 池：名字。
     Pool(String),
-    /// 个人设置里的一项（恢复默认）：键。
+    /// 系统配置里的一项（恢复默认）：键。
     Setting(String),
     /// 一个预设的个人那一层（核心 P-3 中）：编号。
     Preset(String),

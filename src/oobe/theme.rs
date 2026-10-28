@@ -1,7 +1,7 @@
 //! 主题那一步（蓝图 `tui.md`「第一次打开的引导」第 23a 条，2026-10-13 项目主人定，版面 2026-10-14 定）：明暗、配色两行，
 //! 在一行上按 `Enter` 开选择窗（和配置页选值的同一个、同一套键，2026-10-14 项目主人：以后主题多了、有别人做的，左右切不
 //! 好用），上下挪的时候整个界面当场换成挪到的样子（App 每一帧照 [`ThemeStep::preview`] 挑，`app/theme.rs`），`Enter` 选好，
-//! `Esc` 换回开窗以前的。「下一步 →」写个人设置的 `tui.theme_mode`、`tui.theme`，`Esc` 回上一步、换回原来的样子。配色没
+//! `Esc` 换回开窗以前的。「下一步 →」写系统配置的 `tui.theme_mode`、`tui.theme`，`Esc` 回上一步、换回原来的样子。配色没
 //! 写过、人格那一步有头像（或写了主题色）的，进来停在「跟随头像」。人格那一步的这一位没头像的，多一格「吉祥物」显示、
 //! 不显示，一格同时写 `tui.mascot_home`、`tui.mascot_sidebar`（2026-10-15 项目主人定：有头像的头像替掉吉祥物，不列）。
 //! 跟随头像、跟随壁纸、有候选时多一格「主色」，开色块列表挑（跟随壁纸的写 `tui.theme_seed`，跟随头像的写回这个人格）；
@@ -394,13 +394,13 @@ impl ThemeStep {
         if !self.avatar {
             changes.extend(MASCOT_KEYS.map(|key| json!({"key": key, "value": !self.mascot_off})));
         }
-        // 挑过主色的：跟随壁纸、终端配色的写个人设置，跟随头像的写完配置再写人格（`seed_pending`）。
+        // 挑过主色的：跟随壁纸、终端配色的写系统配置，跟随头像的写完配置再写人格（`seed_pending`）。
         let pick = self.seed_pick.filter(|_| self.seeding());
         if let (Some(seed), "wallpaper" | "terminal") = (pick, colors) {
             changes.push(json!({"key": SEED_KEY, "value": format!("#{seed:06x}")}));
         }
         self.seed_pending = pick.is_some() && colors == "persona" && self.persona.is_some();
-        let params = json!({"layer": "personal", "changes": changes});
+        let params = json!({"changes": changes});
         self.error = None;
         self.busy = true;
         asker.ask("config.set", params, Waiting::ThemeSave);

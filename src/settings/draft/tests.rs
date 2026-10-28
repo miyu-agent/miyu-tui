@@ -4,7 +4,7 @@ use super::Draft;
 use crate::settings::test_support::sample;
 
 #[test]
-fn setting_back_what_the_personal_layer_has_is_no_change() {
+fn setting_back_what_the_system_config_has_is_no_change() {
     let data = sample();
     let mut draft = Draft::default();
     let key = "providers.dev.models.flash.window";
@@ -14,7 +14,7 @@ fn setting_back_what_the_personal_layer_has_is_no_change() {
     draft.set(key, json!(128000), &data);
     assert!(draft.is_empty(), "改回原样不算改动");
     draft.unset("providers.dev.name", &data);
-    assert!(draft.is_empty(), "个人层没写的删了也不算");
+    assert!(draft.is_empty(), "系统配置没写的删了也不算");
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn providers_whose_connection_changed_get_their_model_list_again() {
 }
 
 #[test]
-fn deleting_a_table_unsets_every_personal_key_under_it() {
+fn deleting_a_table_unsets_every_written_key_under_it() {
     let data = sample();
     let mut draft = Draft::default();
     draft.set("pools.daily.models", json!(["dev/flash"]), &data);
@@ -83,7 +83,7 @@ fn a_new_key_gets_a_fresh_secret_name_and_the_reference_goes_into_key() {
     );
     let named = [("providers.relay.key".to_string(), "relay-key-2".to_string())];
     let sent = draft.request(&data, &named);
-    assert_eq!(sent["layer"], "personal");
+    assert!(sent.get("layer").is_none(), "不写层：就是系统配置");
     assert_eq!(
         sent["changes"],
         json!([{"key": "providers.relay.key", "value": {"secret": "relay-key-2"},
