@@ -294,11 +294,6 @@ fn left<'a>(seen: &Seen<'a>, model: Model, named: bool) -> Vec<Span<'a>> {
             let icon = seen.config.layout.level_icons.get(&level);
             let (label, sep) = level_label(icon.map(String::as_str), name, named);
             let mut spans = vec![Span::styled(label, theme::level(level))];
-            // 管理员模式开着：级别后面写「管理员」（「管理员模式」第 2 条）。
-            if seen.link.core.admin() {
-                spans.push(Span::styled(sep.clone(), theme::dim()));
-                spans.push(Span::styled(text.admin.badge.as_str(), theme::warn()));
-            }
             // 都在冷却：模型那一格变黄写原因，到点了变回原样（「配置与模型」第 7 条）。
             let now = jiff::Timestamp::now();
             let cooling = t

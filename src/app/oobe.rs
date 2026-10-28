@@ -65,7 +65,7 @@ impl App {
             return;
         };
         for ask in oobe.take_asks() {
-            self.send_ask(ask.tag, ask.method, ask.params, ask.system);
+            self.send_ask(ask.tag, ask.method, ask.params);
         }
     }
 
@@ -210,10 +210,6 @@ impl App {
                 }
                 false
             }
-            Update::Account(account) => {
-                self.account(*account);
-                false
-            }
             Update::Ready(_) | Update::Reconnected => {
                 if let Some(oobe) = self.boxes.oobe.as_mut() {
                     oobe.online();
@@ -235,33 +231,6 @@ impl App {
             }
             _ => false,
         }
-    }
-
-    /// 握手说的这个人（每次连上，在 `Ready`、`Reconnected` 前面）：还没有机主的不读 `ui.welcomed`、直接开引导，走注册那一步
-    /// （「第一次打开的引导」第 1、5a 条）；有机主了的先把引导里记着的语言写进设置（排在连上以后读配置的前面，读到的就是它）。
-    fn account(&mut self, account: crate::core::Account) {
-        self.link.account = account;
-        // 不是管理员了（换了账号）：管理员模式关掉；开着的配置页（连上以前就开了的）照握手说的换（「管理员模式」第 1 条）。
-        if !account.admin && self.link.core.admin() {
-            self.set_admin(false);
-        }
-        if let Some(page) = self.boxes.settings.as_mut() {
-            page.admin = account.admin.then(|| self.link.core.admin());
-        }
-        if account.setup {
-            self.boxes.welcome_known = true;
-            self.boxes.welcome_checked = true;
-            let standalone = self.boxes.settings.as_ref().is_some_and(|s| s.standalone);
-            if self.boxes.oobe.is_none() && !standalone {
-                self.open_oobe();
-            }
-        } else if let Some(code) = self.link.held_language.take() {
-            self.link.core.send(Command::SetLanguage(code));
-        }
-        if let Some(oobe) = self.boxes.oobe.as_mut() {
-            oobe.account(account.setup, Instant::now());
-        }
-        self.send_oobe_asks();
     }
 
     /// 走完了：散开的动画播完、写标记的回来了就关掉；没写成的弹一句（下次打开还会进引导）。

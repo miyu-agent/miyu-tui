@@ -145,7 +145,6 @@
   "exit_hint": "Press Ctrl+D to exit",
   "input_cleared": "Cleared · ↑ to bring it back",
   "editing": " Editing your last message · Esc to cancel ",
-  "admin": {"on": "Admin mode on", "off": "Admin mode off", "denied": "Only admins can enter admin mode", "badge": "admin"},
   "open": {
     "refused": "Won't open this kind of address: {url}",
     "missing": "File not found: {path}",
@@ -786,7 +785,6 @@
     "copies": ["User", "System"]
   },
   "settings": {
-    "admin": ["admin mode", "Enter admin mode first (Shift+A)", "A", "admin mode"],
     "in_use": {
       "persona": "The persona in use has changed. The next turn will miss the whole cache; compacting the context first is recommended.",
       "preset": "The preset in use has changed. The next turn will miss the whole cache; compacting the context first is recommended.",
@@ -1458,7 +1456,7 @@
       "sub": "Take a minute to set up a model and a persona",
       "start": "Press Enter to start"
     },
-    "steps": ["Language", "Sign up", "Controls", "Icons", "Model", "Currency", "Persona", "Color scheme", "About you", "Preset"],
+    "steps": ["Language", "Controls", "Icons", "Model", "Currency", "Persona", "Color scheme", "About you", "Preset"],
     "keys": {
       "searching": "Type to search · Ctrl+J/K select · Enter done · Esc cancel",
       "editing": "Enter done · Esc cancel",
@@ -1625,7 +1623,6 @@
       "next": "Next",
       "saving": "Saving…"
     },
-    "register": {"title": "Create your account", "sub": "Used to sign in on the web", "fields": ["Username", "Password", "Confirm password"], "hints": ["e.g. alice", "At least 8 characters", "Same as above"], "submit": "Create account", "busy": "Creating account…", "problems": {"username": "Lowercase letters, digits, - and _ only, starting with a letter, up to 32", "short": "At least 8 characters", "blank": "Password can't be only spaces", "mismatch": "Passwords don't match", "taken": "Username taken"}},
     "profile": {
       "title": "How the AI knows you",
       "sub": "Applies to new sessions. You can change this in settings later. All are optional",

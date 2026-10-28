@@ -2,23 +2,11 @@
 
 use super::*;
 
-/// 握手回应里说的这个人（核心 Y-12）。
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Account {
-    /// 还没有机主（`setup: true`）：这时只能注册机主（`account.setup`），别的请求核心回 `setup_first`。
-    pub setup: bool,
-    /// 这个账号是不是管理员（机主，和管理员组里的人；`admin`）。
-    pub admin: bool,
-}
-
 /// 核心那边的消息，交给界面。
 #[derive(Debug)]
 pub enum Update {
     /// 连上了，会话开好了，带着会话编号。
     Ready(String),
-    /// 每次连上、握完手先说一声这个人是谁（在 [`Update::Ready`]、[`Update::Reconnected`] 前面）：还没有机主的进引导注册
-    /// （「第一次打开的引导」第 1、5a 条）。
-    Account(Account),
     /// 核心没在跑，也没给 `MIYU_CORE_BIN`，拉不起来。
     NoCoreBin,
     /// `MIYU_CORE_BIN` 指的程序不存在：路径（蓝图「连核心」第 8 条）。

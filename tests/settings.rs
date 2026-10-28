@@ -187,9 +187,10 @@ fn a_new_provider_keeps_its_key_in_the_secret_store_and_an_added_model_can_be_de
     let settings = home.settings();
     assert!(settings.contains("[providers.zen]"), "{settings}");
     assert!(!settings.contains("sk-test-zen"), "明文不进个人设置");
+    // 只有一个主人（核心 SU-1）：`secret.set` 不写层的，主人存系统那一份（原来没开管理员模式时存自己那一份）。
     let secrets =
-        std::fs::read_to_string(home.root().join("home/alice/secrets.toml")).unwrap_or_default();
-    assert!(secrets.contains("zen-key"), "没开管理员模式：存自己那一份");
+        std::fs::read_to_string(home.root().join("system/secrets.toml")).unwrap_or_default();
+    assert!(secrets.contains("zen-key"), "存进系统那一份密钥库");
     // 给它手加一个模型，存下；再删掉，存下。每一步等界面跟上再按下一个键：文件写进去了，供应商的窗不一定已经关上，
     // 键快过界面会落到别的地方（Windows 上见过：回车落在列表上，开了供应商的窗）。
     gone(&mut tui, "[ 保存 ]");

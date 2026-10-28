@@ -11,9 +11,6 @@ pub type Hint = [String; 2];
 pub struct Texts {
     /// 面包屑头一段。
     pub title: String,
-    /// 管理员模式（蓝图「管理员模式」）：开着时面包屑后面写的、只能写系统配置的项关着时回车的提示、主菜单按键提示多的
-    /// 那一段（键、做什么）。
-    pub admin: [String; 4],
     /// 主菜单的一项和它下面那行。
     pub entry: String,
     /// 主菜单那一项下面的暗字。

@@ -16,7 +16,6 @@ impl App {
     pub fn open_settings(&mut self, standalone: bool) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
         let mut page = Settings::open(standalone, online);
-        page.admin = self.link.account.admin.then(|| self.link.core.admin());
         page.more.service_known = crate::service::program().is_some();
         let (schema, presets) = &self.link.look.settings;
         page.remembered(
@@ -45,7 +44,7 @@ impl App {
         };
         let runs = page.take_service_runs();
         for (tag, method, params) in page.take_asks() {
-            self.send_ask(tag, method, params, false);
+            self.send_ask(tag, method, params);
         }
         for verb in runs {
             self.link.service.run(verb);
@@ -86,15 +85,6 @@ impl App {
                 } else {
                     Outcome::Back
                 }
-            }
-            // `Shift+A`：进、退管理员模式（「管理员模式」第 2 条）；在打字、开着窗的不算。
-            Event::Key(key)
-                if key.code == KeyCode::Char('A')
-                    && page.admin.is_some()
-                    && page.popup.is_none()
-                    && !page.typing() =>
-            {
-                return self.toggle_admin();
             }
             Event::Key(key) => page.key(key, texts),
             Event::Paste(text) => {
