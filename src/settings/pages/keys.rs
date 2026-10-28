@@ -237,8 +237,8 @@ impl Settings {
             return;
         };
         let words = &texts.more;
-        if let Some(note) = self.blocked(&item, texts) {
-            self.say(note, Tone::Note);
+        if !item.writable() {
+            self.say(texts.more.no_editor.clone(), Tone::Note);
             return;
         }
         // 主色：候选的色块列表，不开编辑窗（2026-10-14 项目主人定）。
@@ -325,7 +325,8 @@ impl Settings {
             }));
             return;
         }
-        let system = self.writes_system(&item.key);
+        // 只能写系统配置的项删系统那一层的，别的删个人设置里的（`saving.rs` 的 `system_only`）。
+        let system = self.system_only(&item.key);
         let written = if system { &data.system } else { &data.personal };
         if !written.contains_key(&item.key) {
             self.say(words.nothing_to_unset.clone(), Tone::Note);

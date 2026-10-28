@@ -184,17 +184,3 @@ impl UndoFileTexts {
         }
     }
 }
-
-/// 管理员模式的字（蓝图「管理员模式」）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AdminTexts {
-    /// 进了以后弹的。
-    pub on: String,
-    /// 退了以后弹的。
-    pub off: String,
-    /// 不是管理员打了 `/admin`。
-    pub denied: String,
-    /// 开着时底栏级别后面写的。
-    pub badge: String,
-}

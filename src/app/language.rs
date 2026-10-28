@@ -85,12 +85,7 @@ impl App {
         }
         // 写进个人设置的 `ui.language`：这个人所有的头都照它（2026-10-01 项目主人定 A）。当场换，不等回应。
         let code = if auto { "auto" } else { next.code() };
-        // 还没有机主：核心不让写，先记着，注册完重连上再写（「第一次打开的引导」第 5a 条）。
-        if self.link.account.setup {
-            self.link.held_language = Some(code.to_string());
-        } else {
-            self.link.core.send(Command::SetLanguage(code.to_string()));
-        }
+        self.link.core.send(Command::SetLanguage(code.to_string()));
         self.use_language(next, auto, announce);
     }
 

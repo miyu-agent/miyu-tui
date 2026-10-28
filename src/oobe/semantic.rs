@@ -128,7 +128,7 @@ impl SemanticStep {
         self.phase = Phase::Installing { done: 0, total: 0 };
         self.error = None;
         // 装到系统那一层、大家共用（「管理员模式」第 5 条）。
-        asker.ask_system(
+        asker.ask(
             "package.install",
             download::install(),
             Waiting::SemanticInstall,
@@ -145,7 +145,7 @@ impl SemanticStep {
         let params = json!({"layer": "system", "changes": [{"key": KEY, "value": value}]});
         self.error = None;
         self.busy = true;
-        asker.ask_system("config.set", params, Waiting::SemanticSave);
+        asker.ask("config.set", params, Waiting::SemanticSave);
         Move::Stay
     }
 
@@ -170,7 +170,7 @@ impl SemanticStep {
                 let installed = result.ok().is_some_and(|got| installed(&got));
                 self.installed = Some(installed);
                 if !installed {
-                    asker.ask_system(
+                    asker.ask(
                         "package.install",
                         download::preview(),
                         Waiting::SemanticPreview,

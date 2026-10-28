@@ -16,8 +16,6 @@ use miyu_client::connect::Connection;
 /// 连着核心的一头。
 pub struct Rpc {
     writer: WriteHalf<Connection>,
-    /// 管理员模式开着（和界面共用）：改系统那一层的请求带 `scope`（[`super::scope`]）。
-    admin: std::sync::Arc<std::sync::atomic::AtomicBool>,
     incoming: mpsc::UnboundedReceiver<Value>,
     /// 等回应时来的推送。
     held: VecDeque<Value>,
@@ -25,16 +23,12 @@ pub struct Rpc {
 
 impl Rpc {
     /// 在 `connection` 上说话：另起一个读的任务。要在 tokio 运行时里调。
-    pub fn new(
-        connection: Connection,
-        admin: std::sync::Arc<std::sync::atomic::AtomicBool>,
-    ) -> Self {
+    pub fn new(connection: Connection) -> Self {
         let (reader, writer) = tokio::io::split(connection);
         let (sender, incoming) = mpsc::unbounded_channel();
         tokio::spawn(read_all(BufReader::new(reader), sender));
         Self {
             writer,
-            admin,
             incoming,
             held: VecDeque::new(),
         }
@@ -46,26 +40,8 @@ impl Rpc {
     ///
     /// 写不出去。
     pub async fn send(&mut self, method: &str, params: Value) -> io::Result<String> {
-        let admin = self.admin.load(std::sync::atomic::Ordering::Relaxed);
-        let scoped = admin && super::scope::system_write(method, &params);
-        self.write(method, params, scoped).await
-    }
-
-    /// 发一条请求，不管开没开管理员模式都带 `scope`（引导装语义模型，「管理员模式」第 5 条）。
-    ///
-    /// # Errors
-    ///
-    /// 写不出去。
-    pub async fn send_scoped(&mut self, method: &str, params: Value) -> io::Result<String> {
-        self.write(method, params, true).await
-    }
-
-    async fn write(&mut self, method: &str, params: Value, scoped: bool) -> io::Result<String> {
         let id = next_id();
-        let mut request = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
-        if scoped {
-            request["scope"] = json!("system");
-        }
+        let request = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
         self.writer
             .write_all(format!("{request}\n").as_bytes())
             .await?;

@@ -11,7 +11,6 @@ mod picture;
 mod popup;
 mod preset;
 mod profile;
-mod register;
 mod screens;
 mod stage;
 mod stars;
@@ -80,15 +79,6 @@ fn content(step: Step, oobe: &Oobe, p: &Parts<'_>, rect: Rect, now: Instant) -> 
         Step::Persona => persona::content(&oobe.persona, texts, width, p.config.oobe.avatar_rows),
         Step::Theme => theme_step::content(oobe, texts, width),
         Step::Profile => profile::content(&oobe.profile, texts, width),
-        Step::Register => {
-            let frames = &p.config.timeline.spinner;
-            let beat = now.saturating_duration_since(oobe.born).as_millis()
-                / u128::from(p.config.timeline.spinner_ms.max(1));
-            let spinner = frames
-                .get(beat as usize % frames.len().max(1))
-                .map_or("", String::as_str);
-            register::content(&oobe.register, texts, width, spinner)
-        }
         Step::Preset => preset::content(&oobe.preset, texts, width),
         Step::Semantic => pick::semantic(oobe, texts, &p.config.layout.bar, width),
         Step::Welcome | Step::Done => Content::new(width),
@@ -133,11 +123,6 @@ fn hint(oobe: &Oobe, p: &Parts<'_>) -> String {
             keys.pick.clone()
         }
         Step::Profile => keys.edit.clone(),
-        Step::Register if oobe.register.typing() => keys.editing.clone(),
-        Step::Register if oobe.register.focus == crate::oobe::register::Slot::Submit => {
-            keys.pick.clone()
-        }
-        Step::Register => keys.edit.clone(),
         // 浮窗开着：照浮窗里那一行（`preset.rs` 的 `popup`）。
         Step::Preset if oobe.preset.viewing => keys.view.clone(),
         Step::Preset if oobe.preset.custom_open => {
@@ -180,12 +165,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     };
     let look = p.config.oobe.clone();
     let places = stage::places(area, &look, &p.config.mascot);
-    stage::bar(
-        frame,
-        places.bar,
-        (oobe.step, oobe.register.needed),
-        &p.config.text.oobe.steps,
-    );
+    stage::bar(frame, places.bar, oobe.step, &p.config.text.oobe.steps);
     // 没连上核心：按键提示那一行换成黄字（第 4 条）。
     if oobe.online {
         // 按键模式是 Vim：「↑↓」写成「j/k」（引导里不打字的地方都认 `j` `k`，蓝图「按键」表「按键模式」那一行）。

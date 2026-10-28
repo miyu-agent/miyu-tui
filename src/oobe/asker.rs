@@ -17,8 +17,6 @@ pub struct Ask {
     pub method: &'static str,
     /// 参数。
     pub params: Value,
-    /// 不管开没开管理员模式都带 `scope`：写的是大家共用的系统那一层（「管理员模式」第 5 条）。
-    pub system: bool,
 }
 
 /// 等着哪一样回来。
@@ -70,8 +68,6 @@ pub enum Waiting {
     PresetPick(String),
     /// 写「引导走过了」（`config.set ui.welcomed`）。
     Welcomed,
-    /// 注册机主（`account.setup`）。
-    Register,
     /// AI 怎么称呼你、更多描述（`config.get profile.name profile.about`）。
     ProfileRead,
     /// 写这几项（`config.set`）。
@@ -132,22 +128,16 @@ pub struct Asker {
 impl Asker {
     /// 攒一条，记下等的是什么。
     pub fn ask(&mut self, method: &'static str, params: Value, waiting: Waiting) {
-        self.push(method, params, waiting, false);
+        self.push(method, params, waiting);
     }
 
-    /// 要一样写系统那一层的（大家共用）：不管开没开管理员模式都带 `scope`（「管理员模式」第 5 条：引导装语义模型）。
-    pub fn ask_system(&mut self, method: &'static str, params: Value, waiting: Waiting) {
-        self.push(method, params, waiting, true);
-    }
-
-    fn push(&mut self, method: &'static str, params: Value, waiting: Waiting, system: bool) {
+    fn push(&mut self, method: &'static str, params: Value, waiting: Waiting) {
         let tag = TAG_BASE + self.next;
         self.next += 1;
         self.queued.push(Ask {
             tag,
             method,
             params,
-            system,
         });
         self.waiting.insert(tag, waiting);
     }
