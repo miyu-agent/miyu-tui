@@ -1,4 +1,4 @@
-//! 配置页测试用的样例：两家供应商（一家中转站带组织前缀）、两个池、默认用途，个人层写着的几项，密钥库的名字。
+//! 配置页测试用的样例：两家供应商（一家中转站带组织前缀）、两个池、默认用途，系统配置写着的几项，密钥库的名字。
 
 use serde_json::{Value, json};
 
@@ -19,7 +19,7 @@ pub fn model_list() -> Value {
              "models": [
                 {"model": "flash", "ref": "dev/flash", "listed": ["config"],
                  "facts": {
-                    "window": {"value": 128000, "from": "config", "layer": "personal"},
+                    "window": {"value": 128000, "from": "config", "layer": "system"},
                     "inputs": {"value": ["text"], "from": "default"},
                     "reasoning": {"value": ["off", "high"], "from": "catalog"},
                     "effort": {"value": null, "from": "default", "key": "providers.dev.models.flash.effort"},
@@ -54,21 +54,23 @@ pub fn model_list() -> Value {
     })
 }
 
-/// `config.get`（`all: true`）的样子：个人层写了 dev 的窗口、relay 的显示名和 key、默认用途；系统层写了 relay 的地址。
+/// `config.get`（`all: true`）的样子：系统配置写了 dev 的窗口、relay 的显示名、key 和地址、默认用途、两个池；项目配置写了
+/// 一项（不算写着的）。
 pub fn config_all() -> Value {
-    let personal =
-        |v: Value| json!({"origin": {"layer": "personal", "line": 1}, "value": v, "used": true});
+    let project =
+        |v: Value| json!({"origin": {"layer": "project", "line": 1}, "value": v, "used": true});
     let system =
         |v: Value| json!({"origin": {"layer": "system", "line": 1}, "value": v, "used": true});
     json!({"items": {
-        "providers.dev.models.flash.window": {"layers": [personal(json!(128000))]},
-        "providers.relay.name": {"layers": [personal(json!("中转站"))]},
-        "providers.relay.key": {"layers": [personal(json!({"secret": "relay-key"}))]},
+        "providers.dev.models.flash.window": {"layers": [system(json!(128000))]},
+        "providers.relay.name": {"layers": [system(json!("中转站"))]},
+        "providers.relay.key": {"layers": [system(json!({"secret": "relay-key"}))]},
         "providers.relay.base_url": {"layers": [system(json!("https://relay.example.invalid/v1"))]},
-        "models.chat": {"layers": [personal(json!("@daily"))]},
-        "pools.daily.models": {"layers": [personal(json!(["dev/flash", "relay/cline/deepseek-v4"]))]},
-        "pools.daily.strategy": {"layers": [personal(json!("rotate"))]},
-        "pools.empty.models": {"layers": [personal(json!([]))]}
+        "models.chat": {"layers": [system(json!("@daily"))]},
+        "pools.daily.models": {"layers": [system(json!(["dev/flash", "relay/cline/deepseek-v4"]))]},
+        "pools.daily.strategy": {"layers": [system(json!("rotate"))]},
+        "pools.empty.models": {"layers": [system(json!([]))]},
+        "permission.level": {"layers": [project(json!("read"))]}
     }})
 }
 

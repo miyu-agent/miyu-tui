@@ -783,8 +783,7 @@
     "cooling": "クールダウン {n}m",
     "cooling_bare": "クールダウン中",
     "no_key": "キーなし",
-    "refuse_no_key": "このモデルにはキーがありません",
-    "copies": ["ユーザー", "システム"]
+    "refuse_no_key": "このモデルにはキーがありません"
   },
   "settings": {
     "in_use": {
@@ -909,7 +908,7 @@
       "catalog": "catalog",
       "provider": "provider list",
       "system": "system",
-      "personal": "yours",
+      "own": "カスタム",
       "default": "default",
       "id": "ID"
     },
@@ -1003,7 +1002,6 @@
       "Loading…",
       "No matches"
     ],
-    "copies": ["ユーザー", "システム"],
     "confirm": [
       "プロバイダ {name} を削除しますか？",
       "モデル {name} を削除しますか？",
@@ -1029,7 +1027,6 @@
       "conflict": "Changed elsewhere just now (now {current}); your changes are kept, reopen and save again",
       "offline": "コアに接続していません",
       "not_custom": "Only models added with n can be deleted",
-      "in_system": "This is in the system config and can't be deleted here",
       "fixed_pool": "固定のプールは削除できません。編集画面でメンバーと呼び出し方を変更できます",
       "members_hint": "Untick members in the pool editor (Enter)",
       "nothing_here": "Nothing to delete on this page",
@@ -1180,7 +1177,6 @@
       "origins": {
         "default": "既定",
         "system": "システム設定",
-        "personal": "個人設定",
         "project": "プロジェクト設定"
       },
       "toggle": [

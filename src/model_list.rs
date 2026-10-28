@@ -76,7 +76,6 @@ mod tests {
             name: name.into(),
             detail: String::new(),
             state: ChoiceState::Ok,
-            shared: None,
         }
     }
 

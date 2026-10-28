@@ -11,7 +11,7 @@ fn schema(pages: &[&str]) -> Schema {
         .collect();
     let items: Vec<_> = pages
         .iter()
-        .map(|p| json!({"key": format!("{p}.x"), "control": "text", "layers": ["personal"], "name": "x", "page": p, "group": format!("g-{p}")}))
+        .map(|p| json!({"key": format!("{p}.x"), "control": "text", "layers": ["system"], "name": "x", "page": p, "group": format!("g-{p}")}))
         .collect();
     Schema::read(&json!({"pages": pages_json, "groups": groups, "items": items}))
 }
@@ -105,7 +105,7 @@ fn a_removed_mascot_package_is_named_as_not_installed() {
     // 「吉祥物包」第 3 条（2026-10-11）：选着的吉祥物包卸掉了，值不写裸编号，写「pudding（未安装）」。
     let texts = crate::config::Config::builtin().unwrap().text.settings.more;
     let s = Schema::read(&json!({"items": [
-        {"key": "tui.mascot", "control": "text", "layers": ["personal"], "name": "吉祥物", "page": "general", "group": "tui"}
+        {"key": "tui.mascot", "control": "text", "layers": ["system"], "name": "吉祥物", "page": "general", "group": "tui"}
     ]}));
     let item = &s.items[0];
     let installed = vec![crate::core::Persona {
@@ -136,7 +136,7 @@ fn icon_sets_are_named_in_the_interface_language() {
     // 2026-10-14 项目主人：外观页「图标」照界面语言写「Nerd Font 图标」「普通字符」，不写清单里的 nerd、plain。
     let texts = crate::config::Config::builtin().unwrap().text.settings.more;
     let s = Schema::read(&json!({"items": [
-        {"key": "tui.icons", "control": "select", "layers": ["personal"], "name": "图标", "page": "general", "group": "tui",
+        {"key": "tui.icons", "control": "select", "layers": ["system"], "name": "图标", "page": "general", "group": "tui",
          "options": [{"value": "nerd", "name": "nerd"}, {"value": "plain", "name": "plain"}]}
     ]}));
     let item = &s.items[0];
@@ -176,17 +176,17 @@ fn private_directories_show_how_many_not_every_path() {
     // 2026-10-22 项目主人：「加的私密目录」把路径一条条铺出来、「默认私密目录」写「—」，都该写个数；别的列表照旧列。
     let texts = crate::config::Config::builtin().unwrap().text.settings.more;
     let s = Schema::read(&json!({"items": [
-        {"key": "sandbox.private.add", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+        {"key": "sandbox.private.add", "type": "list", "control": "list", "element": "text", "layers": ["system"],
          "name": "加的私密目录", "page": "privacy", "group": "private"},
-        {"key": "sandbox.private.remove", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+        {"key": "sandbox.private.remove", "type": "list", "control": "list", "element": "text", "layers": ["system"],
          "name": "默认私密目录", "page": "privacy", "group": "private", "ticks": "unlisted",
          "options": [{"value": "~/.ssh", "name": "~/.ssh"}, {"value": "~/.gnupg", "name": "~/.gnupg"},
                      {"value": "~/.aws", "name": "~/.aws"}]},
-        {"key": "packages.sources", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+        {"key": "packages.sources", "type": "list", "control": "list", "element": "text", "layers": ["system"],
          "name": "软件源", "page": "packages", "group": "source"},
-        {"key": "sandbox.readonly.add", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+        {"key": "sandbox.readonly.add", "type": "list", "control": "list", "element": "text", "layers": ["system"],
          "name": "加的受保护路径", "page": "privacy", "group": "readonly"},
-        {"key": "sandbox.readonly.remove", "type": "list", "control": "list", "element": "text", "layers": ["personal"],
+        {"key": "sandbox.readonly.remove", "type": "list", "control": "list", "element": "text", "layers": ["system"],
          "name": "默认受保护路径", "page": "privacy", "group": "readonly", "ticks": "unlisted",
          "options": [{"value": ".git/hooks", "name": ".git/hooks"}, {"value": ".envrc", "name": ".envrc"}]}
     ]}));

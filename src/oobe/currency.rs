@@ -1,5 +1,5 @@
 //! 金额用什么货币显示（蓝图 `tui.md`「第一次打开的引导」第 19a 条，2026-10-26 项目主人定：放在接模型后面）：一种货币一行，
-//! 选了写个人设置的 `usage.currency`；模型的金额照近期汇率换成这一种显示（核心 UC-1）。光标停在设过的那一种，没人设过的
+//! 选了写系统配置的 `usage.currency`；模型的金额照近期汇率换成这一种显示（核心 UC-1）。光标停在设过的那一种，没人设过的
 //! 照界面语言的那一种（字表 `oobe.currency.default`：中文人民币、日文日元、英文美元）。列常见的一二十种，最后一行「其他…」
 //! 自己填三个字母的代码（2026-10-27 项目主人：「列更多常见的，然后加其他」；核心 `usage.currency` 是三个字的文字）。
 
@@ -84,10 +84,9 @@ impl CurrencyStep {
         CURRENCIES.len()
     }
 
-    /// 写个人设置，往下走。
+    /// 写系统配置，往下走。
     fn save(code: &str, asker: &mut Asker) -> Move {
-        let params =
-            json!({"layer": "personal", "changes": [{"key": "usage.currency", "value": code}]});
+        let params = json!({"changes": [{"key": "usage.currency", "value": code}]});
         asker.ask("config.set", params, Waiting::CurrencySave);
         Move::Next
     }

@@ -11,7 +11,7 @@ fn texts() -> Texts {
     Config::builtin().unwrap().text.settings
 }
 
-/// 隐私页一项带选项的列表（照核心 5-15 下的 `sandbox.private.remove`），个人设置里写的是 `value`；照 `Enter` 那条路开窗。
+/// 隐私页一项带选项的列表（照核心 5-15 下的 `sandbox.private.remove`），系统配置里写的是 `value`；照 `Enter` 那条路开窗。
 /// `ticks` 是核心给的画法提示（`"unlisted"` 反着勾），不写的照正着勾。
 fn opened(value: Value) -> Settings {
     opened_with(value, Value::Null)
@@ -23,11 +23,11 @@ fn opened_with(value: Value, ticks: Value) -> Settings {
         "items": [{"key": "sandbox.private.remove", "type": "list", "control": "list", "element": "text",
             "options": [{"value": "~/.ssh", "name": "~/.ssh"}, {"value": "~/.gnupg", "name": "~/.gnupg"},
                         {"value": "~/.aws", "name": "~/.aws"}],
-            "layers": ["personal"], "name": "不当私密的出厂目录", "page": "privacy", "group": "private", "ticks": ticks}]});
+            "layers": ["system"], "name": "不当私密的出厂目录", "page": "privacy", "group": "private", "ticks": ticks}]});
     let layers = if value.is_null() {
         json!([])
     } else {
-        json!([{"origin": {"layer": "personal", "line": 1}, "value": value, "used": true}])
+        json!([{"origin": {"layer": "system", "line": 1}, "value": value, "used": true}])
     };
     let config = json!({"items": {"sandbox.private.remove": {"value": value, "layers": layers}}});
     let mut page = Settings::open(false, true);

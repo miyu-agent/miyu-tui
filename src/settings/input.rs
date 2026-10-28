@@ -211,10 +211,10 @@ impl Settings {
     /// `d`：先问，列出谁在用它（「配置页」第 13 条）。
     fn delete(&mut self, texts: &Texts) {
         let col = self.nav.focus(&self.view);
-        let Some(data) = &self.data else {
+        if self.data.is_none() {
             return;
-        };
-        let (title, ask, prefix, uses): (String, Delete, String, Uses) = match col {
+        }
+        let (title, ask, uses): (String, Delete, Uses) = match col {
             Col::Provider => {
                 let Some(p) = self.nav.provider(&self.view) else {
                     return;
@@ -224,7 +224,6 @@ impl Settings {
                 (
                     texts.confirm[0].replace("{name}", p.shown()),
                     Delete::Provider(id.clone()),
-                    super::keys::provider(&id),
                     Box::new(move |r: &str| r.starts_with(&head)),
                 )
             }
@@ -242,7 +241,6 @@ impl Settings {
                 (
                     texts.confirm[1].replace("{name}", &m.name),
                     Delete::Model(p.id.clone(), m.name.clone()),
-                    m.table.clone(),
                     Box::new(move |r: &str| r == reference),
                 )
             }
@@ -258,17 +256,12 @@ impl Settings {
                 (
                     texts.confirm[2].replace("{name}", &pool.name),
                     Delete::Pool(pool.name.clone()),
-                    super::keys::pool(&pool.name),
                     Box::new(move |r: &str| r == reference),
                 )
             }
             Col::Member => return self.say(texts.status("members_hint"), Tone::Note),
             _ => return self.say(texts.status("nothing_here"), Tone::Note),
         };
-        if data.in_system(&prefix) {
-            self.say(texts.status("in_system"), Tone::Bad);
-            return;
-        }
         // 只说谁在用它，一行（2026-10-07 项目主人：原来那样太啰嗦）；没人用的什么都不写。
         let mut users = Vec::new();
         let embedding = self
@@ -436,7 +429,7 @@ impl Settings {
         if button != 0 {
             return Outcome::Stay;
         }
-        // 删预设不碰个人设置：交给核心（`pages/preset_edit.rs`）。
+        // 删预设不碰系统配置：交给核心（`pages/preset_edit.rs`）。
         match ask {
             Delete::Preset(id) => {
                 self.delete_preset(id);
@@ -463,9 +456,8 @@ impl Settings {
             Delete::Preset(_) | Delete::Persona(_) | Delete::PersonaSeed(_) => {
                 return Outcome::Stay;
             }
-            // 恢复默认：去掉个人设置里的这一项；只能写系统配置的去掉系统配置里的。
+            // 恢复默认：去掉系统配置里的这一项。
             Delete::Setting(key) => {
-                self.draft.system = self.system_only(key);
                 self.draft.unset(key, data);
                 self.refresh();
                 self.save(true, texts);

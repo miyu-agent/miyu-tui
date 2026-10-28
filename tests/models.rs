@@ -104,8 +104,8 @@ fn choosing_a_model_shows_no_notice() {
 }
 
 #[test]
-fn effort_is_chosen_from_a_panel_and_written_to_personal_settings() {
-    // 2026-10-02 项目主人定：只要 /effort 面板；改的是个人设置里这个模型的那一项，所有会话下一轮起跟着变，不弹提示。
+fn effort_is_chosen_from_a_panel_and_written_to_the_settings() {
+    // 2026-10-02 项目主人定：只要 /effort 面板；改的是系统配置里这个模型的那一项，所有会话下一轮起跟着变，不弹提示。
     // 供应商、模型照假核心报的写（`deepseek/deepseek-v4`），这一档才落在真在用的那个模型上，底栏看得到。
     let settings = "[models]\nchat = \"deepseek/deepseek-v4\"\n\n[providers.deepseek]\ndriver = \"openai-chat\"\nbase_url = \"http://deepseek.invalid/v1\"\n\n[providers.deepseek.models.deepseek-v4]\nwindow = 128000\nreasoning = [\"off\", \"low\", \"high\"]\n";
     let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
@@ -125,7 +125,7 @@ fn effort_is_chosen_from_a_panel_and_written_to_personal_settings() {
     while !home.settings().contains("effort = \"high\"") {
         assert!(
             std::time::Instant::now() < end,
-            "没写进个人设置：{}",
+            "没写进系统配置：{}",
             home.settings()
         );
         tui.pump(Duration::from_millis(100));

@@ -292,7 +292,7 @@ impl Settings {
         }
     }
 
-    /// `d`：个人设置里写了这一项的（只有系统配置这一层的：系统配置里写了的），问一句再去掉，回到下面一层的值。
+    /// `d`：系统配置里写了这一项的（只有系统配置这一层的：系统配置里写了的），问一句再去掉，回到下面一层的值。
     fn ask_unset(&mut self, page: &str, at: usize, texts: &Texts) {
         let (Some(schema), Some(data)) = (self.more.schema.as_ref(), self.data.as_ref()) else {
             return;
@@ -325,19 +325,12 @@ impl Settings {
             }));
             return;
         }
-        // 只能写系统配置的项删系统那一层的，别的删个人设置里的（`saving.rs` 的 `system_only`）。
-        let system = self.system_only(&item.key);
-        let written = if system { &data.system } else { &data.personal };
-        if !written.contains_key(&item.key) {
+        // 删系统配置里写的，回到出厂默认（核心 SU-3 上起只剩这一层能写）。
+        if !data.system.contains_key(&item.key) {
             self.say(words.nothing_to_unset.clone(), Tone::Note);
             return;
         }
-        let below = if !system && data.system.contains_key(&item.key) {
-            "system"
-        } else {
-            "default"
-        };
-        let from = words.origins.get(below).cloned().unwrap_or_default();
+        let from = words.origins.get("default").cloned().unwrap_or_default();
         self.popup = Some(Popup::Confirm(Confirm {
             title: words.unset[0].replace("{name}", &item.name),
             lines: vec![(words.unset[1].replace("{from}", &from), true)],
@@ -454,7 +447,7 @@ impl Settings {
         }
     }
 
-    /// 选择窗、编辑窗选好了：改预设的照它办（`preset_edit.rs`），别的写个人设置。
+    /// 选择窗、编辑窗选好了：改预设的照它办（`preset_edit.rs`），别的写系统配置。
     fn write_to(&mut self, target: super::target::Target, key: &str, value: Value, texts: &Texts) {
         // 跟随头像的主色写在人格上（`persona.set` 的 `seed`）。
         if let super::target::Target::PersonaSeed(persona) = &target {

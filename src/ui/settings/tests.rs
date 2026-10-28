@@ -163,7 +163,7 @@ fn a_long_menu_note_widens_the_entry_and_is_cut_with_an_ellipsis_only_when_the_w
         .map(|(i, name)| json!({"id": format!("g{i}"), "name": name, "page": "general"}))
         .collect();
     let items: Vec<_> = (0..groups.len())
-        .map(|i| json!({"key": format!("ui.k{i}"), "control": "toggle", "layers": ["personal"], "name": "项", "page": "general", "group": format!("g{i}")}))
+        .map(|i| json!({"key": format!("ui.k{i}"), "control": "toggle", "layers": ["system"], "name": "项", "page": "general", "group": format!("g{i}")}))
         .collect();
     page.more.schema = Some(crate::settings::pages::schema::Schema::read(&json!({
         "pages": [{"id": "general", "name": "通用"}],
@@ -279,7 +279,7 @@ fn typing_in_a_form_field_is_not_underlined() {
 }
 
 #[test]
-fn price_rows_written_by_hand_do_not_say_personal_but_other_rows_still_do() {
+fn price_rows_written_by_hand_do_not_say_custom_but_other_rows_still_do() {
     // 2026-10-19 项目主人：价格那几行右边的「个人」也去掉。
     use crate::settings::forms::{Field, Row, Val};
     let config = Config::builtin().unwrap();
@@ -298,7 +298,7 @@ fn price_rows_written_by_hand_do_not_say_personal_but_other_rows_still_do() {
     }
     assert_eq!(
         super::fields::source(&own(Field::Window), texts).0,
-        texts.source("personal")
+        texts.source("own")
     );
 }
 
@@ -312,11 +312,11 @@ fn an_unset_secret_reads_dim_and_a_set_one_stays_bold() {
         let schema = json!({"pages": [{"id": "general", "name": "通用"}],
             "groups": [{"id": "net", "name": "联网搜索", "page": "general"}],
             "items": [{"key": "net.search.tavily.key", "type": "secret", "control": "text",
-                "layers": ["personal"], "name": "Tavily", "page": "general", "group": "net"}]});
+                "layers": ["system"], "name": "Tavily", "page": "general", "group": "net"}]});
         let layers = if value.is_null() {
             json!([])
         } else {
-            json!([{"origin": {"layer": "personal", "line": 1}, "value": value, "used": true}])
+            json!([{"origin": {"layer": "system", "line": 1}, "value": value, "used": true}])
         };
         let data = json!({"items": {"net.search.tavily.key": {"value": value, "layers": layers}}});
         let mut page = Settings::open(false, true);
@@ -459,35 +459,4 @@ fn the_fixed_pools_are_named_and_listed_first() {
         row.contains("用于：起标题"),
         "走这一档的旁路请求写在池右边：{row}"
     );
-}
-
-#[test]
-fn a_provider_configured_twice_says_which_copy_each_row_is() {
-    // 核心 PL-1：系统配置、个人设置都配了的那一家列两份，名字后面写用户、系统（2026-10-27 项目主人改叫法）；只有一份的不写（2026-10-27 项目主人定）。
-    let config = Config::builtin().unwrap();
-    let mut list = crate::settings::test_support::model_list();
-    let providers = list["providers"].as_array_mut().unwrap();
-    let mut shared = providers
-        .iter()
-        .find(|p| p["id"] == "relay")
-        .cloned()
-        .unwrap();
-    shared["id"] = json!("relay@system");
-    providers.push(shared);
-    let mut p = Settings::open(false, true);
-    for (tag, method, _) in p.take_asks() {
-        let got = match method {
-            "model.list" => list.clone(),
-            "config.get" => crate::settings::test_support::config_all(),
-            _ => json!({"secrets": []}),
-        };
-        p.answer(tag, Ok(got), &config.text.settings);
-    }
-    press(&mut p, &config, KeyCode::Enter);
-    let (text, _) = screen(&mut p, &config, 120, 30);
-    assert!(
-        text.contains("中转站 · 用户") && text.contains("中转站 · 系统"),
-        "{text}"
-    );
-    assert!(!text.contains("dev · "), "只有一份的不写：\n{text}");
 }

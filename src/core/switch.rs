@@ -131,8 +131,7 @@ mod tests {
 
     #[test]
     fn only_a_recent_startup_enters_the_last_session() {
-        let got =
-            |v: &str| json!({"items":{"ui.startup":{"origin":{"layer":"personal"},"value":v}}});
+        let got = |v: &str| json!({"items":{"ui.startup":{"origin":{"layer":"system"},"value":v}}});
         assert!(startup_is_recent(&got("recent")));
         assert!(!startup_is_recent(&got("new")));
         assert!(!startup_is_recent(&json!({"items":{}})), "没登记的照 new");

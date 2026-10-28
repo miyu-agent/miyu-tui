@@ -16,12 +16,6 @@ impl Settings {
             }
             return;
         }
-        // 只能写系统配置的项（运行日志级别这类，「配置页」第 33 条）写系统那一层：单用户以后不用进管理员模式（核心 SU-1，
-        // 两层合并在 SU-3）；恢复默认的照删的那一层，已经定好了。
-        if !self.draft.system {
-            let system = self.draft.keys().any(|key| self.system_only(key));
-            self.draft.system = system;
-        }
         let Some(data) = self.data.as_ref().filter(|_| self.online) else {
             self.draft.clear();
             self.refresh();
@@ -190,16 +184,5 @@ impl Settings {
             }
             Err(refusal) => self.failed(refusal.message),
         }
-    }
-}
-
-impl Settings {
-    /// 清单里这一项只能写系统配置。
-    pub(in crate::settings) fn system_only(&self, key: &str) -> bool {
-        self.more
-            .schema
-            .as_ref()
-            .and_then(|s| s.items.iter().find(|i| i.key == key))
-            .is_some_and(super::pages::schema::Item::system_only)
     }
 }

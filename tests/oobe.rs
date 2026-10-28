@@ -297,7 +297,7 @@ fn choosing_english_switches_the_guide_and_is_saved() {
     tui.key(b"\x1b[B");
     tui.key(b"\r");
     tui.wait_for("How do you like to move around?");
-    until(&mut tui, "写进个人设置", || {
+    until(&mut tui, "写进系统配置", || {
         home.settings().contains("language = \"en\"")
     });
 }
@@ -316,7 +316,7 @@ fn choosing_vim_in_the_guide_is_saved_and_the_session_list_takes_j_and_k() {
     tui.key(b"\x1b[B");
     tui.key(b"\r");
     tui.wait_for("方块或乱码");
-    until(&mut tui, "写进个人设置", || {
+    until(&mut tui, "写进系统配置", || {
         home.settings().contains("keys = \"vim\"")
     });
     tui.wait_for("j/k 选择");

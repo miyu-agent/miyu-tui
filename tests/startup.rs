@@ -97,8 +97,8 @@ fn what_the_core_says_wins_over_what_was_remembered() {
     tui.wait_for("Tab 切换权限级别");
     tui.pump(Duration::from_millis(500));
     drop(tui);
-    let settings = home.root().join("home/alice/settings.toml");
-    let text = std::fs::read_to_string(&settings).expect("有个人设置");
+    let settings = home.settings_file();
+    let text = std::fs::read_to_string(&settings).expect("有系统配置");
     std::fs::write(
         &settings,
         text.replace("mascot_home = false", "mascot_home = true"),

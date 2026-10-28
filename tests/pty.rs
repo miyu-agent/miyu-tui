@@ -114,15 +114,15 @@ fn a_manually_chosen_language_writes_the_folded_line_in_it() {
 }
 
 #[test]
-fn the_language_in_personal_settings_wins_over_the_system_one() {
-    // 2026-10-01 项目主人定 A：界面语言写进个人设置的 `ui.language`，手动选了就是这个人所有的头都用这种。
+fn the_language_in_the_settings_wins_over_the_system_one() {
+    // 2026-10-01 项目主人定 A：界面语言写进系统配置的 `ui.language`，手动选了就是这个人所有的头都用这种。
     let home = Home::with_settings(Script::new([]), "[ui]\nlanguage = \"en\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("Workspace");
 }
 
 #[test]
-fn choosing_a_language_writes_it_into_personal_settings() {
+fn choosing_a_language_writes_it_into_the_settings() {
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
@@ -138,7 +138,7 @@ fn choosing_a_language_writes_it_into_personal_settings() {
     while !home.settings().contains("language = \"ja\"") {
         assert!(
             std::time::Instant::now() < end,
-            "没写进个人设置：{:?}",
+            "没写进系统配置：{:?}",
             home.settings()
         );
         tui.pump(Duration::from_millis(100));

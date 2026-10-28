@@ -11,16 +11,16 @@ fn texts() -> Texts {
     Config::builtin().unwrap().text.settings
 }
 
-/// 一个包一项列表（元素是 `element`），个人设置里写的是 `value`。
+/// 一个包一项列表（元素是 `element`），系统配置里写的是 `value`。
 fn opened(element: &str, value: Value) -> Settings {
     let schema = json!({"pages": [{"id": "packages", "name": "软件包"}],
         "groups": [{"id": "im", "name": "接入通讯平台", "page": "packages"}],
         "items": [{"key": "im.whitelist", "type": "list", "control": "list", "element": element,
-            "layers": ["personal"], "name": "群白名单", "page": "packages", "group": "im"}]});
+            "layers": ["system"], "name": "群白名单", "page": "packages", "group": "im"}]});
     let layers = if value.is_null() {
         json!([])
     } else {
-        json!([{"origin": {"layer": "personal", "line": 1}, "value": value, "used": true}])
+        json!([{"origin": {"layer": "system", "line": 1}, "value": value, "used": true}])
     };
     let config = json!({"items": {"im.whitelist": {"value": value, "layers": layers}}});
     let mut page = Settings::open(false, true);

@@ -104,7 +104,7 @@ pub struct More {
     pub summaries: HashMap<String, String>,
     /// 每个包的作者、从哪来、上游（`package.list` 的 `author`、`from`、`upstream`，核心 F-12）：包页面包屑下面那一行。
     pub origins: HashMap<String, packages::Origin>,
-    /// 个人设置里的 MCP 服务（`mcp.list`）；核心不认的（旧核心）是空的。
+    /// 系统配置里的 MCP 服务（`mcp.list`）；核心不认的（旧核心）是空的。
     pub mcp_home: Vec<mcp::Server>,
     /// 包里带的 MCP 服务（`package.list` 每个包的 `mcp`）。
     pub mcp_bundled: Vec<mcp::Server>,
@@ -205,7 +205,7 @@ impl More {
     }
 
     /// 主色的选择窗：候选一个一行、前面一块颜色，第一个后面暗色写「默认」；停在正在用的那个上。跟随头像的写人格，跟随
-    /// 壁纸的写个人设置。
+    /// 壁纸的写系统配置。
     pub fn seed_choose(&self, title: &str, default_mark: &str) -> Choose {
         let choices = self
             .seeds
@@ -270,7 +270,7 @@ pub struct Texts {
     pub preset_detail: [String; 3],
     /// 功能照包分组时，机主私人的那一组（`~home`）的组名：「我的」（核心 ENV-1）。
     pub package_mine: String,
-    /// 来自哪一层：`default`、`system`、`personal`、`project`。
+    /// 来自哪一层：`default`、`system`、`project`。
     pub origins: HashMap<String, String>,
     /// 开关的两种：开、关。
     pub toggle: [String; 2],
@@ -282,7 +282,7 @@ pub struct Texts {
     pub bad_number: String,
     /// 恢复默认问的那一句：标题 `{name}`、一行话 `{from}`、两个按钮。
     pub unset: [String; 4],
-    /// 个人设置里没写这一项，按 `d`。
+    /// 系统配置里没写这一项，按 `d`。
     pub nothing_to_unset: String,
     /// 现在的默认人格行尾写的。
     pub default_mark: String,

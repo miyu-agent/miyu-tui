@@ -58,7 +58,7 @@ pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<
         Command::SetLanguage(code) => ("config.set", config::set_language(code), None),
         Command::SetTheme(value) => (
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": "tui.theme", "value": value}]}),
+            json!({"changes": [{"key": "tui.theme", "value": value}]}),
             None,
         ),
         // 读输出对着派它的那个会话，不管现在对着哪个（`protocol.md` 的 `job.output`）。

@@ -9,7 +9,6 @@ fn choice(reference: &str) -> Choice {
         name: reference.into(),
         detail: "pin · 2".into(),
         state: ChoiceState::Ok,
-        shared: None,
     }
 }
 

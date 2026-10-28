@@ -101,7 +101,7 @@ enum Waiting {
     Presets,
     /// 读装了的吉祥物包（`package.list`，「吉祥物包」第 3 条）。
     Mascots,
-    /// 读个人设置里的 MCP 服务（`mcp.list`，第 43b 条）。
+    /// 读系统配置里的 MCP 服务（`mcp.list`，第 43b 条）。
     Mcp,
     /// 要一个服务的授权页（`mcp.login`）：服务名。
     McpLogin(String),

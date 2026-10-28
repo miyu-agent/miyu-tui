@@ -11,7 +11,7 @@ use crate::settings::test_support::{config_all, model_list};
 /// 两个有配置项的包、一个没有项的组：名字是核心照界面语言给的组名。
 fn schema() -> Value {
     let item = |key: &str, name: &str, group: &str| {
-        json!({"key": key, "control": "number", "layers": ["system", "personal"], "name": name,
+        json!({"key": key, "control": "number", "layers": ["system", "project"], "name": name,
                "page": "packages", "group": group})
     };
     json!({"pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
@@ -96,7 +96,7 @@ fn a_package_with_two_groups_is_one_row_and_its_page_titles_the_second_group() {
     // 2026-10-19 核心把联网搜索的 key、地址分出「API Key 和地址」一组（项都还带 `package: "net"`，项目主人要标题和空行）。
     let config = Config::builtin().unwrap();
     let item = |key: &str, name: &str, group: &str| {
-        json!({"key": key, "control": "text", "layers": ["personal"], "name": name,
+        json!({"key": key, "control": "text", "layers": ["system"], "name": name,
                "page": "packages", "group": group, "package": "net"})
     };
     let schema = json!({"pages": [{"id": "packages", "name": "软件包"}],

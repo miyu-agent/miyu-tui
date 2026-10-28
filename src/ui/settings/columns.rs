@@ -89,20 +89,7 @@ fn items(col: Col, page: &Settings, texts: &Texts) -> (String, Vec<Item>, String
     match col {
         Col::Provider => {
             let rows = page.nav.providers(view).into_iter();
-            // 同一家自用、共用两份的，名字后面接哪一份（核心 PL-1，`copies.rs`）。
-            let ids = || view.providers.iter().map(|p| p.id.as_str());
-            let rows = rows.map(|p| {
-                let name = match crate::copies::shared(&p.id, ids()) {
-                    Some(shared) => format!(
-                        "{}{}{}",
-                        p.shown(),
-                        crate::sheet::sep(),
-                        texts.copies[usize::from(shared)]
-                    ),
-                    None => p.shown().to_string(),
-                };
-                item(name, p.models.len().to_string())
-            });
+            let rows = rows.map(|p| item(p.shown().to_string(), p.models.len().to_string()));
             (title(0), rows.collect(), empty)
         }
         Col::Org => {

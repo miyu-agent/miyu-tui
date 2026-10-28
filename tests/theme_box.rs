@@ -1,5 +1,5 @@
 //! `/theme` 的配色框（蓝图 `tui.md`「主题」第 6 条，2026-10-15 项目主人：出列表选，选好写进设置）：开框列几种配色、打开
-//! 时用着的那种行首写 `●`；挪到哪一种当场换样子；`Esc` 换回原来的、不写设置；`Enter` 定下写进个人设置的 `tui.theme`。
+//! 时用着的那种行首写 `●`；挪到哪一种当场换样子；`Esc` 换回原来的、不写设置；`Enter` 定下写进系统配置的 `tui.theme`。
 
 mod support;
 
@@ -46,7 +46,7 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
         "没定下不写：{}",
         home.settings()
     );
-    // 再开，挪到终端配色按 Enter：写进个人设置，框关了，样子留着。
+    // 再开，挪到终端配色按 Enter：写进系统配置，框关了，样子留着。
     tui.say("/theme");
     tui.wait_for("● Tokyo Night");
     tui.key(b"\x1b[B");
@@ -54,7 +54,7 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     tui.pump(Duration::from_millis(800));
     assert!(
         home.settings().contains("theme = \"terminal\""),
-        "定下的写进个人设置：{}",
+        "定下的写进系统配置：{}",
         home.settings()
     );
     assert!(!tui.shows("● Tokyo Night"), "框关了");
