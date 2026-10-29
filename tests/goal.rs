@@ -130,7 +130,7 @@ fn pausing_without_a_goal_only_pops_the_cores_words() {
 fn a_goal_without_its_package_is_no_command() {
     let home = Home::with_tools(Script::new([Play::Says("你好。")]), "");
     // 卸掉出厂的长期目标（系统那一层记一笔，核心 F-5 上；SU-5 上起在 `packages/`）；软件包核心起来时读，重启一次。
-    let removed = home.root().join("packages/goal.removed");
+    let removed = home.root().join("packages/miyu-base-goal.removed");
     std::fs::write(removed, "").expect("记得下");
     home.stop_core();
     home.restart_core();
