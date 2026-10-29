@@ -40,6 +40,8 @@ pub struct Texts {
     pub decision_prefix: String,
     /// 写「不允许」的理由时，还没打字暗色写的。
     pub reason_hint: String,
+    /// 光标停在「不允许」上、没在写时后面写的：怎么写理由。
+    pub reason_key: String,
     /// 要跑的命令往上滚过了：上面还有几行，`{n}`。
     pub command_above: String,
     /// 要跑的命令放不下：下面还有几行，`{n}`。
@@ -74,6 +76,8 @@ pub struct Texts {
     pub keys_review: String,
     /// 见 `keys`。
     pub keys_edit: String,
+    /// 写「不允许」的理由时：`Enter` 直接交。
+    pub keys_reason: String,
     /// 见 `keys`。
     pub keys_tabs: String,
     /// 回答了以后正文里那一块的第一行，`{n}`：「你回答了 N 个问题」（`ui/answered_rows.rs`）。

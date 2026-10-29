@@ -124,6 +124,9 @@ pub enum Push {
     Workspace(String),
     /// 给报过的子代理留了言，它又在跑了（`job.messaged`），带着任务编号。
     JobMessaged(String),
+    /// 下一条 `JobEnded` 落盘的序号：她没看到的回报，这一轮结束时核心照它叫醒她，开的那一轮 `trigger` 就是它（终端集成认
+    /// 叫醒的是哪一轮，图纸 `shellhook.md`「后台回报」）。
+    Reported(u64),
     /// 一个后台任务结束了：后台命令（`job.reported`）、子代理（`child.reported`）。
     JobEnded(JobEnd),
     /// 这几条排着队的消息被退回了（`message.withdrawn`），照序号。
@@ -334,7 +337,10 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
             body["trigger"].as_u64(),
         )),
         "message.user" => out.extend(jobs::said(event, mine)),
-        "job.reported" | "child.reported" => out.push(jobs::reported(body)),
+        "job.reported" | "child.reported" => {
+            out.extend(event["seq"].as_u64().map(Push::Reported));
+            out.push(jobs::reported(body));
+        }
         "command.ran" => out.push(Push::CommandRan),
         "message.withdrawn" => out.push(Push::Withdrawn(turns(&body["messages"]))),
         // 认不出的级别（新版本才有的）不画，照旧显示上一次的。

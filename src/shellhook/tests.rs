@@ -1,0 +1,354 @@
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use super::install::{Done, Found, block, found, install_at, uninstall_at};
+use super::shells::{ALL, Shell};
+use super::{Options, script, words};
+
+/// 一个测试一个空目录，用完删掉。
+struct Dir(PathBuf);
+
+impl Dir {
+    fn new(name: &str) -> Self {
+        let dir =
+            std::env::temp_dir().join(format!("miyu-shellhook-{name}-{}", std::process::id()));
+        drop(fs::remove_dir_all(&dir));
+        fs::create_dir_all(&dir).unwrap();
+        Self(dir)
+    }
+}
+
+impl Drop for Dir {
+    fn drop(&mut self) {
+        drop(fs::remove_dir_all(&self.0));
+    }
+}
+
+fn args(list: &[&str]) -> Vec<String> {
+    list.iter().map(|s| s.to_string()).collect()
+}
+
+#[test]
+fn options_are_named_and_unknown_ones_are_refused() {
+    let parsed = Options::parse(&args(&["--shell", "fish", "--program", "/x/miyu"])).unwrap();
+    assert_eq!(parsed.shell, Some(Shell::Fish));
+    assert_eq!(parsed.program, Some(PathBuf::from("/x/miyu")));
+    for bad in [
+        &["fish"][..],
+        &["--shell"],
+        &["--shell", "tcsh"],
+        &["--force"],
+    ] {
+        assert!(Options::parse(&args(bad)).is_err(), "{bad:?}");
+    }
+}
+
+#[test]
+fn shells_are_known_by_name_path_or_login_dash() {
+    assert_eq!(Shell::named("fish"), Some(Shell::Fish));
+    assert_eq!(Shell::named("/usr/bin/zsh"), Some(Shell::Zsh));
+    assert_eq!(Shell::named("-bash"), Some(Shell::Bash));
+    assert_eq!(Shell::named("nu"), None);
+}
+
+#[test]
+fn targets_follow_xdg_and_zdotdir() {
+    let env = |name: &str| match name {
+        "HOME" => Some("/h".to_string()),
+        "XDG_CONFIG_HOME" => Some("/c".to_string()),
+        "ZDOTDIR" => Some("/z".to_string()),
+        _ => None,
+    };
+    assert_eq!(
+        Shell::Fish.target(&env),
+        Some(PathBuf::from("/c/fish/conf.d/miyu-shellhook.fish"))
+    );
+    assert_eq!(Shell::Bash.target(&env), Some(PathBuf::from("/h/.bashrc")));
+    assert_eq!(Shell::Zsh.target(&env), Some(PathBuf::from("/z/.zshrc")));
+    assert_eq!(
+        Shell::Fish.old_hook(&env),
+        Some(PathBuf::from("/c/fish/conf.d/miyu.fish")),
+        "旧版的那一份和自己的在同一个目录、名字不一样"
+    );
+    let bare = |name: &str| (name == "HOME").then(|| "/h".to_string());
+    assert_eq!(
+        Shell::Fish.target(&bare),
+        Some(PathBuf::from("/h/.config/fish/conf.d/miyu-shellhook.fish"))
+    );
+}
+
+#[test]
+fn a_fish_file_we_did_not_write_is_never_touched() {
+    let dir = Dir::new("foreign");
+    let path = dir.0.join("miyu-shellhook.fish");
+    fs::write(&path, "# 自己写的\n").unwrap();
+    assert_eq!(
+        install_at(Shell::Fish, &path, Path::new("/x/miyu")).unwrap(),
+        Done::Foreign
+    );
+    assert!(!uninstall_at(Shell::Fish, &path).unwrap());
+    assert_eq!(fs::read_to_string(&path).unwrap(), "# 自己写的\n");
+    assert_eq!(found(Shell::Fish, &path).unwrap(), Found::Foreign);
+}
+
+#[test]
+fn fish_installs_updates_and_removes_its_own_file() {
+    let dir = Dir::new("fish");
+    let path = dir.0.join("conf.d/miyu-shellhook.fish");
+    let program = Path::new("/opt/it's/miyu");
+    assert_eq!(found(Shell::Fish, &path).unwrap(), Found::Missing);
+    assert_eq!(
+        install_at(Shell::Fish, &path, program).unwrap(),
+        Done::Installed
+    );
+    assert_eq!(
+        found(Shell::Fish, &path).unwrap(),
+        Found::Ours(Some(program.to_path_buf())),
+        "带引号的路径照原样读回来"
+    );
+    let other = Path::new("/new/miyu");
+    assert_eq!(
+        install_at(Shell::Fish, &path, other).unwrap(),
+        Done::Updated
+    );
+    assert_eq!(
+        found(Shell::Fish, &path).unwrap(),
+        Found::Ours(Some(other.into()))
+    );
+    assert!(uninstall_at(Shell::Fish, &path).unwrap());
+    assert!(!path.exists());
+    assert!(!uninstall_at(Shell::Fish, &path).unwrap());
+}
+
+#[test]
+fn rc_files_keep_everything_around_the_block() {
+    for shell in [Shell::Bash, Shell::Zsh] {
+        let dir = Dir::new(shell.name());
+        let path = dir.0.join("rc");
+        fs::write(&path, "alias ll='ls -l'").unwrap();
+        let program = Path::new("/opt/it's/miyu");
+        assert_eq!(install_at(shell, &path, program).unwrap(), Done::Installed);
+        let text = fs::read_to_string(&path).unwrap();
+        assert!(
+            text.starts_with("alias ll='ls -l'\n# >>> miyu shellhook >>>"),
+            "{text}"
+        );
+        assert_eq!(
+            found(shell, &path).unwrap(),
+            Found::Ours(Some(program.into()))
+        );
+        fs::write(&path, format!("{text}export A=1\n")).unwrap();
+        assert_eq!(
+            install_at(shell, &path, Path::new("/b/miyu")).unwrap(),
+            Done::Updated
+        );
+        let text = fs::read_to_string(&path).unwrap();
+        assert_eq!(
+            text.matches("miyu shellhook >>>").count(),
+            1,
+            "换掉，不再加一段"
+        );
+        assert!(
+            text.ends_with("<<< miyu shellhook <<<\nexport A=1\n"),
+            "{text}"
+        );
+        assert!(uninstall_at(shell, &path).unwrap());
+        assert_eq!(
+            fs::read_to_string(&path).unwrap(),
+            "alias ll='ls -l'\nexport A=1\n"
+        );
+        assert_eq!(found(shell, &path).unwrap(), Found::Missing);
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn a_symlinked_rc_file_stays_a_symlink() {
+    let dir = Dir::new("link");
+    let real = dir.0.join("dotfiles-bashrc");
+    fs::write(&real, "# mine\n").unwrap();
+    let link = dir.0.join(".bashrc");
+    std::os::unix::fs::symlink(&real, &link).unwrap();
+    install_at(Shell::Bash, &link, Path::new("/x/miyu")).unwrap();
+    assert!(
+        fs::symlink_metadata(&link)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+    assert!(
+        fs::read_to_string(&real)
+            .unwrap()
+            .contains("miyu shellhook")
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn the_program_is_recorded_by_its_link_on_path_not_its_versioned_real_path() {
+    let dir = Dir::new("on-path");
+    let cellar = dir.0.join("Cellar/miyu/0.7.0/bin");
+    let bin = dir.0.join("bin");
+    let old = dir.0.join("old");
+    for d in [&cellar, &bin, &old] {
+        fs::create_dir_all(d).unwrap();
+    }
+    let real = cellar.join("miyu");
+    fs::write(&real, "new").unwrap();
+    fs::write(old.join("miyu"), "old").unwrap();
+    std::os::unix::fs::symlink(&real, bin.join("miyu")).unwrap();
+    let path = std::env::join_paths([&old, &bin]).unwrap();
+    assert_eq!(
+        super::install::on_path(&real, Some(&path)),
+        Some(bin.join("miyu")),
+        "PATH 上前面那个旧版不是同一个文件，不算"
+    );
+    assert_eq!(
+        super::install::on_path(&real, Some(&std::env::join_paths([&old]).unwrap())),
+        None
+    );
+    let itself = std::env::join_paths([&cellar, &bin]).unwrap();
+    assert_eq!(
+        super::install::on_path(&real, Some(&itself)),
+        None,
+        "自己就在 PATH 上的照旧"
+    );
+}
+
+#[test]
+fn old_shells_are_told_to_reopen_when_the_script_changed() {
+    let (hook, rest) = super::hook(args(&["--hook", "abc", "say", "--shell", "fish"]));
+    assert_eq!(hook.as_deref(), Some("abc"));
+    assert_eq!(rest, args(&["say", "--shell", "fish"]));
+    assert_eq!(super::hook(args(&["status"])), (None, args(&["status"])));
+    let stamp = script::stamp();
+    assert_eq!(stamp.len(), 16);
+    for shell in ALL {
+        let text = script::render(shell, Path::new("/x/miyu"));
+        assert!(!text.contains("@HOOK@"), "{}", shell.name());
+        assert!(text.contains(&stamp), "{}", shell.name());
+    }
+}
+
+#[test]
+fn every_script_calls_the_recorded_program_and_parses() {
+    let program = Path::new("/opt/it's/miyu");
+    for shell in ALL {
+        let text = script::render(shell, program);
+        assert!(!text.contains("@PROGRAM@"), "{}", shell.name());
+        assert!(text.contains(&format!("{} shellhook", shell.quote(program))));
+        if shell.powershell() {
+            // PowerShell 的参数是一个数组拼起来的（那句话从文件读），语法照下面它自己的解析器检查。
+            assert!(text.contains("'say', '--shell'"), "{}", shell.name());
+            assert!(!text.contains("@SHELL@") && !text.contains("@SPOOL@"));
+            continue;
+        }
+        assert!(text.contains("shellhook say --shell"), "{}", shell.name());
+        // 机器上装着这种 shell 的，照它自己的语法检查过一遍（`-n` 只读不跑）。Windows 上叫 `bash` 的多半是 WSL 的启动器，
+        // 没装发行版时跑不起来，不算数。
+        if cfg!(windows) {
+            continue;
+        }
+        let checked = std::process::Command::new(shell.name())
+            .arg("-n")
+            .arg("-c")
+            .arg(&text)
+            .status();
+        if let Ok(status) = checked {
+            assert!(status.success(), "{} 的脚本语法不对", shell.name());
+        }
+        let installed = block(shell, program);
+        if let Ok(status) = std::process::Command::new(shell.name())
+            .args(["-n", "-c", &installed])
+            .status()
+        {
+            assert!(status.success(), "{} 装进去的那一段语法不对", shell.name());
+        }
+    }
+}
+
+#[test]
+fn the_fish_script_hands_sentences_over_without_a_flash() {
+    // 旧版 2026-10-01 报：粘一段长话回车，交给她之前闪一下。清空输入行和重放包在同一段同步输出里。
+    let text = script::render(Shell::Fish, Path::new("/x/miyu"));
+    let hand = &text[text.find("function __miyu_hand_to_ai").unwrap()..];
+    let open = hand.find("\\e[?2026h").unwrap();
+    let clear = hand.find("commandline -b -- \"\"").unwrap();
+    assert!(open < clear);
+    assert!(text.contains("--tokens-raw"), "单行只看没展开的首词");
+    assert!(text.contains("classify --shell fish"), "多行交给程序判");
+}
+
+#[test]
+fn every_language_has_the_same_words() {
+    let table = crate::language::LanguageTable::builtin().unwrap();
+    let mut codes: Vec<&str> = words::TEXTS.iter().map(|(c, _)| *c).collect();
+    codes.sort_unstable();
+    let mut known = table.codes();
+    known.sort_unstable();
+    assert_eq!(codes, known, "和终端界面的语言一样多");
+    for (code, _) in words::TEXTS {
+        words::Words::of(code).unwrap();
+    }
+    assert_eq!(
+        words::fill("{shell}：{path}", &[("shell", "fish"), ("path", "/a")]),
+        "fish：/a"
+    );
+}
+
+#[test]
+fn the_powershell_script_parses_where_powershell_is_installed() {
+    // 机器上有 PowerShell 的（Windows 的 CI 有 5.1），照它自己的解析器读一遍脚本和装进去的那一段，不能有语法错。
+    let program = Path::new("C:/it's/miyu.exe");
+    for shell in [Shell::Pwsh, Shell::WinPs] {
+        for text in [script::render(shell, program), block(shell, program)] {
+            let dir =
+                std::env::temp_dir().join(format!("miyu-shellhook-ps-{}", std::process::id()));
+            std::fs::create_dir_all(&dir).unwrap();
+            let file = dir.join("hook.ps1");
+            std::fs::write(&file, format!("\u{feff}{text}")).unwrap();
+            let check = format!(
+                "$e = $null; $t = $null; [void][System.Management.Automation.Language.Parser]::ParseFile('{}', [ref]$t, [ref]$e); if ($e.Count) {{ $e | % {{ $_.Message }}; exit 1 }}",
+                file.display().to_string().replace('\'', "''")
+            );
+            let status = std::process::Command::new(shell.name())
+                .args([
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-Command",
+                    &check,
+                ])
+                .status();
+            std::fs::remove_dir_all(&dir).unwrap();
+            if let Ok(status) = status {
+                assert!(status.success(), "{} 的脚本语法不对", shell.name());
+            }
+        }
+    }
+}
+
+#[test]
+fn windows_tells_the_powershell_from_its_own_module_folder() {
+    // 2026-10-24：Windows 上认不出上一层进程，照 PowerShell 自己加进 `PSModulePath` 的用户目录认。
+    let env = |name: &str| match name {
+        "ProgramFiles" => Some(r"C:\Program Files".to_string()),
+        "SystemRoot" => Some(r"C:\WINDOWS".to_string()),
+        _ => None,
+    };
+    let system = r"C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules";
+    let from = |path: &str| super::shells::from_module_path(path, &env);
+    assert_eq!(from(system), None, "cmd 里也有的系统目录不算");
+    assert_eq!(
+        from(&format!(
+            r"C:\Users\me\OneDrive\文档\WindowsPowerShell\Modules;{system}"
+        )),
+        Some(Shell::WinPs)
+    );
+    assert_eq!(
+        from(&format!(
+            r"C:\Users\me\Documents\PowerShell\Modules;C:\Program Files\PowerShell\Modules;C:\Program Files\PowerShell\7\Modules;{system}"
+        )),
+        Some(Shell::Pwsh)
+    );
+}

@@ -506,7 +506,7 @@
       ],
       [
         "Ctrl+V",
-        "Paste; an image on the clipboard becomes an attachment"
+        "Paste; an image on the clipboard becomes an attachment (in Windows Terminal use Alt+V for images)"
       ],
       [
         "↓ (empty input)",
@@ -614,6 +614,7 @@
     ],
     "decision_prefix": "Don't ask again for commands starting with `{prefix}` in this folder",
     "reason_hint": "Add a reason (optional)",
+    "reason_key": "n write a reason",
     "command_above": "↑ {n} more above",
     "command_below": "↓ {n} more below",
     "keys_scroll": "Ctrl+J/K scroll command",
@@ -668,6 +669,7 @@
     "keys_approve": "↑/↓ select · Enter confirm · Esc ×2 cancel",
     "keys_review": "Enter submit · Esc ×2 cancel",
     "keys_edit": "Enter save · Esc stop editing",
+    "keys_reason": "Enter submit · Esc stop editing",
     "keys_tabs": " · ←/→ switch question",
     "answered_head": "You answered {n} question(s)",
     "answered_line": "{label} → {answer}",

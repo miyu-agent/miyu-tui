@@ -44,6 +44,7 @@ impl Default for Transcript {
             failure: None,
             models: model::ModelWatch::default(),
             turn: None,
+            seen: 0,
             reverted: Vec::new(),
             next_id: 0,
             older: pages::Older::default(),

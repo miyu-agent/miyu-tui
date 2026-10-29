@@ -32,18 +32,21 @@ fn job_effects_reports_and_foreign_messages_are_read() {
         "body": {"job": "j1", "reason": "exited", "exit_code": 2, "duration_ms": 81234}});
     assert_eq!(
         read_mine(&reported),
-        [Push::JobEnded(JobEnd {
-            job: "j1".into(),
-            reason: JobReason::Finished,
-            exit_code: Some(2),
-            signal: None,
-            duration_ms: Some(81234),
-            text: String::new(),
-        })]
+        [
+            Push::Reported(10),
+            Push::JobEnded(JobEnd {
+                job: "j1".into(),
+                reason: JobReason::Finished,
+                exit_code: Some(2),
+                signal: None,
+                duration_ms: Some(81234),
+                text: String::new(),
+            })
+        ]
     );
     let child = json!({"seq": 11, "kind": "child.reported", "by": {"kind": "session", "id": "s-child"},
         "body": {"job": "j2", "session": "s-child", "reason": "undone", "text": "查到一半"}});
-    let Push::JobEnded(end) = &read_mine(&child)[0] else {
+    let Push::JobEnded(end) = &read_mine(&child)[1] else {
         panic!("子代理的回报")
     };
     assert_eq!(
@@ -57,7 +60,8 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     ] {
         let ended = json!({"seq": 13, "kind": "job.reported", "by": {"kind": "kernel"},
             "body": {"job": "j3", "reason": reason}});
-        let Push::JobEnded(end) = &read_mine(&ended)[0] else {
+        // 先是 `Reported(13)`（落盘的序号），再是结束。
+        let Push::JobEnded(end) = &read_mine(&ended)[1] else {
             panic!("{reason}")
         };
         assert_eq!(end.reason, want);

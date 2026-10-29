@@ -1,68 +1,15 @@
 //! 任务表和别处来的话落进正文的字（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 5、6 条、「别处来的话」第 2 条）：
 //! 任务结束的那一行、子代理正在做什么、用了多少 token、别的 harness 报的名字怎么洗。
 
-use std::time::Instant;
-
 use crate::human::Human;
 
 use crate::config::JobTexts;
 use crate::core::{Bill, Usage};
-use crate::jobs::{Board, JobKind, JobState};
-use crate::meter;
+use crate::jobs::Board;
 use crate::transcript::{Entry, JobMark, Kind, StepKind, Transcript};
 
-/// 一条后台任务结束了：正文末尾一行，记号有颜色、字暗；点开看全文（「后台命令、子代理和侧边栏」第 5 条）。
-pub(super) fn announce(
-    board: &Board,
-    transcript: &mut Transcript,
-    id: u64,
-    now: Instant,
-    words: &JobTexts,
-) {
-    let Some(job) = board.jobs.iter().find(|j| j.id == id) else {
-        return;
-    };
-    let elapsed = meter::clock(job.elapsed(now).as_secs());
-    let why = match job.state {
-        JobState::Undone => words.why_undone.as_str(),
-        JobState::Restarted => words.why_restarted.as_str(),
-        JobState::TimedOut => words.why_timed_out.as_str(),
-        JobState::TooLarge => words.why_too_large.as_str(),
-        _ => "",
-    };
-    let stopped = matches!(
-        job.state,
-        JobState::Stopped
-            | JobState::Undone
-            | JobState::Restarted
-            | JobState::TimedOut
-            | JobState::TooLarge
-    );
-    let (mark, text) = match (job.kind, job.state) {
-        (JobKind::Agent, _) if stopped => (JobMark::Stopped, words.agent_stopped_note.clone()),
-        (JobKind::Agent, _) => (JobMark::Done, words.agent_note.clone()),
-        (_, JobState::Failed(code)) => (
-            JobMark::Failed,
-            words.failed_note.replace("{code}", &code.to_string()),
-        ),
-        (_, JobState::Killed(signal)) => (
-            JobMark::Failed,
-            words.killed_note.replace("{signal}", &signal.to_string()),
-        ),
-        _ if stopped => (JobMark::Stopped, words.stopped_note.clone()),
-        _ => (JobMark::Done, words.done_note.clone()),
-    };
-    let text = text
-        .replace("{title}", &job.headline())
-        .replace("{elapsed}", &elapsed)
-        .replace("{why}", why);
-    // 点开看的全文：子代理是交回来的回答；命令先是命令本身，输出读回来了接在后面（`app/output.rs`）。
-    let detail = match job.kind {
-        JobKind::Agent => job.report.clone(),
-        JobKind::Shell => job.title.trim().to_string(),
-    };
-    transcript.job_from(mark, text, detail, Some(job.job.clone()));
-}
+/// 一条后台任务结束了：正文末尾一行（挪到了 `jobs/announce.rs`，shellhook 也用）。
+pub(super) use crate::jobs::announce;
 
 /// 子会话正在做什么：在想、在说，或者最新那一步「显示名 · 对象」（显示名照 `lang` 挑，`Human::step_name`）；没在跑的空着。
 pub(super) fn doing(

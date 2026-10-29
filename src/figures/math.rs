@@ -97,6 +97,21 @@ fn quiet_fonts() {
                 return;
             }
         }
+        // Windows 同上：指到 NUL（2026-10-23 项目主人在 Windows 的全屏里看到「path: C:\Windows\Fonts\NotoSansSC-VF.ttf」）。
+        #[cfg(windows)]
+        {
+            use filedescriptor::{FileDescriptor, StdioDescriptor};
+            let null = std::fs::File::options().write(true).open("NUL");
+            if let Ok(null) = null
+                && let Ok(saved) = FileDescriptor::redirect_stdio(&null, StdioDescriptor::Stderr)
+            {
+                warm_up();
+                if FileDescriptor::redirect_stdio(&saved, StdioDescriptor::Stderr).is_err() {
+                    // 指不回来了：界面照画，只是之后的报错看不见。
+                }
+                return;
+            }
+        }
         warm_up();
     });
 }

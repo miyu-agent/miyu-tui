@@ -506,7 +506,7 @@
       ],
       [
         "Ctrl+V",
-        "粘贴；剪贴板中的图片作为附件"
+        "粘贴；剪贴板中的图片作为附件（Windows Terminal 里贴图用 Alt+V）"
       ],
       [
         "↓（输入框为空时）",
@@ -614,6 +614,7 @@
     ],
     "decision_prefix": "以后 `{prefix}` 开头的命令在这个目录不再询问",
     "reason_hint": "理由（可选）",
+    "reason_key": "n 编写理由",
     "command_above": "↑ 上面还有 {n} 行",
     "command_below": "↓ 还有 {n} 行",
     "keys_scroll": "Ctrl+J/K 滚动命令",
@@ -668,6 +669,7 @@
     "keys_approve": "↑/↓ 选择 · Enter 确定 · Esc ×2 取消",
     "keys_review": "Enter 提交 · Esc ×2 取消",
     "keys_edit": "Enter 保存 · Esc 退出编辑",
+    "keys_reason": "Enter 提交 · Esc 退出编辑",
     "keys_tabs": " · ←/→ 换题",
     "answered_head": "你回答了 {n} 个问题",
     "answered_line": "{label} → {answer}",

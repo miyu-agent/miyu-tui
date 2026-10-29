@@ -506,7 +506,7 @@
       ],
       [
         "Ctrl+V",
-        "貼り付け。クリップボードの画像は添付ファイルになる"
+        "貼り付け。クリップボードの画像は添付ファイルになる（Windows Terminal では画像は Alt+V）"
       ],
       [
         "↓（入力欄が空のとき）",
@@ -614,6 +614,7 @@
     ],
     "decision_prefix": "このフォルダでは `{prefix}` で始まるコマンドを今後確認しない",
     "reason_hint": "理由を入力（任意）",
+    "reason_key": "n 理由を書く",
     "command_above": "↑ 上にあと {n} 行",
     "command_below": "↓ あと {n} 行",
     "keys_scroll": "Ctrl+J/K コマンドをスクロール",
@@ -668,6 +669,7 @@
     "keys_approve": "↑/↓ 選択 · Enter 確定 · Esc ×2 キャンセル",
     "keys_review": "Enter 送信 · Esc ×2 キャンセル",
     "keys_edit": "Enter 保存 · Esc 編集終了",
+    "keys_reason": "Enter 送信 · Esc 編集終了",
     "keys_tabs": " · ←/→ 質問切り替え",
     "answered_head": "{n} 件の質問に回答しました",
     "answered_line": "{label} → {answer}",

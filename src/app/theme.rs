@@ -5,7 +5,7 @@ use super::App;
 use crate::oobe::Oobe;
 use crate::oobe::persona::Colors;
 use crate::theme::choice::{self, Choice, Mode};
-use crate::theme::{persona, terminal_colors};
+use crate::theme::terminal_colors;
 
 impl App {
     /// 起来时问到了终端的底色：照它重挑（跟随终端的才看它）。
@@ -200,27 +200,26 @@ impl App {
     /// 同 [`App::wanted`]，不看引导里挑的：照配置项、人格的。
     fn wanted_by_config(&mut self) -> (Vec<u32>, Option<u32>) {
         let colors = self.choice().colors;
-        if colors == "wallpaper" || colors == "terminal" {
-            let seeds = match colors.as_str() {
-                "wallpaper" => self.screen.wallpaper.seeds().to_vec(),
-                _ => choice::terminal_seeds(),
-            };
-            let seed = choice::pick_seed(&seeds, self.screen.theme_pick);
-            return (seeds, seed);
-        }
-        if !self.following() {
-            return (Vec::new(), None);
-        }
-        match self.colors_source() {
-            None => (Vec::new(), None),
+        let source = if colors == "persona" {
+            self.colors_source()
+        } else {
+            None
+        };
+        match source {
             Some(Colors::Given { seed, seeds }) => {
-                let seeds: Vec<u32> = seeds.iter().filter_map(|s| persona::hex(s)).collect();
-                let seed = seed
-                    .as_deref()
-                    .and_then(persona::hex)
-                    .or_else(|| seeds.first().copied());
-                (seeds, seed)
+                let persona = choice::PersonaSeeds {
+                    seed: seed.as_deref(),
+                    seeds: &seeds,
+                };
+                choice::seeds(&colors, &[], Some(persona), None)
             }
+            None => choice::seeds(
+                &colors,
+                self.screen.wallpaper.seeds(),
+                None,
+                self.screen.theme_pick,
+            ),
+            // 引导里刚选、还没存的头像：照门面现取（后台取，一张只取一次），只有全屏有。
             Some(Colors::File(path)) => {
                 let key = format!("file:{}", path.display());
                 let seeds = self.screen.seeds.of(&key, &path).unwrap_or_default();

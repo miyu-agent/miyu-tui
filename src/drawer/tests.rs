@@ -262,7 +262,7 @@ fn esc_twice_within_the_window_cancels() {
 }
 
 #[test]
-fn approval_decides_and_deny_asks_for_a_reason_first() {
+fn approval_decides_and_n_writes_a_reason() {
     let mut d = Drawer::approval(None, approval());
     match d.key(key(KeyCode::Char('2'))) {
         Step::Done(Outcome::Decided(x)) => {
@@ -270,9 +270,18 @@ fn approval_decides_and_deny_asks_for_a_reason_first() {
         }
         other => panic!("{other:?}"),
     }
+    // 2026-10-22 项目主人：照提问的 `n` 补充，`n` 写理由；选「不允许」直接交。
     let mut d = Drawer::approval(None, approval());
-    assert_eq!(d.key(key(KeyCode::Char('3'))), Step::Stay);
-    assert_eq!(d.editing, Some(Edit::Reason), "不允许：先写理由");
+    match d.key(key(KeyCode::Char('3'))) {
+        Step::Done(Outcome::Decided(x)) => {
+            assert_eq!((x.decision, x.reason), (Decision::Deny, None));
+        }
+        other => panic!("{other:?}"),
+    }
+    let mut d = Drawer::approval(None, approval());
+    assert_eq!(d.key(key(KeyCode::Char('n'))), Step::Stay);
+    assert_eq!(d.editing, Some(Edit::Reason), "n：写理由");
+    assert_eq!(d.cursor[0], 2, "光标挪到「不允许」");
     assert_eq!(d.key(key(KeyCode::Char('n'))), Step::Stay, "编辑时 n 是字");
     d.key(key(KeyCode::Backspace));
     typed(&mut d, "别动家目录");
@@ -355,34 +364,21 @@ fn what_is_left_behind() {
 }
 
 #[test]
-fn landing_on_deny_opens_the_reason_and_one_enter_submits() {
-    // 2026-10-07 项目主人：光标移到「不允许」就能写理由，回车直接交，不用按两次。
+fn landing_on_deny_does_not_write_and_esc_clears_the_reason() {
     let mut d = Drawer::approval(None, approval());
     d.key(key(KeyCode::Down));
-    assert_eq!(d.editing, None, "「此目录不再询问」上不写字");
     d.key(key(KeyCode::Down));
-    assert_eq!(d.editing, Some(Edit::Reason), "落到「不允许」就在写理由");
+    assert_eq!(d.editing, None, "落到「不允许」不在写字，j、k 照样上下");
+    d.key(key(KeyCode::Char('n')));
     typed(&mut d, "jk别动");
     assert_eq!(d.typed[0], "jk别动", "字母进理由，不是上下");
-    d.key(key(KeyCode::Up));
-    assert_eq!(d.editing, None, "方向键照样能离开");
-    assert_eq!(d.typed[0], "jk别动", "写的字留着");
-    d.key(key(KeyCode::Down));
+    assert_eq!(d.key(key(KeyCode::Esc)), Step::Stay, "Esc 先退出编辑");
+    assert_eq!(d.editing, None);
+    assert_eq!(d.typed[0], "", "退出编辑清掉理由（同补充）");
     let Step::Done(Outcome::Decided(x)) = d.key(key(KeyCode::Enter)) else {
         panic!("一下就交");
     };
-    assert_eq!(
-        (x.decision, x.reason.as_deref()),
-        (Decision::Deny, Some("jk别动"))
-    );
-    let mut d = Drawer::approval(None, approval());
-    d.key(key(KeyCode::Char('3')));
-    assert_eq!(d.editing, Some(Edit::Reason), "数字选到「不允许」也一样");
-    assert_eq!(
-        d.key(key(KeyCode::Esc)),
-        Step::Escape,
-        "Esc 照旧算两下取消的第一下"
-    );
+    assert_eq!((x.decision, x.reason.as_deref()), (Decision::Deny, None));
 }
 
 #[test]

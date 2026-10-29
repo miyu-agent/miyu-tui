@@ -4,6 +4,7 @@
 //! 框下面一行左边是模式和模型，右边是临时的状态和用量。
 
 mod agents;
+mod answered_rows;
 mod avatar_view;
 mod background;
 mod body;
@@ -14,8 +15,8 @@ mod done_row;
 mod drawer;
 mod dream_rows;
 mod dreamt_rows;
-pub use drawer::PreviewLook;
-mod answered_rows;
+// shellhook 照同一套画抽屉、等第一个字的转圈、待办（图纸 `shellhook.md`）。
+pub use drawer::{PreviewLook, draw as draw_drawer, rows as drawer_rows};
 pub mod effort_list;
 mod figure_rows;
 mod floating;
@@ -41,6 +42,7 @@ mod oobe;
 pub mod shown_rows;
 pub use oobe::idle_look as oobe_idle_look;
 mod panel;
+pub use panel::{Chrome, PAD as PANEL_PAD, draw as draw_panel, padded as panel_padded};
 mod panels;
 pub mod persona_list;
 mod recent;
@@ -65,7 +67,8 @@ mod timeline;
 mod todos;
 pub mod tool_list;
 mod undo_rows;
-pub use timeline::release_on_fold;
+pub use timeline::{release_on_fold, tail_rows};
+pub use {dream_rows::rows as dream_rows, todos::todo_lines};
 mod user_rows;
 pub mod wide;
 

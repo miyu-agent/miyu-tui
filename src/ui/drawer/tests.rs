@@ -324,9 +324,10 @@ fn ctrl_j_k_scroll_the_command_unless_writing_where_ctrl_j_is_a_new_line() {
     d.key(ctrl('j'));
     d.key(ctrl('k'));
     assert_eq!(d.command_top, 1);
-    // 落到「不允许」上就在写理由：Ctrl+J 是换行。
+    // 在「不允许」上按 n 写理由（2026-10-22 项目主人：「这里的设计也改成 n 编写理由」）：Ctrl+J 是换行。
     press(&mut d, KeyCode::Down);
     press(&mut d, KeyCode::Down);
+    press(&mut d, KeyCode::Char('n'));
     assert_eq!(d.editing, Some(crate::drawer::Edit::Reason));
     d.key(ctrl('j'));
     assert_eq!((d.command_top, d.typed[0].as_str()), (1, "\n"));
@@ -338,6 +339,7 @@ fn a_reason_with_a_new_line_shows_on_two_rows() {
     let mut d = long_command(1);
     press(&mut d, KeyCode::Down);
     press(&mut d, KeyCode::Down);
+    press(&mut d, KeyCode::Char('n'));
     d.typed[0] = "第一行\n第二行".into();
     let v = view(&d, &texts(), &look(), 40, false);
     let shown: Vec<String> = v.lines.iter().map(text).collect();
