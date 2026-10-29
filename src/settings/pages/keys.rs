@@ -467,7 +467,7 @@ impl Settings {
         }
     }
 
-    /// 写一项（写哪一层照管理员模式，「管理员模式」第 3 条），当场存（关窗；没存成的原因写在状态行）。
+    /// 写一项（不写层，核心写系统配置，「设置只剩一份」第 1 条），当场存（关窗；没存成的原因写在状态行）。
     pub(in crate::settings) fn write_setting(&mut self, key: &str, value: Value, texts: &Texts) {
         let Some(data) = self.data.as_ref() else {
             return;

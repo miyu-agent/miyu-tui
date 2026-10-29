@@ -61,7 +61,6 @@ pub(super) fn menu(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         );
         page.hits.push((row, Hit::Menu(i)));
     }
-    // 管理员多一段「A 管理员模式」（「管理员模式」第 2 条）；不是管理员的不写。
     let hints = texts.key_hints[0].clone();
     footer(frame, stage, page, texts, &hints, None, None);
 }
