@@ -58,11 +58,7 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
             Some(_) => &words.from_avatar,
             None => &words.no_avatar,
         };
-        let lead = " ".repeat(2 + label_w + 2);
-        c.note(
-            &format!("{lead}{}", said.replace("{name}", name)),
-            theme::dim(),
-        );
+        c.note_at(2 + label_w + 2, &said.replace("{name}", name), theme::dim());
     }
     // 跟随壁纸的：照样对齐写取自哪（找不到的照 Tokyo Night）。
     if COLORS.get(step.colors) == Some(&"wallpaper") {
@@ -71,8 +67,7 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
         } else {
             &words.no_wallpaper
         };
-        let lead = " ".repeat(2 + label_w + 2);
-        c.note(&format!("{lead}{said}"), theme::dim());
+        c.note_at(2 + label_w + 2, said, theme::dim());
     }
     // 主色（2026-10-15 项目主人：配色方案和主色）：跟随头像、跟随壁纸、有候选时，一块颜色加 `#rrggbb`。
     if let Some(seed) = step.shown_seed().filter(|_| slots.contains(&Slot::Seed)) {
@@ -83,15 +78,13 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
     c.blank();
     let ground = &words.ground[usize::from(!step.ground)];
     c.chip(&words.rows[4], label_w, ground, "", on(Slot::Ground));
-    let lead = " ".repeat(2 + label_w + 2);
-    c.note(&format!("{lead}{}", words.ground_note), theme::dim());
+    c.note_at(2 + label_w + 2, &words.ground_note, theme::dim());
     // 吉祥物（2026-10-15 项目主人定）：显示、不显示，下面对齐暗色写项目主人定的那一句。
     if !step.avatar {
         c.blank();
         let shown = &words.mascot[usize::from(step.mascot_off)];
         c.chip(&words.rows[2], label_w, shown, "", on(Slot::Mascot));
-        let lead = " ".repeat(2 + label_w + 2);
-        c.note(&format!("{lead}{}", words.mascot_note), theme::dim());
+        c.note_at(2 + label_w + 2, &words.mascot_note, theme::dim());
     }
     c.blank();
     c.action(
