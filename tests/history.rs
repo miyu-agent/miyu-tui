@@ -51,7 +51,7 @@ fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
     up_until(&mut tui, "重启以前说的一句");
     // 记在终端这个软件包的状态目录里（核心 9-1 上，`package.list` 的 `state`）。
     let saved =
-        std::fs::read_to_string(home.root().join("state/packages/tui/history.jsonl")).unwrap();
+        std::fs::read_to_string(home.root().join("state/packages/miyu-tui/history.jsonl")).unwrap();
     assert_eq!(saved.lines().count(), 1, "记在包的状态目录里：{saved}");
 }
 
@@ -67,6 +67,6 @@ fn history_from_the_old_place_moves_into_the_package_state_dir() {
     up_until(&mut tui, "老地方记的一句");
     assert!(!old.exists(), "老位置的搬走了");
     let moved =
-        std::fs::read_to_string(home.root().join("state/packages/tui/history.jsonl")).unwrap();
+        std::fs::read_to_string(home.root().join("state/packages/miyu-tui/history.jsonl")).unwrap();
     assert!(moved.contains("老地方记的一句"));
 }

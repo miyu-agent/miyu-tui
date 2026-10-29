@@ -45,12 +45,38 @@ fn the_theme_overlays_its_marks_on_the_resource_files() {
     assert_eq!(timeline["omitted"], "⋮", "没写的照默认主题");
 }
 
+/// 包的编号就是文件夹名（核心设计 48）：配置里没设主题时认的默认主题、终端清单推荐一起装的，都是仓库里同名的那个主题包；
+/// 清单写 `prefix = "tui"`，配置键照旧是 `tui.*`。
+#[test]
+fn the_terminal_manifest_recommends_the_default_theme_by_its_folder_name() {
+    let manifest = include_str!("../../miyu-tui/package.toml");
+    let recommends = format!("packages = [\"{}\"]", super::DEFAULT_PACKAGE);
+    assert!(
+        manifest.lines().any(|l| l == recommends),
+        "推荐的不是默认主题"
+    );
+    assert!(
+        manifest.lines().any(|l| l == "prefix = \"tui\""),
+        "配置键要照旧是 tui.*"
+    );
+    let folder = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("packages")
+        .join(super::DEFAULT_PACKAGE);
+    assert!(
+        folder.join("package.toml").exists(),
+        "{} 不在",
+        folder.display()
+    );
+}
+
 #[test]
 fn the_ascii_theme_leaves_no_symbol_outside_ascii() {
     // 2026-10-21 项目主人照推荐定：纯 ASCII 样板拿来验「所有样子都能换」。盖上它以后，表里每一个记号、`layout`、
     // `timeline` 两节盖的每一格、框线画出来的每一个字都是 ASCII。
-    let pack: serde_json::Value =
-        serde_json::from_str(include_str!("../../packages/theme-ascii/theme.json")).unwrap();
+    let pack: serde_json::Value = serde_json::from_str(include_str!(
+        "../../packages/miyu-tui-theme-ascii/theme.json"
+    ))
+    .unwrap();
     let whole = merged(&pack);
     let sheet = parse(&whole).expect("纯 ASCII 主题读得懂");
     let mut strings = Vec::new();

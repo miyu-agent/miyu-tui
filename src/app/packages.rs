@@ -1,13 +1,13 @@
 //! 软件包列表（`package.list`）：连上、工具目录变了时要。每个包清单写的图标记下，时间线上包的工具照它画（蓝图「图标」）；
-//! 终端这个软件包（核心 9-1 上，蓝图「输入历史列表」第 8 条）照 `tui` 那一项的 `state` 把输入历史放进包的状态目录（老
+//! 终端这个软件包（核心 9-1 上，蓝图「输入历史列表」第 8 条）照 `miyu-tui` 那一项的 `state` 把输入历史放进包的状态目录（老
 //! 位置有的先搬过去），读进来，和连上以前打的合在一起。只放一次。
 
 use super::App;
 use crate::core::{Command, PackageEntry};
 use crate::input::{Saved, place};
 
-/// 终端这个包的编号（`resources/packages/tui/package.toml`）。
-const PACKAGE: &str = "tui";
+/// 终端这个包的编号（`miyu-tui/package.toml`）。
+const PACKAGE: &str = "miyu-tui";
 
 impl App {
     /// 包的名字交给开着的配置页、引导。
@@ -26,7 +26,7 @@ impl App {
         self.link.core.send(Command::ListPackages);
     }
 
-    /// 软件包回来了：记下每个包的图标，排好的行里有旧的图标，扔掉重排；照 `tui` 的状态目录放输入历史（只放一次），没有的
+    /// 软件包回来了：记下每个包的图标，排好的行里有旧的图标，扔掉重排；照 `miyu-tui` 的状态目录放输入历史（只放一次），没有的
     /// （旧核心、没装清单）照旧放老位置。
     pub(super) fn packages_arrived(&mut self, packages: &[PackageEntry]) {
         let icons = packages

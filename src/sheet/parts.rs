@@ -1,4 +1,4 @@
-//! 主题那张表的各组（蓝图 `tui.md`「主题」第 1 条）：键名同 `packages/theme-default/theme.json`。
+//! 主题那张表的各组（蓝图 `tui.md`「主题」第 1 条）：键名同 `packages/miyu-tui-theme-default/theme.json`。
 
 use ratatui::style::Modifier;
 use ratatui::symbols::{border, line};

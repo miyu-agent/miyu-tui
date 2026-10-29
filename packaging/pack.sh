@@ -1,6 +1,6 @@
 #!/bin/sh
-# 把终端打成软件源用的包文件（`.miyu`，核心施工 G-1，设计 37 第二节）：终端 `tui`（带程序，一种系统一个文件）和
-# 两个主题包 `theme-default`、`theme-ascii`（只有数据，哪种系统都能装）。打包交给核心的 `miyu pkg pack`，这里只摆文件夹。
+# 把终端打成软件源用的包文件（`.miyu`，核心施工 G-1，设计 37 第二节）：终端 `miyu-tui`（带程序，一种系统一个文件）和
+# 两个主题包 `miyu-tui-theme-default`、`miyu-tui-theme-ascii`（只有数据，哪种系统都能装）。打包交给核心的 `miyu pkg pack`，这里只摆文件夹。
 #
 #   packaging/pack.sh --miyu <核心程序> --out <目录> [--target <系统>] [--bin <编好的 miyu-tui>]
 #
@@ -46,17 +46,17 @@ fi
 [ -f "$bin" ] || die "$bin 不存在"
 
 # 清单里的 targets 要写了这一种，核心才打（写了 targets 的必须挑一种）。
-grep -q "\"$target\"" "$repo/tui/package.toml" || die "tui/package.toml 的 targets 没写 $target"
+grep -q "\"$target\"" "$repo/miyu-tui/package.toml" || die "miyu-tui/package.toml 的 targets 没写 $target"
 
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
-mkdir -p "$stage/tui/bin" "$out"
-cp "$repo/tui/package.toml" "$stage/tui/"
-cp "$bin" "$stage/tui/bin/$exe"
-chmod 755 "$stage/tui/bin/$exe"
-cp -R "$repo/packages/theme-default" "$repo/packages/theme-ascii" "$stage/"
+mkdir -p "$stage/miyu-tui/bin" "$out"
+cp "$repo/miyu-tui/package.toml" "$stage/miyu-tui/"
+cp "$bin" "$stage/miyu-tui/bin/$exe"
+chmod 755 "$stage/miyu-tui/bin/$exe"
+cp -R "$repo/packages/miyu-tui-theme-default" "$repo/packages/miyu-tui-theme-ascii" "$stage/"
 
-"$miyu" pkg pack "$stage/tui" --target "$target" -o "$out"
-for theme in theme-default theme-ascii; do
+"$miyu" pkg pack "$stage/miyu-tui" --target "$target" -o "$out"
+for theme in miyu-tui-theme-default miyu-tui-theme-ascii; do
   "$miyu" pkg pack "$stage/$theme" -o "$out"
 done

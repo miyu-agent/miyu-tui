@@ -110,7 +110,7 @@ fn drawing_code_takes_its_marks_from_the_theme() {
     walk(&root.join("src"), root, &mut found);
     assert!(
         found.is_empty(),
-        "这些记号写死在代码里，挪进主题的表（packages/theme-default/theme.json）：\n{}",
+        "这些记号写死在代码里，挪进主题的表（packages/miyu-tui-theme-default/theme.json）：\n{}",
         found.join("\n")
     );
 }

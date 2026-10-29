@@ -32,18 +32,18 @@ fn welcomed(settings: &str) -> String {
     }
 }
 
-/// 照用户装软件包那样把终端自己的清单（`tui/package.toml`）装进数据根的 `packages/`（核心 SU-5 上起数据根只剩一层，原来在 `system/packages/`）：
+/// 照用户装软件包那样把终端自己的清单（`miyu-tui/package.toml`）装进数据根的 `packages/`（核心 SU-5 上起数据根只剩一层，原来在 `system/packages/`）：
 /// 核心 S-5 起出厂不再带它，`tui.*` 配置
 /// 项、终端的状态目录都照它认（README「装上终端」那一步）。程序不放进去：界面的程序不在，配置项照旧在。
 /// `edit` 改一改清单再装（装着旧清单的样子）。
 fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
-    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tui/package.toml");
-    let to = dir.join("packages/tui");
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("miyu-tui/package.toml");
+    let to = dir.join("packages/miyu-tui");
     std::fs::create_dir_all(&to).expect("建得了包的目录");
     let text = std::fs::read_to_string(manifest).expect("读得了终端的清单");
     std::fs::write(to.join("package.toml"), edit(text)).expect("装得上终端的清单");
     // 默认主题和纯 ASCII 样板两个主题包（蓝图「主题」第 4、6 条）：装终端时一起装。
-    for theme in ["theme-default", "theme-ascii"] {
+    for theme in ["miyu-tui-theme-default", "miyu-tui-theme-ascii"] {
         let from = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("packages")
             .join(theme);
