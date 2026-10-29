@@ -184,9 +184,9 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.pump(Duration::from_millis(300));
     assert_eq!(tui.background(0, 0), night, "挪回深色");
     tui.key(b"\r");
-    // 没头像：明暗、配色下面还有铺底色、吉祥物两格，吉祥物停在显示，下面暗色一句（2026-10-15 项目主人定）。
+    // 明暗、配色下面还有铺底色、形象两格，形象停在显示，下面暗色一句（2026-10-15 项目主人定；2026-10-29 从「吉祥物」改名）。
     assert!(
-        tui.shows("吉祥物") && tui.shows("显示") && tui.shows("开启会提高 CPU 占用，拖慢启动速度"),
+        tui.shows("形象") && tui.shows("显示") && tui.shows("开启会提高 CPU 占用，拖慢启动速度"),
         "{}",
         tui.lines().join("\n")
     );

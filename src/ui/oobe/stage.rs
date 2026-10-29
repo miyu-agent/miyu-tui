@@ -26,7 +26,8 @@ pub struct Places {
 }
 
 /// 照窗口排。
-pub fn places(area: Rect, look: &Look, mascot: &MascotLook) -> Places {
+/// `figure` 是左边那一栏要不要（选了不显示形象的去掉，[`crate::oobe::Oobe::figure_column`]）。
+pub fn places(area: Rect, look: &Look, mascot: &MascotLook, figure: bool) -> Places {
     let stage = &look.stage;
     let bar = Rect::new(area.x, area.y + 1, area.width, 1).intersection(area);
     let hints =
@@ -35,7 +36,7 @@ pub fn places(area: Rect, look: &Look, mascot: &MascotLook) -> Places {
     let body_h = hints.y.saturating_sub(body_top + 1);
     // 吉祥物、间隔、内容这一整组，两边再各留 `margin` 列：放不下就收掉吉祥物，只剩内容（第 10 条）。
     let needed = mascot.cols + stage.gap + stage.content_width + 2 * stage.margin;
-    let with_mascot = area.width >= needed && body_h >= mascot.rows;
+    let with_mascot = figure && area.width >= needed && body_h >= mascot.rows;
     let content_w = stage.content_width.min(area.width.saturating_sub(4));
     let side = if with_mascot {
         mascot.cols + stage.gap

@@ -131,3 +131,20 @@ fn each_preset_says_what_it_is_in_the_list_and_in_its_window() {
         "详情最上面是描述"
     );
 }
+
+#[test]
+fn without_the_figure_column_the_content_sits_in_the_middle() {
+    // 2026-10-29 项目主人：选了隐藏以后，左边原本属于吉祥物的位置去掉，内容居中。
+    let config = Config::builtin().unwrap();
+    let area = ratatui::layout::Rect::new(0, 0, 160, 40);
+    let with = super::stage::places(area, &config.oobe, &config.mascot, true);
+    let without = super::stage::places(area, &config.oobe, &config.mascot, false);
+    assert!(with.mascot.is_some(), "宽窗口留着左边那一栏");
+    assert!(without.mascot.is_none());
+    let middle = |r: ratatui::layout::Rect| i32::from(r.x) * 2 + i32::from(r.width) - 160;
+    assert!(
+        middle(without.content).abs() <= 1,
+        "内容居中：{:?}",
+        without.content
+    );
+}

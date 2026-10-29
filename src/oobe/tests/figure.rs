@@ -42,9 +42,26 @@ fn what_the_left_side_shows_follows_the_steps_the_avatar_and_the_mascot_switch()
         Shown::Nothing,
         "挪到不显示就收掉"
     );
+    // 2026-10-29 项目主人：关了形象，头像也不画。
+    assert_eq!(oobe.wanted_figure(true), Shown::Nothing, "有头像也不画");
     oobe.key(key(KeyCode::Enter), t0, &texts);
     // 退回上一步：没写下，吉祥物回来。
     oobe.moved(Move::Back, t0);
     assert_eq!(oobe.step, Step::Persona);
     assert_eq!(oobe.wanted_figure(false), Shown::Mascot);
+}
+
+#[test]
+fn turning_the_figure_off_drops_the_left_column_after_the_color_step() {
+    // 2026-10-29 项目主人：选了隐藏以后，左边原本属于吉祥物的位置应该去掉；配色方案那一步留着看它走出去。
+    let t0 = Instant::now();
+    let mut oobe = fresh(t0);
+    oobe.step = Step::Profile;
+    assert!(oobe.figure_column(), "没选不显示的留着");
+    oobe.theme.mascot_off = true;
+    assert!(oobe.figure_column(), "还没写下的留着");
+    oobe.theme.saved = true;
+    assert!(!oobe.figure_column(), "写下了：后面几步去掉");
+    oobe.step = Step::Theme;
+    assert!(oobe.figure_column(), "配色方案那一步留着");
 }

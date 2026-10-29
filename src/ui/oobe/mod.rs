@@ -164,7 +164,7 @@ fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         return;
     };
     let look = p.config.oobe.clone();
-    let places = stage::places(area, &look, &p.config.mascot);
+    let places = stage::places(area, &look, &p.config.mascot, oobe.figure_column());
     stage::bar(frame, places.bar, oobe.step, &p.config.text.oobe.steps);
     // 没连上核心：按键提示那一行换成黄字（第 4 条）。
     if oobe.online {
@@ -284,7 +284,7 @@ fn popup_frame(
     {
         if paint {
             // 放在内容那一栏、两格下面：不盖吉祥物，挪的时候看得见整个界面换成什么样。
-            let places = stage::places(area, &p.config.oobe, &p.config.mascot);
+            let places = stage::places(area, &p.config.oobe, &p.config.mascot, true);
             let built = theme_step::content(p.oobe, &p.config.text.oobe, places.content.width);
             let below = (places.content, built.len());
             theme_step::picker(frame, below, choose, p.config, &mut p.screen.caret);
@@ -300,7 +300,8 @@ fn popup_frame(
         .filter(|_| p.oobe.step == Step::Profile)
     {
         if paint {
-            let places = stage::places(area, &p.config.oobe, &p.config.mascot);
+            let column = p.oobe.figure_column();
+            let places = stage::places(area, &p.config.oobe, &p.config.mascot, column);
             let built =
                 profile::content(&p.oobe.profile, &p.config.text.oobe, places.content.width);
             let below = (places.content, built.len());

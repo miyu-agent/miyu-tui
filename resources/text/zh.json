@@ -1431,7 +1431,7 @@
       "default_look": "默认主题",
       "mascot_missing": "{id}（未安装）",
       "seed_unset": "清除人格的主色，恢复为头像取出的第一个",
-      "own_groups": {"look": "主题", "theme": "配色方案", "timeline": "时间线", "mascot": "吉祥物", "icons": "图标", "keys": "交互"},
+      "own_groups": {"look": "主题", "theme": "配色方案", "timeline": "时间线", "mascot": "形象", "icons": "图标", "keys": "交互"},
       "appearance": "外观",
       "service": {"group": "启动", "name": "开机启动核心", "enabling": "正在设为开机启动…", "disabling": "正在取消开机启动…", "enabled": "已设为开机启动：{file}", "disabled": "已取消开机启动", "failed": "没成：{step}：{said}", "no_home": "找不到家目录", "windows": "设了 MIYU_HOME 时 Windows 上装不了"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}, "tui.sidebar_sessions": {"0": "不显示"}, "tui.keys": {"arrows": "方向键", "vim": "Vim"}},
@@ -1603,7 +1603,7 @@
     "theme": {
       "title": "配色方案",
       "sub": "选择明暗和配色，立即生效，以后可以在设置里改",
-      "rows": ["明暗", "配色", "吉祥物", "主色", "铺底色"],
+      "rows": ["明暗", "配色", "形象", "主色", "铺底色"],
       "modes": ["自动", "深色", "浅色"],
       "colors": ["跟随头像", "跟随壁纸", "Tokyo Night", "终端配色"],
       "from_avatar": "取自「{name}」的头像",

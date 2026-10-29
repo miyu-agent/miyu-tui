@@ -222,9 +222,9 @@ fn the_colors_list_offers_the_wallpaper_only_when_one_was_found() {
 }
 
 #[test]
-fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offered() {
-    // 2026-10-15 项目主人定：主题那一步第三格「吉祥物」显示、不显示，一格同时管首页、侧边栏；默认停在显示；人格有头像的
-    // 不列（头像替掉吉祥物）。
+fn a_figure_row_writes_both_places_with_or_without_an_avatar() {
+    // 2026-10-15 项目主人定：主题那一步「吉祥物」显示、不显示，一格同时管首页、侧边栏；默认停在显示。2026-10-29 项目主人：
+    // 改叫「形象」，头像也归它管，人格有头像的照样列（原来不列）。
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
@@ -283,7 +283,7 @@ fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offe
     items["tui.mascot_home"] = json!({"value": false, "origin": {"layer": "system"}});
     at_theme(&mut again, t0, &texts, items);
     assert!(again.theme.mascot_off);
-    // 人格有头像：不列这一格，往下三下就是「下一步」，不写那两项。
+    // 人格有头像：照样列这一格，选了不显示照样写那两项。
     let dir = std::env::temp_dir().join(format!("miyu-theme-mascot-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("avatar.png");
@@ -291,19 +291,15 @@ fn without_an_avatar_a_mascot_row_writes_both_places_and_with_one_it_is_not_offe
     let mut pictured = fresh(t0);
     pictured.persona.avatar = Field::line().with(&file.display().to_string());
     at_theme(&mut pictured, t0, &texts, defaults());
-    assert_eq!(
-        pictured.theme.slots(),
-        [Slot::Mode, Slot::Colors, Slot::Ground, Slot::Next]
-    );
-    for _ in 0..3 {
-        pictured.key(key(KeyCode::Down), t0, &texts);
-    }
-    assert_eq!(pictured.theme.slot, Slot::Next);
+    assert!(pictured.theme.slots().contains(&Slot::Mascot), "有头像也列");
+    pictured.theme.mascot_off = true;
+    pictured.theme.slot = Slot::Next;
     pictured.key(key(KeyCode::Enter), t0, &texts);
     let (_, params) = find(&asks(&mut pictured), "config.set");
-    assert_eq!(
-        params["changes"].as_array().map(Vec::len),
-        Some(3),
+    assert!(
+        params["changes"]
+            .as_array()
+            .is_some_and(|c| c.contains(&json!({"key": "tui.mascot_home", "value": false}))),
         "{params}"
     );
     std::fs::remove_dir_all(&dir).unwrap();
