@@ -269,7 +269,7 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", Some("你是海盗。"));
     // 卸掉出厂的长期目标（系统那一层记一笔 `<编号>.removed`，核心 F-5 上；SU-5 上起在 `packages/`）：预设里写了它，是「写了没装的」。核心 X-8 上装上它
     // 以前，出厂的预设里本来就有一样没装。
-    let removed = home.root().join("packages/goal.removed");
+    let removed = home.root().join("packages/miyu-base-goal.removed");
     std::fs::write(removed, "").expect("记得下");
     // 软件包核心起来时读：重启一次。
     home.stop_core();

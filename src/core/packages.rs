@@ -102,9 +102,9 @@ mod tests {
     #[test]
     fn download_progress_is_read_from_its_own_notification() {
         let push = json!({"method": "package.progress",
-            "params": {"package": "embed", "done": 1024, "total": 4096}});
+            "params": {"package": "miyu-embed", "done": 1024, "total": 4096}});
         let want = super::Progress {
-            package: "embed".into(),
+            package: "miyu-embed".into(),
             done: 1024,
             total: 4096,
         };
@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn the_list_gives_each_package_its_state_and_icon() {
         let got = json!({"packages": [
-            {"package": "tui", "state": "/s/tui"},
+            {"package": "miyu-tui", "state": "/s/miyu-tui"},
             {"package": "miyu-memes", "icon": "face-slightly-smiling"},
             {"package": "odd", "icon": ""},
             {"layer": "home"}
@@ -124,8 +124,8 @@ mod tests {
             listed(&got),
             [
                 PackageEntry {
-                    id: "tui".into(),
-                    state: Some("/s/tui".into()),
+                    id: "miyu-tui".into(),
+                    state: Some("/s/miyu-tui".into()),
                     icon: None,
                     name: None,
                     group: None,

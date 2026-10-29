@@ -59,11 +59,11 @@ fn the_terminals_own_items_sit_on_the_general_page() {
         "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
         "groups": [{"id": "display", "name": "显示", "page": "general"},
                    {"id": "im", "name": "接入通讯平台", "page": "packages"},
-                   {"id": "tui", "name": "终端界面", "page": "packages"}],
+                   {"id": "miyu-tui", "name": "终端界面", "page": "packages"}],
         "items": [
             {"key": "ui.language", "control": "select", "layers": ["system"], "name": "界面语言", "page": "general", "group": "display"},
             {"key": "im.listen", "control": "number", "layers": ["system"], "name": "端口", "page": "packages", "group": "im"},
-            {"key": "tui.timeline_fold", "control": "toggle", "layers": ["system", "project"], "name": "做完收起", "page": "packages", "group": "tui"}
+            {"key": "tui.timeline_fold", "control": "toggle", "layers": ["system", "project"], "name": "做完收起", "page": "packages", "group": "miyu-tui"}
         ]
     }));
     assert_eq!(s.group_names("general"), ["显示", "终端界面"]);
@@ -74,11 +74,11 @@ fn the_terminals_own_items_sit_on_the_general_page() {
 fn the_terminals_look_items_move_to_an_appearance_page_after_general() {
     // 「配置页」第 33 条（2026-10-11 项目主人：时间线相关的配置项单独一个标题，吉祥物也分出去；2026-10-14 照推荐定：
     // 主题、吉祥物、图标单开一页「外观」，排在通用后面，时间线留在通用）。
-    let item = |key: &str, name: &str| json!({"key": key, "control": "toggle", "layers": ["system"], "name": name, "page": "packages", "group": "tui"});
+    let item = |key: &str, name: &str| json!({"key": key, "control": "toggle", "layers": ["system"], "name": name, "page": "packages", "group": "miyu-tui"});
     let mut s = Schema::read(&json!({
         "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
         "groups": [{"id": "display", "name": "显示", "page": "general"},
-                   {"id": "tui", "name": "终端界面", "page": "packages"}],
+                   {"id": "miyu-tui", "name": "终端界面", "page": "packages"}],
         "items": [
             {"key": "ui.language", "control": "select", "layers": ["system"], "name": "界面语言", "page": "general", "group": "display"},
             item("tui.icons", "图标"),
@@ -139,11 +139,11 @@ fn skip_pick_joins_the_cores_new_session_group_when_there_is_one() {
     let mut s = Schema::read(&json!({
         "pages": [{"id": "general", "name": "通用"}, {"id": "packages", "name": "软件包"}],
         "groups": [{"id": "new_session", "name": "新会话", "page": "general"},
-                   {"id": "tui", "name": "终端界面", "page": "packages"}],
+                   {"id": "miyu-tui", "name": "终端界面", "page": "packages"}],
         "items": [
             item("persona.default", "general", "new_session"),
-            item("tui.keys", "packages", "tui"),
-            item("tui.skip_pick", "packages", "tui")
+            item("tui.keys", "packages", "miyu-tui"),
+            item("tui.skip_pick", "packages", "miyu-tui")
         ]
     }));
     s.split_own(

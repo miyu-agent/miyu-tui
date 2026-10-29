@@ -1,6 +1,8 @@
 # 终端界面的软件包清单（施工 9-1 上，`docs/blueprint/packages.md`）：核心照它列出这个包、找它的程序和认的页。
 [package]
 version = "0.0.1"
+# 编号是 `miyu-tui`（文件夹名，核心设计 48）；配置键、扩展事件照前缀起，照旧是 `tui.*`。
+prefix = "tui"
 protocol = [1, 1]
 # 带着本机程序 `miyu-tui`，能跑的几种系统（核心施工 G-1）：打包时一种一个文件（`packaging/pack.sh`）。
 targets = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"]
@@ -25,7 +27,7 @@ opens = ["config"]
 
 # 推荐一起装默认主题（终端蓝图 `docs/blueprint/tui.md`「主题」第 4 条：装终端时一起装）：没装也能用，同一份编进了程序。
 [recommends]
-packages = ["theme-default"]
+packages = ["miyu-tui-theme-default"]
 
 # 第一次打开的引导里「图标」那一步写它（终端蓝图 `docs/blueprint/tui.md`「第一次打开的引导」第 14 条、「图标」第 4 条）。
 [settings.icons]
@@ -128,7 +130,7 @@ name = { en = "Mascot", zh = "吉祥物", ja = "マスコット" }
 description = { en = "Which mascot to show. Leave unset for the built-in one.", zh = "显示哪一只吉祥物；不设置就是内置的。", ja = "表示するマスコット。未設定なら内蔵のもの。" }
 
 # 主题（终端蓝图 `docs/blueprint/tui.md`「主题」第 5 条，2026-10-21 项目主人定）：框线、记号、修饰这些照哪个主题包；值是包的
-# 编号，不设就是默认主题（`theme-default`）。配置页照 `package.list` 列装了的主题包。
+# 编号，不设就是默认主题（`miyu-tui-theme-default`）。配置页照 `package.list` 列装了的主题包。
 [settings.look]
 type = "name"
 applies = "now"

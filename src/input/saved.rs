@@ -273,7 +273,7 @@ mod tests {
     fn history_moves_from_the_old_place_into_the_package_state_dir_once() {
         let dir = std::env::temp_dir().join(format!("miyu-tui-place-{}", std::process::id()));
         let old = dir.join("state/tui/history.jsonl");
-        let state = dir.join("state/packages/tui");
+        let state = dir.join("state/packages/miyu-tui");
         std::fs::create_dir_all(old.parent().unwrap()).unwrap();
         std::fs::write(&old, "旧的\n").unwrap();
         let got = place(Some(&state), Some(old.clone())).unwrap();

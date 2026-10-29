@@ -105,7 +105,7 @@ fn a_removed_mascot_package_is_named_as_not_installed() {
     // 「吉祥物包」第 3 条（2026-10-11）：选着的吉祥物包卸掉了，值不写裸编号，写「pudding（未安装）」。
     let texts = crate::config::Config::builtin().unwrap().text.settings.more;
     let s = Schema::read(&json!({"items": [
-        {"key": "tui.mascot", "control": "text", "layers": ["system"], "name": "吉祥物", "page": "general", "group": "tui"}
+        {"key": "tui.mascot", "control": "text", "layers": ["system"], "name": "吉祥物", "page": "general", "group": "miyu-tui"}
     ]}));
     let item = &s.items[0];
     let installed = vec![crate::core::Persona {
@@ -136,7 +136,7 @@ fn icon_sets_are_named_in_the_interface_language() {
     // 2026-10-14 项目主人：外观页「图标」照界面语言写「Nerd Font 图标」「普通字符」，不写清单里的 nerd、plain。
     let texts = crate::config::Config::builtin().unwrap().text.settings.more;
     let s = Schema::read(&json!({"items": [
-        {"key": "tui.icons", "control": "select", "layers": ["system"], "name": "图标", "page": "general", "group": "tui",
+        {"key": "tui.icons", "control": "select", "layers": ["system"], "name": "图标", "page": "general", "group": "miyu-tui",
          "options": [{"value": "nerd", "name": "nerd"}, {"value": "plain", "name": "plain"}]}
     ]}));
     let item = &s.items[0];
