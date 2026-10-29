@@ -36,6 +36,8 @@
 | `src/diff.rs` | 编辑、写入的差异：照工具调用的参数比、排成行 |
 | `resources/` | 界面上的字、布局的数值、时间线的图标、命令清单、模型的窗口（见「对外的样子」） |
 
+- 打成软件源的包（核心施工 G-1，2026-10-29 主人在虚拟机里从软件源装终端时要）：`packaging/pack.sh --miyu <核心程序> --out <目录> [--target <系统>] [--bin <编好的 miyu-tui>]` 把 `tui/`（清单加 `bin/miyu-tui`）和 `packages/` 下两个主题包摆成包文件夹，交给核心的 `miyu pkg pack` 打成 `.miyu`：`tui` 带本机程序，清单写 `targets`（`linux-x86_64`、`linux-aarch64`、`macos-aarch64`、`windows-x86_64`），一种系统一个文件；主题包只有数据，不分系统。`--target` 默认照本机；不给 `--bin` 的先 `cargo build --release`。shellhook 是同一个程序的子命令，随 `tui` 这个包。
+
 ### 对外的样子
 
 **环境变量**：变量写在命令前面，不 `export`。

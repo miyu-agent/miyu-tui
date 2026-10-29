@@ -2,6 +2,8 @@
 [package]
 version = "0.0.1"
 protocol = [1, 1]
+# 带着本机程序 `miyu-tui`，能跑的几种系统（核心施工 G-1）：打包时一种一个文件（`packaging/pack.sh`）。
+targets = ["linux-x86_64", "linux-aarch64", "macos-aarch64", "windows-x86_64"]
 name = { en = "Terminal interface", zh = "终端界面", ja = "ターミナル画面" }
 summary = { en = "Chat with the AI, watch what it does and change settings in the terminal", zh = "在终端里和 AI 对话、看 AI 做事、改配置", ja = "ターミナルで会話し、作業の様子を見て、設定を変える" }
 
