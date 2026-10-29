@@ -142,6 +142,12 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
                 format!(" {}", texts.field(row.field.name())),
                 theme::md_heading(),
             ));
+            if row.field == Field::Members {
+                search_line(lines, form, texts);
+            }
+            continue;
+        }
+        if !form.shows(i) {
             continue;
         }
         let editing = focused && form.editing.is_some();
@@ -189,8 +195,31 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
         Focus::Button(b) => Some(b),
         Focus::Row(_) => None,
     };
-    let which = if form.editing.is_some() { 1 } else { 0 };
+    let which = if form.editing.is_some() || form.search.1 {
+        1
+    } else {
+        0
+    };
     lines.hints = texts.popup_hints[which].clone();
+    // 池的窗多一个「/ 搜索」（同目录窗那一组里的），插在「Esc」前面。
+    if which == 0 && form.searchable() {
+        let slash = texts.popup_hints[2].iter().find(|h| h[0] == "/").cloned();
+        let at = lines.hints.len().saturating_sub(1);
+        lines.hints.splice(at..at, slash);
+    }
+}
+
+/// 成员段名下面一行筛的字（同目录窗）：没在筛的暗着写「/ 搜索」；正在打的记下输入光标。
+fn search_line(lines: &mut Lines, form: &Form, texts: &Texts) {
+    let (search, typing) = &form.search;
+    if *typing {
+        lines.caret = Some((lines.body.len(), 4 + search.width() as u16));
+    }
+    if *typing || !search.is_empty() {
+        lines.plain(Line::raw(format!("  / {search}")));
+    } else {
+        lines.plain(Line::styled(format!("  {}", texts.pick[4]), theme::dim()));
+    }
 }
 
 fn pick_lines(lines: &mut Lines, pick: &Pick, page: &Settings, texts: &Texts, width: u16) {
