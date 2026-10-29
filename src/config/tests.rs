@@ -46,6 +46,33 @@ fn nothing_to_compact_is_a_short_hint_not_a_line() {
 }
 
 #[test]
+fn no_text_speaks_of_accounts_or_personal_settings() {
+    // 2026-10-28 项目主人定只给一个人用（核心 SU-1 到 SU-6）：没有账号、管理员、个人设置这一层了，界面上的字也不许再提。
+    let words = [
+        "个人设置",
+        "终端管理员",
+        "管理员模式",
+        "账号",
+        "personal setting",
+        "admin mode",
+        "account",
+        "個人設定",
+        "管理者",
+        "アカウント",
+    ];
+    for (name, json) in [
+        ("zh", include_str!("../../resources/text/zh.json")),
+        ("en", include_str!("../../resources/text/en.json")),
+        ("ja", include_str!("../../resources/text/ja.json")),
+        ("commands", include_str!("../../resources/commands.json")),
+    ] {
+        let lower = json.to_lowercase();
+        let found: Vec<_> = words.iter().filter(|w| lower.contains(*w)).collect();
+        assert!(found.is_empty(), "{name} 还在提：{found:?}");
+    }
+}
+
+#[test]
 fn only_the_new_tool_names_are_known() {
     // 2026-10-01 核心改名 agent → subagent、message_agent → send_message，同一天项目主人定不认旧名、不留兼容。
     let config = Config::builtin().unwrap();

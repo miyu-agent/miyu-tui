@@ -180,7 +180,7 @@
     "path_unreadable": "Can't find or read that directory",
     "not_a_directory": "That's a file, not a directory",
     "path_forbidden": "That can't be a workspace",
-    "owner_only": "Only the owner can change the workspace",
+    "owner_only": "Owner only",
     "session_not_found": "That session no longer exists",
     "session_sealed": "Session sealed",
     "nothing_to_rename": "No session yet; say something first, then rename",
@@ -1188,11 +1188,11 @@
       "bad_number": "Enter a number",
       "unset": [
         "Reset to default: {name}?",
-        "Removes this from your personal settings and goes back to the {from} value",
+        "Removes your setting for this and goes back to the {from} value",
         "Reset",
         "Cancel"
       ],
-      "nothing_to_unset": "Your personal settings don't set this",
+      "nothing_to_unset": "This isn't set",
       "default_mark": "default",
       "no_personas": "No personas yet",
       "loading": "Reading…",

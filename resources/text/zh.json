@@ -180,7 +180,7 @@
     "path_unreadable": "目录不存在或无法读取",
     "not_a_directory": "不是目录",
     "path_forbidden": "该目录不能用作工作区",
-    "owner_only": "仅终端管理员可用",
+    "owner_only": "仅主人可用",
     "session_not_found": "会话不存在",
     "session_sealed": "会话已封存",
     "nothing_to_rename": "会话尚未创建，无法重命名",
@@ -1188,11 +1188,11 @@
       "bad_number": "请输入数字",
       "unset": [
         "恢复默认：{name}？",
-        "移除个人设置中的此项，恢复为{from}的值",
+        "移除此项的设置，恢复为{from}的值",
         "恢复",
         "取消"
       ],
-      "nothing_to_unset": "个人设置中未设置此项",
+      "nothing_to_unset": "未设置此项",
       "default_mark": "默认",
       "no_personas": "暂无人格",
       "loading": "正在加载…",
