@@ -119,6 +119,11 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
             .map_or(id.to_string(), |p| p.shown().to_string())
     };
     let (title, sub) = match &form.target {
+        // 只填 key 的窗：标题后面写目录里的名字。
+        Target::Provider(None) if form.key_only.is_some() => (
+            texts.titles[0].clone(),
+            form.key_only.clone().unwrap_or_default(),
+        ),
         Target::Provider(None) => (texts.titles[0].clone(), String::new()),
         Target::Provider(Some(id)) => {
             (texts.titles[1].replace("{name}", &shown(id)), String::new())
@@ -133,6 +138,9 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
     let value_width = width.saturating_sub(LABEL + 14) as usize;
     for (i, row) in form.rows.iter().enumerate() {
         let focused = form.focus == Focus::Row(i);
+        if form.key_only.is_some() && !form.shows(i) {
+            continue;
+        }
         if matches!(row.val, Val::Section) {
             // 一节和上面的格子之间空一行（2026-10-19 项目主人：「价格」和「温度」挤在一起）。
             if i > 0 {
@@ -142,6 +150,12 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
                 format!(" {}", texts.field(row.field.name())),
                 theme::md_heading(),
             ));
+            if row.field == Field::Members {
+                search_line(lines, form, texts);
+            }
+            continue;
+        }
+        if !form.shows(i) {
             continue;
         }
         let editing = focused && form.editing.is_some();
@@ -184,13 +198,39 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
         });
     }
     lines.error = form.error.clone();
-    lines.buttons = texts.buttons.iter().map(|b| (b.clone(), false)).collect();
+    // 只填 key 的窗不放按钮：回车存、Esc 关。
+    if form.key_only.is_none() {
+        lines.buttons = texts.buttons.iter().map(|b| (b.clone(), false)).collect();
+    }
     lines.button = match form.focus {
         Focus::Button(b) => Some(b),
         Focus::Row(_) => None,
     };
-    let which = if form.editing.is_some() { 1 } else { 0 };
+    let which = if form.editing.is_some() || form.search.1 {
+        1
+    } else {
+        0
+    };
     lines.hints = texts.popup_hints[which].clone();
+    // 池的窗多一个「/ 搜索」（同目录窗那一组里的），插在「Esc」前面。
+    if which == 0 && form.searchable() {
+        let slash = texts.popup_hints[2].iter().find(|h| h[0] == "/").cloned();
+        let at = lines.hints.len().saturating_sub(1);
+        lines.hints.splice(at..at, slash);
+    }
+}
+
+/// 成员段名下面一行筛的字（同目录窗）：没在筛的暗着写「/ 搜索」；正在打的记下输入光标。
+fn search_line(lines: &mut Lines, form: &Form, texts: &Texts) {
+    let (search, typing) = &form.search;
+    if *typing {
+        lines.caret = Some((lines.body.len(), 4 + search.width() as u16));
+    }
+    if *typing || !search.is_empty() {
+        lines.plain(Line::raw(format!("  / {search}")));
+    } else {
+        lines.plain(Line::styled(format!("  {}", texts.pick[4]), theme::dim()));
+    }
 }
 
 fn pick_lines(lines: &mut Lines, pick: &Pick, page: &Settings, texts: &Texts, width: u16) {

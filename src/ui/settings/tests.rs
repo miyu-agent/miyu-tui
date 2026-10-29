@@ -456,7 +456,32 @@ fn the_fixed_pools_are_named_and_listed_first() {
         .find(|l| l.contains("轻量"))
         .unwrap_or_default();
     assert!(
-        row.contains("用于：起标题"),
-        "走这一档的旁路请求写在池右边：{row}"
+        !row.contains("用于"),
+        "走这一档的旁路请求只写在成员栏下面，池这一行不写（2026-10-29 项目主人）：{row}"
     );
+    assert!(text.contains("起标题"), "成员栏下面写着：\n{text}");
+}
+
+#[test]
+fn a_settings_page_scrolls_only_when_the_selection_hits_an_edge() {
+    // 2026-10-29 项目主人：触底往下滚以后，往上挪一行立刻往上滚，要碰到上边才滚。20 行露 5 行。
+    let lines = |focus: usize| -> Vec<super::pages::Painted> {
+        (0..20)
+            .map(|i| (ratatui::text::Line::raw(format!("项{i}")), i == focus))
+            .collect()
+    };
+    let mut term = Terminal::new(TestBackend::new(20, 5)).unwrap();
+    let mut top = 0;
+    let mut at = |focus: usize, top: &mut usize| {
+        term.draw(|f| super::pages::paint(f, f.area(), &lines(focus), top))
+            .unwrap();
+        *top
+    };
+    for focus in 0..10 {
+        at(focus, &mut top);
+    }
+    assert_eq!(top, 5, "往下碰到下边才滚");
+    assert_eq!(at(8, &mut top), 5, "往上挪一行不滚");
+    assert_eq!(at(5, &mut top), 5, "还在窗里不滚");
+    assert_eq!(at(4, &mut top), 4, "碰到上边才滚");
 }

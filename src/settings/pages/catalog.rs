@@ -201,7 +201,7 @@ impl Settings {
     /// 选了选中的那一行。
     fn catalog_pick(&mut self, mut pick: CatalogPick) {
         let chosen = match pick.rows().get(pick.sel) {
-            Some(Row::Provider(p)) if p.supported => Some(p.id.clone()),
+            Some(Row::Provider(p)) if p.supported => Some((p.id.clone(), p.name.clone())),
             Some(Row::Provider(_)) | None => {
                 self.popup = Some(Popup::Catalog(pick));
                 return;
@@ -225,11 +225,13 @@ impl Settings {
             return;
         };
         let form = match chosen {
-            Some(catalog) => {
+            // 目录里有的：只弹填 key 的窗（2026-10-29 项目主人，照 opencode：用户不知道去哪填 key），地址、名字照目录；回车存、
+            // 存完照旧取模型列表。要改地址这些的，存了以后在供应商栏 `Enter` 开整个窗。
+            Some((catalog, name)) => {
                 let existing: Vec<String> =
                     self.view.providers.iter().map(|p| p.id.clone()).collect();
                 let id = forms::unique(forms::path_name(&catalog), &existing);
-                forms::listed(&self.view, data, &self.draft, &id, &catalog)
+                forms::listed(&self.view, data, &self.draft, &id, &catalog).key_only(name)
             }
             None => forms::provider(&self.view, data, &self.draft, None),
         };

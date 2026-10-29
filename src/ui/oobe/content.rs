@@ -102,15 +102,19 @@ impl Content {
 
     /// 一段字，照块宽折行（核心的原话常常很长）。
     pub fn note(&mut self, text: &str, style: Style) {
-        let (rows, _) = wrap(text, 0, usize::from(self.width).max(1));
+        self.note_at(0, text, style);
+    }
+
+    /// 一段字，每一行都往右缩 `indent` 列、在剩下的宽里折行：和格子的值对齐的说明，折下来的也对齐（2026-10-29 项目主人：
+    /// 「铺底色」的说明折下来跑到标题那一列）。英文照空格断（同正文，`input::pieces`），不在词中间断。
+    pub fn note_at(&mut self, indent: usize, text: &str, style: Style) {
+        let room = usize::from(self.width).saturating_sub(indent).max(1);
+        let lead = " ".repeat(indent);
+        let room = u16::try_from(room).unwrap_or(u16::MAX);
         // 折在空格处的，下一行开头那个空格不要（「…提高大约\n 170 MB」，2026-10-18 真 kitty 看到）。
-        for (i, row) in rows.into_iter().enumerate() {
-            let row = if i > 0 {
-                row.trim_start().to_string()
-            } else {
-                row
-            };
-            self.lines.push(Line::styled(row, style));
+        for (row, _) in crate::input::pieces(text, room) {
+            self.lines
+                .push(Line::styled(format!("{lead}{}", row.trim_start()), style));
         }
     }
 
@@ -207,7 +211,9 @@ impl Content {
         } else {
             wrap(&shown, cursor.min(shown.len()), room)
         };
-        let first = row.saturating_sub(FIELD_ROWS - 1);
+        // 光标碰到上边、下边才挪（2026-10-29 项目主人：触底滚了以后往回一下立刻往上滚，要触顶才滚）。
+        let first = crate::menu::edge(row, None, field.top.get(), rows.len(), FIELD_ROWS);
+        field.top.set(first);
         let blank_lead = " ".repeat(lead.width());
         for (i, text) in rows.iter().enumerate().skip(first).take(FIELD_ROWS) {
             let head = if i == first {

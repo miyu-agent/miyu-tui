@@ -169,6 +169,8 @@ pub struct Settings {
     pub popup: Option<Popup>,
     /// 悬浮窗里从第几行露起，上一帧的（`ui/floating.rs`）。
     pub popup_top: usize,
+    /// 通用、人格、软件包这几页从第几行露起，上一帧的，和是哪一页（`ui/settings/pages.rs`，换了页从头露）。
+    pub page_top: (String, usize),
     /// 通用、权限、高级、人格这几页（`pages/`）。
     pub more: pages::More,
     /// 状态行那一句。
@@ -476,7 +478,7 @@ impl Settings {
     /// 在打字：编辑窗里正在改一项、在打筛选的字（输入法照它切，`ime.rs`）。
     pub fn typing(&self) -> bool {
         let popup = match &self.popup {
-            Some(Popup::Form(form)) => form.editing.is_some(),
+            Some(Popup::Form(form)) => form.editing.is_some() || form.search.1,
             Some(Popup::Pick(pick)) => pick.typing,
             Some(Popup::Catalog(pick)) => pick.typing,
             Some(Popup::Line(_) | Popup::Pair(_) | Popup::Sheet(_)) => true,

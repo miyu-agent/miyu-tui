@@ -139,3 +139,48 @@ fn a_wrapped_line_does_not_start_with_the_space_it_broke_at() {
         "{shown:?}"
     );
 }
+
+#[test]
+fn an_aligned_note_wraps_under_its_value_and_keeps_words_whole() {
+    // 2026-10-29 项目主人报：「铺底色」的说明折下来跑到标题那一列，还在 background 中间断开。
+    let mut c = Content::sized(40, 0);
+    let text = "Paint the whole screen in the color scheme's background";
+    c.note_at(14, text, ratatui::style::Style::default());
+    let lines = plain(&c);
+    assert!(lines.len() > 1, "要折行：{lines:?}");
+    for line in &lines {
+        assert!(
+            line.starts_with(&" ".repeat(14)),
+            "折下来的也对齐值那一列：{lines:?}"
+        );
+        assert!(line.chars().count() <= 40, "不超块宽：{lines:?}");
+    }
+    let words: Vec<&str> = lines.iter().flat_map(|l| l.split_whitespace()).collect();
+    assert_eq!(words.join(" "), text, "词不断开：{lines:?}");
+}
+
+#[test]
+fn a_multiline_field_scrolls_only_when_the_caret_hits_an_edge() {
+    // 2026-10-29 项目主人：触底滚了以后往上挪一行立刻往上滚，要碰到上边才滚。十行露五行。
+    let text: String = (0..10)
+        .map(|i| format!("l{i}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut field = crate::oobe::field::Field::default();
+    field.multiline = true;
+    field.editor.set(&text);
+    let first_shown = |field: &crate::oobe::field::Field| {
+        let mut c = Content::sized(40, 0);
+        c.field("名", 4, field, "", true);
+        plain(&c)
+            .iter()
+            .find_map(|l| l.split_whitespace().last().map(str::to_string))
+            .unwrap_or_default()
+    };
+    assert_eq!(first_shown(&field), "l5", "光标在最后一行：露最后五行");
+    let at = |row: usize| text.find(&format!("l{row}")).unwrap();
+    field.editor.move_to(at(8), false);
+    assert_eq!(first_shown(&field), "l5", "往上挪一行不滚");
+    field.editor.move_to(at(4), false);
+    assert_eq!(first_shown(&field), "l4", "碰到上边才滚");
+}

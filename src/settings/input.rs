@@ -66,6 +66,9 @@ impl Settings {
             Some(Popup::Form(form)) => {
                 if let Some(editor) = form.editing.as_mut() {
                     editor.insert(clean);
+                } else if form.search.1 {
+                    form.search.0.push_str(clean);
+                    form.focus_first_match();
                 }
             }
             Some(Popup::Line(edit)) => edit.editor.insert(clean),

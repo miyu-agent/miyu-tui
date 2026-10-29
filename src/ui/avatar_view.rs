@@ -1,5 +1,6 @@
-//! 吉祥物那一块（蓝图 `tui.md`「空会话的首页」第 10 条，2026-10-11 项目主人）：人格有头像的画头像，图照比例放进这一块、
-//! 居中，照画图那一套在后台做，还没做好的先空着；没有头像、画不了的照开关画吉祥物。头像不受吉祥物的开关管。
+//! 形象那一块（蓝图 `tui.md`「空会话的首页」第 10 条，2026-10-11 项目主人）：人格有头像的画头像，图照比例放进这一块、
+//! 居中，照画图那一套在后台做，还没做好的先空着；没有头像、画不了的画吉祥物。开关关着的头像、吉祥物都不画（2026-10-29
+//! 项目主人：原来头像不受开关管）。
 
 use std::cell::RefCell;
 use std::path::Path;
@@ -23,9 +24,9 @@ enum Shown {
     Unable,
 }
 
-/// 这一处有没有那一块：吉祥物的开关开着，或者有头像。
+/// 这一处有没有那一块：「显示形象」的开关开着（头像、吉祥物都归它管，2026-10-29 项目主人：关了形象头像也不该显示）。
 pub fn slot_shown(seen: &Seen, place: Place) -> bool {
-    mascot_on(seen, place) || seen.avatar(place) != Avatar::None
+    mascot_on(seen, place)
 }
 
 /// 吉祥物在这一处画不画（首页、侧边栏各一个开关）。
@@ -44,7 +45,10 @@ pub fn draw(
     place: Place,
     far: bool,
 ) {
-    let shown = match seen.avatar(place) {
+    let Some(avatar) = wanted(mascot_on(seen, place), seen.avatar(place)) else {
+        return;
+    };
+    let shown = match avatar {
         Avatar::File(path) => {
             let at = match place {
                 Place::Home => "home",
@@ -55,9 +59,14 @@ pub fn draw(
         Avatar::Waiting => Shown::Waiting,
         Avatar::None => Shown::Unable,
     };
-    if matches!(shown, Shown::Unable) && mascot_on(seen, place) {
+    if matches!(shown, Shown::Unable) {
         super::mascot_view::draw(frame, rect, (seen, screen, mascot), far);
     }
+}
+
+/// 这一处画什么：开关（`on`）关着的什么都不画，头像也不画；开着的照头像，没有头像的（`Avatar::None`）画吉祥物。
+fn wanted(on: bool, avatar: Avatar) -> Option<Avatar> {
+    on.then_some(avatar)
 }
 
 /// 引导「好了」那一屏（「第一次打开的引导」第 11 条）：把头像照比例放进 `rect`、居中画，从上往下露出 `shown` 成（0 到 1，
@@ -127,7 +136,22 @@ fn picture(
 
 #[cfg(test)]
 mod tests {
-    use super::revealed;
+    use super::{revealed, wanted};
+    use crate::app::Avatar;
+
+    #[test]
+    fn the_switch_hides_the_avatar_too() {
+        // 2026-10-29 项目主人：藏了吉祥物却依旧显示头像不对，关了形象头像也不画。
+        let file = || Avatar::File("/a.png".into());
+        assert_eq!(wanted(false, file()), None, "关着的头像也不画");
+        assert_eq!(wanted(false, Avatar::None), None);
+        assert_eq!(wanted(true, file()), Some(file()), "开着的画头像");
+        assert_eq!(
+            wanted(true, Avatar::None),
+            Some(Avatar::None),
+            "没头像的画吉祥物"
+        );
+    }
 
     #[test]
     fn the_avatar_is_revealed_row_by_row_from_the_top() {

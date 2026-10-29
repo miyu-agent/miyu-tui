@@ -115,7 +115,7 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     let fin = oobe.finale(now, &texts);
     let base = p.config.mascot.clone();
     let (middle, text_y) = arrange(area, base.cols, base.rows, look.welcome.gap, 5);
-    let from = stage::places(area, look, &base).mascot.or(middle);
+    let from = stage::places(area, look, &base, true).mascot.or(middle);
     let leave = oobe
         .leaving
         .map(|at| ease_out(fraction(at, now, Duration::from_millis(look.done.leave_ms))));
@@ -132,9 +132,14 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
     .mascot;
     // 设了头像的画头像（第 11 条，2026-10-13 项目主人定）：在中间从上往下一行行露出来，不从左边走过来（2026-10-14 项目主人
     // 定）；画不了的照旧画吉祥物，从左边走回中间、转一圈。
-    let avatar = oobe
-        .persona
-        .finale_avatar(|version| p.media.avatars.file(version));
+    // 主题那一步选了不显示形象的（左边那一栏已经收掉了）：好了那一屏头像、吉祥物都不画（第 11a 条，2026-10-29 起头像也算）。
+    let off = oobe.figure.shown == crate::oobe::figure::Shown::Nothing;
+    let avatar = (!off)
+        .then(|| {
+            oobe.persona
+                .finale_avatar(|version| p.media.avatars.file(version))
+        })
+        .flatten();
     let rect = match (from, middle) {
         (Some(from), Some(middle)) => {
             let walked = arrival(avatar.is_some(), from, middle, fin.walk);
@@ -156,8 +161,6 @@ pub fn done(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         let drawn = avatar.is_some_and(|path| {
             crate::ui::avatar_view::draw_file(frame, &p.media.figures, rect, &path, shown)
         });
-        // 主题那一步选了吉祥物不显示的（左边那一块已经收掉了）：好了那一屏也不画它（第 11a 条）。
-        let off = p.oobe.figure.shown == crate::oobe::figure::Shown::Nothing;
         if !drawn && !off {
             let extra = Extra {
                 spin: fin.spin,

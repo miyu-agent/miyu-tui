@@ -347,9 +347,8 @@ impl Oobe {
             Step::Persona => self.persona.enter(&mut self.asker),
             Step::Theme => {
                 let follow = self.persona.colors().is_some();
-                let avatar = self.persona.shows_avatar();
                 let persona = self.persona.chosen_id.clone();
-                self.theme.enter(&mut self.asker, (follow, avatar), persona);
+                self.theme.enter(&mut self.asker, follow, persona);
             }
             Step::Profile => self.profile.enter(&mut self.asker),
             Step::Preset => {
@@ -425,15 +424,21 @@ impl Oobe {
         if early {
             return figure::Shown::Mascot;
         }
-        if avatar {
-            return figure::Shown::Avatar;
-        }
+        // 选了不显示形象的头像也不画（2026-10-29 项目主人：藏了吉祥物却照样显示头像不对）。
         let off = self.theme.mascot_off && (self.step == Step::Theme || self.theme.saved);
         if off {
             figure::Shown::Nothing
+        } else if avatar {
+            figure::Shown::Avatar
         } else {
             figure::Shown::Mascot
         }
+    }
+
+    /// 左边那一栏在不在：选了不显示形象、过了配色方案那一步以后去掉，内容居中（2026-10-29 项目主人：左边原本属于吉祥物的
+    /// 位置应该去掉）；配色方案那一步留着，好看着它走出去。
+    pub fn figure_column(&self) -> bool {
+        !(self.theme.mascot_off && self.theme.saved && self.step != Step::Theme)
     }
 
     /// 主题那一步选着的样子（第 23a 条）：在这一步、读到了配置的，或者写成了的（引导关上以前一直照它）交回配色、明暗、

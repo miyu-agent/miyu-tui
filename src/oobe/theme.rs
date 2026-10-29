@@ -65,8 +65,6 @@ pub struct ThemeStep {
     pub mascot_off: bool,
     /// 铺底色（配置项默认开）。
     pub ground: bool,
-    /// 人格那一步的这一位有头像：不列吉祥物那一格、不写那两项。
-    pub avatar: bool,
     /// 能当主色的候选（好的在前）、正用着的那个：跟随头像、跟随壁纸时 App 每一拍设（`app/theme.rs`）。
     pub seeds: Vec<u32>,
     pub seed: Option<u32>,
@@ -107,7 +105,6 @@ impl Default for ThemeStep {
             colors: 0,
             mascot_off: false,
             ground: true,
-            avatar: false,
             seeds: Vec::new(),
             seed: None,
             seed_pick: None,
@@ -130,19 +127,10 @@ impl Default for ThemeStep {
 
 impl ThemeStep {
     /// 进这一步：第一次进的先读现在写的（重走引导时照它停）。`follow` 是人格那一步有没有能取色的（头像、主题色）：配色没
-    /// 写过、没换过的停在「跟随头像」。`avatar` 是这一位有没有头像：有的不列吉祥物那一格。`persona` 是人格那一步存好的
-    /// 编号：跟随头像挑的主色写给它。
-    pub fn enter(
-        &mut self,
-        asker: &mut Asker,
-        (follow, avatar): (bool, bool),
-        persona: Option<String>,
-    ) {
-        self.avatar = avatar;
+    /// 写过、没换过的停在「跟随头像」。「形象」那一格有没有头像都列（2026-10-29 项目主人：头像也归它管）。`persona`
+    /// 是人格那一步存好的编号：跟随头像挑的主色写给它。
+    pub fn enter(&mut self, asker: &mut Asker, follow: bool, persona: Option<String>) {
         self.persona = persona;
-        if avatar && self.slot == Slot::Mascot {
-            self.slot = Slot::Next;
-        }
         if !self.entered {
             self.entered = true;
             self.busy = true;
@@ -228,7 +216,6 @@ impl ThemeStep {
         .filter(|s| match s {
             Slot::Seed => self.seeding(),
             Slot::Ground => COLORS.get(self.colors) != Some(&"terminal"),
-            Slot::Mascot => !self.avatar,
             _ => true,
         })
         .collect()
@@ -391,9 +378,7 @@ impl ThemeStep {
             json!({"key": "tui.theme", "value": colors}),
             json!({"key": GROUND_KEY, "value": self.ground}),
         ];
-        if !self.avatar {
-            changes.extend(MASCOT_KEYS.map(|key| json!({"key": key, "value": !self.mascot_off})));
-        }
+        changes.extend(MASCOT_KEYS.map(|key| json!({"key": key, "value": !self.mascot_off})));
         // 挑过主色的：跟随壁纸、终端配色的写系统配置，跟随头像的写完配置再写人格（`seed_pending`）。
         let pick = self.seed_pick.filter(|_| self.seeding());
         if let (Some(seed), "wallpaper" | "terminal") = (pick, colors) {

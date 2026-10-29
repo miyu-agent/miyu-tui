@@ -320,10 +320,9 @@ impl App {
                 && self.seen().avatar(Place::Sidebar) == Avatar::None)
     }
 
-    /// 首页吉祥物那一块在：吉祥物或者头像（被顶上去、走下来照它）。
+    /// 首页吉祥物那一块在：「首页显示形象」开着（吉祥物或者头像，被顶上去、走下来照它）。
     fn home_slot_shown(&self) -> bool {
-        self.seen().home()
-            && (self.config.layout.mascot_home || self.seen().avatar(Place::Home) != Avatar::None)
+        self.seen().home() && self.config.layout.mascot_home
     }
 
     /// 到点了：收掉过期的提示。
