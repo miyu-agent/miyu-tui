@@ -1,5 +1,5 @@
 //! 主题（蓝图 `tui.md`「主题」，2026-10-21 项目主人定）：框线、修饰这些形状和材质一张表，颜色归配色方案（`theme/`）。
-//! 出厂那份是默认主题包的 `packages/theme-default/theme.json`，编进程序里；主题包只写想换的那几格，盖在它上面
+//! 出厂那份是默认主题包的 `packages/miyu-tui-theme-default/theme.json`，编进程序里；主题包只写想换的那几格，盖在它上面
 //! （[`merged`]）。
 //!
 //! 画的时候到处要用，放在一个全局的读写锁里（同配色方案）；换了主题照配色方案的代数一起往前走，各处的缓存跟着重画。
@@ -15,10 +15,10 @@ use serde_json::{Map, Value};
 pub use parts::{Marks, Mod, Pick, Sheet, Text};
 
 /// 默认主题包的编号：配置里没设主题就是它。
-pub const DEFAULT_PACKAGE: &str = "theme-default";
+pub const DEFAULT_PACKAGE: &str = "miyu-tui-theme-default";
 
 /// 默认主题，编进程序里（没装默认主题包、包读不成时照它画）。
-pub const DEFAULT: &str = include_str!("../../packages/theme-default/theme.json");
+pub const DEFAULT: &str = include_str!("../../packages/miyu-tui-theme-default/theme.json");
 
 static CURRENT: LazyLock<RwLock<Arc<Sheet>>> = LazyLock::new(|| {
     let sheet = parse(&default_value()).unwrap_or_else(|e| panic!("默认主题读不懂：{e}"));

@@ -160,7 +160,7 @@ pub struct Layout {
 }
 
 impl Layout {
-    /// 吉祥物的两个开关在终端软件包里的名字（`resources/packages/tui/package.toml`，「后台命令、子代理和侧边栏」第 7 条）。
+    /// 吉祥物的两个开关在终端软件包里的名字（`miyu-tui/package.toml`，「后台命令、子代理和侧边栏」第 7 条）。
     pub const MASCOT_KEYS: [&'static str; 2] = ["tui.mascot_home", "tui.mascot_sidebar"];
 
     /// 照 `config.get` 读来的两个开关改：写了的盖过 `layout.json`，没有的（旧核心没这两项）照原样。

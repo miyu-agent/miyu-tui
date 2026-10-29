@@ -1,4 +1,4 @@
-//! 终端自己的配置项（`tui.*`，终端软件包清单 `resources/packages/tui/package.toml` 的 `[settings]`）：连上时、配置变了时
+//! 终端自己的配置项（`tui.*`，终端软件包清单 `miyu-tui/package.toml` 的 `[settings]`）：连上时、配置变了时
 //! `config.get` 读。图标那一套照 `tui.icons` 换（蓝图 `tui.md`「图标」第 4 条）；时间线的几个开关照 `tui.timeline_*`
 //! 盖过 `timeline.json`（「时间线」第 18 条）；吉祥物的两个开关照 `tui.mascot_*` 盖过 `layout.json`（「后台命令、子代理和
 //! 侧边栏」第 7 条）。几样分开问：旧核心不认时间线那几个键时，整份拒，图标照样读得到。

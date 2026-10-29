@@ -31,7 +31,7 @@ fn wait_ascii(tui: &mut Tui) {
 #[test]
 fn a_chosen_theme_package_redraws_the_frames() {
     // 2026-10-21 项目主人：默认主题、纯 ASCII 样板都是软件包；配置里选了哪个就照哪个画。
-    let home = Home::with_settings(Script::new([]), "[tui]\nlook = \"theme-ascii\"\n");
+    let home = Home::with_settings(Script::new([]), "[tui]\nlook = \"miyu-tui-theme-ascii\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     wait_ascii(&mut tui);
@@ -69,7 +69,7 @@ fn a_missing_theme_package_falls_back_to_the_default_and_says_so() {
 #[test]
 fn the_second_start_draws_the_chosen_theme_from_its_first_frame() {
     // 2026-10-21 项目主人：选了主题包的，起来前两帧照默认主题画、再跳成纯 ASCII。记下上次用的，第一帧就照它。
-    let home = Home::with_settings(Script::new([]), "[tui]\nlook = \"theme-ascii\"\n");
+    let home = Home::with_settings(Script::new([]), "[tui]\nlook = \"miyu-tui-theme-ascii\"\n");
     {
         let mut first = home.tui("zh_CN.UTF-8");
         first.wait_for("工作区");
