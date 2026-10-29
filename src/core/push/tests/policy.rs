@@ -8,7 +8,7 @@ use crate::core::push::Push;
 
 #[test]
 fn a_switched_persona_and_preset_are_read_and_an_empty_persona_means_none() {
-    let event = json!({"seq": 9, "kind": "session.policy_changed", "by": {"kind": "person", "account": "admin"},
+    let event = json!({"seq": 9, "kind": "session.policy_changed", "by": {"kind": "person"},
         "body": {"persona": "xiaoxue", "preset": "coding"}});
     assert_eq!(
         read_mine(&event),
@@ -17,7 +17,7 @@ fn a_switched_persona_and_preset_are_read_and_an_empty_persona_means_none() {
             Push::PresetSet("coding".into())
         ]
     );
-    let none = json!({"seq": 10, "kind": "session.policy_changed", "by": {"kind": "person", "account": "admin"},
+    let none = json!({"seq": 10, "kind": "session.policy_changed", "by": {"kind": "person"},
         "body": {"persona": ""}});
     assert_eq!(read_mine(&none), [Push::PersonaSet(String::new())]);
 }

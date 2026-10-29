@@ -16,7 +16,7 @@ mod shown;
 #[test]
 fn a_new_title_comes_from_meta_changed() {
     // 照 docs/designs/samples/events/session.meta_changed.jsonl。
-    let event = json!({"seq": 51, "kind": "session.meta_changed", "by": {"kind": "person", "account": "alice"},
+    let event = json!({"seq": 51, "kind": "session.meta_changed", "by": {"kind": "person"},
         "body": {"title": "整理 src 目录"}});
     assert_eq!(
         read_mine(&event),
@@ -43,7 +43,7 @@ fn a_new_title_comes_from_meta_changed() {
 #[test]
 fn a_new_workspace_comes_from_workspace_changed() {
     // 照 docs/designs/samples/events/session.workspace_changed.jsonl（核心 9-7 上）。
-    let event = json!({"seq": 12, "kind": "session.workspace_changed", "by": {"kind": "person", "account": "alice"},
+    let event = json!({"seq": 12, "kind": "session.workspace_changed", "by": {"kind": "person"},
         "body": {"cwd": "/home/alice/proj", "dirs": ["/home/alice/docs"]}});
     assert_eq!(
         read_mine(&event),
@@ -489,7 +489,7 @@ fn venue_events_are_skipped_and_a_venue_on_a_message_changes_nothing() {
             json!({"seq": 3, "kind": kind, "by": {"kind": "kernel"}, "body": {"message": "m-1"}});
         assert!(super::read(&event, &mine).is_empty(), "{kind}");
     }
-    let said = json!({"seq": 4, "kind": "message.user", "by": {"kind": "person", "account": "admin"},
+    let said = json!({"seq": 4, "kind": "message.user", "by": {"kind": "person"},
         "cause": "tui-1", "body": {"blocks": [{"type": "text", "text": "在吗"}], "venue": {"id": "qq-group-1"}}});
     assert_eq!(super::read(&said, &mine), [Push::UserMessage(4)]);
     // 核心 O-2 中：扩展登记、关掉工具以后，下一个回合开头多一条只带 `policy` 的 `session.policy_changed`，不画。
