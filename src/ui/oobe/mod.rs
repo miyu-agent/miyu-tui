@@ -217,7 +217,11 @@ fn stage_frame(frame: &mut Frame, area: Rect, p: &mut Parts<'_>, now: Instant) {
         return;
     };
     let act = oobe.react.act(now, &look.react);
-    let badge = oobe.badge.clone();
+    // 选了不显示形象的：脚下的名字也不写（2026-10-29 走查：头像收了、名字还留在原处）。
+    let badge = oobe
+        .badge
+        .clone()
+        .filter(|_| oobe.figure.shown != crate::oobe::figure::Shown::Nothing);
     let rect = Rect::new(
         rect.x,
         rect.y.saturating_sub(act.lift),
