@@ -119,6 +119,11 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
             .map_or(id.to_string(), |p| p.shown().to_string())
     };
     let (title, sub) = match &form.target {
+        // 只填 key 的窗：标题后面写目录里的名字。
+        Target::Provider(None) if form.key_only.is_some() => (
+            texts.titles[0].clone(),
+            form.key_only.clone().unwrap_or_default(),
+        ),
         Target::Provider(None) => (texts.titles[0].clone(), String::new()),
         Target::Provider(Some(id)) => {
             (texts.titles[1].replace("{name}", &shown(id)), String::new())
@@ -133,6 +138,9 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
     let value_width = width.saturating_sub(LABEL + 14) as usize;
     for (i, row) in form.rows.iter().enumerate() {
         let focused = form.focus == Focus::Row(i);
+        if form.key_only.is_some() && !form.shows(i) {
+            continue;
+        }
         if matches!(row.val, Val::Section) {
             // 一节和上面的格子之间空一行（2026-10-19 项目主人：「价格」和「温度」挤在一起）。
             if i > 0 {
@@ -190,7 +198,10 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
         });
     }
     lines.error = form.error.clone();
-    lines.buttons = texts.buttons.iter().map(|b| (b.clone(), false)).collect();
+    // 只填 key 的窗不放按钮：回车存、Esc 关。
+    if form.key_only.is_none() {
+        lines.buttons = texts.buttons.iter().map(|b| (b.clone(), false)).collect();
+    }
     lines.button = match form.focus {
         Focus::Button(b) => Some(b),
         Focus::Row(_) => None,
