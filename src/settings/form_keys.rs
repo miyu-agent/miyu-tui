@@ -29,7 +29,12 @@ pub(super) fn form_key(form: &mut Form, key: KeyEvent) -> FormAction {
                     *t = text;
                 }
                 form.editing = None;
+                // 只填 key 的窗：回车就存（照 opencode）。
+                if form.key_only.is_some() {
+                    return FormAction::Save { close: true };
+                }
             }
+            KeyCode::Esc if form.key_only.is_some() => return FormAction::Close,
             KeyCode::Esc => form.editing = None,
             KeyCode::Backspace => editor.backspace(),
             KeyCode::Delete => editor.delete(),

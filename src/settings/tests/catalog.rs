@@ -99,7 +99,8 @@ fn picking_one_fills_in_a_path_safe_id_apart_from_existing_ones_and_saves_the_ca
         ("relay-2".into(), Some("relay".into())),
         "配置里有 relay 了"
     );
-    press(&mut page, KeyCode::Char('s'));
+    // 只填 key 的窗：回车就存（这里没填 key）。
+    press(&mut page, KeyCode::Enter);
     let asks = page.take_asks();
     let (_, _, sent) = asks
         .iter()
@@ -121,7 +122,7 @@ fn picking_one_fills_in_a_path_safe_id_apart_from_existing_ones_and_saves_the_ca
 fn an_id_matching_the_catalog_is_not_written_twice() {
     let mut page = catalog();
     press(&mut page, KeyCode::Enter);
-    press(&mut page, KeyCode::Char('s'));
+    press(&mut page, KeyCode::Enter);
     let asks = page.take_asks();
     let (_, _, sent) = asks
         .iter()
@@ -170,4 +171,38 @@ fn more_reads_the_whole_catalog_and_a_late_featured_answer_is_ignored() {
     assert_eq!(chosen(&page), "anthropic", "Esc 先清筛的");
     press(&mut page, KeyCode::Esc);
     assert!(page.popup.is_none(), "再 Esc 关窗");
+}
+
+#[test]
+fn picking_one_asks_only_for_its_key_enter_saves_and_esc_drops_it() {
+    // 2026-10-29 项目主人：选了目录里有的一家，只弹一个填 key 的框（照 opencode），用户不知道要去哪填 key。
+    use crate::settings::forms::Field;
+    let mut page = catalog();
+    press(&mut page, KeyCode::Enter);
+    let Some(Popup::Form(f)) = &page.popup else {
+        panic!("开了窗：{:?}", page.popup);
+    };
+    assert_eq!(f.key_only.as_deref(), Some("DeepSeek"), "标题后面写名字");
+    assert!(f.editing.is_some(), "直接在打");
+    let shown: Vec<Field> = (0..f.rows.len())
+        .filter(|&i| f.shows(i))
+        .map(|i| f.rows[i].field)
+        .collect();
+    assert_eq!(shown, [Field::Key], "只露 key 那一行");
+    for c in "sk-test".chars() {
+        press(&mut page, KeyCode::Char(c));
+    }
+    press(&mut page, KeyCode::Enter);
+    let asks = page.take_asks();
+    let secret = asks.iter().find(|(_, m, _)| *m == "secret.set");
+    assert_eq!(
+        secret.map(|(_, _, p)| &p["value"]),
+        Some(&json!("sk-test")),
+        "回车就存，key 进密钥库：{asks:?}"
+    );
+    let mut page = catalog();
+    press(&mut page, KeyCode::Enter);
+    press(&mut page, KeyCode::Esc);
+    assert!(!matches!(page.popup, Some(Popup::Form(_))), "Esc 关掉");
+    assert!(page.take_asks().is_empty(), "不存");
 }

@@ -212,6 +212,8 @@ pub struct Form {
     pub catalog: Option<String>,
     /// 池的成员按 `/` 筛的字，和是不是正在打（`forms/search.rs`）。
     pub search: (String, bool),
+    /// 只填 key 的窗：照目录加的一家，标题后面写它的名字，只露 key 那一行（2026-10-29 项目主人，照 opencode）。
+    pub key_only: Option<String>,
 }
 
 impl Form {
@@ -231,6 +233,7 @@ impl Form {
             error: None,
             catalog: None,
             search: (String::new(), false),
+            key_only: None,
         }
     }
 
