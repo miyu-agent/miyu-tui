@@ -169,6 +169,8 @@ pub struct Settings {
     pub popup: Option<Popup>,
     /// 悬浮窗里从第几行露起，上一帧的（`ui/floating.rs`）。
     pub popup_top: usize,
+    /// 通用、人格、软件包这几页从第几行露起，上一帧的，和是哪一页（`ui/settings/pages.rs`，换了页从头露）。
+    pub page_top: (String, usize),
     /// 通用、权限、高级、人格这几页（`pages/`）。
     pub more: pages::More,
     /// 状态行那一句。

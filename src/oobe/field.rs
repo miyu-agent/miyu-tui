@@ -19,6 +19,8 @@ pub struct Field {
     editing: Option<String>,
     /// 网址：没在编辑时画成终端认不出的网址（[`unlink`]），不给点。
     pub unlinked: bool,
+    /// 几行的格子折好以后从第几行露起，上一帧的（光标碰到上边、下边才挪，`menu::edge`）；画的时候记。
+    pub top: std::cell::Cell<usize>,
 }
 
 /// 网址画成终端认不出的样子：`://` 前面夹一个零宽空格（不占格子、看不出来）。终端照 `https://` 认网址、加下划线给点，

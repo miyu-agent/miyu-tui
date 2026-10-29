@@ -176,9 +176,19 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
             (lines, *at, list.len())
         }
     };
-    paint(frame, body, &lines);
+    let key = match &section {
+        Section::Page(id, _) => id.clone(),
+        Section::Personas(_) => "personas".into(),
+        Section::Presets(_) => "presets".into(),
+        Section::Packages(_) => "packages".into(),
+        Section::Mcp(_) => "mcp".into(),
+    };
+    if page.page_top.0 != key {
+        page.page_top = (key, 0);
+    }
+    paint(frame, body, &lines, &mut page.page_top.1);
     if let Section::Mcp(_) = &section {
-        super::mcp_list::buttons(frame, body, &lines, page, texts);
+        super::mcp_list::buttons(frame, body, page, texts);
     }
     let counter = format!("{}/{count}", if count == 0 { 0 } else { at + 1 });
     footer(frame, stage, page, texts, hints, None, Some(counter));
@@ -187,10 +197,13 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
 /// 一行：字、是不是选中的那一行。
 pub(super) type Painted = (Line<'static>, bool);
 
-/// 写进 `body`：放不下的照选中的那一行滚；选中的铺底色、左边竖条。
-pub(super) fn paint(frame: &mut Frame, body: Rect, lines: &[Painted]) {
+/// 写进 `body`：放不下的照选中的那一行滚，`top` 是上一帧从第几行露起，选中的碰到上边、下边才挪（`menu::edge`，
+/// 2026-10-29 项目主人：触底往下滚以后往回一下立刻往上滚，要触顶才滚）；选中的铺底色、左边竖条。
+pub(super) fn paint(frame: &mut Frame, body: Rect, lines: &[Painted], top: &mut usize) {
     let height = usize::from(body.height);
-    let top = top(lines, height);
+    let focus = lines.iter().position(|(_, f)| *f).unwrap_or(0);
+    *top = crate::menu::edge(focus, None, *top, lines.len(), height);
+    let top = *top;
     for (n, (line, focused)) in lines.iter().skip(top).take(height).enumerate() {
         let y = body.y + u16::try_from(n).unwrap_or(0);
         let row = Rect::new(body.x, y, body.width, 1);
@@ -202,12 +215,6 @@ pub(super) fn paint(frame: &mut Frame, body: Rect, lines: &[Painted]) {
             .buffer_mut()
             .set_line(body.x + 2, y, line, body.width.saturating_sub(2));
     }
-}
-
-/// 从第几行画起：选中的那一行要在 `height` 行里看得见。
-pub(super) fn top(lines: &[Painted], height: usize) -> usize {
-    let focus = lines.iter().position(|(_, f)| *f).unwrap_or(0);
-    focus.saturating_sub(height.saturating_sub(1))
 }
 
 /// 照清单画的一页：组名一行，下面一项一行（名字、值）。两层都写不了的整行暗着。

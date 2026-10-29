@@ -211,7 +211,9 @@ impl Content {
         } else {
             wrap(&shown, cursor.min(shown.len()), room)
         };
-        let first = row.saturating_sub(FIELD_ROWS - 1);
+        // 光标碰到上边、下边才挪（2026-10-29 项目主人：触底滚了以后往回一下立刻往上滚，要触顶才滚）。
+        let first = crate::menu::edge(row, None, field.top.get(), rows.len(), FIELD_ROWS);
+        field.top.set(first);
         let blank_lead = " ".repeat(lead.width());
         for (i, text) in rows.iter().enumerate().skip(first).take(FIELD_ROWS) {
             let head = if i == first {

@@ -8,7 +8,7 @@ use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
-use super::pages::{Painted, top};
+use super::pages::Painted;
 use crate::settings::pages::mcp::Server;
 use crate::settings::{Hit, Settings, Texts};
 use crate::theme;
@@ -67,17 +67,11 @@ pub(super) fn lines(list: &[Server], at: usize, texts: &Texts, width: u16) -> Ve
 
 /// 要登录的那几行右边叠上「登录」、登录过的叠上「登出」，记下点得到的地方（[`Hit::Login`]）。和 `paint` 照同一个起点算
 /// 哪几行看得见。
-pub(super) fn buttons(
-    frame: &mut Frame,
-    body: Rect,
-    lines: &[Painted],
-    page: &mut Settings,
-    texts: &Texts,
-) {
+pub(super) fn buttons(frame: &mut Frame, body: Rect, page: &mut Settings, texts: &Texts) {
     let list = page.more.servers();
     let words = &texts.more.mcp;
     let height = usize::from(body.height);
-    let first = top(lines, height);
+    let first = page.page_top.1;
     for (n, (i, server)) in list.iter().enumerate().skip(first).take(height).enumerate() {
         let label = if server.needs_login() {
             &words.login
