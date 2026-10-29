@@ -139,3 +139,22 @@ fn a_wrapped_line_does_not_start_with_the_space_it_broke_at() {
         "{shown:?}"
     );
 }
+
+#[test]
+fn an_aligned_note_wraps_under_its_value_and_keeps_words_whole() {
+    // 2026-10-29 项目主人报：「铺底色」的说明折下来跑到标题那一列，还在 background 中间断开。
+    let mut c = Content::sized(40, 0);
+    let text = "Paint the whole screen in the color scheme's background";
+    c.note_at(14, text, ratatui::style::Style::default());
+    let lines = plain(&c);
+    assert!(lines.len() > 1, "要折行：{lines:?}");
+    for line in &lines {
+        assert!(
+            line.starts_with(&" ".repeat(14)),
+            "折下来的也对齐值那一列：{lines:?}"
+        );
+        assert!(line.chars().count() <= 40, "不超块宽：{lines:?}");
+    }
+    let words: Vec<&str> = lines.iter().flat_map(|l| l.split_whitespace()).collect();
+    assert_eq!(words.join(" "), text, "词不断开：{lines:?}");
+}

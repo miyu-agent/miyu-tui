@@ -168,7 +168,7 @@ fn form_lines(
             (None, Some(env)) => words.key_env.replace("{env}", env),
             _ => words.key_none.clone(),
         };
-        c.note(&format!("  {}  {how}", words.key), theme::dim());
+        c.note_at(2, &format!("{}  {how}", words.key), theme::dim());
     }
     let focus = form.slot().filter(|_| testing.is_none());
     for (i, slot) in slots.into_iter().enumerate() {
@@ -207,7 +207,7 @@ fn form_lines(
                     &words.model_example,
                     focused,
                 );
-                c.note(&format!("  {}", words.cost), theme::dim());
+                c.note_at(2, &words.cost, theme::dim());
             }
         }
     }
