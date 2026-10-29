@@ -86,9 +86,9 @@ pub enum Waiting {
     SemanticRead,
     /// 写开还是关（`config.set models.embedding`）。
     SemanticSave,
-    /// 没装的看一眼软件源里的（`package.install {"source": "embed", "preview": true}`）。
+    /// 没装的看一眼软件源里的（`package.install {"source": "miyu-embed", "preview": true}`）。
     SemanticPreview,
-    /// 当场下载、装上（`package.install {"source": "embed"}`）。
+    /// 当场下载、装上（`package.install {"source": "miyu-embed"}`）。
     SemanticInstall,
 }
 

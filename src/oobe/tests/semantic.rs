@@ -18,7 +18,7 @@ fn losing_the_core_mid_download_offers_retry_instead_of_hanging() {
     oobe.step = Step::Semantic;
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let (_, params) = find(&asks(&mut oobe), "package.install");
-    assert_eq!(params, json!({"source": "embed"}));
+    assert_eq!(params, json!({"source": "miyu-embed"}));
     assert!(oobe.semantic.installing());
     oobe.offline("核心断开了", t0, &texts);
     assert_eq!(

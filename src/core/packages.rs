@@ -102,9 +102,9 @@ mod tests {
     #[test]
     fn download_progress_is_read_from_its_own_notification() {
         let push = json!({"method": "package.progress",
-            "params": {"package": "embed", "done": 1024, "total": 4096}});
+            "params": {"package": "miyu-embed", "done": 1024, "total": 4096}});
         let want = super::Progress {
-            package: "embed".into(),
+            package: "miyu-embed".into(),
             done: 1024,
             total: 4096,
         };
