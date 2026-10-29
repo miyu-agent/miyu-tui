@@ -87,7 +87,7 @@ fn long_session(home: &Home) -> String {
         tui.wait_for(&format!("第 {i} 条记下了。"));
     }
     drop(tui);
-    let sessions = home.root().join("home/alice/sessions");
+    let sessions = home.root().join("sessions");
     let mut ids: Vec<String> = std::fs::read_dir(&sessions)
         .expect("有会话目录")
         .flatten()

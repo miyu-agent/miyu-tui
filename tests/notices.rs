@@ -18,7 +18,7 @@ fn a_clicked_kitty_notice_switches_to_its_session_and_types_nothing() {
     tui.say("topic-two");
     tui.wait_for("answer-two");
     // topic-one 那个会话的编号：日志里有这句话的那个目录。
-    let sessions = home.root().join("home/alice/sessions");
+    let sessions = home.root().join("sessions");
     let first = std::fs::read_dir(&sessions)
         .expect("会话目录")
         .flatten()

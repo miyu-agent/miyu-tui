@@ -46,7 +46,7 @@ fn to_persona(home: &Home) -> Tui {
 }
 
 fn persona_file(home: &Home, name: &str) -> PathBuf {
-    home.root().join("home/alice/personas/persona-1").join(name)
+    home.root().join("personas/persona-1").join(name)
 }
 
 fn read(path: &PathBuf) -> String {
@@ -361,7 +361,7 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
     tui.key(b"\r");
     through_semantic(&mut tui);
     tui.wait_for("按 Enter 开始对话");
-    let file = home.root().join("home/alice/presets/preset-1.toml");
+    let file = home.root().join("presets/preset-1.toml");
     let text = read(&file);
     assert!(
         text.contains("写代码") && text.contains("= false"),

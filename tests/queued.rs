@@ -51,7 +51,7 @@ fn a_message_sent_between_steps_is_drawn_once_where_she_heard_it() {
 
 /// 测试家目录里唯一的那个会话的编号。
 fn only_session(home: &Home) -> String {
-    let dir = home.root().join("home/alice/sessions");
+    let dir = home.root().join("sessions");
     let ids: Vec<String> = std::fs::read_dir(dir)
         .expect("会话目录")
         .filter_map(|e| e.ok().map(|e| e.file_name().to_string_lossy().into_owned()))

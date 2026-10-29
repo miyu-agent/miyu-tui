@@ -14,7 +14,7 @@ use support::{Home, Tui};
 
 /// 新建的第一个人格的目录（编号核心起：`persona-1`）。
 fn dir(home: &Home) -> PathBuf {
-    home.root().join("home/alice/personas/persona-1")
+    home.root().join("personas/persona-1")
 }
 
 /// 等 `check` 成立，最多 [`support::WAIT`]；等不到的把屏幕打出来。

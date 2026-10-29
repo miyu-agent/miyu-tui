@@ -32,13 +32,13 @@ fn welcomed(settings: &str) -> String {
     }
 }
 
-/// 照用户装软件包那样把终端自己的清单（`tui/package.toml`）装进系统那一层（`system/packages/`，核心 U23 上上起装的包都在这里，
-/// 以前在机主家目录）：核心 S-5 起出厂不再带它，`tui.*` 配置
+/// 照用户装软件包那样把终端自己的清单（`tui/package.toml`）装进数据根的 `packages/`（核心 SU-5 上起数据根只剩一层，原来在 `system/packages/`）：
+/// 核心 S-5 起出厂不再带它，`tui.*` 配置
 /// 项、终端的状态目录都照它认（README「装上终端」那一步）。程序不放进去：界面的程序不在，配置项照旧在。
 /// `edit` 改一改清单再装（装着旧清单的样子）。
 fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tui/package.toml");
-    let to = dir.join("system/packages/tui");
+    let to = dir.join("packages/tui");
     std::fs::create_dir_all(&to).expect("建得了包的目录");
     let text = std::fs::read_to_string(manifest).expect("读得了终端的清单");
     std::fs::write(to.join("package.toml"), edit(text)).expect("装得上终端的清单");
@@ -47,7 +47,7 @@ fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
         let from = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("packages")
             .join(theme);
-        let to = dir.join("system/packages").join(theme);
+        let to = dir.join("packages").join(theme);
         std::fs::create_dir_all(&to).expect("建得了主题包的目录");
         for file in ["package.toml", "theme.json"] {
             std::fs::copy(from.join(file), to.join(file)).expect("装得上主题包");
@@ -56,12 +56,12 @@ fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
 }
 
 impl Home {
-    /// 起一份核心：管理员 alice，请求模型照 `script` 回，没有工具。
+    /// 起一份核心：主人 alice，请求模型照 `script` 回，没有工具。
     pub fn new(script: Script) -> Home {
         Home::with_settings(script, "")
     }
 
-    /// 同 [`Home::new`]，核心起来以前先写好系统配置（`system/config.toml`，TOML；核心 SU-3 上起设置只剩这一份）。都记着第一次引导走过了
+    /// 同 [`Home::new`]，核心起来以前先写好系统配置（`config.toml`，TOML；核心 SU-3 上起设置只剩这一份，SU-5 上起直接在数据根下）。都记着第一次引导走过了
     /// （`ui.welcomed`，核心 8-11 四补），不然一起来就进引导；要引导的用 [`Home::unwelcomed`]。
     pub fn with_settings(script: Script, settings: &str) -> Home {
         Home::build(script, &welcomed(settings), Tools::None)
@@ -141,16 +141,16 @@ impl Home {
         install_the_terminal(&dir, manifest);
         // 软件源指到连不上的地方：测试不碰网，引导看一眼语义模型的包时是「连不上」（第 26b 条，2026-10-19 实测原来
         // 照默认地址去了 GitHub）。接在测试写的设置后面：设置里可能有不在表里的键。
-        let system = dir.join("system/config.toml");
+        let system = dir.join("config.toml");
         std::fs::create_dir_all(system.parent().expect("有上一层")).expect("建得了");
         std::fs::write(
             &system,
             format!("{settings}\n[packages]\nsource = \"https://source.invalid/\"\n"),
         )
         .expect("写得进去");
-        // alice 是机主（核心 Y-12 中上）。同核心测具的 `owner()`。
+        // alice 是主人（核心 SU-1 起只有主人；账号文件 SU-5 上起在数据根下）。同核心测具的 `owner()`。
         std::fs::write(
-            dir.join("system/accounts.json"),
+            dir.join("accounts.json"),
             r#"{"version":1,"accounts":[{"id":"alice","username":"alice","password":"$argon2id$v=19$m=19456,t=2,p=1$placeholder","changed":"2026-10-23T00:00:00.000Z","owner":true}]}"#,
         )
         .expect("写得进去");
@@ -184,9 +184,9 @@ impl Home {
         &self.dir
     }
 
-    /// 在 alice 的家目录里放一个人格（核心 P-1 上）：`persona.toml` 写 `toml`，人设写 `prompt`（`None` 不写）。
+    /// 在数据根的 `personas/` 里放一个人格（核心 P-1 上）：`persona.toml` 写 `toml`，人设写 `prompt`（`None` 不写）。
     pub fn persona(&self, id: &str, toml: &str, prompt: Option<&str>) {
-        let dir = self.dir.join("home/alice/personas").join(id);
+        let dir = self.dir.join("personas").join(id);
         std::fs::create_dir_all(dir.join("prompts")).expect("建得了");
         std::fs::write(dir.join("persona.toml"), toml).expect("写得进去");
         if let Some(prompt) = prompt {
@@ -201,7 +201,7 @@ impl Home {
 
     /// 系统配置那个文件：测试手改了再重起核心。
     pub fn settings_file(&self) -> PathBuf {
-        self.dir.join("system/config.toml")
+        self.dir.join("config.toml")
     }
 
     /// 在伪终端里起界面，连这份核心；`lang` 是系统语言（`LANG`）。
