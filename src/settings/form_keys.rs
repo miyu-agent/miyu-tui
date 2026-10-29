@@ -42,8 +42,34 @@ pub(super) fn form_key(form: &mut Form, key: KeyEvent) -> FormAction {
         }
         return FormAction::Stay;
     }
+    // 正在打筛成员的字（`forms/search.rs`）：字、退格进筛的字，`Enter` 打完（筛的留着），`Esc` 清掉；上下照旧挪。
+    if form.search.1 {
+        match key.code {
+            KeyCode::Enter => form.search.1 = false,
+            KeyCode::Esc => form.search = (String::new(), false),
+            KeyCode::Backspace => {
+                form.search.0.pop();
+                form.focus_first_match();
+            }
+            KeyCode::Char(c) => {
+                form.search.0.push(c);
+                form.focus_first_match();
+            }
+            KeyCode::Down => step(form, 1),
+            KeyCode::Up => step(form, -1),
+            _ => {}
+        }
+        form.refocus();
+        return FormAction::Stay;
+    }
     form.error = None;
     match (key.code, form.focus) {
+        (KeyCode::Char('/'), _) if form.searchable() => form.search = (String::new(), true),
+        // 筛着的先清掉筛的字，再按才关窗（同目录窗）。
+        (KeyCode::Esc, _) if !form.search.0.is_empty() => {
+            form.search.0.clear();
+            form.refocus();
+        }
         (KeyCode::Esc, _) => return FormAction::Close,
         // `s` 和按钮「保存」一样：存了关窗（2026-10-07 项目主人）；`q` 同它。
         (KeyCode::Char('s' | 'q'), _) => return FormAction::Save { close: true },
@@ -78,7 +104,7 @@ pub(super) fn form_key(form: &mut Form, key: KeyEvent) -> FormAction {
 /// 上下挪一行：跳过段名；最后一行再往下到按钮，按钮再往上回最后一行。
 fn step(form: &mut Form, dir: isize) {
     let stops: Vec<usize> = (0..form.rows.len())
-        .filter(|i| form.rows[*i].stops())
+        .filter(|i| form.rows[*i].stops() && form.shows(*i))
         .collect();
     form.cursor = 0;
     form.focus = match form.focus {

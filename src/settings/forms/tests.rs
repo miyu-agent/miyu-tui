@@ -258,3 +258,49 @@ fn a_pool_can_be_ordered_and_opens_on_its_strategy() {
         "停在现在的分法上"
     );
 }
+
+#[test]
+fn slash_filters_the_pool_members_and_esc_clears_before_closing() {
+    // 2026-10-29 项目主人：模型池的编辑窗没法搜，模型一多找不到。
+    use crate::settings::form_keys::{FormAction, form_key};
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    let data = sample();
+    let mut form = pool(&data, Some("daily"));
+    let press =
+        |form: &mut super::Form, code| form_key(form, KeyEvent::new(code, KeyModifiers::NONE));
+    let shown = |form: &super::Form| -> Vec<String> {
+        (0..form.rows.len())
+            .filter(|&i| form.shows(i))
+            .filter_map(|i| match &form.rows[i].val {
+                Val::Member { reference, .. } => Some(reference.clone()),
+                _ => None,
+            })
+            .collect()
+    };
+    let all = shown(&form);
+    assert!(all.len() > 2, "{all:?}");
+    press(&mut form, KeyCode::Char('/'));
+    for c in "gpt".chars() {
+        press(&mut form, KeyCode::Char(c));
+    }
+    assert_eq!(shown(&form), ["relay/gpt-oss"], "只露对得上的");
+    let Focus::Row(at) = form.focus else {
+        panic!("停在对得上的成员上");
+    };
+    assert!(
+        matches!(&form.rows[at].val, Val::Member { reference, .. } if reference == "relay/gpt-oss")
+    );
+    press(&mut form, KeyCode::Enter);
+    assert!(!form.search.1, "Enter 打完、筛的留着");
+    press(&mut form, KeyCode::Char(' '));
+    assert!(
+        form.members.contains(&"relay/gpt-oss".to_string()),
+        "筛着也能勾"
+    );
+    assert!(
+        matches!(press(&mut form, KeyCode::Esc), FormAction::Stay),
+        "先清筛的字"
+    );
+    assert_eq!(shown(&form), all, "都回来了");
+    assert!(matches!(press(&mut form, KeyCode::Esc), FormAction::Close));
+}

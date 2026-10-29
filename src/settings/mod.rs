@@ -478,7 +478,7 @@ impl Settings {
     /// 在打字：编辑窗里正在改一项、在打筛选的字（输入法照它切，`ime.rs`）。
     pub fn typing(&self) -> bool {
         let popup = match &self.popup {
-            Some(Popup::Form(form)) => form.editing.is_some(),
+            Some(Popup::Form(form)) => form.editing.is_some() || form.search.1,
             Some(Popup::Pick(pick)) => pick.typing,
             Some(Popup::Catalog(pick)) => pick.typing,
             Some(Popup::Line(_) | Popup::Pair(_) | Popup::Sheet(_)) => true,
