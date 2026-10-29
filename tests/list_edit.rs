@@ -11,7 +11,7 @@ use support::{Home, Tui};
 
 /// 出厂预设「全部功能」在你那一层的文件（改出厂的就是建同名覆盖）。
 fn file(home: &Home) -> PathBuf {
-    home.root().join("home/alice/presets/full.toml")
+    home.root().join("presets/full.toml")
 }
 
 /// 文件里的字；没有的是空的。

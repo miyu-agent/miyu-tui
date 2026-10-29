@@ -16,7 +16,7 @@ const REVIEW: &str = "---\ndescription: Review the code\nargument-hint: <路径>
 fn a_template_command_is_listed_and_shows_the_typed_line() {
     let script = Script::new([Play::Says("看过了。")]);
     let home = Home::new(script.clone());
-    let commands = home.root().join("home/alice/commands");
+    let commands = home.root().join("commands");
     std::fs::create_dir_all(&commands).expect("建得了");
     std::fs::write(commands.join("review.md"), REVIEW).expect("写得进去");
     let mut tui = home.tui("zh_CN.UTF-8");
@@ -42,6 +42,39 @@ fn a_template_command_is_listed_and_shows_the_typed_line() {
     assert!(
         sent.contains("请把 src/lib.rs 这里的代码从头到尾审一遍"),
         "模型看到展开的那段：{sent}"
+    );
+}
+
+/// 一份技能：说明、中文说明，正文一步。
+const FORECAST: &str = "---\nname: forecast\ndescription: Tell the weather.\nmetadata:\n  summary_zh: 看天气\n---\n\n# forecast\n\n先查一遍当地的预报。\n";
+
+#[test]
+fn a_skill_is_listed_and_named_by_slash_with_the_typed_line_shown() {
+    // 核心 PT-2 下：能点名的技能照 `command.catalog` 列（带 `"skill": true`），`/技能名 参数` 照 `command.run` 交给核心，
+    // 正文里是人敲的那一行，模型看到套了外壳的技能正文和参数。
+    let script = Script::new([Play::Says("查好了。")]);
+    let home = Home::new(script.clone());
+    let dir = home.root().join("skills/forecast");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    std::fs::write(dir.join("SKILL.md"), FORECAST).expect("写得进去");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("Tab 切换权限级别");
+    tui.type_text("/forec");
+    tui.wait_for("/forecast");
+    assert!(tui.shows("看天气"), "{}", tui.lines().join("\n"));
+    tui.type_text("ast 明天");
+    tui.key(b"\r");
+    tui.wait_for("查好了。");
+    let screen = tui.lines().join("\n");
+    assert!(
+        screen.contains("/forecast 明天"),
+        "正文里是人敲的那一行：\n{screen}"
+    );
+    assert!(!screen.contains("先查一遍"), "技能正文不给人看：\n{screen}");
+    let sent = format!("{:?}", script.requests().last());
+    assert!(
+        sent.contains("先查一遍当地的预报") && sent.contains("明天"),
+        "模型看到技能正文和参数：{sent}"
     );
 }
 

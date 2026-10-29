@@ -18,7 +18,7 @@ fn four_hues(home: &Home) {
             [usize::try_from((y / 64) * 2 + x / 48).unwrap_or(0)];
         image::Rgba([r, g, b, 255])
     });
-    let file = home.root().join("home/alice/personas/duo/avatar.png");
+    let file = home.root().join("personas/duo/avatar.png");
     image.save(&file).expect("写得进头像");
 }
 
@@ -67,7 +67,7 @@ fn the_main_color_is_picked_from_the_avatars_candidates_and_saved_on_the_persona
     // 挑第二个：写进人格的主题色，颜色当场换。
     tui.key(b"j");
     tui.key(b"\r");
-    let toml = home.root().join("home/alice/personas/duo/persona.toml");
+    let toml = home.root().join("personas/duo/persona.toml");
     let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
     while !std::fs::read_to_string(&toml)
         .unwrap_or_default()

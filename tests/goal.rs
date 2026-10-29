@@ -106,7 +106,7 @@ fn looking_at_or_pausing_a_goal_on_the_home_page_opens_nothing() {
         tui.wait_for("无长期目标");
         tui.pump(Duration::from_millis(300));
     }
-    let sessions = home.root().join("home/alice/sessions");
+    let sessions = home.root().join("sessions");
     let opened = std::fs::read_dir(&sessions).map_or(0, Iterator::count);
     assert_eq!(opened, 0, "没开会话");
 }
@@ -129,8 +129,8 @@ fn pausing_without_a_goal_only_pops_the_cores_words() {
 #[test]
 fn a_goal_without_its_package_is_no_command() {
     let home = Home::with_tools(Script::new([Play::Says("你好。")]), "");
-    // 卸掉出厂的长期目标（系统那一层记一笔，核心 F-5 上；U23 上上起在 `system/packages/`）；软件包核心起来时读，重启一次。
-    let removed = home.root().join("system/packages/goal.removed");
+    // 卸掉出厂的长期目标（系统那一层记一笔，核心 F-5 上；SU-5 上起在 `packages/`）；软件包核心起来时读，重启一次。
+    let removed = home.root().join("packages/goal.removed");
     std::fs::write(removed, "").expect("记得下");
     home.stop_core();
     home.restart_core();
