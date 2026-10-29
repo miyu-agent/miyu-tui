@@ -50,9 +50,7 @@ fn installing_a_package_asks_with_what_it_carries() {
     tui.key(b"\r");
     tui.wait_for("装好了。");
     assert!(
-        home.root()
-            .join("system/packages/weather/package.toml")
-            .exists(),
+        home.root().join("packages/weather/package.toml").exists(),
         "允许本次就装上了"
     );
     std::fs::remove_dir_all(dir.parent().expect("有上一层")).expect("删得掉测试建的目录");

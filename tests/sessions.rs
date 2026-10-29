@@ -238,7 +238,7 @@ fn the_resume_alias_still_opens_the_list() {
 fn explicit_resume_restores_each_session_instead_of_global_recent() {
     let (home, first) = sessions_settings(2, "[tui]\nstartup = \"recent\"\n");
     drop(first);
-    let mut ids: Vec<String> = std::fs::read_dir(home.root().join("home/alice/sessions"))
+    let mut ids: Vec<String> = std::fs::read_dir(home.root().join("sessions"))
         .expect("会话目录")
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         .collect();
@@ -261,7 +261,7 @@ fn missing_explicit_session_does_not_fall_back_to_recent() {
     );
     resumed.pump(Duration::from_secs(2));
     assert!(!resumed.shows("第 1 号的回答。"));
-    let all = std::fs::read_dir(home.root().join("home/alice/sessions"))
+    let all = std::fs::read_dir(home.root().join("sessions"))
         .unwrap()
         .count();
     assert_eq!(all, 1);

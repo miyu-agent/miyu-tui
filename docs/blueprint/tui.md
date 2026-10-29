@@ -1270,6 +1270,7 @@ macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 
 2. 配置页只读 `config.get` 里系统那一层写着的：存的 `expect`、恢复默认（`d`，回到出厂默认）、删供应商、池都照它。原来「系统配置里写了东西、这里删不掉」那一句去掉：现在都是自己写的，删得掉。只能写系统配置的项不再另走一条路（原来 `saving.rs` 的 `system_only`）。一项清单的 `layers` 里有 `system` 的终端改得了，没有的照旧「终端暂不支持修改此项」。
 3. 「来源」一列：`system` 写「系统配置」，另有 `project`、`default`、`env`；没有「个人设置」了。编辑供应商、模型的窗里自己写了的那一格，右边黄字原来写「个人」，改写「自定义」（2026-10-28 项目主人照推荐定；英文 custom、日文 カスタム）。
 4. 密钥：`secret.set`、`secret.delete` 不带 `layer`，`secret.list` 每一项没有 `layer`，终端本来就不读。
+5. 数据根只剩一层（核心 SU-5 上，2026-10-29 换钉）：`config.toml`、`secrets.toml`、`accounts.json`、`packages/`、`personas/`、`presets/`、`skills/`、`commands/`、`sessions/`、`blobs/` 直接在数据根下，没有 `system/`、`home/<账号>/` 两层。终端不按路径读数据根，只有测具（`tests/support/home.rs` 和各个测试）照这个写；蓝图别处写的 `system/…`、`home/<账号>/…` 一律读作数据根下的同名位置。
 
 ### 第一次打开的引导（OOBE，2026-10-08 项目主人定）
 

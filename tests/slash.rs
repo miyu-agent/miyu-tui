@@ -16,7 +16,7 @@ const REVIEW: &str = "---\ndescription: Review the code\nargument-hint: <路径>
 fn a_template_command_is_listed_and_shows_the_typed_line() {
     let script = Script::new([Play::Says("看过了。")]);
     let home = Home::new(script.clone());
-    let commands = home.root().join("home/alice/commands");
+    let commands = home.root().join("commands");
     std::fs::create_dir_all(&commands).expect("建得了");
     std::fs::write(commands.join("review.md"), REVIEW).expect("写得进去");
     let mut tui = home.tui("zh_CN.UTF-8");

@@ -11,7 +11,7 @@ use support::{Home, Tui};
 
 /// 新建的第一个预设的文件（编号核心起：`preset-1`）。
 fn file(home: &Home) -> PathBuf {
-    home.root().join("home/alice/presets/preset-1.toml")
+    home.root().join("presets/preset-1.toml")
 }
 
 /// 文件里的字；没有的是空的。

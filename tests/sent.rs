@@ -30,10 +30,10 @@ fn extension() -> PathBuf {
 
 /// 装扩展 `memes`（开着，清单写了图标 `face-slightly-smiling`）：登记工具 `sticker`，发的图是先放进 alice 名下的一个 blob。
 fn install(dir: &Path) {
-    let blob = miyu_store::blob::Blobs::new(dir.join("home/alice/blobs"))
+    let blob = miyu_store::blob::Blobs::new(dir.join("blobs"))
         .put(b"\x89PNG not really a picture")
         .expect("存得进");
-    let package = dir.join("system/packages/memes");
+    let package = dir.join("packages/memes");
     std::fs::create_dir_all(package.join("bin")).expect("建得了包的目录");
     let program = package
         .join("bin")
@@ -47,7 +47,7 @@ fn install(dir: &Path) {
     // 登记工具的扩展照实声明 `tools`、批过才拉起（核心 X-30）；批过的能力和开关记在一起（`approved`，核心 SU-2 中起；
     // 原来在组表 `system/groups.json`）。
     std::fs::write(
-        dir.join("system/extensions.json"),
+        dir.join("extensions.json"),
         r#"{"version":1,"on":{"memes":true},"approved":{"memes":["tools"]}}"#,
     )
     .expect("写得进去");

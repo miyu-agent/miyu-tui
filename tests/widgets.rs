@@ -46,7 +46,7 @@ const CONTENT: &str = r#"{
 /// 装扩展 `wx`（批了 `widgets`、开着）：首页一块、底栏一块、侧边栏一块（跟着会话）。程序记下收到的 `widget.watch`、
 /// `method.call`。
 fn install(dir: &Path) {
-    let package = dir.join("system/packages/wx");
+    let package = dir.join("packages/wx");
     std::fs::create_dir_all(package.join("bin")).expect("建得了包的目录");
     let program = package
         .join("bin")
@@ -68,7 +68,7 @@ fn install(dir: &Path) {
     std::fs::write(package.join("package.toml"), manifest).expect("写得进去");
     // 批过的能力和开关记在一起（`approved`，核心 SU-2 中起；原来在组表 `system/groups.json`）。
     std::fs::write(
-        dir.join("system/extensions.json"),
+        dir.join("extensions.json"),
         r#"{"version":1,"on":{"wx":true},"approved":{"wx":["widgets"]}}"#,
     )
     .expect("写得进去");
@@ -205,7 +205,7 @@ fn a_page_opens_from_a_button_or_its_command_scrolls_and_esc_goes_back() {
     tui.wait_for("Weather — 本周");
     // 只是开一页：不为它开会话（不交给 `command.run`，「界面块」第 10 条）。
     tui.pump(Duration::from_millis(300));
-    let sessions = std::fs::read_dir(home.root().join("home/alice/sessions"))
+    let sessions = std::fs::read_dir(home.root().join("sessions"))
         .map(|d| d.count())
         .unwrap_or(0);
     assert_eq!(sessions, 0, "开整页不开会话");

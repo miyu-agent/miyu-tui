@@ -24,7 +24,7 @@ fn a_session_deleted_while_the_core_was_away_says_so_and_the_next_sentence_start
     tui.wait_for("第一句的回答。");
     home.stop_core();
     tui.wait_for(DOWN);
-    std::fs::remove_dir_all(home.root().join("home/alice/sessions")).expect("删得掉");
+    std::fs::remove_dir_all(home.root().join("sessions")).expect("删得掉");
     home.restart_core();
     tui.wait_for("会话不存在");
     assert!(tui.shows("第一句的回答。"), "上面的留着看");

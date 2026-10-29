@@ -183,7 +183,7 @@ fn frozen(orders: &mut UnboundedReceiver<Switch>) -> bool {
 fn build(root: &DataRoot, script: Arc<Script>, tools: Tools, token: String) -> Core {
     let admin = AccountId::parse("alice").expect("账号合写法");
     let shipped_root = ResourceRoot::at(resources());
-    let found = || miyu_store::packages::Packages::new(&shipped_root, root, &admin).read();
+    let found = || miyu_store::packages::Packages::new(&shipped_root, root).read();
     let config = Config::load(
         root,
         &admin,
