@@ -159,7 +159,6 @@ pub fn save_params(
         }
     }
     set("models.chat".to_string(), json!(format!("{id}/{model}")));
-    // 引导里接的模型是个人的（2026-10-24 项目主人定，「管理员模式」第 5 条；原来写系统配置）。
     json!({"changes": changes})
 }
 

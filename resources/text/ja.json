@@ -180,7 +180,7 @@
     "path_unreadable": "ディレクトリが見つからないか、読めません",
     "not_a_directory": "ファイルです。ディレクトリではありません",
     "path_forbidden": "ここは作業場所にできません",
-    "owner_only": "作業場所を変えられるのは持ち主だけです",
+    "owner_only": "持ち主のみ使えます",
     "session_not_found": "そのセッションはもうありません",
     "session_sealed": "セッションは締め切られています",
     "nothing_to_rename": "まだセッションがありません。何か話してから名前を変えてください",
@@ -1190,11 +1190,11 @@
       "bad_number": "数値を入力してください",
       "unset": [
         "既定に戻す：{name}？",
-        "個人設定からこの項目を外し、{from}の値に戻します",
+        "この項目の設定を外し、{from}の値に戻します",
         "戻す",
         "キャンセル"
       ],
-      "nothing_to_unset": "個人設定にこの項目はありません",
+      "nothing_to_unset": "この項目は設定されていません",
       "default_mark": "既定",
       "no_personas": "ペルソナがまだありません",
       "loading": "読み込み中…",
