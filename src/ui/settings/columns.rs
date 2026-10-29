@@ -145,11 +145,7 @@ fn items(col: Col, page: &Settings, texts: &Texts) -> (String, Vec<Item>, String
                             .replace("{n}", &p.members.len().to_string()),
                     );
                 }
-                // 走这一档的旁路请求（核心 Q-2）：「用于：起标题」；放不下截掉加「…」，写全的在成员栏下面（`uses`）。
-                if !p.uses.is_empty() {
-                    let names = p.uses.join(&crate::sheet::sep());
-                    parts.push(texts.pool_uses.replace("{names}", &names));
-                }
+                // 走这一档的旁路请求只写在成员栏下面（`uses`），池这一行不写（2026-10-29 项目主人：右边已经有了）。
                 let tag = parts.join(&crate::sheet::sep());
                 Item {
                     text: texts.pool_names.get(&p.name).unwrap_or(&p.name).clone(),

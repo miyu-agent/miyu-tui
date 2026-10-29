@@ -835,7 +835,6 @@
       "own"
     ],
     "pool_names": {"flagship": "Flagship", "normal": "Everyday", "lite": "Lite"},
-    "pool_uses": "Used for: {names}",
     "pool_tag": "{how} · {n}",
     "pool_uses_head": "Used for",
     "gone": " (gone)",

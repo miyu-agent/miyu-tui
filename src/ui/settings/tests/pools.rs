@@ -8,7 +8,7 @@ use crate::config::Config;
 use crate::settings::Settings;
 
 #[test]
-fn a_pool_used_for_much_is_cut_in_its_row_and_listed_in_full_below_its_members() {
+fn a_pool_row_leaves_its_uses_to_the_list_below_its_members() {
     let config = Config::builtin().unwrap();
     let mut list = crate::settings::test_support::model_list();
     list["pools"]
@@ -45,11 +45,8 @@ fn a_pool_used_for_much_is_cut_in_its_row_and_listed_in_full_below_its_members()
         .find(|l| l.contains("empty"))
         .unwrap_or_default();
     assert!(!empty.trim_end().ends_with("空池"), "空池不写：{empty}");
-    assert!(
-        row.contains("用于：起标题") && row.contains('…'),
-        "放不下截掉：{row}"
-    );
-    assert!(!row.contains("看一眼群里在聊什么"), "{row}");
+    // 2026-10-29 项目主人：成员栏下面已经写了「用于」，池这一行不再写。
+    assert!(!row.contains("用于") && !row.contains("起标题"), "{row}");
     // 选中的就是轻量（固定的排最前、只有它）：成员栏下面写全。
     for name in [
         "用于",
