@@ -1431,7 +1431,7 @@
       "default_look": "Default theme",
       "mascot_missing": "{id} (not installed)",
       "seed_unset": "Clear the persona's main color and go back to the avatar's first candidate",
-      "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Mascot", "icons": "Icons", "keys": "Interaction"},
+      "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Figure", "icons": "Icons", "keys": "Interaction"},
       "appearance": "Appearance",
       "service": {"group": "Startup", "name": "Start the core at login", "enabling": "Turning on start at login…", "disabling": "Turning off start at login…", "enabled": "Starts at login: {file}", "disabled": "No longer starts at login", "failed": "Failed: {step}: {said}", "no_home": "Home directory not found", "windows": "Not available on Windows with MIYU_HOME set"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.sidebar_sessions": {"0": "Off"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
@@ -1603,7 +1603,7 @@
     "theme": {
       "title": "Color scheme",
       "sub": "Choose mode and colors. Applies immediately. You can change this in settings later",
-      "rows": ["Mode", "Colors", "Mascot", "Accent", "Background"],
+      "rows": ["Mode", "Colors", "Figure", "Accent", "Background"],
       "modes": ["Auto", "Dark", "Light"],
       "colors": ["Follow the avatar", "Follow the wallpaper", "Tokyo Night", "Terminal colors"],
       "from_avatar": "From {name}'s avatar",

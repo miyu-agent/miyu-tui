@@ -79,13 +79,11 @@ pub fn content(oobe: &Oobe, texts: &Texts, width: u16) -> Content {
     let ground = &words.ground[usize::from(!step.ground)];
     c.chip(&words.rows[4], label_w, ground, "", on(Slot::Ground));
     c.note_at(2 + label_w + 2, &words.ground_note, theme::dim());
-    // 吉祥物（2026-10-15 项目主人定）：显示、不显示，下面对齐暗色写项目主人定的那一句。
-    if !step.avatar {
-        c.blank();
-        let shown = &words.mascot[usize::from(step.mascot_off)];
-        c.chip(&words.rows[2], label_w, shown, "", on(Slot::Mascot));
-        c.note_at(2 + label_w + 2, &words.mascot_note, theme::dim());
-    }
+    // 形象（2026-10-15 项目主人定，2026-10-29 从「吉祥物」改名、头像也归它管）：显示、不显示，下面对齐暗色写那一句。
+    c.blank();
+    let shown = &words.mascot[usize::from(step.mascot_off)];
+    c.chip(&words.rows[2], label_w, shown, "", on(Slot::Mascot));
+    c.note_at(2 + label_w + 2, &words.mascot_note, theme::dim());
     c.blank();
     c.action(
         on(Slot::Next),
