@@ -15,6 +15,10 @@ about = { en = "Open the terminal interface", zh = "打开终端界面", ja = "�
 [ui]
 opens = ["config"]
 
+# 推荐一起装默认主题（终端蓝图 `docs/blueprint/tui.md`「主题」第 4 条：装终端时一起装）：没装也能用，同一份编进了程序。
+[recommends]
+packages = ["theme-default"]
+
 # 第一次打开的引导里「图标」那一步写它（终端蓝图 `docs/blueprint/tui.md`「第一次打开的引导」第 14 条、「图标」第 4 条）。
 [settings.icons]
 type = "option"
