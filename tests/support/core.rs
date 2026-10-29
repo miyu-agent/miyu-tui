@@ -11,7 +11,6 @@ use std::time::{Duration, Instant};
 use miyu_endpoint::config::Config;
 use miyu_endpoint::{Core, run};
 use miyu_ipc::{Dirs, OpenError, Opened, open};
-use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
@@ -181,12 +180,10 @@ fn frozen(orders: &mut UnboundedReceiver<Switch>) -> bool {
 /// 照核心起来时那样造一份：配置读登记的全部配置项接上软件包清单声明的（出厂的，加上装进家里的终端的 `tui.*` 这些，照
 /// 发行包的样子：程序都算在），环境变量一个都不认。
 fn build(root: &DataRoot, script: Arc<Script>, tools: Tools, token: String) -> Core {
-    let admin = AccountId::parse("alice").expect("账号合写法");
     let shipped_root = ResourceRoot::at(resources());
     let found = || miyu_store::packages::Packages::new(&shipped_root, root).read();
     let config = Config::load(
         root,
-        &admin,
         None,
         miyu_core::settings::Packaged::as_released(&mut found()).all(),
         miyu_endpoint::config::Environment::of(&[]),
@@ -206,7 +203,6 @@ fn build(root: &DataRoot, script: Arc<Script>, tools: Tools, token: String) -> C
         script,
         catalog,
         None::<PathBuf>,
-        admin,
         token,
     )
     .with_config(config)
