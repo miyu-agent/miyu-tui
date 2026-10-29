@@ -456,7 +456,8 @@ fn the_fixed_pools_are_named_and_listed_first() {
         .find(|l| l.contains("轻量"))
         .unwrap_or_default();
     assert!(
-        row.contains("用于：起标题"),
-        "走这一档的旁路请求写在池右边：{row}"
+        !row.contains("用于"),
+        "走这一档的旁路请求只写在成员栏下面，池这一行不写（2026-10-29 项目主人）：{row}"
     );
+    assert!(text.contains("起标题"), "成员栏下面写着：\n{text}");
 }
