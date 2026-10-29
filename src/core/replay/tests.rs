@@ -44,8 +44,8 @@ fn shape(pushes: &[Push]) -> Vec<String> {
 fn what_a_person_said_is_drawn_as_yours_with_its_time() {
     // 到点的定时任务、循环交进来的也照你说的画（2026-10-27 项目主人：「不用有什么特别的显示」）。
     for by in [
-        json!({"kind": "person", "account": "alice"}),
-        json!({"kind": "schedule", "schedule": "t3", "account": "alice"}),
+        json!({"kind": "person"}),
+        json!({"kind": "schedule", "schedule": "t3"}),
     ] {
         let mut replay = Replay::default();
         let user = json!({"seq":41,"at":"2026-09-25T07:04:05.123Z","kind":"message.user","by":by,
@@ -145,7 +145,7 @@ fn a_replayed_undo_draws_its_line_and_a_restore_or_redo_takes_it_away() {
     };
     let mut r = Replay::default();
     let ev = |seq: u64, kind: &str, cause: &str, body: Value| {
-        json!({"seq": seq, "at": "2026-10-02T01:00:00Z", "kind": kind, "by": {"kind": "person", "account": "admin"},
+        json!({"seq": seq, "at": "2026-10-02T01:00:00Z", "kind": kind, "by": {"kind": "person"},
             "cause": cause, "body": body})
     };
     assert_eq!(

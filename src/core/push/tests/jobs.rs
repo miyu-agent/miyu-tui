@@ -72,7 +72,7 @@ fn job_effects_reports_and_foreign_messages_are_read() {
             "body": {"blocks": [{"type": "text", "text": "看看测试"}]}})
     };
     let mine = |c: &str| c == "tui-1";
-    let person = json!({"kind": "person", "account": "admin"});
+    let person = json!({"kind": "person"});
     assert_eq!(
         crate::core::push::read(&said(person.clone(), "tui-1"), &mine),
         [Push::UserMessage(12)]
@@ -91,8 +91,7 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     let session = json!({"kind": "session", "id": "s-child"});
     assert_eq!(foreign(session).1, Sender::Session("s-child".into()));
     // 到点的定时任务、循环交进来的照你说的话画（2026-10-27 项目主人），不写「收到你在其他端发送的消息」。
-    let schedule =
-        json!({"kind": "schedule", "schedule": "t3", "account": "admin", "loop": "fixed"});
+    let schedule = json!({"kind": "schedule", "schedule": "t3", "loop": "fixed"});
     assert_eq!(
         crate::core::push::read(&said(schedule, "schedule/t3/1"), &mine),
         [Push::Said {

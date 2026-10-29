@@ -1274,6 +1274,7 @@ macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 
 3. 「来源」一列：`system` 写「系统配置」，另有 `project`、`default`、`env`；没有「个人设置」了。编辑供应商、模型的窗里自己写了的那一格，右边黄字原来写「个人」，改写「自定义」（2026-10-28 项目主人照推荐定；英文 custom、日文 カスタム）。
 4. 密钥：`secret.set`、`secret.delete` 不带 `layer`，`secret.list` 每一项没有 `layer`，终端本来就不读。
 5. 数据根只剩一层（核心 SU-5 上，2026-10-29 换钉）：`config.toml`、`secrets.toml`、`accounts.json`、`packages/`、`personas/`、`presets/`、`skills/`、`commands/`、`sessions/`、`blobs/` 直接在数据根下，没有 `system/`、`home/<账号>/` 两层。终端不按路径读数据根，只有测具（`tests/support/home.rs` 和各个测试）照这个写；蓝图别处写的 `system/…`、`home/<账号>/…` 一律读作数据根下的同名位置。
+6. 事件、回应里不再有账号（核心 SU-6 上，2026-10-29 换钉）：`by` 里人是 `{"kind":"person"}`（私聊认出的另带 `via`），外部身份去掉 `account`、认出是主人的带 `"owner": true`，定时任务的也没有 `account`；`session.created` 不带 `owner`；`usage.query` 的 `group` 不收 `"account"`。终端本来只读 `by` 的 `kind`（人起的标题算 `named`，照旧 `person`、`external` 两种）、`usage.query` 只按 `model`、`use` 分，这一步只改测试里推送的样子。
 
 ### 第一次打开的引导（OOBE，2026-10-08 项目主人定）
 
