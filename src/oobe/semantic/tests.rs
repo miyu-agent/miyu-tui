@@ -51,7 +51,7 @@ fn not_installed(preview: Result<Value, Refusal>) -> (SemanticStep, Asker) {
         sent(&mut asker),
         [(
             "package.install",
-            json!({"source": "embed", "preview": true})
+            json!({"source": "miyu-embed", "preview": true})
         )],
         "没装的看一眼软件源"
     );
@@ -128,7 +128,7 @@ fn an_unreachable_source_still_shows_the_step_without_a_size() {
     let (step, _) = not_installed(Err(refused("source_unreachable", Some("timed out"))));
     assert_eq!(step.offer, Some(Offer::Download(None)));
     assert_eq!(step.skip(Step::Semantic, false), Step::Semantic);
-    let (step, _) = not_installed(Ok(json!({"package": "embed", "download": 59_768_832})));
+    let (step, _) = not_installed(Ok(json!({"package": "miyu-embed", "download": 59_768_832})));
     assert_eq!(step.offer, Some(Offer::Download(Some(59_768_832))));
 }
 
@@ -139,10 +139,10 @@ fn yes_downloads_on_the_spot_with_progress_and_moves_on_when_installed() {
     assert_eq!(step.key(key(KeyCode::Enter), &mut asker), Move::Stay);
     assert_eq!(
         sent(&mut asker),
-        [("package.install", json!({"source": "embed"}))]
+        [("package.install", json!({"source": "miyu-embed"}))]
     );
     assert_eq!(step.phase, Phase::Installing { done: 0, total: 0 });
-    step.progress("embed", 400, 1000);
+    step.progress("miyu-embed", 400, 1000);
     step.progress("other", 999, 1000);
     assert_eq!(
         step.phase,
@@ -213,7 +213,7 @@ fn a_failed_download_says_why_and_offers_retry_or_skip() {
     step.key(key(KeyCode::Enter), &mut asker);
     assert_eq!(
         sent(&mut asker),
-        [("package.install", json!({"source": "embed"}))]
+        [("package.install", json!({"source": "miyu-embed"}))]
     );
     step.answer(
         &Waiting::SemanticInstall,

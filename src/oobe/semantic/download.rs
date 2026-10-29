@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use crate::core::Refusal;
 
 /// 软件源里语义模型的包。
-pub const PACKAGE: &str = "embed";
+pub const PACKAGE: &str = "miyu-embed";
 
 /// 看一眼的结果：这一屏出不出、写多大。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
