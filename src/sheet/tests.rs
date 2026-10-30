@@ -45,15 +45,14 @@ fn the_theme_overlays_its_marks_on_the_resource_files() {
     assert_eq!(timeline["omitted"], "⋮", "没写的照默认主题");
 }
 
-/// 包的编号就是文件夹名（核心设计 48）：配置里没设主题时认的默认主题、终端清单推荐一起装的，都是仓库里同名的那个主题包；
-/// 清单写 `prefix = "tui"`，配置键照旧是 `tui.*`。
+/// 包的编号就是文件夹名（核心设计 48）：配置里没设主题时认的默认主题是仓库里同名的那个文件夹。它编进了程序、不发，终端清单
+/// 不推荐它（「主题」第 4 条，2026-10-30 项目主人定）。清单写 `prefix = "tui"`，配置键照旧是 `tui.*`。
 #[test]
-fn the_terminal_manifest_recommends_the_default_theme_by_its_folder_name() {
+fn the_terminal_manifest_recommends_nothing_and_keeps_tui_keys() {
     let manifest = include_str!("../../miyu-tui/package.toml");
-    let recommends = format!("packages = [\"{}\"]", super::DEFAULT_PACKAGE);
     assert!(
-        manifest.lines().any(|l| l == recommends),
-        "推荐的不是默认主题"
+        !manifest.lines().any(|l| l.trim() == "[recommends]"),
+        "默认主题编进了程序，不推荐"
     );
     assert!(
         manifest.lines().any(|l| l == "prefix = \"tui\""),
