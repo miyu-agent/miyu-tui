@@ -27,3 +27,14 @@ fn the_fixed_pools_show_their_names_and_keep_the_reference_in_the_detail() {
     assert_eq!(all[1].name, "@duo", "人建的池照旧");
     assert_eq!(all[2].name, "dev/m1");
 }
+
+/// 用的是模型池：`/effort` 当场提示一句，不开框（2026-10-30 项目主人报：先闪一下大框才关）。
+#[test]
+fn effort_on_a_pool_hints_at_once_without_opening_the_box() {
+    let (mut app, _sent) = app();
+    app.link.default_chat = Some("@duo".into());
+    app.open_effort();
+    assert!(app.boxes.panel.is_none(), "不开框");
+    let note = app.typing.notice.as_ref().map(|n| n.text.as_str());
+    assert_eq!(note, Some(app.config.text.effort.need_model.as_str()));
+}
