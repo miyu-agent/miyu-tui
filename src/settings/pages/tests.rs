@@ -22,8 +22,8 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
     let mut more = More::default();
     assert_eq!(
         more.entries(),
-        [Entry::Models, Entry::Personas],
-        "没读到清单以前"
+        [Entry::Models, Entry::Personas, Entry::Packages],
+        "没读到清单以前（软件包一直列，第 43c 条）"
     );
     // 核心 F-4 再补、F-6 上起只给这几页：「权限」并进了「通用」，「接入」并进了「软件包」（2026-10-10 项目主人）。
     more.schema = Some(schema(&[
@@ -35,7 +35,7 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("general".into()),
             Entry::Models,
             Entry::Personas,
-            Entry::Page("packages".into()),
+            Entry::Packages,
             Entry::Page("voice".into()),
             Entry::Page("advanced".into()),
         ]
@@ -49,6 +49,7 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("appearance".into()),
             Entry::Models,
             Entry::Personas,
+            Entry::Packages,
             Entry::Page("advanced".into()),
         ]
     );
@@ -68,6 +69,7 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Models,
             Entry::Page("user".into()),
             Entry::Personas,
+            Entry::Packages,
             Entry::Page("advanced".into()),
         ]
     );
@@ -89,6 +91,7 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("user".into()),
             Entry::Page("privacy".into()),
             Entry::Personas,
+            Entry::Packages,
             Entry::Page("advanced".into()),
         ]
     );

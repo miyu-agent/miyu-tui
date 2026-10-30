@@ -41,11 +41,15 @@ impl App {
             return;
         };
         let runs = page.take_service_runs();
+        let web = page.more.store.web.take();
         for (tag, method, params) in page.take_asks() {
             self.send_ask(tag, method, params);
         }
         for verb in runs {
             self.link.service.run(verb);
+        }
+        if let Some((id, name)) = web {
+            self.link.backstage.open(id, name);
         }
     }
 
@@ -56,6 +60,13 @@ impl App {
             && let Some(page) = self.boxes.settings.as_mut()
         {
             page.service_replied(&reply, &self.config.text.settings);
+        }
+        // 「软件后台」拿到了后台页的网址：用系统的打开方式开（配置页第 43c 条）。
+        if let Some(reply) = self.link.backstage.take()
+            && let Some(page) = self.boxes.settings.as_mut()
+        {
+            let opened = reply.url.as_ref().map(|url| crate::open::open(url).is_ok());
+            page.store_web(&reply, opened, &self.config.text.settings);
         }
     }
 
@@ -191,6 +202,11 @@ impl App {
             }
             Update::ConfigChanged => {
                 page.changed();
+                false
+            }
+            // 装包的进度：「软件包」正在装的写进预览块（第 43c 条）。
+            Update::PackageProgress(progress) => {
+                page.store_progress(progress);
                 false
             }
             Update::Ready(_) | Update::Reconnected => {

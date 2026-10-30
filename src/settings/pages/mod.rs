@@ -20,6 +20,7 @@ pub mod preset_edit;
 pub mod presets;
 pub mod schema;
 pub mod secret;
+pub mod store;
 pub mod target;
 pub mod textarea;
 pub mod ticks;
@@ -61,6 +62,8 @@ pub enum Entry {
     Presets,
     /// MCP 服务（有服务才列，第 43b 条）。
     Mcp,
+    /// 软件包：下载软件、已安装、软件后台三页（第 43c 条），一直列。
+    Packages,
 }
 
 /// 进了哪一页（「供应商和模型」那三页不算，归 `Nav`）。
@@ -72,8 +75,8 @@ pub enum Section {
     Personas(usize),
     /// 预设：选中第几个。
     Presets(usize),
-    /// 「软件包」：有配置项的包的列表，选中第几个（「配置页」第 43a 条）；进去是 `Page("packages/<包>")`。
-    Packages(usize),
+    /// 「软件包」三页（「配置页」第 43c 条）：状态在 [`More::store`]；包自己那一页是 `Page("packages/<包>")`。
+    Store,
     /// 「MCP」：服务的列表，选中第几个（第 43b 条）。
     Mcp(usize),
 }
@@ -115,6 +118,8 @@ pub struct More {
     pub mcp_bundled: Vec<mcp::Server>,
     /// 进了哪一页。
     pub section: Option<Section>,
+    /// 「软件包」三页（第 43c 条）。
+    pub store: store::Store,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
     /// 找不到的不列）。
     pub wallpaper: bool,
@@ -159,7 +164,8 @@ impl More {
         if self.presets.as_ref().is_some_and(|l| !l.is_empty()) {
             out.push(Entry::Presets);
         }
-        // 核心以后多了的页排在人格（以后是预设）和高级中间。
+        // 核心以后多了的页排在人格（以后是预设）和高级中间；「软件包」在清单给的位置，清单里没有的排在高级前面（第 43c 条：
+        // 一直列）。
         out.extend(
             pages
                 .iter()
@@ -173,12 +179,20 @@ impl More {
                     ]
                     .contains(*p)
                 })
-                .map(|p| Entry::Page((*p).to_string())),
+                .map(|p| match *p {
+                    packages::PACKAGES => Entry::Packages,
+                    p => Entry::Page(p.to_string()),
+                }),
         );
-        // MCP 放在软件包上面（同网页，2026-10-20 项目主人），没有软件包页的放在高级前面。
+        if !out.contains(&Entry::Packages) {
+            out.push(Entry::Packages);
+        }
+        // MCP 放在软件包上面（同网页，2026-10-20 项目主人）。
         if !self.servers().is_empty() {
-            let packages = Entry::Page(packages::PACKAGES.to_string());
-            let at = out.iter().position(|e| *e == packages).unwrap_or(out.len());
+            let at = out
+                .iter()
+                .position(|e| *e == Entry::Packages)
+                .unwrap_or(out.len());
             out.insert(at, Entry::Mcp);
         }
         if pages.contains(&LAST) {
@@ -293,10 +307,6 @@ pub struct Texts {
     pub no_personas: String,
     /// 正在读。
     pub loading: String,
-    /// 「软件包」一个有配置项的包都没有。
-    pub no_packages: String,
-    /// 「软件包」列表右边写的几项：`{n}`。
-    pub package_items: String,
     /// 只写个数的列表写的：`{n}`（[`list::counted`]）。
     pub counted: String,
     /// 默认人格没设、选择窗第一行：不带人格（2026-10-08 项目主人定叫「无人格」）。
@@ -345,6 +355,8 @@ pub struct Texts {
     pub package_from: std::collections::BTreeMap<String, String>,
     /// 「MCP」那一页（第 43b 条）。
     pub mcp: mcp::McpTexts,
+    /// 「软件包」三页（第 43c 条）。
+    pub store: store::StoreTexts,
 }
 
 /// 一项现在的值：读来的最终值和来自哪一层；哪一层都没写的照清单的默认，来自「默认」。

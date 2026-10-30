@@ -7,9 +7,9 @@ mod dialog_popups;
 mod fields;
 mod mcp_list;
 mod more_popups;
-mod package_list;
 mod pages;
 mod popup;
+mod store;
 
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
@@ -63,6 +63,8 @@ pub fn draw(frame: &mut Frame, page: &mut Settings, config: &Config, caret: &mut
     let stage = stage(area, look);
     if page.on_menu {
         pages::menu(frame, stage, page, texts, look.menu_gap);
+    } else if page.more.section == Some(crate::settings::pages::Section::Store) {
+        store::draw(frame, stage, page, texts, caret);
     } else if page.more.section.is_some() {
         pages::draw(frame, stage, page, texts);
     } else {

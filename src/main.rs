@@ -4,6 +4,7 @@
 
 mod app;
 mod avatars;
+mod backstage;
 mod body_view;
 mod caret;
 mod cells;
@@ -274,6 +275,7 @@ fn run(
     app.screen.wallpaper.set_wake(wake.clone());
     app.screen.seeds.set_wake(wake.clone());
     app.link.service.set_wake(wake.clone());
+    app.link.backstage.set_wake(wake.clone());
     // 系统通知点了（`notify-send` 在另一个线程里等着）：叫醒主循环切过去（「系统通知」第 8 条）。
     app.notifier.set_wake(wake);
     // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）；问到的终端颜色在挑主题以前装上（终端配色照它推底色）。

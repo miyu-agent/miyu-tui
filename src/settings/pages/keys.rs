@@ -5,7 +5,6 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
 
 use super::choose::{Choose, LineEdit, PersonaView, PresetView, Pressed};
-use super::packages::PACKAGES;
 use super::schema::{Row, Schema};
 use super::{Entry, Section, choices, current, is_named, personas};
 use crate::core::Refusal;
@@ -56,6 +55,8 @@ impl Settings {
                 self.more.presets = Some(crate::core::read_preset_files(&got));
             }
             (Waiting::Mascots, Ok(got)) => {
+                self.more.store.local = Some(super::store::read::locals(&got));
+                self.more.store.settle();
                 self.more.summaries = super::packages::summaries(&got);
                 self.more.origins = super::packages::origins(&got);
                 self.more.mcp_bundled = super::mcp::bundled(&got);
@@ -102,12 +103,11 @@ impl Settings {
                 self.status = None;
                 self.more.section = match self.more.selected() {
                     Entry::Models => None,
-                    // 「软件包」先列包，进去一包一页（第 43a 条）。
-                    Entry::Page(id) if id == PACKAGES => Some(Section::Packages(0)),
                     Entry::Page(id) => Some(Section::Page(id, 0)),
                     Entry::Personas => Some(Section::Personas(0)),
                     Entry::Presets => Some(Section::Presets(0)),
                     Entry::Mcp => Some(Section::Mcp(0)),
+                    Entry::Packages => self.store_enter(),
                 };
             }
             KeyCode::Esc | KeyCode::Char('q') => return self.back(),
@@ -121,6 +121,9 @@ impl Settings {
         let Some(section) = self.more.section.clone() else {
             return Outcome::Stay;
         };
+        if section == Section::Store {
+            return self.store_key(key, texts);
+        }
         self.status = self.status.take().filter(|(_, t)| *t == Tone::Busy);
         let count = self.section_count(&section);
         let (at, rebuild): (usize, fn(usize, &Section) -> Section) = match &section {
@@ -130,7 +133,7 @@ impl Settings {
             }),
             Section::Personas(at) => (*at, |n, _| Section::Personas(n)),
             Section::Presets(at) => (*at, |n, _| Section::Presets(n)),
-            Section::Packages(at) => (*at, |n, _| Section::Packages(n)),
+            Section::Store => return Outcome::Stay,
             Section::Mcp(at) => (*at, |n, _| Section::Mcp(n)),
         };
         match key.code {
@@ -143,7 +146,7 @@ impl Settings {
                 self.more.section = Some(rebuild(at.saturating_sub(1), &section));
             }
             KeyCode::Enter => match &section {
-                Section::Packages(at) => self.open_package(*at),
+                Section::Store => {}
                 Section::Page(id, at) => self.change(id, *at, texts),
                 Section::Personas(at) => self.open_persona(*at),
                 Section::Presets(at) => self.open_preset(*at),
@@ -175,7 +178,7 @@ impl Settings {
                         self.ask_delete_persona(&id, texts);
                     }
                 }
-                Section::Packages(_) | Section::Mcp(_) => {}
+                Section::Store | Section::Mcp(_) => {}
             },
             // 预设页、人格页 `a`：新建（第 37、39 条，同旧版）。
             KeyCode::Char('a') if matches!(section, Section::Presets(_)) => self.new_preset(texts),
@@ -193,30 +196,25 @@ impl Settings {
             Section::Page(id, _) => self.page_items(id).len(),
             Section::Personas(_) => self.more.personas.as_ref().map_or(0, Vec::len),
             Section::Presets(_) => self.more.presets.as_ref().map_or(0, Vec::len),
-            Section::Packages(_) => self.more.packages().len(),
+            Section::Store => 0,
             Section::Mcp(_) => self.more.servers().len(),
         }
     }
 
-    /// 从一页退出来：包自己那一页回到包的列表、停在它上面；别的回主菜单。
+    /// 从一页退出来：包自己那一页回到「软件包」的「已安装」、停在它上面（第 43c 条）；别的回主菜单。
     fn leave_section(&mut self, section: &Section) {
         let back = match section {
             Section::Page(page, _) => super::packages::package_of(page).map(|id| {
-                let at = self.more.packages().iter().position(|p| p.id == id);
-                Section::Packages(at.unwrap_or(0))
+                let store = &mut self.more.store;
+                store.tab = super::store::Tab::Installed;
+                store.keep = Some((store.tab, id.to_string()));
+                store.settle();
+                Section::Store
             }),
             _ => None,
         };
         self.on_menu = back.is_none();
         self.more.section = back;
-    }
-
-    /// 包的列表里 `Enter`：进这个包自己那一页。
-    fn open_package(&mut self, at: usize) {
-        if let Some(listed) = self.more.packages().get(at) {
-            let page = super::packages::page_of(&listed.id);
-            self.more.section = Some(Section::Page(page, 0));
-        }
     }
 
     /// 一页里的项，照画的先后（第几项）。
