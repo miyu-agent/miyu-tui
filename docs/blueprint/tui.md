@@ -19,6 +19,7 @@
 | `src/menu.rs`、`commands.rs` | 斜杠命令列表的状态；命令清单 |
 | `src/history.rs` | 输入历史列表的状态：开没开、搜索的字、选中哪一条 |
 | `src/glyph_guard.rs` | 包在后端外面的一层：第 15、16 平面私用区的字（md-atom 这类）宽度各家终端认得不一样，单独写、相邻那一格跟着重写（「图标」第 2 条） |
+| `src/human.rs`、`human/phrases.rs` | 给人看的字：连上时、换语言时向核心要的那一份（`human.get`，「界面语言」）里工具的显示名、属于哪个包、每一句说法。说法只留模板原文：所有的键和原文接成一整串、另记每一句到哪为止，键照字节的先后排好、查时对半找，要说哪一句才解那一句的模板，字段照旧先过核心那份 `clean`；单数那一句（`X/one`，核心补的）和 `X` 一字不差的不另存，记在 `X` 上（2026-10-31 TM-2：原来一拿到回应就把一千三百来句全解成模板，连键的拷贝住着约 470 KB，一次用到的只有几句） |
 | `src/body_view.rs` | 正文区的视口和鼠标：滚动、悬停、选区、点击 |
 | `src/ui/` | 画：`mod.rs` 各块的位置；`margins.rs` 按窗口宽度定留白（窄屏紧凑版面）；`row_cache/` 正文按条缓存排好的行；`rulers.rs` 量尺（忽略的测试，只打数字）；`user_rows.rs` 你说的话（粘贴块能点开）；`media_rows.rs` 她发出去的图（「她发的图」）；`input_box.rs` 输入框（抽屉开着时框里画抽屉）；`drawer/` 抽屉（`mod.rs` 排成行、放不下时怎么滚，`items.rs` 选项、补充、「确认」页，`preview.rs` 选项旁边的文字画）；`rows.rs` 把正文排成行；`timeline/` 时间线（`mod.rs` 一段怎么排、`summary.rs` 收起那一行、`step.rs` 一步的标题、预览、点开的内容）；`body.rs` 视口、底色、反色；`menu.rs` 命令列表；`history.rs` 输入历史列表；`status.rs` 运行状态行和提示；`diff_rows.rs` 差异排成行；`footer.rs` 框下面那一行 |
 | `src/markdown/` | 回答的 Markdown：`mod.rs` 走一遍解析出的事件、排成行；`inline.rs` 行内的样子和带样子的折行；`table.rs` 表格；`code.rs` 代码着色；`links.rs` 认链接；`blocks.rs` 代码块、图片、公式、mermaid 这几种自成一块的；`math.rs` 公式转成 Unicode；`dollars.rs` 把 `\(…\)`、`\[…\]` 换成 `$` |
