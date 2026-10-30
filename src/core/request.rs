@@ -123,7 +123,7 @@ pub(super) fn request(
         | Command::Older(_)
         | Command::CheckDir { .. }
         | Command::NewWorkspace(_)
-        | Command::SetEffort { .. }
+        | Command::SessionEffort(_)
         | Command::Catalog(_)
         | Command::Widgets(_)
         | Command::Dream(_)

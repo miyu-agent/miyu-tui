@@ -93,6 +93,11 @@ impl App {
             self.notice(notice);
             return;
         }
+        // 这个会话的思考强度换成了（`/effort`，核心 SM-1）：底栏当场变（`effort.rs`）。
+        if let Update::EffortSet(level) = &update {
+            self.effort_set(level.clone());
+            return;
+        }
         // 唤醒表里的循环变了：改手上那一份，下一帧照它画（「循环」）。
         if let Update::Loops(change) = &update {
             crate::core::apply_loops(&mut self.link.loops, change.clone());

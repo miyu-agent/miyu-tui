@@ -104,9 +104,8 @@ fn choosing_a_model_shows_no_notice() {
 }
 
 #[test]
-fn effort_is_chosen_from_a_panel_and_written_to_the_settings() {
-    // 2026-10-02 项目主人定：只要 /effort 面板；改的是系统配置里这个模型的那一项，所有会话下一轮起跟着变，不弹提示。
-    // 供应商、模型照假核心报的写（`deepseek/deepseek-v4`），这一档才落在真在用的那个模型上，底栏看得到。
+fn effort_is_chosen_for_this_session_only() {
+    // 2026-10-30 项目主人定（核心 SM-1）：/effort 只管当前会话，不写系统配置；新开的会话照配置。第一行「跟着默认」。
     let settings = "[models]\nchat = \"deepseek/deepseek-v4\"\n\n[providers.deepseek]\ndriver = \"openai-chat\"\nbase_url = \"http://deepseek.invalid/v1\"\n\n[providers.deepseek.models.deepseek-v4]\nwindow = 128000\nreasoning = [\"off\", \"low\", \"high\"]\n";
     let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
     let mut tui = home.tui("zh_CN.UTF-8");
@@ -114,58 +113,56 @@ fn effort_is_chosen_from_a_panel_and_written_to_the_settings() {
     tui.say("在吗");
     tui.wait_for("▣  ");
     tui.say("/effort");
-    tui.wait_for("默认（由供应商决定）");
+    tui.wait_for("跟着默认");
     assert!(tui.shows("high"), "{}", tui.lines().join("\n"));
-    // 第 0 行默认，下面 off、low、high。
+    // 第 0 行跟着默认，下面 off、low、high。
     for _ in 0..3 {
         tui.key(DOWN);
     }
     tui.key(b"\r");
+    wait_footer(&mut tui, "high");
+    assert!(
+        !home.settings().contains("effort"),
+        "不写系统配置：{}",
+        home.settings()
+    );
+    // 新开的会话照配置（没配的不写哪一档），不带上一个会话定的。
+    tui.say("/new");
     let end = std::time::Instant::now() + support::WAIT;
-    while !home.settings().contains("effort = \"high\"") {
+    while footer(&tui).contains("high") {
         assert!(
             std::time::Instant::now() < end,
-            "没写进系统配置：{}",
-            home.settings()
-        );
-        tui.pump(Duration::from_millis(100));
-    }
-    // 底栏写这一档要核心真的照配置算强度（假核心的模型端口不算），在真核心的实测里看（`tui.md`「守着它的」）。
-}
-
-#[test]
-fn the_footer_shows_the_default_model_and_effort_before_a_session_and_follows_a_change_at_once() {
-    // 2026-10-02 项目主人报：空会话的底栏没有模型、思考强度；/effort 换了以后底栏要等下一轮才变。
-    let settings = "[models]\nchat = \"deepseek/deepseek-v4\"\n\n[providers.deepseek]\ndriver = \"openai-chat\"\nbase_url = \"http://deepseek.invalid/v1\"\n\n[providers.deepseek.models.deepseek-v4]\nwindow = 128000\nreasoning = [\"off\", \"low\", \"high\"]\neffort = \"low\"\n";
-    let home = Home::with_settings(Script::new([]), settings);
-    let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
-    let footer = |tui: &support::Tui| {
-        tui.lines()
-            .into_iter()
-            .rev()
-            .find(|l| l.contains("工作区"))
-            .unwrap_or_default()
-    };
-    let end = std::time::Instant::now() + support::WAIT;
-    while !footer(&tui).contains("deepseek-v4") || !footer(&tui).contains("low") {
-        assert!(std::time::Instant::now() < end, "空会话：{}", footer(&tui));
-        tui.pump(Duration::from_millis(100));
-    }
-    tui.say("/effort");
-    tui.wait_for("默认（由供应商决定）");
-    // 第 0 行默认，下面 off、low、high：现在选着 low（第 2 行），再往下一行是 high。
-    tui.key(DOWN);
-    tui.key(b"\r");
-    let end = std::time::Instant::now() + support::WAIT;
-    while !footer(&tui).contains("high") {
-        assert!(
-            std::time::Instant::now() < end,
-            "换了马上变：{}",
+            "新会话还写着：{}",
             footer(&tui)
         );
         tui.pump(Duration::from_millis(100));
     }
+}
+
+#[test]
+fn effort_chosen_before_a_session_shows_at_once_and_goes_with_the_new_session() {
+    // 还没开会话时 /effort：记着，开会话时带上；底栏当场写它（2026-10-02 项目主人报：换了要等下一轮才变）。
+    let settings = "[models]\nchat = \"deepseek/deepseek-v4\"\n\n[providers.deepseek]\ndriver = \"openai-chat\"\nbase_url = \"http://deepseek.invalid/v1\"\n\n[providers.deepseek.models.deepseek-v4]\nwindow = 128000\nreasoning = [\"off\", \"low\", \"high\"]\neffort = \"low\"\n";
+    let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    wait_footer(&mut tui, "low");
+    tui.say("/effort");
+    tui.wait_for("跟着默认");
+    // 第 0 行跟着默认，下面 off、low、high。
+    for _ in 0..3 {
+        tui.key(DOWN);
+    }
+    tui.key(b"\r");
+    wait_footer(&mut tui, "high");
+    tui.say("在吗");
+    tui.wait_for("好。");
+    wait_footer(&mut tui, "high");
+    assert!(
+        !home.settings().contains("effort = \"high\""),
+        "不写系统配置：{}",
+        home.settings()
+    );
 }
 
 #[test]
@@ -177,11 +174,7 @@ fn a_pool_does_not_let_effort_change() {
     tui.wait_for("工作区");
     tui.say("/effort");
     tui.wait_for("当前使用的是模型池");
-    assert!(
-        !tui.shows("默认（由供应商决定）"),
-        "{}",
-        tui.lines().join("\n")
-    );
+    assert!(!tui.shows("跟着默认"), "{}", tui.lines().join("\n"));
 }
 
 #[test]
@@ -192,12 +185,12 @@ fn a_new_session_does_not_flash_an_empty_footer() {
     tui.wait_for("工作区");
     tui.say("在吗");
     tui.wait_for("▣  ");
-    // 假核心开了会话以后不报思考强度（不照配置算）：用 /effort 换成 high，底栏当场照 `model.list` 写上。
+    // 假核心开了会话以后不报思考强度（不照配置算）：开一下 /effort 的框（开框要一次 `model.list`），底栏照配置的那一档
+    // （`TWO` 里是 low）写上；开新会话的每一帧都还写着它，不先空一下。
     tui.say("/effort");
-    tui.wait_for("默认（由供应商决定）");
-    tui.key(DOWN);
-    tui.key(b"\r");
-    wait_footer(&mut tui, "high");
+    tui.wait_for("跟着默认");
+    tui.key(b"\x1b");
+    wait_footer(&mut tui, "low");
     let start = tui.record_from_here();
     tui.say("/new");
     tui.pump(Duration::from_millis(800));
@@ -206,7 +199,7 @@ fn a_new_session_does_not_flash_an_empty_footer() {
     for (i, frame) in frames.iter().enumerate() {
         let footer = frame.iter().rev().find(|l| l.contains("工作区"));
         if let Some(footer) = footer {
-            assert!(footer.contains("high"), "第 {i} 帧底栏闪空了：{footer}");
+            assert!(footer.contains("low"), "第 {i} 帧底栏闪空了：{footer}");
         }
     }
 }

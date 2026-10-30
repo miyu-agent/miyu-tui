@@ -87,6 +87,7 @@ fn a_pool_stays_the_pool_in_the_footer_while_its_members_take_turns() {
             model: None,
             reference: "@daily".into(),
             effort: None,
+            effort_own: false,
         }),
         &texts,
     );
@@ -176,6 +177,7 @@ fn the_reference_in_use_follows_subscribe_turns_and_switches() {
             model: Some("m1".into()),
             reference: "dev/m1".into(),
             effort: None,
+            effort_own: false,
         }),
         &texts,
     );

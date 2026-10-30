@@ -36,6 +36,7 @@ mod rpc;
 mod schedules;
 pub use schedules::{Change as LoopChange, Every as LoopEvery, Loop, apply as apply_loops};
 mod serve;
+mod session_effort;
 mod sessions;
 mod snapshot;
 mod spawn;
@@ -149,13 +150,9 @@ pub enum Command {
     /// `/effort`、底栏要的：每个模型有哪几级、配置的默认、配置键（`model.list`，核心 8-18 补）。给了的只要这几个模型
     /// （`models`，核心 V-6 上），`None` 要整份。
     ListEfforts(Option<Vec<String>>),
-    /// 写系统配置里一个模型的思考强度：配置键、哪一级（`None` 是去掉这一项，回到供应商定）。
-    SetEffort {
-        /// 配置键（照 `facts.effort.key` 抄）。
-        key: String,
-        /// 哪一级。
-        level: Option<String>,
-    },
+    /// 换这个会话的思考强度（`session.configure {effort}`，核心 SM-1）：哪一级，`None` 是回到跟着配置。还没开会话的记着，
+    /// 开会话时带上。成了交回 [`Update::EffortSet`]。
+    SessionEffort(Option<String>),
     /// `@` 文件列表问核心（`fs.list`、`fs.find`，核心 W-2）：哪个词问的、方法、参数。
     Files {
         /// 哪个词问的：回应照它认。

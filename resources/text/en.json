@@ -770,7 +770,7 @@
     "title": "Thinking effort · {model}",
     "loading_title": "Thinking effort",
     "hint": "↑/↓ select · Enter switch · Esc close",
-    "default": "Default (provider decides)",
+    "default": "Follow default",
     "loading": "Reading models…",
     "none": "This model has no effort levels to choose",
     "need_model": "A model pool is in use"
@@ -872,7 +872,7 @@
       "model": "Model",
       "inputs": "Inputs",
       "window": "Context window",
-      "effort": "Default thinking",
+      "effort": "Default effort for new sessions",
       "temperature": "Temperature",
       "price": "Price · per 1M tokens",
       "input": "Input",

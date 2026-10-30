@@ -263,6 +263,8 @@ pub enum Push {
         /// 内核退回默认时原来的引用。
         replaced: Option<String>,
     },
+    /// 会话自己定的思考强度换了（`session.policy_changed` 的 `effort`，核心 SM-1）：`None` 是回到跟着配置。
+    EffortSet(Option<String>),
     /// 会话换了人格（`session.policy_changed` 的 `persona`，核心 P-13）：编号，空的是换成无人格。
     PersonaSet(String),
     /// 会话换了预设（`session.policy_changed` 的 `preset`，核心 P-13）：编号。
@@ -349,6 +351,11 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
             }
             if let Some(preset) = body["preset"].as_str() {
                 out.push(Push::PresetSet(preset.to_string()));
+            }
+            if let Some(effort) = body.get("effort") {
+                out.push(Push::EffortSet(
+                    effort["level"].as_str().map(str::to_string),
+                ));
             }
             if let Some(reference) = body["model"].as_str() {
                 out.push(Push::ModelSet {

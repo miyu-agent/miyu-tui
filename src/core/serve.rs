@@ -199,6 +199,14 @@ pub(super) async fn serve(
                         }
                         continue;
                     }
+                    // 这个会话的思考强度（核心 SM-1，`session_effort.rs`）。
+                    Command::SessionEffort(level) => {
+                        match super::session_effort::configure(rpc, (link, &mut awaiting), level, notify).await {
+                            Ok(true) => continue,
+                            Ok(false) => return Served::Quit,
+                            Err(_) => return Served::Lost,
+                        }
+                    }
                     Command::Preset(id) => {
                         match link.target() {
                             None => link.pending_preset = Some(id),
@@ -263,6 +271,9 @@ pub(super) async fn serve(
                                     if rpc.send("session.set_permission_level", params).await.is_err() {
                                         return Served::Lost;
                                     }
+                                }
+                                if super::session_effort::flush(rpc, link, &id).await.is_err() {
+                                    return Served::Lost;
                                 }
                                 link.main = Some(id);
                                 link.pending_persona = None;

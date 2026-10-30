@@ -233,6 +233,7 @@ impl Transcript {
             | Update::ToolsChanged
             | Update::Notice(_)
             | Update::Loops(_)
+            | Update::EffortSet(_)
             | Update::PackageProgress(_)
             | Update::Older { .. }
             | Update::Workspace { .. }
@@ -348,6 +349,7 @@ impl Transcript {
             } => self.model_set(reference, replaced, texts),
             Push::PersonaSet(id) => self.persona_set(id, texts),
             Push::PresetSet(id) => self.preset_set(id, texts),
+            Push::EffortSet(level) => self.own_effort_set(level),
             Push::Said {
                 seq,
                 text,

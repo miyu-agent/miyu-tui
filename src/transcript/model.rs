@@ -20,6 +20,8 @@ pub struct ModelWatch {
     cooling: Option<Option<Timestamp>>,
     /// 接下来那个模型真用的思考强度：底栏写在模型名后面（核心 8-18，`/effort`）。
     effort: Option<String>,
+    /// 那一档是会话自己定的（核心 SM-1）：`/effort` 的框照它标现在用的那一行。
+    effort_own: bool,
 }
 
 impl Transcript {
@@ -150,6 +152,20 @@ impl Transcript {
         self.models.effort.as_deref()
     }
 
+    /// 会话自己定的那一档（核心 SM-1）；跟着配置的是 `None`。
+    pub fn own_effort(&self) -> Option<&str> {
+        self.effort().filter(|_| self.models.effort_own)
+    }
+
+    /// 会话自己定的思考强度换了（`/effort` 成了、推来的 `session.policy_changed`）：定了一档的底栏当场写它；回到跟着配置的
+    /// 底栏先不动，等界面照 `model.list` 写配置的那一档。
+    pub fn own_effort_set(&mut self, level: Option<String>) {
+        self.models.effort_own = level.is_some();
+        if level.is_some() {
+            self.models.effort = level;
+        }
+    }
+
     /// 订阅回应里会话现在用的模型：底栏照它画，记下引用。
     pub(super) fn current_model(&mut self, current: Current) {
         self.models.reference = Some(current.reference);
@@ -157,6 +173,7 @@ impl Transcript {
             self.show_model(model, endpoint);
         }
         self.models.effort = current.effort;
+        self.models.effort_own = current.effort_own;
     }
 
     /// 推来的这一次用的端点、模型：记下（回答末尾那一行照它写）。
