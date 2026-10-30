@@ -185,6 +185,7 @@ pub(super) async fn take(
             return notify(Update::Efforts(super::EffortList::read(&message["result"])));
         }
         Some(Awaiting::Configure(reference)) => return notify(Update::Configured(reference)),
+        Some(Awaiting::EffortSet(level)) => return notify(Update::EffortSet(level)),
         // 答成了不用说：抽屉照推来的 `question.answered`、`tool.approval_decided` 收、写结果。
         Some(Awaiting::Answer(..)) => return true,
         Some(Awaiting::Ask(tag)) => {

@@ -59,6 +59,8 @@ pub(super) enum Awaiting {
     Files(crate::mention::Word),
     /// 换模型：成了交给界面（引用）。
     Configure(String),
+    /// 换这个会话的思考强度（核心 SM-1）：成了交给界面（哪一级）。
+    EffortSet(Option<String>),
     /// 配置页的一条请求：界面给的编号。
     Ask(u64),
     /// 列人格：回应交给界面。

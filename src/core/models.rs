@@ -128,6 +128,8 @@ pub struct Current {
     pub reference: String,
     /// 接下来那个模型真用的思考强度（核心 8-18）；什么都不发的、轮换的池是 `None`。
     pub effort: Option<String>,
+    /// 这一档是会话自己定的（`effort.from` 是 `session`，核心 SM-1）：`/effort` 的框照它标现在用的那一行。
+    pub effort_own: bool,
 }
 
 /// 订阅回应（`result`）里的 `model`；什么都没配的没有。
@@ -138,6 +140,7 @@ pub fn current(result: &Value) -> Option<Current> {
         model: model["model"].as_str().map(str::to_string),
         reference: model["ref"].as_str()?.to_string(),
         effort: model["effort"]["level"].as_str().map(str::to_string),
+        effort_own: model["effort"]["from"] == "session",
     })
 }
 

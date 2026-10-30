@@ -75,6 +75,8 @@ pub enum Update {
     ToolsChanged,
     /// 给人的通知（核心 J-3 中，`notices.rs`）：每次新开会话的定时跑完了、唤醒表换了新的。
     Notice(super::Notice),
+    /// 这个会话的思考强度换成了（`/effort`，核心 SM-1）：哪一级，`None` 是回到跟着配置。还没开会话的当场算换成了。
+    EffortSet(Option<String>),
     /// 唤醒表里的循环变了（`schedules` 流，「循环」第 1 条）：整张或一项。
     Loops(super::LoopChange),
     /// 装包的下载进度（`package.progress`，核心 G-4 上）。
