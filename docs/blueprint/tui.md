@@ -18,7 +18,7 @@
 | `src/drawer/` | 确认和提问的抽屉：`mod.rs` 选到哪、勾了哪些、写了什么；`keys.rs` 按键和编辑；`event.rs` 核心推的提问、确认和作答的形状；`report.rs` 了结以后留什么；`texts.rs` 抽屉上的字 |
 | `src/menu.rs`、`commands.rs` | 斜杠命令列表的状态；命令清单 |
 | `src/history.rs` | 输入历史列表的状态：开没开、搜索的字、选中哪一条 |
-| `src/glyph_guard.rs` | 包在后端外面的一层：第 15、16 平面私用区的字（md-atom 这类）宽度各家终端认得不一样，单独写、相邻那一格跟着重写（「图标」第 2 条） |
+| `src/glyph_guard.rs` | 包在后端外面的一层：第 15、16 平面私用区的字（md-atom 这类）宽度各家终端认得不一样，单独写、相邻那一格跟着重写（「图标」第 2 条）。要知道相邻那一格现在写着什么，记着送出去过的整屏：照行列排的一块连续格子（第 y 行第 x 格在 `y × 宽 + x`），照送来的最远那一格分（清屏以后的头一帧差不多铺满整屏，一般只分这一回），出了界的才照新的大小重排、记着的原样搬过去；清屏时放掉（ratatui 改尺寸时也清屏），没送过、出了界的格子当空白（2026-10-31 TM-1：原来是按坐标查的散列表，同样一屏多占七成多） |
 | `src/body_view.rs` | 正文区的视口和鼠标：滚动、悬停、选区、点击 |
 | `src/ui/` | 画：`mod.rs` 各块的位置；`margins.rs` 按窗口宽度定留白（窄屏紧凑版面）；`row_cache/` 正文按条缓存排好的行；`rulers.rs` 量尺（忽略的测试，只打数字）；`user_rows.rs` 你说的话（粘贴块能点开）；`media_rows.rs` 她发出去的图（「她发的图」）；`input_box.rs` 输入框（抽屉开着时框里画抽屉）；`drawer/` 抽屉（`mod.rs` 排成行、放不下时怎么滚，`items.rs` 选项、补充、「确认」页，`preview.rs` 选项旁边的文字画）；`rows.rs` 把正文排成行；`timeline/` 时间线（`mod.rs` 一段怎么排、`summary.rs` 收起那一行、`step.rs` 一步的标题、预览、点开的内容）；`body.rs` 视口、底色、反色；`menu.rs` 命令列表；`history.rs` 输入历史列表；`status.rs` 运行状态行和提示；`diff_rows.rs` 差异排成行；`footer.rs` 框下面那一行 |
 | `src/markdown/` | 回答的 Markdown：`mod.rs` 走一遍解析出的事件、排成行；`inline.rs` 行内的样子和带样子的折行；`table.rs` 表格；`code.rs` 代码着色；`links.rs` 认链接；`blocks.rs` 代码块、图片、公式、mermaid 这几种自成一块的；`math.rs` 公式转成 Unicode；`dollars.rs` 把 `\(…\)`、`\[…\]` 换成 `$` |
