@@ -426,3 +426,4 @@ fn a_short_drawer_shows_fewer_command_rows_but_keeps_the_blank_lines() {
 
 mod approval;
 mod preview;
+mod shown_command;
