@@ -32,6 +32,7 @@ mod job_rows;
 pub mod languages;
 mod layout;
 mod link_card;
+mod loop_tag;
 mod margins;
 mod mascot_view;
 mod md_cache;
@@ -406,6 +407,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let spot = app.screen.areas.goal_text;
         let hover = app.screen.pointer.is_some_and(|p| spot.contains(p));
         goal_tag::draw(frame, areas.goal, &goal, hover);
+    }
+    if let Some(text) = loop_tag::shown(app) {
+        loop_tag::draw(frame, areas.goal, app.screen.areas.goal_text, &text);
     }
     if let Some(matches) = &matches {
         let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);

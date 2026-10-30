@@ -232,6 +232,7 @@ impl Transcript {
             | Update::Human(_)
             | Update::ToolsChanged
             | Update::Notice(_)
+            | Update::Loops(_)
             | Update::PackageProgress(_)
             | Update::Older { .. }
             | Update::Workspace { .. }

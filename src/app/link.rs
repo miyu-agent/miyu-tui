@@ -32,4 +32,6 @@ pub struct Link {
     pub bill_asked: Option<String>,
     /// 包的名字、在哪个组（`package.list`）：预设的功能照组、包分组时写组名（`features.rs`）。
     pub package_names: crate::features::Packages,
+    /// 唤醒表里跑在已有会话上的循环（`schedules` 流，蓝图「循环」）：输入框上面、侧边栏照看着的会话挑。
+    pub loops: Vec<crate::core::Loop>,
 }

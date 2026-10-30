@@ -23,6 +23,7 @@ mod goal;
 mod icons;
 mod layout;
 mod localize;
+mod loops;
 mod mention;
 mod motion;
 mod notes;
@@ -40,6 +41,7 @@ pub use figures::{FigureLook, Room};
 pub use goal::GoalTexts;
 pub use icons::Icons;
 pub use layout::{Bar, Dots, Layout, Shimmer, TodoMarks};
+pub use loops::LoopTexts;
 pub use mention::{MentionLook, MentionTexts};
 pub use motion::CompactionMotion;
 pub use notes::CompactionTexts;
@@ -201,6 +203,8 @@ pub struct Texts {
     pub rename: RenameTexts,
     /// 长期目标的字（蓝图「长期目标」）。
     pub goal: GoalTexts,
+    /// 循环的字（蓝图「循环」）。
+    pub loops: LoopTexts,
     /// 输入历史列表上的字（蓝图「输入历史列表」）。
     pub history: HistoryTexts,
     /// `/jump` 的列表上的字，和输入历史列表一样的几格（蓝图「跳到说过的话」）。

@@ -213,6 +213,13 @@
     "removed": "タイトルを外しました",
     "too_long": "タイトルは {max} 文字まで"
   },
+  "loops": {
+    "title": "ループ",
+    "paused": "一時停止中",
+    "next": "次回 {time}",
+    "dynamic": "動的間隔",
+    "every": ["{n} 秒ごと", "{n} 分ごと", "{n} 時間ごと", "{n} 日ごと"]
+  },
   "goal": {
     "mark": "● ",
     "round": "長期目標 · {round} ラウンド目",
