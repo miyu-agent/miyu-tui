@@ -124,6 +124,11 @@ impl Settings {
         if section == Section::Store {
             return self.store_key(key, texts);
         }
+        if let Section::Page(id, at) = &section
+            && self.slide_key(id, *at, key, texts)
+        {
+            return Outcome::Stay;
+        }
         self.status = self.status.take().filter(|(_, t)| *t == Tone::Busy);
         let count = self.section_count(&section);
         let (at, rebuild): (usize, fn(usize, &Section) -> Section) = match &section {
@@ -289,7 +294,7 @@ impl Settings {
             "list" if !item.options.is_empty() => self.open_ticks(&item, &value),
             "list" if super::list::editable(&item) => self.open_list(&item, &value),
             "list" => self.list_not_editable(texts),
-            // 滑块先当数填（第 33 条，核心 PC-1：画成滑块等样板定）。
+            // 滑块在行上调，`Enter` 开数的编辑窗打精确值（第 33 条子规则）。
             "number" | "text" | "slider" => {
                 let number = item.control != "text";
                 let edit = LineEdit::open(&item.key, &item.name, number, &value);

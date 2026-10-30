@@ -70,6 +70,17 @@ impl App {
         }
     }
 
+    /// 配置页的滑块停手到点了：存掉、发出去（「配置页」第 33 条子规则）。
+    pub(super) fn settings_slide_due(&mut self) {
+        let due = self.boxes.settings.as_ref().and_then(|p| p.slide_due());
+        if due.is_some_and(|d| d <= std::time::Instant::now())
+            && let Some(page) = self.boxes.settings.as_mut()
+        {
+            page.slide_flush(&self.config.text.settings);
+            self.send_settings_asks();
+        }
+    }
+
     /// 配置页开着时的一个终端事件。
     pub(super) fn settings_event(&mut self, event: Event) {
         let Some(page) = self.boxes.settings.as_mut() else {

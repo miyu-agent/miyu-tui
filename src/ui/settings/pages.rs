@@ -11,7 +11,9 @@ use super::{bar, crumb, fit, footer};
 use crate::core::Persona;
 use crate::settings::pages::packages::package_of;
 use crate::settings::pages::schema::Row;
-use crate::settings::pages::{DEFAULT_PERSONA, DEFAULT_PRESET, Entry, Section, current, shown};
+use crate::settings::pages::{
+    DEFAULT_PERSONA, DEFAULT_PRESET, Entry, Section, current, shown, slider,
+};
 use crate::settings::{Hit, Settings, Texts};
 use crate::theme;
 
@@ -111,11 +113,14 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
                 .iter()
                 .find(|p| p.id == id)
                 .map_or(id, |p| p.name.as_str());
-            (format!("{} › {name}", packages()), &texts.more.hints[0])
+            (
+                format!("{} › {name}", packages()),
+                page_hints(page, &section, texts),
+            )
         }
         Section::Page(id, _) => (
             entry_words(page, &Entry::Page(id.clone()), texts).0,
-            &texts.more.hints[0],
+            page_hints(page, &section, texts),
         ),
         Section::Store => return,
         Section::Mcp(_) => (texts.more.mcp.entry[0].clone(), &texts.more.mcp.hints),
@@ -188,6 +193,36 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
     footer(frame, stage, page, texts, hints, None, Some(counter));
 }
 
+/// 照清单画的一页的按键提示：光标停在滑块上的换成滑块的那一套（第 33 条子规则）。
+fn page_hints<'a>(page: &Settings, section: &Section, texts: &'a Texts) -> &'a Vec<[String; 2]> {
+    let Section::Page(id, at) = section else {
+        return &texts.more.hints[0];
+    };
+    let slider = page.more.schema.as_ref().is_some_and(|schema| {
+        page.page_items(id)
+            .get(*at)
+            .and_then(|&i| schema.items.get(i))
+            .is_some_and(|i| i.slide.is_some() && i.writable())
+    });
+    if slider {
+        &texts.more.slider_hints
+    } else {
+        &texts.more.hints[0]
+    }
+}
+
+/// 滑块的短条（第 33 条子规则）：16 格，到当前值的那一截强调色、后面暗色，当前值处一个圆点（记号照记号表）。
+fn track(fraction: f64) -> Vec<Span<'static>> {
+    const WIDTH: usize = 16;
+    let at = (fraction * (WIDTH - 1) as f64).round() as usize;
+    let (rule, dot) = crate::sheet::read(|s| (s.marks.rule.clone(), s.marks.on.clone()));
+    vec![
+        Span::styled(rule.repeat(at), theme::accent()),
+        Span::styled(dot, theme::accent()),
+        Span::styled(rule.repeat(WIDTH - 1 - at), theme::faint()),
+    ]
+}
+
 /// 一行：字、是不是选中的那一行。
 pub(super) type Painted = (Line<'static>, bool);
 
@@ -254,6 +289,14 @@ pub(super) fn page_lines(
                 let item = &schema.items[i];
                 // 值后面不写来自哪一层（2026-10-08 项目主人：「所有的这种默认文字都去掉」）。
                 let (value, _) = current(item, data);
+                // 滑块调着、还没存的照调着的画（第 33 条子规则）。
+                let value = page
+                    .more
+                    .sliding
+                    .as_ref()
+                    .filter(|s| s.key == item.key)
+                    .map_or(value, |s| &s.value);
+                let slid = slider::fraction(item, value);
                 // 没设的密钥「未设置」暗着写、不加粗（2026-10-19 项目主人），设了的照常。
                 let unset = crate::settings::pages::secret::is_secret(item) && value.is_null();
                 let value = shown(item, value, page.more.named(&item.key), &texts.more);
@@ -277,6 +320,11 @@ pub(super) fn page_lines(
                         spans.push(Span::styled(hex, style.add_modifier(Modifier::BOLD)));
                     }
                     None if unset => spans.push(Span::styled(fit(&value, room), theme::dim())),
+                    None if slid.is_some() => {
+                        spans.extend(track(slid.unwrap_or(0.0)));
+                        let text = format!("  {}", fit(&value, room.saturating_sub(18)));
+                        spans.push(Span::styled(text, style.add_modifier(Modifier::BOLD)));
+                    }
                     None => spans.push(Span::styled(
                         fit(&value, room),
                         style.add_modifier(Modifier::BOLD),
