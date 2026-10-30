@@ -35,5 +35,49 @@ pub fn expand(text: &str, tab: usize) -> Cow<'_, str> {
     Cow::Owned(out)
 }
 
+/// 要跑的命令的制表位（终端、shell 照 8 列）：和代码、输出的 `output.tab` 分开。
+pub const COMMAND_TAB: usize = 8;
+
+/// 给人照着批的命令（确认抽屉、时间线的预览，发布前审查 T2-2，2026-10-30）：屏上要和真正要跑的一样，看不见的字一个都
+/// 不能悄悄没了。制表符照制表位展开（shell 照它分参数，删了几个参数会连成一个词）；C0 照脱字写法写成 `^[`（ESC）、`^M`
+/// 这种，只用 ASCII，纯 ASCII 主题下也一样；DEL 写 `^?`；C1 控制字符和双向控制字符（U+061C、U+200E、U+200F、U+202A–202E、U+2066–2069）写成 `<U+202E>`。
+/// 换行照旧是换行。没有的原样交回。
+pub fn shown(text: &str) -> Cow<'_, str> {
+    if !text
+        .chars()
+        .any(|c| (c.is_control() && c != '\n') || bidi(c))
+    {
+        return Cow::Borrowed(text);
+    }
+    let mut out = String::with_capacity(text.len() + 16);
+    let mut col = 0;
+    for c in text.chars() {
+        let mark = match c {
+            '\n' => {
+                out.push('\n');
+                col = 0;
+                continue;
+            }
+            '\t' => " ".repeat(COMMAND_TAB - col % COMMAND_TAB),
+            '\u{7f}' => "^?".to_string(),
+            c if u32::from(c) < 0x20 => format!("^{}", char::from(b'@' + c as u8)),
+            c if c.is_control() || bidi(c) => format!("<U+{:04X}>", u32::from(c)),
+            c => {
+                out.push(c);
+                col += c.width().unwrap_or(0);
+                continue;
+            }
+        };
+        col += unicode_width::UnicodeWidthStr::width(mark.as_str());
+        out.push_str(&mark);
+    }
+    Cow::Owned(out)
+}
+
+/// 改字的显示先后、本身看不见的双向控制字符。
+fn bidi(c: char) -> bool {
+    matches!(c, '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+}
+
 #[cfg(test)]
 mod tests;
