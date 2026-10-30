@@ -1632,7 +1632,7 @@
       "sub": "大幅提高记忆、知识库、表情包等内容的检索质量，但是会大幅提高内存占用，每次检索增加 CPU 开销",
       "on": ["是", "推荐"],
       "off": ["否", "只用关键词检索"],
-      "download": {"size": "需下载 {size}", "preparing": "准备下载…", "progress": "{percent}% · {done} / {total}", "retry": "重试", "skip": "跳过"}
+      "download": {"size": "需下载 {size}", "preparing": "准备下载…", "progress": "{percent}% · {done} / {total}", "verifying": "核对…", "installing": "安装…", "retry": "重试", "skip": "跳过"}
     },
     "done": {
       "title": "完成",

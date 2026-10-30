@@ -68,25 +68,47 @@ pub(super) fn tools_changed(message: &Value) -> bool {
     )
 }
 
-/// 装包的下载进度：只推给发起装的那个连接，开始、结束各一次，中间最多 200 毫秒一次（核心 G-4 上）。
+/// 装包的进度：只推给发起装的那个连接（核心 G-4 上）。下载开始、结束各一次，中间最多 200 毫秒一次；核心 IN-3 起照 pacman
+/// 分三段，先全部下完，再逐个核对、逐个装，核对、装之前各推一次。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Progress {
     /// 哪个包。
     pub package: String,
+    /// 到了哪一段。
+    pub stage: Stage,
     /// 下了多少字节。
     pub done: u64,
     /// 一共多少字节。
     pub total: u64,
 }
 
-/// 读 `package.progress {"package", "done", "total"}`；别的推送是 `None`。
+/// 装包到了哪一段（`package.progress` 的 `stage`）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Stage {
+    /// 下载，带下了多少、一共多少。
+    Download,
+    /// 核对 SHA-256。
+    Verify,
+    /// 装。
+    Install,
+}
+
+/// 读 `package.progress {"package", "stage"?, "done"?, "total"?}`：没写 `stage` 的（核心 IN-3 以前）当下载；认不出的段、
+/// 别的推送是 `None`。
 pub(super) fn progress(message: &Value) -> Option<super::Update> {
     if message["method"] != "package.progress" {
         return None;
     }
     let params = &message["params"];
+    let stage = match params["stage"].as_str() {
+        None | Some("download") => Stage::Download,
+        Some("verify") => Stage::Verify,
+        Some("install") => Stage::Install,
+        Some(_) => return None,
+    };
     Some(super::Update::PackageProgress(Progress {
         package: params["package"].as_str()?.to_string(),
+        stage,
         done: params["done"].as_u64().unwrap_or(0),
         total: params["total"].as_u64().unwrap_or(0),
     }))
@@ -105,11 +127,29 @@ mod tests {
             "params": {"package": "miyu-embed", "done": 1024, "total": 4096}});
         let want = super::Progress {
             package: "miyu-embed".into(),
+            stage: super::Stage::Download,
             done: 1024,
             total: 4096,
         };
         assert!(matches!(progress(&push), Some(Update::PackageProgress(got)) if got == want));
         assert!(progress(&json!({"method": "package.changed", "params": {}})).is_none());
+    }
+
+    /// 核心 IN-3 起带 `stage`：核对、装的那一次不带字节数；认不出的段不收。
+    #[test]
+    fn the_stage_is_read_and_an_unknown_one_is_dropped() {
+        let stage = |stage: &str| {
+            let push = json!({"method": "package.progress",
+                "params": {"package": "miyu-embed", "stage": stage, "index": 1, "count": 1}});
+            match progress(&push) {
+                Some(Update::PackageProgress(got)) => Some(got.stage),
+                _ => None,
+            }
+        };
+        assert_eq!(stage("download"), Some(super::Stage::Download));
+        assert_eq!(stage("verify"), Some(super::Stage::Verify));
+        assert_eq!(stage("install"), Some(super::Stage::Install));
+        assert_eq!(stage("unpack"), None);
     }
 
     #[test]

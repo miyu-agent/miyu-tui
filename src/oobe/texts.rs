@@ -215,6 +215,10 @@ pub struct SemanticDownload {
     pub preparing: String,
     /// 进度条后面，`{percent}`、`{done}`、`{total}`。
     pub progress: String,
+    /// 下完以后核对时，条后面写的。
+    pub verifying: String,
+    /// 核对完装的时候，条后面写的。
+    pub installing: String,
     /// 装不上以后的两行：重试、跳过。
     pub retry: String,
     /// 跳过。

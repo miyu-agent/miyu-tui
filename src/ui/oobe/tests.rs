@@ -61,6 +61,7 @@ fn the_last_screen_leaves_out_a_skipped_persona() {
 #[test]
 fn the_semantic_step_shows_the_size_the_bar_and_a_failure() {
     // 2026-10-19（第 26b 条）：没装的「是」后面写要下多大；在下的换成进度条；装不上的写原话、两行「重试」「跳过」。
+    use crate::core::Stage;
     use crate::oobe::Oobe;
     use crate::oobe::pick::Pick;
     use crate::oobe::semantic::download::{Offer, Phase};
@@ -81,10 +82,15 @@ fn the_semantic_step_shows_the_size_the_bar_and_a_failure() {
     oobe.semantic.offer = Some(Offer::Download(None));
     let c = super::pick::semantic(&oobe, texts, bar, 60);
     assert!(says(&c, "推荐") && !says(&c, "需下载"), "连不上的不写大小");
-    oobe.semantic.phase = Phase::Installing { done: 0, total: 0 };
+    oobe.semantic.phase = Phase::Installing {
+        stage: Stage::Download,
+        done: 0,
+        total: 0,
+    };
     let c = super::pick::semantic(&oobe, texts, bar, 60);
     assert!(says(&c, "准备下载…") && !says(&c, "推荐"));
     oobe.semantic.phase = Phase::Installing {
+        stage: Stage::Download,
         done: 29_884_416,
         total: 59_768_832,
     };
@@ -94,6 +100,17 @@ fn the_semantic_step_shows_the_size_the_bar_and_a_failure() {
         says(&c, &bar.full) && says(&c, &bar.empty),
         "半条满、半条空"
     );
+    // 下完以后核对、装：条满着，字换成这一段（核心 IN-3，2026-10-30 项目主人定），不跳回「准备下载…」。
+    for (stage, words) in [(Stage::Verify, "核对…"), (Stage::Install, "安装…")] {
+        oobe.semantic.phase = Phase::Installing {
+            stage,
+            done: 0,
+            total: 0,
+        };
+        let c = super::pick::semantic(&oobe, texts, bar, 60);
+        assert!(says(&c, words) && !says(&c, "准备下载"), "{:?}", c.lines);
+        assert!(says(&c, &bar.full) && !says(&c, &bar.empty), "条满着");
+    }
     oobe.semantic.phase = Phase::Failed {
         said: "连不上软件源".into(),
         why: Some("timed out".into()),
