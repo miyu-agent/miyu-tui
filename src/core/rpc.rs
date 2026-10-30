@@ -8,7 +8,7 @@ use std::io;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, ReadHalf, WriteHalf};
+use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWriteExt, BufReader, WriteHalf};
 use tokio::sync::mpsc;
 
 use miyu_client::connect::Connection;
@@ -99,23 +99,34 @@ pub enum Failure {
     Refused(String),
 }
 
+/// 读一行的缓冲收过长过这么多的一行（`human.get` 这种上百 KB 的回应），这一行处理完缩回 [`LINE_KEPT`]。
+const LINE_MOST: usize = 64 * 1024;
+/// 缓冲缩回多大：平常的一条（推送、回应，几百字节到几 KB）放得下，不用每条重新要。
+const LINE_KEPT: usize = 8 * 1024;
+
 /// 读的一头：一行一条，读不懂的不要。读完了（核心断开）就停。
-async fn read_all(
-    mut reader: BufReader<ReadHalf<Connection>>,
-    sender: mpsc::UnboundedSender<Value>,
-) {
+async fn read_all(mut reader: impl AsyncBufRead + Unpin, sender: mpsc::UnboundedSender<Value>) {
     let mut line = String::new();
     loop {
-        line.clear();
         match reader.read_line(&mut line).await {
             Ok(0) | Err(_) => return,
             Ok(_) => {}
         }
-        if let Ok(message) = serde_json::from_str::<Value>(&line)
-            && sender.send(message).is_err()
-        {
+        let gone =
+            serde_json::from_str::<Value>(&line).is_ok_and(|message| sender.send(message).is_err());
+        handled(&mut line);
+        if gone {
             return;
         }
+    }
+}
+
+/// 一行处理完：清空；长过 [`LINE_MOST`] 的缩回 [`LINE_KEPT`]，不然收过一次大回应，缓冲就一直撑在那么大（2026-10-31 量过：
+/// 连上以后常驻 128 KB）。
+fn handled(line: &mut String) {
+    line.clear();
+    if line.capacity() > LINE_MOST {
+        line.shrink_to(LINE_KEPT);
     }
 }
 
@@ -148,7 +159,43 @@ pub fn owns(id: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{owns, prefix};
+    use serde_json::{Value, json};
+
+    use super::{LINE_KEPT, LINE_MOST, handled, owns, prefix, read_all};
+
+    #[test]
+    fn a_long_line_does_not_keep_the_buffer_large_and_a_short_one_keeps_it_as_is() {
+        let mut long = String::with_capacity(128 * 1024);
+        long.push('x');
+        handled(&mut long);
+        assert!(long.is_empty());
+        assert!(long.capacity() <= LINE_KEPT, "{}", long.capacity());
+        // 平常的一条不重新要：同一块、一样大。
+        let mut short = String::with_capacity(LINE_MOST);
+        short.push_str("{}");
+        let at = short.as_ptr();
+        handled(&mut short);
+        assert_eq!((short.as_ptr(), short.capacity()), (at, LINE_MOST));
+    }
+
+    #[test]
+    fn every_line_arrives_in_order_long_or_short_and_unreadable_ones_are_dropped() {
+        let big = "a".repeat(200 * 1024);
+        let input = format!("{{\"n\":1}}\n{{\"big\":\"{big}\"}}\nnot json\n{{\"n\":2}}\n");
+        let (sender, mut incoming) = tokio::sync::mpsc::unbounded_channel();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        runtime.block_on(read_all(input.as_bytes(), sender));
+        let mut got: Vec<Value> = Vec::new();
+        while let Ok(message) = incoming.try_recv() {
+            got.push(message);
+        }
+        assert_eq!(
+            got,
+            vec![json!({"n": 1}), json!({"big": big}), json!({"n": 2})]
+        );
+    }
 
     #[test]
     fn request_ids_keep_counting_across_reconnects() {
