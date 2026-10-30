@@ -149,6 +149,10 @@ pub struct Layout {
     pub link_icon_cols: u16,
     /// 会话列表里正在用的那个标题前面的记号（2026-10-02）。
     pub current_mark: String,
+    /// 侧边栏「最近会话」里当前这个会话的记号（2026-10-30 项目主人：用箭头）。
+    pub side_here_mark: String,
+    /// 侧边栏「最近会话」里做完了还没看的会话的记号（2026-10-30）。
+    pub side_done_mark: String,
     /// 撤销点开以后，改回了的文件前面的记号，连同它后面的空格（2026-10-02）。
     pub undo_restored_mark: String,
     /// 撤销点开以后，没动的文件前面的记号，连同它后面的空格。
