@@ -249,3 +249,37 @@ fn only_the_supplementary_private_use_planes_count_and_never_a_picture_cell() {
     assert!(!shaky("你"));
     assert!(!shaky("\u{10EEEE}"), "kitty 图片的占位字不归这一层管");
 }
+
+#[test]
+fn what_was_sent_survives_when_the_record_has_to_grow() {
+    // 头一帧只送到第 2 行，记着的只分到那么大；第二帧送到最底下一行、又改了图标右边那一格：记着的照新的大小重排，
+    // 图标还得照原样补回来。
+    let frames = [
+        vec![(1, format!("  {ATOM} 已思考"))],
+        vec![
+            (1, format!("  {ATOM}·已思考")),
+            (H - 1, "x".repeat(usize::from(W))),
+        ],
+    ];
+    let (screen, _) = shown(true, (2, false), &frames);
+    assert!(screen[1].contains(ATOM), "{screen:?}");
+}
+
+#[test]
+fn the_record_answers_blank_outside_and_keeps_cells_when_it_grows() {
+    use ratatui::buffer::Cell;
+
+    let mut shadow = super::Shadow::default();
+    assert!(shadow.get((0, 0)).is_none(), "什么都没送过");
+    shadow.fit(3, 2);
+    let mut a = Cell::default();
+    a.set_symbol("a");
+    shadow.set((2, 1), a.clone());
+    shadow.fit(5, 4);
+    assert_eq!(shadow.get((2, 1)), Some(&a), "重排以后原样在原来的行列");
+    assert_eq!(shadow.get((4, 3)), Some(&Cell::default()), "新出来的是空白");
+    assert!(shadow.get((5, 0)).is_none(), "右边出了界");
+    assert!(shadow.get((0, 4)).is_none(), "下边出了界");
+    shadow.fit(1, 1);
+    assert_eq!((shadow.width, shadow.height), (5, 4), "放得下就不缩");
+}
