@@ -1,5 +1,7 @@
 use serde_json::json;
 
+mod package_config;
+
 use super::schema::Schema;
 use super::{Entry, More};
 

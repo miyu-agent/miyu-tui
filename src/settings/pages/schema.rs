@@ -11,7 +11,8 @@ pub struct Opt {
     pub value: Value,
     /// 给人看的名字。
     pub name: String,
-    /// 核心查得出的一句，接在名字后面暗色写（核心 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字）。
+    /// 核心查得出的一句，接在名字后面暗色写（核心 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字）；没有的照
+    /// 包写的说明（`description`，核心 PC-1）。
     pub note: Option<String>,
     /// 用得了：核心查得出用不了的（没装内置语义模型的包）列着、灰的、选不了（核心 R-5 三补）。
     pub available: bool,
@@ -194,7 +195,11 @@ impl Schema {
                     .map(|o| Opt {
                         value: o["value"].clone(),
                         name: text(&o["name"]),
-                        note: o["note"].as_str().map(str::to_string),
+                        note: o["note"]
+                            .as_str()
+                            .or(o["description"].as_str())
+                            .filter(|s| !s.is_empty())
+                            .map(str::to_string),
                         available: o["available"] != false,
                     })
                     .collect(),

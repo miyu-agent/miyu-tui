@@ -128,6 +128,8 @@ pub struct LineEdit {
     pub title: String,
     /// 是数：存的时候照整数、小数读，读不出的不存、写原因。
     pub number: bool,
+    /// 是小数（`type: "float"`，核心 PC-1）：整数也存成小数。
+    pub float: bool,
     /// 输入框。
     pub editor: Editor,
     /// 没存成的原因。
@@ -150,10 +152,16 @@ impl LineEdit {
             key: key.to_string(),
             title: title.to_string(),
             number,
+            float: false,
             editor,
             error: None,
             target: Target::Setting,
         }
+    }
+
+    /// 是小数：整数也存成小数（打 `1` 存成 `1.0`）。
+    pub fn float(self, float: bool) -> Self {
+        Self { float, ..self }
     }
 
     /// 存的时候写到 `target`（默认写系统配置）。
@@ -167,7 +175,9 @@ impl LineEdit {
         if !self.number {
             return Some(Value::String(text));
         }
-        if let Ok(n) = text.parse::<i64>() {
+        if let Ok(n) = text.parse::<i64>()
+            && !self.float
+        {
             return Some(Value::from(n));
         }
         text.parse::<f64>()
@@ -254,5 +264,16 @@ mod tests {
         assert_eq!(edit.value(), None);
         let text = LineEdit::open("k", "t", false, &json!(" hi "));
         assert_eq!(text.value(), Some(json!("hi")));
+    }
+
+    /// 核心 PC-1：小数的项打整数也存成小数。
+    #[test]
+    fn a_float_item_saves_whole_numbers_as_floats() {
+        let mut edit = LineEdit::open("k", "t", true, &json!(0.7)).float(true);
+        assert_eq!(edit.value(), Some(json!(0.7)));
+        edit.editor.set("1");
+        let value = edit.value().unwrap();
+        assert!(value.is_f64(), "{value}");
+        assert_eq!(value, json!(1.0));
     }
 }
