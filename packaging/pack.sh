@@ -1,6 +1,6 @@
 #!/bin/sh
 # 把终端打成软件源用的包文件（`.miyu`，核心施工 G-1，设计 37 第二节）：终端 `miyu-tui`（带程序，一种系统一个文件）和
-# 两个主题包 `miyu-tui-theme-default`、`miyu-tui-theme-ascii`（只有数据，哪种系统都能装）。打包交给核心的 `miyu pkg pack`，这里只摆文件夹。
+# 主题包 `miyu-tui-theme-ascii`（只有数据，哪种系统都能装）。默认主题编进了程序，不打（终端蓝图「主题」第 4 条）。打包交给核心的 `miyu pkg pack`，这里只摆文件夹。
 #
 #   packaging/pack.sh --miyu <核心程序> --out <目录> [--target <系统>] [--bin <编好的 miyu-tui>]
 #
@@ -54,9 +54,7 @@ mkdir -p "$stage/miyu-tui/bin" "$out"
 cp "$repo/miyu-tui/package.toml" "$stage/miyu-tui/"
 cp "$bin" "$stage/miyu-tui/bin/$exe"
 chmod 755 "$stage/miyu-tui/bin/$exe"
-cp -R "$repo/packages/miyu-tui-theme-default" "$repo/packages/miyu-tui-theme-ascii" "$stage/"
+cp -R "$repo/packages/miyu-tui-theme-ascii" "$stage/"
 
 "$miyu" pkg pack "$stage/miyu-tui" --target "$target" -o "$out"
-for theme in miyu-tui-theme-default miyu-tui-theme-ascii; do
-  "$miyu" pkg pack "$stage/$theme" -o "$out"
-done
+"$miyu" pkg pack "$stage/miyu-tui-theme-ascii" -o "$out"
