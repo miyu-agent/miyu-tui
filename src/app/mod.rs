@@ -326,6 +326,7 @@ impl App {
     pub fn tick(&mut self) {
         // 读配置攒着的还没发的一起发（`config_asks.rs`；平常办完一条消息就发了）。
         self.flush_config_asks();
+        self.settings_slide_due();
         // 引导走完了：关掉，回到首页（`oobe.rs`）。
         self.oobe_tick();
         // 附件照模型收：收不了的那几种交给输入框，刚改成文件块的提示一句（`attachments.rs`）。

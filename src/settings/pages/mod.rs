@@ -20,6 +20,7 @@ pub mod preset_edit;
 pub mod presets;
 pub mod schema;
 pub mod secret;
+pub mod slider;
 pub mod store;
 pub mod target;
 pub mod textarea;
@@ -120,6 +121,8 @@ pub struct More {
     pub section: Option<Section>,
     /// 「软件包」三页（第 43c 条）。
     pub store: store::Store,
+    /// 滑块调了还没存的（第 33 条子规则）。
+    pub sliding: Option<slider::Sliding>,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
     /// 找不到的不列）。
     pub wallpaper: bool,
@@ -355,6 +358,8 @@ pub struct Texts {
     pub package_from: std::collections::BTreeMap<String, String>,
     /// 「MCP」那一页（第 43b 条）。
     pub mcp: mcp::McpTexts,
+    /// 光标停在滑块上时的按键提示（第 33 条子规则）。
+    pub slider_hints: Vec<[String; 2]>,
     /// 「软件包」三页（第 43c 条）。
     pub store: store::StoreTexts,
 }

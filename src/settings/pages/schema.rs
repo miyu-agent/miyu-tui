@@ -49,6 +49,8 @@ pub struct Item {
     /// 带选项的列表反着勾（核心给的 `"ticks": "unlisted"`）：勾着的是不在值里的（「配置页」第 47a 条，2026-10-21 项目主人：
     /// 「默认私密目录」进去是几个已经勾着的目录，空格取消勾选）。
     pub unlisted: bool,
+    /// 滑块（`control: "slider"`，核心 PC-1）的范围和一步：最小、最大、一步；别的控件是 `None`。
+    pub slide: Option<(f64, f64, f64)>,
 }
 
 impl Item {
@@ -216,6 +218,7 @@ impl Schema {
                 package: text(&i["package"]),
                 common: i["common"] == true,
                 unlisted: i["ticks"] == "unlisted",
+                slide: slide(i),
             })
             // 键里有人起的名字的归供应商和模型；别的头专有的不列（蓝图「配置页」第 5 条）。
             .filter(|i: &Item| !i.key.contains('<') && !i.key.starts_with("web."))
@@ -349,6 +352,23 @@ impl Schema {
             .filter(|id| *id != MODELS && !self.rows(id).is_empty())
             .collect()
     }
+}
+
+/// 滑块的范围和一步：要有 `min`、`max`；`step` 没写的整数是 1、小数是范围的百分之一（同核心）。
+fn slide(item: &Value) -> Option<(f64, f64, f64)> {
+    if item["control"] != "slider" {
+        return None;
+    }
+    let (min, max) = (item["min"].as_f64()?, item["max"].as_f64()?);
+    let step = item["step"]
+        .as_f64()
+        .filter(|s| *s > 0.0)
+        .unwrap_or(if item["type"] == "float" {
+            (max - min) / 100.0
+        } else {
+            1.0
+        });
+    (max > min).then_some((min, max, step))
 }
 
 #[cfg(test)]
