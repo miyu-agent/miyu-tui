@@ -23,7 +23,6 @@ impl App {
             &self.config.text.settings,
         );
         self.boxes.settings = Some(page);
-        self.share_package_names();
         // 开机启动开没开着：问一次（`settings/service.rs`）。
         self.link.service.run(crate::service::Verb::Status);
         self.send_settings_asks();
@@ -33,7 +32,6 @@ impl App {
     pub(super) fn open_connect(&mut self) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
         self.boxes.settings = Some(Settings::connect(online));
-        self.share_package_names();
         self.send_settings_asks();
     }
 

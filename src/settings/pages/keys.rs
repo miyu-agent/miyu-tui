@@ -378,6 +378,7 @@ impl Settings {
             detail: None,
             error: None,
             cursor: 0,
+            two: Default::default(),
         }));
     }
 

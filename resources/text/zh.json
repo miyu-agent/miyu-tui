@@ -213,6 +213,10 @@
     "removed": "已清除标题",
     "too_long": "标题最多 {max} 个字"
   },
+  "feature_tree": {
+    "empty": {"skills": "还没有技能", "scripts": "还没有脚本", "mcp": "还没有 MCP 服务", "other": "还没有"},
+    "missing": "未安装"
+  },
   "loops": {
     "title": "循环",
     "paused": "已暂停",
@@ -1171,7 +1175,6 @@
         "预设",
         "决定开关哪些功能"
       ],
-      "package_mine": "我的",
       "preset_detail": [
         "功能 {on}/{all}",
         "未安装",
@@ -1310,6 +1313,10 @@
           [
             "↑/↓",
             "选择"
+          ],
+          [
+            "←/→",
+            "换列"
           ],
           [
             "空格",
@@ -1470,7 +1477,7 @@
       "persona": "Enter 编辑 · j/k 移动 · Esc 上一步",
       "edit": "Enter 编辑 · j/k 移动 · Esc 上一步",
       "writing": "Enter 换行 · Ctrl+G 外部编辑器 · Esc 完成",
-      "custom": "空格 开关 · Ctrl+A 全部开关 · j/k 移动 · Esc 关闭",
+      "custom": "空格 开关 · Ctrl+A 全部开关 · j/k 移动 · h/l 换列 · Esc 关闭",
       "custom_name": "Enter 编辑 · j/k 移动 · Esc 关闭",
       "create": "Enter 创建 · j/k 移动 · Esc 关闭",
       "view": "j/k 滚动 · 空格 关闭",
@@ -1596,7 +1603,6 @@
       "avatar_set": "已设置"
     },
     "preset": {
-      "mine": "我的",
       "title": "选择预设",
       "sub": "预设决定启用哪些功能，可在设置中修改，也可为每个会话单独选择",
       "custom": "自定义",

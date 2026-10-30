@@ -32,6 +32,7 @@ fn a_new_preset_or_persona_window_is_titled_by_its_name_before_the_list_is_read_
         detail: Some(presets::detail(&made)),
         error: None,
         cursor: 0,
+        two: Default::default(),
     }));
     let (text, _) = screen(&mut p, &config, 100, 30);
     assert!(!text.contains("preset-1"), "编号不出现：\n{text}");
@@ -66,6 +67,7 @@ fn the_preset_window_names_the_tools_under_the_cursor_in_its_corner() {
             detail: Some(presets::detail(&got)),
             error: None,
             cursor,
+            two: Default::default(),
         }));
         let (text, _) = screen(&mut p, &config, width, 30);
         let head = text

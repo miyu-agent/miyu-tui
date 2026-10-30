@@ -372,8 +372,6 @@ pub struct Preset {
     /// 标题、说明。
     #[serde(flatten)]
     pub head: Heading,
-    /// 功能照包分组时，机主私人的那一组（`~home`）的组名：「我的」（核心 ENV-1）。
-    pub mine: String,
     /// 「自定义」。
     pub custom: String,
     /// 「自定义」下面暗色写的。

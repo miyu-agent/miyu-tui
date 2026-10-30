@@ -202,6 +202,8 @@ pub struct PresetView {
     pub error: Option<String>,
     /// 光标在第几行能改的（[`super::preset_edit::fields`]）。
     pub cursor: usize,
+    /// 上一帧功能树排成了两列（窗够宽，`ui/feature_tree.rs` 量出来的）：按键照它走（核心设计 52）。
+    pub two: std::cell::Cell<bool>,
 }
 
 #[cfg(test)]

@@ -10,7 +10,7 @@ use super::field::{Edit, Field};
 use super::nav::{self, Nav};
 use super::texts::Preset as Texts;
 use crate::core::Refusal;
-use crate::features::{self, Feature, Row};
+use crate::features::{self, Grid, Row, Tree};
 use crate::settings::pages::target::said;
 
 /// 一个预设一块。
@@ -22,8 +22,8 @@ pub struct Card {
     pub name: String,
     /// 一句描述（`preset.list` 的 `summary`）；没写的是 `None`（2026-10-27 项目主人报：原来只有「自定义」有描述）。
     pub summary: Option<String>,
-    /// 装了的功能；`preset.get` 回来以前是 `None`。
-    pub features: Option<Vec<Feature>>,
+    /// 装了的功能，照核心的分组（`sections`，核心 FG-1）；`preset.get` 回来以前是 `None`。
+    pub features: Option<Tree>,
 }
 
 /// 这一步。
@@ -31,14 +31,14 @@ pub struct Card {
 pub struct PresetStep {
     /// 一个预设一块，照 `preset.list` 的先后。
     pub cards: Vec<Card>,
-    /// 包的名字、在哪个组（App 照 `package.list` 交来）：功能照组、包分组写组名（`features.rs`）。
-    pub package_names: crate::features::Packages,
     /// 光标在第几块；等于 `cards.len()` 的是「自定义」。
     pub cursor: usize,
     /// 自定义的名字。
     pub name: Field,
     /// 自定义的功能、工具开关，先照全开。
-    pub features: Vec<Feature>,
+    pub features: Tree,
+    /// 上一帧自定义的功能树排成了两列（`ui/feature_tree.rs` 量出来的）：按键照它走（核心设计 52）。
+    pub two: std::cell::Cell<bool>,
     /// 自定义展开以后光标在第几行：0 是名字，往下是功能、工具停得上的那几行（[`PresetStep::rows`]）。
     pub inner: usize,
     /// 读回来以前、存的时候。
@@ -70,12 +70,14 @@ impl PresetStep {
         self.rows().len() + 1
     }
 
-    /// 自定义展开以后光标停得上的功能、工具，照画的先后。
+    /// 自定义展开以后光标停得上的组名、功能、工具，照功能树的先后（左列从上往下，再右列）。
     pub fn rows(&self) -> Vec<Row> {
-        features::rows(&self.features)
-            .into_iter()
-            .filter(|r| features::selectable(&self.features, *r))
-            .collect()
+        self.grid().stops(&self.features)
+    }
+
+    /// 自定义的功能树照上一帧排成的列。
+    fn grid(&self) -> Grid {
+        Grid::new(&self.features, self.two.get())
     }
 
     /// 进这一步：第一次进的读列表和默认预设。
@@ -169,10 +171,32 @@ impl PresetStep {
         }
         let moved = nav::plain(key);
         let rows = self.rows();
+        let grid = self.grid();
+        // 光标在功能树里的那一行；第 0 行是名称，最后一行是「创建 →」（[`PresetStep::create_row`]）。
+        let at = self.inner.checked_sub(1).and_then(|i| rows.get(i)).copied();
+        let index = |row: Option<Row>| {
+            row.and_then(|r| rows.iter().position(|x| *x == r))
+                .map(|i| i + 1)
+        };
         match key.code {
-            _ if moved == Some(Nav::Up) => self.inner = self.inner.saturating_sub(1),
-            // 最后一行是「创建 →」（[`PresetStep::create_row`]）。
-            _ if moved == Some(Nav::Down) => self.inner = (self.inner + 1).min(self.create_row()),
+            // 功能树里 `↑` `↓` 在一列里走：到顶回名称，到底到「创建 →」；`←` `→` 换列（核心设计 52）。
+            _ if moved == Some(Nav::Up) => {
+                self.inner = match at {
+                    Some(row) => index(grid.up(&self.features, row)).unwrap_or(0),
+                    None => self.inner.saturating_sub(1),
+                };
+            }
+            _ if moved == Some(Nav::Down) => {
+                self.inner = match at {
+                    Some(row) => index(grid.down(&self.features, row)).unwrap_or(self.create_row()),
+                    None => (self.inner + 1).min(self.create_row()),
+                };
+            }
+            _ if matches!(moved, Some(Nav::Left | Nav::Right)) && at.is_some() => {
+                let right = moved == Some(Nav::Right);
+                let row = at.and_then(|row| grid.side(&self.features, row, right));
+                self.inner = index(row).unwrap_or(self.inner);
+            }
             KeyCode::Char(' ') | KeyCode::Tab | KeyCode::Enter
                 if self.inner > 0 && self.inner < self.create_row() =>
             {
@@ -280,22 +304,15 @@ impl PresetStep {
             }
             Waiting::PresetGet(id) => {
                 let got = result.unwrap_or_default();
-                let mut list: Vec<Feature> = features::read(&got)
-                    .into_iter()
-                    .filter(|f| f.installed)
-                    .collect();
-                features::name_packages(&mut list, &self.package_names);
+                let mut list = features::read(&got);
+                list.features.retain(|f| f.installed);
                 // 自定义的先照全开：功能、工具都开着。
                 if self.features.is_empty() {
-                    self.features = list
-                        .iter()
-                        .cloned()
-                        .map(|mut f| {
-                            f.on = true;
-                            f.tools.iter_mut().for_each(|t| t.on = true);
-                            f
-                        })
-                        .collect();
+                    self.features = list.clone();
+                    for f in self.features.iter_mut() {
+                        f.on = true;
+                        f.tools.iter_mut().for_each(|t| t.on = true);
+                    }
                 }
                 if let Some(card) = self.cards.iter_mut().find(|c| c.id == *id) {
                     card.features = Some(list);

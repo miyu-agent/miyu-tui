@@ -213,6 +213,10 @@
     "removed": "タイトルを外しました",
     "too_long": "タイトルは {max} 文字まで"
   },
+  "feature_tree": {
+    "empty": {"skills": "スキルはまだありません", "scripts": "スクリプトはまだありません", "mcp": "MCP サーバーはまだありません", "other": "まだありません"},
+    "missing": "未インストール"
+  },
   "loops": {
     "title": "ループ",
     "paused": "一時停止中",
@@ -1171,7 +1175,6 @@
         "プリセット",
         "どの機能をオンにするかを決める"
       ],
-      "package_mine": "自分用",
       "preset_detail": [
         "機能 {on}/{all}",
         "未インストール",
@@ -1310,6 +1313,10 @@
           [
             "↑/↓",
             "選択"
+          ],
+          [
+            "←/→",
+            "列を切替"
           ],
           [
             "Space",
@@ -1470,7 +1477,7 @@
       "persona": "Enter 編集 · j/k 移動 · Esc 戻る",
       "edit": "Enter 編集 · j/k 移動 · Esc 戻る",
       "writing": "Enter 改行 · Ctrl+G 外部エディタ · Esc 完了",
-      "custom": "Space 切替 · Ctrl+A すべて · j/k 移動 · Esc 閉じる",
+      "custom": "Space 切替 · Ctrl+A すべて · j/k 移動 · h/l 列を切替 · Esc 閉じる",
       "custom_name": "Enter 編集 · j/k 移動 · Esc 閉じる",
       "create": "Enter 作成 · j/k 移動 · Esc 閉じる",
       "view": "j/k スクロール · Space 閉じる",
@@ -1596,7 +1603,6 @@
       "avatar_set": "設定済み"
     },
     "preset": {
-      "mine": "自分用",
       "title": "プリセットを選ぶ",
       "sub": "プリセットはどの機能を使うかを決めます。設定やセッションごとに変えられます",
       "custom": "カスタム",

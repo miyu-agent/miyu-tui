@@ -129,7 +129,7 @@ fn each_preset_says_what_it_is_in_the_list_and_in_its_window() {
         id: "dev".into(),
         name: "常规开发".into(),
         summary: Some("在极简开发的基础上增加记忆".into()),
-        features: Some(Vec::new()),
+        features: Some(Default::default()),
     }];
     let text = |c: &super::content::Content| -> Vec<String> {
         c.lines.iter().map(|l| l.to_string()).collect()
@@ -141,7 +141,13 @@ fn each_preset_says_what_it_is_in_the_list_and_in_its_window() {
         "{list:?}"
     );
     step.viewing = true;
-    let (_, window, _) = super::preset::popup(&mut step, &texts, (60, 10)).expect("开着");
+    let (_, window, _) = super::preset::popup(
+        &mut step,
+        &texts,
+        (60, 10),
+        &Config::builtin().unwrap().text.feature_tree,
+    )
+    .expect("开着");
     assert_eq!(
         text(&window)[0],
         "在极简开发的基础上增加记忆",

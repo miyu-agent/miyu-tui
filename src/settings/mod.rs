@@ -147,8 +147,6 @@ enum Load {
 pub struct Settings {
     /// 照 `--page config` 起来的：主菜单按 `Esc` 退出程序。
     pub standalone: bool,
-    /// 包的名字、在哪个组（App 照 `package.list` 交来）：预设的功能照组、包分组写组名（`features.rs`）。
-    pub package_names: crate::features::Packages,
     /// 这一帧包页面上画着的上游网址（[`Hit::Link`]）。
     pub link: Option<String>,
     /// 指针停在哪：上游悬停加下划线、指针变手（第 43a 条）。

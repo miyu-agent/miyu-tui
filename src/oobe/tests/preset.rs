@@ -52,7 +52,11 @@ fn the_default_is_chosen_first_and_enter_makes_it_the_default() {
     assert_eq!(oobe.preset.cards.len(), 2, "写错的不列");
     assert_eq!(oobe.preset.cursor, 1, "选着现在的默认预设");
     let card = &oobe.preset.cards[0];
-    assert_eq!(card.features.as_ref().map(Vec::len), Some(2), "没装的不算");
+    assert_eq!(
+        card.features.as_ref().map(|t| t.features.len()),
+        Some(2),
+        "没装的不算"
+    );
     assert_eq!(
         card.summary.as_deref(),
         Some("写代码用"),
@@ -199,4 +203,58 @@ fn escape_while_naming_a_custom_preset_only_stops_editing() {
     // 空格和回车一样开（2026-10-10 项目主人）。
     oobe.key(key(KeyCode::Char(' ')), t0, &texts);
     assert!(oobe.preset.custom_open, "空格也开");
+}
+
+/// 自定义的功能树（第 26 条，核心设计 52）：两列，`↑` `↓` 在一列里走，到顶回名称、到底到「创建」，`←` `→` 换列；组名那一行
+/// 空格整组切。
+#[test]
+fn the_custom_tree_walks_columns_and_flips_a_whole_section() {
+    let texts = texts();
+    let t0 = Instant::now();
+    let mut oobe = at_preset(t0, &texts);
+    oobe.preset.features = crate::features::read(&json!({"sections": [
+        {"id": "basesystem", "kind": "group", "name": "基础系统", "items": [
+            {"id": "read", "name": "读文件", "on": true},
+            {"id": "write", "name": "新建文件", "on": true}]},
+        {"id": "persona", "kind": "group", "name": "人格", "items": [
+            {"id": "roleplay", "name": "人设遵循提醒", "on": true}]}]}));
+    oobe.preset.two.set(true);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Enter), t0, &texts);
+    assert!(oobe.preset.custom_open);
+    use crate::features::Row;
+    let at = |oobe: &crate::oobe::Oobe| {
+        let rows = oobe.preset.rows();
+        oobe.preset
+            .inner
+            .checked_sub(1)
+            .and_then(|i| rows.get(i))
+            .copied()
+    };
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    assert_eq!(at(&oobe), Some(Row::Section(0)), "名称往下进功能树");
+    oobe.key(key(KeyCode::Char('l')), t0, &texts);
+    assert_eq!(at(&oobe), Some(Row::Section(1)), "换到右列");
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    assert_eq!(
+        oobe.preset.inner,
+        oobe.preset.create_row(),
+        "右列到底到「创建」"
+    );
+    oobe.key(key(KeyCode::Char('k')), t0, &texts);
+    oobe.key(key(KeyCode::Char('h')), t0, &texts);
+    assert_eq!(at(&oobe), Some(Row::Feature(0)), "离右列最后一行最近的");
+    oobe.key(key(KeyCode::Char('k')), t0, &texts);
+    oobe.key(key(KeyCode::Char(' ')), t0, &texts);
+    assert!(
+        oobe.preset
+            .features
+            .iter()
+            .filter(|f| f.section == 0)
+            .all(|f| !f.on),
+        "组名那一行空格整组关"
+    );
+    oobe.key(key(KeyCode::Char('k')), t0, &texts);
+    assert_eq!(oobe.preset.inner, 0, "左列顶上往上回名称");
 }

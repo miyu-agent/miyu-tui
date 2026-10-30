@@ -1,14 +1,18 @@
-//! 功能平铺、切一行写哪几个键（「配置页」第 38 条）。
+//! 功能树：读 `sections`、平铺成一行行、切一行写哪几个键（「配置页」第 38 条「功能树」，核心设计 52）。
 
 use serde_json::json;
 
 use super::{
-    Feature, Mark, Packages, Row, apply, group_name, mark, name_packages, offs, read, rows,
-    selectable, toggle, toggle_all,
+    Grid, Mark, Row, Tree, apply, mark, offs, read, section_rows, selectable, toggle, toggle_all,
 };
 
-/// 文件读写（几件工具）、运行命令（一件）、人设防失忆提醒（没有工具）、没装的联网。
-fn sample() -> Vec<super::Feature> {
+/// 旧核心排成的那一组（没有组名）的一行行。
+fn rows(tree: &Tree) -> Vec<Row> {
+    section_rows(tree, 0)
+}
+
+/// 旧核心的写法（没有 `sections`）：文件读写（几件工具）、运行命令（一件）、人设防失忆提醒（没有工具）、没装的联网。
+fn sample() -> Tree {
     read(&json!({"features": [
         {"id": "files", "name": "文件读写", "on": true, "installed": true, "tools": [
             {"name": "glob", "label": "找文件", "on": true},
@@ -110,82 +114,157 @@ fn space_writes_the_feature_or_the_tool_and_ctrl_a_flips_everything() {
     );
 }
 
+/// 核心 FG-1 的 `sections`：基础系统两个功能（文件读写带三件工具）、技能一个都没有、人格一个功能；`features` 里写了联网没装。
+fn grouped() -> Tree {
+    read(&json!({
+    "features": [{"id": "web", "installed": false}],
+    "sections": [
+        {"id": "basesystem", "kind": "group", "name": "基础系统", "on": 2, "total": 2, "items": [
+            {"kind": "feature", "id": "files", "name": "文件读写", "on": true, "by": "group", "tools": [
+                {"id": "glob", "name": "找文件", "on": true},
+                {"id": "grep", "name": "搜内容", "on": false},
+                {"id": "read", "name": "读取", "on": true}]},
+            {"kind": "feature", "id": "commands", "name": "运行命令", "on": false, "by": "preset"}]},
+        {"id": "skills", "kind": "skills", "name": "技能", "on": 0, "total": 0, "items": []},
+        {"id": "research", "kind": "group", "name": "查资料", "on": 1, "total": 1, "items": [
+            {"kind": "feature", "id": "web", "name": "联网", "on": true, "by": "default"}]},
+        {"id": "persona", "kind": "group", "name": "人格", "on": 1, "total": 1, "items": [
+            {"kind": "feature", "id": "roleplay", "name": "人设遵循提醒", "on": true, "by": "group"}]}
+    ]}))
+}
+
 #[test]
-fn features_group_under_their_package_and_lone_packages_get_no_heading() {
-    // 核心 ENV-1：功能带 `package`，开关挂在包名下面；BS-1 起基础系统拆成一包一个功能，组名和功能名重复，不写组名。
-    let got = serde_json::json!({"features": [
-        {"id": "env-time", "name": "时间", "on": true, "package": "env"},
-        {"id": "read", "name": "读取", "on": true, "package": "read"},
-        {"id": "loose", "name": "散的技能", "on": true},
-        {"id": "env-cwd", "name": "工作目录", "on": true, "package": "env"},
-        {"id": "mine", "name": "我的脚本", "on": true, "package": "~home"},
-        {"id": "mine2", "name": "我的命令", "on": true, "package": "~home"}
-    ]});
-    let mut list = read(&got);
-    let names = Packages {
-        names: std::collections::HashMap::from([("env".to_string(), "注入环境信息".to_string())]),
-        ..Packages::default()
-    };
-    name_packages(&mut list, &names);
-    let rows = rows(&list);
+fn sections_come_in_the_cores_order_with_their_heading_and_an_empty_line() {
+    let tree = grouped();
+    assert_eq!(tree.sections.len(), 4);
     assert_eq!(
-        rows,
-        [
-            Row::Feature(2),
-            Row::Group(0),
-            Row::Feature(0),
-            Row::Feature(3),
-            Row::Feature(1),
-            Row::Group(4),
-            Row::Feature(4),
-            Row::Feature(5),
-        ],
-        "不归包的在最前；包照第一次出现的先后；只有一个功能的包不写组名"
-    );
-    assert_eq!(group_name(&list[0], "我的"), "注入环境信息");
-    assert_eq!(group_name(&list[4], "我的"), "我的", "机主私人的");
-    assert!(!selectable(&list, Row::Group(0)), "组名选不上");
-    assert!(toggle(&list, Row::Group(0)).is_empty());
-    // 旧核心一个都不带：照旧平铺。
-    let old =
-        read(&serde_json::json!({"features": [{"id": "a", "on": true}, {"id": "b", "on": true}]}));
-    assert_eq!(rows_of(&old), [Row::Feature(0), Row::Feature(1)]);
-}
-
-fn rows_of(list: &[Feature]) -> Vec<Row> {
-    rows(list)
-}
-
-#[test]
-fn packages_in_a_group_gather_under_the_groups_name() {
-    // 核心 BS-1下上：出厂的十八个包在「基础系统」组里，一包一个功能，照组收在一起、写组名；不在组里的照包。
-    let got = serde_json::json!({"features": [
-        {"id": "read", "name": "读取", "on": true, "package": "read"},
-        {"id": "weather", "name": "天气", "on": true, "package": "weather"},
-        {"id": "shell", "name": "跑命令", "on": true, "package": "shell"}
-    ]});
-    let mut list = read(&got);
-    let group = |id: &str| {
         (
-            id.to_string(),
-            ("basesystem".to_string(), "基础系统".to_string()),
-        )
-    };
-    let packages = Packages {
-        names: std::collections::HashMap::from([("weather".to_string(), "天气包".to_string())]),
-        groups: std::collections::HashMap::from([group("read"), group("shell")]),
-    };
-    name_packages(&mut list, &packages);
-    assert_eq!(
-        rows(&list),
-        [
-            Row::Group(0),
-            Row::Feature(0),
-            Row::Feature(2),
-            Row::Feature(1)
-        ],
-        "同组的收在一起；只有一个功能的包照旧不写组名"
+            tree.sections[1].name.as_str(),
+            tree.sections[1].kind.as_str()
+        ),
+        ("技能", "skills")
     );
-    assert_eq!(group_name(&list[0], "我的"), "基础系统");
-    assert_eq!(group_name(&list[1], "我的"), "天气包");
+    assert_eq!(
+        tree.features[0].tools[1].name, "grep",
+        "工具的编号是写键用的名字"
+    );
+    assert_eq!(tree.features[0].tools[1].label, "搜内容");
+    assert!(
+        !tree.features[2].installed,
+        "装没装照 `features` 里同一个编号的"
+    );
+    assert_eq!(
+        section_rows(&tree, 0),
+        [
+            Row::Section(0),
+            Row::Feature(0),
+            Row::Tool(0, 0),
+            Row::Tool(0, 1),
+            Row::Tool(0, 2),
+            Row::Feature(1)
+        ]
+    );
+    assert_eq!(section_rows(&tree, 1), [Row::Section(1), Row::Empty(1)]);
+    assert!(selectable(&tree, Row::Section(0)), "组名那一行停得上");
+    assert!(!selectable(&tree, Row::Section(1)), "什么都没有的组停不上");
+    assert!(
+        !selectable(&tree, Row::Section(2)),
+        "组里只有没装的也停不上"
+    );
+    assert!(!selectable(&tree, Row::Empty(1)) && !selectable(&tree, Row::Blank));
+    assert_eq!(super::tally(&tree, 0), (1, 2), "开着几个、一共几个");
+}
+
+#[test]
+fn space_on_a_heading_flips_the_whole_section() {
+    // 2026-10-30 项目主人：「可以整组，也可以 ctrl+A 切换全选」。组里有关着的就全开，都开着的就全关。
+    let tree = grouped();
+    let key = |k: &str, on: bool| (k.to_string(), on);
+    assert_eq!(
+        toggle(&tree, Row::Section(0)),
+        [key("tools.grep", true), key("features.commands", true)]
+    );
+    assert_eq!(
+        toggle(&tree, Row::Section(3)),
+        [key("features.roleplay", false)]
+    );
+    assert!(toggle(&tree, Row::Empty(1)).is_empty() && toggle(&tree, Row::Blank).is_empty());
+}
+
+#[test]
+fn sections_split_into_two_columns_where_the_lines_are_closest() {
+    let tree = grouped();
+    let grid = Grid::new(&tree, true);
+    // 基础系统 6 行 | 技能 2 + 空 1 + 查资料 2 + 空 1 + 人格 2 = 8 行：切在第一组后面最近。
+    assert_eq!(grid.cols.len(), 2);
+    assert_eq!(grid.cols[0], section_rows(&tree, 0));
+    assert_eq!(
+        grid.cols[1],
+        [
+            Row::Section(1),
+            Row::Empty(1),
+            Row::Blank,
+            Row::Section(2),
+            Row::Feature(2),
+            Row::Blank,
+            Row::Section(3),
+            Row::Feature(3)
+        ]
+    );
+    // 窗不够宽：排一列，组和组之间空一行。
+    let one = Grid::new(&tree, false);
+    assert_eq!(one.cols.len(), 1);
+    assert_eq!(one.cols[0].len(), 6 + 1 + 2 + 1 + 2 + 1 + 2);
+    // 停得上的照先后：左列从上往下，再右列；没装的、空的组停不上。
+    assert_eq!(
+        grid.stops(&tree),
+        [
+            Row::Section(0),
+            Row::Feature(0),
+            Row::Tool(0, 0),
+            Row::Tool(0, 1),
+            Row::Tool(0, 2),
+            Row::Feature(1),
+            Row::Section(3),
+            Row::Feature(3)
+        ]
+    );
+}
+
+#[test]
+fn up_and_down_stay_in_a_column_and_left_right_go_to_the_nearest_line() {
+    let tree = grouped();
+    let grid = Grid::new(&tree, true);
+    assert_eq!(grid.down(&tree, Row::Feature(1)), None, "左列到底了");
+    assert_eq!(grid.up(&tree, Row::Section(0)), None, "到顶了交给外面");
+    assert_eq!(
+        grid.up(&tree, Row::Section(3)),
+        None,
+        "右列上面只有停不上的"
+    );
+    assert_eq!(grid.down(&tree, Row::Tool(0, 2)), Some(Row::Feature(1)));
+    assert_eq!(
+        grid.side(&tree, Row::Tool(0, 2), true),
+        Some(Row::Section(3)),
+        "右列离第 5 行最近的停得上的"
+    );
+    assert_eq!(
+        grid.side(&tree, Row::Feature(3), false),
+        Some(Row::Feature(1))
+    );
+    assert_eq!(grid.side(&tree, Row::Feature(0), false), None, "左边没有了");
+}
+
+/// 预设写了、这台机器没装的：核心不排进组，照旧排在最后一段，不写组名，停不上（「配置页」第 38 条）。
+#[test]
+fn features_written_but_not_installed_follow_in_a_last_unnamed_part() {
+    let tree = read(&json!({
+        "features": [{"id": "goal", "name": "长期目标", "on": true, "installed": false}],
+        "sections": [{"id": "tasks", "kind": "group", "name": "任务和定时", "items": [
+            {"id": "todo", "name": "待办清单", "on": true}]}]}));
+    assert_eq!(tree.sections.len(), 2);
+    assert_eq!(tree.features[1].name, "长期目标");
+    assert!(!tree.features[1].installed);
+    assert_eq!(section_rows(&tree, 1), [Row::Feature(1)], "不写组名");
+    assert!(!selectable(&tree, Row::Feature(1)));
 }
