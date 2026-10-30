@@ -94,5 +94,11 @@ missing_panics_doc = "warn"
 [profile.dev]
 opt-level = 1
 
+# 发行版整个程序一起优化（2026-10-31 项目主人定，蓝图「量尺」的发行配置）：比不写省 6 MB 程序、0.5 MB PSS、5% 冷启动指令。
+# opt-level 照默认 3：写 "s" 再省 0.8 MB PSS，可指令多 12%。
+[profile.release]
+lto = "fat"
+codegen-units = 1
+
 # 演示程序不进仓库的 workspace，自己单独编，门禁不查它。
 [workspace]
