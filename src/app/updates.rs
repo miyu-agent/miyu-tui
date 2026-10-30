@@ -258,9 +258,9 @@ impl App {
         if self.widget_update(&update) {
             return;
         }
-        if let Update::SlashRefused { message, reason } = &update {
+        if let Update::SlashRefused { message } = &update {
             self.dream_refused();
-            self.slash_refused(message, reason.as_deref());
+            self.slash_refused(message);
             return;
         }
         // `/dream` 的回执：看着整理的醒一下再收成回执（`dream.rs`）。
@@ -268,11 +268,9 @@ impl App {
             && command == "dream"
             && self.dream_woke(said)
         {
-            self.slash_ran();
             return;
         }
         if let Update::CommandRan { command, said } = &update {
-            self.slash_ran();
             let said = said.trim_end().trim_end_matches(['。', '.']);
             // `/goal` 看进度的：原文长了截原文，在哪一步、第几轮留着（「长期目标」第 1 条）。
             let (text, tail) = match command.as_str() {

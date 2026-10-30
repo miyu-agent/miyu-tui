@@ -120,7 +120,6 @@ impl App {
                     config_tips,
                 ),
                 notice: None,
-                slash_draft: None,
             },
             boxes: Default::default(),
             media: super::media::Media::new(md_keep, figures),
