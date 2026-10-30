@@ -12,7 +12,7 @@
 |---|---|
 | `src/main.rs` | 进出全屏；主循环：终端事件和核心的消息进同一个通道，空闲不重画 |
 | `src/app/` | 程序状态：`mod.rs` 状态、事件分给各块、核心的消息；`keys.rs` 按键和斜杠命令的执行；`catalog.rs` 核心认的斜杠命令（问清单、交给核心、被拒放回）；`widgets.rs` 界面块（照屏上的位置订阅、收推送、点了做什么）；`mouse.rs` 鼠标；`drawer.rs` 抽屉接到程序上（按键、收起、了结） |
-| `src/core/` | 连核心：`mod.rs` 连上、握手、开会话、订阅、收发；`rpc.rs` 一行一条的 JSON-RPC；`push.rs` 把推送读成界面关心的几样；`kinds.rs` 有固定取值的几样（权限级别、工具结果的状态、一轮结束的原因）读成类型；`undo.rs` 撤销、恢复的回应；`catalog.rs` `command.catalog` 的回应；`widgets.rs` 界面块的流（订阅、重连和掉队重订、`widget.changed`）；`types.rs` 几个小类型 |
+| `src/core/` | 连核心：`mod.rs` 连上、握手、开会话、订阅、收发；`rpc.rs` 一行一条的 JSON-RPC（读一行的缓冲收过长过 64 KB 的一行，处理完缩回 8 KB：不然收过一次 `human.get` 这种上百 KB 的回应就一直撑在那么大，2026-10-31 TM-3；平常的一条不重新要）；`push.rs` 把推送读成界面关心的几样；`kinds.rs` 有固定取值的几样（权限级别、工具结果的状态、一轮结束的原因）读成类型；`undo.rs` 撤销、恢复的回应；`catalog.rs` `command.catalog` 的回应；`widgets.rs` 界面块的流（订阅、重连和掉队重订、`widget.changed`）；`types.rs` 几个小类型 |
 | `src/transcript/` | 界面记着的会话：`mod.rs` 正文、在不在跑、用量、权限；`blocks.rs` 一块块流式的字接到哪里；`steps.rs` 时间线的一段和一步；`words.rs` 旁白的拼法；`beat.rs` 这一轮出过几件事（运行状态行照它换词）；`media.rs` 她发出去的图一张一条（「她发的图」） |
 | `src/input/` | 输入框：`editor.rs` 编辑（粘贴块按位置记着、当一个字），`pasted.rs` 大段粘贴什么时候收成一块、带着块的一段字（`Draft`），`wrap.rs` 折行和坐标换算，`saved.rs` 输入历史记进文件、起来读回（「输入历史列表」第 8 条），`mod.rs` 键盘和鼠标 |
 | `src/drawer/` | 确认和提问的抽屉：`mod.rs` 选到哪、勾了哪些、写了什么；`keys.rs` 按键和编辑；`event.rs` 核心推的提问、确认和作答的形状；`report.rs` 了结以后留什么；`texts.rs` 抽屉上的字 |
