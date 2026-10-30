@@ -10,6 +10,7 @@ use crate::core::Refusal;
 mod catalog;
 mod cleared;
 mod fixed_pool;
+mod preset_tree;
 mod rename;
 mod search;
 

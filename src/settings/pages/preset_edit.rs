@@ -39,11 +39,11 @@ pub enum Field {
     Row(features::Row),
 }
 
-/// 预设的窗里能改的几行。
-pub fn fields(detail: &Detail) -> Vec<Field> {
-    let rows = features::rows(&detail.features)
+/// 预设的窗里能改的几行：名字、描述，再照功能树的先后（左列从上往下，再右列；`two` 是排成了两列）。
+pub fn fields(detail: &Detail, two: bool) -> Vec<Field> {
+    let rows = features::Grid::new(&detail.features, two)
+        .stops(&detail.features)
         .into_iter()
-        .filter(|r| features::selectable(&detail.features, *r))
         .map(Field::Row);
     [Field::Name, Field::Summary]
         .into_iter()
@@ -75,8 +75,8 @@ impl Settings {
         self.popup = Some(Popup::Line(edit.to(Target::NewPreset)));
     }
 
-    /// 预设的窗的按键：上下挪光标；功能那几行空格、`Tab`、`Enter` 切，`Ctrl+A` 全开、全关；名字、默认人格 `Enter`
-    /// 改；`d` 删除，`Esc` 关。
+    /// 预设的窗的按键：上下挪光标（功能树里 `↑` `↓` 在一列里走、到顶回描述，`←` `→` 换列，核心设计 52）；功能、工具、
+    /// 组名那几行空格、`Tab`、`Enter` 切，`Ctrl+A` 全开、全关；名字、描述 `Enter` 改；`d` 删除，`Esc` 关。
     pub(in crate::settings) fn preset_key(
         &mut self,
         mut view: PresetView,
@@ -89,28 +89,41 @@ impl Settings {
             }
             return;
         };
-        let lines = fields(&detail);
+        let two = view.two.get();
+        let lines = fields(&detail, two);
         let at = lines.get(view.cursor).copied();
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-        match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => return,
-            KeyCode::Char('a') if ctrl => self.toggle_all(&detail),
-            KeyCode::Char('j') | KeyCode::Down => {
+        let grid = features::Grid::new(&detail.features, two);
+        let tree = &detail.features;
+        let index = |row: Option<features::Row>| {
+            row.and_then(|r| lines.iter().position(|f| *f == Field::Row(r)))
+        };
+        match (key.code, at) {
+            (KeyCode::Esc | KeyCode::Char('q'), _) => return,
+            (KeyCode::Char('a'), _) if ctrl => self.toggle_all(&detail),
+            (KeyCode::Char('j') | KeyCode::Down, Some(Field::Row(row))) => {
+                view.cursor = index(grid.down(tree, row)).unwrap_or(view.cursor);
+            }
+            (KeyCode::Char('j') | KeyCode::Down, _) => {
                 view.cursor = (view.cursor + 1).min(lines.len().saturating_sub(1));
             }
-            KeyCode::Char('k') | KeyCode::Up => view.cursor = view.cursor.saturating_sub(1),
-            KeyCode::Char('d') => return self.ask_delete_preset(&view.id, texts),
-            KeyCode::Char(' ') | KeyCode::Tab | KeyCode::Enter
-                if matches!(at, Some(Field::Row(_))) =>
-            {
-                if let Some(Field::Row(row)) = at {
-                    let changes = features::toggle(&detail.features, row);
-                    if !changes.is_empty() {
-                        self.set_preset(&view.id, bools(changes), false);
-                    }
+            // 一列的顶上再往上回到描述那一行。
+            (KeyCode::Char('k') | KeyCode::Up, Some(Field::Row(row))) => {
+                view.cursor = index(grid.up(tree, row)).unwrap_or(1);
+            }
+            (KeyCode::Char('k') | KeyCode::Up, _) => view.cursor = view.cursor.saturating_sub(1),
+            (KeyCode::Char('h' | 'l') | KeyCode::Left | KeyCode::Right, Some(Field::Row(row))) => {
+                let right = matches!(key.code, KeyCode::Char('l') | KeyCode::Right);
+                view.cursor = index(grid.side(tree, row, right)).unwrap_or(view.cursor);
+            }
+            (KeyCode::Char('d'), _) => return self.ask_delete_preset(&view.id, texts),
+            (KeyCode::Char(' ') | KeyCode::Tab | KeyCode::Enter, Some(Field::Row(row))) => {
+                let changes = features::toggle(&detail.features, row);
+                if !changes.is_empty() {
+                    self.set_preset(&view.id, bools(changes), false);
                 }
             }
-            KeyCode::Enter => return self.edit_preset(view, at, &detail, texts),
+            (KeyCode::Enter, _) => return self.edit_preset(view, at, &detail, texts),
             _ => {}
         }
         self.popup = Some(Popup::Preset(view));
@@ -147,11 +160,9 @@ impl Settings {
         self.popup = Some(popup);
     }
 
-    /// 读 `preset.get` 的回应，照 `package.list` 填上每个功能的包名（组名那一行写它，`features.rs`）。
+    /// 读 `preset.get` 的回应（分组照核心的 `sections`，`features.rs`）。
     pub(in crate::settings) fn preset_detail(&self, got: &Value) -> Detail {
-        let mut detail = presets::detail(got);
-        features::name_packages(&mut detail.features, &self.package_names);
-        detail
+        presets::detail(got)
     }
 
     /// 选择窗、编辑窗选好了：照写到哪办；不是预设的交回 `false`。
@@ -226,6 +237,7 @@ impl Settings {
                     detail: Some(detail),
                     error: None,
                     cursor: 0,
+                    two: Default::default(),
                 }));
             }
             _ => {}
@@ -335,6 +347,7 @@ mod tests {
             detail: Some(got.clone()),
             error: None,
             cursor,
+            two: Default::default(),
         };
         let key = |code, modifiers| KeyEvent::new(code, modifiers);
         let mut page = Settings::default();
@@ -374,6 +387,7 @@ mod tests {
                 detail: Some(got),
                 error: None,
                 cursor: 0,
+                two: Default::default(),
             })),
             ..Settings::default()
         };
@@ -405,6 +419,7 @@ mod tests {
             detail: Some(got),
             error: None,
             cursor: 1,
+            two: Default::default(),
         };
         let mut page = Settings::default();
         page.preset_key(
@@ -443,7 +458,7 @@ mod tests {
             {"id": "commands", "name": "运行命令", "on": false, "installed": true,
              "tools": [{"name": "shell", "label": "执行命令", "on": false}]}]}));
         assert_eq!(
-            fields(&got),
+            fields(&got, true),
             [
                 Field::Name,
                 Field::Summary,

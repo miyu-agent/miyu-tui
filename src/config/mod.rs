@@ -18,6 +18,7 @@ use localize::localized;
 
 mod attach;
 mod dream;
+mod feature_tree;
 mod figures;
 mod goal;
 mod icons;
@@ -37,6 +38,7 @@ mod words;
 
 pub use attach::{AttachLook, AttachTexts};
 pub use dream::{DreamLook, DreamTexts};
+pub use feature_tree::FeatureTreeTexts;
 pub use figures::{FigureLook, Room};
 pub use goal::GoalTexts;
 pub use icons::Icons;
@@ -205,6 +207,8 @@ pub struct Texts {
     pub goal: GoalTexts,
     /// 循环的字（蓝图「循环」）。
     pub loops: LoopTexts,
+    /// 功能树的字（蓝图「配置页」第 38 条「功能树」）。
+    pub feature_tree: FeatureTreeTexts,
     /// 输入历史列表上的字（蓝图「输入历史列表」）。
     pub history: HistoryTexts,
     /// `/jump` 的列表上的字，和输入历史列表一样的几格（蓝图「跳到说过的话」）。

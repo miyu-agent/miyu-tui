@@ -98,7 +98,6 @@ impl App {
                 widgets: Default::default(),
                 service: Default::default(),
                 bill_asked: None,
-                package_names: Default::default(),
                 loops: Vec::new(),
             },
             typing: super::typing::Typing {

@@ -17,6 +17,7 @@ mod dreamt_rows;
 pub use drawer::PreviewLook;
 mod answered_rows;
 pub mod effort_list;
+pub mod feature_tree;
 mod figure_rows;
 mod floating;
 mod footer;

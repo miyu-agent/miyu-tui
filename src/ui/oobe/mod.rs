@@ -339,7 +339,7 @@ fn popup_frame(
             .as_ref()
             .map(|m| more::popup(m, &texts, size)),
         // 看预设、自定义（第 24、26 条）。
-        Step::Preset => preset::popup(&mut oobe.preset, &texts, size),
+        Step::Preset => preset::popup(&mut oobe.preset, &texts, size, &p.config.text.feature_tree),
         // 更多描述的大编辑浮窗（第 23b 条）。
         Step::Profile => profile::popup(&mut oobe.profile, &texts, size),
         _ => None,

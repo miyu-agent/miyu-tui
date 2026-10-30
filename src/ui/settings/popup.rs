@@ -28,6 +28,7 @@ pub fn draw(
     texts: &Texts,
     look: &Look,
     caret: &mut Caret,
+    tree: &crate::config::FeatureTreeTexts,
 ) {
     let Some(mut popup) = page.popup.take() else {
         return;
@@ -75,7 +76,13 @@ pub fn draw(
         // 预设的名称、描述就在详情窗那一行里改，不另开小窗（2026-10-23 项目主人：「回车直接编辑就好了」）。
         Popup::Line(edit) => match &edit.target {
             crate::settings::pages::target::Target::Preset(view) => {
-                super::more_popups::preset(&mut lines, view, page, texts, (width, Some(edit)));
+                super::more_popups::preset(
+                    &mut lines,
+                    view,
+                    page,
+                    texts,
+                    (width, Some(edit), tree),
+                );
             }
             _ => super::more_popups::line(&mut lines, edit, texts),
         },
@@ -85,7 +92,7 @@ pub fn draw(
         }
         Popup::Persona(view) => super::more_popups::persona(&mut lines, view, page, texts),
         Popup::Preset(view) => {
-            super::more_popups::preset(&mut lines, view, page, texts, (width, None));
+            super::more_popups::preset(&mut lines, view, page, texts, (width, None, tree));
         }
         Popup::Dialogs(view) => super::dialog_popups::dialogs(&mut lines, view, texts, width),
         Popup::List(edit) => super::dialog_popups::list(&mut lines, edit, texts, width),

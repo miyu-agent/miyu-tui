@@ -360,20 +360,25 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     tui.wait_for("全部功能");
     tui.wait_for("常规开发");
     tui.key(b"\r");
-    tui.wait_for("功能");
+    tui.wait_for("基础系统");
     // 预设不再管默认人格（2026-10-08 项目主人）。
     assert!(!tui.shows("默认人格"), "{}", tui.lines().join("\n"));
     // 出厂的十八个包照组收在「基础系统」下面（核心 BS-1下上）。功能写给人看的名字，不写编号（2026-10-08 项目主人：「都是英文谁看得懂？」，核心 P-3 补给名字）。
-    tui.wait_for("改文件");
+    tui.wait_for("编辑文件");
     tui.wait_for("基础系统");
     assert!(!tui.shows("files"), "{}", tui.lines().join("\n"));
-    // 功能多了（核心后来加了展示、Harness 版本这些），写了没装的那一行可能在窗外：往下挪着找。
+    // 右列最底下是停不上的空组（脚本、MCP 服务，核心 FG-1）：光标从名称往下进功能树（名称、描述、第一组的组名），`l`
+    // 换到右列，往下走到最后一个停得上的，窗照这一列的最底下滚，空组也露出来（写了没装的同样排在最后，单元测试守着；
+    // 出厂的常规开发 FG-1 起按组写，测具里没有写了没装的）。
+    tui.key(b"j");
+    tui.key(b"j");
+    tui.key(b"l");
     for _ in 0..40 {
-        if !tui.shows("未安装") {
+        if !tui.shows("还没有 MCP 服务") {
             tui.key(b"j");
         }
     }
-    tui.wait_for("未安装");
+    tui.wait_for("还没有 MCP 服务");
     tui.key(b"\x1b");
 }
 

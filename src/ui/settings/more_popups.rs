@@ -2,7 +2,7 @@
 //! 原因，画法在 `ui/floating.rs`，引导的主题那一步也用它）、填一行字的编辑窗、人格的窗、预设的窗。和别的悬浮窗一个底、一个
 //! 排法（`ui/floating.rs` 的 `Lines`）。
 
-use ratatui::style::{Modifier, Style};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
@@ -151,24 +151,25 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
     }
 }
 
-/// 预设的窗（蓝图「配置页」第 38 条）：名字；「功能 N/M」一段照旧版「启用的功能」一行一个 `[*] 名字   说明`，
-/// 没装的暗着、右边黄字「没安装」；关掉的单件工具一行，写显示名。光标那一行铺底色。
+/// 预设的窗（蓝图「配置页」第 38 条）：名字、描述，空一行，下面照功能树画（`ui/feature_tree.rs`，核心设计 52：两列、组名
+/// 后面写开着几个）。光标那一格铺底色、前面竖条；右上角暗色写光标那一行的工具名。
 pub(super) fn preset(
     lines: &mut Lines,
     view: &PresetView,
     page: &Settings,
     texts: &Texts,
-    (width, inline): (u16, Option<&LineEdit>),
+    (width, inline, tree): (u16, Option<&LineEdit>, &crate::config::FeatureTreeTexts),
 ) {
     let words = &texts.more;
     let listed = page.more.presets.iter().flatten().find(|p| p.id == view.id);
     let named = view.detail.as_ref().and_then(|d| d.name.as_deref());
     let title = title(named, listed, &view.id);
+    let two = view.two.get();
     // 右上角暗色写光标那一行的工具名（2026-10-22 项目主人：只看中文名不知道到底是哪件）。
     let at = view
         .detail
         .as_ref()
-        .and_then(|d| match fields(d).get(view.cursor) {
+        .and_then(|d| match fields(d, two).get(view.cursor) {
             Some(Field::Row(row)) => Some(tool_names(&d.features, *row)),
             _ => None,
         });
@@ -184,11 +185,8 @@ pub(super) fn preset(
     };
     // 存不进去的原话写在窗里（读成了详情以后 `error` 只管这个）。
     lines.error = view.error.clone();
-    let fields = fields(detail);
+    let fields = fields(detail, two);
     let at = fields.get(view.cursor).copied();
-    // 写了没装的功能排在最后、光标停不上去：挪到最后一个能选的行时连它们一起露出来（2026-10-24：功能多了以后
-    // 「没安装」那几行一直在窗外）。
-    lines.to_end = view.cursor + 1 == fields.len();
     // 名字、描述两行，名字那一栏对齐（描述 2026-10-23 加，没写的空着）。正在改的那一行写编辑器里的字、光标停在里面。
     let rows = [
         (Field::Name, "preset.name", &words.detail[0], &detail.name),
@@ -222,93 +220,38 @@ pub(super) fn preset(
             hit: None,
         });
     }
-    // 功能：照旧版一行一个开关，空格、Tab 切（2026-10-08 项目主人）；工具平铺在功能下面，一件一行（2026-10-09）。
-    let installed: Vec<_> = detail.features.iter().filter(|f| f.installed).collect();
-    let on = installed.iter().filter(|f| f.on).count();
-    let title = words.preset_detail[0]
-        .replace("{on}", &on.to_string())
-        .replace("{all}", &installed.len().to_string());
+    // 功能树（核心设计 52）：光标那一格自己画（竖条、铺底色），窗只照它滚。
     lines.plain(Line::default());
-    lines.plain(Line::styled(
-        format!("  {title}"),
-        theme::dim().add_modifier(Modifier::BOLD),
-    ));
-    for row in features::rows(&detail.features) {
-        lines.body.push(Body {
-            line: feature_line(
-                &detail.features,
-                row,
-                (&words.preset_detail[1], &words.package_mine),
-            ),
-            focused: at == Some(Field::Row(row)),
-            hit: None,
-        });
+    let cursor = match at {
+        Some(Field::Row(row)) => Some(row),
+        _ => None,
+    };
+    let focus = crate::ui::feature_tree::Focus {
+        lead: Span::styled(
+            crate::sheet::mark(|m| &m.bar).to_string(),
+            theme::picked_mark(),
+        ),
+        bg: theme::row_focus(),
+    };
+    // 窗里左右各留两格。
+    let room = width.saturating_sub(4);
+    let drawn = crate::ui::feature_tree::draw(&detail.features, cursor, room, (tree, &focus));
+    view.two.set(drawn.two);
+    let first = lines.body.len();
+    lines.focus = drawn.focus.map(|i| first + i);
+    for line in drawn.lines {
+        lines.plain(line);
     }
 }
 
-/// 一行对应的工具名：工具那一行写它自己；功能那一行写它下面的几件，` · ` 隔开（同一天项目主人照推荐定）。
+/// 一行对应的工具名：工具那一行写它自己；功能那一行写它下面的几件，` · ` 隔开（同一天项目主人照推荐定）；组名那一行不写。
 fn tool_names(list: &[features::Feature], row: features::Row) -> String {
     match row {
-        features::Row::Group(_) => String::new(),
         features::Row::Tool(i, j) => list[i].tools[j].name.clone(),
         features::Row::Feature(i) => {
             let names: Vec<_> = list[i].tools.iter().map(|t| t.name.as_str()).collect();
             names.join(&crate::sheet::sep())
         }
-    }
-}
-
-/// 平铺的一行（「配置页」第 38 条）：功能那一行勾在前、名字加粗；工具缩进两格；关着的、功能关着时的工具暗着；没装的
-/// 暗着、名字后面黄字「没安装」。
-fn feature_line(
-    list: &[features::Feature],
-    row: features::Row,
-    (missing, mine): (&str, &str),
-) -> Line<'static> {
-    let checked = |on: bool| {
-        if on {
-            ("[*]", theme::accent(), Style::new())
-        } else {
-            ("[ ]", theme::dim(), theme::dim())
-        }
-    };
-    match row {
-        // 组名（核心 ENV-1）：暗色，和功能那一行的勾对齐。
-        features::Row::Group(i) => Line::styled(
-            format!("  {}", features::group_name(&list[i], mine)),
-            theme::dim().add_modifier(Modifier::BOLD),
-        ),
-        features::Row::Feature(i) => {
-            let feature = &list[i];
-            if !feature.installed {
-                return Line::from(vec![
-                    Span::styled(format!("      {}", feature.name), theme::dim()),
-                    Span::raw("  "),
-                    Span::styled(missing.to_string(), theme::warn()),
-                ]);
-            }
-            let mark = features::mark(feature);
-            let (_, mark_style, name_style) = checked(feature.on);
-            Line::from(vec![
-                Span::raw("  "),
-                Span::styled(mark.text(), mark_style),
-                Span::raw(" "),
-                Span::styled(
-                    feature.name.clone(),
-                    name_style.add_modifier(Modifier::BOLD),
-                ),
-            ])
-        }
-        features::Row::Tool(i, j) => {
-            let feature = &list[i];
-            let tool = &feature.tools[j];
-            let (mark, mark_style, name_style) = checked(features::tool_on(feature, tool));
-            Line::from(vec![
-                Span::raw("    "),
-                Span::styled(mark, mark_style),
-                Span::raw(" "),
-                Span::styled(tool.label.clone(), name_style),
-            ])
-        }
+        _ => String::new(),
     }
 }

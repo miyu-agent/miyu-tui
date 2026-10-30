@@ -45,8 +45,8 @@ fn made(home: &Home) -> Tui {
     until(&mut tui, "建好的文件", || {
         text(home).contains("我的预设")
     });
-    // 建好开它的窗：名字、功能；编号不出现。
-    tui.wait_for("功能");
+    // 建好开它的窗：名字、功能树（核心 FG-1，组名打头）；编号不出现。
+    tui.wait_for("基础系统");
     assert!(!tui.shows("preset-1"), "{}", tui.lines().join("\n"));
     tui
 }
@@ -55,10 +55,12 @@ fn made(home: &Home) -> Tui {
 fn a_new_preset_has_its_features_toggled_with_space_and_is_deleted() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = made(&home);
-    // 新建的功能先全开：一项都没写。光标从名字起，下面是描述（2026-10-23 加），再下一行是第一项功能，空格切掉。
+    // 新建的功能先全开：一项都没写。光标从名字起，下面是描述（2026-10-23 加），再下一行是第一组的组名（核心 FG-1），
+    // 再下一行是第一项功能，空格切掉。
     assert!(!text(&home).contains("[software]"), "{}", text(&home));
-    tui.key(b"j");
-    tui.key(b"j");
+    for _ in 0..3 {
+        tui.key(b"j");
+    }
     tui.key(b" ");
     until(&mut tui, "切掉的那一项", || {
         text(&home).contains("= false")

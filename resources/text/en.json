@@ -213,6 +213,10 @@
     "removed": "Title removed",
     "too_long": "Titles are at most {max} characters"
   },
+  "feature_tree": {
+    "empty": {"skills": "No skills yet", "scripts": "No scripts yet", "mcp": "No MCP servers yet", "other": "Nothing yet"},
+    "missing": "Not installed"
+  },
   "loops": {
     "title": "Loop",
     "paused": "Paused",
@@ -1171,7 +1175,6 @@
         "Presets",
         "Decides which features are on"
       ],
-      "package_mine": "Mine",
       "preset_detail": [
         "Features {on}/{all}",
         "Not installed",
@@ -1310,6 +1313,10 @@
           [
             "↑/↓",
             "select"
+          ],
+          [
+            "←/→",
+            "column"
           ],
           [
             "Space",
@@ -1470,7 +1477,7 @@
       "persona": "Enter edit · j/k move · Esc back",
       "edit": "Enter edit · j/k move · Esc back",
       "writing": "Enter new line · Ctrl+G external editor · Esc done",
-      "custom": "Space toggle · Ctrl+A all · j/k move · Esc close",
+      "custom": "Space toggle · Ctrl+A all · j/k move · h/l column · Esc close",
       "custom_name": "Enter edit · j/k move · Esc close",
       "create": "Enter create · j/k move · Esc close",
       "view": "j/k scroll · Space close",
@@ -1596,7 +1603,6 @@
       "avatar_set": "Set"
     },
     "preset": {
-      "mine": "Mine",
       "title": "Choose a preset",
       "sub": "A preset decides which features are on. You can change it in settings or per session",
       "custom": "Custom",

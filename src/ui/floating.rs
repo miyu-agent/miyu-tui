@@ -25,8 +25,8 @@ pub struct Lines<H> {
     pub hints: Vec<[String; 2]>,
     /// 正在改的那一行：第几行、光标在第几列。
     pub caret: Option<(usize, u16)>,
-    /// 光标停在最后一个能选的行上：后面跟着的、光标停不上去的行（预设里写了没装的功能）也露出来，窗口滚到底。
-    pub to_end: bool,
+    /// 光标在第几行、只照它滚不铺整行（功能树两列，光标那一格自己画，`ui/feature_tree.rs`）；`None` 的照 `focused` 那一行。
+    pub focus: Option<usize>,
     /// 窗里从第几行露起：画之前填上一帧的，画完是这一帧的（叫的人记着，下一帧再交回来）。选中的碰到上下边才挪（`menu::edge`，
     /// 2026-10-27 项目主人：往下滚到底以后往回一下就整页往上翻，要碰到上边才翻）。
     pub top: usize,
@@ -42,7 +42,7 @@ impl<H> Default for Lines<H> {
             button: None,
             hints: Vec::new(),
             caret: None,
-            to_end: false,
+            focus: None,
             top: 0,
         }
     }
@@ -193,18 +193,11 @@ fn paint<H: Copy>(
         .map(|e| error_rows(e, usize::from(inner.width)))
         .unwrap_or_default();
     let room = inner.height.saturating_sub(6 + errors.len() as u16) as usize;
-    let focus = if lines.to_end {
-        lines.body.len().saturating_sub(1)
-    } else {
-        lines.body.iter().position(|b| b.focused).unwrap_or(0)
-    };
-    let top = if lines.to_end {
-        focus
-            .saturating_sub(room.saturating_sub(1))
-            .min(lines.body.len().saturating_sub(room))
-    } else {
-        crate::menu::edge(focus, None, lines.top, lines.body.len(), room)
-    };
+    let focus = lines
+        .focus
+        .or_else(|| lines.body.iter().position(|b| b.focused))
+        .unwrap_or(0);
+    let top = crate::menu::edge(focus, None, lines.top, lines.body.len(), room);
     let top = if lines.caret.is_some_and(|(row, _)| row == 0) {
         0
     } else {
