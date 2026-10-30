@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use super::asker::{Asker, Waiting};
 use super::pick::Pick;
 use super::{Move, Step};
-use crate::core::Refusal;
+use crate::core::{Progress, Refusal, Stage};
 
 pub mod download;
 
@@ -125,7 +125,11 @@ impl SemanticStep {
 
     /// 开始下：两行换成进度条。
     fn start(&mut self, asker: &mut Asker) {
-        self.phase = Phase::Installing { done: 0, total: 0 };
+        self.phase = Phase::Installing {
+            stage: Stage::Download,
+            done: 0,
+            total: 0,
+        };
         self.error = None;
         asker.ask(
             "package.install",
@@ -147,10 +151,16 @@ impl SemanticStep {
         Move::Stay
     }
 
-    /// 推来的下载进度：只认语义模型的包、正在下的时候。
-    pub fn progress(&mut self, package: &str, done: u64, total: u64) {
-        if package == download::PACKAGE && self.installing() {
-            self.phase = Phase::Installing { done, total };
+    /// 推来的进度：只认语义模型的包、正在装的时候。核对、装的那一次不带字节数，下完的数留着（条停在满格）。
+    pub fn progress(&mut self, got: &Progress) {
+        if got.package != download::PACKAGE {
+            return;
+        }
+        if let Phase::Installing { stage, done, total } = &mut self.phase {
+            *stage = got.stage;
+            if got.stage == Stage::Download {
+                (*done, *total) = (got.done, got.total);
+            }
         }
     }
 

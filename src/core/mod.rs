@@ -26,7 +26,7 @@ mod notices;
 pub use notices::Notice;
 mod output;
 mod packages;
-pub use packages::{PackageEntry, Progress};
+pub use packages::{PackageEntry, Progress, Stage};
 mod page;
 mod personas;
 mod push;

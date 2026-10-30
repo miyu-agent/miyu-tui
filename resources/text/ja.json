@@ -1632,7 +1632,7 @@
       "sub": "記憶・ナレッジベース・スタンプなどの検索の質が大きく上がります。ただしメモリ使用量が大きく増え、検索ごとに CPU を使います",
       "on": ["はい", "おすすめ"],
       "off": ["いいえ", "キーワード検索だけ"],
-      "download": {"size": "ダウンロード {size}", "preparing": "ダウンロードの準備中…", "progress": "{percent}% · {done} / {total}", "retry": "再試行", "skip": "スキップ"}
+      "download": {"size": "ダウンロード {size}", "preparing": "ダウンロードの準備中…", "progress": "{percent}% · {done} / {total}", "verifying": "検証中…", "installing": "インストール中…", "retry": "再試行", "skip": "スキップ"}
     },
     "done": {
       "title": "準備完了",
