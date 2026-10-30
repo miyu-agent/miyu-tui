@@ -33,6 +33,8 @@ mod push;
 mod replay;
 mod request;
 mod rpc;
+mod schedules;
+pub use schedules::{Change as LoopChange, Every as LoopEvery, Loop, apply as apply_loops};
 mod serve;
 mod sessions;
 mod snapshot;

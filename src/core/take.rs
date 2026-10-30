@@ -65,7 +65,8 @@ pub(super) async fn take(
                 | Awaiting::Models
                 | Awaiting::SessionsStream
                 | Awaiting::PackagesStream
-                | Awaiting::NoticesStream,
+                | Awaiting::NoticesStream
+                | Awaiting::SchedulesStream,
             ) => true,
             Some(Awaiting::Choices) => notify(Update::Choices(Vec::new())),
             Some(Awaiting::Efforts) => notify(Update::Efforts(super::EffortList::default())),
@@ -207,6 +208,10 @@ pub(super) async fn take(
             return notify(Update::Sessions(sessions::read(&message["result"])));
         }
         Some(Awaiting::PackagesStream | Awaiting::NoticesStream) => return true,
+        Some(Awaiting::SchedulesStream) => {
+            let all = super::schedules::table(&message["result"]);
+            return notify(Update::Loops(super::LoopChange::All(all)));
+        }
         // 最新一页到了：画进去，再带 `after` 订阅（`page.rs`）。
         Some(Awaiting::Page(session)) => {
             return super::page::take_latest(
@@ -326,6 +331,16 @@ pub(super) async fn take(
     if super::notices::lost(message) {
         if let Ok(id) = super::notices::follow(rpc).await {
             awaiting.insert(id, Awaiting::NoticesStream);
+        }
+        return true;
+    }
+    // 唤醒表变了（核心 J-1 下）：交给界面改手上那一份；掉了队重新订，回应是整张。
+    if let Some(change) = super::schedules::changed(message) {
+        return notify(Update::Loops(change));
+    }
+    if super::schedules::lost(message) {
+        if let Ok(id) = super::schedules::follow(rpc).await {
+            awaiting.insert(id, Awaiting::SchedulesStream);
         }
         return true;
     }

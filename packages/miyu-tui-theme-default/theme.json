@@ -145,6 +145,7 @@
     "undo_left_mark": "✗ ",
     "queued_mark": "↳ ",
     "goal_mark": "◎ ",
+    "loop_mark": "↻ ",
     "todo_marks": {
       "pending": "☐ ",
       "active": "■ ",

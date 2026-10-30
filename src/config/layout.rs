@@ -149,6 +149,8 @@ pub struct Layout {
     pub link_icon_cols: u16,
     /// 会话列表里正在用的那个标题前面的记号（2026-10-02）。
     pub current_mark: String,
+    /// 输入框上面那一行循环打头的记号，连同它后面的空格（「循环」第 2 条）。
+    pub loop_mark: String,
     /// 侧边栏「最近会话」里当前这个会话的记号（2026-10-30 项目主人：用箭头）。
     pub side_here_mark: String,
     /// 侧边栏「最近会话」里做完了还没看的会话的记号（2026-10-30）。

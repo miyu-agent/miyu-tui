@@ -213,6 +213,13 @@
     "removed": "已清除标题",
     "too_long": "标题最多 {max} 个字"
   },
+  "loops": {
+    "title": "循环",
+    "paused": "已暂停",
+    "next": "下次 {time}",
+    "dynamic": "动态间隔",
+    "every": ["每 {n} 秒", "每 {n} 分钟", "每 {n} 小时", "每 {n} 天"]
+  },
   "goal": {
     "mark": "● ",
     "round": "长期目标 · 第 {round} 轮",

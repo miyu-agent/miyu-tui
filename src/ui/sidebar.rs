@@ -238,6 +238,15 @@ pub fn draw(
     }
     // 「用量」那一段最后接花了多少（核心 8-15）：用量那一段在最后，接在后面就是。
     info.extend(spent_lines(seen.spent(), seen.config));
+    // 这个会话挂着循环的，多一段「循环」，空一行接在后面（「循环」第 3 条）。
+    let session = seen.talk.transcript.session.as_deref();
+    let at_now = (jiff::Timestamp::now(), &jiff::tz::TimeZone::system());
+    let mine = super::loop_tag::of(&seen.link.loops, session);
+    let loops = super::loop_tag::sidebar(&mine, seen.config, at_now, inner);
+    if !loops.is_empty() {
+        info.push(Line::raw(""));
+        info.extend(loops);
+    }
     let tall = u16::try_from(info.len()).unwrap_or(u16::MAX);
     let at = Rect::new(area.x + 1, top, inner, tall).intersection(area);
     // 写了字的行记下来，给侧边栏的选字用（第 7 条）。

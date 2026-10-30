@@ -213,6 +213,13 @@
     "removed": "Title removed",
     "too_long": "Titles are at most {max} characters"
   },
+  "loops": {
+    "title": "Loop",
+    "paused": "Paused",
+    "next": "Next {time}",
+    "dynamic": "Dynamic interval",
+    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"]
+  },
   "goal": {
     "mark": "● ",
     "round": "Goal · round {round}",

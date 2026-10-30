@@ -75,6 +75,8 @@ pub enum Update {
     ToolsChanged,
     /// 给人的通知（核心 J-3 中，`notices.rs`）：每次新开会话的定时跑完了、唤醒表换了新的。
     Notice(super::Notice),
+    /// 唤醒表里的循环变了（`schedules` 流，「循环」第 1 条）：整张或一项。
+    Loops(super::LoopChange),
     /// 装包的下载进度（`package.progress`，核心 G-4 上）。
     PackageProgress(Progress),
     /// 配置里头要的几项（界面语言、金额排最前的币种）：连上时读一次，别处改了再读（「界面语言」）。

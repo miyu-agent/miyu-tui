@@ -99,6 +99,7 @@ impl App {
                 service: Default::default(),
                 bill_asked: None,
                 package_names: Default::default(),
+                loops: Vec::new(),
             },
             typing: super::typing::Typing {
                 input,
