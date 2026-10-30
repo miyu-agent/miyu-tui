@@ -474,3 +474,11 @@ fn a_dollar_in_a_link_address_does_not_make_a_formula() {
         ["交付：z-$0.11.html </home/s/z-$0.11.html>（30.6 KB）"]
     );
 }
+
+#[test]
+fn kitty_placeholders_in_her_text_are_not_passed_on() {
+    // 发布前审查（2026-10-30）：U+10EEEE 是界面自己放 kitty 图的格子写的字，别处照它认图（`figure_rows::is_picture`、
+    // `theme::ground` 不上前景色、`theme::depth` 不降色）；kitty 照前景色把它当成某张图的一格。回答里写的不该原样交出去。
+    let shown = lines("看\u{10EEEE}\u{305}\u{305}这里\n\n`\u{10EEEE}`", 30);
+    assert!(shown.iter().all(|l| !l.contains('\u{10EEEE}')), "{shown:?}");
+}
