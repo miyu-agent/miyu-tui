@@ -48,3 +48,46 @@ fn a_schedule_run_is_told_under_its_session_and_a_reset_under_miyu() {
     let out = app.notifier.outbox().concat();
     assert!(out.contains(&b("定时任务表坏了，原来的定时都没了")) && !out.contains("report"));
 }
+
+/// 后台的会话做完了（「后台命令、子代理和侧边栏」第 7 条，2026-10-30 项目主人：「会话在非聚焦情况下完成，没有任何提示」）：
+/// 不是当前这个的一轮结束，记成没看、弹「回答完了」，点了切过去；当前这个的、本来就闲着的不算；切过去就消。
+#[test]
+fn a_background_session_that_finishes_is_marked_and_told() {
+    let (mut app, _sent) = crate::app::test_support::app();
+    let config = app.config.clone();
+    app.notifier = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        |name| (name == "TERM").then(|| "xterm-kitty".to_string()),
+        None,
+    );
+    let info = |id: &str, busy: bool| SessionInfo {
+        session: id.into(),
+        title: Some(format!("会话 {id}")),
+        busy,
+        ..SessionInfo::default()
+    };
+    app.talk.transcript.session = Some("me".into());
+    app.talk.sessions_seen = Some(vec![
+        info("me", true),
+        info("bg", true),
+        info("idle", false),
+    ]);
+    for id in ["me", "bg", "idle"] {
+        app.session_changed(crate::core::SessionChange::Entry(info(id, false)));
+    }
+    assert_eq!(
+        app.talk.unseen,
+        ["bg".to_string()].into(),
+        "只有后台在跑、做完的那个"
+    );
+    let out = app.notifier.outbox().concat();
+    assert!(
+        out.contains(&b("会话 bg")) && out.contains(&b("回答完了")),
+        "{out}"
+    );
+    assert!(out.contains("i=miyu-s-bg:"), "点了切过去");
+    assert!(!out.contains(&b("会话 me")), "当前这个照原来那一套");
+    app.switch_session("bg".into());
+    assert!(app.talk.unseen.is_empty(), "切过去就消");
+}

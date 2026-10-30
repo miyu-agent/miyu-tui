@@ -43,6 +43,7 @@ impl App {
         if !self.talk.deleting.admits(&change) {
             return;
         }
+        self.note_finished(&change);
         let Some(seen) = self.talk.sessions_seen.as_mut() else {
             return;
         };
@@ -278,6 +279,7 @@ impl App {
     /// 切到 `session`（第 4、5 条）：停放着的（切走时还忙着的）直接换上来；别的先开一份停放着的空正文收补发来的，
     /// 补完了再换上来，这之间照旧显示原来那个（不闪空会话的首页）。
     pub(super) fn switch_session(&mut self, session: String) {
+        self.talk.unseen.remove(&session);
         self.close_sessions();
         self.leave_child();
         if self.talk.transcript.session.as_deref() == Some(session.as_str()) {

@@ -76,6 +76,7 @@ mod theme_box;
 mod theme_pick;
 mod tool_list;
 mod typing;
+mod unseen;
 mod updates;
 pub mod usage;
 pub(crate) mod vim;

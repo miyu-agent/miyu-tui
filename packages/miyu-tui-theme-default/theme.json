@@ -139,6 +139,8 @@
     },
     "undo_icon": "↶ ",
     "current_mark": "●",
+    "side_here_mark": "❱",
+    "side_done_mark": "●",
     "undo_restored_mark": "✓ ",
     "undo_left_mark": "✗ ",
     "queued_mark": "↳ ",

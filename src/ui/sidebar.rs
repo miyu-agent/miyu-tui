@@ -263,8 +263,13 @@ pub fn draw(
     let list = seen.talk.sessions_seen.as_deref().unwrap_or_default();
     let count = seen.config.layout.sidebar_sessions;
     let frame_at = (inner, super::spin_frame(seen));
-    let (mut recent, ids) =
-        super::recent::recent_lines(list, current, count, frame_at, seen.config);
+    let (mut recent, ids) = super::recent::recent_lines(
+        (list, &seen.talk.unseen),
+        current,
+        count,
+        frame_at,
+        seen.config,
+    );
     // 记号挂在缩进那两格里，名字和别的几段的内容对齐（2026-10-27 项目主人：「最近会话的缩进有待优化」）：不套 `section`
     // 的缩进，只给标题上色。
     if let Some(title) = recent.first_mut() {
