@@ -774,7 +774,7 @@
     "title": "思考の強さ · {model}",
     "loading_title": "思考の強さ",
     "hint": "↑/↓ 選択 · Enter 切替 · Esc 閉じる",
-    "default": "デフォルトに従う",
+    "default": "設定に従う",
     "loading": "モデルを読み込み中…",
     "none": "このモデルには選べる強さがありません",
     "need_model": "モデルプールを使用中です"

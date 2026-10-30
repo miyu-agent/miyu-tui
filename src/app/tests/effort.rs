@@ -33,7 +33,7 @@ fn the_sessions_own_effort_is_not_covered_by_the_configured_one() {
         Some("low"),
         "会话自己定的照它"
     );
-    // 回到跟着默认：底栏照配置的那一档。
+    // 回到跟随设置：底栏照配置的那一档。
     app.effort_set(None);
     app.efforts_listed(list());
     assert_eq!(app.talk.transcript.effort(), Some("high"));
