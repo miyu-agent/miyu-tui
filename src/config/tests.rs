@@ -88,3 +88,15 @@ fn only_the_new_tool_names_are_known() {
         config.icons.tool("没登记的工具")
     );
 }
+
+#[test]
+fn loading_does_not_eat_the_callers_stack() {
+    // 界面上的字那几份 serde 拆起来一层层的栈帧近 300 KB，读配置另起线程拆（施工 TM-4）：调它的线程只有 64 KB 的栈也读得了。
+    // 改回在调用方的线程上拆，这里当场栈溢出。
+    let reading = std::thread::Builder::new()
+        .stack_size(192 * 1024)
+        .spawn(Config::builtin)
+        .unwrap();
+    let config = reading.join().unwrap().unwrap();
+    assert_eq!(config.language.code(), "zh");
+}
