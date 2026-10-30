@@ -97,6 +97,7 @@ impl App {
                 look: Default::default(),
                 widgets: Default::default(),
                 service: Default::default(),
+                backstage: Default::default(),
                 bill_asked: None,
                 loops: Vec::new(),
             },

@@ -9,7 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::{bar, crumb, fit, footer};
 use crate::core::Persona;
-use crate::settings::pages::packages::{PACKAGES, package_of};
+use crate::settings::pages::packages::package_of;
 use crate::settings::pages::schema::Row;
 use crate::settings::pages::{DEFAULT_PERSONA, DEFAULT_PRESET, Entry, Section, current, shown};
 use crate::settings::{Hit, Settings, Texts};
@@ -78,21 +78,19 @@ fn entry_words(page: &Settings, entry: &Entry, texts: &Texts) -> (String, String
             texts.more.mcp.entry[0].clone(),
             texts.more.mcp.entry[1].clone(),
         ),
+        Entry::Packages => (
+            texts.more.store.entry[0].clone(),
+            texts.more.store.entry[1].clone(),
+        ),
         Entry::Page(id) => {
             let schema = page.more.schema.as_ref();
             let name = schema
                 .and_then(|s| s.page_name(id))
                 .unwrap_or(id)
                 .to_string();
-            // 「软件包」照包列（一个包几组的只写一次，2026-10-20 项目主人验收：联网搜索的 key 那一组像是另一个包）。
-            let note = if id == PACKAGES {
-                let names: Vec<String> = page.more.packages().into_iter().map(|p| p.name).collect();
-                names.join("、")
-            } else {
-                schema
-                    .map(|s| s.group_names(id).join("、"))
-                    .unwrap_or_default()
-            };
+            let note = schema
+                .map(|s| s.group_names(id).join("、"))
+                .unwrap_or_default();
             (name, note)
         }
     }
@@ -103,7 +101,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
     let Some(section) = page.more.section.clone() else {
         return;
     };
-    let packages = || entry_words(page, &Entry::Page(PACKAGES.to_string()), texts).0;
+    let packages = || texts.more.store.entry[0].clone();
     let (title, hints) = match &section {
         // 包自己那一页：「软件包 › 包名」（第 43a 条）。
         Section::Page(id, _) if package_of(id).is_some() => {
@@ -119,7 +117,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
             entry_words(page, &Entry::Page(id.clone()), texts).0,
             &texts.more.hints[0],
         ),
-        Section::Packages(_) => (packages(), &texts.more.hints[10]),
+        Section::Store => return,
         Section::Mcp(_) => (texts.more.mcp.entry[0].clone(), &texts.more.mcp.hints),
         Section::Personas(_) => (texts.more.personas[0].clone(), &texts.more.hints[5]),
         Section::Presets(_) => (texts.more.presets[0].clone(), &texts.more.hints[5]),
@@ -165,11 +163,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
             let lines = list_lines(page, (list, DEFAULT_PRESET, false), *at, texts, body.width);
             (lines, *at, list.map_or(0, <[_]>::len))
         }
-        Section::Packages(at) => {
-            let list = page.more.packages();
-            let lines = super::package_list::lines(&list, *at, texts, body.width);
-            (lines, *at, list.len())
-        }
+        Section::Store => return,
         Section::Mcp(at) => {
             let list = page.more.servers();
             let lines = super::mcp_list::lines(&list, *at, texts, body.width);
@@ -180,7 +174,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         Section::Page(id, _) => id.clone(),
         Section::Personas(_) => "personas".into(),
         Section::Presets(_) => "presets".into(),
-        Section::Packages(_) => "packages".into(),
+        Section::Store => return,
         Section::Mcp(_) => "mcp".into(),
     };
     if page.page_top.0 != key {

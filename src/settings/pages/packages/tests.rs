@@ -1,8 +1,9 @@
-//! 「软件包」先列包、进去一包一页（「配置页」第 43a 条，2026-10-16 项目主人定）。
+//! 「软件包」里一包一页（「配置页」第 43a 条，2026-10-16 项目主人定）：2026-10-31 起从「已安装」进（第 43c 条）。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde_json::{Value, json};
 
+use super::super::store::Tab;
 use super::super::{Entry, Section};
 use crate::config::Config;
 use crate::settings::Settings;
@@ -64,29 +65,34 @@ fn packages_are_listed_first_and_each_opens_its_own_page() {
         ],
         "没有项的组不列"
     );
-    for _ in 0..8 {
-        if page.more.selected() == Entry::Page("packages".into()) {
+    for _ in 0..12 {
+        if page.more.selected() == Entry::Packages {
             break;
         }
         press(&mut page, &config, KeyCode::Char('j'));
     }
     press(&mut page, &config, KeyCode::Enter);
-    assert_eq!(page.more.section, Some(Section::Packages(0)), "先列包");
+    assert_eq!(
+        page.more.section,
+        Some(Section::Store),
+        "进「软件包」三页（第 43c 条）"
+    );
+    press(&mut page, &config, KeyCode::Char('.'));
+    assert_eq!(page.more.store.tab, Tab::Installed);
     press(&mut page, &config, KeyCode::Char('j'));
     press(&mut page, &config, KeyCode::Enter);
     assert_eq!(
         page.more.section,
         Some(Section::Page("packages/im".into(), 0)),
-        "进去是这个包自己的一页"
+        "「已安装」回车进这个包自己的一页"
     );
     let items = page.page_items("packages/im");
     assert_eq!(items.len(), 1, "只有这个包的项");
     press(&mut page, &config, KeyCode::Esc);
-    assert_eq!(
-        page.more.section,
-        Some(Section::Packages(1)),
-        "Esc 回到列表、停在它上面"
-    );
+    assert_eq!(page.more.section, Some(Section::Store), "Esc 回「已安装」");
+    assert_eq!(page.more.store.tab, Tab::Installed);
+    let at = page.more.store.current().map(|r| r.id().to_string());
+    assert_eq!(at.as_deref(), Some("im"), "停在它上面");
     press(&mut page, &config, KeyCode::Esc);
     assert_eq!(page.more.section, None, "再 Esc 回主菜单");
 }

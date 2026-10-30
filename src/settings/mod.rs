@@ -133,6 +133,8 @@ enum Waiting {
     PersonaRemove(String),
     /// 供应商目录（`provider.catalog`）：是不是全目录（「配置页」第 11a 条）。
     Catalog(bool),
+    /// 「软件包」三页的（第 43c 条）。
+    Store(pages::store::Ask),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -324,6 +326,7 @@ impl Settings {
             Waiting::PresetRemove(id) => self.preset_remove_read(&id, result, texts),
             Waiting::PersonaRemove(id) => self.persona_remove_read(&id, result, texts),
             Waiting::Catalog(all) => self.catalog_answer(all, result.ok()),
+            Waiting::Store(ask) => self.store_answer(ask, result, texts),
         }
     }
 

@@ -13,6 +13,7 @@ mod fixed_pool;
 mod preset_tree;
 mod rename;
 mod search;
+mod store;
 
 fn texts() -> Texts {
     Config::builtin().unwrap().text.settings

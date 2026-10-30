@@ -28,6 +28,8 @@ pub struct Link {
     pub widgets: crate::widgets::Widgets,
     /// 开机启动核心：在后台跑 `miyu service`（配置页「开机启动」，`crate::service`）。
     pub service: crate::service::Service,
+    /// 「软件后台」打开后台页：在后台跑 `miyu web --package`（配置页第 43c 条，`crate::backstage`）。
+    pub backstage: crate::backstage::Backstage,
     /// 一轮结束时问了这个会话换算好的金额（`bill_refresh.rs`）：问的是哪个会话。
     pub bill_asked: Option<String>,
     /// 唤醒表里跑在已有会话上的循环（`schedules` 流，蓝图「循环」）：输入框上面、侧边栏照看着的会话挑。
