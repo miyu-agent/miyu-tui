@@ -8,6 +8,8 @@ use miyu_client::protocol::Template;
 use miyu_client::texts::{Face, clean};
 use serde_json::Value;
 
+use phrases::Phrases;
+
 /// MCP 服务的工具名的开头（核心 `miyu_tool::catalog::MCP_PREFIX`）。
 const MCP: &str = "mcp__";
 
@@ -17,12 +19,12 @@ pub struct Human {
     tools: BTreeMap<String, Face>,
     packages: BTreeMap<String, String>,
     icons: BTreeMap<String, String>,
-    said: BTreeMap<String, Template>,
+    said: Phrases,
 }
 
 impl Human {
     /// 照 `human.get` 的回应造：`tools` 每件工具的样子，`packages` 每件工具属于哪个包（核心 X-24 补），`said` 每一句说法的
-    /// 模板原文；读不懂的那一件、那一句不要。
+    /// 模板原文（只留原文，说到那一句才解，[`Phrases`]）；读不懂的那一件、不是字的那一句不要。
     pub fn from_reply(reply: &Value) -> Human {
         let tools = reply["tools"]
             .as_object()
@@ -38,14 +40,7 @@ impl Human {
             .flatten()
             .filter_map(|(name, package)| Some((name.clone(), package.as_str()?.to_string())))
             .collect();
-        let said = reply["said"]
-            .as_object()
-            .into_iter()
-            .flatten()
-            .filter_map(|(key, source)| {
-                Some((key.clone(), Template::parse(source.as_str()?).ok()?))
-            })
-            .collect();
+        let said = Phrases::from_said(&reply["said"]);
         Human {
             tools,
             packages,
@@ -104,9 +99,9 @@ impl Human {
             .unwrap_or_else(|| self.tool_name(name))
     }
 
-    /// 照说法换成一句话，字段先过一遍核心那份 `clean`。没有这一句、或者少了字段的，是空的。
+    /// 照说法换成一句话，字段先过一遍核心那份 `clean`。没有这一句、模板写坏了、或者少了字段的，是空的。
     pub fn say(&self, said: &Said) -> Option<String> {
-        let template = self.said.get(&said.key)?;
+        let template = Template::parse(self.said.get(&said.key)?).ok()?;
         let fields: BTreeMap<&str, &str> = said
             .fields
             .iter()
@@ -116,6 +111,7 @@ impl Human {
     }
 }
 
+mod phrases;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]
