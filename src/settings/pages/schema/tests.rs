@@ -169,3 +169,23 @@ fn skip_pick_joins_the_cores_new_session_group_when_there_is_one() {
     );
     assert_eq!(at("tui.keys"), Some(("general".into(), "tui.keys".into())));
 }
+
+/// 核心 PC-1：选项写了说明的，照说明接在名字后面暗色写；核心自己查得出的一句（`note`）优先。
+#[test]
+fn an_option_description_is_its_note() {
+    let s = Schema::read(&json!({
+        "pages": [{"id": "packages", "name": "软件包"}],
+        "groups": [{"id": "draw", "name": "画图", "page": "packages"}],
+        "items": [{"key": "draw.size", "control": "select", "layers": ["system"], "name": "尺寸",
+            "page": "packages", "group": "draw",
+            "options": [{"value": "s", "name": "小", "description": "512 像素"},
+                        {"value": "m", "name": "中", "note": "推荐", "description": "1024 像素"},
+                        {"value": "l", "name": "大"}]}]
+    }));
+    let notes: Vec<Option<&str>> = s.items[0]
+        .options
+        .iter()
+        .map(|o| o.note.as_deref())
+        .collect();
+    assert_eq!(notes, [Some("512 像素"), Some("推荐"), None]);
+}

@@ -289,11 +289,11 @@ impl Settings {
             "list" if !item.options.is_empty() => self.open_ticks(&item, &value),
             "list" if super::list::editable(&item) => self.open_list(&item, &value),
             "list" => self.list_not_editable(texts),
-            "number" | "text" => {
-                let number = item.control == "number";
-                self.popup = Some(Popup::Line(LineEdit::open(
-                    &item.key, &item.name, number, &value,
-                )));
+            // 滑块先当数填（第 33 条，核心 PC-1：画成滑块等样板定）。
+            "number" | "text" | "slider" => {
+                let number = item.control != "text";
+                let edit = LineEdit::open(&item.key, &item.name, number, &value);
+                self.popup = Some(Popup::Line(edit.float(item.kind == "float")));
             }
             _ => self.say(words.no_editor.clone(), Tone::Note),
         }
