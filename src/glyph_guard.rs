@@ -10,9 +10,10 @@
 //! 3. 这种字的格子变了（换成别的、或者换成它）、它右边那一格变了：相邻那一格跟着重写（当两格的终端里改了一半，
 //!    整个字就没了；当一格画、字形宽出一截的终端里，右边那格留着半个字形）。
 //!
-//! 要知道相邻那一格现在是什么，这一层记着送出去过的每一格（[`Guarded::shadow`]）；清屏时一起清掉。
+//! 要知道相邻那一格现在是什么，这一层记着送出去过的每一格（[`Guarded::shadow`]）：照行列排的一块连续格子，
+//! 和 ratatui 自己的缓冲一样大；清屏时放掉。
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use ratatui::backend::{Backend, ClearType, WindowSize};
 use ratatui::buffer::Cell;
@@ -34,7 +35,7 @@ pub fn shaky(symbol: &str) -> bool {
 pub struct Guarded<B> {
     inner: B,
     /// 送出去过的每一格：相邻那一格要重写时照它写。
-    shadow: HashMap<(u16, u16), Cell>,
+    shadow: Shadow,
     /// 现在写着宽度认不准的字的格子。
     glyphs: HashSet<(u16, u16)>,
 }
@@ -44,7 +45,7 @@ impl<B> Guarded<B> {
     pub fn new(inner: B) -> Self {
         Self {
             inner,
-            shadow: HashMap::new(),
+            shadow: Shadow::default(),
             glyphs: HashSet::new(),
         }
     }
@@ -56,13 +57,52 @@ impl<B> Guarded<B> {
 
     /// 屏上清空了：记着的都不作数。
     fn forget(&mut self) {
-        self.shadow.clear();
+        self.shadow = Shadow::default();
         self.glyphs.clear();
     }
 
     /// 这一格现在写着什么；没送过的是空白。
     fn now(&self, at: (u16, u16)) -> Cell {
-        self.shadow.get(&at).cloned().unwrap_or_default()
+        self.shadow.get(at).cloned().unwrap_or_default()
+    }
+}
+
+/// 送出去过的整屏：照行列排的一块连续格子，第 `y` 行第 `x` 格在 `y × width + x`。
+#[derive(Default)]
+struct Shadow {
+    width: usize,
+    height: usize,
+    cells: Vec<Cell>,
+}
+
+impl Shadow {
+    /// 这一格记着的；出了界的没有。
+    fn get(&self, (x, y): (u16, u16)) -> Option<&Cell> {
+        let (x, y) = (usize::from(x), usize::from(y));
+        (x < self.width && y < self.height).then(|| &self.cells[y * self.width + x])
+    }
+
+    /// 至少放得下 `width` × `height`：放不下的照两边大的那个重排，记着的格子原样搬过去，新出来的是空白。
+    fn fit(&mut self, width: usize, height: usize) {
+        if width <= self.width && height <= self.height {
+            return;
+        }
+        let (w, h) = (width.max(self.width), height.max(self.height));
+        let mut cells = vec![Cell::default(); w * h];
+        for (y, row) in self.cells.chunks_exact(self.width.max(1)).enumerate() {
+            cells[y * w..y * w + self.width].clone_from_slice(row);
+        }
+        *self = Self {
+            width: w,
+            height: h,
+            cells,
+        };
+    }
+
+    /// 记下这一格（先 [`Shadow::fit`] 过，一定在界内）。
+    fn set(&mut self, (x, y): (u16, u16), cell: Cell) {
+        let i = usize::from(y) * self.width + usize::from(x);
+        self.cells[i] = cell;
     }
 }
 
@@ -75,10 +115,16 @@ impl<B: Backend> Backend for Guarded<B> {
     {
         let updates: Vec<(u16, u16, Cell)> = content.map(|(x, y, c)| (x, y, c.clone())).collect();
         let touched: HashSet<(u16, u16)> = updates.iter().map(|(x, y, _)| (*x, *y)).collect();
+        // 记着的放不下这一帧的格子：照这一帧最远的那一格重排（清屏以后的头一帧差不多铺满整屏，一般只排这一回）。
+        // 不问后端终端多大：ratatui 照固定区域画时不问，这一层也不多问一回。
+        let far = updates.iter().fold((0, 0), |(w, h), (x, y, _)| {
+            (w.max(usize::from(*x) + 1), h.max(usize::from(*y) + 1))
+        });
+        self.shadow.fit(far.0, far.1);
         // 先记下这一帧以前哪几格写着这种字，再照这一帧改记着的。
         let before = self.glyphs.clone();
         for (x, y, cell) in &updates {
-            self.shadow.insert((*x, *y), cell.clone());
+            self.shadow.set((*x, *y), cell.clone());
             if shaky(cell.symbol()) {
                 self.glyphs.insert((*x, *y));
             } else {
