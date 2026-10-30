@@ -1,21 +1,44 @@
 //! 制表符展开成空格（review C1，2026-10-11）：画面库把带控制字符的字素整个丢掉，排版却照 1 列算，代码块、命令的输出、
 //! 差异里的缩进没了，这一行后面的点击区、复制的列也偏一格。进排版以前照制表位展开：每行从头数，`tab` 列一个制表位
-//! （`layout.json` 的 `output.tab`）；别的控制字符（换行除外）画不出来，去掉。
+//! （`layout.json` 的 `output.tab`）；别的控制字符（换行除外）画不出来，去掉。外来的字里 kitty 的图格字 U+10EEEE（连同
+//! 跟在后面写行列的附加符）和国旗以外的标签字符也去掉（发布前审查 T2-4）：图格字是界面自己放图写的，kitty 和这边几处照它
+//! 认图，混进来会把字藏起来；标签字符看不见、复制时一起带走。
 
 use std::borrow::Cow;
 
 use unicode_width::UnicodeWidthChar;
 
-/// 展开 `text` 里的制表符、去掉别的控制字符；没有的原样交回。
+/// kitty 放图时每一格写的字（Unicode 占位）。
+const PLACEHOLDER: char = '\u{10EEEE}';
+
+/// 标签字符：只在国旗（🏴 后面接一串、`U+E007F` 收尾）里有意思。
+fn tag(c: char) -> bool {
+    ('\u{E0020}'..='\u{E007F}').contains(&c)
+}
+
+/// 展开 `text` 里的制表符、去掉别的控制字符、图格字和国旗以外的标签字符；没有的原样交回。
 pub fn expand(text: &str, tab: usize) -> Cow<'_, str> {
-    if !text.chars().any(|c| c.is_control() && c != '\n') {
+    if !text
+        .chars()
+        .any(|c| (c.is_control() && c != '\n') || c == PLACEHOLDER || tag(c))
+    {
         return Cow::Borrowed(text);
     }
     let tab = tab.max(1);
     let mut out = String::with_capacity(text.len() + 8);
     let mut col = 0;
+    // 在国旗的标签串里；刚去掉一个图格字（后面写行列的附加符一起去掉）。
+    let (mut flag, mut placeholder) = (false, false);
     for c in text.chars() {
+        if placeholder && c.width() == Some(0) {
+            continue;
+        }
+        placeholder = c == PLACEHOLDER;
+        let in_flag = flag && tag(c);
+        flag = c == '\u{1F3F4}' || (in_flag && c != '\u{E007F}');
         match c {
+            c if c == PLACEHOLDER => {}
+            c if tag(c) && !in_flag => {}
             '\n' => {
                 out.push('\n');
                 col = 0;
