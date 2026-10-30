@@ -90,8 +90,8 @@ pub(super) async fn take(
                 let gone = link.gone(&session, reason.as_deref());
                 notify(gone.unwrap_or(Update::Refused { reason, message }))
             }
-            // 核心清单里的斜杠命令被拒：另报，界面把打的那一行放回输入框（「斜杠命令列表」第 4 条）。
-            Some(Awaiting::Slash) => notify(Update::SlashRefused { message, reason }),
+            // 核心清单里的斜杠命令被拒：另报，界面只弹原话（「斜杠命令列表」第 4 条）。
+            Some(Awaiting::Slash) => notify(Update::SlashRefused { message }),
             // 订阅不上界面块（核心旧、不认这个流）：什么都不画，不用说（「界面块」第 8 条）。
             Some(Awaiting::Widgets) => true,
             // 跟着看整理订不上、取不到正文（没装记忆、核心旧）：照旧等回执，不用说。
