@@ -105,7 +105,7 @@ fn choosing_a_model_shows_no_notice() {
 
 #[test]
 fn effort_is_chosen_for_this_session_only() {
-    // 2026-10-30 项目主人定（核心 SM-1）：/effort 只管当前会话，不写系统配置；新开的会话照配置。第一行「跟着默认」。
+    // 2026-10-30 项目主人定（核心 SM-1）：/effort 只管当前会话，不写系统配置；新开的会话照配置。第一行「跟随设置」。
     let settings = "[models]\nchat = \"deepseek/deepseek-v4\"\n\n[providers.deepseek]\ndriver = \"openai-chat\"\nbase_url = \"http://deepseek.invalid/v1\"\n\n[providers.deepseek.models.deepseek-v4]\nwindow = 128000\nreasoning = [\"off\", \"low\", \"high\"]\n";
     let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
     let mut tui = home.tui("zh_CN.UTF-8");
@@ -113,9 +113,9 @@ fn effort_is_chosen_for_this_session_only() {
     tui.say("在吗");
     tui.wait_for("▣  ");
     tui.say("/effort");
-    tui.wait_for("跟着默认");
+    tui.wait_for("跟随设置");
     assert!(tui.shows("high"), "{}", tui.lines().join("\n"));
-    // 第 0 行跟着默认，下面 off、low、high。
+    // 第 0 行跟随设置，下面 off、low、high。
     for _ in 0..3 {
         tui.key(DOWN);
     }
@@ -148,8 +148,8 @@ fn effort_chosen_before_a_session_shows_at_once_and_goes_with_the_new_session() 
     tui.wait_for("工作区");
     wait_footer(&mut tui, "low");
     tui.say("/effort");
-    tui.wait_for("跟着默认");
-    // 第 0 行跟着默认，下面 off、low、high。
+    tui.wait_for("跟随设置");
+    // 第 0 行跟随设置，下面 off、low、high。
     for _ in 0..3 {
         tui.key(DOWN);
     }
@@ -174,7 +174,7 @@ fn a_pool_does_not_let_effort_change() {
     tui.wait_for("工作区");
     tui.say("/effort");
     tui.wait_for("当前使用的是模型池");
-    assert!(!tui.shows("跟着默认"), "{}", tui.lines().join("\n"));
+    assert!(!tui.shows("跟随设置"), "{}", tui.lines().join("\n"));
 }
 
 #[test]
@@ -188,7 +188,7 @@ fn a_new_session_does_not_flash_an_empty_footer() {
     // 假核心开了会话以后不报思考强度（不照配置算）：开一下 /effort 的框（开框要一次 `model.list`），底栏照配置的那一档
     // （`TWO` 里是 low）写上；开新会话的每一帧都还写着它，不先空一下。
     tui.say("/effort");
-    tui.wait_for("跟着默认");
+    tui.wait_for("跟随设置");
     tui.key(b"\x1b");
     wait_footer(&mut tui, "low");
     let start = tui.record_from_here();
