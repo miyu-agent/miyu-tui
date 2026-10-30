@@ -20,6 +20,15 @@ impl Settings {
         self.ask("preset.list", json!({}), Waiting::Presets);
         self.ask("package.list", json!({}), Waiting::Mascots);
         self.ask("mcp.list", json!({}), Waiting::Mcp);
+        // 目录在配置页开着的时候不会变：读到过一次就不再读。
+        if self.more.featured.is_none() && !self.more.featured_asked {
+            self.more.featured_asked = true;
+            self.ask(
+                "provider.catalog",
+                json!({"featured": true}),
+                Waiting::Catalog(false),
+            );
+        }
     }
 
     /// 清单、人格、人格详情回来了：记下；核心不认的（旧核心）当没有，菜单里不列那几页。

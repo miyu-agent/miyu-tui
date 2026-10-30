@@ -34,6 +34,7 @@ fn answer_loads(page: &mut Settings) {
         let got = match method {
             "model.list" => model_list(),
             "config.get" => config_all(),
+            "provider.catalog" => continue,
             _ => json!({"secrets": [{"name": "relay-key", "set": true}]}),
         };
         page.answer(tag, Ok(got), &texts());
@@ -57,7 +58,8 @@ fn opening_reads_what_it_needs_and_a_change_during_the_read_reads_again() {
             "persona.list",
             "preset.list",
             "package.list",
-            "mcp.list"
+            "mcp.list",
+            "provider.catalog"
         ]
     );
     assert_eq!(asks[1].2, json!({"all": true}));
@@ -72,7 +74,7 @@ fn opening_reads_what_it_needs_and_a_change_during_the_read_reads_again() {
         page.answer(tag, Ok(got), &texts());
     }
     assert!(!page.loading());
-    assert_eq!(page.take_asks().len(), 8, "读完补读一次");
+    assert_eq!(page.take_asks().len(), 8, "读完补读一次，目录读到过不再读");
 }
 
 #[test]

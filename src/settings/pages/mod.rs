@@ -95,6 +95,11 @@ pub struct More {
     pub mascots: Option<Vec<Persona>>,
     /// 装了的主题包（默认主题包不列：没设就是它）；还没读到的是 `None`。
     pub looks: Option<Vec<Persona>>,
+    /// 供应商目录里常用的几家（`provider.catalog {"featured": true}`）：开配置页时先读好，按 `a` 开目录窗当场列出来
+    /// （「配置页」第 11a 条，2026-10-30 项目主人：「每次加载的画面都很短，会闪一下」）。还没读到的是 `None`。
+    pub featured: Option<Vec<catalog::Entry>>,
+    /// 问了常用的几家、还没回来：开配置页时重读的那几下不再问（读完三样会马上补读一次）。
+    pub featured_asked: bool,
     /// 读来的清单、预设列表的原样：终端记下，下次开配置页第一帧照它画主菜单（`app/look.rs`，2026-10-21 项目主人：
     /// 「/config 打开配置菜单闪了一下」）。只有清单和名字，没有配置的值。
     pub raw: (Option<Value>, Option<Value>),
