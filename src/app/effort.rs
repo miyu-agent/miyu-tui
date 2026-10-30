@@ -1,7 +1,7 @@
 //! `/effort`：换正在用的模型的思考强度（蓝图 `tui.md`「配置与模型」思考强度，核心 8-18 补；2026-10-02 项目主人定：只要
 //! 这个框）。开框时向核心要一次 `model.list`，照正在请求的模型（没有的照会话的引用、默认的聊天模型）列它的几级；
 //! `Enter` 写进系统配置（默认的去掉这一项），关框，不弹提示，所有会话下一轮起照它，底栏当场变。用的是模型池的提示一句，
-//! 不开框（2026-10-02 项目主人定）。
+//! 不开框（2026-10-02 项目主人定）；开框以前就看（2026-10-30 项目主人报：先闪一下大框才关）。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
@@ -13,6 +13,17 @@ impl App {
     /// 开框，向核心要几级。
     pub(super) fn open_effort(&mut self) {
         if !self.reachable() {
+            return;
+        }
+        // 会话的引用、没开会话时默认的聊天模型是池的：当场提示，不开框。还不知道的（刚连上）照旧开框等核心交回来再看。
+        let reference = self
+            .talk
+            .transcript
+            .model_ref()
+            .or(self.link.default_chat.as_deref());
+        if reference.is_some_and(|r| r.starts_with('@')) {
+            let note = self.config.text.effort.need_model.clone();
+            self.hint(note, false);
             return;
         }
         self.boxes.efforts = None;
