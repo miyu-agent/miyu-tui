@@ -350,10 +350,28 @@ impl Config {
 
     /// 读编译时带进来的那一份，照 `language` 挑界面上的字、命令的说明、运行状态行的词（蓝图「界面语言」）。
     ///
+    /// 另起一个线程读，读好了交回来（蓝图「量尺」的栈）：界面上的字那几份结构很大，serde 拆它们一层层的栈帧加起来近 300 KB；
+    /// 在主线程上拆，摸过的栈页一直算在终端头上，线程完了它的栈当场还掉。
+    ///
     /// # Errors
     ///
-    /// JSON 写坏了、缺了字段时返回错误，说清是哪一份。
+    /// JSON 写坏了、缺了字段时返回错误，说清是哪一份；读的线程起不来也返回错误。
     pub fn load(language: &Language, auto: bool) -> Result<Self, String> {
+        // 读好的装在堆上交回来：这一份二十几 KB，照值经线程交接的几层传，每层都在栈上占一份。
+        let config = std::thread::scope(|scope| {
+            let reading = std::thread::Builder::new()
+                .name("config".into())
+                .spawn_scoped(scope, || Self::read(language, auto).map(Box::new))
+                .map_err(|e| format!("读配置的线程起不来：{e}"))?;
+            reading
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+        })?;
+        Ok(*config)
+    }
+
+    /// 在这个线程上读（[`Config::load`]）。
+    fn read(language: &Language, auto: bool) -> Result<Self, String> {
         let table = LanguageTable::builtin()?;
         let (text_name, text_json) = localize::text(language)?;
         let mut text: Texts = parse(&text_name, text_json)?;
