@@ -211,7 +211,8 @@ impl App {
                 page.tools_changed();
                 false
             }
-            Update::ConfigChanged => {
+            // 模型列表在核心后台变了（核心 V-26）：同配置变了，整份重读。
+            Update::ConfigChanged | Update::ModelsChanged => {
                 page.changed();
                 false
             }

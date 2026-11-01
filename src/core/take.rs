@@ -297,6 +297,10 @@ pub(super) async fn take(
     if message["method"] == "config.changed" && !notify(Update::ConfigChanged) {
         return false;
     }
+    // 模型列表在核心后台变了（核心 V-26）；配置流掉了队、漏掉的不补，当成全变了。往下照旧走重订。
+    if config::models_changed(message) && !notify(Update::ModelsChanged) {
+        return false;
+    }
     // 会话列表变了（核心 9-5）：整项换、删掉；掉了队重新订、整张换。它也带 `session`，别往下当会话的事件走。
     if message["method"] == "sessions.changed" {
         return sessions::change(params).is_none_or(|c| notify(Update::SessionChanged(c)));
