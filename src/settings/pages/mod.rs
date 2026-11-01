@@ -16,6 +16,7 @@ pub mod packages;
 pub mod persona_edit;
 mod persona_seed;
 pub mod personas;
+mod popup_keys;
 pub mod preset_edit;
 pub mod presets;
 pub mod schema;
