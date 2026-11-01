@@ -133,3 +133,34 @@ fn space_turns_a_shipped_package_off_and_on() {
         !row(t, "联网搜索").trim_end().ends_with('关')
     });
 }
+
+/// 在数据根里放一个只带设置的包 `drawtest`：一项滑块（1～50，一步 5，默认 20）。
+fn drawtest(root: &Path) {
+    let dir = root.join("packages/drawtest");
+    std::fs::create_dir_all(&dir).expect("建得了目录");
+    std::fs::write(
+        dir.join("package.toml"),
+        "[package]\nversion = \"0.1.0\"\nname = { zh = \"画图测试\" }\n\n[settings.steps]\ntype = \"int\"\nslider = true\nmin = 1\nmax = 50\nstep = 5\ndefault = 21\nname = { zh = \"步数\" }\n",
+    )
+    .expect("写得进去");
+}
+
+/// 滑块（「配置页」第 33 条子规则，2026-10-31 项目主人定）：那一行 `→` 直接调，不按别的键，停手半秒自己存进系统配置。
+#[test]
+fn a_slider_saves_itself_half_a_second_after_the_last_arrow() {
+    let home = Home::prepared(Script::new([Play::Says("好。")]), "", drawtest);
+    let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
+    installed(&mut tui);
+    enter(&mut tui, "画图测试");
+    tui.wait_for("步数");
+    // 核心照包的开关在最上面多一项（「把这个包关掉」），滑块在下面：挪到它上面。
+    reach(&mut tui, "步数");
+    tui.wait_for("←/→ 调");
+    tui.key(b"\x1b[C");
+    until(&mut tui, "那一行写 26", |t| {
+        row(t, "步数").trim_end().ends_with("26")
+    });
+    until(&mut tui, "停手以后存进系统配置", |_| {
+        home.settings().contains("steps = 26")
+    });
+}
