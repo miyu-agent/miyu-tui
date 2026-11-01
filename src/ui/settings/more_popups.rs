@@ -22,7 +22,11 @@ pub(super) fn line(lines: &mut Lines, edit: &LineEdit, texts: &Texts) {
     let typed = edit.editor.text();
     let before = &typed[..edit.editor.cursor().min(typed.len())];
     // 密钥（「配置页」第 48 条）：一个字一个 `•`。
-    let (typed, before) = if edit.target == Target::Secret {
+    let secret = matches!(
+        edit.target,
+        Target::Secret | Target::RecordField(_, _, true)
+    );
+    let (typed, before) = if secret {
         (masked(typed), masked(before))
     } else {
         (typed.to_string(), before.to_string())

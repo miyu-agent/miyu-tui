@@ -164,3 +164,56 @@ fn a_slider_saves_itself_half_a_second_after_the_last_arrow() {
         home.settings().contains("steps = 26")
     });
 }
+
+/// 在数据根里放一个带记录列表的包 `acct`：账号，每一条一个名字（当标题）、一个 Key（密钥）。
+fn accounts(root: &Path) {
+    let dir = root.join("packages/acct");
+    std::fs::create_dir_all(&dir).expect("建得了目录");
+    let manifest = "[package]\nversion = \"0.1.0\"\nname = { zh = \"账号测试\" }\n\n\
+        [settings.accounts]\ntype = \"list\"\nelement = \"record\"\ntitle = \"name\"\nname = { zh = \"账号\" }\n\n\
+        [settings.accounts.fields.name]\ntype = \"text\"\nname = { zh = \"名字\" }\n\n\
+        [settings.accounts.fields.key]\ntype = \"secret\"\nname = { zh = \"Key\" }\n";
+    std::fs::write(dir.join("package.toml"), manifest).expect("写得进去");
+}
+
+/// 记录列表（「配置页」第 47b 条，核心 PC-2）：加一条、填名字和密钥，收起列表窗时整份存；密钥先存进密钥库、配置里写引用，
+/// 不写明文（真的核心）。
+#[test]
+fn a_record_with_a_secret_is_saved_as_a_reference() {
+    let home = Home::prepared(Script::new([Play::Says("好。")]), "", accounts);
+    let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
+    installed(&mut tui);
+    enter(&mut tui, "账号测试");
+    tui.wait_for("账号");
+    enter(&mut tui, "账号");
+    tui.wait_for("还没有");
+    tui.key(b"a");
+    tui.wait_for("账号 › 第 1 项");
+    tui.key(b"\r");
+    for c in ["备", "用"] {
+        tui.key(c.as_bytes());
+    }
+    tui.key(b"\r");
+    tui.wait_for("账号 › 备用");
+    tui.key(b"\x1b[B");
+    tui.key(b"\r");
+    tui.key(b"sk-test-1");
+    tui.key(b"\r");
+    until(&mut tui, "Key 写已设置", |t| {
+        t.lines()
+            .iter()
+            .any(|l| l.contains("Key") && l.contains("已设置"))
+    });
+    tui.key(b"\x1b");
+    tui.wait_for("J/K 移动");
+    tui.key(b"\x1b");
+    until(&mut tui, "存进系统配置", |_| {
+        home.settings().contains("备用")
+    });
+    let settings = home.settings();
+    assert!(settings.contains("secret"), "写成引用：\n{settings}");
+    assert!(!settings.contains("sk-test-1"), "不写明文：\n{settings}");
+    until(&mut tui, "页里那一行写标题", |t| {
+        row(t, "账号").contains("备用")
+    });
+}

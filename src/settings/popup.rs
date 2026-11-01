@@ -33,6 +33,10 @@ pub enum Popup {
     Ticks(super::pages::ticks::TickEdit),
     /// 加供应商先弹的目录（「配置页」第 11a 条）。
     Catalog(super::pages::catalog::CatalogPick),
+    /// 记录列表的列表窗（「配置页」第 47b 条）。
+    Records(super::pages::records::RecordsEdit),
+    /// 记录列表的一条的表单窗。
+    Record(super::pages::records::RecordForm),
 }
 
 /// 选默认模型的窗。

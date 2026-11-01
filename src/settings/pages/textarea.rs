@@ -24,16 +24,22 @@ pub struct SheetEdit {
     pub to: Option<super::target::Target>,
 }
 
+impl SheetEdit {
+    /// 一项（或记录里的一个字段）现在的值是 `value` 的窗，写配置项。
+    pub fn open(item: &Item, value: &Value) -> Self {
+        Self {
+            key: item.key.clone(),
+            title: item.name.clone(),
+            sheet: Sheet::open(value.as_str().unwrap_or_default()),
+            to: None,
+        }
+    }
+}
+
 impl Settings {
     /// 开窗（`item` 现在的值是 `value`）。
     pub(in crate::settings) fn open_textarea(&mut self, item: &Item, value: &Value) {
-        let text = value.as_str().unwrap_or_default();
-        self.popup = Some(Popup::Sheet(SheetEdit {
-            key: item.key.clone(),
-            title: item.name.clone(),
-            sheet: Sheet::open(text),
-            to: None,
-        }));
+        self.popup = Some(Popup::Sheet(SheetEdit::open(item, value)));
     }
 
     /// 窗里按了一个键：`Esc` 收起（改过的存，清空了的去掉），`Ctrl+G` 交给外部编辑器，别的照常打字。
@@ -55,9 +61,8 @@ impl Settings {
                     Value::String(text)
                 };
                 match edit.to {
-                    Some(target) => {
-                        self.preset_write(target, &edit.key, value);
-                    }
+                    // 预设的描述、记录里的字段（第 47b 条）照它写到哪写回去。
+                    Some(target) => self.write_to(target, &edit.key, value, texts),
                     None => self.write_setting(&edit.key, value, texts),
                 }
             }

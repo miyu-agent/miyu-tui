@@ -19,6 +19,7 @@ pub mod personas;
 mod popup_keys;
 pub mod preset_edit;
 pub mod presets;
+pub mod records;
 pub mod schema;
 pub mod secret;
 pub mod slider;
@@ -354,6 +355,8 @@ pub struct Texts {
     pub sheet_hints: Vec<[String; 2]>,
     /// 列表窗（第 47 条）。
     pub list: list::ListTexts,
+    /// 记录列表（第 47b 条）。
+    pub records: records::RecordTexts,
     /// 勾选窗（第 47a 条）。
     pub ticks: ticks::TicksTexts,
     /// 包从哪来（第 43a 条，包页面包屑下面那一行）：出厂自带、官方软件源、本机安装（照 `package.list` 的 `from`）。
