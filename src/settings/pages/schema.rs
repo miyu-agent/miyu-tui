@@ -51,6 +51,10 @@ pub struct Item {
     pub unlisted: bool,
     /// 滑块（`control: "slider"`，核心 PC-1）的范围和一步：最小、最大、一步；别的控件是 `None`。
     pub slide: Option<(f64, f64, f64)>,
+    /// 记录列表（`element: "record"`，核心 PC-2）拿哪个字段当每一条的标题；没写的是 `None`。
+    pub title: Option<String>,
+    /// 记录列表每一条的字段，照清单的先后（`hidden` 的不在）；别的是空的。
+    pub fields: Vec<Item>,
 }
 
 impl Item {
@@ -156,7 +160,6 @@ impl OwnGroups {
 impl Schema {
     /// 读 `config.schema` 的回应。
     pub fn read(got: &Value) -> Schema {
-        let text = |v: &Value| v.as_str().unwrap_or_default().to_string();
         let pages = got["pages"]
             .as_array()
             .into_iter()
@@ -179,47 +182,7 @@ impl Schema {
             .flatten()
             // 标了 `hidden` 的设置页不画（照样能写、能查，核心 9-1 下）。
             .filter(|i| i["hidden"] != true)
-            .map(|i| Item {
-                key: text(&i["key"]),
-                control: text(&i["control"]),
-                kind: text(&i["type"]),
-                element: text(&i["element"]),
-                suggestions: i["suggestions"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .filter_map(|s| s.as_str().map(str::to_string))
-                    .collect(),
-                options: i["options"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .map(|o| Opt {
-                        value: o["value"].clone(),
-                        name: text(&o["name"]),
-                        note: o["note"]
-                            .as_str()
-                            .or(o["description"].as_str())
-                            .filter(|s| !s.is_empty())
-                            .map(str::to_string),
-                        available: o["available"] != false,
-                    })
-                    .collect(),
-                layers: i["layers"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .map(text)
-                    .collect(),
-                default: i["default"].clone(),
-                name: text(&i["name"]),
-                page: text(&i["page"]),
-                group: text(&i["group"]),
-                package: text(&i["package"]),
-                common: i["common"] == true,
-                unlisted: i["ticks"] == "unlisted",
-                slide: slide(i),
-            })
+            .map(read_item)
             // 键里有人起的名字的归供应商和模型；别的头专有的不列（蓝图「配置页」第 5 条）。
             .filter(|i: &Item| !i.key.contains('<') && !i.key.starts_with("web."))
             .collect();
@@ -351,6 +314,65 @@ impl Schema {
             .map(|(id, _)| id.as_str())
             .filter(|id| *id != MODELS && !self.rows(id).is_empty())
             .collect()
+    }
+}
+
+/// 一格字：不是字的当空的。
+fn text(v: &Value) -> String {
+    v.as_str().unwrap_or_default().to_string()
+}
+
+/// 读一项（记录列表的字段同样读）。
+fn read_item(i: &Value) -> Item {
+    Item {
+        key: text(&i["key"]),
+        control: text(&i["control"]),
+        kind: text(&i["type"]),
+        element: text(&i["element"]),
+        suggestions: i["suggestions"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|s| s.as_str().map(str::to_string))
+            .collect(),
+        options: i["options"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|o| Opt {
+                value: o["value"].clone(),
+                name: text(&o["name"]),
+                note: o["note"]
+                    .as_str()
+                    .or(o["description"].as_str())
+                    .filter(|s| !s.is_empty())
+                    .map(str::to_string),
+                available: o["available"] != false,
+            })
+            .collect(),
+        layers: i["layers"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(text)
+            .collect(),
+        default: i["default"].clone(),
+        name: text(&i["name"]),
+        page: text(&i["page"]),
+        group: text(&i["group"]),
+        package: text(&i["package"]),
+        common: i["common"] == true,
+        unlisted: i["ticks"] == "unlisted",
+        slide: slide(i),
+        title: i["title"].as_str().map(str::to_string),
+        // 记录列表的字段（核心 PC-2）：写法同一项，`hidden` 的不画。
+        fields: i["fields"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|f| f["hidden"] != true)
+            .map(read_item)
+            .collect(),
     }
 }
 

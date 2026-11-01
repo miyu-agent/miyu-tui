@@ -58,6 +58,9 @@ impl Settings {
             }
             Popup::Sheet(edit) => self.sheet_key(edit, key, texts),
             Popup::List(edit) => self.list_key(edit, key, texts),
+            // 记录列表的列表窗、表单窗（第 47b 条）。
+            Popup::Records(edit) => self.records_key(edit, key, texts),
+            Popup::Record(form) => self.record_key(form, key, texts),
             Popup::Ticks(edit) => self.ticks_key(edit, key, texts),
             // 人格的窗（第 36 条）、示范对话列表和两格窗（第 41 条）。
             Popup::Persona(view) => self.persona_key(view, key, texts),
@@ -70,11 +73,21 @@ impl Settings {
     }
 
     /// 选择窗、编辑窗选好了：改预设的照它办（`preset_edit.rs`），别的写系统配置。
-    fn write_to(&mut self, target: super::target::Target, key: &str, value: Value, texts: &Texts) {
+    pub(in crate::settings) fn write_to(
+        &mut self,
+        target: super::target::Target,
+        key: &str,
+        value: Value,
+        texts: &Texts,
+    ) {
         // 跟随头像的主色写在人格上（`persona.set` 的 `seed`）。
         if let super::target::Target::PersonaSeed(persona) = &target {
             let params = json!({"persona": persona, "seed": value});
             self.ask("persona.set", params, Waiting::PersonaSeed);
+            return;
+        }
+        // 记录列表一条里的字段（第 47b 条）：写回表单窗。
+        if self.record_write(&target, value.clone()) {
             return;
         }
         if !self.model_or_write(&target, key, &value)

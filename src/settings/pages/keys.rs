@@ -291,6 +291,8 @@ impl Settings {
             "combo" => self.open_combo(&item, &value, texts),
             "textarea" => self.open_textarea(&item, &value),
             // 带选项的（隐私页的去掉出厂私密目录）勾选，不手打（第 47a 条）。
+            // 记录列表（第 47b 条）：开列表窗。
+            "list" if item.element == "record" => self.open_records(&item, &value),
             "list" if !item.options.is_empty() => self.open_ticks(&item, &value),
             "list" if super::list::editable(&item) => self.open_list(&item, &value),
             "list" => self.list_not_editable(texts),

@@ -212,7 +212,7 @@ fn page_hints<'a>(page: &Settings, section: &Section, texts: &'a Texts) -> &'a V
 }
 
 /// 滑块的短条（第 33 条子规则）：16 格，到当前值的那一截强调色、后面暗色，当前值处一个圆点（记号照记号表）。
-fn track(fraction: f64) -> Vec<Span<'static>> {
+pub(super) fn track(fraction: f64) -> Vec<Span<'static>> {
     const WIDTH: usize = 16;
     let at = (fraction * (WIDTH - 1) as f64).round() as usize;
     let (rule, dot) = crate::sheet::read(|s| (s.marks.rule.clone(), s.marks.on.clone()));

@@ -24,6 +24,10 @@ pub fn is_named(key: &str) -> bool {
 /// 值写成给人看的样子：下拉写选项的名字（默认人格、默认预设写名字，`named` 是它们的列表），开关写开、关，密钥写设没设，
 /// 列表用顿号连（私密目录两项只写个数）。
 pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Texts) -> String {
+    // 记录列表写各条的标题（第 47b 条）。
+    if let Some(titles) = super::records::summary(item, value, &texts.records) {
+        return titles;
+    }
     if let (Some(list), Some(id)) = (named, value.as_str())
         && let Some(p) = list.iter().find(|p| p.id == id)
     {

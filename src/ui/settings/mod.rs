@@ -9,6 +9,7 @@ mod mcp_list;
 mod more_popups;
 mod pages;
 mod popup;
+mod records;
 mod store;
 
 use ratatui::Frame;

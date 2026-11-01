@@ -189,7 +189,17 @@ impl Draft {
     pub fn request(&self, data: &Data, named: &[(String, String)]) -> Value {
         let mut all = self.changes.clone();
         for (key, name) in named {
-            all.insert(key.clone(), Change::Set(json!({"secret": name})));
+            let reference = json!({"secret": name});
+            // 记录列表一条里的密钥字段（「配置页」第 47b 条）：引用写进那一条。
+            if let Some((base, i, field)) = crate::settings::pages::records::record_path(key) {
+                if let Some(Change::Set(Value::Array(list))) = all.get_mut(&base)
+                    && let Some(Value::Object(record)) = list.get_mut(i)
+                {
+                    record.insert(field, reference);
+                }
+                continue;
+            }
+            all.insert(key.clone(), Change::Set(reference));
         }
         let changes: Vec<Value> = all
             .iter()
