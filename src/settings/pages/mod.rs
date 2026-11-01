@@ -16,6 +16,7 @@ pub mod packages;
 pub mod persona_edit;
 mod persona_seed;
 pub mod personas;
+mod picks;
 mod popup_keys;
 pub mod preset_edit;
 pub mod presets;
@@ -126,6 +127,8 @@ pub struct More {
     pub store: store::Store,
     /// 滑块调了还没存的（第 33 条子规则）。
     pub sliding: Option<slider::Sliding>,
+    /// 知识库（`kb.list`，选知识库的项照它列）；还没读到、核心不认的是 `None`。
+    pub knowledge: Option<Vec<Persona>>,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
     /// 找不到的不列）。
     pub wallpaper: bool,
@@ -271,6 +274,15 @@ impl More {
             LOOK => self.looks.as_deref(),
             _ => None,
         }
+    }
+
+    /// 一项照哪份列表选、写名字：默认人格这类照键，`persona`、`knowledge` 类型的照人格、知识库（第 33 条子规则）。
+    pub fn named_item(&self, item: &schema::Item) -> Option<&[Persona]> {
+        self.named(&item.key).or(match item.kind.as_str() {
+            "persona" => self.personas.as_deref(),
+            "knowledge" => self.knowledge.as_deref(),
+            _ => None,
+        })
     }
 
     /// 主菜单停在哪一项：没读到清单以前「供应商和模型」排第一，读到以后通用排第一，选中的照「是哪一项」留住。

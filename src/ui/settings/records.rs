@@ -7,9 +7,9 @@ use unicode_width::UnicodeWidthStr;
 
 use super::fit;
 use super::popup::{Body, Lines};
-use crate::settings::Texts;
 use crate::settings::pages::records::{RecordForm, RecordsEdit, label};
 use crate::settings::pages::{shown, slider};
+use crate::settings::{Settings, Texts};
 use crate::theme;
 
 /// 列表窗：标题是这一项的名字；一条都没有的暗色写「还没有」。
@@ -33,7 +33,13 @@ pub(super) fn list(lines: &mut Lines, edit: &RecordsEdit, texts: &Texts, width: 
 }
 
 /// 表单窗：标题「<项名> › <这一条的标题>」，一个字段一行。
-pub(super) fn form(lines: &mut Lines, form: &RecordForm, texts: &Texts, width: u16) {
+pub(super) fn form(
+    lines: &mut Lines,
+    form: &RecordForm,
+    page: &Settings,
+    texts: &Texts,
+    width: u16,
+) {
     let words = &texts.more.records;
     let item = &form.list.item;
     let n = form.at.map_or(form.list.records.len() + 1, |i| i + 1);
@@ -53,7 +59,7 @@ pub(super) fn form(lines: &mut Lines, form: &RecordForm, texts: &Texts, width: u
         let value = form.record.get(&field.key).unwrap_or(&field.default);
         let pad = " ".repeat(name_w.saturating_sub(field.name.width()));
         let mut spans = vec![Span::raw(format!("  {}{pad}", field.name))];
-        let text = shown(field, value, None, &texts.more);
+        let text = shown(field, value, page.more.named_item(field), &texts.more);
         let bold = Style::new().add_modifier(Modifier::BOLD);
         match slider::fraction(field, value) {
             Some(at) => {

@@ -100,7 +100,7 @@ pub fn draw(
         Popup::Pair(edit) => super::dialog_popups::pair(&mut lines, edit, texts),
         Popup::Catalog(pick) => super::catalog::lines(&mut lines, pick, texts, width),
         Popup::Records(edit) => super::records::list(&mut lines, edit, texts, width),
-        Popup::Record(form) => super::records::form(&mut lines, form, texts, width),
+        Popup::Record(form) => super::records::form(&mut lines, form, page, texts, width),
     }
     // 窗里从第几行露起照上一帧接着（选中的碰到上下边才挪，`floating.rs`）。
     lines.top = page.popup_top;

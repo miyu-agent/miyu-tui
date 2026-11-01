@@ -384,6 +384,12 @@ impl Settings {
                     pick.refilter(&self.view);
                 }
                 KeyCode::Enter => {
+                    // 选模型的配置项（第 33 条子规则）：写回那一项。
+                    if let (Some(reference), Some((target, key))) =
+                        (pick.chosen(&self.view), pick.to.clone())
+                    {
+                        return self.write_to(target, &key, serde_json::json!(reference), texts);
+                    }
                     if let (Some(reference), Some(data)) = (pick.chosen(&self.view), &self.data) {
                         let key = match pick.usage {
                             super::nav::Use::Chat => "models.chat",
@@ -400,7 +406,12 @@ impl Settings {
                     pick.search.clear();
                     pick.refilter(&self.view);
                 }
-                KeyCode::Esc => return,
+                KeyCode::Esc => {
+                    if let Some((target, _)) = pick.to {
+                        self.edit_cancel(target);
+                    }
+                    return;
+                }
                 _ => {}
             }
             true

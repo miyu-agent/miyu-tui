@@ -299,7 +299,7 @@ pub(super) fn page_lines(
                 let slid = slider::fraction(item, value);
                 // 没设的密钥「未设置」暗着写、不加粗（2026-10-19 项目主人），设了的照常。
                 let unset = crate::settings::pages::secret::is_secret(item) && value.is_null();
-                let value = shown(item, value, page.more.named(&item.key), &texts.more);
+                let value = shown(item, value, page.more.named_item(item), &texts.more);
                 let style = if item.writable() {
                     Style::new()
                 } else {
