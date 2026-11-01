@@ -19,6 +19,7 @@ impl Settings {
         self.ask("preset.list", json!({}), Waiting::Presets);
         self.ask("package.list", json!({}), Waiting::Mascots);
         self.ask("mcp.list", json!({}), Waiting::Mcp);
+        self.ask("kb.list", json!({}), Waiting::Knowledge);
         // 目录在配置页开着的时候不会变：读到过一次就不再读。
         if self.more.featured.is_none() && !self.more.featured_asked {
             self.more.featured_asked = true;
@@ -50,6 +51,7 @@ impl Settings {
                 self.more.schema = Some(schema);
             }
             (Waiting::Personas, Ok(got)) => self.more.personas = Some(personas::read(&got)),
+            (Waiting::Knowledge, Ok(got)) => self.more.knowledge = Some(super::picks::bases(&got)),
             (Waiting::Presets, Ok(got)) => {
                 self.more.raw.1 = Some(got.clone());
                 self.more.presets = Some(crate::core::read_preset_files(&got));
@@ -266,8 +268,10 @@ impl Settings {
             return self.toggle_service(value == Value::Bool(true), texts);
         }
         // 默认人格不管清单写什么控件（核心写的是填名字），都照 `persona.list` 开列表（2026-10-07 项目主人报）。
-        let control = if is_named(&item.key) {
+        let control = if is_named(&item.key) || self.more.named_item(&item).is_some() {
             "select"
+        } else if item.kind == "reference" {
+            "reference"
         } else {
             item.control.as_str()
         };
@@ -276,7 +280,7 @@ impl Settings {
         }
         match control {
             "select" => {
-                let list = choices(&item, self.more.named(&item.key), &texts.more);
+                let list = choices(&item, self.more.named_item(&item), &texts.more);
                 let list = self.more.offered(&item.key, list);
                 self.popup = Some(Popup::Choose(Choose::open(
                     &item.key, &item.name, list, &value,
@@ -289,6 +293,8 @@ impl Settings {
                 self.save(false, texts);
             }
             "combo" => self.open_combo(&item, &value, texts),
+            // 选模型（第 33 条子规则）：开选默认模型的那个窗，写回这一项。
+            "reference" => self.open_reference(super::target::Target::Setting, &item.key, &value),
             "textarea" => self.open_textarea(&item, &value),
             // 带选项的（隐私页的去掉出厂私密目录）勾选，不手打（第 47a 条）。
             // 记录列表（第 47b 条）：开列表窗。

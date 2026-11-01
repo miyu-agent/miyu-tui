@@ -134,6 +134,8 @@ enum Waiting {
     PersonaRemove(String),
     /// 供应商目录（`provider.catalog`）：是不是全目录（「配置页」第 11a 条）。
     Catalog(bool),
+    /// 读知识库（`kb.list`，第 33 条子规则：选知识库的项）。
+    Knowledge,
     /// 「软件包」三页的（第 43c 条）。
     Store(pages::store::Ask),
 }
@@ -309,7 +311,8 @@ impl Settings {
             | Waiting::PersonaDetail(_)
             | Waiting::Presets
             | Waiting::Mascots
-            | Waiting::PresetDetail(_)) => {
+            | Waiting::PresetDetail(_)
+            | Waiting::Knowledge) => {
                 self.more_answer(more, result, &texts.more);
             }
             Waiting::Mcp => self.mcp_listed(result),

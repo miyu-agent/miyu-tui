@@ -200,8 +200,13 @@ impl Settings {
         let secret = secret::is_secret(field);
         let key = field.key.clone();
         let target = Target::RecordField(Box::new(form), key.clone(), secret);
-        self.popup = Some(if !field.options.is_empty() {
-            let list = choices(field, None, &texts.more);
+        // 选模型、人格、知识库的字段（第 33 条子规则）：同配置项。
+        if field.kind == "reference" {
+            return self.open_reference(target, &key, &now);
+        }
+        let named = self.more.named_item(field).map(<[_]>::to_vec);
+        self.popup = Some(if !field.options.is_empty() || named.is_some() {
+            let list = choices(field, named.as_deref(), &texts.more);
             let mut choose = Choose::open(&key, &field.name, list, &now);
             choose.target = target;
             Popup::Choose(choose)

@@ -49,7 +49,7 @@ fn opening_reads_what_it_needs_and_a_change_during_the_read_reads_again() {
     let asks = page.take_asks();
     let methods: Vec<&str> = asks.iter().map(|(_, m, _)| *m).collect();
     // 供应商和模型那三样，加上通用这类页面的清单、人格（2026-10-07 加）、预设（2026-10-08 加）、吉祥物包（2026-10-11 加）、
-    // MCP 服务（2026-10-22 加，「配置页」第 43b 条）。
+    // MCP 服务（2026-10-22 加，「配置页」第 43b 条）、知识库（2026-11-02 加，第 33 条子规则）。
     assert_eq!(
         methods,
         [
@@ -61,6 +61,7 @@ fn opening_reads_what_it_needs_and_a_change_during_the_read_reads_again() {
             "preset.list",
             "package.list",
             "mcp.list",
+            "kb.list",
             "provider.catalog"
         ]
     );
@@ -76,7 +77,7 @@ fn opening_reads_what_it_needs_and_a_change_during_the_read_reads_again() {
         page.answer(tag, Ok(got), &texts());
     }
     assert!(!page.loading());
-    assert_eq!(page.take_asks().len(), 8, "读完补读一次，目录读到过不再读");
+    assert_eq!(page.take_asks().len(), 9, "读完补读一次，目录读到过不再读");
 }
 
 #[test]

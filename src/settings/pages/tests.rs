@@ -1,6 +1,7 @@
 use serde_json::json;
 
 mod package_config;
+mod picks;
 
 use super::schema::Schema;
 use super::{Entry, More};
