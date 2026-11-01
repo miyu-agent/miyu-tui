@@ -67,6 +67,15 @@ pub(super) fn head(result: &Value) -> HeadConfig {
 /// 终端自己的配置项（终端软件包清单声明的）打头的那一截：改了的也要重读（图标、时间线的开关，`app/head_settings.rs`）。
 const OWN: &str = "tui.";
 
+/// 这条推送说模型列表在核心后台变了（`models.changed`，核心 V-26）；配置流掉了队要重订的（`resync`）漏掉的不补，也算。
+pub(super) fn models_changed(message: &Value) -> bool {
+    match message["method"].as_str() {
+        Some("models.changed") => true,
+        Some("resync") => message["params"]["stream"] == "config",
+        _ => false,
+    }
+}
+
 /// 推来的 `config.changed` 动了头要的哪一项：上面那几项，或者终端自己的任何一项。
 pub(super) fn touches(params: &Value) -> bool {
     let keys = &params["keys"];
@@ -92,7 +101,7 @@ pub(super) fn set_language(code: &str) -> Value {
 mod tests {
     use serde_json::json;
 
-    use super::{head, set_language, touches};
+    use super::{head, models_changed, set_language, touches};
 
     #[test]
     fn the_language_is_read_written_and_noticed_by_its_key() {
@@ -114,5 +123,15 @@ mod tests {
             set_language("auto"),
             json!({"changes":[{"key":"ui.language","value":"auto"}]})
         );
+    }
+
+    /// 核心 V-26：模型列表在后台变了推 `models.changed`；配置流掉队的 `resync` 漏掉的不补，也算变了；别的流的不算。
+    #[test]
+    fn models_changed_and_a_config_resync_both_mean_the_models_may_have_changed() {
+        let push = |method: &str, stream: &str| json!({"method": method, "params": {"stream": stream, "providers": ["dev"]}});
+        assert!(models_changed(&push("models.changed", "")));
+        assert!(models_changed(&push("resync", "config")));
+        assert!(!models_changed(&push("resync", "sessions")));
+        assert!(!models_changed(&push("config.changed", "")));
     }
 }

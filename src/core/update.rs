@@ -207,6 +207,8 @@ pub enum Update {
     SessionChanged(SessionChange),
     /// 配置变了（推来的 `config.changed`，哪个头、哪一层改的都算）：开着配置页的重读（「配置页」第 25 条）。
     ConfigChanged,
+    /// 模型列表在核心后台变了（推来的 `models.changed`，核心 V-26；配置流掉队重订也算）：配置页、`/model` 的框、底栏重要一次。
+    ModelsChanged,
     /// 一条后台命令的输出（[`Command::Output`] 的回应）；读不了的（任务没了、是子代理）是 `None`。
     Output {
         /// 哪个会话派的。

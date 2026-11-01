@@ -105,6 +105,14 @@ impl App {
         }
         // 工具目录变了：照现在的语言重取给人看的字，新装的脚本、MCP、扩展工具的显示名跟着换（核心 9-8 七补）；重取软件包
         // 列表，包的图标跟着换（`packages.rs`）。
+        // 模型列表在核心后台变了（核心 V-26）：`/model` 的框开着的再要一次，底栏再要一次模型资料。
+        if matches!(update, Update::ModelsChanged) {
+            if self.boxes.model_list.is_some() {
+                self.link.core.send(Command::ListChoices);
+            }
+            self.refresh_effort();
+            return;
+        }
         if matches!(update, Update::ToolsChanged) {
             let code = self.config.language.code().to_string();
             self.link.core.send(Command::FetchHuman(code));

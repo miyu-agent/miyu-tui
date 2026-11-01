@@ -43,7 +43,12 @@ impl App {
         }
         let current = self.talk.transcript.current_ref();
         if let Some(list) = &mut self.boxes.model_list {
-            list.replace(all, current.as_deref());
+            // 后台变了再要来的（核心 V-26）：光标留在原来那一行，不停回正在用的那个。
+            let kept = list
+                .loaded
+                .then(|| list.picked().map(|c| c.reference.clone()))
+                .flatten();
+            list.replace(all, kept.or(current).as_deref());
         }
     }
 

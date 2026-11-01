@@ -268,6 +268,7 @@ impl Transcript {
             | Update::Presets(_)
             | Update::AnswerRefused { .. }
             | Update::ConfigChanged
+            | Update::ModelsChanged
             | Update::SessionChanged(_) => {}
             Update::Failed(reason) => {
                 self.link = Link::Down(texts.core_failed.replace("{reason}", &reason));
