@@ -117,8 +117,9 @@ fn a_finished_list_goes_away_at_once() {
 }
 
 #[test]
-fn folded_it_shows_what_is_in_progress_and_the_next_two() {
-    // 2026-10-26 项目主人（反馈第 1 条）：只露进行中的一条、待进行的两条，标题写总数，底下不再接「还有」「已完成」。
+fn folded_it_shows_what_is_in_progress_and_the_next_one() {
+    // 2026-11-03 项目主人（改 10-26 反馈第 1 条的「待进行两条」）：只露进行中的一条、待进行的一条，标题写总数，最底下写没露出来
+    // 的没做完的还有几项，做完的不写。
     let names = [
         "一号", "二号", "三号", "四号", "五号", "六号", "七号", "八号",
     ];
@@ -145,20 +146,22 @@ fn folded_it_shows_what_is_in_progress_and_the_next_two() {
     tui.say("排一下要做的");
     tui.wait_for("列好了。");
     tui.wait_for("待办 4/8");
-    tui.wait_for("七号");
+    tui.wait_for("还有 2 项");
     let lines = tui.lines();
     let row = |word: &str| lines.iter().position(|l| l.contains(word));
     assert!(
-        row("待办 4/8") < row("五号") && row("五号") < row("六号") && row("六号") < row("七号"),
+        row("待办 4/8") < row("五号")
+            && row("五号") < row("六号")
+            && row("六号") < row("还有 2 项"),
         "{}",
         lines.join("\n")
     );
     assert!(
-        row("八号").is_none()
+        row("七号").is_none()
+            && row("八号").is_none()
             && row("一号").is_none()
-            && row("已完成").is_none()
-            && row("还有").is_none(),
-        "只露三项：\n{}",
+            && row("已完成").is_none(),
+        "只露两项，做完的不写：\n{}",
         lines.join("\n")
     );
 }

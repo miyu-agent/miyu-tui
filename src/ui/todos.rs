@@ -1,5 +1,6 @@
 //! 待办那一块（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 4、4a 条）：一律画在输入框上面（2026-10-26 项目主人：侧边栏不放
-//! 待办）。收着时只露正在做的那一项和后面两项没做的，标题写做完几项、一共几项；点开全部、长的折行。
+//! 待办）。收着时只露正在做的那一项和后面一项没做的（2026-11-03 项目主人改，原来两项），标题写做完几项、一共几项，没露出来的
+//! 没做完的最底下写「… 还有 N 项」；点开全部、长的折行。
 
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -9,11 +10,12 @@ use crate::config::{Config, TodoMarks};
 use crate::jobs::{Board, Todo, TodoState};
 use crate::theme;
 
-/// 收着时露几项没做的（在做的那一项之外）。
-const NEXT: usize = 2;
+/// 收着时露几项没做的（在做的那一项之外；2026-11-03 项目主人：「我记得是仅显示一个待处理」，原来两项）。
+const NEXT: usize = 1;
 
 /// 待办那一块：`待办 2/5`，下面一项一行、一个记号。没有待办、全做完了是空的。`full` 时没做完的照她写的先后在前、做完的在
-/// 后，全部列出、长的折行；不然只露正在做的第一项和接着两项没做的（没有在做的露前三项没做的），长的截掉加 `…`。
+/// 后，全部列出、长的折行；不然只露正在做的第一项和接着一项没做的（没有在做的露前两项没做的），长的截掉加 `…`，没露出来的
+/// 没做完的最底下暗色写「… 还有 N 项」（做完的不算，2026-11-03 项目主人）。
 pub fn todo_lines(board: &Board, config: &Config, width: u16, full: bool) -> Vec<Line<'static>> {
     let words = &config.text.jobs;
     let marks = &config.layout.todo_marks;
@@ -33,13 +35,20 @@ pub fn todo_lines(board: &Board, config: &Config, width: u16, full: bool) -> Vec
         }
         return out;
     }
-    for todo in shown(&open) {
+    let shown = shown(&open);
+    for todo in &shown {
         out.extend(item(todo, marks, width, false));
+    }
+    let hidden = open.len() - shown.len();
+    if hidden > 0 {
+        let more = words.todo_more.replace("{n}", &hidden.to_string());
+        let line = format!("{} {more}", crate::sheet::ellipsis());
+        out.push(Line::styled(super::rows::clip(&line, width), theme::dim()));
     }
     out
 }
 
-/// 收着时露的几项：正在做的第一项，接着没做的前两项；没有在做的，没做的前三项。
+/// 收着时露的几项：正在做的第一项，接着没做的前 `NEXT` 项；没有在做的，没做的前 `NEXT + 1` 项。
 fn shown<'a>(open: &[&'a Todo]) -> Vec<&'a Todo> {
     let pending = open.iter().filter(|t| t.state == TodoState::Pending);
     match open.iter().find(|t| t.state == TodoState::Active) {

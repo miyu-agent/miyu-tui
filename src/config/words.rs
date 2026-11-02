@@ -126,6 +126,8 @@ pub struct JobTexts {
     pub finished: String,
     /// 待办的进度，`{done}` `{total}`。
     pub todo: String,
+    /// 待办收着时最底下那一行，`{n}` 是没露出来的没做完的几项（前面接主题的 `…`）。
+    pub todo_more: String,
 }
 
 /// 换模型、冷却的字（蓝图「配置与模型」第 2、7 条，核心 8-9）。

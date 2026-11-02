@@ -565,7 +565,7 @@
     "stopped": "（停止済み）",
     "main": "メインセッション",
     "more": "他 {count} 件",
-    "todo": "ToDo {done}/{total}",
+    "todo": "ToDo {done}/{total}", "todo_more": "あと {n} 件",
     "done_note": "バックグラウンドコマンド完了 · {title} · {elapsed}",
     "failed_note": "バックグラウンドコマンド失敗 · {title} · 終了コード {code}",
     "stopped_note": "バックグラウンドコマンド停止 · {title}{why}",
