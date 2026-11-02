@@ -95,7 +95,9 @@ fn the_main_color_is_picked_from_the_avatars_candidates_and_saved_on_the_persona
 
 #[test]
 fn the_main_color_item_shows_only_while_following_an_avatar_or_wallpaper() {
-    let home = Home::with_settings(Script::new([]), "[tui]\ntheme = \"tokyonight\"\n");
+    // 不跟随头像、壁纸的：终端配色（测试的终端不回报颜色，没有主色候选）。2026-11-02 起 tokyonight 当自动读、会跟随人格，
+    // 不能再拿它当「不跟随」。
+    let home = Home::with_settings(Script::new([]), "[tui]\ntheme = \"terminal\"\n");
     four_hues(&home);
     let mut tui = home.tui_args_with("zh_CN.UTF-8", &["config"], &[("MIYU_TUI_PERSONA", "duo")]);
     tui.open_menu("外观");

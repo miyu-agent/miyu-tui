@@ -14,14 +14,26 @@ impl App {
         self.apply_theme();
     }
 
-    /// 现在照哪几样挑：配置项，引导「主题」那一步选着的盖在上面（「第一次打开的引导」第 23a 条）。
-    fn choice(&self) -> Choice {
+    /// 选着的：配置项，引导「主题」那一步选着的盖在上面（「第一次打开的引导」第 23a 条）。配色可能是「自动」。
+    pub(super) fn chosen(&self) -> Choice {
         let mut choice = self.screen.theme_choice.clone();
         if let Some(preview) = &self.screen.theme_preview {
             choice.colors.clone_from(&preview.colors);
             choice.mode = preview.mode;
             choice.ground = preview.ground;
         }
+        choice
+    }
+
+    /// 现在照哪几样挑：[`App::chosen`]，「自动」换成这一拍挑出来的那一种（「主题」第 2 条子规则）。
+    pub(super) fn choice(&self) -> Choice {
+        let mut choice = self.chosen();
+        let found = (
+            self.colors_source().is_some(),
+            !self.screen.wallpaper.seeds().is_empty(),
+            terminal_colors::seen().sixteen.is_some(),
+        );
+        choice.colors = choice::resolve(&choice.colors, found).to_string();
         choice
     }
 
@@ -77,7 +89,9 @@ impl App {
     /// 跟随壁纸（「主题」的「跟随壁纸」）：起来时找一次，打开配色列表、选上跟随壁纸时再找一次，不定时查（2026-10-14 项目主人：
     /// 不要轮询）；找没找到交给两处配色列表（找不到的不列）。跟随着才解图取色、才盯文件（第 6 条）。
     fn follow_wallpaper(&mut self) {
-        let following = self.choice().colors == "wallpaper";
+        // 「自动」里人格交不出颜色时要看壁纸：照跟随壁纸那样找、解图取色。
+        let auto = self.chosen().colors == "auto" && self.colors_source().is_none();
+        let following = auto || self.choice().colors == "wallpaper";
         let wanted = self.colors_list_open() || following;
         let dark = self.choice().dark(self.screen.terminal_dark);
         let wallpaper = &mut self.screen.wallpaper;
@@ -132,6 +146,8 @@ impl App {
     /// 主色的候选、正在用的那个交给外观页（「主色」那一项照它画、开色块列表；跟随头像的选了写那个人格）。
     fn share_seeds(&mut self) {
         let colors = self.choice().colors;
+        let persona_colors = self.colors_source().is_some();
+        let now = self.chosen().colors;
         let persona = (colors == "persona")
             .then(|| self.seen().theme_persona().map(|p| p.id.clone()))
             .flatten();
@@ -139,6 +155,7 @@ impl App {
         if let Some(oobe) = &mut self.boxes.oobe {
             oobe.theme.seeds.clone_from(&self.screen.theme_seeds);
             oobe.theme.seed = self.screen.theme_seed;
+            oobe.theme.persona_colors = persona_colors;
         }
         if let Some(settings) = &mut self.boxes.settings {
             settings.more.seeds.clone_from(&self.screen.theme_seeds);
@@ -148,6 +165,8 @@ impl App {
                 || (colors == "terminal" && !self.screen.theme_seeds.is_empty());
             settings.more.terminal_colors = colors == "terminal";
             settings.more.seed_persona = persona;
+            settings.more.persona_colors = persona_colors;
+            settings.more.theme_now = now;
             // 配置页里改了人格的主色：重读人格列表，照新的换颜色。
             if std::mem::take(&mut settings.personas_changed) {
                 self.link.core.send(crate::core::Command::ListPersonas);

@@ -95,6 +95,8 @@ pub struct ThemeStep {
     before: usize,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设）。
     pub wallpaper: bool,
+    /// 人格交得出颜色：配色列表里列「跟随头像」（2026-11-02 项目主人：没设置头像的不用出现，App 每一拍设）。
+    pub persona_colors: bool,
 }
 
 impl Default for ThemeStep {
@@ -121,6 +123,7 @@ impl Default for ThemeStep {
             picking: None,
             before: 0,
             wallpaper: false,
+            persona_colors: false,
         }
     }
 }
@@ -143,7 +146,7 @@ impl ThemeStep {
         self.settle(follow);
     }
 
-    /// 配色没写过、没换过、有能取色的：停在「跟随头像」。
+    /// 配色没写过、没换过的：停在第一种「自动」（2026-11-02 项目主人：出厂自动，有头像的自动就跟随头像）。
     fn settle(&mut self, follow: bool) {
         if follow && self.unset && !self.turned {
             self.colors = 0;
@@ -301,12 +304,17 @@ impl ThemeStep {
             ),
             _ => return,
         };
-        // 找不到壁纸的不列「跟随壁纸」（「主题」的「跟随壁纸」）。
-        let wallpaper = self.wallpaper;
+        // 找不到壁纸的不列「跟随壁纸」、交不出颜色的不列「跟随头像」，正选着的照列（「主题」第 2 条子规则）。
+        let (wallpaper, persona) = (self.wallpaper, self.persona_colors);
+        let now = values[at];
         let choices = names
             .iter()
             .zip(values)
-            .filter(|(_, value)| wallpaper || **value != "wallpaper")
+            .filter(|(_, value)| match **value {
+                "wallpaper" => wallpaper || **value == now,
+                "persona" => persona || **value == now,
+                _ => true,
+            })
             .map(|(name, value)| Choice {
                 value: json!(value),
                 label: name.clone(),

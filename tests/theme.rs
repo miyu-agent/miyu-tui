@@ -31,8 +31,9 @@ fn following_the_avatar_paints_the_colors_of_the_viewed_persona() {
         matches!(persona, Color::Rgb(..)) && persona != NIGHT,
         "跟随头像：照人格的主题色生成一套，铺它的底色：{persona:?}"
     );
+    // 2026-11-02 项目主人：有了自动就不要默认了，以前写的 tokyonight 当自动读：人格有主题色就跟随它。
     let tokyonight = ground("[tui]\ntheme = \"tokyonight\"\ntheme_mode = \"dark\"\n");
-    assert_eq!(tokyonight, NIGHT, "选 tokyonight 的不看人格");
+    assert_eq!(tokyonight, persona, "写着 tokyonight 的当自动：跟随人格");
 }
 
 #[test]
