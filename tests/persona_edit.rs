@@ -56,8 +56,8 @@ fn made(home: &Home, editor: &str) -> Tui {
     let mut tui = home.tui_args_with("zh_CN.UTF-8", &["config"], &env);
     tui.wait_for("人格和记忆");
     tui.open_menu("人格");
-    // 出厂不带人格（核心 P-4 下）：列表是空的。
-    tui.wait_for("暂无人格");
+    // 出厂带一个人格「软件工程师」（核心 PE-1，能卸）：列表里有它。
+    tui.wait_for("软件工程师");
     tui.key(b"a");
     // 两格窗：上面 id、下面名字（2026-11-02 项目主人）；写了 id 的照它建。
     tui.wait_for("新建人格");
