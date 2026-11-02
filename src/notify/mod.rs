@@ -94,6 +94,20 @@ pub fn plan(look: &NotifyLook, route: Route, focused: Option<bool>, in_herdr: bo
     }
 }
 
+/// 别的会话来的（后台的会话做完了、别的会话在问，2026-11-02 项目主人：在前台也弹，不响）：在前台也弹，响照 [`plan`]。
+/// 正在看的会话在屏幕上，别的会话不在，前台不前台挡不住要看它的理由。
+pub fn plan_elsewhere(
+    look: &NotifyLook,
+    route: Route,
+    focused: Option<bool>,
+    in_herdr: bool,
+) -> Plan {
+    Plan {
+        route: look.enabled.then_some(route),
+        sound: plan(look, route, focused, in_herdr).sound,
+    }
+}
+
 /// 界面这一边的通知：记着终端在不在前台，照 [`plan`] 弹、响，报给 herdr。
 pub struct Notifier {
     look: NotifyLook,
@@ -182,6 +196,16 @@ impl Notifier {
 
     /// 出了一件要通知的事：标题是会话标题，正文只写为什么，图标照人格头像（第 3 条）。
     pub fn tell(&mut self, event: Event) {
+        let (title, body, avatar) = self.words(event);
+        self.send(
+            (&title, &body),
+            (avatar.as_deref(), pose(event)),
+            (None, false),
+        );
+    }
+
+    /// 这件事的标题（会话标题，没有的写 Miyu）、正文、图标（人格头像）。
+    fn words(&self, event: Event) -> (String, String, Option<PathBuf>) {
         let body = match event {
             Event::Replied => self.texts.replied.clone(),
             Event::Failed => self.texts.failed.clone(),
@@ -192,8 +216,17 @@ impl Notifier {
             .title
             .clone()
             .unwrap_or_else(|| self.texts.title.clone());
-        let avatar = self.avatar.clone();
-        self.send((&title, &body), (avatar.as_deref(), pose(event)), None);
+        (title, body, self.avatar.clone())
+    }
+
+    /// 别的会话在问（[`plan_elsewhere`]）：同 [`Notifier::tell`]，在前台也弹。
+    pub fn tell_elsewhere(&mut self, event: Event) {
+        let (title, body, avatar) = self.words(event);
+        self.send(
+            (&title, &body),
+            (avatar.as_deref(), pose(event)),
+            (None, true),
+        );
     }
 
     /// 给人的通知（核心 J-3 中，第 8 条）：标题照传进来的（空的写 Miyu），图标是站着的吉祥物（不是正在看的会话的头像）；
@@ -203,17 +236,28 @@ impl Notifier {
             .filter(|t| !t.trim().is_empty())
             .unwrap_or_else(|| self.texts.title.clone());
         let pose = mascot_icon::Icon::Standing;
-        self.send((&title, body), (None, pose), session);
+        self.send((&title, body), (None, pose), (session, false));
     }
 
-    /// 照 [`plan`] 弹、响。`session` 是点了切过去的会话：kitty 要它回话，`notify-send` 带动作等着。
+    /// 后台的会话做完了（[`plan_elsewhere`]）：同 [`Notifier::tell_notice`]，在前台也弹。
+    pub fn tell_finished(&mut self, title: Option<String>, body: &str, session: String) {
+        let title = title
+            .filter(|t| !t.trim().is_empty())
+            .unwrap_or_else(|| self.texts.title.clone());
+        let pose = mascot_icon::Icon::Standing;
+        self.send((&title, body), (None, pose), (Some(session), true));
+    }
+
+    /// 照 [`plan`] 弹、响，别的会话来的（`elsewhere`）照 [`plan_elsewhere`]。`session` 是点了切过去的会话：kitty 要它
+    /// 回话，`notify-send` 带动作等着。
     fn send(
         &mut self,
         (title, body): (&str, &str),
         (avatar, pose): (Option<&std::path::Path>, mascot_icon::Icon),
-        session: Option<String>,
+        (session, elsewhere): (Option<String>, bool),
     ) {
-        let plan = plan(&self.look, self.route, self.focused, self.herdr.is_some());
+        let judge = if elsewhere { plan_elsewhere } else { plan };
+        let plan = judge(&self.look, self.route, self.focused, self.herdr.is_some());
         let icon = || {
             let mascot = self.mascot.as_ref().map(|look| (look, pose));
             self.icons
@@ -227,7 +271,7 @@ impl Notifier {
                     .as_deref()
                     .map_or_else(|| self.id.clone(), click::kitty_id);
                 let seq = osc::kitty(
-                    (&id, session.is_some()),
+                    (&id, session.is_some(), elsewhere),
                     &self.look.app,
                     (title, body),
                     picture.as_deref(),

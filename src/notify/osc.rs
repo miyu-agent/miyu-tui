@@ -8,8 +8,9 @@ use base64::engine::general_purpose::STANDARD;
 /// 同一个界面的新通知顶掉旧的；两段要一次写完，不能被别的输出劈开。照旧版 09-18 验过的写法。
 /// 有图标（PNG 的内容，第 3 条）的，标题和正文中间多一段 `p=icon`，`g=` 照内容算，kitty 照它缓存。
 /// `report` 的（点了要切会话的，第 8 条）点一下 kitty 还往输入里回一句 `99;i=<编号>;`（`a=focus,report`）。
+/// `always` 的（别的会话来的，2026-11-02 项目主人）窗口在前台也弹（`o=always`）。
 pub fn kitty(
-    (id, report): (&str, bool),
+    (id, report, always): (&str, bool, bool),
     app: &str,
     (title, body): (&str, &str),
     icon: Option<&[u8]>,
@@ -26,8 +27,9 @@ pub fn kitty(
             STANDARD.encode(data)
         )
     });
+    let when = if always { "always" } else { "unfocused" };
     format!(
-        "\x1b]99;i={id}:e=1:d=0:a={action}:o=unfocused:u=1:f={}:s={}:p=title;{}\x1b\\{picture}\x1b]99;i={id}:e=1:d=1:p=body;{}\x1b\\",
+        "\x1b]99;i={id}:e=1:d=0:a={action}:o={when}:u=1:f={}:s={}:p=title;{}\x1b\\{picture}\x1b]99;i={id}:e=1:d=1:p=body;{}\x1b\\",
         b(app),
         b("silent"),
         b(title),
@@ -54,7 +56,7 @@ mod tests {
     #[test]
     fn kitty_gets_two_base64_parts_that_jump_back_and_stay_quiet() {
         let seq = kitty(
-            ("miyu-42", false),
+            ("miyu-42", false, false),
             "Miyu",
             ("Miyu", "回答好了 · 3.2s"),
             None,

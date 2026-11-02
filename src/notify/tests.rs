@@ -239,3 +239,41 @@ fn waiting_notifications_hold_the_laptop_and_finished_ones_stand() {
     assert_eq!(super::pose(Event::Replied), Icon::Standing);
     assert_eq!(super::pose(Event::Failed), Icon::Standing);
 }
+
+/// 别的会话来的（后台的会话做完了、别的会话在问）在前台也弹、不响（2026-11-02 项目主人：在会话 B 里干活，A 的循环跑完了
+/// 没有任何提示）；正在看的会话照旧在前台不弹。
+#[test]
+fn another_session_pops_up_even_when_focused_but_stays_quiet() {
+    let look = Config::builtin().unwrap().notify;
+    let here = plan(&look, Route::System, Some(true), false);
+    assert_eq!(here.route, None, "正在看的：在前台不弹");
+    let there = super::plan_elsewhere(&look, Route::System, Some(true), false);
+    assert_eq!((there.route, there.sound), (Some(Route::System), false));
+    let away = super::plan_elsewhere(&look, Route::System, Some(false), false);
+    assert_eq!(away.sound, look.sound, "离开了照旧响");
+    let mut off = look.clone();
+    off.enabled = false;
+    assert_eq!(
+        super::plan_elsewhere(&off, Route::System, Some(true), false).route,
+        None
+    );
+    // kitty 自己判前台：正在看的 `o=unfocused`，别的会话的 `o=always`。
+    let config = Config::builtin().unwrap();
+    let mut n = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        env(&[("TERM", "xterm-kitty")]),
+        None,
+    );
+    n.focus(true);
+    n.tell(Event::Replied);
+    assert!(n.outbox().concat().contains(":o=unfocused:"));
+    n.tell_finished(Some("A".into()), "回答完了", "s-1".into());
+    let out = n.outbox().concat();
+    assert!(
+        out.contains(":o=always:") && out.contains("report"),
+        "{out:?}"
+    );
+    n.tell_elsewhere(Event::Asking);
+    assert!(n.outbox().concat().contains(":o=always:"));
+}
