@@ -43,6 +43,9 @@ pub struct Layout {
     /// 底栏两段挂哪几件、什么先后（`tui.footer`，「挂载位」第 4 条 SL-2）；没配的照出厂。
     #[serde(default)]
     pub footer: Vec<super::slots::Slot>,
+    /// 输入框上面那一块挂哪几件、什么先后、最多几行（`tui.above`，「挂载位」第 4 条 SL-2）；没配的照出厂。
+    #[serde(default)]
+    pub above: Vec<super::slots::Slot>,
     /// 按键模式是 Vim（蓝图「按键」表「按键模式」那一行）：会话列表、`/model` 里 `j`、`k` 挪，`/` 才搜；`false` 是方向键。
     pub vim: bool,
     /// 新会话不问人格、预设，直接用默认的（`tui.skip_pick`，「新会话：人格、工作区」第 1a 条）。

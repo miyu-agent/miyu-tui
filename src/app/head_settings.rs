@@ -32,6 +32,8 @@ const SIDEBAR_SESSIONS_TAG: u64 = TAG_BASE - 23;
 const SIDE_TAG: u64 = TAG_BASE - 24;
 /// 读底栏挂哪几件的请求编号（「挂载位」第 4 条 SL-2）。
 const FOOTER_TAG: u64 = TAG_BASE - 25;
+/// 读输入框上面那一块挂哪几件的请求编号（SL-2）。
+const ABOVE_TAG: u64 = TAG_BASE - 26;
 /// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
 const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
 
@@ -48,6 +50,7 @@ impl App {
                 self.ask_config(SIDEBAR_SESSIONS_TAG, &[Layout::SIDEBAR_SESSIONS_KEY]);
                 self.ask_config(SIDE_TAG, &[crate::config::slots::SIDE_KEY]);
                 self.ask_config(FOOTER_TAG, &[crate::config::slots::FOOTER_KEY]);
+                self.ask_config(ABOVE_TAG, &[crate::config::slots::ABOVE_KEY]);
                 let mut keys = crate::theme::choice::Choice::KEYS.to_vec();
                 keys.push(crate::theme::choice::SEED_KEY);
                 self.ask_config(THEME_TAG, &keys);
@@ -84,9 +87,9 @@ impl App {
                 }
                 true
             }
-            Update::Answer { tag, result } if *tag == SIDE_TAG || *tag == FOOTER_TAG => {
+            Update::Answer { tag, result } if [SIDE_TAG, FOOTER_TAG, ABOVE_TAG].contains(tag) => {
                 if let Ok(got) = result {
-                    self.take_slot(*tag == SIDE_TAG, got);
+                    self.take_slot(*tag, got);
                 }
                 true
             }
@@ -145,21 +148,24 @@ impl App {
         }
     }
 
-    /// 侧边栏（`side`）、底栏挂哪几件（「挂载位」第 2 条）：读到的盖上，配置里有不认识的部件提示一次。
-    fn take_slot(&mut self, side: bool, got: &Value) {
-        use crate::config::slots::{FOOTER_KEY, FOOTER_LEFT, FOOTER_RIGHT, SIDE_KEY, SIDE_PARTS};
-        let (key, known): (&str, Vec<&str>) = if side {
-            (SIDE_KEY, SIDE_PARTS.to_vec())
-        } else {
-            (FOOTER_KEY, [FOOTER_LEFT, FOOTER_RIGHT].concat())
+    /// 侧边栏、底栏、输入框上面那一块挂哪几件（「挂载位」第 2 条，照请求编号认是哪一处）：读到的盖上，配置里有不认识的部件
+    /// 提示一次。
+    fn take_slot(&mut self, tag: u64, got: &Value) {
+        use crate::config::slots::{ABOVE_KEY, ABOVE_PARTS, FOOTER_KEY, FOOTER_LEFT, FOOTER_RIGHT};
+        use crate::config::slots::{SIDE_KEY, SIDE_PARTS};
+        let (key, known): (&str, Vec<&str>) = match tag {
+            SIDE_TAG => (SIDE_KEY, SIDE_PARTS.to_vec()),
+            FOOTER_TAG => (FOOTER_KEY, [FOOTER_LEFT, FOOTER_RIGHT].concat()),
+            _ => (ABOVE_KEY, ABOVE_PARTS.to_vec()),
         };
         let slots = crate::config::slots::read(got, key);
         let (_, unknown) = crate::config::slots::arrange(&known, &slots);
-        if side {
-            self.config.layout.side = slots;
-        } else {
-            self.config.layout.footer = slots;
-        }
+        let layout = &mut self.config.layout;
+        *match tag {
+            SIDE_TAG => &mut layout.side,
+            FOOTER_TAG => &mut layout.footer,
+            _ => &mut layout.above,
+        } = slots;
         if !unknown.is_empty() {
             let note = self
                 .config

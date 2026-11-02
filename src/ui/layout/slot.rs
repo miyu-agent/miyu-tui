@@ -105,6 +105,34 @@ pub fn stack<C>(
     Stacked { next, written }
 }
 
+/// 只排字的挂载位（输入框上面那一块：高度要先算出来再定位，「挂载位」第 4 条 SL-2）：照配置排先后、藏、截行数，件和件
+/// 之间空 `gap` 行，交回排好的行；没东西的件不占行。
+pub fn column(
+    mut parts: Vec<(&'static str, Vec<Line<'static>>)>,
+    (config, gap): (&[Slot], u16),
+) -> Vec<Line<'static>> {
+    let names: Vec<&'static str> = parts.iter().map(|(name, _)| *name).collect();
+    let (order, _) = arrange(&names, config);
+    let mut out = Vec::new();
+    for (name, cap) in order {
+        let Some((_, lines)) = parts.iter_mut().find(|(n, _)| *n == name) else {
+            continue;
+        };
+        let (Laid::Lines(lines), _) = clip(Laid::Lines(std::mem::take(lines)), usize::from(cap))
+        else {
+            continue;
+        };
+        if lines.is_empty() {
+            continue;
+        }
+        if !out.is_empty() {
+            out.extend((0..gap).map(|_| Line::default()));
+        }
+        out.extend(lines);
+    }
+    out
+}
+
 /// 照 `cap` 截（0 是不限）：照字画的留 `cap - 1` 行，最后一行写暗色的 `…`（主题的 `marks.ellipsis`，交回的 `true`）；自己画的给 `cap` 行。
 fn clip(laid: Laid, cap: usize) -> (Laid, bool) {
     match laid {

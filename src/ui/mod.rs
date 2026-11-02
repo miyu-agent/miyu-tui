@@ -138,15 +138,14 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .collect();
     let count = u16::try_from(queued.len()).unwrap_or(u16::MAX);
     let agent_rows = agents::height(app.talk.listed_agents().len(), app.config.layout.agent_rows);
-    // 待办一律常驻在输入框上面（第 4a 条，2026-10-26 起侧边栏不放待办）。
-    // 首页的框收窄了：照首页框里的字宽排，不然长的一项被裁掉、没有「…」。
+    // 输入框上面那一块是挂载位（「挂载位」第 4 条 SL-2），出厂只有待办（第 4a 条）；首页的框收窄了，照首页框里的字宽排。
     let todo_width = if home {
         home::text_width(main.width, &app.config.layout)
     } else {
         text_width(main.width, &app.config.layout)
     };
-    let todo_lines =
-        todos::todo_lines(&app.talk.board, &app.config, todo_width, app.talk.todo_full);
+    let todo = todos::todo_lines(&app.talk.board, &app.config, todo_width, app.talk.todo_full);
+    let todo_lines = layout::slot::column(vec![("todo", todo)], (&app.config.layout.above, 1));
     let todo_rows = u16::try_from(todo_lines.len()).unwrap_or(u16::MAX);
     // 首页的界面块照首页框里的字宽排好，要几行交给 `place` 定位（蓝图「界面块」第 4 条）。
     let home_blocks = if home {
