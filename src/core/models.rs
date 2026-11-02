@@ -106,10 +106,11 @@ pub fn choices(result: &Value) -> Vec<Choice> {
                 Some("no_key") => ChoiceState::NoKey,
                 _ => ChoiceState::Ok,
             };
+            // 名字、引用是供应商给的：图格字、标签字符这种不进画面（发布前第五批审查 T5-3）；`reference` 是发给核心的，照原样。
             out.push(Choice {
                 reference: reference.to_string(),
-                name: name.to_string(),
-                detail,
+                name: crate::tabs::printable(name).into_owned(),
+                detail: crate::tabs::printable(&detail).into_owned(),
                 state,
             });
         }

@@ -60,6 +60,7 @@ pub(super) fn form(
         let pad = " ".repeat(name_w.saturating_sub(field.name.width()));
         let mut spans = vec![Span::raw(format!("  {}{pad}", field.name))];
         let text = shown(field, value, page.more.named_item(field), &texts.more);
+        let text = crate::tabs::printable(&text).into_owned();
         let bold = Style::new().add_modifier(Modifier::BOLD);
         match slider::fraction(field, value) {
             Some(at) => {

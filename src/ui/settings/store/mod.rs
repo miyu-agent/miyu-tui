@@ -68,7 +68,11 @@ pub(super) fn draw(
     let room = stage.height.saturating_sub(4 + 5 + 1);
     let list_h = LIST_ROWS.min(room / 2).max(1);
     let body = Rect::new(stage.x, stage.y + 4, stage.width, list_h);
-    let lines = rows(store, words, body.width);
+    // 软件源给的名字、说明是外来的字：图格字、标签字符不进画面（发布前第五批审查 T5-3），列表、预览块都过一遍。
+    let mut lines = rows(store, words, body.width);
+    for (line, _) in &mut lines {
+        crate::tabs::printable_lines(std::slice::from_mut(line));
+    }
     let tab = store.tab.index();
     let mut top = page.more.store.top[tab];
     paint(frame, body, &lines, &mut top);
@@ -77,7 +81,8 @@ pub(super) fn draw(
     let pv_y = body.bottom() + 1;
     let pv_h = stage.bottom().saturating_sub(5).saturating_sub(pv_y);
     let pv = Rect::new(stage.x, pv_y, stage.width, pv_h);
-    let shown = preview::lines(store, words, &texts.more.package_from);
+    let mut shown = preview::lines(store, words, &texts.more.package_from);
+    crate::tabs::printable_lines(&mut shown);
     if pv.height > 0 && !shown.is_empty() {
         frame.buffer_mut().set_style(pv, theme::panel());
         let inner = Rect::new(

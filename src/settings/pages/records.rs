@@ -65,7 +65,8 @@ pub fn label(item: &Item, record: &Value, n: usize, texts: &RecordTexts) -> Stri
         .as_ref()
         .and_then(|t| record.get(t))
         .and_then(|v| match v {
-            Value::String(s) if !s.is_empty() => Some(s.clone()),
+            // 记录是包设置里的、外来的字：图格字、标签字符不进画面（发布前第五批审查 T5-3）。
+            Value::String(s) if !s.is_empty() => Some(crate::tabs::printable(s).into_owned()),
             Value::Number(n) => Some(n.to_string()),
             _ => None,
         });

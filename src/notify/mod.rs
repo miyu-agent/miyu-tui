@@ -263,6 +263,9 @@ impl Notifier {
         (avatar, pose): (Option<&std::path::Path>, mascot_icon::Icon),
         (session, elsewhere): (Option<String>, bool),
     ) {
+        // 标题是会话标题、正文有时带模型写的字：图格字、标签字符这种外来的不进通知（发布前第五批审查 T5-3）。
+        let (title, body) = (crate::tabs::printable(title), crate::tabs::printable(body));
+        let (title, body) = (title.as_ref(), body.as_ref());
         let judge = if elsewhere { plan_elsewhere } else { plan };
         let plan = judge(&self.look, self.route, self.focused, self.herdr.is_some());
         let icon = || {
