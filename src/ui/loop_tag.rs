@@ -23,14 +23,15 @@ pub(crate) fn of<'a>(loops: &'a [Loop], session: Option<&str>) -> Vec<&'a Loop> 
     mine
 }
 
-/// 输入框上面那一截（第 2 条）：「↻ 13:07」，停着的「↻ 已暂停」，还没定下一次的只写「↻」。没有循环的是 `None`。
+/// 输入框上面那一截（第 2 条）：「◷ 13:07」，停着的「◷ 已暂停」，还没定下一次的只写「◷」（记号照图标那一套的 `loop`）。
+/// 没有循环的是 `None`。
 pub(crate) fn tag(
     mine: &[&Loop],
     config: &Config,
     (now, tz): (Timestamp, &TimeZone),
 ) -> Option<String> {
     let first = mine.first()?;
-    let mark = &config.layout.loop_mark;
+    let mark = &config.icons.loop_mark;
     Some(match (first.paused, first.next) {
         (true, _) => format!("{mark}{}", config.text.loops.paused),
         (false, Some(next)) => format!("{mark}{}", when(next, now, tz)),
@@ -69,28 +70,39 @@ pub(crate) fn sidebar(
     lines
 }
 
-/// 输入框上面那一截写什么：看着的会话的（看着子会话时不写，同长期目标）。
-pub(super) fn shown(app: &crate::app::App) -> Option<String> {
+/// 输入框上面那一截写什么、打头的记号：看着的会话的（看着子会话时不写，同长期目标）。
+pub(super) fn shown(app: &crate::app::App) -> Option<(String, String)> {
     let session = app.talk.transcript.session.as_deref();
     let session = session.filter(|_| app.talk.viewing_title().is_none());
     let now = (Timestamp::now(), &TimeZone::system());
-    tag(&of(&app.link.loops, session), &app.config, now)
+    let text = tag(&of(&app.link.loops, session), &app.config, now)?;
+    Some((text, app.config.icons.loop_mark.clone()))
 }
 
-/// 画在框上面那一行，右对齐、暗色；`goal` 是长期目标那一截占的地方，有的话接在它左边、中间空两格。
-pub(super) fn draw(frame: &mut Frame, area: Rect, goal: Rect, text: &str) {
-    let width = u16::try_from(text.width()).unwrap_or(u16::MAX);
+/// 画在框上面那一行，右对齐、暗色；`goal` 是长期目标那一截占的地方，有的话接在它左边、中间空两格。放不下整截的只写记号
+/// （`mark` 是它打头的记号），记号也放不下的不写，不往框外伸（2026-11-02 项目主人：窄窗口里截掉了）。
+pub(super) fn draw(frame: &mut Frame, area: Rect, goal: Rect, (text, mark): &(String, String)) {
     let right = if goal.width > 0 {
         goal.x.saturating_sub(2)
     } else {
         area.right()
     };
-    let x = right.saturating_sub(width).max(area.x);
-    let at = Rect::new(x, area.y, right.saturating_sub(x), area.height.min(1));
-    frame.render_widget(
-        Paragraph::new(Span::styled(text.to_string(), theme::dim())),
-        at,
-    );
+    let room = usize::from(right.saturating_sub(area.x));
+    let Some(text) = fit(text, mark, room) else {
+        return;
+    };
+    let width = u16::try_from(text.width()).unwrap_or(u16::MAX);
+    let at = Rect::new(right - width, area.y, width, area.height.min(1));
+    frame.render_widget(Paragraph::new(Span::styled(text, theme::dim())), at);
+}
+
+/// 放得进 `room` 列的那一截：整截，不然只写记号，都放不下的是 `None`。
+fn fit(text: &str, mark: &str, room: usize) -> Option<String> {
+    let mark = mark.trim_end();
+    [text, mark]
+        .into_iter()
+        .find(|t| !t.is_empty() && t.width() <= room)
+        .map(str::to_string)
 }
 
 /// 多久一次：固定间隔照秒数挑最大的整单位写（600 秒写「每 10 分钟」），cron 原样，动态的写「动态间隔」。

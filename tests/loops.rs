@@ -19,13 +19,14 @@ fn a_loop_shows_above_the_input_and_in_the_sidebar() {
     tui.say("在吗");
     tui.wait_for("在。");
     tui.say("/loop 10m 看一眼 CI");
-    tui.wait_for("↻ ");
+    // 记号照图标那一套，出厂 nerd 是钟（2026-11-02 项目主人）。
+    tui.wait_for("\u{f017} ");
     tui.wait_for("每 10 分钟 · 下次");
     assert!(tui.shows("看一眼 CI"), "{}", tui.lines().join("\n"));
     // 停掉：那一段和那一截都不画了。
     tui.say("/loop off");
     let end = std::time::Instant::now() + support::WAIT;
-    while tui.shows("每 10 分钟") || tui.shows("↻ ") {
+    while tui.shows("每 10 分钟") || tui.shows("\u{f017} ") {
         assert!(
             std::time::Instant::now() < end,
             "停了还在：\n{}",
