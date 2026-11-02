@@ -21,8 +21,6 @@ pub const PROMPTS: [&str; 2] = ["persona", "reminders"];
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct EditTexts {
-    /// 新建时编辑窗的标题。
-    pub new_name: String,
     /// 删除、恢复出厂前问的。
     pub remove: RemoveTexts,
     /// 删了、这个人格没了（在回收处留 7 天）。
@@ -85,11 +83,9 @@ pub struct PromptEdit {
 }
 
 impl Settings {
-    /// 人格页 `a`：开编辑窗写新人格的名字。
-    pub(in crate::settings) fn new_persona(&mut self, texts: &Texts) {
-        let title = &texts.more.persona_edit.new_name;
-        let edit = LineEdit::open("persona.name", title, false, &Value::Null);
-        self.popup = Some(Popup::Line(edit.to(Target::NewPersona)));
+    /// 人格页 `a`：开两格窗写新人格的 id、名字（`create.rs`）。
+    pub(in crate::settings) fn new_persona(&mut self) {
+        self.open_create(super::create::Kind::Persona);
     }
 
     /// 人格的窗的按键：上下挪光标，`Enter` 改这一行，`d` 删除，`Esc` 关。
@@ -171,12 +167,6 @@ impl Settings {
                 };
                 self.set_persona(&view.id, json!({"changes": [change(key, value)]}), false);
                 self.popup = Some(Popup::Persona(*view));
-            }
-            Target::NewPersona if text.is_empty() => {}
-            // 新建：不写编号，核心起（核心 P-3 补）；建好开它的窗，光标停在人设，接着填。
-            Target::NewPersona => {
-                let body = json!({"changes": [change("persona.name", json!(text))]});
-                self.set_persona("", body, true);
             }
             _ => return false,
         }
@@ -373,7 +363,7 @@ impl Settings {
 }
 
 /// `changes` 的一项：`Null` 是去掉。
-fn change(key: &str, value: Value) -> Value {
+pub(super) fn change(key: &str, value: Value) -> Value {
     match value {
         Value::Null => json!({"key": key, "unset": true}),
         value => json!({"key": key, "value": value}),

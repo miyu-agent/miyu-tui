@@ -98,6 +98,7 @@ pub fn draw(
         Popup::List(edit) => super::dialog_popups::list(&mut lines, edit, texts, width),
         Popup::Ticks(edit) => super::dialog_popups::ticks(&mut lines, edit, texts, width),
         Popup::Pair(edit) => super::dialog_popups::pair(&mut lines, edit, texts),
+        Popup::Create(edit) => super::dialog_popups::create(&mut lines, edit, texts),
         Popup::Catalog(pick) => super::catalog::lines(&mut lines, pick, texts, width),
         Popup::Records(edit) => super::records::list(&mut lines, edit, texts, width),
         Popup::Record(form) => super::records::form(&mut lines, form, page, texts, width),

@@ -39,7 +39,10 @@ fn made(home: &Home) -> Tui {
     tui.open_menu("预设");
     tui.wait_for("全部功能");
     tui.key(b"a");
-    tui.wait_for("新预设名称");
+    // 两格窗：上面 id、下面名字（2026-11-02 项目主人）；id 空着，核心起 `preset-1`。
+    tui.wait_for("新建预设");
+    tui.wait_for("留空自动起");
+    tui.key(b"\r");
     tui.type_text("我的预设");
     tui.key(b"\r");
     until(&mut tui, "建好的文件", || {

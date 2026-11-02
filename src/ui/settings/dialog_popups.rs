@@ -8,6 +8,7 @@ use unicode_width::UnicodeWidthStr;
 use super::fit;
 use super::popup::{Body, Lines};
 use crate::settings::Texts;
+use crate::settings::pages::create::{CreateEdit, Kind};
 use crate::settings::pages::dialogs::{DialogsView, PairEdit};
 use crate::settings::pages::list::ListEdit;
 use crate::settings::pages::ticks::TickEdit;
@@ -66,6 +67,39 @@ pub(super) fn pair(lines: &mut Lines, edit: &PairEdit, texts: &Texts) {
                 Span::styled(lead, theme::dim()),
                 Span::raw(typed.to_string()),
             ]),
+            focused: i == edit.focus,
+            hit: None,
+        });
+    }
+    lines.error = edit.error.clone();
+}
+
+/// 新建预设、人格的两格窗（`pages/create.rs`）：上面 id、下面名字，同两格窗的画法；id 空着暗色写「留空自动起」。
+pub(super) fn create(lines: &mut Lines, edit: &CreateEdit, texts: &Texts) {
+    let words = &texts.more.create;
+    let title = match edit.kind {
+        Kind::Preset => &words.titles[0],
+        Kind::Persona => &words.titles[1],
+    };
+    lines.title(title.clone(), String::new());
+    lines.hints = texts.more.hints[9].clone();
+    let label_w = words.sides.iter().map(|s| s.width()).max().unwrap_or(0);
+    for (i, (side, editor)) in words.sides.iter().zip(&edit.sides).enumerate() {
+        let typed = editor.text();
+        let pad = " ".repeat(label_w.saturating_sub(side.width()));
+        let lead = format!("  {side}{pad}  ");
+        if i == edit.focus {
+            let before = &typed[..editor.cursor().min(typed.len())];
+            let col = lead.width() + before.width();
+            lines.caret = Some((lines.body.len(), u16::try_from(col).unwrap_or(0)));
+        }
+        let shown = if i == 0 && typed.is_empty() {
+            Span::styled(words.id_hint.clone(), theme::dim())
+        } else {
+            Span::raw(typed.to_string())
+        };
+        lines.body.push(Body {
+            line: Line::from(vec![Span::styled(lead, theme::dim()), shown]),
             focused: i == edit.focus,
             hit: None,
         });

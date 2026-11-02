@@ -12,9 +12,9 @@ use std::time::{Duration, Instant};
 use miyu_session::testkit::{Play, Script};
 use support::{Home, Tui};
 
-/// 新建的第一个人格的目录（编号核心起：`persona-1`）。
+/// 新建的人格的目录：两格窗里写的 id `writer`（2026-11-02 项目主人：新建时能写 id）。
 fn dir(home: &Home) -> PathBuf {
-    home.root().join("personas/persona-1")
+    home.root().join("personas/writer")
 }
 
 /// 等 `check` 成立，最多 [`support::WAIT`]；等不到的把屏幕打出来。
@@ -59,7 +59,10 @@ fn made(home: &Home, editor: &str) -> Tui {
     // 出厂不带人格（核心 P-4 下）：列表是空的。
     tui.wait_for("暂无人格");
     tui.key(b"a");
-    tui.wait_for("新人格名称");
+    // 两格窗：上面 id、下面名字（2026-11-02 项目主人）；写了 id 的照它建。
+    tui.wait_for("新建人格");
+    tui.type_text("writer");
+    tui.key(b"\r");
     tui.type_text("我的人格");
     tui.key(b"\r");
     let toml = dir(home).join("persona.toml");
@@ -69,7 +72,7 @@ fn made(home: &Home, editor: &str) -> Tui {
     tui.wait_for("人设提醒短语");
     assert!(
         !tui.shows("persona-1"),
-        "编号不出现：\n{}",
+        "照写的 id 建，核心不另起：\n{}",
         tui.lines().join("\n")
     );
     tui
