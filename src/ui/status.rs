@@ -79,8 +79,15 @@ pub(super) fn swept(word: &str, dots: &Dots, t: f64, sweep: f64) -> String {
 
 /// 提示：圆角细边框的小框，底边压在 `bottom` 那一行，框里的字从 `text_x` 起（和输入框里的字左对齐），
 /// 左右各空一格。浮着，先把底下的格子清掉再画（`tui.md`「提示」）。字有好几行的（扩展办的斜杠命令的回执，核心 X-14
-/// 下）照行数长高，一行一行各自截，宽照最宽的一行；上面放不下的只露最后几行。
-pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, seen: &Seen) {
+/// 下）照行数长高，一行一行各自截，宽照最宽的一行；上面放不下的只露最后几行。框占的那几行整行清掉（`row` 是主列的左右，
+/// 2026-11-02 项目主人报：框左边露出时间线的转圈、右边露出被盖住的那一步，看着框错了位）。
+pub fn toast(
+    frame: &mut Frame,
+    (text_x, row): (u16, (u16, u16)),
+    bottom: u16,
+    max_width: u16,
+    seen: &Seen,
+) {
     let Some(notice) = &seen.typing.notice else {
         return;
     };
@@ -111,7 +118,9 @@ pub fn toast(frame: &mut Frame, text_x: u16, bottom: u16, max_width: u16, seen: 
         .iter()
         .map(|l| Line::raw(l.clone()))
         .collect();
-    frame.render_widget(Clear, area);
+    let (left, right) = row;
+    let rows = Rect::new(left, area.y, right.saturating_sub(left), area.height);
+    frame.render_widget(Clear, rows.intersection(frame.area()).union(area));
     let block = Block::bordered()
         .border_set(crate::sheet::read(|s| s.frame.toast.set()))
         .border_style(theme::notice_border(notice.good));

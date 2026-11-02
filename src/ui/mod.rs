@@ -483,7 +483,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     status::toast(
         frame,
-        areas.text.x,
+        (areas.text.x, (areas.body.x, areas.body.right())),
         toast_bottom,
         areas.text.width,
         &app.seen(),

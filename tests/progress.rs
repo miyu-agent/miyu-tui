@@ -57,3 +57,37 @@ fn a_running_step_shows_its_latest_progress_in_place_until_the_result() {
         tui.lines().join("\n")
     );
 }
+
+/// 提示框浮在在跑的那一步上（2026-11-02 项目主人报：「盲文会导致通知错位」）：框占的那几行整行清掉，框左边不露转圈、右边
+/// 不露被盖住那一步的字。窄窗口走紧凑版面，框左边一列正好是时间线的记号列。
+#[test]
+fn a_toast_over_a_running_step_clears_its_rows() {
+    let command =
+        "for i in 1 2 3; do echo 普通$i输出; echo \"miyu-progress: 第 $i 步\"; sleep 1.5; done";
+    let args = serde_json::json!({"command": command, "description": "分两步"}).to_string();
+    let long: String = (1..=60).map(|i| format!("第{i}行\n\n")).collect();
+    let script = Script::new([
+        Play::Says(Box::leak(long.into_boxed_str())),
+        Play::Calls(vec![("shell".into(), args)]),
+        Play::Says("好了。"),
+    ]);
+    let home = Home::with_tools(script, "[permission]\nlevel = \"full\"\n");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 80);
+    tui.wait_for("开放权限");
+    tui.say("先说很多");
+    tui.wait_for("第60行");
+    tui.say("跑一下");
+    tui.wait_for("第 1 步");
+    tui.key(b"\x1b");
+    tui.wait_for("再按一次");
+    let lines = tui.lines();
+    let at = lines.iter().position(|l| l.contains("再按一次")).unwrap();
+    let braille = |c: char| ('\u{2800}'..='\u{28ff}').contains(&c);
+    for row in &lines[at - 1..=at + 1] {
+        assert!(
+            !row.chars().any(braille) && !row.contains("echo") && !row.contains("第 1 步"),
+            "框那几行只有框：{row}\n{}",
+            lines.join("\n")
+        );
+    }
+}
