@@ -8,6 +8,8 @@ use crate::human::Human;
 pub struct Link {
     /// 连着核心的一头。
     pub core: Core,
+    /// 上回告诉核心开着的会话（`viewing.rs`）：变了才再说；连上、重连以后是 `None`，再说一遍。
+    pub viewing: Option<Option<String>>,
     /// 每个模型、池收哪几种附件（`attachments.rs`，照 `model.list`）。
     pub abilities: crate::core::Abilities,
     /// 工具给人看的显示名（仓库 `resources/software/basesystem/human/`）。

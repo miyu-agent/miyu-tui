@@ -10,7 +10,11 @@ impl App {
         let SessionChange::Entry(info) = change else {
             return;
         };
-        if info.busy || self.talk.transcript.session.as_deref() == Some(info.session.as_str()) {
+        // 别的头开着它的：由开着的那个通知，这边不弹、不标（核心 HV-1，2026-11-02 项目主人：两个终端弹了两条）。
+        if info.busy
+            || info.viewed
+            || self.talk.transcript.session.as_deref() == Some(info.session.as_str())
+        {
             return;
         }
         let was_busy = self

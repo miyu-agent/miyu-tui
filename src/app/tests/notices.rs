@@ -91,3 +91,79 @@ fn a_background_session_that_finishes_is_marked_and_told() {
     app.switch_session("bg".into());
     assert!(app.talk.unseen.is_empty(), "切过去就消");
 }
+
+/// 别的头开着的会话（核心 HV-1 的 `viewed`）做完了：由开着的那个通知，这边不标、不弹（2026-11-02 项目主人：herdr 里两个
+/// 终端各弹一条「回答完了」）。
+#[test]
+fn a_session_open_in_another_head_is_left_to_that_head() {
+    let (mut app, _sent) = crate::app::test_support::app();
+    let config = app.config.clone();
+    app.notifier = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        |name| (name == "TERM").then(|| "xterm-kitty".to_string()),
+        None,
+    );
+    let info = |busy: bool, viewed: bool| SessionInfo {
+        session: "other".into(),
+        title: Some("别处开着的".into()),
+        busy,
+        viewed,
+        ..SessionInfo::default()
+    };
+    app.talk.transcript.session = Some("me".into());
+    app.talk.sessions_seen = Some(vec![info(true, true)]);
+    app.session_changed(crate::core::SessionChange::Entry(info(false, true)));
+    assert!(app.talk.unseen.is_empty(), "不标");
+    assert!(app.notifier.outbox().concat().is_empty(), "不弹");
+}
+
+/// 告诉核心开着哪个会话：变了才说，连上、重连以后再说一遍（核心 HV-1）。
+#[test]
+fn the_open_session_is_told_once_and_again_after_reconnecting() {
+    use crate::core::{Command, Update};
+    let (mut app, mut sent) = crate::app::test_support::app();
+    let viewing = |sent: &mut tokio::sync::mpsc::UnboundedReceiver<Command>| {
+        let mut got = Vec::new();
+        while let Ok(command) = sent.try_recv() {
+            if let Command::Viewing(session) = command {
+                got.push(session);
+            }
+        }
+        got
+    };
+    app.tell_main_session();
+    app.tell_main_session();
+    assert_eq!(viewing(&mut sent), [None], "空会话：说一次");
+    app.talk.transcript.session = Some("s-1".into());
+    app.tell_main_session();
+    assert_eq!(viewing(&mut sent), [Some("s-1".to_string())]);
+    app.core(Update::Reconnected);
+    app.tell_main_session();
+    assert_eq!(
+        viewing(&mut sent),
+        [Some("s-1".to_string())],
+        "重连以后再说一遍"
+    );
+}
+
+/// 别的会话在问时弹不弹看它（`ask_elsewhere.rs`）：别的头开着的不弹；自己开着的不算别处。
+#[test]
+fn a_session_counts_as_open_elsewhere_only_when_another_head_has_it() {
+    let (mut app, _sent) = crate::app::test_support::app();
+    let item = |id: &str, viewed: bool| SessionInfo {
+        session: id.into(),
+        viewed,
+        ..SessionInfo::default()
+    };
+    app.talk.sessions_seen = Some(vec![
+        item("there", true),
+        item("nowhere", false),
+        item("mine", true),
+    ]);
+    app.talk.transcript.session = Some("mine".into());
+    app.tell_main_session();
+    assert!(app.viewed_elsewhere("there"));
+    assert!(!app.viewed_elsewhere("nowhere"));
+    assert!(!app.viewed_elsewhere("mine"), "带 viewed 是因为自己开着");
+}

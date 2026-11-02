@@ -21,6 +21,7 @@ pub(super) fn request(command: &Command) -> Option<(&'static str, Value, Option<
             None,
         ),
         Command::Delete(session) => ("session.delete", json!({"session": session}), None),
+        Command::Viewing(session) => ("session.viewing", json!({"session": session}), None),
         Command::ListModels => ("model.list", json!({}), Some(Awaiting::Models)),
         Command::ListChoices => ("model.list", json!({}), Some(Awaiting::Choices)),
         Command::SetChat(reference) => ("config.set", config::set_chat(reference), None),
