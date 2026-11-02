@@ -196,3 +196,23 @@ fn a_shortened_model_keeps_the_provider_name_until_last() {
         "deepseek-v4.1-flash"
     );
 }
+
+/// 底栏不写出字速度（2026-11-02 项目主人：每一轮回答末尾那一行已经有了）。
+#[test]
+fn the_footer_leaves_the_output_speed_to_the_done_row() {
+    let config = crate::config::Config::builtin().unwrap();
+    let mut t = crate::transcript::Transcript::default();
+    t.speed.last = Some(41.0);
+    let parts = super::right(
+        &t,
+        &crate::core::Usage::default(),
+        &config,
+        Some((342_600, Some(1_000_000))),
+    );
+    let text: String = parts
+        .iter()
+        .flat_map(|p| p.spans.iter().map(|s| s.content.to_string()))
+        .collect();
+    assert!(text.contains("342.6k"), "上下文照写：{text}");
+    assert!(!text.contains("tok/s") && !text.contains("41"), "{text}");
+}
