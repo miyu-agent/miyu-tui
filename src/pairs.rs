@@ -107,21 +107,23 @@ pub fn form_key(sides: &mut [Editor; 2], focus: &mut usize, key: KeyEvent) -> Fo
             }
             return FormKey::Done(Pair { user, assistant });
         }
-        _ => {
-            let editor = &mut sides[*focus];
-            match key.code {
-                KeyCode::Backspace => editor.backspace(),
-                KeyCode::Delete => editor.delete(),
-                KeyCode::Left => editor.left(false),
-                KeyCode::Right => editor.right(false),
-                KeyCode::Home => editor.move_to(0, false),
-                KeyCode::End => editor.move_to(editor.text().len(), false),
-                KeyCode::Char(c) => editor.insert(&c.to_string()),
-                _ => {}
-            }
-        }
+        _ => type_into(&mut sides[*focus], key),
     }
     FormKey::Stay
+}
+
+/// 一格里打字：删、挪光标、打一个字（两格窗、新建预设和人格的窗共用）。
+pub fn type_into(editor: &mut Editor, key: KeyEvent) {
+    match key.code {
+        KeyCode::Backspace => editor.backspace(),
+        KeyCode::Delete => editor.delete(),
+        KeyCode::Left => editor.left(false),
+        KeyCode::Right => editor.right(false),
+        KeyCode::Home => editor.move_to(0, false),
+        KeyCode::End => editor.move_to(editor.text().len(), false),
+        KeyCode::Char(c) => editor.insert(&c.to_string()),
+        _ => {}
+    }
 }
 
 /// 改好的一轮放回去：改的照原位，加的放末尾、选中它。

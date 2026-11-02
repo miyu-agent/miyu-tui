@@ -28,12 +28,8 @@ pub enum Target {
     Setting,
     /// 一个预设的一个键；关窗回到它的详情窗。
     Preset(Box<PresetView>),
-    /// 新建预设：填的是名字。
-    NewPreset,
     /// 一个人格的一个键；关窗回到它的详情窗。
     Persona(Box<PersonaView>),
-    /// 新建人格：填的是名字。
-    NewPersona,
     /// 一个人格的头像：填的是图片的路径；关窗回到它的详情窗（「配置页」第 36 条）。
     Avatar(Box<PersonaView>),
     /// `model_or` 那种项（语义模型）：选了「填一个模型…」开编辑窗，别的照旧写系统配置（「配置页」第 21 条）。

@@ -18,8 +18,6 @@ use crate::settings::{Settings, Texts, Tone, Waiting};
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct EditTexts {
-    /// 新建时编辑窗的标题。
-    pub new_name: String,
     /// 删除、恢复出厂前问的。
     pub remove: RemoveTexts,
     /// 删了、这个预设没了。
@@ -68,11 +66,14 @@ fn bools(changes: Vec<(String, bool)>) -> Vec<(String, Value)> {
 }
 
 impl Settings {
-    /// 预设页 `a`：开编辑窗写新预设的名字。
-    pub(in crate::settings) fn new_preset(&mut self, texts: &Texts) {
-        let title = &texts.more.preset_edit.new_name;
-        let edit = LineEdit::open("preset.name", title, false, &Value::Null);
-        self.popup = Some(Popup::Line(edit.to(Target::NewPreset)));
+    /// 预设页 `a`：开两格窗写新预设的 id、名字（`create.rs`）。
+    pub(in crate::settings) fn new_preset(&mut self) {
+        self.open_create(super::create::Kind::Preset);
+    }
+
+    /// 两格窗交了（`create.rs`）：`id` 空的让核心起；功能不写就是全开，建好开它的窗。
+    pub(super) fn new_preset_named(&mut self, id: &str, name: &str) {
+        self.set_preset(id, vec![("preset.name".into(), json!(name))], true);
     }
 
     /// 预设的窗的按键：上下挪光标（功能树里 `↑` `↓` 在一列里走、到顶回描述，`←` `→` 换列，核心设计 52）；功能、工具、
@@ -183,11 +184,6 @@ impl Settings {
                 };
                 self.set_preset(&view.id, vec![(key.to_string(), value)], false);
                 self.popup = Some(Popup::Preset(*view));
-            }
-            Target::NewPreset if text.is_empty() => {}
-            // 新建：不写编号，核心起（核心 P-3 补）；功能不写就是全开。
-            Target::NewPreset => {
-                self.set_preset("", vec![("preset.name".into(), json!(text))], true);
             }
             _ => return false,
         }

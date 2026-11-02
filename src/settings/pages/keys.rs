@@ -188,10 +188,8 @@ impl Settings {
                 Section::Store | Section::Mcp(_) => {}
             },
             // 预设页、人格页 `a`：新建（第 37、39 条，同旧版）。
-            KeyCode::Char('a') if matches!(section, Section::Presets(_)) => self.new_preset(texts),
-            KeyCode::Char('a') if matches!(section, Section::Personas(_)) => {
-                self.new_persona(texts)
-            }
+            KeyCode::Char('a') if matches!(section, Section::Presets(_)) => self.new_preset(),
+            KeyCode::Char('a') if matches!(section, Section::Personas(_)) => self.new_persona(),
             _ => {}
         }
         Outcome::Stay

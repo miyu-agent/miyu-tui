@@ -37,6 +37,8 @@ pub enum Popup {
     Records(super::pages::records::RecordsEdit),
     /// 记录列表的一条的表单窗。
     Record(super::pages::records::RecordForm),
+    /// 新建预设、人格的两格窗（`pages/create.rs`）。
+    Create(super::pages::create::CreateEdit),
 }
 
 /// 选默认模型的窗。

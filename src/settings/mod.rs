@@ -404,7 +404,7 @@ impl Settings {
             Some(Popup::Form(form)) => form.editing.is_some() || form.search.1,
             Some(Popup::Pick(pick)) => pick.typing,
             Some(Popup::Catalog(pick)) => pick.typing,
-            Some(Popup::Line(_) | Popup::Pair(_) | Popup::Sheet(_)) => true,
+            Some(Popup::Line(_) | Popup::Pair(_) | Popup::Sheet(_) | Popup::Create(_)) => true,
             _ => false,
         };
         popup || self.nav.search.as_ref().is_some_and(|s| s.typing)

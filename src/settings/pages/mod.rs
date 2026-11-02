@@ -6,6 +6,7 @@ mod avatar;
 pub mod catalog;
 pub mod choose;
 pub mod combo;
+pub mod create;
 pub mod dialogs;
 mod keys;
 pub mod list;
@@ -369,6 +370,8 @@ pub struct Texts {
     pub list: list::ListTexts,
     /// 记录列表（第 47b 条）。
     pub records: records::RecordTexts,
+    /// 新建预设、人格的两格窗（「配置页」第 36、39 条子规则）。
+    pub create: create::CreateTexts,
     /// 勾选窗（第 47a 条）。
     pub ticks: ticks::TicksTexts,
     /// 包从哪来（第 43a 条，包页面包屑下面那一行）：出厂自带、官方软件源、本机安装（照 `package.list` 的 `from`）。

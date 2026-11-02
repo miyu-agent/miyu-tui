@@ -66,6 +66,7 @@ impl Settings {
             Popup::Persona(view) => self.persona_key(view, key, texts),
             Popup::Dialogs(view) => self.dialogs_key(view, key),
             Popup::Pair(edit) => self.pair_key(edit, key, texts),
+            Popup::Create(edit) => self.create_key(edit, key, texts),
             // 能改的预设详情窗（第 39 条）。
             Popup::Preset(view) => self.preset_key(view, key, texts),
             other => self.popup = Some(other),
