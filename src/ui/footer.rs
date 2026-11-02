@@ -357,25 +357,16 @@ fn cooling_word(
     Some(texts.cooling_until.replace("{n}", &minutes.to_string()))
 }
 
-/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢速度（1）、花费（2，接在累计后面，见调用处），
-/// 这几样比权限级别的字先丢（[`EARLY`]，2026-10-19 项目主人）；再丢累计（3），上下文留到最后（4）。还是 0 的格子不写
-/// （`tui.md`「框下面那一行」）。
+/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢花费（2，接在累计后面，见调用处），这几样
+/// 比权限级别的字先丢（[`EARLY`]，2026-10-19 项目主人）；再丢累计（3），上下文留到最后（4）。还是 0 的格子不写
+/// （`tui.md`「框下面那一行」）。出字速度不写（2026-11-02 项目主人：每一轮回答末尾那一行已经有了，`speed` 那句字只给收尾行用）。
 fn right(
     t: &Transcript,
     total: &Usage,
     config: &Config,
     preview: Option<(u64, Option<u64>)>,
 ) -> Vec<Part> {
-    let text = &config.text;
     let mut parts = Vec::new();
-    if let Some(speed) = t.speed.last {
-        let rate = format!("{speed:.0}");
-        let speed = Span::styled(text.speed.replace("{rate}", &rate), theme::dim());
-        parts.push(Part {
-            keep: 1,
-            spans: vec![speed],
-        });
-    }
     let context = match preview {
         Some((used, window)) => context_words(used, window, config),
         None => context_text(t, config),
