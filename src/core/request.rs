@@ -102,6 +102,7 @@ pub(super) fn request(
         | Command::ListSessions
         | Command::Pin { .. }
         | Command::Delete(_)
+        | Command::Viewing(_)
         | Command::SetLanguage(_)
         | Command::SetTheme(_)
         | Command::FetchHuman(_)

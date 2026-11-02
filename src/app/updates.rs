@@ -9,6 +9,10 @@ impl App {
     /// 收一条核心那边的消息。撤销成了、排队的消息被退回了，字放回输入框（`tui.md`「输入框」第 7、8 条）。
     pub fn core(&mut self, update: Update) {
         // 断开了：在途的请求不会回来了，等着的几处先复位（`lost.rs`）；下面各处照样收到这一条。
+        // 连上、重连了：核心照连接记开着哪个会话，断了就忘，再说一遍（`viewing.rs`）。
+        if matches!(update, Update::Ready(_) | Update::Reconnected) {
+            self.link.viewing = None;
+        }
         if matches!(update, Update::Disconnected) {
             self.lost_requests();
             // 界面块跟着扩展一起停了：清掉，重连以后核心照记着的订阅重推（`widgets.rs`）。

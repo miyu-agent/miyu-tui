@@ -79,6 +79,7 @@ mod typing;
 mod unseen;
 mod updates;
 pub mod usage;
+mod viewing;
 pub(crate) mod vim;
 mod workspace;
 

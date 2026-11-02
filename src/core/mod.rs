@@ -137,6 +137,9 @@ pub enum Command {
     },
     /// 删掉一个会话（`session.delete`），不管对着哪个会话。
     Delete(String),
+    /// 告诉核心这个头开着哪个会话（`session.viewing`，核心 HV-1）：别的头照会话列表的 `viewed` 不再替它弹后台的通知。
+    /// `None` 是哪个都没开（空会话的首页）。
+    Viewing(Option<String>),
     /// 要 `/model` 框里的一行行（`model.list`），交回 [`Update::Choices`]。
     ListChoices,
     /// 要一个网址的链接卡片（`link.preview`，核心 W-7）。

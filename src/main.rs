@@ -302,7 +302,7 @@ fn run(
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
     let mut log = frame_log::FrameLog::open(log_path.as_deref(), slow);
     while !app.quit {
-        app.notifier.session(app.talk.main_session().as_deref());
+        app.tell_main_session();
         frame(terminal, &mut app, &mut pointer, depth, &mut log)?;
         let drawn_at = Instant::now();
         // 这一帧整屏空着在等 `ui.welcomed`：问到了当场画首页，不等下一拍（蓝图「每一帧」；2026-10-15 冷启动查出，空着的
