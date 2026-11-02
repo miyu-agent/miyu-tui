@@ -37,13 +37,20 @@ pub fn kitty(
     )
 }
 
-/// OSC 9：iTerm2、WezTerm、ghostty 认，只有一段字。标题和正文拼成一句；字里的控制字符去掉，免得提前收尾。
+/// OSC 9：iTerm2、WezTerm、ghostty 认，只有一段字。标题和正文拼成一句；字里的控制字符去掉，免得提前收尾。数字打头的
+/// 前面垫一个空格：`9;4;…` 这种是 ConEmu 那一套子命令（ghostty 认 `9;4` 进度条），标题是会话标题，写成 `4;3;` 打头
+/// 时整句就不当通知了（发布前第五批审查 T5-4）。
 pub fn osc9(title: &str, body: &str) -> String {
     let text: String = format!("{title}: {body}")
         .chars()
         .filter(|c| !c.is_control())
         .collect();
-    format!("\x1b]9;{text}\x07")
+    let pad = if text.starts_with(|c: char| c.is_ascii_digit()) {
+        " "
+    } else {
+        ""
+    };
+    format!("\x1b]9;{pad}{text}\x07")
 }
 
 #[cfg(test)]
@@ -90,5 +97,6 @@ mod tests {
     #[test]
     fn osc9_is_one_line_without_controls() {
         assert_eq!(osc9("Miyu", "出错\x07"), "\x1b]9;Miyu: 出错\x07");
+        assert_eq!(osc9("4;3;99", "等你回答"), "\x1b]9; 4;3;99: 等你回答\x07");
     }
 }
