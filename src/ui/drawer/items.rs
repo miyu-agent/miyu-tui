@@ -103,11 +103,12 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
     let lit = active || (checked && d.multiple(tab));
     let style = if lit { theme::picked() } else { Style::new() };
     let label_style = style.add_modifier(Modifier::BOLD);
-    // 序号：按 1–9 直接选这一项（`drawer/keys.rs`；2026-10-27 项目主人：选项加上序号，照 Claude Code）。
+    // 序号：按 1–9 直接选这一项（`drawer/keys.rs`；2026-10-27 项目主人：选项加上序号，照 Claude Code），一律暗色
+    // （2026-11-02 项目主人）。
     let number = format!("{}. ", index + 1);
     let mut spans = vec![
         Span::styled(pointer.clone(), theme::picked()),
-        Span::styled(number.clone(), style),
+        Span::styled(number.clone(), theme::dim()),
     ];
     if let Some(marker) = marker {
         spans.push(Span::styled(marker.clone(), style));
@@ -149,10 +150,25 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
             (label, None)
         }
     };
-    let label = super::clip(&label, u16::try_from(room).unwrap_or(u16::MAX));
+    // 放不下的标题折行、不截（2026-11-02 项目主人）；在写的那一项标题后面接着写字，照旧截。
+    let mut labels = if editing {
+        vec![super::clip(&label, col(room))]
+    } else {
+        folded(&label, col(room))
+    }
+    .into_iter();
+    let label = labels.next().unwrap_or_default();
     let mut used = lead + label.width();
     spans.push(Span::styled(label, label_style));
-    let mut more = Vec::new();
+    let indent = " ".repeat(lead);
+    let mut more: Vec<Line<'static>> = labels
+        .map(|row| {
+            Line::from(vec![
+                Span::raw(indent.clone()),
+                Span::styled(row, label_style),
+            ])
+        })
+        .collect();
     if editing {
         let (gap, hint) = match item {
             Item::Other => ("", &texts.other),
@@ -186,9 +202,8 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
         b.push(line, Some(index));
     }
     if let Some(description) = description.filter(|s| !s.trim().is_empty()) {
-        let indent = " ".repeat(lead);
         let room = col(usize::from(width).saturating_sub(lead)).max(1);
-        for (piece, _) in pieces(description.trim(), room) {
+        for piece in folded(description.trim(), room) {
             let spans = vec![Span::raw(indent.clone()), Span::styled(piece, theme::dim())];
             b.push(Line::from(spans), Some(index));
         }
@@ -250,6 +265,19 @@ fn reason_rows(text: &str, room: usize) -> Vec<String> {
             out.push(String::new());
         }
         out.extend(parts.into_iter().map(|(piece, _)| piece));
+    }
+    out
+}
+
+/// 照 `room` 列折好的几行（至少一行），每一行去掉行尾的空白：正文的折行把满了的那一格空白留在行尾，多占一列，
+/// 抽屉里并排时中线会错开（2026-11-02 项目主人报）。
+pub(super) fn folded(text: &str, room: u16) -> Vec<String> {
+    let mut out: Vec<String> = pieces(text, room)
+        .into_iter()
+        .map(|(piece, _)| piece.trim_end().to_string())
+        .collect();
+    if out.is_empty() {
+        out.push(String::new());
     }
     out
 }
