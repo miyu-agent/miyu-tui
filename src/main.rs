@@ -102,8 +102,7 @@ fn main() -> io::Result<()> {
     // 以后 54 MiB，定了以后 23 MiB；解码大图的十几 MB 放掉以后留在 glibc 手里、还不回去）。别的平台什么都不做。
     miyu_client::heap::tune();
     let launch = startup::launch(std::env::args().skip(1))?;
-    if launch.help {
-        println!("{}", startup::USAGE);
+    if startup::early(&launch) {
         return Ok(());
     }
     // 配置先读：读不懂就别进全屏，错误照原样打在终端里。

@@ -89,6 +89,54 @@ pub fn of_image(bytes: &[u8]) -> Vec<u32> {
         .collect()
 }
 
+/// 另起一个短命的自己解图取色（隐藏的参数，[`print_from_stdin`] 接）：解一张 4K 的壁纸要三十多 MB，放在界面进程里，峰值就
+/// 跟着高这么多、还回不去（2026-11-02：出厂「自动」起来就跟随壁纸，量尺「打开长会话」的峰值比稳下来多了 24.6 MiB）。
+/// 图的字节从标准输入交过去，候选从标准输出一行一个 `#rrggbb` 读回来；起不来、读不懂的是空的。单元测试里当场解（测试程序
+/// 不认这个参数）。
+pub fn of_image_apart(bytes: &[u8]) -> Vec<u32> {
+    if cfg!(test) {
+        return of_image(bytes);
+    }
+    let Ok(program) = std::env::current_exe() else {
+        return Vec::new();
+    };
+    let child = std::process::Command::new(program)
+        .arg(SEEDS_FLAG)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+    let Ok(mut child) = child else {
+        return Vec::new();
+    };
+    if let Some(mut input) = child.stdin.take() {
+        use std::io::Write;
+        let _sent = input.write_all(bytes);
+    }
+    let Ok(out) = child.wait_with_output() else {
+        return Vec::new();
+    };
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|line| super::persona::hex(line.trim()))
+        .collect()
+}
+
+/// 隐藏的参数：另起的那个自己照它从标准输入读图、印候选（[`of_image_apart`]）。
+pub const SEEDS_FLAG: &str = "--wallpaper-seeds";
+
+/// 另起的那个自己：标准输入的图解开取色，一行一个 `#rrggbb` 印出来。
+pub fn print_from_stdin() {
+    use std::io::Read;
+    let mut bytes = Vec::new();
+    if std::io::stdin().read_to_end(&mut bytes).is_err() {
+        return;
+    }
+    for seed in of_image(&bytes) {
+        println!("#{seed:06x}");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, mpsc};

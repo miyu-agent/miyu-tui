@@ -259,7 +259,7 @@ fn colors_of(
         return Found::Image;
     }
     let seeds = read()
-        .map(|bytes| super::seeds::of_image(&bytes))
+        .map(|bytes| super::seeds::of_image_apart(&bytes))
         .unwrap_or_default();
     if seeds.is_empty() {
         return Found::Nothing;
