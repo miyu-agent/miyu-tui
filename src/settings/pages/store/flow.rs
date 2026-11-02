@@ -209,6 +209,19 @@ impl Settings {
         self.ask("package.install", params, Waiting::Store(Ask::Install(id)));
     }
 
+    /// 问的时候没看完就按 `y`、`Enter`：不做，状态行说下面还有几行；窗口小得预览块画不出来的说窗口太小（发布前第五批审查
+    /// T5-1）。
+    pub(super) fn store_unread(&mut self, texts: &Texts) {
+        let view = self.more.store.ask;
+        let words = &texts.more.store.status;
+        let line = if view.rows == 0 {
+            say(words, "too_small")
+        } else {
+            say(words, "unread").replace("{n}", &view.left().to_string())
+        };
+        self.say(line, Tone::Note);
+    }
+
     /// 问的时候按 `n`、`Esc`：不做。
     pub(super) fn store_cancel(&mut self, texts: &Texts) {
         self.more.store.flow = None;

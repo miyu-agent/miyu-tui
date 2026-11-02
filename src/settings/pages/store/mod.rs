@@ -3,6 +3,7 @@
 //! `keys.rs`，先问再做的流程在 `flow.rs`，回应在 `answer.rs`，画在 `ui/settings/store/`。
 
 mod answer;
+pub mod ask_view;
 pub mod flow;
 mod keys;
 pub mod read;
@@ -12,6 +13,7 @@ pub mod texts;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 pub use answer::Ask;
+pub use ask_view::AskView;
 pub use flow::Flow;
 pub use read::{Info, Local, Remote};
 pub use sort::Sort;
@@ -82,6 +84,8 @@ pub struct Store {
     pub asked: HashSet<(bool, String)>,
     /// 正在问、正在做的。
     pub flow: Option<Flow>,
+    /// 问的时候预览块滚到哪（发布前第五批审查 T5-1）。
+    pub ask: AskView,
     /// 做完重读以后光标停回去的那个包：（哪一页，编号）。
     pub keep: Option<(Tab, String)>,
     /// 要 App 在后台打开后台页的包：（编号，名字），App 拿走一次（`backstage.rs`）。

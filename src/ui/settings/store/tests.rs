@@ -154,6 +154,11 @@ fn asking_to_install_lists_versions_dependencies_needs_and_sizes() {
     let has = |want: &str| lines.iter().any(|l| l.contains(want));
     assert!(has("一起装的依赖 : 天气 1.0.0"), "{lines:?}");
     assert!(has(": 联网"), "{lines:?}");
+    let at = |want: &str| lines.iter().position(|l| l.contains(want));
+    assert!(
+        at(": 联网") < at("一起装的依赖"),
+        "「需要」排在依赖前面，依赖再长也挤不走（发布前第五批审查 T5-1）：{lines:?}"
+    );
     assert!(has(": 2.0 KiB"), "下载大小加起来：{lines:?}");
     assert!(has("推荐（不装） : 接入QQ"), "{lines:?}");
     // 卸的没有要一并删的：那一行不写。

@@ -62,12 +62,13 @@ pub fn lines(
                 .map(|r| name_of(store, &text(&r["package"])))
                 .collect();
             let total = |key: &str| previews.iter().filter_map(|p| p[key].as_u64()).sum::<u64>();
-            extra.push((a("with"), with.join(&sep), false));
+            // 「需要」排在依赖前面：依赖一长折成几行，也挤不走要批的能力（发布前第五批审查 T5-1）。
             extra.push((
                 StoreTexts::say(&texts.keys, "needs"),
                 needs.join(&sep),
                 true,
             ));
+            extra.push((a("with"), with.join(&sep), false));
             extra.push((
                 StoreTexts::say(&texts.keys, "download"),
                 sized(total("download")),
