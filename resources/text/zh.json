@@ -761,7 +761,7 @@
     "delete_again": "再按一次 Ctrl+D 删除「{title}」",
     "deleted": "已删除「{title}」",
     "asking": "在问",
-    "delete_current": "无法删除当前会话",
+    "delete_running": "回答进行中：先打断再删除当前会话",
     "pinned": "已置顶",
     "unpinned": "已取消置顶",
     "tokens": "Σ{tokens}",

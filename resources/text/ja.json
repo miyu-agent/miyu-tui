@@ -761,7 +761,7 @@
     "delete_again": "もう一度 Ctrl+D で「{title}」を削除",
     "deleted": "「{title}」を削除しました",
     "asking": "質問中",
-    "delete_current": "使用中のセッションは削除できません。先に切り替えてください",
+    "delete_running": "応答中です。中断してから今のセッションを削除してください",
     "pinned": "ピン留めしました",
     "unpinned": "ピン留めを外しました",
     "tokens": "Σ{tokens}",
