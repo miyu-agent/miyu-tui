@@ -114,3 +114,57 @@ fn ids_follow_the_core_rules() {
         assert!(!valid_id(bad), "{bad}");
     }
 }
+
+/// 列表还没读到：写了 id 的查不了重没重，不交（重了的会改掉已有的那一个）；id 空着的照交。
+#[test]
+fn an_id_is_not_sent_before_the_list_it_is_checked_against_has_come() {
+    let words = texts().more.create;
+    let mut page = Settings::open(false, true);
+    drop(page.take_asks());
+    page.open_create(Kind::Persona);
+    typed(&mut page, "writer");
+    press(&mut page, KeyCode::Enter);
+    typed(&mut page, "写手");
+    press(&mut page, KeyCode::Enter);
+    assert_eq!(error(&page), Some((words.id_unchecked.clone(), 0)));
+    assert_eq!(sent(&mut page), None, "不交");
+    for _ in 0.."writer".len() {
+        press(&mut page, KeyCode::Backspace);
+    }
+    press(&mut page, KeyCode::Enter);
+    press(&mut page, KeyCode::Enter);
+    assert!(sent(&mut page).is_some(), "id 空着的照交");
+}
+
+/// 从人格框按 `a` 进来（「新会话：人格、工作区」第 2c 条）：交出去还没回来时不算完（不回框），回来了开它的详情窗、记下
+/// 新的编号，详情窗关了才回框。
+#[test]
+fn creating_from_the_pick_box_waits_for_the_new_one_and_remembers_it() {
+    use crate::settings::in_use::Item;
+    let mut page = Settings::create_one(true, Item::Persona);
+    drop(page.take_asks());
+    press(&mut page, KeyCode::Enter);
+    typed(&mut page, "写手");
+    press(&mut page, KeyCode::Enter);
+    let (tag, method, _) = page
+        .take_asks()
+        .into_iter()
+        .find(|(_, method, _)| *method == "persona.set")
+        .expect("交了");
+    assert_eq!(method, "persona.set");
+    assert!(page.popup.is_none(), "两格窗关了");
+    assert!(!page.lone_done(), "新建的还没回来：不回框");
+    let got = json!({"persona": "persona-1", "name": "写手"});
+    page.answer(tag, Ok(got), &texts());
+    assert!(
+        matches!(page.popup, Some(Popup::Persona(_))),
+        "开它的详情窗"
+    );
+    assert_eq!(
+        page.watch.created,
+        Some((Item::Persona, "persona-1".to_string()))
+    );
+    assert!(!page.lone_done());
+    press(&mut page, KeyCode::Esc);
+    assert!(page.lone_done(), "详情窗关了：回框");
+}

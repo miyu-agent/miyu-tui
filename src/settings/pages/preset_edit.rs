@@ -228,6 +228,7 @@ impl Settings {
                 view.error = None;
             }
             _ if open => {
+                self.note_created(crate::settings::in_use::Item::Preset, &detail.id);
                 self.popup = Some(Popup::Preset(PresetView {
                     id: detail.id.clone(),
                     detail: Some(detail),

@@ -28,6 +28,8 @@ pub struct CreateTexts {
     pub id_bad: String,
     /// id 和已有的重了。
     pub id_taken: String,
+    /// 写了 id、已有的列表还没读到（查不了重没重）。
+    pub id_unchecked: String,
 }
 
 /// 建的是哪一种。
@@ -117,8 +119,13 @@ impl Settings {
             Kind::Preset => self.more.presets.as_deref(),
             Kind::Persona => self.more.personas.as_deref(),
         };
-        if !id.is_empty() && have.is_some_and(|list| list.iter().any(|p| p.id == id)) {
-            return Err((words.id_taken.clone(), 0));
+        // 列表还没读到的不交：查不了重没重，重了的会改掉已有的那一个（从人格框、预设框按 `a` 进来时一开窗就能交）。
+        match have {
+            None if !id.is_empty() => return Err((words.id_unchecked.clone(), 0)),
+            Some(list) if !id.is_empty() && list.iter().any(|p| p.id == id) => {
+                return Err((words.id_taken.clone(), 0));
+            }
+            _ => {}
         }
         if name.is_empty() {
             return Err((words.name_missing.clone(), 1));
