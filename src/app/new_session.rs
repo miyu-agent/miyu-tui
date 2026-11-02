@@ -111,14 +111,14 @@ impl Pick {
 }
 
 impl App {
-    fn pick(&self, kind: Kind) -> &Pick {
+    pub(super) fn pick(&self, kind: Kind) -> &Pick {
         match kind {
             Kind::Persona => &self.talk.persona,
             Kind::Preset => &self.talk.preset,
         }
     }
 
-    fn pick_mut(&mut self, kind: Kind) -> &mut Pick {
+    pub(super) fn pick_mut(&mut self, kind: Kind) -> &mut Pick {
         match kind {
             Kind::Persona => &mut self.talk.persona,
             Kind::Preset => &mut self.talk.preset,
@@ -163,7 +163,7 @@ impl App {
         else {
             return;
         };
-        if open != kind {
+        if open != kind || self.focus_created(kind) {
             return;
         }
         let selected = if self.pick(kind).opened == Some(selected) {
@@ -259,8 +259,8 @@ impl App {
         self.boxes.panel = Some(Panel::Pick { kind, selected });
     }
 
-    /// 框开着时的按键（`pick_box.rs`）：上下挪（跳过写错的），`Enter` 选，`e` 编辑（第 2b 条），`Esc` 照光标起初停的
-    /// 那一个。别的键不管：选了才能打字。
+    /// 框开着时的按键（`pick_box.rs`）：上下挪（跳过写错的），`Enter` 选，`e` 编辑（第 2b 条），`a` 新建（第 2c 条），
+    /// `Esc` 照光标起初停的那一个。别的键不管：选了才能打字（第 1c 条）。
     pub(super) fn pick_key(&mut self, kind: Kind, selected: usize, key: KeyEvent) {
         let Some(list) = self.pick(kind).list.clone() else {
             self.boxes.panel = None;
@@ -285,6 +285,7 @@ impl App {
                 }
             }
             Pressed::Edit(at) => self.edit_pick(kind, selected, list[at].id.clone()),
+            Pressed::Create => self.create_pick(kind, selected),
             Pressed::CantEdit => {
                 let note = self.config.text.persona_box.cant_edit.clone();
                 self.hint(note, false);

@@ -181,7 +181,11 @@ impl App {
                 self.link.core.send(Command::ListPersonas);
                 self.link.core.send(Command::ListPresets);
                 // 从人格框、预设框按 `e` 进来的：回框，改了正在用的先问要不要压缩（第 2b 条）。
-                self.pick_returned(page.as_ref().map_or(&[][..], |p| &p.watch.saved));
+                let watch = page.as_ref().map(|p| &p.watch);
+                self.pick_returned(
+                    watch.map_or(&[][..], |w| &w.saved),
+                    watch.and_then(|w| w.created.as_ref()),
+                );
             }
             Outcome::Quit => self.quit = true,
         }

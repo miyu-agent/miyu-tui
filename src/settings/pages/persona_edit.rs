@@ -269,6 +269,7 @@ impl Settings {
         match &mut self.popup {
             Some(Popup::Persona(view)) if view.id == detail.id => view.detail = Some(detail),
             _ if open => {
+                self.note_created(crate::settings::in_use::Item::Persona, &detail.id);
                 self.popup = Some(Popup::Persona(PersonaView {
                     id: detail.id.clone(),
                     detail: Some(detail),

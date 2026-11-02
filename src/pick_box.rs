@@ -17,6 +17,8 @@ pub enum Pressed {
     Edit(usize),
     /// 光标那一行不能编辑：「无人格」、写错了读不出来的。
     CantEdit,
+    /// `a`：新建一个（第 2c 条）。
+    Create,
     /// `Esc`。
     Escape,
     /// 别的键，和写错了选不了的那一行上按 `Enter`。
@@ -39,6 +41,7 @@ pub fn press(list: &[Persona], selected: usize, key: KeyEvent) -> Pressed {
             Some(p) if !p.id.is_empty() => Pressed::Edit(selected),
             _ => Pressed::CantEdit,
         },
+        KeyCode::Char('a' | 'A') => Pressed::Create,
         KeyCode::Esc => Pressed::Escape,
         _ => Pressed::Ignored,
     }
@@ -77,6 +80,16 @@ mod tests {
         assert_eq!(press(&list, 0, e), Pressed::CantEdit, "无人格");
         assert_eq!(press(&list, 2, e), Pressed::CantEdit, "写错了的");
         assert_eq!(press(&list, 9, e), Pressed::CantEdit, "列表变短了");
+    }
+
+    #[test]
+    fn a_creates_from_any_row_and_other_letters_are_ignored() {
+        // 第 2c 条：`a` 新建，停在哪一行都一样；别的字母框不管（第 1c 条：框接管输入，打的字哪都不进）。
+        let list = [row("", None), row("broken", Some("bad"))];
+        for at in [0, 1] {
+            assert_eq!(press(&list, at, key(KeyCode::Char('a'))), Pressed::Create);
+        }
+        assert_eq!(press(&list, 0, key(KeyCode::Char('x'))), Pressed::Ignored);
     }
 
     #[test]
