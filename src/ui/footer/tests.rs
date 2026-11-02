@@ -211,8 +211,32 @@ fn the_footer_leaves_the_output_speed_to_the_done_row() {
     );
     let text: String = parts
         .iter()
-        .flat_map(|p| p.spans.iter().map(|s| s.content.to_string()))
+        .flat_map(|(_, p)| p.spans.iter().map(|s| s.content.to_string()))
         .collect();
     assert!(text.contains("342.6k"), "上下文照写：{text}");
     assert!(!text.contains("tok/s") && !text.contains("41"), "{text}");
+}
+
+/// 左段两件照配置排（「挂载位」第 4 条 SL-2）：换先后时中间是 ` · `，藏起来的不写，空的不留分隔。
+#[test]
+fn the_left_side_follows_the_configured_order() {
+    use crate::config::slots::Slot;
+    let slot = |part: &str, hidden: bool| Slot {
+        part: part.into(),
+        hidden,
+        rows: 0,
+    };
+    let joined = |config: &[Slot], model: Vec<Span<'static>>| -> String {
+        let level = (vec![Span::raw("L")], " ".to_string());
+        super::arranged(config, level, model)
+            .iter()
+            .map(|s| s.content.to_string())
+            .collect()
+    };
+    let model = || vec![Span::raw("M")];
+    assert_eq!(joined(&[], model()), "L M", "出厂：权限级别接它自己的分隔");
+    let sep = crate::sheet::sep();
+    assert_eq!(joined(&[slot("model", false)], model()), format!("M{sep}L"));
+    assert_eq!(joined(&[slot("level", true)], model()), "M");
+    assert_eq!(joined(&[], Vec::new()), "L", "没有模型不留分隔");
 }

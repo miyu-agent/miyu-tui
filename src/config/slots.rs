@@ -26,6 +26,15 @@ pub const SIDE_PARTS: [&str; 7] = [
 /// 侧边栏那一项在终端软件包里的名字（`[settings.side]`）。
 pub const SIDE_KEY: &str = "tui.side";
 
+/// 底栏左段出厂的部件名（「挂载位」第 4 条，SL-2，画在 `ui/footer.rs`）：权限级别、模型。
+pub const FOOTER_LEFT: [&str; 2] = ["level", "model"];
+
+/// 底栏右段出厂的部件名：上下文、用量（累计连花费）。
+pub const FOOTER_RIGHT: [&str; 2] = ["context", "usage"];
+
+/// 底栏那一项在终端软件包里的名字（`[settings.footer]`）。
+pub const FOOTER_KEY: &str = "tui.footer";
+
 /// 读 `config.get` 交回的 `key` 那一项：认不得的条目跳过，没写、读不成的是空的（照出厂的画）。
 pub fn read(got: &Value, key: &str) -> Vec<Slot> {
     got["items"][key]["value"]
