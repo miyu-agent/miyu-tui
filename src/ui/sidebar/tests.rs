@@ -2,7 +2,30 @@
 
 use ratatui::layout::Rect;
 
-use super::{spent_lines, split};
+use super::{context_lines, cwd_lines, session_lines, spent_lines, split, usage_lines};
+
+/// 会话、工作目录、上下文、用量几段照出厂的先后连起来，一段之间空一行（挂载位排的样子，「挂载位」第 4 条），交回短编号在
+/// 第几行。
+fn info_lines(
+    t: &crate::transcript::Transcript,
+    total: &crate::core::Usage,
+    config: &crate::config::Config,
+    width: u16,
+    cwd: &str,
+) -> (Vec<ratatui::text::Line<'static>>, Option<usize>) {
+    let (mut out, id_row) = session_lines(t, config, width, Vec::new());
+    for part in [
+        cwd_lines(config, width, cwd),
+        context_lines(t, config, width),
+        usage_lines(t, total, config),
+    ] {
+        if !part.is_empty() {
+            out.push(ratatui::text::Line::raw(""));
+            out.extend(part);
+        }
+    }
+    (out, id_row)
+}
 use crate::config::Config;
 
 #[test]
@@ -25,7 +48,7 @@ fn the_sidebar_is_laid_out_in_sections() {
     t.session = Some("019a5c3e-8f2b-7c61-9e0d-2f5a7b3c1d4e".into());
     let cwd = "~/Documents/github/miyu-agent-remake/.worktrees/proto-tui-demo/tui-demo";
     // 还没用过：会话、工作目录两段；名字当标题，没起名字的暗色写「未命名会话」，下面是短编号。
-    let (lines, id_row) = super::info_lines(&t, &t.total, &config, 36, cwd);
+    let (lines, id_row) = info_lines(&t, &t.total, &config, 36, cwd);
     let text: Vec<String> = lines.iter().map(|l| l.to_string()).collect();
     assert_eq!(
         text,
@@ -60,7 +83,7 @@ fn the_sidebar_is_laid_out_in_sections() {
     t.limits.window = Some(1_000_000);
     t.context = 200_000;
     t.total.output = 3500;
-    let (lines, _) = super::info_lines(&t, &t.total, &config, 36, "~/src");
+    let (lines, _) = info_lines(&t, &t.total, &config, 36, "~/src");
     let text: Vec<String> = lines.iter().map(|l| l.to_string()).collect();
     assert_eq!(text[0], "整理 src 目录");
     assert_eq!(
@@ -97,7 +120,7 @@ fn compactions_and_cache_breaks_show_only_once_they_happen() {
     t.context = 200_000;
     t.total.output = 3500;
     let text = |t: &Transcript| -> Vec<String> {
-        let (lines, _) = super::info_lines(t, &t.total, &config, 36, "~/src");
+        let (lines, _) = info_lines(t, &t.total, &config, 36, "~/src");
         lines.iter().map(|l| l.to_string()).collect()
     };
     let before = text(&t);
@@ -181,7 +204,7 @@ fn the_window_comes_from_the_core_not_the_model_name() {
     t.model = Some(("deepseek-v4.1-flash".into(), "dev".into()));
     t.context = 12_000;
     let text = |t: &Transcript| -> Vec<String> {
-        let (lines, _) = super::info_lines(t, &t.total, &config, 36, "~/src");
+        let (lines, _) = info_lines(t, &t.total, &config, 36, "~/src");
         lines.iter().map(|l| l.to_string()).collect()
     };
     let at = |text: &[String]| text.iter().position(|l| l == "上下文").unwrap();

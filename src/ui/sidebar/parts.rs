@@ -1,0 +1,221 @@
+//! 侧边栏挂的出厂部件（蓝图 `tui.md`「挂载位」第 4 条，SL-1）：头像、会话、工作目录、上下文、用量、循环、最近会话，照这个
+//! 先后。每件照宽度排出自己那几行；要点的（短编号、最近会话）画好以后照给它的那一块记点击区。
+
+use ratatui::Frame;
+use ratatui::layout::Rect;
+
+use super::super::layout::slot::{Laid, Part};
+use crate::app::{MascotState, Place, Screen, Seen};
+
+use crate::config::slots::SIDE_PARTS as NAMES;
+
+/// 侧边栏画的时候要用的。
+pub struct Side<'s, 'a> {
+    /// 这一帧看到的。
+    pub seen: &'s Seen<'a>,
+    /// 点击区、最近会话那几行记在这里。
+    pub screen: &'s mut Screen,
+    /// 吉祥物的动作。
+    pub pet: &'s mut MascotState,
+}
+
+/// `avatar`：人格的头像，没有头像的吉祥物（照旧受「侧边栏显示形象」管），居中。
+pub struct Avatar;
+
+impl Part<Side<'_, '_>> for Avatar {
+    fn name(&self) -> &'static str {
+        NAMES[0]
+    }
+
+    fn lay(&mut self, side: &Side, _: u16) -> Laid {
+        let shown = super::super::avatar_view::slot_shown(side.seen, Place::Sidebar);
+        Laid::Rows(if shown {
+            side.seen.config.mascot.rows
+        } else {
+            0
+        })
+    }
+
+    fn placed(&mut self, frame: &mut Frame, area: Rect, _: usize, side: &mut Side) {
+        // 照侧边栏整栏居中：给的这一块左右各少一列（和竖线、右边留的那一列），照回整栏算。
+        let whole = Rect::new(
+            area.x.saturating_sub(1),
+            area.y,
+            area.width + 2,
+            area.height,
+        );
+        let cols = side.seen.config.mascot.cols.min(whole.width);
+        let rect = Rect::new(
+            whole.x + (whole.width - cols) / 2,
+            area.y,
+            cols,
+            area.height,
+        );
+        let parts = (side.seen, &*side.screen, &mut *side.pet);
+        super::super::avatar_view::draw(frame, rect, parts, Place::Sidebar, true);
+    }
+}
+
+/// `session`：会话名、短编号、人格、预设。点短编号复制完整编号。
+#[derive(Default)]
+pub struct Session {
+    id_row: Option<usize>,
+}
+
+impl Part<Side<'_, '_>> for Session {
+    fn name(&self) -> &'static str {
+        NAMES[1]
+    }
+
+    fn lay(&mut self, side: &Side, width: u16) -> Laid {
+        let t = &side.seen.talk.transcript;
+        let (lines, id_row) =
+            super::session_lines(t, side.seen.config, width, side.seen.session_picks());
+        self.id_row = id_row;
+        Laid::Lines(lines)
+    }
+
+    fn placed(&mut self, _: &mut Frame, area: Rect, shown: usize, side: &mut Side) {
+        if let Some(row) = self.id_row.filter(|row| *row < shown) {
+            let y = area.y + u16::try_from(row).unwrap_or(0);
+            side.screen.areas.session_id = Rect::new(area.x, y, area.width, 1);
+        }
+    }
+}
+
+/// `cwd`：工作目录照会话的（核心 9-7 上）；还没开会话、核心旧的照终端所在的。
+pub struct Cwd;
+
+impl Part<Side<'_, '_>> for Cwd {
+    fn name(&self) -> &'static str {
+        NAMES[2]
+    }
+
+    fn lay(&mut self, side: &Side, width: u16) -> Laid {
+        Laid::Lines(super::cwd_lines(
+            side.seen.config,
+            width,
+            side.seen.current_workspace(),
+        ))
+    }
+}
+
+/// `context`：上下文。
+pub struct Context;
+
+impl Part<Side<'_, '_>> for Context {
+    fn name(&self) -> &'static str {
+        NAMES[3]
+    }
+
+    fn lay(&mut self, side: &Side, width: u16) -> Laid {
+        Laid::Lines(super::context_lines(
+            &side.seen.talk.transcript,
+            side.seen.config,
+            width,
+        ))
+    }
+}
+
+/// `usage`：用量，最后接花了多少（核心 8-15）。
+pub struct Usage;
+
+impl Part<Side<'_, '_>> for Usage {
+    fn name(&self) -> &'static str {
+        NAMES[4]
+    }
+
+    fn lay(&mut self, side: &Side, _: u16) -> Laid {
+        let seen = side.seen;
+        let total = seen.talk.usage_total();
+        let mut lines = super::usage_lines(&seen.talk.transcript, &total, seen.config);
+        lines.extend(super::spent_lines(seen.spent(), seen.config));
+        Laid::Lines(lines)
+    }
+}
+
+/// `loops`：这个会话挂着的循环（「循环」第 3 条）。
+pub struct Loops;
+
+impl Part<Side<'_, '_>> for Loops {
+    fn name(&self) -> &'static str {
+        NAMES[5]
+    }
+
+    fn lay(&mut self, side: &Side, width: u16) -> Laid {
+        let seen = side.seen;
+        let at_now = (jiff::Timestamp::now(), &jiff::tz::TimeZone::system());
+        let mine =
+            super::super::loop_tag::of(&seen.link.loops, seen.talk.transcript.session.as_deref());
+        Laid::Lines(super::super::loop_tag::sidebar(
+            &mine,
+            seen.config,
+            at_now,
+            width,
+        ))
+    }
+}
+
+/// `recent`：最近会话，一行一个；点一行切过去。
+#[derive(Default)]
+pub struct Recent {
+    ids: Vec<Option<String>>,
+}
+
+impl Part<Side<'_, '_>> for Recent {
+    fn name(&self) -> &'static str {
+        NAMES[6]
+    }
+
+    fn lay(&mut self, side: &Side, width: u16) -> Laid {
+        let seen = side.seen;
+        let t = &seen.talk.transcript;
+        let current = t.session.as_deref().map(|id| (id, t.title.as_deref()));
+        let list = seen.talk.sessions_seen.as_deref().unwrap_or_default();
+        let count = seen.config.layout.sidebar_sessions;
+        let (mut lines, ids) = super::super::recent::recent_lines(
+            (list, &seen.talk.unseen),
+            current,
+            count,
+            (width, super::super::spin_frame(seen)),
+            seen.config,
+        );
+        // 记号挂在缩进那两格里，名字和别的几段的内容对齐（2026-10-27 项目主人：「最近会话的缩进有待优化」）：只给标题上色。
+        if let Some(title) = lines.first_mut() {
+            *title = std::mem::take(title).style(crate::theme::side_title());
+        }
+        self.ids = ids;
+        Laid::Lines(lines)
+    }
+
+    fn placed(&mut self, _: &mut Frame, area: Rect, shown: usize, side: &mut Side) {
+        // 标题那一行不算：从第二行起一行一个会话。
+        let rows = shown.saturating_sub(1);
+        side.screen.areas.recent = Rect {
+            y: area.y + 1,
+            height: u16::try_from(rows).unwrap_or(0),
+            ..area
+        };
+        side.screen.recent = self
+            .ids
+            .iter()
+            .skip(1)
+            .take(rows)
+            .flatten()
+            .cloned()
+            .collect();
+    }
+}
+
+/// 这一处的几件，照出厂的先后。
+pub fn all() -> (Avatar, Session, Cwd, Context, Usage, Loops, Recent) {
+    (
+        Avatar,
+        Session::default(),
+        Cwd,
+        Context,
+        Usage,
+        Loops,
+        Recent::default(),
+    )
+}
