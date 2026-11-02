@@ -44,12 +44,12 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
         broken.contains("不认识的键"),
         "写错的后面写核心给的原因：{broken}"
     );
-    // 框开着时打的字进输入框（2026-10-26 项目主人定，蓝图「新会话：人格、工作区」第 1c 条），框里照旧选。
-    tui.type_text("abc");
+    // 框开着时打的字哪都不进（蓝图「新会话：人格、工作区」第 1c 条，2026-11-02 项目主人改），框里照旧选。
+    tui.type_text("xyz");
     // 第一行「无人格」（2026-10-08 项目主人：人格允许为空），默认人格没设，光标停在它上面；往下挪到海盗（写错的跳过）。
     assert!(tui.shows("无人格"), "{}", tui.lines().join("\n"));
     assert!(picked(&tui).contains("无人格"), "{}", picked(&tui));
-    // 打过字的 j、k 是字，上下用方向键（没打字时 j、k 照旧上下，见 `tests/start_box.rs`）。
+    // 上下用方向键（j、k 也行，见 `tests/start_box.rs`）。
     for _ in 0..8 {
         if picked(&tui).contains("海盗") {
             break;
@@ -66,13 +66,10 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     // 选好了框关上、能打字（首页那一行不写人格、预设，2026-10-08 项目主人）；选的照发出去的请求认。
     closed(&mut tui);
     assert!(
-        input(&tui).contains("abc"),
-        "框开着时打的字还在：{}",
+        !input(&tui).contains("xyz"),
+        "框开着时打的字不进输入框：{}",
         input(&tui)
     );
-    for _ in 0..3 {
-        tui.key(b"\x7f");
-    }
     // 还没说话再打开：选过的那个写 `●`（2026-10-20 项目主人报：空会话选了再打开没有圆点），没有切换前压缩那一行。
     tui.say("/persona");
     tui.wait_for("● 海盗");
@@ -297,17 +294,17 @@ fn the_compaction_note_shows_only_when_there_is_something_to_compact() {
 }
 
 #[test]
-fn the_new_session_pick_takes_the_place_of_the_input_box_and_typing_waits_in_the_input() {
-    // 2026-10-21 项目主人：「不是以列表的形式出，而是直接替换掉输入框」。打的字原来不进输入框，2026-10-26 项目主人报刚起来
-    // 发的第一句被吞，改成进输入框、选完出来还在（蓝图「新会话：人格、工作区」第 1c 条）。
+fn the_new_session_pick_takes_the_place_of_the_input_box_and_typing_is_dropped() {
+    // 2026-10-21 项目主人：「不是以列表的形式出，而是直接替换掉输入框」。10-26 起框开着打的字进输入框，框盖着看不见，选完
+    // 一回车就发了出去；2026-11-02 项目主人改回：框接管输入，打的字哪都不进（蓝图「新会话：人格、工作区」第 1c 条）。
     let home = Home::new(Script::new([]));
     // 一个人格都没装的核心不问人格（列表是空的），装一个才有人格框。
     home.persona("pirate", "[persona]\nname = { zh = \"海盗\" }\n", None);
     let mut tui = home.tui_with("zh_CN.UTF-8", &[ASK, ASK_PRESET]);
-    // 一起来就打字：列表读回来以前（「正在加载…」）、以后都进输入框。
-    tui.type_text("abc");
-    tui.wait_for("请选择人格");
+    // 一起来就打字：列表读回来以前（「正在加载…」）、以后都不进输入框。
     tui.type_text("xyz");
+    tui.wait_for("请选择人格");
+    tui.type_text("uvw");
     // 只有一个框：人格框就是输入框那一块，上面不另开框。
     let frames: Vec<String> = tui
         .lines()
@@ -322,5 +319,8 @@ fn the_new_session_pick_takes_the_place_of_the_input_box_and_typing_waits_in_the
     closed(&mut tui);
     tui.pump(std::time::Duration::from_millis(200));
     let line = input(&tui);
-    assert!(line.contains("abcxyz"), "选完出来打的字还在：{line}");
+    assert!(
+        !line.contains("xyz") && !line.contains("uvw"),
+        "框开着时打的字不进输入框：{line}"
+    );
 }

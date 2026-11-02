@@ -65,7 +65,6 @@ mod sessions;
 mod settings;
 mod shown;
 mod start_entered;
-mod start_typing;
 mod status;
 mod stop_agents;
 mod switch;
