@@ -90,6 +90,35 @@ applies = "now"
 name = { en = "Recent sessions in the sidebar", zh = "侧边栏最近会话", ja = "サイドバーの最近のセッション" }
 description = { en = "How many sessions the sidebar lists, the current one included. Off hides the list.", zh = "侧边栏列几个会话，算上当前这个。选不显示就不列。", ja = "サイドバーに並べるセッションの数（今のセッションを含む）。表示しないにすると並べない。" }
 
+# 侧边栏挂哪几件、什么先后、最多几行（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 2、4 条，2026-11-02 项目主人：只在配置
+# 文件里写）：一条一件，写了的照写的先后，没写到的照出厂的先后接在后面。配置页不画。
+[settings.side]
+type = "list"
+element = "record"
+title = "part"
+hidden = true
+applies = "now"
+name = { en = "Sidebar parts", zh = "侧边栏部件", ja = "サイドバーの部品" }
+description = { en = "Which parts the sidebar shows, in which order, and at most how many rows each.", zh = "侧边栏挂哪几件、什么先后、每件最多几行。", ja = "サイドバーに並べる部品、その順番、それぞれの最大行数。" }
+
+# 部件名：出厂的 avatar、session、cwd、context、usage、loops、recent，包的块写 `pkg:<包>/<块>`；认不出的终端不画、提示一次。
+[settings.side.fields.part]
+type = "text"
+max = 100
+name = { en = "Part", zh = "部件", ja = "部品" }
+
+[settings.side.fields.hidden]
+type = "bool"
+default = false
+name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+
+[settings.side.fields.rows]
+type = "int"
+min = 0
+max = 200
+default = 0
+name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+
 # 按键模式（终端蓝图 `docs/blueprint/tui.md`「按键」表「按键模式」那一行，2026-10-21 项目主人）：`vim` 时会话列表、`/model`
 # 里 `j`、`k` 挪，`/` 才开始搜；`arrows` 照方向键的用法，打字就搜。配置页排在「通用」页「按键模式」一组；出厂方向键，引导里「你喜欢的操作方式」那一步选。
 [settings.keys]

@@ -10,11 +10,14 @@ use ratatui::widgets::Paragraph;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use super::layout::slot::{Part, stack};
 use crate::app::{MascotState, Screen, Seen};
 use crate::config::{Config, Layout};
 use crate::core::Usage;
 use crate::side_select::TextRow;
 use crate::transcript::Transcript;
+
+mod parts;
 use crate::{meter, theme};
 
 /// 分出主列和侧边栏（侧边栏不含竖线）；窗口窄时侧边栏宽是 0。
@@ -28,93 +31,116 @@ pub fn split(area: Rect, layout: &Layout) -> (Rect, Rect) {
     (main, sidebar)
 }
 
-/// 会话、工作目录、上下文、用量几段（`tui.md`「后台命令、子代理和侧边栏」第 7 条）：小标题加粗、内容缩进两格、
-/// 一段之间空一行。会话名称当第一段的标题，下面是短编号；还是 0 的上下文、用量不写。
+/// 侧边栏那几段的小标题加粗、内容缩进两格（`tui.md`「后台命令、子代理和侧边栏」第 7 条）；一段之间的空行由挂载位排
+/// （「挂载位」第 4 条）。
+fn item(s: String, style: Style) -> Line<'static> {
+    Line::styled(format!("  {s}"), style)
+}
+
+/// `session`：会话名当标题（没起名字的也一样蓝），下面短编号，再下面人格、预设各一行（「新会话：人格、工作区」第 3、6 条）。
 /// 一并交回短编号在第几行（点它复制完整编号）。
-pub fn info_lines(
+pub(super) fn session_lines(
     t: &Transcript,
-    total: &Usage,
     config: &Config,
     width: u16,
-    cwd: &str,
+    picks: Vec<String>,
 ) -> (Vec<Line<'static>>, Option<usize>) {
     let text = &config.text;
-    let room = usize::from(width).saturating_sub(2).max(1);
-    let bold = theme::side_title();
-    let item = |s: String, style: Style| Line::styled(format!("  {s}"), style);
-    // 标题一律蓝色，没起名字的也一样；内容一律暗（第 7 条）。
     let name = t.title.as_deref().unwrap_or(&text.untitled);
-    let mut out = vec![Line::styled(super::rows::clip(name, width), bold)];
+    let mut out = vec![Line::styled(
+        super::rows::clip(name, width),
+        theme::side_title(),
+    )];
     let mut id_row = None;
     if let Some(session) = &t.session {
         // 短编号：最后 8 个字符（核心 C-1 定的，头显示的、她看到的都是这个）。
         let short = crate::session_list::short(session);
         id_row = Some(out.len());
         out.push(item(text.side_id.replace("{id}", &short), theme::dim()));
+        out.extend(picks.into_iter().map(|label| item(label, theme::dim())));
     }
-    out.push(Line::raw(""));
-    out.push(Line::styled(text.side_cwd.clone(), bold));
+    (out, id_row)
+}
+
+/// `cwd`：工作目录，照斜杠折行。
+pub(super) fn cwd_lines(config: &Config, width: u16, cwd: &str) -> Vec<Line<'static>> {
+    let room = usize::from(width).saturating_sub(2).max(1);
+    let mut out = vec![Line::styled(
+        config.text.side_cwd.clone(),
+        theme::side_title(),
+    )];
     out.extend(
         wrap_path(cwd, room)
             .into_iter()
             .map(|l| item(l, theme::dim())),
     );
-    if t.context > 0 {
-        let used = meter::short(t.context);
-        // 窗口照核心在订阅的回应里给的（`tui.md` 第 7 条），头不自己照模型名查。
-        let window = t.limits.window;
-        out.push(Line::raw(""));
-        out.push(Line::styled(text.side_context.clone(), bold));
-        match window {
-            Some(window) => {
-                let value = text
-                    .side_context_value
-                    .replace("{used}", &used)
-                    .replace("{window}", &meter::short(window))
-                    .replace("{percent}", &meter::percent_tenths(t.context, window));
-                out.push(item(value, theme::dim()));
-                let marks = &config.layout.bar;
-                let line = t.limits.compaction_line;
-                out.push(bar(t.context, window, line, marks.width.min(room), marks));
-            }
-            None => out.push(item(used, theme::dim())),
-        }
-        if t.cache.compactions > 0 {
-            let compactions = text
-                .side_compactions
-                .replace("{n}", &t.cache.compactions.to_string());
-            out.push(item(compactions, theme::dim()));
-        }
+    out
+}
+
+/// `context`：上下文用了多少、进度条、压缩过几次；还是 0 的不写。
+pub(super) fn context_lines(t: &Transcript, config: &Config, width: u16) -> Vec<Line<'static>> {
+    if t.context == 0 {
+        return Vec::new();
     }
-    // 用量连同子代理用的（`App::usage_total`，2026-09-30 项目主人）。
+    let text = &config.text;
+    let room = usize::from(width).saturating_sub(2).max(1);
+    let used = meter::short(t.context);
+    let mut out = vec![Line::styled(text.side_context.clone(), theme::side_title())];
+    // 窗口照核心在订阅的回应里给的（`tui.md` 第 7 条），头不自己照模型名查。
+    match t.limits.window {
+        Some(window) => {
+            let value = text
+                .side_context_value
+                .replace("{used}", &used)
+                .replace("{window}", &meter::short(window))
+                .replace("{percent}", &meter::percent_tenths(t.context, window));
+            out.push(item(value, theme::dim()));
+            let marks = &config.layout.bar;
+            let line = t.limits.compaction_line;
+            out.push(bar(t.context, window, line, marks.width.min(room), marks));
+        }
+        None => out.push(item(used, theme::dim())),
+    }
+    if t.cache.compactions > 0 {
+        let compactions = text
+            .side_compactions
+            .replace("{n}", &t.cache.compactions.to_string());
+        out.push(item(compactions, theme::dim()));
+    }
+    out
+}
+
+/// `usage`：用量连同子代理用的（`App::usage_total`，2026-09-30 项目主人）；还是 0 的不写。
+pub(super) fn usage_lines(t: &Transcript, total: &Usage, config: &Config) -> Vec<Line<'static>> {
+    let text = &config.text;
     let input = total.input();
-    if input + total.output + total.aux > 0 {
-        out.push(Line::raw(""));
-        out.push(Line::styled(text.side_usage.clone(), bold));
-        // 共多少连同回顾这类辅助请求；输入输出、命中率只照主对话（蓝图「回顾」第 5 条）。
-        let sum = meter::short(input + total.output + total.aux);
-        out.push(item(
-            text.side_total.replace("{tokens}", &sum),
-            theme::dim(),
-        ));
-        let split = text
-            .side_split
-            .replace("{input}", &meter::short(input))
-            .replace("{output}", &meter::short(total.output));
-        out.push(item(split, theme::dim()));
-        let hit = meter::hit_rate(total.cache_read, input);
-        out.push(item(text.side_hit.replace("{percent}", &hit), theme::dim()));
-        if t.cache.breaks > 0 {
-            let breaks = text.side_breaks.replace("{n}", &t.cache.breaks.to_string());
-            out.push(item(breaks, theme::dim()));
-        }
+    if input + total.output + total.aux == 0 {
+        return Vec::new();
     }
-    (out, id_row)
+    let mut out = vec![Line::styled(text.side_usage.clone(), theme::side_title())];
+    // 共多少连同回顾这类辅助请求；输入输出、命中率只照主对话（蓝图「回顾」第 5 条）。
+    let sum = meter::short(input + total.output + total.aux);
+    out.push(item(
+        text.side_total.replace("{tokens}", &sum),
+        theme::dim(),
+    ));
+    let split = text
+        .side_split
+        .replace("{input}", &meter::short(input))
+        .replace("{output}", &meter::short(total.output));
+    out.push(item(split, theme::dim()));
+    let hit = meter::hit_rate(total.cache_read, input);
+    out.push(item(text.side_hit.replace("{percent}", &hit), theme::dim()));
+    if t.cache.breaks > 0 {
+        let breaks = text.side_breaks.replace("{n}", &t.cache.breaks.to_string());
+        out.push(item(breaks, theme::dim()));
+    }
+    out
 }
 
 /// 花了多少：「花费 $0.42 + ¥1.30」；一笔都算不出的不写。没有价格的请求不提（2026-10-10 项目主人：「没有费用记录的请求
 /// 不需要出现在侧边栏中」）。
-fn spent_lines(amounts: Option<String>, config: &Config) -> Vec<Line<'static>> {
+pub(super) fn spent_lines(amounts: Option<String>, config: &Config) -> Vec<Line<'static>> {
     amounts
         .map(|amounts| {
             let line = config.text.side_cost.replace("{amounts}", &amounts);
@@ -193,7 +219,7 @@ pub(super) fn wrap_path(path: &str, room: usize) -> Vec<String> {
     lines
 }
 
-/// 画侧边栏：竖线、吉祥物（开着的话）、会话那几段，一段之间空一行。
+/// 画侧边栏：竖线；挂着的几件照「挂载位」排（第 4 条，一件之间空一行），包的界面块接在最后（「界面块」第 2 条）。
 pub fn draw(
     frame: &mut Frame,
     area: Rect,
@@ -212,96 +238,44 @@ pub fn draw(
         Rect::new(area.x - 1, area.y, 1, area.height),
     );
     let inner = area.width.saturating_sub(2);
-    let mut top = area.y + 1;
-    // 人格有头像的画头像，不受吉祥物的开关管（「空会话的首页」第 10 条）。
-    if super::avatar_view::slot_shown(seen, crate::app::Place::Sidebar) {
-        let look = &seen.config.mascot;
-        let cols = look.cols.min(area.width);
-        let mascot =
-            Rect::new(area.x + (area.width - cols) / 2, top, cols, look.rows).intersection(area);
-        let parts = (seen, &*screen, &mut *pet);
-        super::avatar_view::draw(frame, mascot, parts, crate::app::Place::Sidebar, true);
-        top = mascot.bottom() + 1;
-    }
-    let total = seen.talk.usage_total();
-    // 工作目录照会话的（核心 9-7 上）；还没开会话、核心旧的照终端所在的。
-    let cwd = seen.current_workspace();
-    let (mut info, id_row) = info_lines(&seen.talk.transcript, &total, seen.config, inner, cwd);
-    // 会话名下面、短编号后面写人格、预设，一样一行（「新会话：人格、工作区」第 3、6 条）。
-    if let Some(row) = id_row {
-        for (n, label) in seen.session_picks().into_iter().enumerate() {
-            info.insert(
-                row + 1 + n,
-                Line::styled(format!("  {label}"), theme::dim()),
-            );
-        }
-    }
-    // 「用量」那一段最后接花了多少（核心 8-15）：用量那一段在最后，接在后面就是。
-    info.extend(spent_lines(seen.spent(), seen.config));
-    // 这个会话挂着循环的，多一段「循环」，空一行接在后面（「循环」第 3 条）。
-    let session = seen.talk.transcript.session.as_deref();
-    let at_now = (jiff::Timestamp::now(), &jiff::tz::TimeZone::system());
-    let mine = super::loop_tag::of(&seen.link.loops, session);
-    let loops = super::loop_tag::sidebar(&mine, seen.config, at_now, inner);
-    if !loops.is_empty() {
-        info.push(Line::raw(""));
-        info.extend(loops);
-    }
-    let tall = u16::try_from(info.len()).unwrap_or(u16::MAX);
-    let at = Rect::new(area.x + 1, top, inner, tall).intersection(area);
-    // 写了字的行记下来，给侧边栏的选字用（第 7 条）。
-    let mut text_rows: Vec<TextRow> = info
-        .iter()
-        .enumerate()
-        .map(|(i, line)| TextRow {
-            y: at.y + u16::try_from(i).unwrap_or(0),
-            x: at.x,
-            text: line.to_string(),
-        })
-        .collect();
-    frame.render_widget(Paragraph::new(info), at);
-    // 点短编号复制完整编号。
-    screen.areas.session_id = id_row.map_or(Rect::default(), |row| {
-        let y = at.y + u16::try_from(row).unwrap_or(0);
-        Rect::new(at.x, y, inner, 1).intersection(at)
-    });
-    // 「最近会话」：接在会话那几段后面，空一行；待办 2026-10-26 起不在侧边栏（第 4a 条）。点一行切过去。
-    let top = at.bottom() + 1;
-    let current = seen.talk.transcript.session.as_deref();
-    let current = current.map(|id| (id, seen.talk.transcript.title.as_deref()));
-    let list = seen.talk.sessions_seen.as_deref().unwrap_or_default();
-    let count = seen.config.layout.sidebar_sessions;
-    let frame_at = (inner, super::spin_frame(seen));
-    let (mut recent, ids) = super::recent::recent_lines(
-        (list, &seen.talk.unseen),
-        current,
-        count,
-        frame_at,
-        seen.config,
-    );
-    // 记号挂在缩进那两格里，名字和别的几段的内容对齐（2026-10-27 项目主人：「最近会话的缩进有待优化」）：不套 `section`
-    // 的缩进，只给标题上色。
-    if let Some(title) = recent.first_mut() {
-        *title = std::mem::take(title).style(theme::side_title());
-    }
-    let room = area.bottom().saturating_sub(top);
-    let tall = u16::try_from(recent.len()).unwrap_or(u16::MAX).min(room);
-    let block = Rect::new(area.x + 1, top, inner, tall);
-    text_rows.extend(recent.iter().enumerate().map(|(i, line)| TextRow {
-        y: top + u16::try_from(i).unwrap_or(0),
-        x: block.x,
-        text: line.to_string(),
-    }));
-    frame.render_widget(Paragraph::new(recent), block);
-    // 标题那一行不算：从第二行起一行一个会话。
-    screen.areas.recent = Rect {
-        y: block.y + 1,
-        height: tall.saturating_sub(1),
-        ..block
+    // 这一帧没画到（藏起来、放不下）的件不留点击区。
+    screen.areas.session_id = Rect::default();
+    screen.areas.recent = Rect::default();
+    screen.recent.clear();
+    let body = Rect::new(area.x + 1, area.y + 1, inner, area.height.saturating_sub(1));
+    let (mut avatar, mut session, mut cwd, mut context, mut usage, mut loops, mut recent) =
+        parts::all();
+    let stacked = {
+        let mut side = parts::Side {
+            seen,
+            screen: &mut *screen,
+            pet,
+        };
+        let mut all: [&mut dyn Part<parts::Side>; 7] = [
+            &mut avatar,
+            &mut session,
+            &mut cwd,
+            &mut context,
+            &mut usage,
+            &mut loops,
+            &mut recent,
+        ];
+        stack(
+            frame,
+            body,
+            &mut all,
+            (&seen.config.layout.side, 1),
+            &mut side,
+        )
     };
-    screen.recent = ids.into_iter().skip(1).flatten().collect();
-    // 扩展包放的界面块：接在后面，空一行（蓝图「界面块」第 2 条）。
-    let after = if tall > 0 { block.bottom() + 1 } else { top };
+    // 写了字的行记下来，给侧边栏的选字用（第 7 条）。
+    let mut text_rows: Vec<TextRow> = stacked
+        .written
+        .into_iter()
+        .map(|(y, x, text)| TextRow { y, x, text })
+        .collect();
+    // 扩展包放的界面块：接在后面（蓝图「界面块」第 2 条）。
+    let after = stacked.next;
     let rest = Rect::new(
         area.x + 1,
         after,

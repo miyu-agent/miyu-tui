@@ -5,6 +5,8 @@ use ratatui::layout::Rect;
 
 use crate::config::Layout;
 
+pub(crate) mod slot;
+
 /// 一帧里各块的位置。
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Areas {

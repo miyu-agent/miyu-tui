@@ -31,6 +31,7 @@ mod notes;
 mod notify;
 mod open;
 mod panels;
+pub mod slots;
 mod themed;
 mod timeline;
 mod widgets;
@@ -63,6 +64,8 @@ pub struct Texts {
     pub markdown: crate::markdown::Labels,
     /// 侧边栏：会话还没起名字时写的（蓝图「后台命令、子代理和侧边栏」第 7 条）。
     pub untitled: String,
+    /// 挂载位的配置里有不认识的部件（「挂载位」第 2 条），`{names}` 是那几个名字。
+    pub slot_unknown: String,
     /// 指针停在排队的话上时后面写的（「运行状态行和排队的消息」）。
     pub queued_withdraw: String,
     /// 侧边栏的短编号，`{id}` 是完整编号的前 8 位。

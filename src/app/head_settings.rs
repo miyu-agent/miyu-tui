@@ -28,6 +28,8 @@ const VIM_TAG: u64 = TAG_BASE - 12;
 const SKIP_PICK_TAG: u64 = TAG_BASE - 16;
 /// 读侧边栏「最近会话」几个的请求编号：单问，同按键模式。
 const SIDEBAR_SESSIONS_TAG: u64 = TAG_BASE - 23;
+/// 读侧边栏挂哪几件的请求编号（「挂载位」第 2 条）：单问，同按键模式。
+const SIDE_TAG: u64 = TAG_BASE - 24;
 /// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
 const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
 
@@ -42,6 +44,7 @@ impl App {
                 self.ask_config(VIM_TAG, &[Layout::KEYS_KEY]);
                 self.ask_config(SKIP_PICK_TAG, &[Layout::SKIP_PICK_KEY]);
                 self.ask_config(SIDEBAR_SESSIONS_TAG, &[Layout::SIDEBAR_SESSIONS_KEY]);
+                self.ask_config(SIDE_TAG, &[crate::config::slots::SIDE_KEY]);
                 let mut keys = crate::theme::choice::Choice::KEYS.to_vec();
                 keys.push(crate::theme::choice::SEED_KEY);
                 self.ask_config(THEME_TAG, &keys);
@@ -75,6 +78,12 @@ impl App {
             Update::Answer { tag, result } if *tag == SIDEBAR_SESSIONS_TAG => {
                 if let Ok(got) = result {
                     self.config.layout.apply_sidebar_sessions(got);
+                }
+                true
+            }
+            Update::Answer { tag, result } if *tag == SIDE_TAG => {
+                if let Ok(got) = result {
+                    self.take_side(got);
                 }
                 true
             }
@@ -130,6 +139,21 @@ impl App {
         if let Some(name) = got["items"]["tui.icons"]["value"].as_str() {
             let name = name.to_string();
             self.use_icons(&name);
+        }
+    }
+
+    /// 侧边栏挂哪几件（「挂载位」第 2 条）：读到的盖上，配置里有不认识的部件提示一次。
+    fn take_side(&mut self, got: &Value) {
+        let side = crate::config::slots::read(got, crate::config::slots::SIDE_KEY);
+        let (_, unknown) = crate::config::slots::arrange(&crate::config::slots::SIDE_PARTS, &side);
+        self.config.layout.side = side;
+        if !unknown.is_empty() {
+            let note = self
+                .config
+                .text
+                .slot_unknown
+                .replace("{names}", &unknown.join(", "));
+            self.hint(note, false);
         }
     }
 
