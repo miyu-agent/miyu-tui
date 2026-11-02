@@ -7,7 +7,7 @@ use crate::core::{Command, PackageEntry};
 use crate::input::{Saved, place};
 
 /// 终端这个包的编号（`miyu-tui/package.toml`）。
-const PACKAGE: &str = "miyu-tui";
+pub(super) const PACKAGE: &str = "miyu-tui";
 
 impl App {
     /// 连上了、工具目录变了：去要软件包。

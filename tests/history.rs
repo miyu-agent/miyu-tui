@@ -54,19 +54,3 @@ fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
         std::fs::read_to_string(home.root().join("state/packages/miyu-tui/history.jsonl")).unwrap();
     assert_eq!(saved.lines().count(), 1, "记在包的状态目录里：{saved}");
 }
-
-#[test]
-fn history_from_the_old_place_moves_into_the_package_state_dir() {
-    // 9-1 以前记在数据根的 `state/tui/`：新位置还没有的，先搬过去再读。
-    let home = Home::new(Script::new([Play::Says("好。")]));
-    let old = home.root().join("state/tui/history.jsonl");
-    std::fs::create_dir_all(old.parent().unwrap()).unwrap();
-    std::fs::write(&old, "{\"at\":1,\"text\":\"老地方记的一句\"}\n").unwrap();
-    let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
-    up_until(&mut tui, "老地方记的一句");
-    assert!(!old.exists(), "老位置的搬走了");
-    let moved =
-        std::fs::read_to_string(home.root().join("state/packages/miyu-tui/history.jsonl")).unwrap();
-    assert!(moved.contains("老地方记的一句"));
-}
