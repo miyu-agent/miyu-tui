@@ -40,3 +40,26 @@ fn a_tab_between_arguments_still_separates_them_on_screen() {
         "屏上的命令和要跑的不一样（shell 照制表符分参数）：{at:?}"
     );
 }
+
+/// 发布前第五批审查 T5-2：`tabs::shown` 只给制表符、C0/C1、双向控制字符写记号；零宽空格、词连接符、BOM、行分隔符这类
+/// 宽度为 0 的字不在里面，画面库照旧整个丢掉，屏上的命令和真正要跑的不一样（照 T2-2 定的「看不见的字一个都不能悄悄没了」）。
+#[test]
+fn zero_width_characters_in_a_command_are_not_silently_dropped() {
+    let approval: crate::drawer::Approval = serde_json::from_value(serde_json::json!({
+        "call_id": "c1", "access": "execute", "detail": {"tool": "shell"}
+    }))
+    .unwrap();
+    let mut vanished = Vec::new();
+    for hidden in ['\u{200B}', '\u{2060}', '\u{FEFF}', '\u{2028}', '\u{E0041}'] {
+        let mut d = Drawer::approval(None, approval.clone());
+        d.command = Some((None, format!("rm -rf ~/a{hidden}b")));
+        let shown = screen(&d, 60);
+        if shown.iter().any(|l| l.ends_with("$ rm -rf ~/ab")) {
+            vanished.push(format!("U+{:04X}", u32::from(hidden)));
+        }
+    }
+    assert!(
+        vanished.is_empty(),
+        "这几个字在确认抽屉里无声消失，屏上读成 `rm -rf ~/ab`：{vanished:?}"
+    );
+}

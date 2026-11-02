@@ -56,7 +56,12 @@ fn entry(s: &Value) -> Option<SessionInfo> {
     if !s["parent"].is_null() || s["oneshot"] == true || s["kind"] == "dream" {
         return None;
     }
-    let text = |v: &Value| v.as_str().filter(|t| !t.is_empty()).map(str::to_string);
+    // 标题、预览是模型起的、写的：图格字、标签字符这种外来的读进来时就去掉（发布前第五批审查 T5-3）。
+    let text = |v: &Value| {
+        v.as_str()
+            .filter(|t| !t.is_empty())
+            .map(|t| crate::tabs::printable(t).into_owned())
+    };
     Some(SessionInfo {
         session: s["session"].as_str()?.to_string(),
         title: text(&s["title"]),
