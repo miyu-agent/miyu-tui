@@ -10,9 +10,26 @@ pub fn read(got: &Value) -> Vec<Persona> {
     of_kind(got, "mascot", None)
 }
 
-/// 主题包一行行（「主题」第 5 条）：默认主题包不列，第一行「默认主题」就是它。
+/// 主题包一行行（「主题」第 5 条）：默认主题包不列，第一行「默认主题」就是它。外观包可以只带网页的主题，没带终端主题的
+/// 不列（[`tui_file`]，2026-11-02 核心定的形状）。
 pub fn looks(got: &Value) -> Vec<Persona> {
-    of_kind(got, "theme", Some(crate::sheet::DEFAULT_PACKAGE))
+    let mut list = of_kind(got, "theme", Some(crate::sheet::DEFAULT_PACKAGE));
+    list.retain(|p| {
+        got["packages"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .any(|item| item["package"] == p.id.as_str() && tui_file(item).is_some())
+    });
+    list
+}
+
+/// `package.list` 一项外观包里终端主题的文件：`theme.tui.file`；核心改形状以前的 `theme.file` 也认（过渡）。只带网页主题
+/// （`theme.web`）的没有。
+pub fn tui_file(item: &Value) -> Option<&str> {
+    item["theme"]["tui"]["file"]
+        .as_str()
+        .or_else(|| item["theme"]["file"].as_str())
 }
 
 /// 这一种（`kind`）读成了的包，跳过 `skip` 那一个。
@@ -66,5 +83,21 @@ mod tests {
             (list[0].id.as_str(), list[0].label()),
             ("miyu-tui-theme-ascii", "纯 ASCII")
         );
+    }
+
+    /// 外观包（2026-11-02 核心定：`[theme.tui] file`、`[theme.web] dir`，带一样就行）：只带网页主题的不列；新形状
+    /// `theme.tui.file`、旧形状 `theme.file` 都认。
+    #[test]
+    fn appearance_packages_without_a_terminal_theme_are_not_listed() {
+        let got = json!({"packages": [
+            {"package": "both", "kind": "theme", "name": "两样都带", "theme": {"tui": {"file": "t.json"}, "web": {"dir": "web"}}},
+            {"package": "web-only", "kind": "theme", "name": "只有网页的", "theme": {"web": {"dir": "web"}}},
+            {"package": "old", "kind": "theme", "name": "旧形状", "theme": {"file": "theme.json"}}
+        ]});
+        let ids: Vec<String> = super::looks(&got).into_iter().map(|p| p.id).collect();
+        assert_eq!(ids, ["both", "old"]);
+        assert_eq!(super::tui_file(&got["packages"][0]), Some("t.json"));
+        assert_eq!(super::tui_file(&got["packages"][1]), None);
+        assert_eq!(super::tui_file(&got["packages"][2]), Some("theme.json"));
     }
 }
