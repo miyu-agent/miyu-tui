@@ -565,7 +565,7 @@
     "stopped": "(stopped)",
     "main": "Main session",
     "more": "{count} more",
-    "todo": "To-dos {done}/{total}",
+    "todo": "To-dos {done}/{total}", "todo_more": "{n} more",
     "done_note": "Background command done · {title} · {elapsed}",
     "failed_note": "Background command failed · {title} · exit code {code}",
     "stopped_note": "Background command stopped · {title}{why}",
