@@ -113,3 +113,28 @@ fn what_does_not_fit_is_cut_and_says_how_much_showed() {
     assert_eq!(words, ["a0", "a1", "a2", "b0"], "放不下的截掉");
     assert_eq!(placed[1], ("b", Rect::new(0, 5, 20, 1), 1));
 }
+
+#[test]
+fn a_column_lays_out_lines_in_order_with_caps_and_gaps() {
+    use super::column;
+    let lines = |prefix: &str, n: usize| -> Vec<Line<'static>> {
+        (0..n).map(|i| Line::raw(format!("{prefix}{i}"))).collect()
+    };
+    let parts = || {
+        vec![
+            ("a", lines("a", 3)),
+            ("b", Vec::new()),
+            ("c", lines("c", 1)),
+        ]
+    };
+    let text =
+        |out: Vec<Line<'static>>| -> Vec<String> { out.iter().map(ToString::to_string).collect() };
+    assert_eq!(
+        text(column(parts(), (&[], 1))),
+        ["a0", "a1", "a2", "", "c0"],
+        "空的件不占行"
+    );
+    let config = [slot("c", false, 0), slot("a", false, 2)];
+    assert_eq!(text(column(parts(), (&config, 1))), ["c0", "", "a0", "…"]);
+    assert!(column(parts(), (&[slot("a", true, 0), slot("c", true, 0)], 1)).is_empty());
+}

@@ -35,6 +35,12 @@ pub const FOOTER_RIGHT: [&str; 2] = ["context", "usage"];
 /// 底栏那一项在终端软件包里的名字（`[settings.footer]`）。
 pub const FOOTER_KEY: &str = "tui.footer";
 
+/// 输入框上面那一块出厂的部件名（「挂载位」第 4 条 SL-2）：待办。
+pub const ABOVE_PARTS: [&str; 1] = ["todo"];
+
+/// 输入框上面那一项在终端软件包里的名字（`[settings.above]`）。
+pub const ABOVE_KEY: &str = "tui.above";
+
 /// 读 `config.get` 交回的 `key` 那一项：认不得的条目跳过，没写、读不成的是空的（照出厂的画）。
 pub fn read(got: &Value, key: &str) -> Vec<Slot> {
     got["items"][key]["value"]

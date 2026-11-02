@@ -147,6 +147,34 @@ max = 200
 default = 0
 name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
 
+# 输入框上面那一块挂哪几件、什么先后、最多几行（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条 SL-2）：出厂只有 todo。
+# 配置页不画。
+[settings.above]
+type = "list"
+element = "record"
+title = "part"
+hidden = true
+applies = "now"
+name = { en = "Parts above the input box", zh = "输入框上面的部件", ja = "入力欄の上の部品" }
+description = { en = "Which parts show above the input box, in which order, and at most how many rows each.", zh = "输入框上面挂哪几件、什么先后、每件最多几行。", ja = "入力欄の上に並べる部品、その順番、それぞれの最大行数。" }
+
+[settings.above.fields.part]
+type = "text"
+max = 100
+name = { en = "Part", zh = "部件", ja = "部品" }
+
+[settings.above.fields.hidden]
+type = "bool"
+default = false
+name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+
+[settings.above.fields.rows]
+type = "int"
+min = 0
+max = 200
+default = 0
+name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+
 # 按键模式（终端蓝图 `docs/blueprint/tui.md`「按键」表「按键模式」那一行，2026-10-21 项目主人）：`vim` 时会话列表、`/model`
 # 里 `j`、`k` 挪，`/` 才开始搜；`arrows` 照方向键的用法，打字就搜。配置页排在「通用」页「按键模式」一组；出厂方向键，引导里「你喜欢的操作方式」那一步选。
 [settings.keys]

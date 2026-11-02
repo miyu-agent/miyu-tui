@@ -1,5 +1,5 @@
 //! 伪终端里的端到端测试：挂载位（蓝图 `tui.md`「挂载位」第 2、4 条，反馈 1102 第 13 条）。配置文件里 `[[tui.side]]`、
-//! `[[tui.footer]]` 写了的照写的先后、藏起来的不画，没写到的照出厂的先后接在后面。
+//! `[[tui.footer]]`、`[[tui.above]]` 写了的照写的先后、藏起来的不画，没写到的照出厂的先后接在后面。
 
 mod support;
 
@@ -83,4 +83,29 @@ fn the_status_line_follows_the_configured_order_and_hides_what_is_hidden() {
         );
         tui.pump(std::time::Duration::from_millis(50));
     }
+}
+
+#[test]
+fn a_hidden_todo_list_does_not_show_above_the_input_box() {
+    // 输入框上面那一块（SL-2）：藏起待办，她写了待办也不画。
+    let args = serde_json::json!({"todos": [
+        {"content": "改掉那个错", "status": "in_progress"},
+        {"content": "跑测试", "status": "pending"}
+    ]})
+    .to_string();
+    let script = Script::new([
+        Play::Calls(vec![("todowrite".into(), args)]),
+        Play::Says("列好了。"),
+    ]);
+    let home = Home::with_tools(script, "[[tui.above]]\npart = \"todo\"\nhidden = true\n");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("排一下要做的");
+    tui.wait_for("列好了。");
+    tui.pump(std::time::Duration::from_millis(500));
+    assert!(
+        !tui.shows("待办 0/2") && !tui.shows("跑测试"),
+        "藏起来的不画：\n{}",
+        tui.lines().join("\n")
+    );
 }
