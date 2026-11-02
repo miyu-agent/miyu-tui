@@ -100,3 +100,34 @@ fn a_note_folds_the_live_segment_before_it() {
     assert_eq!(t.entries.len(), 3);
     assert_eq!(segments(&t).len(), 1);
 }
+
+/// 人点开了一步正看着：回报插进来、命令跑完，那一段也不自己收，等人收（2026-11-02 项目主人：「我正在看呢……应该由我来
+/// 收缩」）；人把那一步收上了，照常收起。
+#[test]
+fn a_segment_with_a_step_opened_by_hand_stays_open_after_a_job_notice() {
+    let mut t = Transcript::default();
+    started_with_command(&mut t);
+    let at = t.entries.iter().position(|e| e.segment.is_some()).unwrap();
+    t.entries[at].segment.as_mut().unwrap().steps[0].open = Some(true);
+    t.job(
+        JobMark::Done,
+        "后台命令完成 · sleep 9 · 9s".into(),
+        String::new(),
+    );
+    apply(
+        &mut t,
+        vec![Push::ToolResult {
+            call_id: "c1".into(),
+            status: crate::core::ToolStatus::Ok,
+            text: String::new(),
+            said: None,
+            display: Default::default(),
+            sent: 0,
+            detail: None,
+        }],
+    );
+    assert!(segments(&t)[0].settled(), "结束了、跑完了");
+    assert!(segments(&t)[0].expanded(true), "点开着一步的不收");
+    t.entries[at].segment.as_mut().unwrap().steps[0].open = Some(false);
+    assert!(!segments(&t)[0].expanded(true), "那一步收上了就照常收起");
+}

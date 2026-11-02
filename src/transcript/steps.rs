@@ -34,8 +34,10 @@ impl Segment {
     }
 
     /// 现在是不是展开的：人点过的照人点的；没点过的，进行中展开，收好了照 `fold` 收不收（蓝图「时间线」第 18 条）。
+    /// 里面有人点开的一步的不自己收（第 21 条子规则，2026-11-02 项目主人：「我正在看呢……应该由我来收缩」）。
     pub fn expanded(&self, fold: bool) -> bool {
-        self.open.unwrap_or(!self.settled() || !fold)
+        let reading = self.steps.iter().any(|s| s.open == Some(true));
+        self.open.unwrap_or(!self.settled() || !fold || reading)
     }
 
     /// 收好了：这一段结束了，而且没有还在跑的步骤。插进一条回报时前面那段结束了，可里面的命令还在跑的，等它跑完再收
