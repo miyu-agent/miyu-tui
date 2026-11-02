@@ -277,11 +277,11 @@ impl Notifier {
         match plan.route {
             Some(Route::Kitty) => {
                 let picture = icon().and_then(|p| std::fs::read(p).ok());
-                let id = session
-                    .as_deref()
-                    .map_or_else(|| self.id.clone(), click::kitty_id);
+                let clickable = session.as_deref().and_then(click::kitty_id);
+                let report = clickable.is_some();
+                let id = clickable.unwrap_or_else(|| self.id.clone());
                 let seq = osc::kitty(
-                    (&id, session.is_some(), elsewhere),
+                    (&id, report, elsewhere),
                     &self.look.app,
                     (title, body),
                     picture.as_deref(),
