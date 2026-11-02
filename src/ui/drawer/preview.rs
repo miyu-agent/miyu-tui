@@ -81,17 +81,12 @@ fn inner(look: &Look, width: u16) -> u16 {
     width.saturating_sub(look.pad.saturating_mul(2)).max(1)
 }
 
-/// 照 `room` 列折好的一行行：放不下的行折到下一行（Claude Code 也折，2026-10-23 项目主人）。
+/// 照 `room` 列折好的一行行：放不下的行折到下一行（Claude Code 也折，2026-10-23 项目主人），行尾的空白去掉（不多占一列）。
 fn wrapped(picture: &str, room: u16) -> Vec<String> {
-    let mut out = Vec::new();
-    for line in picture.lines() {
-        let parts = crate::input::pieces(line, room);
-        if parts.is_empty() {
-            out.push(String::new());
-        }
-        out.extend(parts.into_iter().map(|(piece, _)| piece));
-    }
-    out
+    picture
+        .lines()
+        .flat_map(|line| items::folded(line, room))
+        .collect()
 }
 
 /// 这一页最高的那张折好以后几行，最多 [`Look::rows`]：换选项时抽屉不跳。

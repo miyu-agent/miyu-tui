@@ -117,3 +117,47 @@ fn a_wide_preview_asks_for_a_wider_drawer() {
         None
     );
 }
+
+/// 2026-11-02 项目主人报：带预览的提问，中线错位、选项被截成 `…`。用的是那天真问的一道（中英混排的说明在空格处折行，
+/// 原来那一行多带一格空白，中线往右错一列）。
+#[test]
+fn the_divider_stays_in_one_column_and_long_labels_fold() {
+    let grub = "GRUB_CMDLINE_LINUX=\"zswap.enabled=0 rootfstype=btrfs clearcpuid=514,avx512f,avx512dq,avx512cd,avx512bw,avx512vl,pku\"";
+    let asked: Asked = serde_json::from_value(serde_json::json!({
+        "call_id": "c",
+        "questions": [{"question": "你想怎么走？", "options": [
+            {"label": "改 GRUB 屏蔽 AVX-512 后重启（推荐）", "description": "在 clearcpuid= 里加上 avx512*、pku 等，重启后 XCR0 自然变成 7，壳的检查原样通过；副作用是全系统没有 AVX-512（可随时改回）", "preview": grub},
+            {"label": "先不重启，继续在用户态想办法", "description": "保留我对 artifact.dll 的补丁绕开检查，我再深挖它为什么卡在保护壳的 VM 里空转（现在正在跑一个 15 分钟的长测试）"},
+            {"label": "我能拿到 brcly 的 LD_PRELOAD 助手", "description": "RIN 帖里现在推荐用 brcly 的 LD_PRELOAD + 原版 Proton-GE，比这个 7 月的老改版兼容性更好"}
+        ]}]
+    }))
+    .unwrap();
+    let d = Drawer::question(None, asked);
+    // 窄于 `side_min`（86）的挪到下面、没有竖线，只看标题不截。
+    let narrow = lines(&d, 60);
+    assert!(!narrow.iter().any(|l| l.contains('…')), "{narrow:#?}");
+    for width in [86, 90, 110, 140] {
+        let got = lines(&d, width);
+        let columns: Vec<usize> = got
+            .iter()
+            .filter_map(|row| row.find('│').map(|bar| row[..bar].width()))
+            .collect();
+        assert!(columns.len() > 4, "{width} 列：{got:#?}");
+        assert!(
+            columns.iter().all(|c| *c == columns[0]),
+            "{width} 列：竖线都在一列 {columns:?}\n{got:#?}"
+        );
+        assert!(
+            !got.iter().any(|l| l.contains('…')),
+            "{width} 列：不截：{got:#?}"
+        );
+        let left: String = got
+            .iter()
+            .map(|l| l.split('│').next().unwrap_or_default().replace(' ', ""))
+            .collect();
+        assert!(
+            left.contains("我能拿到brcly的LD_PRELOAD助手"),
+            "{width} 列：标题折下去写全：{got:#?}"
+        );
+    }
+}

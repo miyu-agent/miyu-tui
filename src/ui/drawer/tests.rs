@@ -75,8 +75,11 @@ fn it_shows_who_asks_the_tabs_the_pointer_and_the_keys() {
     );
     assert_eq!(v.focus, (5, 6));
     assert_eq!((v.items[5], v.items[3]), (Some(0), None));
-    // 标题加粗、选中的品红。
-    let label = &v.lines[5].spans[1];
+    // 序号暗色，选中那一行也是（2026-11-02 项目主人）；标题加粗、选中的品红。
+    assert_eq!(v.lines[5].spans[1].content, "1. ");
+    assert_eq!(v.lines[5].spans[1].style, crate::theme::dim());
+    assert_eq!(v.lines[7].spans[1].style, crate::theme::dim());
+    let label = &v.lines[5].spans[2];
     assert!(
         label
             .style
