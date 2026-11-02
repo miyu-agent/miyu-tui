@@ -41,6 +41,9 @@ pub struct Icons {
     /// 要的）；没写的这一套不画。
     #[serde(default)]
     pub files: HashMap<String, String>,
+    /// 输入框上面那一截循环打头的记号，连同它后面的空格（「循环」第 2 条，2026-11-02 项目主人要时钟）；没写的套件写 `~ `。
+    #[serde(rename = "loop", default = "loop_mark")]
+    pub loop_mark: String,
 }
 
 impl Icons {
@@ -94,6 +97,10 @@ pub fn pick(sets: &[Icons], name: &str) -> Option<Icons> {
 /// 没写 `warn` 的图标套件（以前的、包里带的）用它。
 fn warn_mark() -> String {
     "! ".to_string()
+}
+
+fn loop_mark() -> String {
+    "~ ".to_string()
 }
 
 #[cfg(test)]

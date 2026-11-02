@@ -3,7 +3,7 @@
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
 
-use super::{of, sidebar, tag};
+use super::{fit, of, sidebar, tag};
 use crate::config::Config;
 use crate::core::{Loop, LoopEvery};
 
@@ -25,6 +25,9 @@ fn text(lines: &[ratatui::text::Line]) -> Vec<String> {
 #[test]
 fn the_tag_says_when_the_next_one_runs() {
     let config = Config::builtin().unwrap();
+    // 记号照图标那一套（2026-11-02 项目主人要时钟），不照主题。
+    let mark = config.icons.loop_mark.clone();
+    assert_eq!(mark, "\u{f017} ", "出厂的 nerd 那一套是钟");
     let now: Timestamp = "2026-10-30T04:00:00Z".parse().unwrap();
     let at = (now, &TimeZone::UTC);
     let loops = vec![
@@ -51,21 +54,24 @@ fn the_tag_says_when_the_next_one_runs() {
     assert_eq!(mine.len(), 2, "只看看着的会话");
     assert_eq!(
         tag(&mine, &config, at).as_deref(),
-        Some("↻ 13:07"),
+        Some(format!("{mark}13:07").as_str()),
         "最早那个，今天的只写时分"
     );
     let tomorrow = of(&loops[..1], Some("s-1"));
     assert_eq!(
         tag(&tomorrow, &config, at).as_deref(),
-        Some("↻ 10-31 04:07")
+        Some(format!("{mark}10-31 04:07").as_str())
     );
     let mut paused = loops[0].clone();
     paused.paused = true;
-    assert_eq!(tag(&[&paused], &config, at).as_deref(), Some("↻ 已暂停"));
+    assert_eq!(
+        tag(&[&paused], &config, at).as_deref(),
+        Some(format!("{mark}已暂停").as_str())
+    );
     let unset = one("t4", "s-1", LoopEvery::Dynamic, None);
     assert_eq!(
         tag(&[&unset], &config, at).as_deref(),
-        Some("↻"),
+        Some(mark.trim_end()),
         "还没定下一次"
     );
     assert_eq!(tag(&of(&loops, Some("s-9")), &config, at), None);
@@ -112,4 +118,13 @@ fn the_sidebar_writes_how_often_when_and_what() {
         "  每 90 秒"
     );
     assert!(sidebar(&[], &config, at, 40).is_empty(), "没有循环整段不画");
+}
+
+/// 放不下整截的只写记号，记号也放不下的不写，不往框外伸（2026-11-02 项目主人：窄窗口里截掉了）。
+#[test]
+fn a_narrow_row_keeps_only_the_mark_or_nothing() {
+    assert_eq!(fit("◷ 13:07", "◷ ", 20).as_deref(), Some("◷ 13:07"));
+    assert_eq!(fit("◷ 13:07", "◷ ", 7).as_deref(), Some("◷ 13:07"));
+    assert_eq!(fit("◷ 13:07", "◷ ", 6).as_deref(), Some("◷"));
+    assert_eq!(fit("◷ 13:07", "◷ ", 0), None);
 }
