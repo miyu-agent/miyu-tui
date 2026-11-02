@@ -176,6 +176,13 @@ impl Notifier {
         }
     }
 
+    /// 人真退出了：在 herdr 里的退还窗格（挂断、被杀的不退，留着恢复命令）。
+    pub fn quit(&mut self) {
+        if let Some(herdr) = self.herdr.as_mut() {
+            herdr.release();
+        }
+    }
+
     /// 主会话变了：更新 herdr 恢复命令，空会话清除旧绑定。
     pub fn session(&mut self, session: Option<&str>) {
         if let Some(herdr) = self.herdr.as_mut() {

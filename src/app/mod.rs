@@ -178,8 +178,12 @@ impl App {
             && self.screen.view.select.is_none()
     }
 
-    /// 退出程序前收尾：输入法还原成进来时的样子（`ime.rs`）。
+    /// 退出程序前收尾：输入法还原成进来时的样子（`ime.rs`）。人退出的才向 herdr 退还窗格；终端挂断（读终端的那一头断了，
+    /// `main.rs` 不走到这里）的不退，herdr 重启时照恢复命令接回来（2026-11-02 项目主人）。
     pub fn finish(&mut self) {
+        if self.quit {
+            self.notifier.quit();
+        }
         std::mem::take(&mut self.typing.ime).finish();
         // 这一回的样子记下，下次起来连上以前先照它画（`look.rs`）。
         self.save_look();
