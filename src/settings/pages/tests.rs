@@ -157,24 +157,43 @@ fn icon_sets_are_named_in_the_interface_language() {
 }
 
 #[test]
-fn the_colors_list_hides_the_wallpaper_until_one_is_found() {
-    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。
+fn the_colors_list_hides_what_cannot_give_colors_and_tokyonight() {
+    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。2026-11-02 项目主人：有了自动就不要默认了（tokyonight
+    // 不列，只兜底）、没设置头像的跟随人格也不用出现；正用着的照列。
     let choice = |value: &str| crate::settings::pages::choose::Choice {
         value: json!(value),
         label: value.into(),
         note: None,
         off: None,
     };
-    let list = || vec![choice("persona"), choice("wallpaper"), choice("tokyonight")];
+    let list = || {
+        ["auto", "persona", "wallpaper", "tokyonight", "terminal"]
+            .map(choice)
+            .to_vec()
+    };
+    let values = |more: &More| -> Vec<String> {
+        more.offered("tui.theme", list())
+            .iter()
+            .map(|c| c.value.as_str().unwrap_or_default().to_string())
+            .collect()
+    };
     let mut more = More::default();
-    assert_eq!(more.offered("tui.theme", list()).len(), 2);
+    assert_eq!(values(&more), ["auto", "terminal"]);
     assert_eq!(
         more.offered("tui.theme_mode", list()).len(),
-        3,
+        5,
         "别的项不管"
     );
     more.wallpaper = true;
-    assert_eq!(more.offered("tui.theme", list()).len(), 3);
+    more.persona_colors = true;
+    assert_eq!(values(&more), ["auto", "persona", "wallpaper", "terminal"]);
+    more.persona_colors = false;
+    more.theme_now = "persona".into();
+    assert_eq!(
+        values(&more),
+        ["auto", "persona", "wallpaper", "terminal"],
+        "正用着的照列"
+    );
 }
 
 #[test]

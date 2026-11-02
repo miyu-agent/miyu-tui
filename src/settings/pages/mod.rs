@@ -133,6 +133,10 @@ pub struct More {
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
     /// 找不到的不列）。
     pub wallpaper: bool,
+    /// 看着的人格交得出颜色（写了主题色或有头像）：配色列表里列「跟随头像」（2026-11-02 项目主人：没设置头像的不用出现）。
+    pub persona_colors: bool,
+    /// 配置里选着的配色（「自动」不换）：交不出颜色、找不到壁纸的那一种正用着的照列。
+    pub theme_now: String,
     /// 能当主色的几个候选，好的在前（跟随头像、跟随壁纸时；App 每一拍照 `app/theme.rs` 设）。
     pub seeds: Vec<u32>,
     /// 正在用的主色：「主色」那一项照它画色块。
@@ -258,10 +262,20 @@ impl More {
         choose
     }
 
-    /// 选择窗列哪几个：找不到壁纸的，配色里不列「跟随壁纸」。
+    /// 选择窗列哪几个：配色里不列 tokyonight（只兜底）、交不出颜色的「跟随头像」、找不到壁纸的「跟随壁纸」，正用着的照列
+    /// （「主题」第 2 条子规则，2026-11-02 项目主人）。
     pub fn offered(&self, key: &str, mut list: Vec<Choice>) -> Vec<Choice> {
-        if key == "tui.theme" && !self.wallpaper {
-            list.retain(|c| c.value != "wallpaper");
+        if key == "tui.theme" {
+            list.retain(|c| {
+                let value = c.value.as_str().unwrap_or_default();
+                let shown = match value {
+                    "tokyonight" => false,
+                    "persona" => self.persona_colors,
+                    "wallpaper" => self.wallpaper,
+                    _ => true,
+                };
+                shown || value == self.theme_now
+            });
         }
         list
     }

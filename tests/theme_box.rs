@@ -18,17 +18,18 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.pump(Duration::from_millis(800));
+    // 出厂「自动」，测试里借不到人格、壁纸、终端的颜色：兜底 tokyonight（2026-11-02 项目主人）。
     assert_eq!(tui.background(0, 0), NIGHT, "起来是 tokyonight 深色");
     tui.say("/theme");
     // 命令列表那一行的说明里也有这几种的名字：等框里用着的那种（行首 `●`，2026-10-19 起不写「当前」）。
-    tui.wait_for("● Tokyo Night");
+    tui.wait_for("● 自动");
     let current = tui
         .lines()
         .into_iter()
-        .find(|l| l.contains("Tokyo Night"))
+        .find(|l| l.contains("自动"))
         .unwrap_or_default();
     assert!(
-        current.contains("● Tokyo Night"),
+        current.contains("● 自动"),
         "用着的那种行首写 ●：\n{}",
         tui.lines().join("\n")
     );
@@ -40,7 +41,7 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     tui.key(b"\x1b");
     tui.pump(Duration::from_millis(300));
     assert_eq!(tui.background(0, 0), NIGHT, "Esc 换回原来的");
-    assert!(!tui.shows("● Tokyo Night"), "框关了");
+    assert!(!tui.shows("● 自动"), "框关了");
     assert!(
         !home.settings().contains("theme = "),
         "没定下不写：{}",
@@ -48,7 +49,7 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     );
     // 再开，挪到终端配色按 Enter：写进系统配置，框关了，样子留着。
     tui.say("/theme");
-    tui.wait_for("● Tokyo Night");
+    tui.wait_for("● 自动");
     tui.key(b"\x1b[B");
     tui.key(b"\r");
     tui.pump(Duration::from_millis(800));
@@ -57,6 +58,6 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
         "定下的写进系统配置：{}",
         home.settings()
     );
-    assert!(!tui.shows("● Tokyo Night"), "框关了");
+    assert!(!tui.shows("● 自动"), "框关了");
     assert_ne!(tui.background(0, 0), NIGHT, "样子留着");
 }

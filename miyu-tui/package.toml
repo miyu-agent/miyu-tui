@@ -129,11 +129,11 @@ description = { en = "Which theme package draws the frames, marks and text style
 # 第一次打开的引导里「主题」那一步写前两项；配置页「通用」里一组「主题」，名字照终端的字写。
 [settings.theme]
 type = "option"
-choices = ["persona", "wallpaper", "tokyonight", "terminal"]
-default = "tokyonight"
+choices = ["auto", "persona", "wallpaper", "tokyonight", "terminal"]
+default = "auto"
 applies = "now"
 name = { en = "Colors", zh = "配色", ja = "配色" }
-description = { en = "Follow the persona's avatar, follow the desktop wallpaper, Tokyo Night, or the terminal's own colors.", zh = "跟随人格的头像生成、跟随桌面壁纸生成、tokyonight，或者跟着终端自己的配色。", ja = "ペルソナのアバターから作る配色、デスクトップの壁紙から作る配色、Tokyo Night、またはターミナル自身の配色。" }
+description = { en = "Auto follows the persona's avatar, else the desktop wallpaper, else the terminal's colors, else Tokyo Night. Or pick one of them.", zh = "自动：有头像的跟随人格的头像，没有的跟随桌面壁纸，再没有的跟着终端的配色，都没有的用 tokyonight。也可以只选其中一种。", ja = "自動：アバターがあればペルソナのアバター、なければデスクトップの壁紙、それもなければターミナルの配色、どれもなければ Tokyo Night。どれか一つを選ぶこともできる。" }
 
 # 跟随壁纸、终端配色自选的主色（终端蓝图「主题」的「主色」，2026-10-14 项目主人定；终端配色 2026-10-19 起共这一项）：从几个候选里挑，`#rrggbb`；没写的、不在
 # 候选里的（换了壁纸）照打分最高的那个。跟随头像的主色存在人格上（`persona.set` 的 `seed`），不在这里。

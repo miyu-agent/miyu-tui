@@ -99,3 +99,4 @@ mod notices;
 mod pools;
 mod status;
 mod switching;
+mod theme_auto;

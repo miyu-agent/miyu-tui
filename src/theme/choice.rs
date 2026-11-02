@@ -31,8 +31,20 @@ impl Mode {
     }
 }
 
-/// 配色：配置里的写法，列表照这个先后。
-pub const COLORS: [&str; 4] = ["persona", "wallpaper", "tokyonight", "terminal"];
+/// 配色：配置里的写法，列表照这个先后（2026-11-02 项目主人：出厂「自动」，tokyonight 不再是选项、只兜底）。
+pub const COLORS: [&str; 4] = ["auto", "persona", "wallpaper", "terminal"];
+
+/// 「自动」照这个先后挑真正用的那一种（「主题」第 2 条子规则）：看着的人格交得出颜色、找到了能取色的壁纸、问到了终端的
+/// 16 色，各自有没有；都没有的 tokyonight。
+pub fn resolve(colors: &str, (persona, wallpaper, terminal): (bool, bool, bool)) -> &str {
+    match colors {
+        "auto" if persona => "persona",
+        "auto" if wallpaper => "wallpaper",
+        "auto" if terminal => "terminal",
+        "auto" => "tokyonight",
+        other => other,
+    }
+}
 /// 照一个主色生成一套的配色：跟随头像、跟随壁纸（2026-10-14 项目主人定，同一套算法）；终端配色真彩色、问到了终端颜色的
 /// 也是（2026-10-19 项目主人定，主色从终端 16 色里挑）。
 pub const SEEDED: [&str; 3] = ["persona", "wallpaper", "terminal"];
@@ -72,7 +84,7 @@ pub struct Choice {
 impl Default for Choice {
     fn default() -> Self {
         Self {
-            colors: "tokyonight".into(),
+            colors: "auto".into(),
             mode: Mode::Auto,
             ground: true,
         }
@@ -86,8 +98,11 @@ impl Choice {
     /// 读 `config.get` 的回应：读到的、认得的盖上，别的照旧。
     pub fn apply(&mut self, got: &Value) {
         let value = |key: &str| &got["items"][key]["value"];
-        if let Some(colors) = value("tui.theme").as_str().filter(|c| COLORS.contains(c)) {
-            self.colors = colors.to_string();
+        // 以前选的 tokyonight 当「自动」读（2026-11-02 项目主人：有了自动就不要默认了）。
+        match value("tui.theme").as_str() {
+            Some("tokyonight") => self.colors = "auto".into(),
+            Some(colors) if COLORS.contains(&colors) => self.colors = colors.to_string(),
+            _ => {}
         }
         if let Some(mode) = value("tui.theme_mode").as_str().and_then(Mode::read) {
             self.mode = mode;
@@ -408,5 +423,26 @@ mod tests {
             "tokyonight-night",
             "不是跟随头像的不看主色"
         );
+    }
+
+    /// 「自动」的先后（2026-11-02 项目主人）：人格交得出颜色 → 壁纸 → 终端配色 → tokyonight；以前写的 tokyonight 当自动读。
+    #[test]
+    fn auto_follows_the_persona_then_the_wallpaper_then_the_terminal_then_tokyonight() {
+        use super::resolve;
+        assert_eq!(resolve("auto", (true, true, true)), "persona");
+        assert_eq!(resolve("auto", (false, true, true)), "wallpaper");
+        assert_eq!(resolve("auto", (false, false, true)), "terminal");
+        assert_eq!(resolve("auto", (false, false, false)), "tokyonight");
+        assert_eq!(
+            resolve("wallpaper", (true, false, false)),
+            "wallpaper",
+            "选了哪种照哪种"
+        );
+        let mut choice = Choice::default();
+        assert_eq!(choice.colors, "auto", "出厂自动");
+        choice.apply(&json!({"items": {"tui.theme": {"value": "terminal"}}}));
+        assert_eq!(choice.colors, "terminal");
+        choice.apply(&json!({"items": {"tui.theme": {"value": "tokyonight"}}}));
+        assert_eq!(choice.colors, "auto", "以前选的 tokyonight 当自动");
     }
 }

@@ -38,7 +38,7 @@ pub(super) fn at_theme(oobe: &mut Oobe, t0: Instant, texts: &Texts, items: serde
 /// 出厂的两项：都是默认值。
 pub(super) fn defaults() -> serde_json::Value {
     json!({
-        "tui.theme": {"value": "tokyonight", "origin": {"layer": "default"}},
+        "tui.theme": {"value": "auto", "origin": {"layer": "default"}},
         "tui.theme_mode": {"value": "auto", "origin": {"layer": "default"}}
     })
 }
@@ -53,12 +53,12 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     at_theme(&mut oobe, t0, &texts, defaults());
     assert_eq!(
         shown(&oobe),
-        Some(("tokyonight".into(), Mode::Auto)),
+        Some(("auto".into(), Mode::Auto)),
         "没有头像：停在现在的配置"
     );
     // 左右不再换。
     oobe.key(key(KeyCode::Right), t0, &texts);
-    assert_eq!(shown(&oobe), Some(("tokyonight".into(), Mode::Auto)));
+    assert_eq!(shown(&oobe), Some(("auto".into(), Mode::Auto)));
     // 明暗那一格 Enter：开列表，停在「自动」；往下挪一个，当场换成深色；Enter 选好、关窗。
     oobe.key(key(KeyCode::Enter), t0, &texts);
     let labels: Vec<String> = oobe
@@ -73,15 +73,11 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     assert_eq!(labels, ["自动", "深色", "浅色"]);
     assert!(asks(&mut oobe).is_empty(), "开列表不写");
     oobe.key(key(KeyCode::Down), t0, &texts);
-    assert_eq!(
-        shown(&oobe),
-        Some(("tokyonight".into(), Mode::Dark)),
-        "挪到就换"
-    );
+    assert_eq!(shown(&oobe), Some(("auto".into(), Mode::Dark)), "挪到就换");
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert!(oobe.theme.picking.is_none(), "选好关窗");
     assert_eq!(oobe.step, Step::Theme, "选好不往下走");
-    // 配色那一格：挪到终端配色看一眼，Esc 换回 Tokyo Night，还在这一步。
+    // 配色那一格：挪到终端配色看一眼，Esc 换回自动，还在这一步（没头像、没壁纸的列表只有自动、终端配色）。
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
@@ -91,7 +87,7 @@ fn enter_opens_a_list_that_previews_as_it_moves_and_esc_puts_it_back() {
     assert_eq!(oobe.step, Step::Theme, "Esc 只关列表");
     assert_eq!(
         shown(&oobe),
-        Some(("tokyonight".into(), Mode::Dark)),
+        Some(("auto".into(), Mode::Dark)),
         "换回原来的"
     );
     // 再开、选终端配色；「下一步」写两项。
@@ -152,8 +148,9 @@ fn with_an_avatar_the_colors_start_on_follow_the_avatar_unless_already_chosen() 
     let mut oobe = fresh(t0);
     oobe.persona.avatar = Field::line().with(&file.display().to_string());
     at_theme(&mut oobe, t0, &texts, defaults());
-    assert_eq!(oobe.theme.colors, 0, "停在跟随头像");
-    assert_eq!(shown(&oobe).map(|p| p.0), Some("persona".into()));
+    // 2026-11-02 项目主人：出厂自动，有头像的自动就跟随头像（`app/theme.rs` 照它挑），这一步停在自动。
+    assert_eq!(oobe.theme.colors, 0, "停在自动");
+    assert_eq!(shown(&oobe).map(|p| p.0), Some("auto".into()));
     // 写过配色的照写的。
     let mut chosen = fresh(t0);
     chosen.persona.avatar = Field::line().with(&file.display().to_string());
@@ -194,7 +191,8 @@ fn a_refused_write_stays_and_says_why() {
 
 #[test]
 fn the_colors_list_offers_the_wallpaper_only_when_one_was_found() {
-    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。
+    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。2026-11-02 项目主人：tokyonight 不列（只兜底），交不出颜色
+    // 的「跟随头像」不列。
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
@@ -205,19 +203,18 @@ fn the_colors_list_offers_the_wallpaper_only_when_one_was_found() {
         let list = oobe.theme.picking.as_ref().expect("开了列表");
         list.choices.iter().map(|c| c.label.clone()).collect()
     };
-    assert_eq!(labels(&oobe), ["跟随头像", "Tokyo Night", "终端配色"]);
-    // 少了一行，挪到哪还是照值认：往上一个是跟随头像。
-    oobe.key(key(KeyCode::Up), t0, &texts);
-    assert_eq!(shown(&oobe).map(|p| p.0), Some("persona".into()));
+    assert_eq!(labels(&oobe), ["自动", "终端配色"]);
+    // 少了几行，挪到哪还是照值认：往下一个是终端配色。
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    assert_eq!(shown(&oobe).map(|p| p.0), Some("terminal".into()));
     oobe.key(key(KeyCode::Esc), t0, &texts);
-    // 找到了：列着，选上它当场换。
+    // 找到了壁纸、人格交得出颜色：都列着，选上当场换。
     oobe.theme.wallpaper = true;
+    oobe.theme.persona_colors = true;
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    assert_eq!(
-        labels(&oobe),
-        ["跟随头像", "跟随壁纸", "Tokyo Night", "终端配色"]
-    );
-    oobe.key(key(KeyCode::Up), t0, &texts);
+    assert_eq!(labels(&oobe), ["自动", "跟随头像", "跟随壁纸", "终端配色"]);
+    oobe.key(key(KeyCode::Down), t0, &texts);
+    oobe.key(key(KeyCode::Down), t0, &texts);
     assert_eq!(shown(&oobe).map(|p| p.0), Some("wallpaper".into()));
 }
 
@@ -265,7 +262,7 @@ fn a_figure_row_writes_both_places_with_or_without_an_avatar() {
         params["changes"],
         json!([
             {"key": "tui.theme_mode", "value": "auto"},
-            {"key": "tui.theme", "value": "tokyonight"},
+            {"key": "tui.theme", "value": "auto"},
             {"key": "tui.theme_background", "value": true},
             {"key": "tui.mascot_home", "value": false},
             {"key": "tui.mascot_sidebar", "value": false}
