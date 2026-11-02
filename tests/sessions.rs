@@ -89,8 +89,6 @@ fn switching_draws_the_other_ones_past_without_flashing_an_empty_session() {
     // 打开时选中的是正在用的那个：`❯` 那一列写当前这个的箭头（2026-11-02 项目主人：照「最近会话」），选中了也不让给
     // `❯`（2026-10-19 项目主人定各个框统一）。
     tui.wait_for("❱ 第 2 号的话");
-    tui.key(CTRL_D);
-    tui.wait_for("无法删除当前会话");
     tui.key(DOWN);
     tui.record();
     tui.key(b"\r");
@@ -159,17 +157,23 @@ fn ticked_ones_go_on_one_confirmation_and_the_pick_stays_in_place() {
     let (_home, mut tui) = sessions(4);
     tui.say("/sessions");
     tui.wait_for("4 个");
-    // 第一行是正在用的 4 号：勾不上。
+    // 第一行是正在用的 4 号：也能勾（2026-11-02 项目主人），再按取消。
     tui.key(b" ");
-    assert!(!tui.shows("已勾"), "{}", tui.lines().join("\n"));
+    tui.wait_for("已选 1");
+    tui.key(b" ");
+    let end = Instant::now() + support::WAIT;
+    while tui.shows("已选") {
+        assert!(Instant::now() < end, "{}", tui.lines().join("\n"));
+        tui.pump(Duration::from_millis(50));
+    }
     tui.key(DOWN);
     tui.key(b" ");
     tui.key(DOWN);
     tui.key(b" ");
     tui.wait_for("已选 2");
-    // Ctrl+A：全都勾着的时候全部取消，没全勾的勾上全部（正在用的除外）。
+    // Ctrl+A：全都勾着的时候全部取消，没全勾的勾上全部（连正在用的）。
     tui.key(b"\x01");
-    tui.wait_for("已选 3");
+    tui.wait_for("已选 4");
     tui.key(b"\x01");
     assert!(!tui.shows("已勾"), "{}", tui.lines().join("\n"));
     tui.key(b" ");
@@ -330,4 +334,34 @@ fn with_vim_keys_j_moves_and_a_space_after_slash_is_part_of_the_search() {
     tui.key(b"\r");
     tui.key(b"\r");
     tui.wait_for("第 2 号的回答。");
+}
+
+/// 删正在用的（2026-11-02 项目主人：「现在是不允许删除当前会话的，我觉得要允许，删除当前会话的话会进到最近会话？如果全删除了
+/// 就进到空会话」）：删了切到剩下的里最近的那个；最后一个也删了进空会话的首页。
+#[test]
+fn deleting_the_current_session_moves_to_the_latest_one_and_then_to_an_empty_one() {
+    let (_home, mut tui) = sessions(2);
+    tui.say("/sessions");
+    tui.wait_for("2 个");
+    tui.wait_for("❱ 第 2 号的话");
+    tui.key(CTRL_D);
+    tui.wait_for("再按一次 Ctrl+D 删除「");
+    tui.key(CTRL_D);
+    tui.wait_for("第 1 号的回答。");
+    assert!(!tui.shows("第 2 号的回答。"), "{}", tui.lines().join("\n"));
+    tui.say("/sessions");
+    wait_rows(&mut tui, 1);
+    tui.key(CTRL_D);
+    tui.wait_for("再按一次 Ctrl+D 删除「");
+    tui.key(CTRL_D);
+    let end = Instant::now() + support::WAIT;
+    while tui.shows("第 1 号的回答。") {
+        assert!(
+            Instant::now() < end,
+            "没进空会话：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(50));
+    }
+    tui.wait_for("工作区");
 }

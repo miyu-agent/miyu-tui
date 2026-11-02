@@ -761,7 +761,7 @@
     "delete_again": "Press Ctrl+D again to delete \"{title}\"",
     "deleted": "Deleted \"{title}\"",
     "asking": "asking",
-    "delete_current": "Can't delete the session in use; switch away first",
+    "delete_running": "A turn is running: interrupt it before deleting this session",
     "pinned": "Pinned",
     "unpinned": "Unpinned",
     "tokens": "Σ{tokens}",

@@ -85,15 +85,12 @@ impl SessionList {
         self.pinned = None;
     }
 
-    /// 空格：勾上选中的那个，勾过的取消；正在用的（`current`）勾不上。
-    pub fn tick(&mut self, current: Option<&str>) {
+    /// 空格：勾上选中的那个，勾过的取消（正在用的也能勾，2026-11-02 项目主人）。
+    pub fn tick(&mut self) {
         let Some(id) = self.picked().map(|s| s.session.clone()) else {
             return;
         };
         self.armed = None;
-        if current == Some(id.as_str()) {
-            return;
-        }
         match self.ticked.iter().position(|t| *t == id) {
             Some(at) => {
                 self.ticked.remove(at);
@@ -102,14 +99,9 @@ impl SessionList {
         }
     }
 
-    /// `Ctrl+A`：勾上对得上的全部（正在用的除外）；全都勾着时全部取消。
-    pub fn tick_all(&mut self, current: Option<&str>) {
-        let all: Vec<String> = self
-            .matches()
-            .iter()
-            .map(|s| s.session.clone())
-            .filter(|s| Some(s.as_str()) != current)
-            .collect();
+    /// `Ctrl+A`：勾上对得上的全部（连正在用的）；全都勾着时全部取消。
+    pub fn tick_all(&mut self) {
+        let all: Vec<String> = self.matches().iter().map(|s| s.session.clone()).collect();
         self.armed = None;
         if all.iter().all(|s| self.ticked.contains(s)) {
             self.ticked.retain(|s| !all.contains(s));
@@ -122,8 +114,8 @@ impl SessionList {
         }
     }
 
-    /// `Ctrl+D` 要删的：勾了的全部（照列表的先后），没勾的是选中的那一个；正在用的不算。
-    pub fn doomed(&self, current: Option<&str>) -> Vec<String> {
+    /// `Ctrl+D` 要删的：勾了的全部（照列表的先后），没勾的是选中的那一个。
+    pub fn doomed(&self) -> Vec<String> {
         let picked = self.picked().map(|s| s.session.clone());
         let ids: Vec<String> = if self.ticked.is_empty() {
             picked.into_iter().collect()
@@ -134,9 +126,16 @@ impl SessionList {
                 .filter(|s| self.ticked.contains(s))
                 .collect()
         };
-        ids.into_iter()
-            .filter(|s| Some(s.as_str()) != current)
-            .collect()
+        ids
+    }
+
+    /// 删了正在用的以后切到哪个：剩下的里最近有动静的（没有动静时刻的排后面）；一个都不剩的是 `None`。
+    pub fn next_after(&self, gone: &[String]) -> Option<String> {
+        self.all
+            .iter()
+            .filter(|s| !gone.contains(&s.session))
+            .max_by_key(|s| s.last_active)
+            .map(|s| s.session.clone())
     }
 
     /// 删掉了这几个：选中的停在原来的位置，下面那个补上来（2026-10-01 项目主人：原来跳回第一个）。
@@ -239,23 +238,27 @@ mod tests {
             info("0000-cccccccc", Some("三"), false, None),
             info("0000-dddddddd", Some("四"), false, None),
         ]);
-        let here = Some("0000-aaaaaaaa");
         list.step(true);
-        assert_eq!(list.doomed(here), ["0000-bbbbbbbb"], "没勾的删选中的");
-        list.tick(here);
+        assert_eq!(list.doomed(), ["0000-bbbbbbbb"], "没勾的删选中的");
+        list.tick();
         list.step(true);
-        list.tick(here);
+        list.tick();
         assert_eq!(
-            list.doomed(here),
+            list.doomed(),
             ["0000-bbbbbbbb", "0000-cccccccc"],
             "勾了的全删"
         );
-        list.tick(here);
-        assert_eq!(list.doomed(here), ["0000-bbbbbbbb"], "再按取消");
+        list.tick();
+        assert_eq!(list.doomed(), ["0000-bbbbbbbb"], "再按取消");
         list.step(false);
         list.step(false);
-        list.tick(here);
-        assert_eq!(list.doomed(here), ["0000-bbbbbbbb"], "正在用的勾不上");
+        list.tick();
+        assert_eq!(
+            list.doomed(),
+            ["0000-aaaaaaaa", "0000-bbbbbbbb"],
+            "正在用的也能勾（2026-11-02 项目主人）"
+        );
+        list.tick();
         list.step(true);
         list.remove(&["0000-bbbbbbbb".to_string()]);
         assert_eq!(
@@ -275,7 +278,7 @@ mod tests {
     }
 
     #[test]
-    fn ctrl_a_ticks_every_match_but_the_current_one_and_again_clears() {
+    fn ctrl_a_ticks_every_match_and_again_clears() {
         // 2026-10-01 项目主人：做 Ctrl+A 全选（有 222 个未命名会话要删）。
         let mut list = SessionList::default();
         list.replace(vec![
@@ -283,18 +286,17 @@ mod tests {
             info("0000-bbbbbbbb", None, false, None),
             info("0000-cccccccc", None, false, None),
         ]);
-        let here = Some("0000-aaaaaaaa");
         list.typed("cccc".into());
-        list.tick_all(here);
+        list.tick_all();
         assert_eq!(list.ticked, ["0000-cccccccc"], "只勾对得上的");
         list.typed(String::new());
-        list.tick_all(here);
+        list.tick_all();
         assert_eq!(
-            list.doomed(here),
-            ["0000-bbbbbbbb", "0000-cccccccc"],
-            "正在用的不勾"
+            list.doomed(),
+            ["0000-aaaaaaaa", "0000-bbbbbbbb", "0000-cccccccc"],
+            "连正在用的一起勾（2026-11-02 项目主人）"
         );
-        list.tick_all(here);
+        list.tick_all();
         assert!(list.ticked.is_empty(), "全都勾着：全部取消");
     }
 
@@ -319,5 +321,26 @@ mod tests {
         ]);
         assert_eq!(list.picked().unwrap().session, "0000-bbbbbbbb");
         assert_eq!(short("0192f3a0-1111-7abc-8def-001122334455"), "22334455");
+    }
+
+    #[test]
+    fn deleting_the_current_one_moves_to_the_latest_of_the_rest() {
+        // 2026-11-02 项目主人：删当前会话切到最近的那个；全删光了进空会话（`None`，开新会话）。
+        let mut list = SessionList::default();
+        list.replace(vec![
+            info("0000-aaaaaaaa", None, false, Some("2026-11-02T08:00:00Z")),
+            info("0000-bbbbbbbb", None, false, Some("2026-11-02T09:00:00Z")),
+            info("0000-cccccccc", None, true, Some("2026-11-02T07:00:00Z")),
+        ]);
+        let gone = |ids: &[&str]| ids.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert_eq!(
+            list.next_after(&gone(&["0000-aaaaaaaa"])).as_deref(),
+            Some("0000-bbbbbbbb"),
+            "最近有动静的，不管置顶"
+        );
+        assert_eq!(
+            list.next_after(&gone(&["0000-aaaaaaaa", "0000-bbbbbbbb", "0000-cccccccc"])),
+            None
+        );
     }
 }

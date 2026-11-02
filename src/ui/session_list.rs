@@ -59,8 +59,8 @@ pub struct Texts {
     pub deleted: String,
     /// 有确认、提问在等你回答的会话，右边写的（「确认和提问的抽屉」第 10 条）。
     pub asking: String,
-    /// 正在用的不能删。
-    pub delete_current: String,
+    /// 删的里有正在用的、它有一轮在跑：先打断再删。
+    pub delete_running: String,
     /// 置顶了、取消了。
     pub pinned: String,
     /// 取消置顶了。
