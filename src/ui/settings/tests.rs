@@ -424,6 +424,7 @@ mod pools;
 mod presets;
 mod records;
 mod slider;
+mod store_scroll;
 
 #[test]
 fn the_fixed_pools_are_named_and_listed_first() {

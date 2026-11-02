@@ -92,6 +92,12 @@ fn picked_packages_are_previewed_asked_and_installed_one_by_one() {
         "问的时候别的键不收"
     );
     press(&mut page, KeyCode::Char('y'));
+    assert!(
+        matches!(page.more.store.flow, Some(Flow::Confirm { .. })),
+        "预览块没画出来过（没看完）的不批（发布前第五批审查 T5-1）"
+    );
+    page.more.store.ask = read_through(5);
+    press(&mut page, KeyCode::Char('y'));
     let first = sent(&mut page);
     assert_eq!(first.len(), 1, "一次只装一个");
     assert_eq!(first[0].2, json!({"source": "a"}));
@@ -182,6 +188,7 @@ fn turning_on_an_extension_that_needs_approval_asks_then_approves() {
     };
     page.answer(on[0].0, Err(refusal), &texts());
     assert!(matches!(page.more.store.flow, Some(Flow::Confirm { .. })));
+    page.more.store.ask = read_through(3);
     press(&mut page, KeyCode::Enter);
     let approve = sent(&mut page);
     assert_eq!(
@@ -209,12 +216,40 @@ fn upgrading_one_needs_an_update_and_all_upgrades_everything() {
     let got =
         json!({"upgrades": [{"package": "im", "from": "0.8.4", "to": "0.9.0"}], "download": 9});
     page.answer(preview[0].0, Ok(got), &texts());
+    page.more.store.ask = read_through(4);
     press(&mut page, KeyCode::Char('y'));
     let real = sent(&mut page);
     assert_eq!(real[0].2, json!({"preview": false}));
     let done = json!({"upgraded": [{"package": "im", "from": "0.8.4", "to": "0.9.0"}]});
     page.answer(real[0].0, Ok(done), &texts());
     assert_eq!(status(&page), Some(("已升级 名字im".into(), Tone::Good)));
+}
+
+/// 发布前第五批审查 T5-1：预览块放不下的，没滚到最后一行之前 `y`、`Enter` 不批，状态行说下面还有几行；滚到底了才批。
+#[test]
+fn an_unread_confirmation_scrolls_before_it_approves() {
+    let mut page = opened();
+    page.more.store.flow = Some(Flow::Confirm {
+        doing: crate::settings::pages::store::flow::Doing::Enable("memes".into(), vec!["a".into()]),
+        previews: Vec::new(),
+    });
+    page.more.store.ask = crate::settings::pages::store::AskView {
+        top: 0,
+        rows: 10,
+        room: 4,
+    };
+    for key in [KeyCode::Char('y'), KeyCode::Enter] {
+        press(&mut page, key);
+        assert!(sent(&mut page).is_empty(), "没看完不批");
+        assert_eq!(status(&page), Some(("还有 6 行未查看".into(), Tone::Note)));
+    }
+    press(&mut page, KeyCode::PageDown);
+    press(&mut page, KeyCode::Char('j'));
+    press(&mut page, KeyCode::Char('j'));
+    assert_eq!(page.more.store.ask.top, 6, "滚到最后一窗");
+    press(&mut page, KeyCode::Char('y'));
+    let approve = sent(&mut page);
+    assert_eq!(approve[0].2, json!({"package": "memes", "approve": ["a"]}));
 }
 
 #[test]
@@ -248,4 +283,13 @@ fn a_package_without_settings_says_so_instead_of_an_empty_page() {
         Some(("这个软件包没有设置项".into(), Tone::Note))
     );
     assert_eq!(page.more.section, Some(Section::Store));
+}
+
+/// 预览块画过一帧、`rows` 行一窗放得下（看完了）。
+fn read_through(rows: usize) -> crate::settings::pages::store::AskView {
+    crate::settings::pages::store::AskView {
+        top: 0,
+        rows,
+        room: rows,
+    }
 }

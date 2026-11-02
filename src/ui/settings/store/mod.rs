@@ -13,7 +13,7 @@ use unicode_width::UnicodeWidthStr;
 use super::pages::{Painted, paint};
 use super::{crumb, footer};
 use crate::caret::Caret;
-use crate::settings::pages::store::{Flow, Item, Listing, Store, StoreTexts, Tab};
+use crate::settings::pages::store::{AskView, Flow, Item, Listing, Store, StoreTexts, Tab};
 use crate::settings::{Hit, Settings, Texts};
 use crate::theme;
 
@@ -31,6 +31,8 @@ pub(super) fn draw(
     let words = &texts.more.store;
     crumb(frame, stage, texts, Some(&words.entry[0]));
     if stage.height < 12 {
+        // 画不出预览块：问的时候算没看完（发布前第五批审查 T5-1）。
+        page.more.store.ask = AskView::default();
         return;
     }
     tabs(
@@ -66,7 +68,13 @@ pub(super) fn draw(
     }
     // 列表、空一行、预览块，下面留给状态行、细线、按键提示（`footer` 的四行）再空一行。
     let room = stage.height.saturating_sub(4 + 5 + 1);
-    let list_h = LIST_ROWS.min(room / 2).max(1);
+    // 问的时候列表收成光标那一行，高度让给预览块：要批的、要装的尽量一窗写完（发布前第五批审查 T5-1）。
+    let confirming = matches!(store.flow, Some(Flow::Confirm { .. }));
+    let list_h = if confirming {
+        1
+    } else {
+        LIST_ROWS.min(room / 2).max(1)
+    };
     let body = Rect::new(stage.x, stage.y + 4, stage.width, list_h);
     // 软件源给的名字、说明是外来的字：图格字、标签字符不进画面（发布前第五批审查 T5-3），列表、预览块都过一遍。
     let mut lines = rows(store, words, body.width);
@@ -91,11 +99,19 @@ pub(super) fn draw(
             pv.width.saturating_sub(4),
             pv.height.saturating_sub(2),
         );
-        let wrapped = wrap(&shown, inner.width);
-        for (n, line) in wrapped.iter().take(usize::from(inner.height)).enumerate() {
+        let mut wrapped = wrap(&shown, inner.width);
+        let height = usize::from(inner.height);
+        if confirming {
+            wrapped = asking_window(&mut page.more.store.ask, wrapped, height, words);
+        }
+        for (n, line) in wrapped.iter().take(height).enumerate() {
             let y = inner.y + u16::try_from(n).unwrap_or(0);
             frame.buffer_mut().set_line(inner.x, y, line, inner.width);
         }
+    }
+    let store = &mut page.more.store;
+    if !confirming || pv.height < 3 {
+        store.ask = AskView::default();
     }
     let hints = hints(store, words);
     let count = store.rows().len();
@@ -238,6 +254,9 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
 /// 这一页这时候的按键提示。
 fn hints<'a>(store: &Store, words: &'a StoreTexts) -> &'a [[String; 2]] {
     match &store.flow {
+        Some(Flow::Confirm { .. }) if store.ask.rows > store.ask.room => {
+            return words.hint("confirm_scroll");
+        }
         Some(Flow::Confirm { .. }) => return words.hint("confirm"),
         Some(_) => return words.hint("running"),
         None => {}
@@ -248,6 +267,36 @@ fn hints<'a>(store: &Store, words: &'a StoreTexts) -> &'a [[String; 2]] {
         Tab::Installed => words.hint("installed"),
         Tab::Backstage => words.hint("backstage"),
     }
+}
+
+/// 问的时候的预览块（发布前第五批审查 T5-1）：放得下的全写；放不下的照滚到的地方露一窗，最后一行暗色写下面（滚到底了写
+/// 上面）还有几行。滚到哪、露几行记在 `view`，按键照它滚、没看完不让批。
+fn asking_window(
+    view: &mut AskView,
+    lines: Vec<Line<'static>>,
+    height: usize,
+    words: &StoreTexts,
+) -> Vec<Line<'static>> {
+    if lines.len() <= height {
+        *view = AskView {
+            top: 0,
+            rows: lines.len(),
+            room: height,
+        };
+        return lines;
+    }
+    let room = height.saturating_sub(1).max(1);
+    view.rows = lines.len();
+    view.room = room;
+    view.scroll(0);
+    let ask = |key: &str, n: usize| StoreTexts::say(&words.ask, key).replace("{n}", &n.to_string());
+    let note = match view.left() {
+        0 => ask("above", view.top),
+        below => ask("below", below),
+    };
+    let mut out: Vec<Line<'static>> = lines.into_iter().skip(view.top).take(room).collect();
+    out.push(Line::styled(note, theme::faint()));
+    out
 }
 
 /// 太长的行照宽度折开（照显示宽度，一个字一个字地切）。

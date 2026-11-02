@@ -23,9 +23,16 @@ impl Settings {
     pub(in crate::settings) fn store_key(&mut self, key: KeyEvent, texts: &Texts) -> Outcome {
         self.status = self.status.take().filter(|(_, t)| *t == Tone::Busy);
         match &self.more.store.flow {
+            // 预览块放不下的能滚；没看到最后一行之前 `y`、`Enter` 不做（发布前第五批审查 T5-1）。
             Some(Flow::Confirm { .. }) => {
+                let view = &mut self.more.store.ask;
                 match key.code {
-                    KeyCode::Char('y' | 'Y') | KeyCode::Enter => self.store_go(),
+                    KeyCode::Char('j') | KeyCode::Down => view.scroll(1),
+                    KeyCode::Char('k') | KeyCode::Up => view.scroll(-1),
+                    KeyCode::PageDown => view.page(true),
+                    KeyCode::PageUp => view.page(false),
+                    KeyCode::Char('y' | 'Y') | KeyCode::Enter if view.seen() => self.store_go(),
+                    KeyCode::Char('y' | 'Y') | KeyCode::Enter => self.store_unread(texts),
                     KeyCode::Char('n' | 'N') | KeyCode::Esc => self.store_cancel(texts),
                     _ => {}
                 }

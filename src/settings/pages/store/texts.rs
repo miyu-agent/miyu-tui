@@ -39,12 +39,15 @@ pub struct StoreTexts {
     /// 带的程序照种类写（`ui`、`process`、`worker`、`builtin`，同确认抽屉），不露核心的种类词。
     pub programs: HashMap<String, String>,
     /// 问之前、做的时候写在预览块里的：`install`（`{n}`）、`with`、`recommends`、`remove`（`{name}`，带版本）、`drop`、
-    /// `upgrade`（`{n}`）、`approve`（`{name}`）、`go`、`downloading`、`verifying`、`installing`。
+    /// `upgrade`（`{n}`）、`approve`（`{name}`）、`go`、`above`、`below`（`{n}`，放不下时上下还有几行）、`downloading`、
+    /// `verifying`、`installing`。
     pub ask: HashMap<String, String>,
     /// 状态行：`installed`（`{names}`）、`removed`、`upgraded`、`on`、`off`、`latest`、`all_latest`、`cancelled`、
-    /// `no_settings`、`blocked`（`{why}`）、`opened`、`run_web`（`{id}`）、`no_browser`（`{url}`）。
+    /// `no_settings`、`blocked`（`{why}`）、`opened`、`run_web`（`{id}`）、`no_browser`（`{url}`）、`unread`（`{n}`）、
+    /// `too_small`（没看完就按 `y`）。
     pub status: HashMap<String, String>,
-    /// 按键提示：`source`、`typing`、`installed`、`backstage`、`confirm`、`running`。
+    /// 按键提示：`source`、`typing`、`installed`、`backstage`、`confirm`、`confirm_scroll`（放不下要滚）、
+    /// `running`。
     pub hints: HashMap<String, Vec<Hint>>,
 }
 
