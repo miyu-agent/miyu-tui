@@ -37,7 +37,8 @@ pub struct Herdr {
     reports: Option<mpsc::Sender<Vec<String>>>,
     worker: Option<thread::JoinHandle<()>>,
     session: Option<String>,
-    command: String,
+    /// 恢复命令打头的那几个（后面接 `--resume <编号>`）：PATH 上找不到的是 `None`，只报会话编号、不报恢复命令。
+    resume: Option<Vec<String>>,
     pane: String,
     /// 下一个序号：从进程启动那一刻的毫秒数起往上加。herdr 丢掉比水位小的，每次从 1 数的话第二次开界面的上报
     /// 全被丢掉（旧版 09-20 踩过）。
@@ -76,7 +77,7 @@ impl Herdr {
             reports: Some(reports),
             worker: Some(worker),
             session: None,
-            command: env!("CARGO_PKG_NAME").into(),
+            resume: resume_program(&var),
             pane,
             next: now,
             last: None,
@@ -108,6 +109,12 @@ impl Herdr {
         self.send(args);
     }
 
+    /// 人真退出了：退还这个窗格，herdr 当场清掉名字、状态和恢复命令（它的文档：只在人真退出时退还）。
+    pub fn release(&mut self) {
+        let args = self.release_args();
+        self.send(args);
+    }
+
     /// 交给工作线程；它没了（报的程序把它弄崩了）的丢掉，同上不写 stderr。
     fn send(&self, args: Vec<String>) {
         if let Some(tx) = &self.reports
@@ -132,13 +139,15 @@ impl Herdr {
         ]
         .map(str::to_string)
         .to_vec();
+        // 会话编号登记成这个窗格的会话（`--agent-session-id`）：herdr 重启以后只给登记了会话的窗格跑恢复命令（2026-11-02
+        // 项目主人：重启以后 Claude Code 的 tab 回来了、接着原来的会话，Miyu 的没有）。
         if let Some(session) = &self.session {
-            args.extend([
-                "--".into(),
-                self.command.clone(),
-                "--resume".into(),
-                session.clone(),
-            ]);
+            args.extend(["--agent-session-id".into(), session.clone()]);
+            if let Some(program) = &self.resume {
+                args.push("--".into());
+                args.extend(program.iter().cloned());
+                args.extend(["--resume".into(), session.clone()]);
+            }
         }
         args
     }
@@ -168,11 +177,29 @@ impl Herdr {
     }
 }
 
-/// 界面退出（崩了也算）：等着跑完退还，进程一没，丢出去的子进程也跟着没了。
+/// 恢复命令打头的那几个（2026-11-02 项目主人：herdr 重启以后 Miyu 没回来）：herdr 要「PATH 上的一个命令名，不是路径」。
+/// 核心转交 `miyu tui` 来的（`MIYU_PROGRAM` 是核心的路径）照人敲的那个命令写 `<名字> tui`，不然写终端自己的名字；PATH 上找不到
+/// 那个名字的不报恢复命令（报了 herdr 重启时也跑不起来，原来写死 `miyu-tui`，装的是 `miyu`、`miyu-remake` 的都跑不起来）。
+fn resume_program(var: &impl Fn(&str) -> Option<String>) -> Option<Vec<String>> {
+    let (name, args) = match var("MIYU_PROGRAM").filter(|p| !p.is_empty()) {
+        Some(program) => {
+            let name = std::path::Path::new(&program)
+                .file_name()?
+                .to_string_lossy()
+                .into_owned();
+            (name, vec!["tui".to_string()])
+        }
+        None => (env!("CARGO_PKG_NAME").to_string(), Vec::new()),
+    };
+    let path = var("PATH").unwrap_or_default();
+    let found = std::env::split_paths(&path).any(|dir| dir.join(&name).is_file());
+    found.then(|| std::iter::once(name).chain(args).collect())
+}
+
+/// 界面退出（崩了也算）：等排着的报完，进程一没，丢出去的子进程也跟着没了。退还只在人真退出时（[`Herdr::release`]）：
+/// 终端被挂断（herdr 关了、关机）退出的不退还，留着恢复命令给 herdr 重启时用（2026-11-02 项目主人）。
 impl Drop for Herdr {
     fn drop(&mut self) {
-        let args = self.release_args();
-        self.send(args);
         self.reports.take();
         if let Some(worker) = self.worker.take() {
             let _joined = worker.join();
@@ -254,7 +281,7 @@ mod resume_tests {
             reports: Some(tx),
             worker: None,
             session: None,
-            command: "miyu-tui".into(),
+            resume: Some(vec!["miyu".into(), "tui".into()]),
             pane: "p1".into(),
             next: 100,
             last: None,
@@ -264,12 +291,24 @@ mod resume_tests {
         h.report(State::Working);
         h.session(Some("second"));
         h.session(None);
+        h.release();
         drop(h);
         let reports: Vec<_> = rx.into_iter().collect();
         assert_eq!(reports.len(), 7);
-        assert_eq!(&reports[1][11..], ["--", "miyu-tui", "--resume", "first"]);
-        assert_eq!(&reports[2][11..], ["--", "miyu-tui", "--resume", "first"]);
-        assert_eq!(&reports[3][11..], ["--", "miyu-tui", "--resume", "second"]);
+        fn tail(id: &str) -> [&str; 7] {
+            [
+                "--agent-session-id",
+                id,
+                "--",
+                "miyu",
+                "tui",
+                "--resume",
+                id,
+            ]
+        }
+        assert_eq!(&reports[1][11..], tail("first"));
+        assert_eq!(&reports[2][11..], tail("first"));
+        assert_eq!(&reports[3][11..], tail("second"));
         assert_eq!(reports[4][1], "release-agent");
         assert_eq!(reports[5].len(), 11);
         assert_eq!(reports[6][1], "release-agent");
@@ -282,5 +321,45 @@ mod resume_tests {
             })
             .collect();
         assert!(seq.windows(2).all(|s| s[0] < s[1]));
+    }
+}
+
+#[cfg(test)]
+mod program_tests {
+    use super::resume_program;
+
+    /// 恢复命令照人敲的那个命令名写，PATH 上找不到的不报（2026-11-02 项目主人：herdr 重启以后 Miyu 没回来）。
+    #[test]
+    fn the_resume_command_is_the_name_the_person_typed_and_must_be_on_path() {
+        let dir = std::env::temp_dir().join(format!("miyu-herdr-path-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("miyu-remake"), b"").unwrap();
+        std::fs::write(dir.join(env!("CARGO_PKG_NAME")), b"").unwrap();
+        let path = dir.to_string_lossy().into_owned();
+        let var = |program: Option<&str>| {
+            let path = path.clone();
+            let program = program.map(str::to_string);
+            move |name: &str| match name {
+                "PATH" => Some(path.clone()),
+                "MIYU_PROGRAM" => program.clone(),
+                _ => None,
+            }
+        };
+        assert_eq!(
+            resume_program(&var(Some("/home/a/.local/bin/miyu-remake"))),
+            Some(vec!["miyu-remake".to_string(), "tui".to_string()]),
+            "核心转交来的写核心的名字加 tui"
+        );
+        assert_eq!(
+            resume_program(&var(Some("/opt/x/miyu"))),
+            None,
+            "PATH 上没有的不报"
+        );
+        assert_eq!(
+            resume_program(&var(None)),
+            Some(vec![env!("CARGO_PKG_NAME").to_string()]),
+            "直接开的写终端自己的名字"
+        );
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 }
