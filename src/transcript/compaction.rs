@@ -54,9 +54,11 @@ impl Transcript {
             // 提前在后台压好、没停下来等就换上了：正文不写（同上）。
             Compaction::Done { prepared: true, .. } if self.compacting.is_none() => {
                 self.manual_compaction = false;
+                self.compaction_trouble = false;
             }
             Compaction::Done { before, after, .. } => {
                 self.manual_compaction = false;
+                self.compaction_trouble = false;
                 let text = words
                     .done
                     .replace("{before}", &meter::short(before))
@@ -85,6 +87,7 @@ impl Transcript {
             }
             Compaction::Failed(error) => {
                 self.manual_compaction = false;
+                self.compaction_trouble = true;
                 let reason =
                     if error.class == "bad_summary" && error.message.contains("called a tool") {
                         words.called_a_tool.clone()
@@ -99,6 +102,7 @@ impl Transcript {
                 failures,
                 entry,
             } => {
+                self.compaction_trouble = true;
                 let text = match (reason.as_str(), failures, entry) {
                     ("failures", Some(n), _) => {
                         words.paused_failures.replace("{n}", &n.to_string())
@@ -211,6 +215,7 @@ impl Transcript {
             entry.mark = Some(words.done_mark.clone());
         }
         self.cleared = true;
+        self.compaction_trouble = false;
         // 上下文用量清零，下一次请求再照实际的写（「正文」第 9 条）。
         self.context = 0;
     }

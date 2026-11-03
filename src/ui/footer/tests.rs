@@ -1,6 +1,6 @@
 use ratatui::text::Span;
 
-use super::{Model, Part, fit, left_line, level_label, middle, model_spans, right, split};
+use super::{Model, Part, fit, left_line, level_label, middle, model_spans, split};
 
 #[test]
 fn a_narrow_left_side_is_clipped_with_an_ellipsis() {
@@ -28,27 +28,9 @@ fn the_button_sits_in_the_middle_of_the_gap() {
     assert_eq!(middle(20, 30, 10, 100), Some(22 + (46 - 10) / 2));
     assert_eq!(middle(20, 30, 50, 100), None, "放不下");
 }
-use crate::config::Config;
-use crate::transcript::Transcript;
-
-#[test]
-fn nothing_on_the_right_while_everything_is_zero() {
-    let config = Config::builtin().unwrap();
-    let mut t = Transcript::default();
-    assert!(
-        right(&t, &t.total, &config, None).is_empty(),
-        "还没用过：右边整段空着"
-    );
-    t.context = 1800;
-    let cells = right(&t, &t.total, &config, None);
-    assert_eq!(cells.len(), 1, "只有上下文有数");
-}
 
 fn part(keep: u8, text: &'static str) -> Part {
-    Part {
-        keep,
-        spans: vec![Span::raw(text)],
-    }
+    Part::new(keep, vec![Span::raw(text)])
 }
 
 fn shown(spans: Vec<Span<'static>>) -> String {
@@ -197,24 +179,23 @@ fn a_shortened_model_keeps_the_provider_name_until_last() {
     );
 }
 
-/// 底栏不写出字速度（2026-11-02 项目主人：每一轮回答末尾那一行已经有了）。
+/// 用量那一格卡住时的几截只隔一个空格（`tight`），放不下先收「用了多少 / 线」（「框下面那一行」用量那一格）。
 #[test]
-fn the_footer_leaves_the_output_speed_to_the_done_row() {
-    let config = crate::config::Config::builtin().unwrap();
-    let mut t = crate::transcript::Transcript::default();
-    t.speed.last = Some(41.0);
-    let parts = super::right(
-        &t,
-        &crate::core::Usage::default(),
-        &config,
-        Some((342_600, Some(1_000_000))),
-    );
-    let text: String = parts
-        .iter()
-        .flat_map(|(_, p)| p.spans.iter().map(|s| s.content.to_string()))
-        .collect();
-    assert!(text.contains("342.6k"), "上下文照写：{text}");
-    assert!(!text.contains("tok/s") && !text.contains("41"), "{text}");
+fn tight_parts_join_with_a_space_and_drop_by_keep() {
+    let tight = |keep: u8, text: &'static str| {
+        let mut p = part(keep, text);
+        p.tight = true;
+        p
+    };
+    let parts = || {
+        vec![
+            part(5, "上下文压缩失败"),
+            tight(3, "203k/190k"),
+            tight(5, "压缩"),
+        ]
+    };
+    assert_eq!(shown(fit(parts(), 40)), "上下文压缩失败 203k/190k 压缩");
+    assert_eq!(shown(fit(parts(), 20)), "上下文压缩失败 压缩");
 }
 
 /// 左段两件照配置排（「挂载位」第 4 条 SL-2）：换先后时中间是 ` · `，藏起来的不写，空的不留分隔。

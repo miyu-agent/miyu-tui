@@ -64,10 +64,8 @@
   "retry": "Retry {attempt}/{limit}: {message}",
   "older": "Loading earlier…",
   "older_failed": "Couldn't load earlier messages: {reason}",
-  "total": "Σ{tokens}(C{percent}%)",
   "done": "{time} · {endpoint}/{model} · {elapsed}",
   "speed": "{rate} tok/s",
-  "context": "{used}/{window}({percent}%)",
   "undone": "Undone",
   "undo_restore": "/restore to bring it back",
   "undo_compactions": "Undid a compaction: the context is back to before it",
@@ -304,6 +302,7 @@
     "empty": "No matches",
     "hints": "↑/↓ select · Tab open folder · Enter insert · Esc close"
   },
+  "usage_cell": {"failed": "Context compaction failed", "over": "Context exceeds the window", "compact": "Compact", "compacting": "Compacting context"},
   "history": {
     "title": "History",
     "count": "  {count}",

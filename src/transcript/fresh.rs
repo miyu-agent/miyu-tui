@@ -35,6 +35,7 @@ impl Default for Transcript {
             limits: Limits::default(),
             goal: None,
             compacting: None,
+            compaction_trouble: false,
             manual_compaction: false,
             spoke: false,
             manual: false,

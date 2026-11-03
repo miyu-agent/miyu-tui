@@ -64,10 +64,8 @@
   "retry": "再試行 {attempt}/{limit}：{message}",
   "older": "以前の会話を読み込み中…",
   "older_failed": "以前の会話を読み込めませんでした：{reason}",
-  "total": "Σ{tokens}(C{percent}%)",
   "done": "{time} · {endpoint}/{model} · {elapsed}",
   "speed": "{rate} tok/s",
-  "context": "{used}/{window}({percent}%)",
   "undone": "取り消しました",
   "undo_restore": "/restore で復元",
   "undo_compactions": "圧縮を取り消しました。コンテキストは圧縮前の状態に戻りました",
@@ -304,6 +302,7 @@
     "empty": "該当なし",
     "hints": "↑/↓ 選択 · Tab フォルダを開く · Enter 挿入 · Esc 閉じる"
   },
+  "usage_cell": {"failed": "コンテキストの圧縮に失敗", "over": "コンテキストがウィンドウを超過", "compact": "圧縮", "compacting": "コンテキストを圧縮中"},
   "history": {
     "title": "履歴",
     "count": "  {count}",

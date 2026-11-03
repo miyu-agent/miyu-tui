@@ -26,15 +26,13 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
-    // 还没开会话：底栏照新会话的预览写用了多少（核心 CX-1 下），`/context` 是预览、没有累计。
+    // 还没开会话：底栏照新会话的预览画环（核心 CX-1 下），`/context` 是预览、没有累计。
     let end = Instant::now() + support::WAIT;
-    // 「工作区」那一行右边是预览的数（测试核心工具少，不到 1k）。
+    // 「工作区」那一行右边是预览的环（排期第 22 条：用量那一格，新会话只画环）。
     let previewed = |tui: &Tui| {
-        tui.lines().iter().any(|l| {
-            l.contains("工作区")
-                && l.trim_end()
-                    .ends_with(|c: char| c.is_ascii_digit() || c == ')')
-        })
+        tui.lines()
+            .iter()
+            .any(|l| l.contains("工作区") && l.trim_end().ends_with(['○', '◔', '◑', '◕', '●']))
     };
     while !previewed(&tui) {
         assert!(

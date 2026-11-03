@@ -296,6 +296,19 @@ impl App {
             }
             return true;
         }
+        // 用量那一格：「压缩」同 `/compact`，别处开 `/context`（「框下面那一行」用量那一格）。
+        if areas.compact.contains(at) {
+            if press {
+                self.compact(None);
+            }
+            return true;
+        }
+        if areas.usage_cell.contains(at) {
+            if press {
+                self.open_context();
+            }
+            return true;
+        }
         for (rect, button) in [(areas.button, Button::Background)] {
             if rect.contains(at) {
                 if press {
@@ -385,6 +398,8 @@ impl App {
             || self.boxes.settings.as_ref().is_some_and(crate::settings::Settings::over_link)
             || self.typing.input.hovered_attachment().is_some()
             || over(self.screen.areas.button)
+            || over(self.screen.areas.usage_cell)
+            || over(self.screen.areas.compact)
             || over(self.screen.areas.session_id)
             || over(self.screen.areas.todo)
             || over(self.screen.areas.recent)
