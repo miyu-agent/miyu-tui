@@ -36,7 +36,7 @@ impl Part<Side<'_, '_>> for Avatar {
         })
     }
 
-    fn placed(&mut self, frame: &mut Frame, area: Rect, _: usize, side: &mut Side) {
+    fn placed(&mut self, frame: &mut Frame, area: Rect, _: (usize, usize), side: &mut Side) {
         // 照侧边栏整栏居中：给的这一块左右各少一列（和竖线、右边留的那一列），照回整栏算。
         let whole = Rect::new(
             area.x.saturating_sub(1),
@@ -75,9 +75,19 @@ impl Part<Side<'_, '_>> for Session {
         Laid::Lines(lines)
     }
 
-    fn placed(&mut self, _: &mut Frame, area: Rect, shown: usize, side: &mut Side) {
-        if let Some(row) = self.id_row.filter(|row| *row < shown) {
-            let y = area.y + u16::try_from(row).unwrap_or(0);
+    fn placed(
+        &mut self,
+        _: &mut Frame,
+        area: Rect,
+        (first, shown): (usize, usize),
+        side: &mut Side,
+    ) {
+        // 短编号那一行露出来了才能点（往下滚过的照露出来的那一截算）。
+        if let Some(row) = self
+            .id_row
+            .filter(|row| (first..first + shown).contains(row))
+        {
+            let y = area.y + u16::try_from(row - first).unwrap_or(0);
             side.screen.areas.session_id = Rect::new(area.x, y, area.width, 1);
         }
     }
@@ -188,18 +198,25 @@ impl Part<Side<'_, '_>> for Recent {
         Laid::Lines(lines)
     }
 
-    fn placed(&mut self, _: &mut Frame, area: Rect, shown: usize, side: &mut Side) {
-        // 标题那一行不算：从第二行起一行一个会话。
-        let rows = shown.saturating_sub(1);
+    fn placed(
+        &mut self,
+        _: &mut Frame,
+        area: Rect,
+        (first, shown): (usize, usize),
+        side: &mut Side,
+    ) {
+        // 标题那一行（第 0 行）不算：从第一个露出来的会话起一行一个（往下滚过、标题滚出去的从第 `first` 行起）。
+        let start = first.max(1);
+        let rows = (first + shown).saturating_sub(start);
         side.screen.areas.recent = Rect {
-            y: area.y + 1,
+            y: area.y + u16::try_from(start - first).unwrap_or(0),
             height: u16::try_from(rows).unwrap_or(0),
             ..area
         };
         side.screen.recent = self
             .ids
             .iter()
-            .skip(1)
+            .skip(start)
             .take(rows)
             .flatten()
             .cloned()
