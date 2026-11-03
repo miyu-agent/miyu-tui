@@ -98,3 +98,42 @@ fn lines_from_an_unsettled_timeline_on_are_held_back_from_the_scrollback() {
     let (lines, held) = view.lines_held(&transcript, Scope::Turns(vec![5]), false);
     assert_eq!(held, lines.len(), "收好了的都定下来了");
 }
+
+#[test]
+fn lines_fit_the_terminal_width_with_the_slot_in_front() {
+    // 排期第 32 条（2026-11-03 项目主人附图）：每行前面有两格槽，正文照终端宽排会多出两列，画出来被切掉（表格右框线没了）。
+    let config = Config::builtin().unwrap();
+    let human = Human::default();
+    let media = Media::new(&config);
+    let board = crate::jobs::Board::default();
+    let view = View {
+        config: &config,
+        human: &human,
+        media: &media,
+        board: &board,
+        width: 40,
+        height: 40,
+        frame: 0,
+    };
+    let mut transcript = Transcript::default();
+    said(
+        &mut transcript,
+        Kind::Reply,
+        Some(5),
+        "这一段话比终端宽很多很多，要照终端的宽折行，行尾一个字都不能被切掉才对。\n\n\
+         | 项 | 甲 | 乙 |\n|---|---|---|\n| 平台 | 仅 Apple Silicon，作者说自己没测过 | Mac/Win/Linux，纯 Rust |",
+    );
+    let lines = view.lines(&transcript, Scope::Turns(vec![5]), false);
+    for line in &lines {
+        assert!(line.width() <= 40, "超出终端宽：{line:?}");
+    }
+    let text: Vec<String> = lines
+        .iter()
+        .map(|l| l.spans.iter().map(|s| s.content.as_ref()).collect())
+        .collect();
+    assert!(
+        text.iter().any(|l| l.trim_end().ends_with('┐')),
+        "表格右上角在：\n{}",
+        text.join("\n")
+    );
+}

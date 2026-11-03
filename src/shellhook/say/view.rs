@@ -180,9 +180,7 @@ impl View<'_> {
         transcript: &Transcript,
         dream: &crate::dream::Dream,
     ) -> Vec<Line<'static>> {
-        // 每行前面有两格槽：照终端界面，这一块的宽不算它（不然右下角的「合了多少」被截掉两格）。
-        let mut ctx = self.ctx(transcript);
-        ctx.width = ctx.width.saturating_sub(2);
+        let ctx = self.ctx(transcript);
         let mut lines: Vec<Line<'static>> =
             crate::ui::dream_rows(dream, &ctx, std::time::Instant::now())
                 .into_iter()
@@ -198,7 +196,8 @@ impl View<'_> {
             config: self.config,
             human: self.human,
             indent: String::new(),
-            width: self.width,
+            // 每行前面有两格槽：照终端界面，内容的宽不算它（不然每行多出两列被切掉：表格没了右框线、长段落行尾丢字，排期第 32 条）。
+            width: self.width.saturating_sub(2),
             hover: None,
             frame: self.frame,
             md: &self.media.md,
