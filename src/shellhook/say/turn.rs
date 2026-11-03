@@ -270,11 +270,20 @@ impl Turn {
                     });
                     // 最新一页读回来（`Paged`、读不成的 `Older`）再发。
                     self.paging = true;
+                } else if self.terminal.none && self.terminal.unknown.is_some() {
+                    // 不认的命令：先问核心有没有它（排期第 34 条）。
+                    core.send(Command::Catalog(None));
                 } else if self.terminal.none {
                     self.done = true;
                 } else {
                     self.send(core);
                 }
+            }
+            Update::Catalog(list) if self.terminal.none => {
+                if let Some(name) = &self.terminal.unknown {
+                    self.terminal.missing = super::terminal::missing(name, &list);
+                }
+                self.done = true;
             }
             update @ (Update::Paged(_) | Update::Older { .. }) if self.paging => {
                 self.paging = false;

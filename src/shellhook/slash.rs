@@ -118,6 +118,16 @@ pub fn to_core(commands: &crate::commands::Commands, line: &str) -> bool {
     }
 }
 
+/// 终端不认的斜杠命令（核心的命令模板、扩展的、打错的）：它的名字，不带 `/`；别的是 `None`（排期第 34 条）。
+pub fn unknown(commands: &crate::commands::Commands, line: &str) -> Option<String> {
+    let line = line.trim();
+    if !matches!(commands.read(line), Line::Unknown) {
+        return None;
+    }
+    let name = line.strip_prefix('/')?.split_whitespace().next()?;
+    Some(name.to_string())
+}
+
 /// 这一行是 `/compact`：交回给摘要的要求（没写的是 `None`）。不是的交回 `None`。
 pub fn compact(commands: &crate::commands::Commands, line: &str) -> Option<Option<String>> {
     match commands.read(line.trim()) {
@@ -196,4 +206,19 @@ fn act(
 fn tell(text: &str) -> io::Result<ExitCode> {
     writeln!(io::stderr(), "{text}")?;
     Ok(ExitCode::FAILURE)
+}
+
+#[cfg(test)]
+mod unknown_tests {
+    /// 排期第 34 条：终端不认的命令交回名字（不带 `/`、不带参数）；终端认的、不是命令的交回 `None`。
+    #[test]
+    fn unknown_names_what_the_terminal_does_not_know() {
+        let commands = crate::config::Config::builtin().unwrap().commands;
+        assert_eq!(
+            super::unknown(&commands, " /sesssions  a b"),
+            Some("sesssions".into())
+        );
+        assert_eq!(super::unknown(&commands, "/sessions"), None);
+        assert_eq!(super::unknown(&commands, "说一句"), None);
+    }
 }

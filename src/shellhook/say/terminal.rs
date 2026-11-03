@@ -23,6 +23,10 @@ pub struct Asked {
     pub none: bool,
     /// 闲置久了核心换了新会话：旧会话最后一次动静的时刻，印一行就拿走。
     pub renewed: Option<jiff::Timestamp>,
+    /// 这一行是终端不认的斜杠命令：它的名字（不带 `/`）。还没有终端会话时先问核心认不认（排期第 34 条）。
+    pub unknown: Option<String>,
+    /// 核心的命令里也没有它（[`Asked::unknown`]）：写「命令不存在」，不叫人先说一句。
+    pub missing: bool,
 }
 
 impl Asked {
@@ -56,6 +60,15 @@ impl Asked {
         self.renewed = found.as_ref().and_then(|f| f.renewed);
         found
     }
+}
+
+/// 核心认的命令（`command.catalog` 不带会话）读回来了：`unknown` 不在里面的记 `missing`。一条都没有的当没问到（旧核心、
+/// 拒了：正常的核心至少有 `/clear` 这些），照旧叫人先说一句。
+pub fn missing(unknown: &str, list: &[crate::core::CoreCommand]) -> bool {
+    !list.is_empty()
+        && !list
+            .iter()
+            .any(|c| c.name == unknown || c.aliases.iter().any(|a| a == unknown))
 }
 
 /// 这个终端的键：照 shell 的进程号和它起来的时刻（Linux 读 `/proc/<pid>/stat` 第 22 项，进程号回收了也认得出不是同一个），
@@ -109,7 +122,26 @@ pub fn ago(
 mod tests {
     use serde_json::json;
 
-    use super::{Asked, Terminal, ago, key, read};
+    use super::{Asked, Terminal, ago, key, missing, read};
+
+    /// 排期第 34 条：打错的命令（核心也没有）写「命令不存在」；核心有的（模板、别名）照旧叫人先说一句；一条都没问到（旧核心、
+    /// 拒了）当没问到。
+    #[test]
+    fn an_unknown_command_is_missing_only_when_the_core_lists_others_but_not_it() {
+        let command = |name: &str, aliases: &[&str]| crate::core::CoreCommand {
+            name: name.into(),
+            aliases: aliases.iter().map(|a| (*a).to_string()).collect(),
+            summary: String::new(),
+            argument: None,
+            opens: None,
+            usage: Vec::new(),
+        };
+        let list = [command("clear", &[]), command("review", &["rv"])];
+        assert!(missing("sesssions", &list));
+        assert!(!missing("review", &list));
+        assert!(!missing("rv", &list), "别名也算");
+        assert!(!missing("sesssions", &[]), "没问到：照旧叫人先说一句");
+    }
 
     #[test]
     fn only_asking_sends_create_false_and_a_null_answer_means_none() {

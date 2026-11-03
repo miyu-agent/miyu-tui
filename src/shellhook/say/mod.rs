@@ -97,11 +97,19 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     // 这个终端自己的终端会话；不说话的（交给核心的斜杠命令、`/redo`）只问不开（核心 T-22）。
     turn.terminal.key = terminal::key(ask.shell);
     turn.terminal.only_ask = turn.slash || turn.compact.is_some() || bare_redo;
+    if turn.slash {
+        turn.terminal.unknown =
+            crate::shellhook::slash::unknown(&session.config.commands, &turn_text);
+    }
     turn.ask_terminal(&session.core);
     session.drive(&mut turn, |t| {
         t.terminal.renewed.map(|since| renewed_line(since, words))
     })?;
-    if turn.terminal.none {
+    if turn.terminal.missing {
+        let name = turn.terminal.unknown.as_deref().unwrap_or_default();
+        let text = crate::shellhook::words::fill(&words.unknown_command, &[("name", name)]);
+        session.note(note(&text))?;
+    } else if turn.terminal.none {
         session.note(note(&words.no_session))?;
     }
     if ask.stale {

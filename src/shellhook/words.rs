@@ -30,6 +30,8 @@ pub struct Words {
     pub ps_policy: String,
     /// 这个终端还没和她说过话：斜杠命令没有会话可办。
     pub no_session: String,
+    /// 终端、核心都不认的斜杠命令（`{name}` 不带 `/`，排期第 34 条）。
+    pub unknown_command: String,
     /// 这个 shell 里的脚本是升级以前印的：重开终端。
     pub stale_hook: String,
     /// 闲置久了换了新会话（`{ago}` 是隔了多久）。
