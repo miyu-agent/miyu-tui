@@ -14,7 +14,7 @@ use support::{Home, Tui};
 
 /// 新建的人格的目录：两格窗里写的 id `writer`（2026-11-02 项目主人：新建时能写 id）。
 fn dir(home: &Home) -> PathBuf {
-    home.root().join("personas/writer")
+    home.data().personas().join("writer")
 }
 
 /// 等 `check` 成立，最多 [`support::WAIT`]；等不到的把屏幕打出来。

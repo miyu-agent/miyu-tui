@@ -30,10 +30,10 @@ fn extension() -> PathBuf {
 
 /// 装扩展 `memes`（开着，清单写了图标 `face-slightly-smiling`）：登记工具 `sticker`，发的图是先放进 alice 名下的一个 blob。
 fn install(dir: &Path) {
-    let blob = miyu_store::blob::Blobs::new(dir.join("blobs"))
+    let blob = miyu_store::blob::Blobs::new(support::data_of(dir).blobs())
         .put(b"\x89PNG not really a picture")
         .expect("存得进");
-    let package = dir.join("packages/memes");
+    let package = support::data_of(dir).packages().join("memes");
     std::fs::create_dir_all(package.join("bin")).expect("建得了包的目录");
     let program = package
         .join("bin")
@@ -47,7 +47,7 @@ fn install(dir: &Path) {
     // 登记工具的扩展照实声明 `tools`、批过才拉起（核心 X-30）；批过的能力和开关记在一起（`approved`，核心 SU-2 中起；
     // 原来在组表 `system/groups.json`）。
     std::fs::write(
-        dir.join("extensions.json"),
+        support::data_of(dir).extensions_file(),
         r#"{"version":1,"on":{"memes":true},"approved":{"memes":["tools"]}}"#,
     )
     .expect("写得进去");
@@ -57,7 +57,7 @@ fn install(dir: &Path) {
 fn started(home: &Home) -> support::Tui {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
-    let cache = home.root().join("state/providers/memes.json");
+    let cache = home.data().provide_cache("memes");
     let end = Instant::now() + support::WAIT;
     while !cache.exists() {
         assert!(Instant::now() < end, "扩展一直没登记工具");

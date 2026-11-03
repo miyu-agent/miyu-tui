@@ -51,6 +51,7 @@ fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
     up_until(&mut tui, "重启以前说的一句");
     // 记在终端这个软件包的状态目录里（核心 9-1 上，`package.list` 的 `state`）。
     let saved =
-        std::fs::read_to_string(home.root().join("state/packages/miyu-tui/history.jsonl")).unwrap();
+        std::fs::read_to_string(home.data().package_state("miyu-tui").join("history.jsonl"))
+            .unwrap();
     assert_eq!(saved.lines().count(), 1, "记在包的状态目录里：{saved}");
 }
