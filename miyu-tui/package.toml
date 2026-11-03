@@ -80,12 +80,12 @@ applies = "now"
 name = { en = "Show the figure in the sidebar", zh = "侧边栏显示形象", ja = "サイドバーにキャラクターを表示" }
 description = { en = "Show the persona's avatar, or the built-in mascot without one, at the top of the sidebar.", zh = "在侧边栏顶部显示人格的头像，没有头像的显示内置吉祥物。", ja = "サイドバーの上部にペルソナのアバター（なければ内蔵のマスコット）を表示する。" }
 
-# 侧边栏「最近会话」列几个（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人：默认 5 个、
+# 侧边栏「最近会话」列几个（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人：默认 5 个（2026-11-03 改 8 个，排期第 14 条）、
 # 个数可配、整个功能可关，放在通用页终端自己那几项里）。0 是不显示。
 [settings.sidebar_sessions]
 type = "option"
 choices = ["0", "3", "5", "8", "10"]
-default = "5"
+default = "8"
 applies = "now"
 name = { en = "Recent sessions in the sidebar", zh = "侧边栏最近会话", ja = "サイドバーの最近のセッション" }
 description = { en = "How many sessions the sidebar lists, the current one included. Off hides the list.", zh = "侧边栏列几个会话，算上当前这个。选不显示就不列。", ja = "サイドバーに並べるセッションの数（今のセッションを含む）。表示しないにすると並べない。" }

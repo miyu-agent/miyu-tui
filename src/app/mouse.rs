@@ -9,6 +9,9 @@ use crate::commands::Spec;
 use crate::input::Action;
 use crate::ui::rows::Target;
 
+/// 侧边栏滚轮一格滚几行（同正文的 `body_view::WHEEL`）。
+const SIDE_WHEEL: u16 = 3;
+
 impl App {
     /// 鼠标：按下时看落在哪一块，之后的拖动、松开都归那一块；悬停、滚轮照位置分。
     pub(super) fn mouse(&mut self, mouse: MouseEvent) -> Action {
@@ -35,6 +38,15 @@ impl App {
         }
         if !captured && self.jobs_mouse(mouse, at) {
             return Action::None;
+        }
+        // 滚轮在侧边栏上：滚侧边栏，一格三行同正文（排期第 14 条；滚过头的画的时候限住）。
+        if !captured && self.screen.areas.sidebar.contains(at) {
+            let top = &mut self.screen.side_top;
+            match mouse.kind {
+                MouseEventKind::ScrollDown => *top = top.saturating_add(SIDE_WHEEL),
+                MouseEventKind::ScrollUp => *top = top.saturating_sub(SIDE_WHEEL),
+                _ => {}
+            }
         }
         // 排着队的话：点哪条退回哪条，字放回输入框，她这一轮照跑（2026-10-22 项目主人：「不如直接点击那条消息撤回」）。
         if !captured && self.screen.areas.queued.contains(at) {

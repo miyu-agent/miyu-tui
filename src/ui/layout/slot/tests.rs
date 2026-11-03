@@ -25,7 +25,13 @@ impl Part<Placed> for Text {
         )
     }
 
-    fn placed(&mut self, _: &mut ratatui::Frame, area: Rect, shown: usize, seen: &mut Placed) {
+    fn placed(
+        &mut self,
+        _: &mut ratatui::Frame,
+        area: Rect,
+        (_, shown): (usize, usize),
+        seen: &mut Placed,
+    ) {
         seen.push((self.0, area, shown));
     }
 }
@@ -42,7 +48,13 @@ impl Part<Placed> for Picture {
         Laid::Rows(self.0)
     }
 
-    fn placed(&mut self, _: &mut ratatui::Frame, area: Rect, shown: usize, seen: &mut Placed) {
+    fn placed(
+        &mut self,
+        _: &mut ratatui::Frame,
+        area: Rect,
+        (_, shown): (usize, usize),
+        seen: &mut Placed,
+    ) {
         seen.push(("pic", area, shown));
     }
 }
@@ -66,7 +78,7 @@ fn run(
     let mut out = None;
     term.draw(|frame| {
         let area = Rect::new(0, 1, 20, height - 1);
-        out = Some(stack(frame, area, parts, (config, 1), &mut placed));
+        out = Some(stack(frame, area, parts, (config, 1, 0), &mut placed));
     })
     .unwrap();
     let stacked = out.unwrap();
@@ -137,4 +149,81 @@ fn a_column_lays_out_lines_in_order_with_caps_and_gaps() {
     let config = [slot("c", false, 0), slot("a", false, 2)];
     assert_eq!(text(column(parts(), (&config, 1))), ["c0", "", "a0", "…"]);
     assert!(column(parts(), (&[slot("a", true, 0), slot("c", true, 0)], 1)).is_empty());
+}
+
+/// 排期第 14 条：从第 `top` 行露起。照字画的露出来的那一截照它自己的第几行算；自己画的滚出去一截的不画；滚过头的限在
+/// 「一共多高减一窗」。
+#[test]
+fn a_scrolled_stack_shows_the_window_from_top_and_clamps_it() {
+    struct Rows;
+    impl Part<Vec<(usize, usize)>> for Rows {
+        fn name(&self) -> &'static str {
+            "a"
+        }
+        fn lay(&mut self, _: &Vec<(usize, usize)>, _: u16) -> Laid {
+            Laid::Lines((0..6).map(|i| Line::raw(format!("a{i}"))).collect())
+        }
+        fn placed(
+            &mut self,
+            _: &mut ratatui::Frame,
+            _: Rect,
+            rows: (usize, usize),
+            seen: &mut Vec<(usize, usize)>,
+        ) {
+            seen.push(rows);
+        }
+    }
+    struct Pic;
+    impl Part<Vec<(usize, usize)>> for Pic {
+        fn name(&self) -> &'static str {
+            "pic"
+        }
+        fn lay(&mut self, _: &Vec<(usize, usize)>, _: u16) -> Laid {
+            Laid::Rows(2)
+        }
+        fn placed(
+            &mut self,
+            _: &mut ratatui::Frame,
+            _: Rect,
+            _: (usize, usize),
+            seen: &mut Vec<(usize, usize)>,
+        ) {
+            seen.push((99, 99));
+        }
+    }
+    // 一共 2 + 1 + 6 = 9 行，一窗 4 行，最多滚 5 行。
+    let run = |top: u16| {
+        let mut term = Terminal::new(TestBackend::new(10, 4)).unwrap();
+        let mut seen = Vec::new();
+        let mut out = None;
+        term.draw(|frame| {
+            let mut parts: [&mut dyn Part<Vec<(usize, usize)>>; 2] = [&mut Pic, &mut Rows];
+            out = Some(stack(
+                frame,
+                Rect::new(0, 0, 10, 4),
+                &mut parts,
+                (&[], 1, top),
+                &mut seen,
+            ));
+        })
+        .unwrap();
+        let out = out.unwrap();
+        let words: Vec<String> = out.written.into_iter().map(|(_, _, t)| t).collect();
+        (out.top, words, seen)
+    };
+    let (top, words, seen) = run(1);
+    assert_eq!(top, 1);
+    // 一窗是第 1～4 行：图的下半截（不画）、空行、a0、a1。
+    assert_eq!(words, ["a0", "a1"], "图滚出去一截：不画");
+    assert_eq!(seen, [(0, 2)]);
+    let (top, words, seen) = run(9);
+    assert_eq!(top, 5, "滚过头的限住");
+    assert_eq!(words, ["a2", "a3", "a4", "a5"]);
+    assert_eq!(seen, [(2, 4)]);
+    let (_, _, seen) = run(4);
+    assert_eq!(
+        seen,
+        [(1, 4)],
+        "滚到一件中间：露出来的那一截从它自己的第 1 行起"
+    );
 }

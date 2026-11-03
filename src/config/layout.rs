@@ -319,12 +319,15 @@ mod tests {
     }
 
     #[test]
-    fn the_sidebar_lists_five_recent_sessions_until_the_setting_says_otherwise() {
+    fn the_sidebar_lists_eight_recent_sessions_until_the_setting_says_otherwise() {
         // 2026-10-26 项目主人（反馈第 21 条）：默认 5 个、个数可配、整个功能可关（`0`）。
         let mut layout = Config::builtin().unwrap().layout;
-        assert_eq!(layout.sidebar_sessions, 5, "出厂 5 个");
+        assert_eq!(
+            layout.sidebar_sessions, 8,
+            "出厂 8 个（2026-11-03 排期第 14 条，原来 5 个）"
+        );
         layout.apply_sidebar_sessions(&json!({"items": {}}));
-        assert_eq!(layout.sidebar_sessions, 5, "没写的照出厂");
+        assert_eq!(layout.sidebar_sessions, 8, "没写的照出厂");
         layout.apply_sidebar_sessions(&json!({"items": {"tui.sidebar_sessions": {"value": "0"}}}));
         assert_eq!(layout.sidebar_sessions, 0);
         layout.apply_sidebar_sessions(&json!({"items": {"tui.sidebar_sessions": {"value": "8"}}}));

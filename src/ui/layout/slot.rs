@@ -33,76 +33,97 @@ pub trait Part<C> {
     fn name(&self) -> &'static str;
     /// 照宽度排。
     fn lay(&mut self, ctx: &C, width: u16) -> Laid;
-    /// 画好了：`area` 是给它的那一块，照字画的 `shown` 是它自己那几行露出来几行（截了的 `…` 那一行不算）。自己画的在这里
-    /// 画，点击区照这里的位置记。
-    fn placed(&mut self, _frame: &mut Frame, _area: Rect, _shown: usize, _ctx: &mut C) {}
+    /// 画好了：`area` 是给它露出来的那一块，`first` 是这一块的第一行是它自己的第几行（往下滚过、上面几行滚出去的不是 0），
+    /// 照字画的 `shown` 是它自己那几行露出来几行（截了的 `…` 那一行不算）。自己画的只在整块露出来时叫到（滚出去一截的
+    /// 不画），在这里画；点击区照这里的位置记。
+    fn placed(&mut self, _frame: &mut Frame, _area: Rect, _rows: (usize, usize), _ctx: &mut C) {}
 }
 
 /// 照字画出来的一行：（行、列、字），侧边栏选字用。
 pub type Written = (u16, u16, String);
 
-/// 一处挂载位画完了：排到的下一行（最后一件下面空 `gap` 行以后）、照字画出来的那几行。
+/// 一处挂载位画完了：排到的下一行（最后一件下面空 `gap` 行以后）、照字画出来的那几行、限过的偏移、一共多高。
 pub struct Stacked {
-    /// 接着往下画从这一行起；一件都没画的是 `area` 的顶上。
+    /// 接着往下画从这一行起（照滚过的算）；一件都没画的是 `area` 的顶上。
     pub next: u16,
     /// 照字画出来的每一行。
     pub written: Vec<Written>,
+    /// 从第几行露起：交进来的限在 0 到「一共多高减一窗」之间。
+    pub top: u16,
 }
 
-/// 照 `config` 的先后把 `parts` 从 `area` 顶上往下排，件和件之间空 `gap` 行；放不下的截掉，配置里不认识的名字不管
-/// （读配置时提示过）。
+/// 照 `config` 的先后把 `parts` 从 `area` 顶上往下排，件和件之间空 `gap` 行，从第 `top` 行露起（排期第 14 条：侧边栏
+/// 像正文那样滚）；露不出来的截掉，配置里不认识的名字不管（读配置时提示过）。先把每件排好、算出一共多高、限住 `top`，
+/// 再画露出来的那一截。
 pub fn stack<C>(
     frame: &mut Frame,
     area: Rect,
     parts: &mut [&mut dyn Part<C>],
-    (config, gap): (&[Slot], u16),
+    (config, gap, top): (&[Slot], u16, u16),
     ctx: &mut C,
 ) -> Stacked {
     let names: Vec<&'static str> = parts.iter().map(|p| p.name()).collect();
     let (order, _) = arrange(&names, config);
-    let mut y = area.y;
-    let mut drawn = false;
-    let mut written = Vec::new();
+    // 先排：（第几件、排好截好的、截没截）。
+    let mut laid = Vec::new();
     for (name, cap) in order {
-        let Some(part) = parts.iter_mut().find(|p| p.name() == name) else {
+        let Some(at) = parts.iter().position(|p| p.name() == name) else {
             continue;
         };
-        let (laid, cut) = clip(part.lay(ctx, area.width), usize::from(cap));
-        let height = laid.height();
-        if height == 0 {
-            continue;
+        let (one, cut) = clip(parts[at].lay(ctx, area.width), usize::from(cap));
+        if one.height() > 0 {
+            laid.push((at, one, cut));
         }
-        if drawn {
-            y = y.saturating_add(gap);
-        }
-        drawn = true;
-        let tall = u16::try_from(height).unwrap_or(u16::MAX);
-        let rect = Rect::new(area.x, y, area.width, tall).intersection(area);
-        let shown = match laid {
-            Laid::Lines(lines) => {
-                let shown = lines.len().min(usize::from(rect.height));
-                let own = if cut && shown == lines.len() {
-                    shown - 1
-                } else {
-                    shown
-                };
-                written.extend(
-                    lines
-                        .iter()
-                        .take(shown)
-                        .zip(rect.y..)
-                        .map(|(line, row)| (row, rect.x, line.to_string())),
-                );
-                frame.render_widget(Paragraph::new(lines), rect);
-                own
-            }
-            Laid::Rows(_) => usize::from(rect.height),
-        };
-        part.placed(frame, rect, shown, ctx);
-        y = y.saturating_add(tall);
     }
-    let next = if drawn { y.saturating_add(gap) } else { area.y };
-    Stacked { next, written }
+    let gap = usize::from(gap);
+    let total: usize = laid.iter().map(|(_, one, _)| one.height()).sum::<usize>()
+        + gap * laid.len().saturating_sub(1);
+    let room = usize::from(area.height);
+    let top = usize::from(top).min(total.saturating_sub(room));
+    let mut written = Vec::new();
+    // 照排好的算的那一行（不看滚了多少）。
+    let mut y = 0;
+    for (k, (at, one, cut)) in laid.into_iter().enumerate() {
+        if k > 0 {
+            y += gap;
+        }
+        let height = one.height();
+        // 这一件露出来的是它自己的第 `from` 到 `to` 行。
+        let from = top.saturating_sub(y).min(height);
+        let to = (top + room).saturating_sub(y).min(height);
+        if from < to {
+            let row = area.y + u16::try_from(y + from - top).unwrap_or(u16::MAX);
+            let tall = u16::try_from(to - from).unwrap_or(u16::MAX);
+            let rect = Rect::new(area.x, row, area.width, tall);
+            match one {
+                Laid::Lines(lines) => {
+                    let own = if cut && to == height {
+                        to - from - 1
+                    } else {
+                        to - from
+                    };
+                    let shown: Vec<Line<'static>> = lines[from..to].to_vec();
+                    written.extend(
+                        shown
+                            .iter()
+                            .zip(rect.y..)
+                            .map(|(line, row)| (row, rect.x, line.to_string())),
+                    );
+                    frame.render_widget(Paragraph::new(shown), rect);
+                    parts[at].placed(frame, rect, (from, own), ctx);
+                }
+                Laid::Rows(_) if from == 0 && to == height => {
+                    parts[at].placed(frame, rect, (0, height), ctx);
+                }
+                Laid::Rows(_) => {}
+            }
+        }
+        y += height;
+    }
+    let end = if total > 0 { total + gap } else { 0 };
+    let next = area.y + u16::try_from(end.saturating_sub(top)).unwrap_or(u16::MAX);
+    let top = u16::try_from(top).unwrap_or(u16::MAX);
+    Stacked { next, written, top }
 }
 
 /// 只排字的挂载位（输入框上面那一块：高度要先算出来再定位，「挂载位」第 4 条 SL-2）：照配置排先后、藏、截行数，件和件
