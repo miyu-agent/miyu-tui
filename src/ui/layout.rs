@@ -40,6 +40,9 @@ pub struct Areas {
     pub mascot: Rect,
     /// 框下面那一行中间的后台按钮；没有时宽是 0（`tui.md`「后台命令、子代理和侧边栏」第 1 条）。
     pub button: Rect,
+    /// 框下面那一行用量那一格（点了开 `/context`）、卡住时的「压缩」（`footer.rs` 的 `Hits`）。
+    pub usage_cell: Rect,
+    pub compact: Rect,
     /// 输入框上面常驻的待办；没有时高是 0（第 4、4a 条）。
     pub todo: Rect,
     /// 侧边栏「最近会话」一行一个会话的那几行（不含标题）；没有时高是 0（第 7 条）。哪一行是哪个会话在 `Screen::recent`。

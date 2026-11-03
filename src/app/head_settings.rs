@@ -163,7 +163,7 @@ impl App {
         use crate::config::slots::{SIDE_KEY, SIDE_PARTS, TOP_KEY, TOP_PARTS};
         let (key, known): (&str, Vec<&str>) = match tag {
             SIDE_TAG => (SIDE_KEY, SIDE_PARTS.to_vec()),
-            FOOTER_TAG => (FOOTER_KEY, [FOOTER_LEFT, FOOTER_RIGHT].concat()),
+            FOOTER_TAG => (FOOTER_KEY, [&FOOTER_LEFT[..], &FOOTER_RIGHT[..]].concat()),
             TOP_TAG => (TOP_KEY, TOP_PARTS.to_vec()),
             _ => (ABOVE_KEY, ABOVE_PARTS.to_vec()),
         };

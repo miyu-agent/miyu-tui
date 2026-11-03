@@ -29,8 +29,8 @@ pub const SIDE_KEY: &str = "tui.side";
 /// 底栏左段出厂的部件名（「挂载位」第 4 条，SL-2，画在 `ui/footer.rs`）：权限级别、模型。
 pub const FOOTER_LEFT: [&str; 2] = ["level", "model"];
 
-/// 底栏右段出厂的部件名：上下文、用量（累计连花费）。
-pub const FOOTER_RIGHT: [&str; 2] = ["context", "usage"];
+/// 底栏右段出厂的部件名：用量那一格（环、累计、花费，排期第 22 条；原来另有 `context`，2026-11-03 并进来）。
+pub const FOOTER_RIGHT: [&str; 1] = ["usage"];
 
 /// 底栏那一项在终端软件包里的名字（`[settings.footer]`）。
 pub const FOOTER_KEY: &str = "tui.footer";
