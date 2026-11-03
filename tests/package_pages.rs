@@ -53,7 +53,7 @@ fn installed(tui: &mut Tui) {
 
 /// 在数据根里放一个只带一个技能的包 `weather`（核心起来时读、补记进本地库）。
 fn weather(root: &Path) {
-    let dir = root.join("packages/weather");
+    let dir = support::data_of(root).packages().join("weather");
     let skill = dir.join("skills/notes");
     std::fs::create_dir_all(&skill).expect("建得了目录");
     std::fs::write(
@@ -104,12 +104,12 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
     tui.wait_for("要卸载 Weather 1.2.0");
     tui.wait_for("继续？");
     assert!(
-        home.root().join("packages/weather").exists(),
+        home.data().packages().join("weather").exists(),
         "问的时候还没卸"
     );
     tui.key(b"y");
     tui.wait_for("已卸载 Weather");
-    assert!(!home.root().join("packages/weather").exists(), "卸了");
+    assert!(!home.data().packages().join("weather").exists(), "卸了");
     until(&mut tui, "列表里没了 Weather", |t| {
         !t.lines().iter().any(|l| l.contains("Weather  "))
     });
@@ -136,7 +136,7 @@ fn space_turns_a_shipped_package_off_and_on() {
 
 /// 在数据根里放一个只带设置的包 `drawtest`：一项滑块（1～50，一步 5，默认 20）。
 fn drawtest(root: &Path) {
-    let dir = root.join("packages/drawtest");
+    let dir = support::data_of(root).packages().join("drawtest");
     std::fs::create_dir_all(&dir).expect("建得了目录");
     std::fs::write(
         dir.join("package.toml"),
@@ -167,7 +167,7 @@ fn a_slider_saves_itself_half_a_second_after_the_last_arrow() {
 
 /// 在数据根里放一个带记录列表的包 `acct`：账号，每一条一个名字（当标题）、一个 Key（密钥）。
 fn accounts(root: &Path) {
-    let dir = root.join("packages/acct");
+    let dir = support::data_of(root).packages().join("acct");
     std::fs::create_dir_all(&dir).expect("建得了目录");
     let manifest = "[package]\nversion = \"0.1.0\"\nname = { zh = \"账号测试\" }\n\n\
         [settings.accounts]\ntype = \"list\"\nelement = \"record\"\ntitle = \"name\"\nname = { zh = \"账号\" }\n\n\
