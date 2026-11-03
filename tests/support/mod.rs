@@ -28,6 +28,10 @@ fn resources() -> PathBuf {
 mod core;
 mod home;
 
+#[allow(
+    unused_imports,
+    reason = "不起核心的测试（连不上、数据根认不认）用不到它"
+)]
 pub use home::Home;
 
 /// 伪终端里跑着的界面。
@@ -53,6 +57,11 @@ pub struct Tui {
 }
 
 impl Tui {
+    /// 在伪终端起界面，数据根是 `home`（不经 [`Home`]、不起核心：测连不上、数据根本身认不认这种）。
+    pub fn at(home: &Path, work: &Path, lang: &str, env: &[(&str, &str)]) -> Tui {
+        Self::spawn(home, work, lang, env, &[])
+    }
+
     fn spawn(home: &Path, work: &Path, lang: &str, env: &[(&str, &str)], args: &[&str]) -> Tui {
         Self::program(home, work, lang, env, args, env!("CARGO_BIN_EXE_miyu-tui"))
     }
