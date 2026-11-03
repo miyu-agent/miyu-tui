@@ -10,6 +10,8 @@ pub enum Notice {
     ScheduleRan { session: String, ok: bool },
     /// 唤醒表坏了，改名留着、换了一份空的：原来的定时都没了。
     SchedulesReset,
+    /// 有没有人认领了后台通知（核心 TR-1：订阅回应的 `claimed`、推来的 `notices.claimed`）。
+    Claimed(bool),
 }
 
 /// 订阅。交回请求编号。
@@ -17,8 +19,16 @@ pub(super) async fn follow(rpc: &mut super::rpc::Rpc) -> std::io::Result<String>
     rpc.send("subscribe", json!({"stream": "notices"})).await
 }
 
-/// 推来的一条 `notice`；不是的、认不出的种类是 `None`。
+/// 订阅的回应：这一刻有人认领了的写 `{"claimed": true}`，没有的、旧核心是 `{}`（核心 TR-1）。
+pub fn subscribed(result: &Value) -> Notice {
+    Notice::Claimed(result["claimed"] == true)
+}
+
+/// 推来的一条 `notice`、认领变了的 `notices.claimed`；不是的、认不出的种类是 `None`。
 pub fn read(message: &Value) -> Option<Notice> {
+    if message["method"] == "notices.claimed" {
+        return Some(Notice::Claimed(message["params"]["claimed"] == true));
+    }
     if message["method"] != "notice" {
         return None;
     }
@@ -79,5 +89,19 @@ mod tests {
         assert!(!lost(
             &json!({"method": "resync", "params": {"stream": "sessions"}})
         ));
+    }
+
+    /// 核心 TR-1：订阅回应的 `claimed`、推来的 `notices.claimed`。
+    #[test]
+    fn claims_come_from_the_subscription_and_a_push() {
+        use super::subscribed;
+        assert_eq!(subscribed(&json!({"claimed": true})), Notice::Claimed(true));
+        assert_eq!(
+            subscribed(&json!({})),
+            Notice::Claimed(false),
+            "没人认领、旧核心"
+        );
+        let push = json!({"method": "notices.claimed", "params": {"claimed": true}});
+        assert_eq!(read(&push), Some(Notice::Claimed(true)));
     }
 }
