@@ -47,7 +47,10 @@ impl App {
                 self.ask_config(MASCOT_TAG, &Layout::MASCOT_KEYS);
                 self.ask_config(VIM_TAG, &[Layout::KEYS_KEY]);
                 self.ask_config(SKIP_PICK_TAG, &[Layout::SKIP_PICK_KEY]);
-                self.ask_config(SIDEBAR_SESSIONS_TAG, &[Layout::SIDEBAR_SESSIONS_KEY]);
+                self.ask_config(
+                    SIDEBAR_SESSIONS_TAG,
+                    &[Layout::SIDEBAR_SESSIONS_KEY, Layout::SIDEBAR_JUMPS_KEY],
+                );
                 self.ask_config(SIDE_TAG, &[crate::config::slots::SIDE_KEY]);
                 self.ask_config(FOOTER_TAG, &[crate::config::slots::FOOTER_KEY]);
                 self.ask_config(ABOVE_TAG, &[crate::config::slots::ABOVE_KEY]);

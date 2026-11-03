@@ -224,8 +224,78 @@ impl Part<Side<'_, '_>> for Recent {
     }
 }
 
+/// `jump`：跳转消息（排期第 15 条）：这个会话里你说的话，新的在上，列 `sidebar_jumps` 条，一条一行截掉放不下的；点一行
+/// 同 `/jump` 选它，顶到视口第一行（「跳到说过的话」第 3 条）。
+#[derive(Default)]
+pub struct Jumps {
+    ids: Vec<u64>,
+}
+
+impl Part<Side<'_, '_>> for Jumps {
+    fn name(&self) -> &'static str {
+        NAMES[7]
+    }
+
+    fn lay(&mut self, side: &Side, width: u16) -> Laid {
+        let seen = side.seen;
+        let count = seen.config.layout.sidebar_jumps;
+        let spoken: Vec<&crate::transcript::Entry> = seen
+            .talk
+            .transcript
+            .entries
+            .iter()
+            .rev()
+            .filter(|e| e.kind == crate::transcript::Kind::User && !e.hidden)
+            .take(count)
+            .collect();
+        self.ids = spoken.iter().map(|e| e.id).collect();
+        if spoken.is_empty() {
+            return Laid::Lines(Vec::new());
+        }
+        let room = width.saturating_sub(2);
+        let mut lines = vec![ratatui::text::Line::styled(
+            seen.config.text.side_jumps.clone(),
+            crate::theme::side_title(),
+        )];
+        lines.extend(spoken.iter().map(|e| {
+            let first = e
+                .text
+                .lines()
+                .find(|l| !l.trim().is_empty())
+                .unwrap_or_default();
+            let text = super::super::rows::clip(first.trim(), room);
+            ratatui::text::Line::styled(format!("  {text}"), crate::theme::dim())
+        }));
+        Laid::Lines(lines)
+    }
+
+    fn placed(
+        &mut self,
+        _: &mut Frame,
+        area: Rect,
+        (first, shown): (usize, usize),
+        side: &mut Side,
+    ) {
+        // 标题那一行（第 0 行）不算，同最近会话。
+        let start = first.max(1);
+        let rows = (first + shown).saturating_sub(start);
+        side.screen.areas.jumps = Rect {
+            y: area.y + u16::try_from(start - first).unwrap_or(0),
+            height: u16::try_from(rows).unwrap_or(0),
+            ..area
+        };
+        side.screen.jumps = self
+            .ids
+            .iter()
+            .skip(start - 1)
+            .take(rows)
+            .copied()
+            .collect();
+    }
+}
+
 /// 这一处的几件，照出厂的先后。
-pub fn all() -> (Avatar, Session, Cwd, Context, Usage, Loops, Recent) {
+pub fn all() -> (Avatar, Session, Cwd, Context, Usage, Loops, Recent, Jumps) {
     (
         Avatar,
         Session::default(),
@@ -234,5 +304,6 @@ pub fn all() -> (Avatar, Session, Cwd, Context, Usage, Loops, Recent) {
         Usage,
         Loops,
         Recent::default(),
+        Jumps::default(),
     )
 }

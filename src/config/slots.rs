@@ -19,8 +19,8 @@ pub struct Slot {
 }
 
 /// 侧边栏出厂的部件名，照出厂的先后（「挂载位」第 4 条，画在 `ui/sidebar/parts.rs`）：配置里没写到的照它接在后面。
-pub const SIDE_PARTS: [&str; 7] = [
-    "avatar", "session", "cwd", "context", "usage", "loops", "recent",
+pub const SIDE_PARTS: [&str; 8] = [
+    "avatar", "session", "cwd", "context", "usage", "loops", "recent", "jump",
 ];
 
 /// 侧边栏那一项在终端软件包里的名字（`[settings.side]`）。
