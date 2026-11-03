@@ -16,6 +16,18 @@ fn a_long_reason_for_being_down_is_written_in_full_above_the_input_box() {
     let missing = missing.display().to_string();
     let mut tui = support::Tui::at(&home, &work, "zh_CN.UTF-8", &[("MIYU_CORE_BIN", &missing)]);
     tui.wait_for("endmarker");
+    // 等底栏那一截也画出来：上面那几行先到、底栏还在路上时读屏只读到半截（2026-11-03 macOS CI 读到底栏只有「找」）。
+    let end = std::time::Instant::now() + support::WAIT;
+    while tui
+        .lines()
+        .iter()
+        .filter(|l| l.contains("找不到核心程序"))
+        .count()
+        < 2
+        && std::time::Instant::now() < end
+    {
+        tui.pump(std::time::Duration::from_millis(50));
+    }
     let lines = tui.lines();
     let footer = lines
         .iter()

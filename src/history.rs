@@ -4,8 +4,6 @@
 //! 选中的是其中第几条：0 是最新的，画的时候最新的贴着输入框。`/jump`（「跳到说过的话」）用同一个列表，列的是这个会话
 //! 正文里你说的话，同样的字说了两次是两条。
 
-use std::time::SystemTime;
-
 use crate::input::Sent;
 
 /// 列表的状态。
@@ -15,15 +13,12 @@ pub struct History {
     pub open: bool,
     /// 开的是 `/jump`：列这个会话里你说的话，`Enter` 跳过去（不是填进输入框）。
     pub jump: bool,
-    /// 「历史：」后面打的字。
+    /// 框里最下面搜索那一行打的字（「输入历史列表」第 1、3 条）。
     pub query: String,
     /// 选中的是对得上的第几条，0 是最新的。
     pub selected: usize,
     /// 鼠标钉住的露出来的那一段（`menu::pin`）；按键选、打字放开。
     pub pinned: Option<usize>,
-    /// `Tab` 展开着的几条，照发出去的时刻认：展开是那一条自己的，光标移走照旧展开着，移到别的条上也不跟着展开
-    /// （蓝图「输入历史列表」第 7 条）。
-    pub expanded: Vec<SystemTime>,
 }
 
 impl History {
@@ -42,21 +37,6 @@ impl History {
             jump: true,
             ..Self::default()
         };
-    }
-
-    /// `Tab`：`at` 发的那一条展开成全文，再按收回一行。
-    pub fn toggle_full(&mut self, at: SystemTime) {
-        match self.expanded.iter().position(|a| *a == at) {
-            Some(i) => {
-                self.expanded.remove(i);
-            }
-            None => self.expanded.push(at),
-        }
-    }
-
-    /// `at` 发的那一条展开着。
-    pub fn is_expanded(&self, at: SystemTime) -> bool {
-        self.expanded.contains(&at)
     }
 
     /// 关掉。
