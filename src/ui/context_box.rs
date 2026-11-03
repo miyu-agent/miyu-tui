@@ -17,9 +17,11 @@ use crate::core::UsageRow;
 use crate::theme;
 
 mod parts;
+mod sections;
 mod uses;
 
 pub use parts::{Shape, read_parts};
+pub use sections::Tail;
 pub use uses::read_uses;
 
 /// 框里的字。
@@ -47,6 +49,21 @@ pub struct Texts {
     pub uses: BTreeMap<String, String>,
     /// 下边框的按键提示。
     pub hint: String,
+    /// 三段的段头（第 7 条）：上下文；累计消耗 `{tokens}`，右边缓存命中 `{percent}`；花费，算不出钱的右边写 `no_price`。
+    pub context: String,
+    pub spent: String,
+    pub hit: String,
+    pub cost: String,
+    pub no_price: String,
+    /// 四种 token：缓存读、缓存写、输出、输入（未命中）。
+    pub kinds: [String; 4],
+    /// 上下文那一段底下两行的名目，`times` 是「{n} 次」。
+    pub compactions: String,
+    pub breaks: String,
+    pub times: String,
+    /// 卡住的原因：压缩失败（暂停）、超出窗口。
+    pub stuck_failed: String,
+    pub stuck_over: String,
 }
 
 /// 累计表的列名。
@@ -78,11 +95,14 @@ fn title(texts: &Texts, _data: Option<&ContextData>) -> String {
     texts.title.clone()
 }
 
-/// 框里的正文（滚动前的全部）。
+/// 一份账写成界面上的金额（照界面的币种和符号）；算不出的是 `None`。
+pub type Money<'a> = &'a dyn Fn(&crate::core::Bill) -> Option<String>;
+
+/// 框里的正文（滚动前的全部）：上下文、累计消耗、花费三段（第 7 条），段之间空一行；`tail` 是上下文那一段底下的几样。
 pub fn rows(
     data: Option<&ContextData>,
     config: &Config,
-    money: &dyn Fn(&crate::core::Bill) -> Option<String>,
+    (money, tail): (Money, &Tail),
     width: u16,
 ) -> Vec<Line<'static>> {
     let texts = &config.text.context_box;
@@ -91,16 +111,30 @@ pub fn rows(
         return note(&texts.loading);
     };
     let room = usize::from(width).saturating_sub(2).max(1);
-    let mut out = match &data.parts {
-        None => note(&texts.loading),
-        Some(Err(said)) => vec![Line::styled(said.clone(), theme::error())],
-        Some(Ok(shape)) => parts::rows(shape, texts, &config.layout.bar, room),
-    };
-    if let Some(Ok(list)) = &data.uses {
-        let table = uses::rows(list, texts, money, room);
-        if !table.is_empty() {
+    if data.parts.is_none() && data.uses.is_none() {
+        return note(&texts.loading);
+    }
+    let mut out = vec![Line::raw(texts.context.clone())];
+    match &data.parts {
+        None => out.extend(note(&texts.loading)),
+        Some(Err(said)) => out.push(Line::styled(said.clone(), theme::error())),
+        Some(Ok(shape)) => {
+            out.extend(parts::rows(shape, texts, &config.layout.bar, room));
             out.push(Line::default());
-            out.extend(table);
+            out.extend(sections::context_tail(tail, texts, room));
+        }
+    }
+    if let Some(Ok(list)) = &data.uses {
+        let spent = sections::spent(list, texts, room);
+        if !spent.is_empty() {
+            out.push(Line::default());
+            out.extend(spent);
+            out.extend(uses::rows(list, texts, money, room));
+        }
+        let cost = sections::cost(list, texts, money, room);
+        if !cost.is_empty() {
+            out.push(Line::default());
+            out.extend(cost);
         }
     }
     out
@@ -111,7 +145,18 @@ fn seen_rows(seen: &Seen, width: u16) -> Vec<Line<'static>> {
     let money = |bill: &crate::core::Bill| {
         crate::money::amounts(bill, &seen.link.currency, &seen.config.layout.currencies)
     };
-    rows(seen.boxes.context.as_ref(), seen.config, &money, width)
+    let t = &seen.talk.transcript;
+    let tail = Tail {
+        compactions: t.cache.compactions,
+        breaks: t.cache.breaks,
+        stuck: t.stuck(),
+    };
+    rows(
+        seen.boxes.context.as_ref(),
+        seen.config,
+        (&money, &tail),
+        width,
+    )
 }
 
 /// 一共几行（滚到哪为止）。
