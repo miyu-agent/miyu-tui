@@ -50,12 +50,20 @@ fn the_sidebar_follows_the_configured_order_and_hides_what_is_hidden() {
     }
 }
 
+/// 底栏那一行里用量那一格（环 + 累计）的那一行：模型名和环都在。
+fn footer_line(lines: &[String]) -> Option<String> {
+    lines
+        .iter()
+        .rev()
+        .find(|l| l.contains("deepseek-v4") && l.contains(['○', '◔', '◑', '◕', '●']))
+        .cloned()
+}
+
 #[test]
 fn the_status_line_follows_the_configured_order_and_hides_what_is_hidden() {
-    // 底栏（SL-2）：左段藏起权限级别，右段把用量排到上下文前面。
+    // 底栏（SL-2）：左段藏起权限级别，右段只有用量那一格（排期第 22 条：环 + 累计 + 花费），照常写。
     let script = Script::new([Play::Says("answer-one")]);
-    let settings =
-        "[[tui.footer]]\npart = \"level\"\nhidden = true\n\n[[tui.footer]]\npart = \"usage\"\n";
+    let settings = "[[tui.footer]]\npart = \"level\"\nhidden = true\n";
     let home = Home::with_settings(script, settings);
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
     // 首页的底栏左段只有权限级别（模型要等开了会话），藏起来了就空着：等首页的提示。
@@ -64,25 +72,45 @@ fn the_status_line_follows_the_configured_order_and_hides_what_is_hidden() {
     tui.wait_for("answer-one");
     let end = std::time::Instant::now() + support::WAIT;
     loop {
-        let lines = tui.lines();
-        let footer = lines
-            .iter()
-            .rev()
-            .find(|l| l.contains("deepseek-v4") && l.contains('Σ'));
-        if let Some(footer) = footer {
-            let total = footer.find('Σ').expect("有累计");
-            let context = footer.rfind(" 110").expect("有上下文");
-            assert!(total < context, "用量排到上下文前面：{footer}");
+        if let Some(footer) = footer_line(&tui.lines()) {
             assert!(!footer.contains("工作区"), "权限级别藏起来了：{footer}");
+            assert!(
+                !footer.contains('Σ') && !footer.contains("(C"),
+                "不再写 Σ、命中率：{footer}"
+            );
             break;
         }
         assert!(
             std::time::Instant::now() < end,
-            "底栏要有模型和累计：\n{}",
-            lines.join("\n")
+            "底栏要有模型和用量那一格：\n{}",
+            tui.lines().join("\n")
         );
         tui.pump(std::time::Duration::from_millis(50));
     }
+    // 点用量那一格开 `/context`（「框下面那一行」用量那一格）。
+    let lines = tui.lines();
+    let footer = footer_line(&lines).expect("在");
+    let row = lines.iter().rposition(|l| *l == footer).expect("在");
+    let ring = footer.find(['○', '◔', '◑', '◕', '●']).expect("有环");
+    let col = footer[..ring].chars().count() + 1;
+    tui.key(format!("\x1b[<0;{col};{0}M\x1b[<0;{col};{0}m", row + 1).as_bytes());
+    tui.wait_for("上下文明细");
+}
+
+#[test]
+fn a_hidden_usage_part_leaves_the_right_side_empty() {
+    let script = Script::new([Play::Says("answer-one")]);
+    let home = Home::with_settings(script, "[[tui.footer]]\npart = \"usage\"\nhidden = true\n");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+    tui.wait_for("工作区");
+    tui.say("topic-one");
+    tui.wait_for("answer-one");
+    tui.pump(std::time::Duration::from_millis(500));
+    assert!(
+        footer_line(&tui.lines()).is_none(),
+        "藏起来的不画：\n{}",
+        tui.lines().join("\n")
+    );
 }
 
 #[test]

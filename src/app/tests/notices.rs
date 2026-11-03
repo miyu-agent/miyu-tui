@@ -167,3 +167,43 @@ fn a_session_counts_as_open_elsewhere_only_when_another_head_has_it() {
     assert!(!app.viewed_elsewhere("nowhere"));
     assert!(!app.viewed_elsewhere("mine"), "带 viewed 是因为自己开着");
 }
+
+/// 核心 TR-1（2026-11-03 项目主人定）：托盘认领了后台通知，没人开着的会话、给人的通知这个头不弹（圆点照画），自己开着的
+/// 那一个照弹；认领的走了照原来的弹。
+#[test]
+fn a_claimed_tray_takes_over_notices_for_sessions_nobody_has_open() {
+    let (mut app, _sent) = crate::app::test_support::app();
+    let config = app.config.clone();
+    app.notifier = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        |name| (name == "TERM").then(|| "xterm-kitty".to_string()),
+        None,
+    );
+    let info = |id: &str, busy: bool| SessionInfo {
+        session: id.into(),
+        title: Some(format!("会话 {id}")),
+        busy,
+        ..SessionInfo::default()
+    };
+    app.talk.transcript.session = Some("me".into());
+    app.talk.sessions_seen = Some(vec![info("me", true), info("bg", true)]);
+    app.notice(&Notice::Claimed(true));
+    app.session_changed(crate::core::SessionChange::Entry(info("bg", false)));
+    assert!(app.talk.unseen.contains("bg"), "圆点照画");
+    app.notice(&Notice::ScheduleRan {
+        session: "new".into(),
+        ok: true,
+    });
+    app.notice(&Notice::SchedulesReset);
+    assert!(app.notifier.outbox().is_empty(), "交给托盘");
+    app.notice(&Notice::ScheduleRan {
+        session: "me".into(),
+        ok: true,
+    });
+    assert!(!app.notifier.outbox().is_empty(), "自己开着的照弹");
+    // 托盘走了：照原来的弹。
+    app.notice(&Notice::Claimed(false));
+    app.notice(&Notice::SchedulesReset);
+    assert!(!app.notifier.outbox().is_empty());
+}

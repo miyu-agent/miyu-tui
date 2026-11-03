@@ -41,3 +41,17 @@ pub struct MenuTexts {
     /// 标题后面的条数，`{count}`。
     pub count: String,
 }
+
+/// 框下面那一行用量那一格的字（蓝图「框下面那一行」用量那一格，反馈 1102 第 22 条）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UsageCellTexts {
+    /// 卡住：最近一次压缩失败、自动压缩暂停了，用量到了压缩线。
+    pub failed: String,
+    /// 卡住：用量大于窗口。
+    pub over: String,
+    /// 卡住时跟在后面那个能点的。
+    pub compact: String,
+    /// 正在压缩。
+    pub compacting: String,
+}

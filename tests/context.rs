@@ -26,15 +26,13 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
-    // 还没开会话：底栏照新会话的预览写用了多少（核心 CX-1 下），`/context` 是预览、没有累计。
+    // 还没开会话：底栏照新会话的预览画环（核心 CX-1 下），`/context` 是预览、没有累计。
     let end = Instant::now() + support::WAIT;
-    // 「工作区」那一行右边是预览的数（测试核心工具少，不到 1k）。
+    // 「工作区」那一行右边是预览的环（排期第 22 条：用量那一格，新会话只画环）。
     let previewed = |tui: &Tui| {
-        tui.lines().iter().any(|l| {
-            l.contains("工作区")
-                && l.trim_end()
-                    .ends_with(|c: char| c.is_ascii_digit() || c == ')')
-        })
+        tui.lines()
+            .iter()
+            .any(|l| l.contains("工作区") && l.trim_end().ends_with(['○', '◔', '◑', '◕', '●']))
     };
     while !previewed(&tui) {
         assert!(
@@ -47,7 +45,7 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     tui.say("/context");
     tui.wait_for("核心说明");
     assert!(
-        tui.shows("估算") && !tui.shows("本会话累计"),
+        tui.shows("估算") && !tui.shows("累计消耗"),
         "{}",
         tui.lines().join("\n")
     );
@@ -56,13 +54,13 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/context");
-    tui.wait_for("本会话累计");
+    tui.wait_for("累计消耗");
     let screen = tui.lines().join("\n");
     for text in ["已用", "系统提示", "对话", "主对话", "合计", "次数"] {
         assert!(screen.contains(text), "少了「{text}」：\n{screen}");
     }
     tui.key(b"\x1b");
-    until_gone(&mut tui, "本会话累计");
+    until_gone(&mut tui, "累计消耗");
 }
 
 #[test]

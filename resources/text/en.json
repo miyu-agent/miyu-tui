@@ -64,10 +64,8 @@
   "retry": "Retry {attempt}/{limit}: {message}",
   "older": "Loading earlier…",
   "older_failed": "Couldn't load earlier messages: {reason}",
-  "total": "Σ{tokens}(C{percent}%)",
   "done": "{time} · {endpoint}/{model} · {elapsed}",
   "speed": "{rate} tok/s",
-  "context": "{used}/{window}({percent}%)",
   "undone": "Undone",
   "undo_restore": "/restore to bring it back",
   "undo_compactions": "Undid a compaction: the context is back to before it",
@@ -304,6 +302,7 @@
     "empty": "No matches",
     "hints": "↑/↓ select · Tab open folder · Enter insert · Esc close"
   },
+  "usage_cell": {"failed": "Context compaction failed", "over": "Context exceeds the window", "compact": "Compact", "compacting": "Compacting context"},
   "history": {
     "title": "History",
     "count": "  {count}",
@@ -369,34 +368,7 @@
     "count": "{n}",
     "hint": "↑/↓ scroll · c copy · Esc close"
   },
-  "context_box": {
-    "title": "Context breakdown",
-    "loading": "Loading…",
-    "used": "Used {used} / {window}",
-    "used_only": "Used {used}",
-    "line": "compaction at {line}",
-    "estimated": "estimated",
-    "totals": "This session so far",
-    "columns": {
-      "requests": "Calls",
-      "uncached": "Input",
-      "cache_read": "Cache read",
-      "cache_write": "Cache write",
-      "output": "Output",
-      "cost": "Cost"
-    },
-    "sum": "Total",
-    "uses": {
-      "main": "Main",
-      "compaction": "Compaction",
-      "subagent": "Subagents",
-      "recap": "Recap",
-      "title": "Titles",
-      "memory": "Memory",
-      "other": "Other"
-    },
-    "hint": "↑/↓ scroll · c copy · Esc close"
-  },
+  "context_box": {"title": "Context breakdown", "loading": "Loading…", "used": "Used {used} / {window}", "used_only": "Used {used}", "line": "compaction at {line}", "estimated": "estimated", "totals": "By use", "columns": {"requests": "Calls", "uncached": "Input", "cache_read": "Cache read", "cache_write": "Cache write", "output": "Output", "cost": "Cost"}, "sum": "Total", "uses": {"main": "Main", "compaction": "Compaction", "subagent": "Subagents", "recap": "Recap", "title": "Titles", "memory": "Memory", "other": "Other"}, "hint": "↑/↓ scroll · c copy · Esc close", "context": "Context", "spent": "Total used {tokens}", "hit": "cache hit {percent}%", "cost": "Cost", "no_price": "no price", "kinds": ["Cache read", "Cache write", "Output", "Input (uncached)"], "compactions": "Compacted", "breaks": "Cache breaks", "times": "{n}×", "stuck_failed": "Auto-compaction is paused; compact to continue.", "stuck_over": "Over this model's window; compact to continue."},
   "usage": {
     "rates": "Exchange rates from {source}",
     "title": "Usage",

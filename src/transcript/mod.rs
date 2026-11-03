@@ -29,6 +29,7 @@ mod results;
 mod speed;
 mod spent;
 mod steps;
+mod stuck;
 mod switched;
 pub use switched::set_names;
 mod turn;
@@ -49,6 +50,7 @@ pub use cache::CacheWatch;
 pub use chips::Chip;
 pub use climb::Progress;
 pub use entry::{Entry, JobMark, JobNote, Kind};
+pub use stuck::Stuck;
 
 pub use steps::{Segment, Step, StepKind, Tally, ToolState};
 pub use words::undo_counts;
@@ -142,6 +144,8 @@ pub struct Transcript {
     pub goal: Option<crate::core::Goal>,
     /// 正在压缩的那一行是第几条（`compaction.rs`）。
     compacting: Option<usize>,
+    /// 最近一次压缩失败了、或者自动压缩暂停了，后来没压好、没清空过（`stuck.rs`）。
+    compaction_trouble: bool,
     /// 这个头发了 `/compact`、还没压完：旧核心的进度不带 `trigger` 时照它认手动（`compaction.rs`）。
     pub manual_compaction: bool,
     /// 这一轮她出过字了（来过一块）：出过就不再算在等第一个字（[`Transcript::waiting`]）。

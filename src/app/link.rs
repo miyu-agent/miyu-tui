@@ -10,6 +10,8 @@ pub struct Link {
     pub core: Core,
     /// 上回告诉核心开着的会话（`viewing.rs`）：变了才再说；连上、重连以后是 `None`，再说一遍。
     pub viewing: Option<Option<String>>,
+    /// 有人认领了后台通知（核心 TR-1 `notices.claim`，托盘）：没人开着的会话、给人的通知不弹，开着的照常（`notices.rs`）。
+    pub notices_claimed: bool,
     /// 每个模型、池收哪几种附件（`attachments.rs`，照 `model.list`）。
     pub abilities: crate::core::Abilities,
     /// 工具给人看的显示名（仓库 `resources/software/basesystem/human/`）。

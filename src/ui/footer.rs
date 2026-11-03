@@ -8,13 +8,11 @@ use ratatui::widgets::Paragraph;
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::{Screen, Seen};
-use crate::config::Config;
 use crate::config::slots::{FOOTER_LEFT, FOOTER_RIGHT, Slot, arrange};
-use crate::core::Usage;
 use crate::focus::{Button, Focus};
-use crate::meter;
 use crate::theme;
-use crate::transcript::{Link, Transcript};
+use crate::transcript::Link;
+use crate::ui::usage_cell::{self, Hit};
 use crate::ui::widget::{Kind, Spot};
 
 /// 左右两段之间至少空几列。
@@ -26,7 +24,13 @@ const GAP: usize = 2;
 ///
 /// 一行放不下时，右边的格子照顺序往下丢，上下文留到最后（`13-终端界面.md` 第八节）：左右两段不许叠在一起，
 /// 叠上以后宽字被盖掉一半，下一帧会留下残字。按钮留到最后。
-pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rect, Vec<Spot>) {
+pub fn draw(
+    frame: &mut Frame,
+    area: Rect,
+    seen: &Seen,
+    screen: &Screen,
+    spin: usize,
+) -> (Rect, Vec<Spot>, Hits) {
     let focus = seen.focus();
     let count = seen.talk.board.shells_running();
     let button = (count > 0).then(|| {
@@ -37,32 +41,25 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
             .replace("{count}", &count.to_string())
     });
     let button_w = button.as_ref().map_or(0, |b| b.width() + GAP);
-    let total = seen.talk.usage_total();
     // 扩展包放的界面块：用量前面，一块一格，最先丢（蓝图「界面块」第 1、4 条）。
     let status = crate::ui::widget::status(seen);
     let mut cells: Vec<Part> = status
         .iter()
-        .map(|(text, style, _)| Part {
-            keep: 0,
-            spans: vec![Span::styled(text.clone(), *style)],
-        })
+        .map(|(text, style, _)| Part::new(0, vec![Span::styled(text.clone(), *style)]))
         .collect();
-    // 还没开会话：照选了的人格、预设预览的上下文（核心 CX-1 下，「框下面那一行」）。
-    let preview = seen
-        .talk
-        .preview
-        .filter(|_| seen.talk.transcript.session.is_none());
-    let mut named = right(&seen.talk.transcript, &total, seen.config, preview);
-    // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定），和累计算同一件 `usage`。
-    if let Some(amounts) = seen.spent() {
-        named.push((
-            FOOTER_RIGHT[1],
-            Part {
-                keep: 2,
-                spans: vec![Span::styled(amounts, theme::dim())],
-            },
-        ));
-    }
+    // 用量那一格（`usage_cell.rs`）：环、累计、花费；卡住的红字加「压缩」，正在压的转圈。
+    let facts = usage_cell::Facts {
+        t: &seen.talk.transcript,
+        preview: seen.talk.preview,
+        total: seen.talk.usage_total(),
+        spent: seen.spent(),
+        texts: &seen.config.text.usage_cell,
+        spinner: &seen.config.timeline.spinner,
+    };
+    let named: Vec<(&str, Part)> = usage_cell::pieces(&facts, spin, hovered(screen))
+        .into_iter()
+        .map(|p| (FOOTER_RIGHT[0], Part::from(p)))
+        .collect();
     // 照配置排右段的几件（「挂载位」第 4 条 SL-2）：藏起来的不写，一件几格的照原来的先后挨着。
     let (order, _) = arrange(&FOOTER_RIGHT, &seen.config.layout.footer);
     for (name, _) in order {
@@ -77,6 +74,7 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
         .iter()
         .map(|p| p.spans.iter().map(Span::width).sum())
         .collect();
+    let cells_meta: Vec<Meta> = cells.iter().map(|p| (p.tight, p.hit)).collect();
     let (left, right, kept) = split(
         [
             left(seen, Model::Full, true),
@@ -91,10 +89,10 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
     frame.render_widget(Paragraph::new(left.clone()), area);
     let right_w = right.width();
     frame.render_widget(Paragraph::new(right.right_aligned()), area);
-    let spots = status_spots(area, right_w, &widths, &kept, &status);
+    let (spots, hits) = status_spots(area, right_w, (&cells_meta, &widths, &kept), &status);
     let none = Rect::new(area.x, area.y, 0, 0);
     let Some(button) = button else {
-        return (none, spots);
+        return (none, spots, hits);
     };
     let Some(x) = middle(
         left.width(),
@@ -102,7 +100,7 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
         button.width(),
         usize::from(area.width),
     ) else {
-        return (none, spots);
+        return (none, spots, hits);
     };
     let at = Rect::new(
         area.x + u16::try_from(x).unwrap_or(0),
@@ -112,41 +110,78 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
     );
     let style = button_style(screen, at, focus == Focus::Footer(Button::Background));
     frame.render_widget(Paragraph::new(Line::styled(button, style)), at);
-    (at, spots)
+    (at, spots, hits)
 }
 
-/// 底栏上界面块那几格在哪：右边那一段右对齐，留下的格子照先后排、之间 ` · `；界面块排在最前面（悬停时说是哪个软件放的）。
+/// 用量那一格（点了开 `/context`）、「压缩」（点了同 `/compact`）在哪；没画的是空的。
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Hits {
+    pub usage: Rect,
+    pub compact: Rect,
+}
+
+/// 指针停在用量那一格的哪一截上（照上一帧的位置）。
+fn hovered(screen: &Screen) -> Option<Hit> {
+    let p = screen.pointer?;
+    if screen.areas.compact.contains(p) {
+        Some(Hit::Compact)
+    } else if screen.areas.usage_cell.contains(p) {
+        Some(Hit::Usage)
+    } else {
+        None
+    }
+}
+
+/// 一格和前一格只隔一个空格没有、点了做什么（[`Part`] 的 `tight`、`hit`）。
+type Meta = (bool, Option<Hit>);
+
+/// 底栏上界面块那几格、用量那一格在哪：右边那一段右对齐，留下的格子照先后排、之间 ` · `（`tight` 的一个空格）；界面块排在
+/// 最前面（悬停时说是哪个软件放的）。
 fn status_spots(
     area: Rect,
     right_w: usize,
-    widths: &[usize],
-    kept: &[bool],
+    (meta, widths, kept): (&[Meta], &[usize], &[bool]),
     status: &[(String, ratatui::style::Style, &crate::widgets::Block)],
-) -> Vec<Spot> {
+) -> (Vec<Spot>, Hits) {
     let mut x = usize::from(area.right()).saturating_sub(right_w);
     let mut spots = Vec::new();
+    let mut hits = Hits::default();
+    let mut first = true;
+    let sep = crate::sheet::sep().width();
     for (i, (&w, _)) in widths
         .iter()
         .zip(kept)
         .enumerate()
         .filter(|(_, (_, k))| **k)
     {
+        let (tight, hit) = meta.get(i).copied().unwrap_or_default();
+        if !first {
+            x += if tight { 1 } else { sep };
+        }
+        first = false;
+        let rect = Rect::new(
+            u16::try_from(x).unwrap_or(0),
+            area.y,
+            u16::try_from(w).unwrap_or(0),
+            1,
+        );
         if let Some((_, _, block)) = status.get(i) {
             spots.push(Spot {
-                rect: Rect::new(
-                    u16::try_from(x).unwrap_or(0),
-                    area.y,
-                    u16::try_from(w).unwrap_or(0),
-                    1,
-                ),
+                rect,
                 package: block.package.clone(),
                 id: block.id.clone(),
                 what: Kind::Status,
             });
         }
-        x += w + 3;
+        match hit {
+            Some(Hit::Compact) => hits.compact = rect,
+            Some(Hit::Usage) if hits.usage.width == 0 => hits.usage = rect,
+            Some(Hit::Usage) => hits.usage = hits.usage.union(rect),
+            None => {}
+        }
+        x += w;
     }
-    spots
+    (spots, hits)
 }
 
 /// 按钮的样子：强调色；悬停加粗；焦点在上面反色（第 1、2 条）。
@@ -206,12 +241,11 @@ fn joined_width(parts: &[Part]) -> usize {
 
 /// 同 [`joined_width`]，给挑出来的几格。
 fn joined_width_of(parts: &[&Part]) -> usize {
-    let dots = parts.len().saturating_sub(1) * 3;
-    dots + parts
+    parts
         .iter()
-        .flat_map(|p| &p.spans)
-        .map(Span::width)
-        .sum::<usize>()
+        .enumerate()
+        .map(|(i, p)| gap_before(p, i == 0) + p.spans.iter().map(Span::width).sum::<usize>())
+        .sum()
 }
 
 /// `keep` 不过它的格子（界面块、速度、花费）比权限级别的字先丢。
@@ -225,11 +259,44 @@ fn middle(left: usize, right: usize, button: usize, width: usize) -> Option<usiz
     (gap >= button).then(|| start + (gap - button) / 2)
 }
 
-/// 右边的一格：放不下时先丢 `keep` 小的。
+/// 右边的一格：放不下时先丢 `keep` 小的；`tight` 的和前一格只隔一个空格（用量那一格卡住时的几截）；`hit` 是点了做什么。
 #[derive(Clone)]
 struct Part {
     keep: u8,
+    tight: bool,
+    hit: Option<Hit>,
     spans: Vec<Span<'static>>,
+}
+
+impl Part {
+    fn new(keep: u8, spans: Vec<Span<'static>>) -> Self {
+        Self {
+            keep,
+            tight: false,
+            hit: None,
+            spans,
+        }
+    }
+}
+
+impl From<usage_cell::Piece> for Part {
+    fn from(p: usage_cell::Piece) -> Self {
+        Self {
+            keep: p.keep,
+            tight: p.tight,
+            hit: p.hit,
+            spans: p.spans,
+        }
+    }
+}
+
+/// 这一格前面隔几列：头一格不隔，`tight` 的一个空格，别的 ` · `。
+fn gap_before(part: &Part, first: bool) -> usize {
+    match (first, part.tight) {
+        (true, _) => 0,
+        (false, true) => 1,
+        (false, false) => crate::sheet::sep().width(),
+    }
 }
 
 /// 照 `keep` 从大到小挑，放得进 `room` 列的留下、放不下的跳过（后面短的照样能进：2026-10-11 项目主人报，长的那一格
@@ -245,13 +312,16 @@ fn choose(parts: &[Part], room: usize) -> Vec<bool> {
     let mut order: Vec<usize> = (0..parts.len()).collect();
     order.sort_by_key(|&i| std::cmp::Reverse(parts[i].keep));
     let mut kept = vec![false; parts.len()];
-    let mut used = 0;
     for i in order {
-        let w: usize = parts[i].spans.iter().map(Span::width).sum();
-        let dot = if used > 0 { 3 } else { 0 };
-        if used + dot + w <= room {
-            used += dot + w;
-            kept[i] = true;
+        kept[i] = true;
+        let chosen: Vec<&Part> = parts
+            .iter()
+            .zip(&kept)
+            .filter(|(_, k)| **k)
+            .map(|(p, _)| p)
+            .collect();
+        if joined_width_of(&chosen) > room {
+            kept[i] = false;
         }
     }
     kept
@@ -266,8 +336,10 @@ fn join(parts: Vec<Part>, kept: &[bool]) -> Vec<Span<'static>> {
         .map(|(p, _)| p);
     let mut spans = Vec::new();
     for (i, part) in parts.enumerate() {
-        if i > 0 {
-            spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
+        match gap_before(&part, i == 0) {
+            0 => {}
+            1 => spans.push(Span::raw(" ")),
+            _ => spans.push(Span::styled(crate::sheet::sep(), theme::dim())),
         }
         spans.extend(part.spans);
     }
@@ -401,73 +473,6 @@ fn cooling_word(
     }
     let minutes = (left + 59) / 60;
     Some(texts.cooling_until.replace("{n}", &minutes.to_string()))
-}
-
-/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢花费（2，接在累计后面，见调用处），这几样
-/// 比权限级别的字先丢（[`EARLY`]，2026-10-19 项目主人）；再丢累计（3），上下文留到最后（4）。还是 0 的格子不写
-/// （`tui.md`「框下面那一行」）。出字速度不写（2026-11-02 项目主人：每一轮回答末尾那一行已经有了，`speed` 那句字只给收尾行用）。
-fn right(
-    t: &Transcript,
-    total: &Usage,
-    config: &Config,
-    preview: Option<(u64, Option<u64>)>,
-) -> Vec<(&'static str, Part)> {
-    let mut parts = Vec::new();
-    let context = match preview {
-        Some((used, window)) => context_words(used, window, config),
-        None => context_text(t, config),
-    };
-    if let Some(context) = context {
-        let part = Part {
-            keep: 4,
-            spans: vec![Span::styled(context, theme::dim())],
-        };
-        parts.push((FOOTER_RIGHT[0], part));
-    }
-    if let Some(total) = total_text(total, config) {
-        let part = Part {
-            keep: 3,
-            spans: vec![Span::styled(total, theme::dim())],
-        };
-        parts.push((FOOTER_RIGHT[1], part));
-    }
-    parts
-}
-
-/// 累计：`Σ3.5k(C82%)`；还是 0 的是 `None`。`total` 连同子代理用的（`App::usage_total`）。
-pub fn total_text(total: &Usage, config: &Config) -> Option<String> {
-    let input = total.input();
-    (input + total.output + total.aux > 0).then(|| {
-        config
-            .text
-            .total
-            .replace("{tokens}", &meter::short(input + total.output + total.aux))
-            .replace("{percent}", &meter::hit_rate(total.cache_read, input))
-    })
-}
-
-/// 上下文：`1.8k/1M(0.2%)`；不知道窗口多大的模型只写用了多少；还是 0 的是 `None`。侧边栏也照它写。
-pub fn context_text(t: &Transcript, config: &Config) -> Option<String> {
-    // 窗口照核心在订阅的回应里给的，头不自己照模型名查。
-    context_words(t.context, t.limits.window, config)
-}
-
-/// 用了多少、窗口写成字（开着的会话、还没开的预览一个写法）。
-fn context_words(used: u64, window: Option<u64>, config: &Config) -> Option<String> {
-    if used == 0 {
-        return None;
-    }
-    let short = meter::short(used);
-    let text = match window {
-        None => short,
-        Some(window) => config
-            .text
-            .context
-            .replace("{used}", &short)
-            .replace("{window}", &meter::short(window))
-            .replace("{percent}", &meter::percent_tenths(used, window)),
-    };
-    Some(text)
 }
 
 #[cfg(test)]

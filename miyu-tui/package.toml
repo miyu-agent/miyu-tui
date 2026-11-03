@@ -127,7 +127,7 @@ max = 200
 default = 0
 name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
 
-# 底栏两段挂哪几件、什么先后（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条 SL-2）：左段 level、model，右段 context、usage，
+# 底栏两段挂哪几件、什么先后（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条 SL-2）：左段 level、model，右段 usage（原来的 context 11-03 并进 usage），
 # 各在各的那一段里排；只有一行，rows 不管。配置页不画。
 [settings.footer]
 type = "list"

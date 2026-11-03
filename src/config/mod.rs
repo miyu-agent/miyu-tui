@@ -50,7 +50,7 @@ pub use motion::CompactionMotion;
 pub use notes::CompactionTexts;
 pub use notify::{NotifyLook, NotifyTexts};
 pub use open::OpenTexts;
-pub use panels::{HistoryTexts, MenuTexts};
+pub use panels::{HistoryTexts, MenuTexts, UsageCellTexts};
 pub use timeline::{Body, Summary, Timeline, ToolKind};
 pub use widgets::{WidgetLayout, WidgetMarks};
 pub use words::{JobTexts, ModelTexts, RecapTexts, RenameTexts, UndoFileTexts};
@@ -180,8 +180,6 @@ pub struct Texts {
     pub older: String,
     /// 更早的一页读不成，弹的提示：`{reason}` 是核心的原话。
     pub older_failed: String,
-    /// 上下文用量，紧凑写法照旧版：`{used}` 用了多少，`{window}` 窗口多大，`{percent}` 一位小数的百分比。
-    pub context: String,
     /// 空着按 `Ctrl+C` 的提示。
     pub exit_hint: String,
     /// `Ctrl+C` 清空了输入框的提示：清掉的按 `↑` 找回。
@@ -216,6 +214,8 @@ pub struct Texts {
     pub feature_tree: FeatureTreeTexts,
     /// 输入历史列表上的字（蓝图「输入历史列表」）。
     pub history: HistoryTexts,
+    /// 框下面那一行用量那一格的字。
+    pub usage_cell: UsageCellTexts,
     /// `/jump` 的列表上的字，和输入历史列表一样的几格（蓝图「跳到说过的话」）。
     pub jump: HistoryTexts,
     /// 斜杠命令列表上的字（蓝图「斜杠命令列表」）。
@@ -292,8 +292,6 @@ pub struct Texts {
     pub omitted: String,
     /// 时间线收起那一行的字：界面语言是自动时换成语言表 `auto_summary` 那一种（英文），手动选了哪种照哪种（蓝图「时间线」第 17 条）。
     pub summary: Summary,
-    /// 累计用量和缓存命中率，紧凑写法照旧版：`{tokens}` 写短的 token 数，`{percent}` 命中率的整数。
-    pub total: String,
     /// 第一次打开的引导上的字（蓝图「第一次打开的引导」）。
     pub oobe: crate::oobe::Texts,
 }

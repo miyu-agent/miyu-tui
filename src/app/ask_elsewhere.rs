@@ -69,7 +69,8 @@ impl App {
         let note = self.config.text.drawer.elsewhere.replace("{title}", &title);
         self.hint(note, false);
         // 别的头开着它的：由开着的那个通知，这边只提示（核心 HV-1，2026-11-02 项目主人：两个终端弹了两条）。
-        if self.viewed_elsewhere(owner) {
+        // 有人认领了后台通知（托盘，核心 TR-1）：没人开着的会话由它弹。
+        if self.viewed_elsewhere(owner) || self.link.notices_claimed {
             return;
         }
         // 通知的标题写问的那个会话的（「系统通知」第 3 条）；下一次通知照正在看的重新写。

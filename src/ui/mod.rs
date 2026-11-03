@@ -74,6 +74,7 @@ pub mod tool_list;
 mod undo_rows;
 pub use timeline::{release_on_fold, tail_rows};
 pub use {dream_rows::rows as dream_rows, todos::todo_lines};
+mod usage_cell;
 mod user_rows;
 pub mod wide;
 
@@ -404,10 +405,13 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         history,
         (panel_chrome, panel_lines),
     );
-    let (button, status_spots) = section("footer", || {
-        footer::draw(frame, areas.footer, &app.seen(), &app.screen)
+    let (button, status_spots, hits) = section("footer", || {
+        let seen = app.seen();
+        footer::draw(frame, areas.footer, &seen, &app.screen, spin_frame(&seen))
     });
     app.screen.areas.button = button;
+    app.screen.areas.usage_cell = hits.usage;
+    app.screen.areas.compact = hits.compact;
     app.screen.widget_spots.extend(status_spots);
     // 不在首页才有正文可翻。
     app.screen.areas.bottom = if home {

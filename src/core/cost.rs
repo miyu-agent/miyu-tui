@@ -4,8 +4,10 @@
 use serde_json::Value;
 
 mod converted;
+mod kinds;
 
 pub use converted::Converted;
+pub use kinds::KindMoney;
 
 /// 一笔钱：多少、什么币。相等照位比（和核心的 `Real` 一样），所以能放进要 `Eq` 的推送里。
 #[derive(Debug, Clone)]
@@ -185,6 +187,8 @@ pub struct UsageRow {
     pub split: Split,
     /// 金额和没价格的几次。
     pub bill: Bill,
+    /// 换成的那几笔分四种各多少（核心 UP-1 `converted_parts`）；老账、没换成的是 `None`。
+    pub kinds: Option<KindMoney>,
 }
 
 /// 一行的四项用量：没命中缓存的输入、缓存读、缓存写、输出。
@@ -231,6 +235,7 @@ pub fn rows(result: &Value) -> Vec<UsageRow> {
                 tokens: split.uncached + split.cache_read + split.cache_write + split.output,
                 split,
                 bill: Bill::read(row),
+                kinds: KindMoney::read(&row["converted_parts"]),
             }
         })
         .collect()
