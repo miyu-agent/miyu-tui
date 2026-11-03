@@ -159,7 +159,8 @@ mod tests {
         assert_eq!(look.choice.colors, "terminal", "配置读回来以前");
         look.configured(Some(&got("persona", "default")));
         assert_eq!(look.choice.colors, "terminal", "照默认值的");
-        look.configured(Some(&got("tokyonight", "user")));
-        assert_eq!(look.choice.colors, "tokyonight", "人设了的");
+        // 人设的照设的（`tokyonight` 2026-11-02 起不是一种选法、读成「自动」，拿跟随壁纸当人设的）。
+        look.configured(Some(&got("wallpaper", "user")));
+        assert_eq!(look.choice.colors, "wallpaper", "人设了的");
     }
 }

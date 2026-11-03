@@ -53,10 +53,8 @@ impl EffortPick {
             return Picked::Stay;
         }
         if level != target.current {
-            core.send(Command::SetEffort {
-                key: target.key.clone(),
-                level: level.clone(),
-            });
+            // 只改这个会话（核心 SM-1，同终端界面的 `/effort`）。
+            core.send(Command::SessionEffort(level.clone()));
         }
         let shown = level.unwrap_or_else(|| config.text.effort.default.clone());
         Picked::Done(Some(result(&fill(

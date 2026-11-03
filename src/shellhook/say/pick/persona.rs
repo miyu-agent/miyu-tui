@@ -186,7 +186,8 @@ impl Picker for PersonaPick {
             Pressed::Moved(at) => self.selected = at,
             Pressed::Chose(at) => return self.choose(at, core),
             Pressed::Escape => return Picked::Done(None),
-            Pressed::Edit(_) | Pressed::CantEdit | Pressed::Ignored => {}
+            // shell 里不编辑、不新建：到终端界面去做（同上面的提示）。
+            Pressed::Edit(_) | Pressed::CantEdit | Pressed::Create | Pressed::Ignored => {}
         }
         Picked::Stay
     }

@@ -110,6 +110,7 @@ impl Picker for SessionsPick {
         let marks = crate::ui::session_list::Marks {
             current: turn.transcript.session.as_deref(),
             asking: &[],
+            unseen: None,
         };
         let (chrome, lines, _) =
             crate::ui::session_list::lines(&self.list, marks, &here, config, width, max, 0);
