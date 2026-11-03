@@ -18,17 +18,20 @@ use localize::localized;
 
 mod attach;
 mod dream;
+mod feature_tree;
 mod figures;
 mod goal;
 mod icons;
 mod layout;
 mod localize;
+mod loops;
 mod mention;
 mod motion;
 mod notes;
 mod notify;
 mod open;
 mod panels;
+pub mod slots;
 mod themed;
 mod timeline;
 mod widgets;
@@ -36,10 +39,12 @@ mod words;
 
 pub use attach::{AttachLook, AttachTexts};
 pub use dream::{DreamLook, DreamTexts};
+pub use feature_tree::FeatureTreeTexts;
 pub use figures::{FigureLook, Room};
 pub use goal::GoalTexts;
 pub use icons::Icons;
 pub use layout::{Bar, Dots, Layout, Shimmer, TodoMarks};
+pub use loops::LoopTexts;
 pub use mention::{MentionLook, MentionTexts};
 pub use motion::CompactionMotion;
 pub use notes::CompactionTexts;
@@ -59,6 +64,8 @@ pub struct Texts {
     pub markdown: crate::markdown::Labels,
     /// 侧边栏：会话还没起名字时写的（蓝图「后台命令、子代理和侧边栏」第 7 条）。
     pub untitled: String,
+    /// 挂载位的配置里有不认识的部件（「挂载位」第 2 条），`{names}` 是那几个名字。
+    pub slot_unknown: String,
     /// 指针停在排队的话上时后面写的（「运行状态行和排队的消息」）。
     pub queued_withdraw: String,
     /// 侧边栏的短编号，`{id}` 是完整编号的前 8 位。
@@ -201,6 +208,10 @@ pub struct Texts {
     pub rename: RenameTexts,
     /// 长期目标的字（蓝图「长期目标」）。
     pub goal: GoalTexts,
+    /// 循环的字（蓝图「循环」）。
+    pub loops: LoopTexts,
+    /// 功能树的字（蓝图「配置页」第 38 条「功能树」）。
+    pub feature_tree: FeatureTreeTexts,
     /// 输入历史列表上的字（蓝图「输入历史列表」）。
     pub history: HistoryTexts,
     /// `/jump` 的列表上的字，和输入历史列表一样的几格（蓝图「跳到说过的话」）。
@@ -342,10 +353,28 @@ impl Config {
 
     /// 读编译时带进来的那一份，照 `language` 挑界面上的字、命令的说明、运行状态行的词（蓝图「界面语言」）。
     ///
+    /// 另起一个线程读，读好了交回来（蓝图「量尺」的栈）：界面上的字那几份结构很大，serde 拆它们一层层的栈帧加起来近 300 KB；
+    /// 在主线程上拆，摸过的栈页一直算在终端头上，线程完了它的栈当场还掉。
+    ///
     /// # Errors
     ///
-    /// JSON 写坏了、缺了字段时返回错误，说清是哪一份。
+    /// JSON 写坏了、缺了字段时返回错误，说清是哪一份；读的线程起不来也返回错误。
     pub fn load(language: &Language, auto: bool) -> Result<Self, String> {
+        // 读好的装在堆上交回来：这一份二十几 KB，照值经线程交接的几层传，每层都在栈上占一份。
+        let config = std::thread::scope(|scope| {
+            let reading = std::thread::Builder::new()
+                .name("config".into())
+                .spawn_scoped(scope, || Self::read(language, auto).map(Box::new))
+                .map_err(|e| format!("读配置的线程起不来：{e}"))?;
+            reading
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+        })?;
+        Ok(*config)
+    }
+
+    /// 在这个线程上读（[`Config::load`]）。
+    fn read(language: &Language, auto: bool) -> Result<Self, String> {
         let table = LanguageTable::builtin()?;
         let (text_name, text_json) = localize::text(language)?;
         let mut text: Texts = parse(&text_name, text_json)?;

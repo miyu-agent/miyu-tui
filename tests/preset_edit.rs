@@ -11,7 +11,7 @@ use support::{Home, Tui};
 
 /// 新建的第一个预设的文件（编号核心起：`preset-1`）。
 fn file(home: &Home) -> PathBuf {
-    home.root().join("presets/preset-1.toml")
+    home.data().presets().join("preset-1.toml")
 }
 
 /// 文件里的字；没有的是空的。
@@ -39,14 +39,17 @@ fn made(home: &Home) -> Tui {
     tui.open_menu("预设");
     tui.wait_for("全部功能");
     tui.key(b"a");
-    tui.wait_for("新预设名称");
+    // 两格窗：上面 id、下面名字（2026-11-02 项目主人）；id 空着，核心起 `preset-1`。
+    tui.wait_for("新建预设");
+    tui.wait_for("留空自动起");
+    tui.key(b"\r");
     tui.type_text("我的预设");
     tui.key(b"\r");
     until(&mut tui, "建好的文件", || {
         text(home).contains("我的预设")
     });
-    // 建好开它的窗：名字、功能；编号不出现。
-    tui.wait_for("功能");
+    // 建好开它的窗：名字、功能树（核心 FG-1，组名打头）；编号不出现。
+    tui.wait_for("基础系统");
     assert!(!tui.shows("preset-1"), "{}", tui.lines().join("\n"));
     tui
 }
@@ -55,10 +58,12 @@ fn made(home: &Home) -> Tui {
 fn a_new_preset_has_its_features_toggled_with_space_and_is_deleted() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = made(&home);
-    // 新建的功能先全开：一项都没写。光标从名字起，下面是描述（2026-10-23 加），再下一行是第一项功能，空格切掉。
+    // 新建的功能先全开：一项都没写。光标从名字起，下面是描述（2026-10-23 加），再下一行是第一组的组名（核心 FG-1），
+    // 再下一行是第一项功能，空格切掉。
     assert!(!text(&home).contains("[software]"), "{}", text(&home));
-    tui.key(b"j");
-    tui.key(b"j");
+    for _ in 0..3 {
+        tui.key(b"j");
+    }
     tui.key(b" ");
     until(&mut tui, "切掉的那一项", || {
         text(&home).contains("= false")

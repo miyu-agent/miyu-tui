@@ -3,13 +3,21 @@
 //! 头不读核心的存储（`01-架构.md` 第五节第 1 条），所以只照参数：写入的全部是加上的，带行号；编辑的每一处
 //! 按行比，不知道在文件的第几行，不带行号。完整的差异等核心经协议交出来（蓝图「还没有的」）。
 
+mod cache;
 pub mod unified;
+
+use std::rc::Rc;
+use std::time::Duration;
 
 use serde::Deserialize;
 use similar::{ChangeTag, TextDiff};
 
 /// 每处改动前后带几行不变的。
 const CONTEXT: usize = 3;
+
+/// 比一份最多用多久（发布前审查 T2-1）：整块重写大文件时 Myers 按改动数的平方走，4000 行比一遍两百多毫秒；到了就退成粗的
+/// 差异（多算几行改动），不让界面卡住。
+const DEADLINE: Duration = Duration::from_millis(30);
 
 /// 写入的参数里要的那一格。
 #[derive(Deserialize)]
@@ -67,7 +75,9 @@ pub struct Diff {
 
 /// 比两份内容。新建的文件，`before` 传空的。
 pub fn compare(before: &str, after: &str) -> Diff {
-    let diff = TextDiff::from_lines(before, after);
+    let diff = TextDiff::configure()
+        .timeout(DEADLINE)
+        .diff_lines(before, after);
     let mut out = Diff::default();
     for (i, group) in diff.grouped_ops(CONTEXT).iter().enumerate() {
         if i > 0 {
@@ -101,8 +111,14 @@ pub fn compare(before: &str, after: &str) -> Diff {
     out
 }
 
-/// 照工具调用的参数排差异：有 `content` 的是写入，有 `edits` 的是编辑；都不是的是 `None`。
-pub fn from_args(args: &serde_json::Value) -> Option<Diff> {
+/// 照工具调用的参数排差异：有 `content` 的是写入，有 `edits` 的是编辑；都不是的是 `None`。同样的参数比过的直接拿
+/// （`cache.rs`）：标题、合计、点开的差异共用一份，每帧不再重比。
+pub fn from_args(args: &serde_json::Value) -> Option<Rc<Diff>> {
+    cache::get_or(cache::key(args), || build(args))
+}
+
+/// 照参数比一遍。
+fn build(args: &serde_json::Value) -> Option<Diff> {
     if let Ok(write) = Write::deserialize(args) {
         return Some(compare("", &write.content));
     }
@@ -128,7 +144,7 @@ pub fn from_args(args: &serde_json::Value) -> Option<Diff> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Mark, compare};
+    use super::{DEADLINE, Mark, compare, from_args};
 
     fn marks(before: &str, after: &str) -> Vec<(Mark, Option<usize>, String)> {
         compare(before, after)
@@ -186,6 +202,42 @@ mod tests {
         let write =
             super::from_args(&serde_json::json!({"file_path": "a", "content": "1\n2\n"})).unwrap();
         assert_eq!(write.lines.last().map(|l| l.number), Some(Some(2)));
+    }
+
+    /// 量尺（不断言耗时，AGENTS 规矩）：`cargo test --bin miyu-tui a_large_rewrite -- --ignored --nocapture` 打出比一遍
+    /// 用了多久。
+    #[test]
+    #[ignore = "量尺"]
+    fn a_large_rewrite_is_compared_within_a_frame() {
+        // 发布前审查（2026-10-30）：还在进行的那一段每帧重排（`row_cache::fingerprint` 交 `None`），编辑这一步的标题
+        // `+N -N`、收起那一行的合计、点开的差异每帧各照参数重比一遍（`from_args`）。整块重写的编辑两边几乎没有相同的
+        // 行，Myers 不设期限时按改动数的平方走，这一轮剩下的时间里每一帧都卡在这里。
+        let old: String = (0..4000).map(|n| format!("old line {n}\n")).collect();
+        let new: String = (0..4000).map(|n| format!("new line {n}\n")).collect();
+        let start = std::time::Instant::now();
+        let diff = compare(&old, &new);
+        let spent = start.elapsed();
+        assert_eq!((diff.added, diff.removed), (4000, 4000));
+        eprintln!("4000 行整块重写比一次用了 {spent:?}（期限 {DEADLINE:?}）");
+    }
+
+    /// 同样的参数只比一次（发布前审查 T2-1）：标题、合计、点开的差异拿的是同一份；参数不一样的另比。
+    #[test]
+    fn the_same_arguments_are_compared_once() {
+        let args = serde_json::json!({"edits": [{"old_string": "a\nb", "new_string": "a\nc"}]});
+        let one = from_args(&args).unwrap();
+        let again = from_args(&args.clone()).unwrap();
+        assert!(std::rc::Rc::ptr_eq(&one, &again), "比过的直接拿");
+        assert_eq!((one.added, one.removed), (1, 1));
+        let other = serde_json::json!({"edits": [{"old_string": "a", "new_string": "b"}]});
+        assert!(!std::rc::Rc::ptr_eq(&one, &from_args(&other).unwrap()));
+        let write = serde_json::json!({"content": "a\nc"});
+        assert_eq!(
+            from_args(&write).map(|d| d.added),
+            Some(2),
+            "写入和编辑不混"
+        );
+        assert!(from_args(&serde_json::json!({"path": "x"})).is_none());
     }
 
     #[test]

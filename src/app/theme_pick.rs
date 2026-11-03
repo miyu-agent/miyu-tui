@@ -100,7 +100,7 @@ impl App {
             .as_array()?
             .iter()
             .find(|p| p["package"] == id && p["kind"] == "theme")
-            .and_then(|p| p["theme"]["file"].as_str())
+            .and_then(crate::settings::pages::mascots::tui_file)
             .map(str::to_string)
     }
 

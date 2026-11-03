@@ -234,6 +234,8 @@ impl Transcript {
             | Update::Human(_)
             | Update::ToolsChanged
             | Update::Notice(_)
+            | Update::Loops(_)
+            | Update::EffortSet(_)
             | Update::PackageProgress(_)
             | Update::Older { .. }
             | Update::Workspace { .. }
@@ -268,6 +270,7 @@ impl Transcript {
             | Update::Presets(_)
             | Update::AnswerRefused { .. }
             | Update::ConfigChanged
+            | Update::ModelsChanged
             | Update::SessionChanged(_) => {}
             Update::Failed(reason) => {
                 self.link = Link::Down(texts.core_failed.replace("{reason}", &reason));
@@ -341,6 +344,7 @@ impl Transcript {
             } => self.model_set(reference, replaced, texts),
             Push::PersonaSet(id) => self.persona_set(id, texts),
             Push::PresetSet(id) => self.preset_set(id, texts),
+            Push::EffortSet(level) => self.own_effort_set(level),
             Push::Said {
                 seq,
                 text,

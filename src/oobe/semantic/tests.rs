@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 use super::download::{Offer, Phase};
 use super::{SemanticStep, installed};
-use crate::core::Refusal;
+use crate::core::{Progress, Refusal, Stage};
 use crate::oobe::asker::{Asker, Waiting};
 use crate::oobe::{Move, Step};
 
@@ -141,17 +141,29 @@ fn yes_downloads_on_the_spot_with_progress_and_moves_on_when_installed() {
         sent(&mut asker),
         [("package.install", json!({"source": "miyu-embed"}))]
     );
-    assert_eq!(step.phase, Phase::Installing { done: 0, total: 0 });
-    step.progress("miyu-embed", 400, 1000);
-    step.progress("other", 999, 1000);
+    let pushed = |package: &str, stage, done, total| Progress {
+        package: package.into(),
+        stage,
+        done,
+        total,
+    };
+    let installing = |stage, done, total| Phase::Installing { stage, done, total };
+    assert_eq!(step.phase, installing(Stage::Download, 0, 0));
+    step.progress(&pushed("miyu-embed", Stage::Download, 400, 1000));
+    step.progress(&pushed("other", Stage::Download, 999, 1000));
     assert_eq!(
         step.phase,
-        Phase::Installing {
-            done: 400,
-            total: 1000
-        },
+        installing(Stage::Download, 400, 1000),
         "只认 embed 的进度"
     );
+    // 核心 IN-3 起下完以后核对、装：那一次不带字节数，下完的数留着。
+    step.progress(&pushed("miyu-embed", Stage::Download, 1000, 1000));
+    step.progress(&pushed("miyu-embed", Stage::Verify, 0, 0));
+    assert_eq!(step.phase, installing(Stage::Verify, 1000, 1000));
+    step.progress(&pushed("other", Stage::Install, 0, 0));
+    assert_eq!(step.phase, installing(Stage::Verify, 1000, 1000));
+    step.progress(&pushed("miyu-embed", Stage::Install, 0, 0));
+    assert_eq!(step.phase, installing(Stage::Install, 1000, 1000));
     // 下着的时候按键都不认，Esc 也不认。
     assert_eq!(step.key(key(KeyCode::Esc), &mut asker), Move::Stay);
     assert_eq!(step.key(key(KeyCode::Down), &mut asker), Move::Stay);

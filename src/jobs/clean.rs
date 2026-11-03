@@ -1,5 +1,5 @@
-//! 命令的输出给人看之前洗一遍（蓝图「后台命令、子代理和侧边栏」第 3、5 条）：终端转义序列（颜色、光标移动、标题）去掉；
-//! 一行里回车覆盖的只留最后一段（进度条）；制表符换成空格；别的控制字符去掉。
+//! 命令的输出给人看之前洗一遍（蓝图「后台命令、子代理和侧边栏」第 3、5 条）：终端转义序列（颜色、光标移动、标题，
+//! kitty、sixel 的图这种整段给终端的字串）去掉；一行里回车覆盖的只留最后一段（进度条）；制表符换成空格；别的控制字符去掉。
 
 use std::iter::Peekable;
 use std::str::Chars;
@@ -12,6 +12,9 @@ pub fn clean(text: &str, tab: usize) -> String {
     while let Some(c) = chars.next() {
         match c {
             '\x1b' => skip_escape(&mut chars),
+            // 8 位的写法（发布前审查 T2-3）：CSI、OSC 和几种字串同 7 位的。
+            '\u{9b}' => skip_csi(&mut chars),
+            '\u{9d}' | '\u{90}' | '\u{98}' | '\u{9e}' | '\u{9f}' => skip_string(&mut chars),
             '\n' => {
                 out.push_str(&line);
                 out.push('\n');
@@ -41,28 +44,37 @@ pub fn note_detail(output: &crate::core::JobOutput, tab: usize, nothing: &str) -
     }
 }
 
-/// 跳过 `ESC` 后面的一段：CSI（`ESC [` 到结尾那个字）、OSC（`ESC ]` 到 `BEL` 或 `ESC \`），别的只跳一个字。
+/// 跳过 `ESC` 后面的一段：CSI（`ESC [` 到结尾那个字）；OSC（`ESC ]`）、DCS（`ESC P`，sixel、tmux 透传）、APC（`ESC _`，
+/// kitty 的图）、PM（`ESC ^`）、SOS（`ESC X`）到字串结尾（发布前审查 T2-3：原来只认前两种，图的 base64 整段铺在面板里）；
+/// 别的只跳一个字。
 fn skip_escape(chars: &mut Peekable<Chars>) {
     match chars.next() {
-        Some('[') => {
-            for c in chars.by_ref() {
-                if ('\x40'..='\x7e').contains(&c) {
-                    break;
-                }
-            }
-        }
-        Some(']') => {
-            while let Some(c) = chars.next() {
-                if c == '\x07' {
-                    break;
-                }
-                if c == '\x1b' {
-                    chars.next();
-                    break;
-                }
-            }
-        }
+        Some('[') => skip_csi(chars),
+        Some(']' | 'P' | '_' | '^' | 'X') => skip_string(chars),
         _ => {}
+    }
+}
+
+/// CSI 的参数到结尾那个字。
+fn skip_csi(chars: &mut Peekable<Chars>) {
+    for c in chars.by_ref() {
+        if ('\x40'..='\x7e').contains(&c) {
+            break;
+        }
+    }
+}
+
+/// 字串到结尾：`BEL`、`ESC \\` 或 8 位的 ST（U+009C）。
+fn skip_string(chars: &mut Peekable<Chars>) {
+    while let Some(c) = chars.next() {
+        match c {
+            '\x07' | '\u{9c}' => break,
+            '\x1b' => {
+                chars.next();
+                break;
+            }
+            _ => {}
+        }
     }
 }
 
@@ -116,5 +128,15 @@ mod tests {
             "bell back",
             "别的控制字符去掉"
         );
+    }
+
+    #[test]
+    fn string_escapes_and_eight_bit_csi_leave_nothing_behind() {
+        // 发布前审查（2026-10-30）：只认 `ESC [`、`ESC ]` 两种，别的只跳过 `ESC` 后面一个字。APC（kitty 的图片协议，
+        // `kitten icat` 的输出）、DCS（sixel、tmux 透传）到 `ESC \` 为止整段是给终端的，不是给人看的字。
+        assert_eq!(clean("\x1b_Ga=T,f=100;iVBORw0KGgo=\x1b\\ok", 4), "ok");
+        assert_eq!(clean("\x1bPq#0;2;0;0;0~-\x1b\\ok", 4), "ok");
+        // 8 位的 CSI（U+009B）：控制字符本身去掉了，参数留成了字。
+        assert_eq!(clean("\u{9b}31mred\u{9b}0m", 4), "red");
     }
 }

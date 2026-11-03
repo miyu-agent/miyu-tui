@@ -9,12 +9,14 @@ use std::sync::{Arc, Mutex};
 /// 叫醒主循环。
 pub type Wake = Arc<dyn Fn() + Send + Sync>;
 
-/// 点了要切过去的通知，编号的打头（后面接会话编号）。kitty 的编号只认字母、数字和 `-_+.`，会话编号都在里面。
+/// 点了要切过去的通知，编号的打头（后面接会话编号）。
 const PREFIX: &str = "miyu-s-";
 
-/// 要切到 `session` 的那条通知的 kitty 编号。
-pub fn kitty_id(session: &str) -> String {
-    format!("{PREFIX}{session}")
+/// 要切到 `session` 的那条通知的 kitty 编号。kitty 的编号只认字母、数字和 `-_+.`，而且这一格在 OSC 99 里原样写、不
+/// base64：会话编号里有别的字的是 `None`，那条通知照平常的编号弹、点了不切（发布前第五批审查 T5-5）。
+pub fn kitty_id(session: &str) -> Option<String> {
+    let fine = |c: char| c.is_ascii_alphanumeric() || "-_+.".contains(c);
+    (!session.is_empty() && session.chars().all(fine)).then(|| format!("{PREFIX}{session}"))
 }
 
 /// kitty 回的一句（`99;i=<编号>[:…];…`）是点了哪个会话的通知；别的回话、别的通知是 `None`。
@@ -100,8 +102,9 @@ mod tests {
 
     #[test]
     fn a_clicked_kitty_notice_names_its_session() {
-        let id = kitty_id("01a17cd2-0852-7199-a84f-f1b4584073fe");
+        let id = kitty_id("01a17cd2-0852-7199-a84f-f1b4584073fe").unwrap();
         assert_eq!(id, "miyu-s-01a17cd2-0852-7199-a84f-f1b4584073fe");
+        assert_eq!(kitty_id("s\x1b\\x"), None, "kitty 不认的字不进编号");
         assert_eq!(
             clicked(&format!("99;i={id};")).as_deref(),
             Some("01a17cd2-0852-7199-a84f-f1b4584073fe")

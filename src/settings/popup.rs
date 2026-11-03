@@ -33,6 +33,12 @@ pub enum Popup {
     Ticks(super::pages::ticks::TickEdit),
     /// 加供应商先弹的目录（「配置页」第 11a 条）。
     Catalog(super::pages::catalog::CatalogPick),
+    /// 记录列表的列表窗（「配置页」第 47b 条）。
+    Records(super::pages::records::RecordsEdit),
+    /// 记录列表的一条的表单窗。
+    Record(super::pages::records::RecordForm),
+    /// 新建预设、人格的两格窗（`pages/create.rs`）。
+    Create(super::pages::create::CreateEdit),
 }
 
 /// 选默认模型的窗。
@@ -48,6 +54,8 @@ pub struct Pick {
     pub sel: usize,
     /// 滚到哪。
     pub top: usize,
+    /// 写到哪、写哪个键：`None` 是默认用途（`models.chat` 这些）；选模型的配置项写回那一项（第 33 条子规则）。
+    pub to: Option<(super::pages::target::Target, String)>,
 }
 
 /// 选模型的窗里的一行。
@@ -86,6 +94,7 @@ impl Pick {
             typing: false,
             sel: 0,
             top: 0,
+            to: None,
         };
         let current = match usage {
             Use::Chat => view.chat.clone(),
@@ -99,6 +108,26 @@ impl Pick {
             .unwrap_or(0);
         pick.settle(&items);
         pick
+    }
+
+    /// 停在引用是 `reference` 的那一行（选模型的配置项开窗时照它现在的值）。
+    pub fn at(mut self, reference: &str, view: &Data) -> Self {
+        let items = self.items(view);
+        if let Some(i) = items.iter().position(
+            |i| matches!(i, Item::Choice { reference: r, off: None, .. } if r == reference),
+        ) {
+            self.sel = i;
+        }
+        self.settle(&items);
+        self
+    }
+
+    /// 选好了写到 `target` 的 `key`，不写默认用途。
+    pub fn to(self, target: super::pages::target::Target, key: &str) -> Self {
+        Self {
+            to: Some((target, key.to_string())),
+            ..self
+        }
     }
 
     /// 一行行：池在上，再按供应商分段列模型；视觉的只列能看图的，池要每个成员都能看图。

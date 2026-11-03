@@ -51,7 +51,7 @@ impl App {
     }
 
     /// 那个会话在会话列表里怎么叫：标题，没有的照预览；没见过的是 `None`（写 Miyu）。
-    fn notice_title(&self, session: &str) -> Option<String> {
+    pub(super) fn notice_title(&self, session: &str) -> Option<String> {
         let info = self
             .talk
             .sessions_seen

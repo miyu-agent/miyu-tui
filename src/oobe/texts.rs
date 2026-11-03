@@ -215,6 +215,10 @@ pub struct SemanticDownload {
     pub preparing: String,
     /// 进度条后面，`{percent}`、`{done}`、`{total}`。
     pub progress: String,
+    /// 下完以后核对时，条后面写的。
+    pub verifying: String,
+    /// 核对完装的时候，条后面写的。
+    pub installing: String,
     /// 装不上以后的两行：重试、跳过。
     pub retry: String,
     /// 跳过。
@@ -368,8 +372,6 @@ pub struct Preset {
     /// 标题、说明。
     #[serde(flatten)]
     pub head: Heading,
-    /// 功能照包分组时，机主私人的那一组（`~home`）的组名：「我的」（核心 ENV-1）。
-    pub mine: String,
     /// 「自定义」。
     pub custom: String,
     /// 「自定义」下面暗色写的。

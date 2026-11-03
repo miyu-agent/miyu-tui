@@ -31,24 +31,26 @@ fn text(board: &Board, width: u16, full: bool) -> Vec<String> {
 }
 
 #[test]
-fn folded_it_shows_the_one_in_progress_and_the_next_two() {
-    // 2026-10-26 项目主人（反馈第 1 条）：只露进行中的一条、待进行的两条，标题写总数，底下不再接「还有」「已完成」。
+fn folded_it_shows_the_one_in_progress_and_the_next_one_then_how_many_more() {
+    // 2026-11-03 项目主人（改 10-26 反馈第 1 条的「待进行两条」）：只露进行中的一条、待进行的一条，标题写总数；没露出来的
+    // 没做完的最底下写「… 还有 N 项」，做完的不算。
     let lines = text(&board(12, 7), 30, false);
-    assert_eq!(lines.len(), 4, "标题加三项：{lines:?}");
+    assert_eq!(lines.len(), 4, "标题、两项、还有几项：{lines:?}");
     assert_eq!(lines[0], "待办 12/20");
     assert!(lines[1].starts_with("■ 第 12 项"), "先是在做的那项");
     assert!(lines[1].ends_with('…'), "长的截掉加 …");
     assert!(lines[2].starts_with("☐ 第 13 项"));
-    assert!(lines[3].starts_with("☐ 第 14 项"));
-    // 剩得少的露剩下的。
+    assert_eq!(lines[3], "… 还有 6 项", "没做完的八项露了两项");
+    // 剩得少的露剩下的，不写还有几项。
     let lines = text(&board(2, 1), 30, false);
     assert_eq!(lines.len(), 3, "在做的、没做的一项，做完的不露：{lines:?}");
-    // 没有在做的：露前三项没做的。
+    // 没有在做的：露前两项没做的。
     let mut idle = board(0, 4);
     idle.todos[0].state = TodoState::Pending;
     let lines = text(&idle, 30, false);
     assert_eq!(lines.len(), 4, "{lines:?}");
     assert!(lines[1].starts_with("☐ 第 0 项"), "{lines:?}");
+    assert_eq!(lines[3], "… 还有 3 项", "五项没做的露了两项：{lines:?}");
 }
 
 #[test]

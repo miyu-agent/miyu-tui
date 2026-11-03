@@ -29,6 +29,9 @@ pub fn render(head: &[Cell], rows: &[Vec<Cell>], aligns: &[Alignment], width: u1
         })
         .collect();
     let widths = bounded(natural, usize::from(width));
+    if widths.iter().sum::<usize>() + widths.len() * 3 + 1 > usize::from(width) {
+        return stacked(head, rows, width);
+    }
     // 线照主题的 `frame.table`（出厂直角）。
     let set = crate::sheet::read(|s| s.frame.table.lines());
     let rule = |left: &str, mid: &str, right: &str| {
@@ -72,6 +75,43 @@ fn bounded(mut widths: Vec<usize>, room: usize) -> Vec<usize> {
     }
     widths
 }
+
+/// 收到保底宽度还放不下的表一行一段（2026-11-02 项目主人照 Claude Code 定）：一格一行「表头：值」，表头加粗、表头色，
+/// 放不下的照宽折行；段与段之间一条暗色横线。
+fn stacked(head: &[Cell], rows: &[Vec<Cell>], width: u16) -> Vec<Folded> {
+    let set = crate::sheet::read(|s| s.frame.table.lines());
+    let rule = set.horizontal.repeat(usize::from(width).min(RULE));
+    let mut out = Vec::new();
+    for (r, row) in rows.iter().enumerate() {
+        if r > 0 {
+            out.push(line(vec![Span::styled(rule.clone(), theme::dim())]));
+        }
+        for (c, cell) in row.iter().enumerate() {
+            let title: String = head
+                .get(c)
+                .map(|h| h.iter().map(|p| p.text.as_str()).collect())
+                .unwrap_or_default();
+            let title = title.trim();
+            let mut pieces = Vec::new();
+            if !title.is_empty() {
+                // 表头是中日文的接全角冒号，不然接「: 」。
+                let wide = title
+                    .chars()
+                    .last()
+                    .is_some_and(|ch| ch.to_string().width() > 1);
+                let colon = if wide { "：" } else { ": " };
+                let style = theme::md_table_head();
+                pieces.push(Piece::new(format!("{title}{colon}"), style));
+            }
+            pieces.extend(cell.iter().cloned());
+            out.extend(fold(&pieces, width.max(1)));
+        }
+    }
+    out
+}
+
+/// 一行一段时段与段之间那条横线最长几列。
+const RULE: usize = 16;
 
 fn cell_width(cell: &Cell) -> usize {
     let text: String = cell.iter().map(|p| p.text.as_str()).collect();
@@ -203,5 +243,36 @@ mod tests {
     fn too_wide_tables_shrink_the_widest_column_down_to_the_floor() {
         assert_eq!(bounded(vec![30, 5], 30), vec![18, 5]);
         assert_eq!(bounded(vec![30, 30], 20), vec![14, 14], "保底两列各 14");
+    }
+
+    /// 2026-11-02 项目主人：二十列的表右边截掉了。收到保底宽度还放不下的一行一段，一格一行「表头：值」，段间一条横线。
+    #[test]
+    fn a_table_that_cannot_fit_is_written_one_row_per_paragraph() {
+        let heads = ["臂", "次", "过", "严格", "超时", "未做", "请求", "输入M"];
+        let head: Vec<Vec<Piece>> = heads.iter().map(|h| cell(h)).collect();
+        let row = |name: &str| -> Vec<Vec<Piece>> {
+            std::iter::once(cell(name))
+                .chain((1..heads.len()).map(|i| cell(&i.to_string())))
+                .collect()
+        };
+        let rows = vec![row("miyu 极简"), row("dsh 极简")];
+        let aligns = vec![Alignment::None; heads.len()];
+        let lines: Vec<String> = render(&head, &rows, &aligns, 40)
+            .iter()
+            .map(plain)
+            .collect();
+        assert!(
+            !lines.iter().any(|l| l.contains('┌')),
+            "不画表格：{lines:#?}"
+        );
+        assert!(lines.iter().all(|l| l.width() <= 40), "{lines:#?}");
+        assert_eq!(lines[0], "臂：miyu 极简", "{lines:#?}");
+        assert_eq!(lines[3], "严格：3");
+        assert_eq!(lines[heads.len()], "─".repeat(16), "段间横线：{lines:#?}");
+        assert_eq!(lines[heads.len() + 1], "臂：dsh 极简");
+        assert_eq!(lines.len(), heads.len() * 2 + 1, "表头那一行不另写");
+        // 放得下的照旧画表格。
+        let fits = render(&head[..2], &[row("a")[..2].to_vec()], &aligns[..2], 40);
+        assert!(plain(&fits[0]).starts_with('┌'));
     }
 }

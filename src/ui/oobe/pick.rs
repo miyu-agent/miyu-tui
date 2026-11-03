@@ -7,6 +7,7 @@ use unicode_width::UnicodeWidthStr;
 use super::content::Content;
 use crate::config::Bar;
 use crate::config::Icons;
+use crate::core::Stage;
 use crate::oobe::semantic::download::{Offer, Phase};
 use crate::oobe::{Oobe, SemanticTexts, Texts};
 use crate::theme;
@@ -130,8 +131,9 @@ pub fn semantic(oobe: &Oobe, texts: &Texts, bar: &Bar, width: u16) -> Content {
     let mut c = Content::new(width);
     c.heading(&words.head.title, &words.head.sub);
     let rows: [(String, String); 2] = match &step.phase {
-        Phase::Installing { done, total } => {
-            c.lines.push(progress(*done, *total, words, bar, width));
+        Phase::Installing { stage, done, total } => {
+            c.lines
+                .push(progress(*stage, (*done, *total), words, bar, width));
             return c;
         }
         Phase::Failed { said, why } => {
@@ -184,18 +186,32 @@ pub fn semantic(oobe: &Oobe, texts: &Texts, bar: &Bar, width: u16) -> Content {
     c
 }
 
-/// 下载的进度条（同界面块的进度条的两种格），后面写百分比和下了多少；还没推来进度的写「准备下载…」。
-fn progress(done: u64, total: u64, words: &SemanticTexts, bar: &Bar, width: u16) -> Line<'static> {
+/// 装的进度条（同界面块的进度条的两种格）：下载时后面写百分比和下了多少，还没推来进度的写「准备下载…」；下完以后核对、
+/// 装的时候条满着，后面写「核对…」「安装…」（第 26b 条，2026-10-30 项目主人定）。
+fn progress(
+    stage: Stage,
+    (done, total): (u64, u64),
+    words: &SemanticTexts,
+    bar: &Bar,
+    width: u16,
+) -> Line<'static> {
     let d = &words.download;
-    if total == 0 {
-        return Line::styled(d.preparing.clone(), theme::dim());
-    }
-    let value = (done as f64 / total as f64).clamp(0.0, 1.0);
-    let tail = d
-        .progress
-        .replace("{percent}", &format!("{:.0}", value * 100.0))
-        .replace("{done}", &crate::drawer::size(done))
-        .replace("{total}", &crate::drawer::size(total));
+    let (value, tail) = match stage {
+        Stage::Download if total == 0 => {
+            return Line::styled(d.preparing.clone(), theme::dim());
+        }
+        Stage::Download => {
+            let value = (done as f64 / total as f64).clamp(0.0, 1.0);
+            let tail = d
+                .progress
+                .replace("{percent}", &format!("{:.0}", value * 100.0))
+                .replace("{done}", &crate::drawer::size(done))
+                .replace("{total}", &crate::drawer::size(total));
+            (value, tail)
+        }
+        Stage::Verify => (1.0, d.verifying.clone()),
+        Stage::Install => (1.0, d.installing.clone()),
+    };
     let room = usize::from(width).saturating_sub(tail.width() + 2);
     let cells = bar.width.min(room).max(1);
     let full = ((value * cells as f64).round() as usize).min(cells);

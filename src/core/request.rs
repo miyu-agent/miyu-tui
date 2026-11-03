@@ -109,6 +109,7 @@ pub(super) fn request(
         | Command::ListSessions
         | Command::Pin { .. }
         | Command::Delete(_)
+        | Command::Viewing(_)
         | Command::SetLanguage(_)
         | Command::SetTheme(_)
         | Command::FetchHuman(_)
@@ -130,7 +131,7 @@ pub(super) fn request(
         | Command::Older(_)
         | Command::CheckDir { .. }
         | Command::NewWorkspace(_)
-        | Command::SetEffort { .. }
+        | Command::SessionEffort(_)
         | Command::Catalog(_)
         | Command::Widgets(_)
         | Command::Dream(_)

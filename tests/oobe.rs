@@ -46,7 +46,7 @@ fn to_persona(home: &Home) -> Tui {
 }
 
 fn persona_file(home: &Home, name: &str) -> PathBuf {
-    home.root().join("personas/persona-1").join(name)
+    home.data().personas().join("persona-1").join(name)
 }
 
 fn read(path: &PathBuf) -> String {
@@ -149,10 +149,10 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.wait_for("说话简短。");
     tui.key(b"\x1b[B");
     tui.key(b"\r");
-    // 建好、写成默认人格，到了主题（第 22a 条）：没头像的停在现在的配置；明暗那一格回车开列表（2026-10-14 项目主人：
+    // 建好、写成默认人格，到了主题（第 22a 条）：停在出厂的「自动」（2026-11-02 项目主人）；明暗那一格回车开列表（2026-10-14 项目主人：
     // 和配置页选值的同一个），挪到哪当场换成哪的底；选好深色，挪到「下一步」写下。
     tui.wait_for("选择明暗和配色");
-    assert!(tui.shows("Tokyo Night"), "{}", tui.lines().join("\n"));
+    assert!(tui.shows("自动"), "{}", tui.lines().join("\n"));
     // 两格之间空一行，同别的几步的表单（2026-10-14 项目主人报：挤在一起）。
     let lines = tui.lines();
     // 那一格的行：去掉光标的 `❯` 以后以名字打头（说明那一行里也有「明暗」「配色」）。
@@ -361,7 +361,7 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
     tui.key(b"\r");
     through_semantic(&mut tui);
     tui.wait_for("按 Enter 开始对话");
-    let file = home.root().join("presets/preset-1.toml");
+    let file = home.data().presets().join("preset-1.toml");
     let text = read(&file);
     assert!(
         text.contains("写代码") && text.contains("= false"),

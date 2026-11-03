@@ -52,7 +52,7 @@ impl Settings {
     /// 正在打字的窗：一行字、几行字、示范对话的一轮，表单里正在改的那一格（这些地方 `Ctrl+J` 归编辑器）。
     fn writing(&self) -> bool {
         match &self.popup {
-            Some(Popup::Line(_) | Popup::Sheet(_) | Popup::Pair(_)) => true,
+            Some(Popup::Line(_) | Popup::Sheet(_) | Popup::Pair(_) | Popup::Create(_)) => true,
             Some(Popup::Form(form)) => form.editing.is_some(),
             _ => false,
         }
@@ -75,6 +75,7 @@ impl Settings {
             // 几行字的窗留着换行（「配置页」第 45 条）。
             Some(Popup::Sheet(edit)) => Settings::sheet_paste(edit, text),
             Some(Popup::Pair(edit)) => Settings::pair_paste(edit, clean),
+            Some(Popup::Create(edit)) => Settings::create_paste(edit, clean),
             Some(Popup::Pick(pick)) if pick.typing => {
                 pick.search.push_str(clean);
                 pick.refilter(&self.view);
@@ -384,6 +385,12 @@ impl Settings {
                     pick.refilter(&self.view);
                 }
                 KeyCode::Enter => {
+                    // 选模型的配置项（第 33 条子规则）：写回那一项。
+                    if let (Some(reference), Some((target, key))) =
+                        (pick.chosen(&self.view), pick.to.clone())
+                    {
+                        return self.write_to(target, &key, serde_json::json!(reference), texts);
+                    }
                     if let (Some(reference), Some(data)) = (pick.chosen(&self.view), &self.data) {
                         let key = match pick.usage {
                             super::nav::Use::Chat => "models.chat",
@@ -400,7 +407,12 @@ impl Settings {
                     pick.search.clear();
                     pick.refilter(&self.view);
                 }
-                KeyCode::Esc => return,
+                KeyCode::Esc => {
+                    if let Some((target, _)) = pick.to {
+                        self.edit_cancel(target);
+                    }
+                    return;
+                }
                 _ => {}
             }
             true

@@ -33,13 +33,17 @@ impl App {
             label: config.text.paste_label.clone(),
         });
         input.set_attach_rule(paste::attach_rule(&config));
-        // 输入历史连上以后照 `package.list` 放进终端这个包的状态目录（`app/packages.rs`）；这里先记着 9-1 以前的老位置
-        // （数据根的 `state/tui/history.jsonl`），拿不到状态目录的照旧用它。单元测试不记：数据根是人在用的。
+        // 输入历史连上以后照 `package.list` 放进终端这个包的状态目录（`app/packages.rs`）；这里先照核心算的包状态目录记一份
+        // （设计 55 第三节第 4 条，核心 FH-3 起是数据根的 `var/lib/miyu-tui/`），拿不到 `package.list` 的照它。单元测试不记：
+        // 数据根是人在用的。
         let old_history =
             miyu_client::places::DataRoot::locate(&miyu_client::places::Env::current())
                 .ok()
                 .filter(|_| !cfg!(test))
-                .map(|root| root.state().join("tui").join("history.jsonl"));
+                .map(|root| {
+                    root.package_state(super::packages::PACKAGE)
+                        .join("history.jsonl")
+                });
         // 提示音、暂存的截图放机器缓存目录（「系统通知」第 5 条、「输入框」第 12 条）；找不到的不响、贴不了图。
         let cache = miyu_client::places::cache_root(&miyu_client::places::Env::current()).ok();
         let sounds = cache.as_ref().map(|root| root.join("tui").join("sounds"));
@@ -73,6 +77,7 @@ impl App {
                 left: Vec::new(),
                 opening: None,
                 sessions_seen: None,
+                unseen: Default::default(),
                 deleting: Default::default(),
                 unsent: None,
                 takeback: None,
@@ -86,6 +91,7 @@ impl App {
             },
             link: super::link::Link {
                 core,
+                viewing: None,
                 abilities: crate::core::Abilities::default(),
                 human,
                 currency: "USD".to_string(),
@@ -96,8 +102,9 @@ impl App {
                 look: Default::default(),
                 widgets: Default::default(),
                 service: Default::default(),
+                backstage: Default::default(),
                 bill_asked: None,
-                package_names: Default::default(),
+                loops: Vec::new(),
             },
             typing: super::typing::Typing {
                 input,
@@ -120,7 +127,6 @@ impl App {
                     config_tips,
                 ),
                 notice: None,
-                slash_draft: None,
             },
             boxes: Default::default(),
             media: super::media::Media::new(md_keep, figures),

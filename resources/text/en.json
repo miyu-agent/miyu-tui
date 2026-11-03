@@ -13,6 +13,7 @@
     "With background commands running, ↓ on an empty input opens the panel"
   ],
   "untitled": "Untitled session",
+  "slot_unknown": "Unknown parts in a slot: {names}",
   "queued_withdraw": "click to take back",
   "side_id": "#{id}",
   "side_cwd": "Workspace",
@@ -212,6 +213,17 @@
     "done": "Renamed: {title}",
     "removed": "Title removed",
     "too_long": "Titles are at most {max} characters"
+  },
+  "feature_tree": {
+    "empty": {"skills": "No skills yet", "scripts": "No scripts yet", "mcp": "No MCP servers yet", "other": "Nothing yet"},
+    "missing": "Not installed"
+  },
+  "loops": {
+    "title": "Loop",
+    "paused": "Paused",
+    "next": "Next {time}",
+    "dynamic": "Dynamic interval",
+    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"]
   },
   "goal": {
     "mark": "● ",
@@ -553,7 +565,7 @@
     "stopped": "(stopped)",
     "main": "Main session",
     "more": "{count} more",
-    "todo": "To-dos {done}/{total}",
+    "todo": "To-dos {done}/{total}", "todo_more": "{n} more",
     "done_note": "Background command done · {title} · {elapsed}",
     "failed_note": "Background command failed · {title} · exit code {code}",
     "stopped_note": "Background command stopped · {title}{why}",
@@ -752,7 +764,7 @@
     "delete_again": "Press Ctrl+D again to delete \"{title}\"",
     "deleted": "Deleted \"{title}\"",
     "asking": "asking",
-    "delete_current": "Can't delete the session in use; switch away first",
+    "delete_running": "A turn is running: interrupt it before deleting this session",
     "pinned": "Pinned",
     "unpinned": "Unpinned",
     "tokens": "Σ{tokens}",
@@ -765,7 +777,7 @@
     "title": "Thinking effort · {model}",
     "loading_title": "Thinking effort",
     "hint": "↑/↓ select · Enter switch · Esc close",
-    "default": "Default (provider decides)",
+    "default": "Follow settings",
     "loading": "Reading models…",
     "none": "This model has no effort levels to choose",
     "need_model": "A model pool is in use"
@@ -844,9 +856,9 @@
       "": "Auto",
       "on": "On",
       "off": "Off",
-      "rotate": "Rotate",
-      "pin": "Pin",
-      "ordered": "In order",
+      "rotate": "Rotate per request",
+      "pin": "Pinned per session",
+      "ordered": "Fall back when unavailable",
       "secret": "API key",
       "env": "Env variable",
       "text": "Text",
@@ -867,7 +879,7 @@
       "model": "Model",
       "inputs": "Inputs",
       "window": "Context window",
-      "effort": "Default thinking",
+      "effort": "Default effort for new sessions",
       "temperature": "Temperature",
       "price": "Price · per 1M tokens",
       "input": "Input",
@@ -1166,7 +1178,6 @@
         "Presets",
         "Decides which features are on"
       ],
-      "package_mine": "Mine",
       "preset_detail": [
         "Features {on}/{all}",
         "Not installed",
@@ -1197,8 +1208,6 @@
       "default_mark": "default",
       "no_personas": "No personas yet",
       "loading": "Reading…",
-      "no_packages": "No package has settings",
-      "package_items": "{n} settings",
       "counted": "{n} listed",
       "detail": [
         "Name",
@@ -1307,6 +1316,10 @@
             "select"
           ],
           [
+            "←/→",
+            "column"
+          ],
+          [
             "Space",
             "toggle"
           ],
@@ -1375,7 +1388,6 @@
         ]
       ],
       "persona_edit": {
-        "new_name": "Name of the new persona",
         "deleted": "Deleted (kept in the trash for 7 days)",
         "restored": "Restored to the shipped one",
         "avatar": "Avatar",
@@ -1399,7 +1411,6 @@
         }
       },
       "preset_edit": {
-        "new_name": "Name of the new preset",
         "deleted": "Deleted",
         "restored": "Restored to the shipped one",
         "remove": {
@@ -1436,14 +1447,18 @@
       "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Figure", "icons": "Icons", "keys": "Interaction"},
       "appearance": "Appearance",
       "service": {"group": "Startup", "name": "Start the core at login", "enabling": "Turning on start at login…", "disabling": "Turning off start at login…", "enabled": "Starts at login: {file}", "disabled": "No longer starts at login", "failed": "Failed: {step}: {said}", "no_home": "Home directory not found", "windows": "Not available on Windows with MIYU_HOME set"},
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.sidebar_sessions": {"0": "Off"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"auto": "Auto", "persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.sidebar_sessions": {"0": "Off"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
       "unavailable": "Not installed",
       "custom_model": "Enter a model…",
       "combo": ["Not set", "Other…"],
       "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]],
       "list": {"empty": "None yet", "whole": "Enter a whole number", "hints": [["Enter", "edit"], ["a", "add"], ["d", "delete"], ["J/K", "move"], ["Esc", "done"]]},
       "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["Ctrl+A", "all"], ["j/k", "move"], ["Enter", "save"], ["Esc", "cancel"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally"},
-      "mcp": {"entry": ["MCP", "Status and sign-in of MCP servers"], "states": {"off": "Off", "starting": "Starting", "running": "Running", "waiting": "Reconnecting", "stopped": "Stopped", "needs_login": "Sign-in needed"}, "tools": "{n} tools", "login": "Sign in", "asking": "Getting the sign-in page for {name}", "opened": "Opened the sign-in page for {name} in the browser", "no_browser": "Can't open a browser. Sign-in page: {url}", "unregistered": "This server needs a registered client. Put its client_id in the server's settings", "failed": "Sign-in failed: {why}", "logout": "Sign out", "leaving": "Signing out of {name}", "left": "Signed out of {name}", "not_logged_in": "{name} was not signed in", "hints": [["Enter", "sign in / out"], ["Esc", "back"]]}
+      "mcp": {"entry": ["MCP", "Status and sign-in of MCP servers"], "states": {"off": "Off", "starting": "Starting", "running": "Running", "waiting": "Reconnecting", "stopped": "Stopped", "needs_login": "Sign-in needed"}, "tools": "{n} tools", "login": "Sign in", "asking": "Getting the sign-in page for {name}", "opened": "Opened the sign-in page for {name} in the browser", "no_browser": "Can't open a browser. Sign-in page: {url}", "unregistered": "This server needs a registered client. Put its client_id in the server's settings", "failed": "Sign-in failed: {why}", "logout": "Sign out", "leaving": "Signing out of {name}", "left": "Signed out of {name}", "not_logged_in": "{name} was not signed in", "hints": [["Enter", "sign in / out"], ["Esc", "back"]]},
+      "slider_hints": [["←/→", "adjust"], ["Enter", "type a value"], ["d", "reset"], ["Esc", "back"]],
+      "records": {"nth": "Item {n}", "empty": "None yet", "hints": [["Enter", "edit"], ["a", "add"], ["d", "delete"], ["J/K", "move"], ["Esc", "close"]], "form_hints": [["↑/↓", "select"], ["Enter", "change"], ["←/→", "slider"], ["Esc", "back to list"]]},
+      "create": {"titles": ["New preset", "New persona"], "sides": ["id", "Name"], "id_hint": "leave empty to pick one", "name_missing": "Name is required", "id_bad": "id starts with a lowercase letter and uses only a-z, 0-9, - and _", "id_taken": "This id is taken", "id_unchecked": "Loading list, try again"},
+      "store": {"entry": ["Packages", "Download, installed, backstage"], "tabs": ["Download", "Installed", "Backstage"], "sort": "Sort", "sorts": ["Recent", "Downloads", "Trending"], "search": "Search: ", "states": {"installed": "installed", "upgradable": "update", "blocked": "blocked", "off": "off", "upgrade_to": "update → {to}"}, "loading_source": "Reading the package source…", "loading": "Loading…", "empty": ["No matching packages", "No packages with a backstage page yet"], "keys": {"name": "Name", "version": "Version", "summary": "Description", "author": "Author", "upstream": "Upstream", "source": "Source", "from": "From", "depends": "Depends on", "required_by": "Required by", "provides": "Provides", "needs": "Needs", "download": "Download size", "installed_size": "Installed size", "published": "Published", "downloads": "Downloads", "installed": "Install date", "settings": "Settings"}, "values": {"installed_as": " (installed {v})", "downloads": "{n} ({w} this week)", "settings_yes": "yes, Enter to open", "settings_no": "none", "none": "none", "sep": ", ", "replace": "{from} → {to}"}, "provides": {"program": "program", "command": "command", "commands": "commands", "page": "backstage page", "mascot": "mascot", "theme": "appearance", "connection": "connection", "settings": "settings", "mcp": "MCP server", "skills": "skill", "scripts": "script", "slash": "slash command", "personas": "persona", "presets": "preset"}, "ask": {"install": "Install {n} package(s):", "with": "Dependencies", "recommends": "Recommended (not installed)", "remove": "Remove {name}:", "drop": "Also removes", "drop_settings": "{n} setting(s)", "drop_state": "state directory", "upgrade": "Upgrade {n} package(s):", "approve": "Turning on {name} needs:", "go": "Continue? [Y/n]", "above": "↑ {n} more above", "below": "↓ {n} more below", "downloading": "Downloading…", "verifying": "Verifying…", "installing": "Installing…", "size": "Size"}, "status": {"installed": "Installed {names}", "removed": "Removed {name}", "upgraded": "Upgraded {names}", "on": "{name} turned on", "off": "{name} turned off", "latest": "{name} is up to date", "all_latest": "Everything is up to date", "cancelled": "Cancelled", "no_settings": "This package has no settings", "blocked": "Blocked: {why}", "opened": "Opened the backstage of {name} in the browser", "run_web": "Run miyu web --package {id} in a terminal", "no_browser": "Couldn't open a browser. Backstage page: {url}", "previewing": "Checking…", "unread": "{n} more lines to review", "too_small": "Window too small to review"}, "hints": {"source": [["↑/↓", "select"], ["/", "search"], ["Tab", "pick"], ["Enter", "install"], ["s", "sort"], [", .", "page"], ["Esc", "back"]], "typing": [["Ctrl+J/K", "select"], ["Enter", "done"], ["Esc", "cancel"]], "installed": [["↑/↓", "select"], ["Enter", "settings"], ["Space", "on/off"], ["d", "remove"], ["u", "upgrade"], ["U", "upgrade all"], ["Esc", "back"]], "backstage": [["↑/↓", "select"], ["Enter", "open in browser"], [", .", "page"], ["Esc", "back"]], "confirm": [["y/Enter", "continue"], ["n/Esc", "cancel"]], "confirm_scroll": [["↑/↓", "scroll"], ["y/Enter", "continue"], ["n/Esc", "cancel"]], "running": [["", "Please wait"]]}, "programs": {"ui": "interface", "process": "extension", "worker": "worker program", "builtin": "built-in feature"}}
     }
   },
   "oobe": {
@@ -1465,7 +1480,7 @@
       "persona": "Enter edit · j/k move · Esc back",
       "edit": "Enter edit · j/k move · Esc back",
       "writing": "Enter new line · Ctrl+G external editor · Esc done",
-      "custom": "Space toggle · Ctrl+A all · j/k move · Esc close",
+      "custom": "Space toggle · Ctrl+A all · j/k move · h/l column · Esc close",
       "custom_name": "Enter edit · j/k move · Esc close",
       "create": "Enter create · j/k move · Esc close",
       "view": "j/k scroll · Space close",
@@ -1591,7 +1606,6 @@
       "avatar_set": "Set"
     },
     "preset": {
-      "mine": "Mine",
       "title": "Choose a preset",
       "sub": "A preset decides which features are on. You can change it in settings or per session",
       "custom": "Custom",
@@ -1607,7 +1621,7 @@
       "sub": "Choose mode and colors. Applies immediately. You can change this in settings later",
       "rows": ["Mode", "Colors", "Figure", "Accent", "Background"],
       "modes": ["Auto", "Dark", "Light"],
-      "colors": ["Follow the avatar", "Follow the wallpaper", "Tokyo Night", "Terminal colors"],
+      "colors": ["Auto", "Follow the avatar", "Follow the wallpaper", "Terminal colors"],
       "from_avatar": "From {name}'s avatar",
       "from_seed": "Uses {name}'s main color",
       "no_avatar": "{name} has no avatar. Using Tokyo Night", "from_wallpaper": "From the desktop wallpaper", "no_wallpaper": "No desktop wallpaper found. Using Tokyo Night",
@@ -1634,7 +1648,7 @@
       "sub": "Much better search in memories, knowledge bases, stickers and more, at a much higher memory use and extra CPU on each search",
       "on": ["Yes", "Recommended"],
       "off": ["No", "Keyword search only"],
-      "download": {"size": "{size} to download", "preparing": "Preparing download…", "progress": "{percent}% · {done} / {total}", "retry": "Retry", "skip": "Skip"}
+      "download": {"size": "{size} to download", "preparing": "Preparing download…", "progress": "{percent}% · {done} / {total}", "verifying": "Verifying…", "installing": "Installing…", "retry": "Retry", "skip": "Skip"}
     },
     "done": {
       "title": "All set",

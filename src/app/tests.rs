@@ -92,8 +92,11 @@ fn the_persona_box_opens_before_connecting_when_the_guide_was_done() {
 }
 
 mod bill;
+mod effort;
 mod goal;
+mod models_changed;
 mod notices;
 mod pools;
 mod status;
 mod switching;
+mod theme_auto;

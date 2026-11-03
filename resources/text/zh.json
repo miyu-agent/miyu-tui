@@ -13,6 +13,7 @@
     "有后台命令时，在空输入框按 ↓ 打开后台面板"
   ],
   "untitled": "未命名会话",
+  "slot_unknown": "挂载位里有不认识的部件：{names}",
   "queued_withdraw": "点击撤回",
   "side_id": "#{id}",
   "side_cwd": "工作区",
@@ -212,6 +213,17 @@
     "done": "已改名：{title}",
     "removed": "已清除标题",
     "too_long": "标题最多 {max} 个字"
+  },
+  "feature_tree": {
+    "empty": {"skills": "还没有技能", "scripts": "还没有脚本", "mcp": "还没有 MCP 服务", "other": "还没有"},
+    "missing": "未安装"
+  },
+  "loops": {
+    "title": "循环",
+    "paused": "已暂停",
+    "next": "下次 {time}",
+    "dynamic": "动态间隔",
+    "every": ["每 {n} 秒", "每 {n} 分钟", "每 {n} 小时", "每 {n} 天"]
   },
   "goal": {
     "mark": "● ",
@@ -553,7 +565,7 @@
     "stopped": "（已停止）",
     "main": "主会话",
     "more": "还有 {count} 个",
-    "todo": "待办 {done}/{total}",
+    "todo": "待办 {done}/{total}", "todo_more": "还有 {n} 项",
     "done_note": "后台命令完成 · {title} · {elapsed}",
     "failed_note": "后台命令失败 · {title} · 退出码 {code}",
     "stopped_note": "后台命令已停止 · {title}{why}",
@@ -752,7 +764,7 @@
     "delete_again": "再按一次 Ctrl+D 删除「{title}」",
     "deleted": "已删除「{title}」",
     "asking": "在问",
-    "delete_current": "无法删除当前会话",
+    "delete_running": "回答进行中：先打断再删除当前会话",
     "pinned": "已置顶",
     "unpinned": "已取消置顶",
     "tokens": "Σ{tokens}",
@@ -765,7 +777,7 @@
     "title": "思考强度 · {model}",
     "loading_title": "思考强度",
     "hint": "↑/↓ 选择 · Enter 切换 · Esc 关闭",
-    "default": "默认（由供应商决定）",
+    "default": "跟随设置",
     "loading": "正在加载模型…",
     "none": "该模型没有可选的思考强度",
     "need_model": "当前使用的是模型池"
@@ -844,9 +856,9 @@
       "": "自动",
       "on": "开",
       "off": "关",
-      "rotate": "轮换",
-      "pin": "固定",
-      "ordered": "照先后",
+      "rotate": "每次请求轮换",
+      "pin": "按会话固定",
+      "ordered": "不可用时回退",
       "secret": "API Key",
       "env": "环境变量",
       "text": "文字",
@@ -867,7 +879,7 @@
       "model": "模型",
       "inputs": "支持输入",
       "window": "上下文窗口",
-      "effort": "默认思考",
+      "effort": "新会话默认思考",
       "temperature": "温度",
       "price": "价格 · 每百万 token",
       "input": "输入",
@@ -1166,7 +1178,6 @@
         "预设",
         "决定开关哪些功能"
       ],
-      "package_mine": "我的",
       "preset_detail": [
         "功能 {on}/{all}",
         "未安装",
@@ -1197,8 +1208,6 @@
       "default_mark": "默认",
       "no_personas": "暂无人格",
       "loading": "正在加载…",
-      "no_packages": "没有带设置的软件包",
-      "package_items": "{n} 项",
       "counted": "{n} 个",
       "detail": [
         "名称",
@@ -1307,6 +1316,10 @@
             "选择"
           ],
           [
+            "←/→",
+            "换列"
+          ],
+          [
             "空格",
             "开关"
           ],
@@ -1375,7 +1388,6 @@
         ]
       ],
       "persona_edit": {
-        "new_name": "新人格名称",
         "deleted": "已删除（回收站保留 7 天）",
         "restored": "已恢复为出厂设置",
         "avatar": "头像",
@@ -1399,7 +1411,6 @@
         }
       },
       "preset_edit": {
-        "new_name": "新预设名称",
         "deleted": "已删除",
         "restored": "已恢复为出厂设置",
         "remove": {
@@ -1436,14 +1447,18 @@
       "own_groups": {"look": "主题", "theme": "配色方案", "timeline": "时间线", "mascot": "形象", "icons": "图标", "keys": "交互"},
       "appearance": "外观",
       "service": {"group": "启动", "name": "开机启动核心", "enabling": "正在设为开机启动…", "disabling": "正在取消开机启动…", "enabled": "已设为开机启动：{file}", "disabled": "已取消开机启动", "failed": "没成：{step}：{said}", "no_home": "找不到家目录", "windows": "设了 MIYU_HOME 时 Windows 上装不了"},
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}, "tui.sidebar_sessions": {"0": "不显示"}, "tui.keys": {"arrows": "方向键", "vim": "Vim"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"auto": "自动", "persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}, "tui.sidebar_sessions": {"0": "不显示"}, "tui.keys": {"arrows": "方向键", "vim": "Vim"}},
       "unavailable": "未安装",
       "custom_model": "输入模型…",
       "combo": ["不设", "其他…"],
       "sheet_hints": [["Enter", "换行"], ["Ctrl+G", "外部编辑器"], ["Esc", "完成"]],
       "list": {"empty": "还没有", "whole": "请输入整数", "hints": [["Enter", "编辑"], ["a", "添加"], ["d", "删除"], ["J/K", "移动"], ["Esc", "完成"]]},
       "ticks": {"empty": "没有可选的", "hints": [["空格", "勾选"], ["Ctrl+A", "全选"], ["j/k", "移动"], ["Enter", "保存"], ["Esc", "取消"]]}, "package_from": {"shipped": "出厂自带", "official": "官方软件源", "local": "本机安装"},
-      "mcp": {"entry": ["MCP", "MCP 服务的状态、登录"], "states": {"off": "关着", "starting": "在启动", "running": "在跑", "waiting": "等重连", "stopped": "停了", "needs_login": "要登录"}, "tools": "{n} 件工具", "login": "登录", "asking": "正在要 {name} 的授权页", "opened": "已在浏览器打开 {name} 的授权页", "no_browser": "打不开浏览器，授权页：{url}", "unregistered": "这个服务要先注册客户端，把 client_id 写进它的设置", "failed": "登录失败：{why}", "logout": "登出", "leaving": "正在登出 {name}", "left": "已登出 {name}", "not_logged_in": "{name} 没有登录过", "hints": [["Enter", "登录、登出"], ["Esc", "返回"]]}
+      "mcp": {"entry": ["MCP", "MCP 服务的状态、登录"], "states": {"off": "关着", "starting": "在启动", "running": "在跑", "waiting": "等重连", "stopped": "停了", "needs_login": "要登录"}, "tools": "{n} 件工具", "login": "登录", "asking": "正在要 {name} 的授权页", "opened": "已在浏览器打开 {name} 的授权页", "no_browser": "打不开浏览器，授权页：{url}", "unregistered": "这个服务要先注册客户端，把 client_id 写进它的设置", "failed": "登录失败：{why}", "logout": "登出", "leaving": "正在登出 {name}", "left": "已登出 {name}", "not_logged_in": "{name} 没有登录过", "hints": [["Enter", "登录、登出"], ["Esc", "返回"]]},
+      "slider_hints": [["←/→", "调"], ["Enter", "输入数值"], ["d", "恢复默认"], ["Esc", "返回"]],
+      "records": {"nth": "第 {n} 项", "empty": "还没有", "hints": [["Enter", "编辑"], ["a", "添加"], ["d", "删除"], ["J/K", "移动"], ["Esc", "收起"]], "form_hints": [["↑/↓", "选择"], ["Enter", "改这一格"], ["←/→", "调滑块"], ["Esc", "回到列表"]]},
+      "create": {"titles": ["新建预设", "新建人格"], "sides": ["id", "名字"], "id_hint": "留空自动起", "name_missing": "名字不能空着", "id_bad": "id 要小写字母开头，只用小写字母、数字、-、_", "id_taken": "这个 id 已经有了", "id_unchecked": "列表读取中，稍后再试"},
+      "store": {"entry": ["软件包", "下载软件、已安装、软件后台"], "tabs": ["下载软件", "已安装", "软件后台"], "sort": "排序", "sorts": ["最近", "下载量", "趋势"], "search": "搜索：", "states": {"installed": "已安装", "upgradable": "可升级", "blocked": "已拉黑", "off": "关", "upgrade_to": "可升级 → {to}"}, "loading_source": "正在读软件源…", "loading": "正在读取…", "empty": ["没有对得上的软件包", "还没有带后台页的软件包"], "keys": {"name": "名字", "version": "版本", "summary": "说明", "author": "作者", "upstream": "上游", "source": "软件源", "from": "来源", "depends": "依赖", "required_by": "被依赖", "provides": "包含", "needs": "需要", "download": "下载大小", "installed_size": "安装后大小", "published": "发布时间", "downloads": "下载量", "installed": "安装时间", "settings": "设置"}, "values": {"installed_as": "（装着 {v}）", "downloads": "{n}（本周 {w}）", "settings_yes": "有，Enter 进入", "settings_no": "无", "none": "无", "sep": "、", "replace": "{from} → {to}"}, "provides": {"program": "程序", "command": "命令", "commands": "命令", "page": "后台页", "mascot": "吉祥物", "theme": "外观", "connection": "接入", "settings": "设置", "mcp": "MCP 服务", "skills": "技能", "scripts": "脚本", "slash": "斜杠命令", "personas": "人格", "presets": "预设"}, "ask": {"install": "要安装 {n} 个软件包：", "with": "一起装的依赖", "recommends": "推荐（不装）", "remove": "要卸载 {name}：", "drop": "一并删除", "drop_settings": "{n} 项设置", "drop_state": "状态目录", "upgrade": "要升级 {n} 个软件包：", "approve": "打开 {name} 要批这些能力：", "go": "继续？ [Y/n]", "above": "↑ 上面还有 {n} 行", "below": "↓ 还有 {n} 行", "downloading": "正在下载…", "verifying": "正在核对…", "installing": "正在安装…", "size": "大小"}, "status": {"installed": "已安装 {names}", "removed": "已卸载 {name}", "upgraded": "已升级 {names}", "on": "{name} 已打开", "off": "{name} 已关闭", "latest": "{name} 已是最新", "all_latest": "都是最新的", "cancelled": "已取消", "no_settings": "这个软件包没有设置项", "blocked": "已拉黑：{why}", "opened": "已在浏览器打开 {name} 的后台", "run_web": "在终端里运行 miyu web --package {id}", "no_browser": "打不开浏览器，后台页：{url}", "previewing": "正在查看…", "unread": "还有 {n} 行未查看", "too_small": "窗口太小，放大后再确认"}, "hints": {"source": [["↑/↓", "选择"], ["/", "搜索"], ["Tab", "勾选"], ["Enter", "安装"], ["s", "排序"], [", .", "换页"], ["Esc", "返回"]], "typing": [["Ctrl+J/K", "选择"], ["Enter", "完成"], ["Esc", "取消"]], "installed": [["↑/↓", "选择"], ["Enter", "设置"], ["空格", "开关"], ["d", "卸载"], ["u", "升级"], ["U", "全部升级"], ["Esc", "返回"]], "backstage": [["↑/↓", "选择"], ["Enter", "在浏览器打开"], [", .", "换页"], ["Esc", "返回"]], "confirm": [["y/Enter", "继续"], ["n/Esc", "取消"]], "confirm_scroll": [["↑/↓", "滚动"], ["y/Enter", "继续"], ["n/Esc", "取消"]], "running": [["", "请稍候"]]}, "programs": {"ui": "界面程序", "process": "扩展程序", "worker": "小程序", "builtin": "内置功能"}}
     }
   },
   "oobe": {
@@ -1465,7 +1480,7 @@
       "persona": "Enter 编辑 · j/k 移动 · Esc 上一步",
       "edit": "Enter 编辑 · j/k 移动 · Esc 上一步",
       "writing": "Enter 换行 · Ctrl+G 外部编辑器 · Esc 完成",
-      "custom": "空格 开关 · Ctrl+A 全部开关 · j/k 移动 · Esc 关闭",
+      "custom": "空格 开关 · Ctrl+A 全部开关 · j/k 移动 · h/l 换列 · Esc 关闭",
       "custom_name": "Enter 编辑 · j/k 移动 · Esc 关闭",
       "create": "Enter 创建 · j/k 移动 · Esc 关闭",
       "view": "j/k 滚动 · 空格 关闭",
@@ -1591,7 +1606,6 @@
       "avatar_set": "已设置"
     },
     "preset": {
-      "mine": "我的",
       "title": "选择预设",
       "sub": "预设决定启用哪些功能，可在设置中修改，也可为每个会话单独选择",
       "custom": "自定义",
@@ -1607,7 +1621,7 @@
       "sub": "选择明暗和配色，立即生效，以后可以在设置里改",
       "rows": ["明暗", "配色", "形象", "主色", "铺底色"],
       "modes": ["自动", "深色", "浅色"],
-      "colors": ["跟随头像", "跟随壁纸", "Tokyo Night", "终端配色"],
+      "colors": ["自动", "跟随头像", "跟随壁纸", "终端配色"],
       "from_avatar": "取自「{name}」的头像",
       "from_seed": "使用「{name}」的主色",
       "no_avatar": "「{name}」未设置头像，使用 Tokyo Night", "from_wallpaper": "取自桌面壁纸", "no_wallpaper": "未找到桌面壁纸，使用 Tokyo Night",
@@ -1634,7 +1648,7 @@
       "sub": "大幅提高记忆、知识库、表情包等内容的检索质量，但是会大幅提高内存占用，每次检索增加 CPU 开销",
       "on": ["是", "推荐"],
       "off": ["否", "只用关键词检索"],
-      "download": {"size": "需下载 {size}", "preparing": "准备下载…", "progress": "{percent}% · {done} / {total}", "retry": "重试", "skip": "跳过"}
+      "download": {"size": "需下载 {size}", "preparing": "准备下载…", "progress": "{percent}% · {done} / {total}", "verifying": "核对…", "installing": "安装…", "retry": "重试", "skip": "跳过"}
     },
     "done": {
       "title": "完成",

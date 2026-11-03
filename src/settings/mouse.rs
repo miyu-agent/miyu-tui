@@ -53,6 +53,15 @@ impl Settings {
                 self.more.menu_at = i;
                 return self.key(enter, texts);
             }
+            // 「软件包」的分页条（第 43c 条）：问着、做着的时候不换。
+            Hit::Tab(i) if self.more.section == Some(super::pages::Section::Store) => {
+                if self.more.store.flow.is_none() {
+                    let tab = super::pages::store::Tab::ALL[i.min(2)];
+                    self.more.store.tab = tab;
+                    self.more.store.typing = false;
+                    self.store_load();
+                }
+            }
             Hit::Tab(i) if self.popup.is_none() => {
                 self.nav.turn(PAGES[i.min(PAGES.len() - 1)]);
                 self.nav.col = 0;

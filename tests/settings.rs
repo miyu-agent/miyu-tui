@@ -188,7 +188,7 @@ fn a_new_provider_keeps_its_key_in_the_secret_store_and_an_added_model_can_be_de
     assert!(settings.contains("[providers.zen]"), "{settings}");
     assert!(!settings.contains("sk-test-zen"), "明文不进系统配置");
     // 只有一个主人（核心 SU-1）：`secret.set` 不写层的，主人存系统那一份（原来没开管理员模式时存自己那一份）。
-    let secrets = std::fs::read_to_string(home.root().join("secrets.toml")).unwrap_or_default();
+    let secrets = std::fs::read_to_string(home.data().secrets_file()).unwrap_or_default();
     assert!(secrets.contains("zen-key"), "存进系统那一份密钥库");
     // 给它手加一个模型，存下；再删掉，存下。每一步等界面跟上再按下一个键：文件写进去了，供应商的窗不一定已经关上，
     // 键快过界面会落到别的地方（Windows 上见过：回车落在列表上，开了供应商的窗）。
@@ -269,7 +269,8 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", Some("你是海盗。"));
     // 卸掉出厂的长期目标（系统那一层记一笔 `<编号>.removed`，核心 F-5 上；SU-5 上起在 `packages/`）：预设里写了它，是「写了没装的」。核心 X-8 上装上它
     // 以前，出厂的预设里本来就有一样没装。
-    let removed = home.root().join("packages/miyu-base-goal.removed");
+    let removed = home.data().removed_markers().join("miyu-base-goal");
+    std::fs::create_dir_all(removed.parent().expect("有上一层")).expect("建得了");
     std::fs::write(removed, "").expect("记得下");
     // 软件包核心起来时读：重启一次。
     home.stop_core();
@@ -360,20 +361,25 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     tui.wait_for("全部功能");
     tui.wait_for("常规开发");
     tui.key(b"\r");
-    tui.wait_for("功能");
+    tui.wait_for("基础系统");
     // 预设不再管默认人格（2026-10-08 项目主人）。
     assert!(!tui.shows("默认人格"), "{}", tui.lines().join("\n"));
     // 出厂的十八个包照组收在「基础系统」下面（核心 BS-1下上）。功能写给人看的名字，不写编号（2026-10-08 项目主人：「都是英文谁看得懂？」，核心 P-3 补给名字）。
-    tui.wait_for("改文件");
+    tui.wait_for("编辑文件");
     tui.wait_for("基础系统");
     assert!(!tui.shows("files"), "{}", tui.lines().join("\n"));
-    // 功能多了（核心后来加了展示、Harness 版本这些），写了没装的那一行可能在窗外：往下挪着找。
+    // 右列最底下是停不上的空组（脚本、MCP 服务，核心 FG-1）：光标从名称往下进功能树（名称、描述、第一组的组名），`l`
+    // 换到右列，往下走到最后一个停得上的，窗照这一列的最底下滚，空组也露出来（写了没装的同样排在最后，单元测试守着；
+    // 出厂的常规开发 FG-1 起按组写，测具里没有写了没装的）。
+    tui.key(b"j");
+    tui.key(b"j");
+    tui.key(b"l");
     for _ in 0..40 {
-        if !tui.shows("未安装") {
+        if !tui.shows("还没有 MCP 服务") {
             tui.key(b"j");
         }
     }
-    tui.wait_for("未安装");
+    tui.wait_for("还没有 MCP 服务");
     tui.key(b"\x1b");
 }
 

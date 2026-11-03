@@ -78,11 +78,7 @@ fn servers_from_settings_and_packages_are_one_list_above_packages() {
     );
     let entries = page.more.entries();
     let mcp = entries.iter().position(|e| *e == Entry::Mcp).unwrap();
-    assert_eq!(
-        entries[mcp + 1],
-        Entry::Page("packages".into()),
-        "放在软件包上面"
-    );
+    assert_eq!(entries[mcp + 1], Entry::Packages, "放在软件包上面");
 }
 
 #[test]

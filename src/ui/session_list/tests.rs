@@ -35,6 +35,7 @@ fn info(session: &str, title: Option<&str>, cwd: &str) -> SessionInfo {
         context: None,
         terminal: false,
         waiting: false,
+        viewed: false,
     }
 }
 
@@ -53,6 +54,7 @@ fn rows_line_up_in_columns_and_only_a_different_directory_is_written() {
         super::Marks {
             current: Some("0000-aaaaaaaa"),
             asking: &[],
+            unseen: None,
         },
         "~/src/miyu",
         &config,
@@ -106,6 +108,7 @@ fn the_current_one_gets_a_dot_and_a_busy_one_a_spinner_in_the_mark_column() {
             super::Marks {
                 current: Some("0000-aaaaaaaa"),
                 asking: &[],
+                unseen: None,
             },
             "~/src/miyu",
             &config,
@@ -117,9 +120,14 @@ fn the_current_one_gets_a_dot_and_a_busy_one_a_spinner_in_the_mark_column() {
         rows.iter().map(ToString::to_string).collect()
     };
     let spin = &config.timeline.spinner[0];
+    // 2026-11-02 项目主人：照「最近会话」那一列，当前这个写箭头。
+    let here = config.layout.side_here_mark.clone();
     list.selected = 2;
     let text = shown(&list);
-    assert!(text[0].starts_with("● 正在用的"), "{text:#?}");
+    assert!(
+        text[0].starts_with(&format!("{here} 正在用的")),
+        "{text:#?}"
+    );
     assert!(text[1].starts_with(&format!("{spin} 在跑的")), "{text:#?}");
     assert!(text[2].starts_with("❯ 别的"), "{text:#?}");
     assert!(
@@ -130,10 +138,10 @@ fn the_current_one_gets_a_dot_and_a_busy_one_a_spinner_in_the_mark_column() {
     );
     list.selected = 0;
     let text = shown(&list);
-    // 2026-10-19 项目主人：正在用的选中了也照旧写 `●`、不让给 `❯`。
+    // 2026-10-19 项目主人：正在用的选中了也照旧写它的记号、不让给 `❯`。
     assert!(
-        text[0].starts_with("● 正在用的"),
-        "正在用的选中了也写 ●：{text:#?}"
+        text[0].starts_with(&format!("{here} 正在用的")),
+        "正在用的选中了也写箭头：{text:#?}"
     );
     list.selected = 1;
     let text = shown(&list);
@@ -160,6 +168,7 @@ fn the_total_tokens_sit_between_the_id_and_the_right_column_right_aligned() {
     let marks = super::Marks {
         current: None,
         asking: &[],
+        unseen: None,
     };
     let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
     let rows = sessions_only(rows, &map);
@@ -179,8 +188,9 @@ fn the_total_tokens_sit_between_the_id_and_the_right_column_right_aligned() {
 }
 
 #[test]
-fn a_narrow_box_shortens_the_title_before_the_tokens() {
-    // 2026-10-19 真数据：窄的框里右边的目录把总 token 挤成「Σ4…」。标题先让，编号、总 token 照全写。
+fn a_narrow_box_keeps_the_title_and_the_tokens_and_shortens_the_directory() {
+    // 2026-10-19 真数据：窄的框里右边的目录把总 token 挤成「Σ4…」：编号、总 token 照全写。2026-11-02 项目主人改了先后：
+    // 标题先占宽，目录拿剩下的（原来标题先让，标题被挤成 8 列）。
     let config = Config::builtin().unwrap();
     let mut list = SessionList::default();
     list.replace(vec![SessionInfo {
@@ -194,16 +204,21 @@ fn a_narrow_box_shortens_the_title_before_the_tokens() {
     let marks = super::Marks {
         current: None,
         asking: &[],
+        unseen: None,
     };
     let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 64, 20, 0);
     let rows = sessions_only(rows, &map);
     let row = rows[0].to_string();
     assert!(row.contains("#aaaaaaaa  Σ27.5M"), "{row}");
-    assert!(row.contains("…/acceptance/tui-work"), "{row}");
     assert!(
-        row.contains('…') && !row.contains("会话标题"),
-        "标题截短：{row}"
+        row.contains("一个很长很长很长很长的会话标题"),
+        "标题写全：{row}"
     );
+    assert!(
+        row.contains("…") && row.contains("tui-work"),
+        "目录从前面截：{row}"
+    );
+    assert!(row.width() <= 64, "{row}");
 }
 
 #[test]
@@ -248,6 +263,7 @@ fn sessions_are_grouped_by_age_under_plain_headings_unless_searching() {
     let marks = super::Marks {
         current: None,
         asking: &[],
+        unseen: None,
     };
     let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
     let text: Vec<String> = rows
@@ -312,6 +328,7 @@ fn the_context_share_sits_left_of_the_total_as_a_percent() {
     let marks = super::Marks {
         current: None,
         asking: &[],
+        unseen: None,
     };
     let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 90, 20, 0);
     let rows: Vec<String> = sessions_only(rows, &map)
@@ -350,6 +367,7 @@ fn terminal_sessions_say_so_when_there_is_room() {
         let marks = super::Marks {
             current: None,
             asking: &[],
+            unseen: None,
         };
         let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, width, 20, 0);
         let rows: Vec<String> = sessions_only(rows, &map)
@@ -392,6 +410,7 @@ fn columns_stay_put_when_the_list_scrolls() {
         let marks = super::Marks {
             current: None,
             asking: &[],
+            unseen: None,
         };
         let (_, rows, map) = lines(list, marks, "~/src/miyu", &config, 120, 30, 0);
         let rows: Vec<String> = sessions_only(rows, &map)
@@ -411,4 +430,55 @@ fn columns_stay_put_when_the_list_scrolls() {
     );
     assert_eq!(id_top, id_end, "编号一列不挪：{top:#?}\n{end:#?}");
     assert_eq!(sum_top, sum_end, "总计一列不挪：{top:#?}\n{end:#?}");
+}
+
+/// 2026-11-02 项目主人：记号照「最近会话」那一套（等人的 `?`、做完没看的圆点），标题不被右边那一格的目录挤成 8 列。
+#[test]
+fn marks_follow_the_recent_list_and_titles_come_before_directories() {
+    let config = Config::builtin().unwrap();
+    let mut list = SessionList::default();
+    let mut waiting = info("0000-bbbbbbbb", Some("等你回答的会话"), "~/src/miyu");
+    waiting.waiting = true;
+    let far = "~/Documents/github/miyu-agent/a-very-long-worktree-name/sub";
+    list.replace(vec![
+        info(
+            "0000-aaaaaaaa",
+            Some("Terminal 集成实测与修复"),
+            "~/src/miyu",
+        ),
+        waiting,
+        info("0000-cccccccc", Some("做完了还没看的会话"), "~/src/miyu"),
+        info("0000-dddddddd", Some("在别的目录里开的会话"), far),
+    ]);
+    let unseen: std::collections::HashSet<String> = ["0000-cccccccc".to_string()].into();
+    let marks = super::Marks {
+        current: Some("0000-aaaaaaaa"),
+        asking: &[],
+        unseen: Some(&unseen),
+    };
+    let (_, rows, map) = lines(&list, marks, "~/src/miyu", &config, 70, 20, 0);
+    let rows = sessions_only(rows, &map);
+    let text: Vec<String> = rows.iter().map(ToString::to_string).collect();
+    let done = &config.layout.side_done_mark;
+    assert!(text[1].starts_with("? 等你回答的会话"), "{text:#?}");
+    assert!(
+        text[2].starts_with(&format!("{done} 做完了还没看的会话")),
+        "{text:#?}"
+    );
+    for (row, title) in [
+        "Terminal 集成实测与修复",
+        "等你回答的会话",
+        "做完了还没看的会话",
+        "在别的目录里开的会话",
+    ]
+    .iter()
+    .enumerate()
+    {
+        assert!(text[row].contains(title), "标题写全：{text:#?}");
+    }
+    assert!(!text.iter().any(|l| l.contains("Termina…")), "{text:#?}");
+    assert!(
+        text.iter().all(|l| l.width() <= 70),
+        "目录只拿剩下的，不撑出框：{text:#?}"
+    );
 }

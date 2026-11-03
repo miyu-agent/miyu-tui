@@ -67,7 +67,6 @@ mod sessions;
 mod settings;
 mod shown;
 mod start_entered;
-mod start_typing;
 mod status;
 mod stop_agents;
 mod switch;
@@ -78,8 +77,10 @@ mod theme_box;
 mod theme_pick;
 mod tool_list;
 mod typing;
+mod unseen;
 mod updates;
 pub mod usage;
+mod viewing;
 pub(crate) mod vim;
 pub(crate) use keys::is_paste;
 pub(crate) use vim::step as vim_step;
@@ -181,8 +182,12 @@ impl App {
             && self.screen.view.select.is_none()
     }
 
-    /// 退出程序前收尾：输入法还原成进来时的样子（`ime.rs`）。
+    /// 退出程序前收尾：输入法还原成进来时的样子（`ime.rs`）。人退出的才向 herdr 退还窗格；终端挂断（读终端的那一头断了，
+    /// `main.rs` 不走到这里）的不退，herdr 重启时照恢复命令接回来（2026-11-02 项目主人）。
     pub fn finish(&mut self) {
+        if self.quit {
+            self.notifier.quit();
+        }
         std::mem::take(&mut self.typing.ime).finish();
         // 这一回的样子记下，下次起来连上以前先照它画（`look.rs`）。
         self.save_look();
@@ -329,6 +334,7 @@ impl App {
     pub fn tick(&mut self) {
         // 读配置攒着的还没发的一起发（`config_asks.rs`；平常办完一条消息就发了）。
         self.flush_config_asks();
+        self.settings_slide_due();
         // 引导走完了：关掉，回到首页（`oobe.rs`）。
         self.oobe_tick();
         // 附件照模型收：收不了的那几种交给输入框，刚改成文件块的提示一句（`attachments.rs`）。

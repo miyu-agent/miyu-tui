@@ -4,6 +4,7 @@
 
 mod app;
 mod avatars;
+mod backstage;
 mod body_view;
 mod caret;
 mod cells;
@@ -113,8 +114,7 @@ fn fullscreen() -> io::Result<()> {
     // 以后 54 MiB，定了以后 23 MiB；解码大图的十几 MB 放掉以后留在 glibc 手里、还不回去）。别的平台什么都不做。
     miyu_client::heap::tune();
     let launch = startup::launch(std::env::args().skip(1))?;
-    if launch.help {
-        println!("{}", startup::USAGE);
+    if startup::early(&launch) {
         return Ok(());
     }
     // 配置先读：读不懂就别进全屏，错误照原样打在终端里。
@@ -275,6 +275,7 @@ fn run(
     app.screen.wallpaper.set_wake(wake.clone());
     app.screen.seeds.set_wake(wake.clone());
     app.link.service.set_wake(wake.clone());
+    app.link.backstage.set_wake(wake.clone());
     // 系统通知点了（`notify-send` 在另一个线程里等着）：叫醒主循环切过去（「系统通知」第 8 条）。
     app.notifier.set_wake(wake);
     // 终端显示得了几种颜色，启动时看一次（蓝图「主题」第 8 条）；问到的终端颜色在挑主题以前装上（终端配色照它推底色）。
@@ -301,7 +302,7 @@ fn run(
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
     let mut log = frame_log::FrameLog::open(log_path.as_deref(), slow);
     while !app.quit {
-        app.notifier.session(app.talk.main_session().as_deref());
+        app.tell_main_session();
         frame(terminal, &mut app, &mut pointer, depth, &mut log)?;
         let drawn_at = Instant::now();
         // 这一帧整屏空着在等 `ui.welcomed`：问到了当场画首页，不等下一拍（蓝图「每一帧」；2026-10-15 冷启动查出，空着的

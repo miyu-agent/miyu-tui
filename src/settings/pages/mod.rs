@@ -6,6 +6,7 @@ mod avatar;
 pub mod catalog;
 pub mod choose;
 pub mod combo;
+pub mod create;
 pub mod dialogs;
 mod keys;
 pub mod list;
@@ -16,23 +17,29 @@ pub mod packages;
 pub mod persona_edit;
 mod persona_seed;
 pub mod personas;
+mod picks;
+mod popup_keys;
 pub mod preset_edit;
 pub mod presets;
+pub mod records;
 pub mod schema;
 pub mod secret;
+pub mod slider;
+pub mod store;
 pub mod target;
 pub mod textarea;
 pub mod ticks;
+mod values;
 
 use std::collections::HashMap;
 
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::data::Data;
 use choose::{Choice, Choose};
 use personas::Persona;
-use schema::{Item, Schema};
+use schema::Schema;
+pub use values::{choices, current, is_named, shown};
 
 /// 默认人格那一项的键：下拉照 `persona.list` 列。
 pub const DEFAULT_PERSONA: &str = "persona.default";
@@ -61,6 +68,8 @@ pub enum Entry {
     Presets,
     /// MCP 服务（有服务才列，第 43b 条）。
     Mcp,
+    /// 软件包：下载软件、已安装、软件后台三页（第 43c 条），一直列。
+    Packages,
 }
 
 /// 进了哪一页（「供应商和模型」那三页不算，归 `Nav`）。
@@ -72,8 +81,8 @@ pub enum Section {
     Personas(usize),
     /// 预设：选中第几个。
     Presets(usize),
-    /// 「软件包」：有配置项的包的列表，选中第几个（「配置页」第 43a 条）；进去是 `Page("packages/<包>")`。
-    Packages(usize),
+    /// 「软件包」三页（「配置页」第 43c 条）：状态在 [`More::store`]；包自己那一页是 `Page("packages/<包>")`。
+    Store,
     /// 「MCP」：服务的列表，选中第几个（第 43b 条）。
     Mcp(usize),
 }
@@ -95,6 +104,11 @@ pub struct More {
     pub mascots: Option<Vec<Persona>>,
     /// 装了的主题包（默认主题包不列：没设就是它）；还没读到的是 `None`。
     pub looks: Option<Vec<Persona>>,
+    /// 供应商目录里常用的几家（`provider.catalog {"featured": true}`）：开配置页时先读好，按 `a` 开目录窗当场列出来
+    /// （「配置页」第 11a 条，2026-10-30 项目主人：「每次加载的画面都很短，会闪一下」）。还没读到的是 `None`。
+    pub featured: Option<Vec<catalog::Entry>>,
+    /// 问了常用的几家、还没回来：开配置页时重读的那几下不再问（读完三样会马上补读一次）。
+    pub featured_asked: bool,
     /// 读来的清单、预设列表的原样：终端记下，下次开配置页第一帧照它画主菜单（`app/look.rs`，2026-10-21 项目主人：
     /// 「/config 打开配置菜单闪了一下」）。只有清单和名字，没有配置的值。
     pub raw: (Option<Value>, Option<Value>),
@@ -110,9 +124,19 @@ pub struct More {
     pub mcp_bundled: Vec<mcp::Server>,
     /// 进了哪一页。
     pub section: Option<Section>,
+    /// 「软件包」三页（第 43c 条）。
+    pub store: store::Store,
+    /// 滑块调了还没存的（第 33 条子规则）。
+    pub sliding: Option<slider::Sliding>,
+    /// 知识库（`kb.list`，选知识库的项照它列）；还没读到、核心不认的是 `None`。
+    pub knowledge: Option<Vec<Persona>>,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：
     /// 找不到的不列）。
     pub wallpaper: bool,
+    /// 看着的人格交得出颜色（写了主题色或有头像）：配色列表里列「跟随头像」（2026-11-02 项目主人：没设置头像的不用出现）。
+    pub persona_colors: bool,
+    /// 配置里选着的配色（「自动」不换）：交不出颜色、找不到壁纸的那一种正用着的照列。
+    pub theme_now: String,
     /// 能当主色的几个候选，好的在前（跟随头像、跟随壁纸时；App 每一拍照 `app/theme.rs` 设）。
     pub seeds: Vec<u32>,
     /// 正在用的主色：「主色」那一项照它画色块。
@@ -154,7 +178,8 @@ impl More {
         if self.presets.as_ref().is_some_and(|l| !l.is_empty()) {
             out.push(Entry::Presets);
         }
-        // 核心以后多了的页排在人格（以后是预设）和高级中间。
+        // 核心以后多了的页排在人格（以后是预设）和高级中间；「软件包」在清单给的位置，清单里没有的排在高级前面（第 43c 条：
+        // 一直列）。
         out.extend(
             pages
                 .iter()
@@ -168,12 +193,20 @@ impl More {
                     ]
                     .contains(*p)
                 })
-                .map(|p| Entry::Page((*p).to_string())),
+                .map(|p| match *p {
+                    packages::PACKAGES => Entry::Packages,
+                    p => Entry::Page(p.to_string()),
+                }),
         );
-        // MCP 放在软件包上面（同网页，2026-10-20 项目主人），没有软件包页的放在高级前面。
+        if !out.contains(&Entry::Packages) {
+            out.push(Entry::Packages);
+        }
+        // MCP 放在软件包上面（同网页，2026-10-20 项目主人）。
         if !self.servers().is_empty() {
-            let packages = Entry::Page(packages::PACKAGES.to_string());
-            let at = out.iter().position(|e| *e == packages).unwrap_or(out.len());
+            let at = out
+                .iter()
+                .position(|e| *e == Entry::Packages)
+                .unwrap_or(out.len());
             out.insert(at, Entry::Mcp);
         }
         if pages.contains(&LAST) {
@@ -229,10 +262,20 @@ impl More {
         choose
     }
 
-    /// 选择窗列哪几个：找不到壁纸的，配色里不列「跟随壁纸」。
+    /// 选择窗列哪几个：配色里不列 tokyonight（只兜底）、交不出颜色的「跟随头像」、找不到壁纸的「跟随壁纸」，正用着的照列
+    /// （「主题」第 2 条子规则，2026-11-02 项目主人）。
     pub fn offered(&self, key: &str, mut list: Vec<Choice>) -> Vec<Choice> {
-        if key == "tui.theme" && !self.wallpaper {
-            list.retain(|c| c.value != "wallpaper");
+        if key == "tui.theme" {
+            list.retain(|c| {
+                let value = c.value.as_str().unwrap_or_default();
+                let shown = match value {
+                    "tokyonight" => false,
+                    "persona" => self.persona_colors,
+                    "wallpaper" => self.wallpaper,
+                    _ => true,
+                };
+                shown || value == self.theme_now
+            });
         }
         list
     }
@@ -246,6 +289,15 @@ impl More {
             LOOK => self.looks.as_deref(),
             _ => None,
         }
+    }
+
+    /// 一项照哪份列表选、写名字：默认人格这类照键，`persona`、`knowledge` 类型的照人格、知识库（第 33 条子规则）。
+    pub fn named_item(&self, item: &schema::Item) -> Option<&[Persona]> {
+        self.named(&item.key).or(match item.kind.as_str() {
+            "persona" => self.personas.as_deref(),
+            "knowledge" => self.knowledge.as_deref(),
+            _ => None,
+        })
     }
 
     /// 主菜单停在哪一项：没读到清单以前「供应商和模型」排第一，读到以后通用排第一，选中的照「是哪一项」留住。
@@ -268,8 +320,6 @@ pub struct Texts {
     pub presets: [String; 2],
     /// 预设的窗：功能（`{on}/{all}`）、没安装。
     pub preset_detail: [String; 3],
-    /// 功能照包分组时，机主私人的那一组（`~home`）的组名：「我的」（核心 ENV-1）。
-    pub package_mine: String,
     /// 来自哪一层：`default`、`system`、`project`。
     pub origins: HashMap<String, String>,
     /// 开关的两种：开、关。
@@ -290,10 +340,6 @@ pub struct Texts {
     pub no_personas: String,
     /// 正在读。
     pub loading: String,
-    /// 「软件包」一个有配置项的包都没有。
-    pub no_packages: String,
-    /// 「软件包」列表右边写的几项：`{n}`。
-    pub package_items: String,
     /// 只写个数的列表写的：`{n}`（[`list::counted`]）。
     pub counted: String,
     /// 默认人格没设、选择窗第一行：不带人格（2026-10-08 项目主人定叫「无人格」）。
@@ -336,140 +382,20 @@ pub struct Texts {
     pub sheet_hints: Vec<[String; 2]>,
     /// 列表窗（第 47 条）。
     pub list: list::ListTexts,
+    /// 记录列表（第 47b 条）。
+    pub records: records::RecordTexts,
+    /// 新建预设、人格的两格窗（「配置页」第 36、39 条子规则）。
+    pub create: create::CreateTexts,
     /// 勾选窗（第 47a 条）。
     pub ticks: ticks::TicksTexts,
     /// 包从哪来（第 43a 条，包页面包屑下面那一行）：出厂自带、官方软件源、本机安装（照 `package.list` 的 `from`）。
     pub package_from: std::collections::BTreeMap<String, String>,
     /// 「MCP」那一页（第 43b 条）。
     pub mcp: mcp::McpTexts,
-}
-
-/// 一项现在的值：读来的最终值和来自哪一层；哪一层都没写的照清单的默认，来自「默认」。
-pub fn current<'a>(item: &'a Item, data: &'a Data) -> (&'a Value, &'a str) {
-    match data.values.get(&item.key) {
-        Some((value, origin)) => (value, origin.as_str()),
-        None => (&item.default, "default"),
-    }
-}
-
-/// 名字照列表写、下拉照列表列的项（默认人格、默认预设）：不管清单写什么控件，一律开选择窗。
-pub fn is_named(key: &str) -> bool {
-    key == DEFAULT_PERSONA || key == DEFAULT_PRESET || key == MASCOT || key == LOOK
-}
-
-/// 值写成给人看的样子：下拉写选项的名字（默认人格、默认预设写名字，`named` 是它们的列表），开关写开、关，密钥写设没设，
-/// 列表用顿号连（私密目录两项只写个数）。
-pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Texts) -> String {
-    if let (Some(list), Some(id)) = (named, value.as_str())
-        && let Some(p) = list.iter().find(|p| p.id == id)
-    {
-        return p.label().to_string();
-    }
-    // 选着的吉祥物包、主题包卸掉了：编号后面写没装（「吉祥物包」第 3 条、「主题」第 5 条）。
-    if (item.key == MASCOT || item.key == LOOK)
-        && named.is_some()
-        && let Some(id) = value.as_str()
-    {
-        return texts.mascot_missing.replace("{id}", id);
-    }
-    if let Some(name) = own_choice(item, value, texts) {
-        return name;
-    }
-    if let Some(name) = item
-        .options
-        .iter()
-        .find(|o| o.value == *value)
-        .map(|o| &o.name)
-    {
-        return name.clone();
-    }
-    // 密钥：只写设了没设，不露引用（第 48 条）。
-    if secret::is_secret(item) {
-        return texts.secret[usize::from(value.is_null())].clone();
-    }
-    if let Some(n) = list::counted(item, value) {
-        return match n {
-            0 => "—".to_string(),
-            n => texts.counted.replace("{n}", &n.to_string()),
-        };
-    }
-    match (item.control.as_str(), value) {
-        // 默认人格没设：就是无人格。
-        (_, Value::Null) if item.key == DEFAULT_PERSONA => texts.no_persona.clone(),
-        // 吉祥物没设：就是内置的。
-        (_, Value::Null) if item.key == MASCOT => texts.builtin_mascot.clone(),
-        // 主题没设：就是默认主题。
-        (_, Value::Null) if item.key == LOOK => texts.default_look.clone(),
-        // 下拉加「其他」手写没设：写「不设」（「配置页」第 44 条）。
-        ("combo", Value::Null) => texts.combo[0].clone(),
-        (_, Value::Null) => "—".to_string(),
-        // 几行字：只写第一行，多行的末尾 `…`（第 45 条）。
-        ("textarea", Value::String(s)) if s.trim_end().contains('\n') => {
-            format!(
-                "{}{}",
-                s.lines().next().unwrap_or_default(),
-                crate::sheet::ellipsis()
-            )
-        }
-        ("toggle", Value::Bool(on)) => texts.toggle[usize::from(!*on)].clone(),
-        (_, Value::String(s)) => s.clone(),
-        // 空列表同没设（「配置页」第 47 条：删光了写的是空列表）。
-        (_, Value::Array(list)) if list.is_empty() => "—".to_string(),
-        (_, Value::Array(list)) => list
-            .iter()
-            .map(|v| v.as_str().map_or_else(|| v.to_string(), str::to_string))
-            .collect::<Vec<_>>()
-            .join("、"),
-        (_, other) => other.to_string(),
-    }
-}
-
-/// 下拉的选择窗里列什么：默认人格、默认预设照列表（`named`，写错的选不了），别的照清单的选项。
-pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Choice> {
-    if let Some(list) = named {
-        // 默认人格第一行「无人格」：选了就不设（2026-10-08 项目主人：人格允许为空）。
-        let first = match item.key.as_str() {
-            DEFAULT_PERSONA => Some(&texts.no_persona),
-            // 吉祥物第一行「内置」：选了就不设（「吉祥物包」第 3 条）。
-            MASCOT => Some(&texts.builtin_mascot),
-            // 主题第一行「默认主题」：选了就不设（「主题」第 5 条）。
-            LOOK => Some(&texts.default_look),
-            _ => None,
-        };
-        let none = first.map(|label| Choice {
-            value: Value::Null,
-            label: label.clone(),
-            note: None,
-            off: None,
-        });
-        let named = list.iter().map(|p| Choice {
-            value: Value::from(p.id.clone()),
-            label: p.label().to_string(),
-            // 只写名字，说明在人格页、预设页看（2026-10-07 项目主人：没必要）。
-            note: None,
-            off: p.problem.clone(),
-        });
-        return none.into_iter().chain(named).collect();
-    }
-    item.options
-        .iter()
-        .map(|o| Choice {
-            value: o.value.clone(),
-            label: own_choice(item, &o.value, texts).unwrap_or_else(|| o.name.clone()),
-            note: o.note.clone(),
-            // 用不了的列着、灰的、选不了，为什么照头自己的一句（核心 R-5 三补）。
-            off: (!o.available).then(|| texts.unavailable.clone()),
-        })
-        .collect()
-}
-
-/// 终端自己的选项（`tui.theme` 这类）照界面语言的名字；没登记的是 `None`，照清单写。
-fn own_choice(item: &Item, value: &Value, texts: &Texts) -> Option<String> {
-    texts
-        .choice_names
-        .get(&item.key)
-        .and_then(|names| names.get(value.as_str()?))
-        .cloned()
+    /// 光标停在滑块上时的按键提示（第 33 条子规则）。
+    pub slider_hints: Vec<[String; 2]>,
+    /// 「软件包」三页（第 43c 条）。
+    pub store: store::StoreTexts,
 }
 
 #[cfg(test)]

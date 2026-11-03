@@ -7,6 +7,16 @@ use super::{press, screen};
 use crate::config::Config;
 use crate::settings::Settings;
 
+/// 池的三种分法写成做法（2026-10-30 项目主人：「这三个各自是什么意思其实有些不太明朗，用户不知道该选哪个」）。
+#[test]
+fn pool_strategies_say_what_they_do() {
+    let options = &Config::builtin().unwrap().text.settings.options;
+    let said = |k: &str| options.get(k).map(String::as_str);
+    assert_eq!(said("pin"), Some("按会话固定"));
+    assert_eq!(said("rotate"), Some("每次请求轮换"));
+    assert_eq!(said("ordered"), Some("不可用时回退"));
+}
+
 #[test]
 fn a_pool_row_leaves_its_uses_to_the_list_below_its_members() {
     let config = Config::builtin().unwrap();
@@ -47,6 +57,12 @@ fn a_pool_row_leaves_its_uses_to_the_list_below_its_members() {
     assert!(!empty.trim_end().ends_with("空池"), "空池不写：{empty}");
     // 2026-10-29 项目主人：成员栏下面已经写了「用于」，池这一行不再写。
     assert!(!row.contains("用于") && !row.contains("起标题"), "{row}");
+    // 2026-10-30 项目主人：分法写成做法，看得懂选哪个。
+    let daily = text
+        .lines()
+        .find(|l| l.contains("daily"))
+        .unwrap_or_default();
+    assert!(daily.contains("每次请求轮换"), "{daily}");
     // 选中的就是轻量（固定的排最前、只有它）：成员栏下面写全。
     for name in [
         "用于",

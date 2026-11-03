@@ -266,7 +266,8 @@ pub fn preview(step: &Step, style: Style, ctx: &Ctx) -> Vec<Piece> {
             if command.is_empty() {
                 return Vec::new();
             }
-            let lines = pieces(command, width);
+            // 屏上要和真正要跑的一样：看不见的字换成记号再排（发布前审查 T2-2，`tabs::shown`）。
+            let lines = pieces(&crate::tabs::shown(command), width);
             let mut out: Vec<Piece> = lines
                 .iter()
                 .take(tl.preview_rows)
@@ -396,7 +397,9 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
             }
             let mut out = Vec::new();
             if kind(step, ctx) == Some(ToolKind::Command) {
-                out.extend(each(step.arg("command").unwrap_or_default(), style));
+                // 屏上要和真正要跑的一样（发布前审查 T2-2，`tabs::shown`）。
+                let command = step.arg("command").unwrap_or_default();
+                out.extend(each(&crate::tabs::shown(command), style));
                 out.push(Piece {
                     lead: None,
                     content: Vec::new(),

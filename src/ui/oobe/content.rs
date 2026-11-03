@@ -47,7 +47,7 @@ pub struct Picture {
 
 /// 光标停着的那一行前面的记号（「第一次打开的引导」第 7 条，2026-10-10 项目主人：「改成箭头加变颜色吧，列表里面可以是
 /// 箭头加背景」；照主题的 `marks.pointer`）。
-fn pointer() -> String {
+pub(super) fn pointer() -> String {
     crate::sheet::mark(|m| &m.pointer)
 }
 /// 没选中的行前面空两格。

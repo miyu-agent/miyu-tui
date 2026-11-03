@@ -53,9 +53,9 @@ impl App {
     /// 粘贴进来的字（终端送来的、`Ctrl+V` 读剪贴板的）：历史列表开着的进「历史：」，抽屉开着的进抽屉里写的字，
     /// 别的进输入框（大段的收成一块，`tui.md`「输入框」第 11 条）。
     pub(super) fn paste(&mut self, text: &str) {
-        // 新会话开头选人格、预设时框换掉了输入框：粘贴照样进输入框，框关了字还在（「新会话：人格、工作区」第 1c 条）。
+        // 新会话开头选人格、预设时框换掉了输入框：粘贴哪都不进，选了才能打字（「新会话：人格、工作区」第 1c 条，2026-11-02
+        // 项目主人改）。
         if self.seen().start_pick().is_some() {
-            self.typing.input.paste(text);
             return;
         }
         if self.typing.history.open {
@@ -73,6 +73,10 @@ impl App {
     /// 全是本机现成的文件的也收成块；别的照字粘贴（`tui.md`「输入框」第 12 条，2026-10-10 项目主人：「ctrl+shift+V
     /// 粘贴文字，ctrl+V 粘贴占位符」）。读不到、是空的，提示一句（「按键」）。
     pub(super) fn paste_clipboard(&mut self) {
+        // 新会话开头选人格、预设：同 `paste`，哪都不进。
+        if self.seen().start_pick().is_some() {
+            return;
+        }
         let into_input = !self.typing.history.open && !self.talk.drawers.open();
         if into_input {
             if clipboard::read_files().is_some_and(|files| self.typing.input.paste_files(&files)) {

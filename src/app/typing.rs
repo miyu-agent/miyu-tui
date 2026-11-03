@@ -42,6 +42,4 @@ pub struct Typing {
     pub tips: Tips,
     /// 框下面那一行的临时提示。
     pub notice: Option<Notice>,
-    /// 交给核心的那一行斜杠命令（`catalog.rs`）：被拒了放回输入框，办了扔掉。
-    pub slash_draft: Option<crate::input::Draft>,
 }

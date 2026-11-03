@@ -1,6 +1,6 @@
 //! 核心认的斜杠命令（蓝图 `tui.md`「斜杠命令列表」第 4、6 条，核心 X-14）：家目录里放的命令模板照 `command.catalog`
 //! 列进命令列表（名字后面暗色跟参数提示、说明照界面语言），打了整行交给核心；正文里是人敲的那一行，模型看到的是展开的
-//! 那段。终端不认的名字也交给核心，被拒的弹核心的原话、字放回输入框。
+//! 那段。终端不认的名字也交给核心，被拒的只弹核心的原话、字不放回输入框。
 
 mod support;
 
@@ -16,7 +16,7 @@ const REVIEW: &str = "---\ndescription: Review the code\nargument-hint: <路径>
 fn a_template_command_is_listed_and_shows_the_typed_line() {
     let script = Script::new([Play::Says("看过了。")]);
     let home = Home::new(script.clone());
-    let commands = home.root().join("commands");
+    let commands = home.data().commands();
     std::fs::create_dir_all(&commands).expect("建得了");
     std::fs::write(commands.join("review.md"), REVIEW).expect("写得进去");
     let mut tui = home.tui("zh_CN.UTF-8");
@@ -54,7 +54,7 @@ fn a_skill_is_listed_and_named_by_slash_with_the_typed_line_shown() {
     // 正文里是人敲的那一行，模型看到套了外壳的技能正文和参数。
     let script = Script::new([Play::Says("查好了。")]);
     let home = Home::new(script.clone());
-    let dir = home.root().join("skills/forecast");
+    let dir = home.data().skills().join("forecast");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("SKILL.md"), FORECAST).expect("写得进去");
     let mut tui = home.tui("zh_CN.UTF-8");
@@ -156,4 +156,22 @@ fn loop_from_the_core_is_listed_and_taken_by_the_core() {
         "核心收下了，不弹「命令不存在」"
     );
     assert!(!tui.input().contains("/loop"), "交出去了：{}", tui.input());
+}
+
+#[test]
+fn loop_with_bad_arguments_is_only_told_and_not_put_back() {
+    // 2026-10-30 项目主人：「/loop 回车后如果是未知参数或者无效参数，通知就行，不用回填」。只写间隔没写话，核心拒 `bad_params`。
+    // 在会话里打（同平常用的样子），核心的命令清单到了再打。
+    let home = Home::with_tools(Script::new([Play::Says("在。")]), "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("在吗");
+    tui.wait_for("在。");
+    tui.type_text("/lo");
+    tui.wait_for("/loop [<间隔>] <要说的话> | off");
+    tui.key(b"\x7f\x7f\x7f");
+    tui.say("/loop 10m");
+    tui.wait_for("参数错误");
+    tui.pump(Duration::from_millis(300));
+    assert!(!tui.input().contains("/loop"), "不放回：{}", tui.input());
 }

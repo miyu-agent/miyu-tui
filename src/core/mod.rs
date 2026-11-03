@@ -26,14 +26,17 @@ mod notices;
 pub use notices::Notice;
 mod output;
 mod packages;
-pub use packages::{PackageEntry, Progress};
+pub use packages::{PackageEntry, Progress, Stage};
 mod page;
 mod personas;
 mod push;
 mod replay;
 mod request;
 mod rpc;
+mod schedules;
+pub use schedules::{Change as LoopChange, Every as LoopEvery, Loop, apply as apply_loops};
 mod serve;
+mod session_effort;
 mod sessions;
 mod snapshot;
 mod spawn;
@@ -136,6 +139,9 @@ pub enum Command {
     },
     /// 删掉一个会话（`session.delete`），不管对着哪个会话。
     Delete(String),
+    /// 告诉核心这个头开着哪个会话（`session.viewing`，核心 HV-1）：别的头照会话列表的 `viewed` 不再替它弹后台的通知。
+    /// `None` 是哪个都没开（空会话的首页）。
+    Viewing(Option<String>),
     /// 要 `/model` 框里的一行行（`model.list`），交回 [`Update::Choices`]。
     ListChoices,
     /// 要一个网址的链接卡片（`link.preview`，核心 W-7）。
@@ -149,13 +155,9 @@ pub enum Command {
     /// `/effort`、底栏要的：每个模型有哪几级、配置的默认、配置键（`model.list`，核心 8-18 补）。给了的只要这几个模型
     /// （`models`，核心 V-6 上），`None` 要整份。
     ListEfforts(Option<Vec<String>>),
-    /// 写系统配置里一个模型的思考强度：配置键、哪一级（`None` 是去掉这一项，回到供应商定）。
-    SetEffort {
-        /// 配置键（照 `facts.effort.key` 抄）。
-        key: String,
-        /// 哪一级。
-        level: Option<String>,
-    },
+    /// 换这个会话的思考强度（`session.configure {effort}`，核心 SM-1）：哪一级，`None` 是回到跟着配置。还没开会话的记着，
+    /// 开会话时带上。成了交回 [`Update::EffortSet`]。
+    SessionEffort(Option<String>),
     /// `@` 文件列表问核心（`fs.list`、`fs.find`，核心 W-2）：哪个词问的、方法、参数。
     Files {
         /// 哪个词问的：回应照它认。

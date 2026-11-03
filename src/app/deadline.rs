@@ -48,6 +48,8 @@ impl App {
             .chain((self.media.row_cache.borrow().stale > 0).then(Instant::now))
             // 正文少了一大截：到点把堆里空着的还给系统（`trim.rs`）。
             .chain(self.media.trim.deadline())
+            // 配置页的滑块停手了：到点存（「配置页」第 33 条子规则）。
+            .chain(self.boxes.settings.as_ref().and_then(|p| p.slide_due()))
             .min()
     }
 }

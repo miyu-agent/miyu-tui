@@ -65,7 +65,8 @@ pub(super) async fn take(
                 | Awaiting::Models
                 | Awaiting::SessionsStream
                 | Awaiting::PackagesStream
-                | Awaiting::NoticesStream,
+                | Awaiting::NoticesStream
+                | Awaiting::SchedulesStream,
             ) => true,
             Some(Awaiting::Choices) => notify(Update::Choices(Vec::new())),
             Some(Awaiting::Efforts) => notify(Update::Efforts(super::EffortList::default())),
@@ -90,8 +91,8 @@ pub(super) async fn take(
                 let gone = link.gone(&session, reason.as_deref());
                 notify(gone.unwrap_or(Update::Refused { reason, message }))
             }
-            // 核心清单里的斜杠命令被拒：另报，界面把打的那一行放回输入框（「斜杠命令列表」第 4 条）。
-            Some(Awaiting::Slash) => notify(Update::SlashRefused { message, reason }),
+            // 核心清单里的斜杠命令被拒：另报，界面只弹原话（「斜杠命令列表」第 4 条）。
+            Some(Awaiting::Slash) => notify(Update::SlashRefused { message }),
             // 订阅不上界面块（核心旧、不认这个流）：什么都不画，不用说（「界面块」第 8 条）。
             Some(Awaiting::Widgets) => true,
             // 跟着看整理订不上、取不到正文（没装记忆、核心旧）：照旧等回执，不用说。
@@ -184,6 +185,7 @@ pub(super) async fn take(
             return notify(Update::Efforts(super::EffortList::read(&message["result"])));
         }
         Some(Awaiting::Configure(reference)) => return notify(Update::Configured(reference)),
+        Some(Awaiting::EffortSet(level)) => return notify(Update::EffortSet(level)),
         // 答成了不用说：抽屉照推来的 `question.answered`、`tool.approval_decided` 收、写结果。
         Some(Awaiting::Answer(..)) => return true,
         Some(Awaiting::Ask(tag)) => {
@@ -207,6 +209,10 @@ pub(super) async fn take(
             return notify(Update::Sessions(sessions::read(&message["result"])));
         }
         Some(Awaiting::PackagesStream | Awaiting::NoticesStream) => return true,
+        Some(Awaiting::SchedulesStream) => {
+            let all = super::schedules::table(&message["result"]);
+            return notify(Update::Loops(super::LoopChange::All(all)));
+        }
         // 最新一页到了：画进去，再带 `after` 订阅（`page.rs`）。
         Some(Awaiting::Page(session)) => {
             return super::page::take_latest(
@@ -291,6 +297,10 @@ pub(super) async fn take(
     if message["method"] == "config.changed" && !notify(Update::ConfigChanged) {
         return false;
     }
+    // 模型列表在核心后台变了（核心 V-26）；配置流掉了队、漏掉的不补，当成全变了。往下照旧走重订。
+    if config::models_changed(message) && !notify(Update::ModelsChanged) {
+        return false;
+    }
     // 会话列表变了（核心 9-5）：整项换、删掉；掉了队重新订、整张换。它也带 `session`，别往下当会话的事件走。
     if message["method"] == "sessions.changed" {
         return sessions::change(params).is_none_or(|c| notify(Update::SessionChanged(c)));
@@ -326,6 +336,16 @@ pub(super) async fn take(
     if super::notices::lost(message) {
         if let Ok(id) = super::notices::follow(rpc).await {
             awaiting.insert(id, Awaiting::NoticesStream);
+        }
+        return true;
+    }
+    // 唤醒表变了（核心 J-1 下）：交给界面改手上那一份；掉了队重新订，回应是整张。
+    if let Some(change) = super::schedules::changed(message) {
+        return notify(Update::Loops(change));
+    }
+    if super::schedules::lost(message) {
+        if let Ok(id) = super::schedules::follow(rpc).await {
+            awaiting.insert(id, Awaiting::SchedulesStream);
         }
         return true;
     }

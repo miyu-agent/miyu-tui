@@ -114,7 +114,14 @@ fn a_narrow_window_drops_the_margins() {
         "框下面那一行照框的左右边"
     );
     let r = areas(Rect::new(0, 0, 44, 30), &rows, &layout, 0, true, 0, 0, 0);
-    assert_eq!((r.pulse.x, r.pulse.width), (1, 42), "运行状态行同");
+    // 运行状态行、待办从正文的字那一列起（2026-11-03 项目主人：「要有左侧间距……和正文输出内容对齐」），底栏照旧。
+    assert_eq!(
+        (r.pulse.x, r.pulse.width),
+        (3, 40),
+        "运行状态行让开正文那两格槽"
+    );
+    let t = areas(Rect::new(0, 0, 44, 30), &rows, &layout, 0, false, 0, 0, 3);
+    assert_eq!((t.todo.x, t.todo.width), (3, 40), "待办同运行状态行");
     let h = super::home::areas(Rect::new(0, 0, 44, 30), &rows, &layout, (0, 0), 0, 0, 0, 0);
     assert_eq!((h.frame.x, h.text.x, h.text.width), (1, 4, 37), "首页一样");
     // 99 列还是紧凑的；100 列起照旧留白，框下面那一行跟着框里的字对齐。

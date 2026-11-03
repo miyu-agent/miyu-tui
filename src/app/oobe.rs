@@ -34,7 +34,6 @@ impl App {
         if let Some(oobe) = self.boxes.oobe.as_mut() {
             oobe.keys.selected = usize::from(self.config.layout.vim);
         }
-        self.share_package_names();
         self.send_oobe_asks();
     }
 
@@ -200,7 +199,7 @@ impl App {
             // 装包的下载进度（核心 G-4 上）：引导当场下语义模型时画进度条（第 26b 条）。
             Update::PackageProgress(p) => {
                 if let Some(oobe) = self.boxes.oobe.as_mut() {
-                    oobe.semantic.progress(&p.package, p.done, p.total);
+                    oobe.semantic.progress(p);
                 }
                 true
             }

@@ -239,3 +239,88 @@ fn waiting_notifications_hold_the_laptop_and_finished_ones_stand() {
     assert_eq!(super::pose(Event::Replied), Icon::Standing);
     assert_eq!(super::pose(Event::Failed), Icon::Standing);
 }
+
+/// 别的会话来的（后台的会话做完了、别的会话在问）在前台也弹、不响（2026-11-02 项目主人：在会话 B 里干活，A 的循环跑完了
+/// 没有任何提示）；正在看的会话照旧在前台不弹。
+#[test]
+fn another_session_pops_up_even_when_focused_but_stays_quiet() {
+    let look = Config::builtin().unwrap().notify;
+    let here = plan(&look, Route::System, Some(true), false);
+    assert_eq!(here.route, None, "正在看的：在前台不弹");
+    let there = super::plan_elsewhere(&look, Route::System, Some(true), false);
+    assert_eq!((there.route, there.sound), (Some(Route::System), false));
+    let away = super::plan_elsewhere(&look, Route::System, Some(false), false);
+    assert_eq!(away.sound, look.sound, "离开了照旧响");
+    let mut off = look.clone();
+    off.enabled = false;
+    assert_eq!(
+        super::plan_elsewhere(&off, Route::System, Some(true), false).route,
+        None
+    );
+    // kitty 自己判前台：正在看的 `o=unfocused`，别的会话的 `o=always`。
+    let config = Config::builtin().unwrap();
+    let mut n = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        env(&[("TERM", "xterm-kitty")]),
+        None,
+    );
+    n.focus(true);
+    n.tell(Event::Replied);
+    assert!(n.outbox().concat().contains(":o=unfocused:"));
+    n.tell_finished(Some("A".into()), "回答完了", "s-1".into());
+    let out = n.outbox().concat();
+    assert!(
+        out.contains(":o=always:") && out.contains("report"),
+        "{out:?}"
+    );
+    n.tell_elsewhere(Event::Asking);
+    assert!(n.outbox().concat().contains(":o=always:"));
+}
+
+/// 发布前第五批审查 T5-4：OSC 9 的字是「标题: 正文」，标题是会话标题（模型起的、别的会话的也会来）。标题照 ConEmu 那一套写成
+/// `数字;` 打头时，整句变成 `ESC ] 9 ; 4 ; …`，认 ConEmu 扩展的终端（ghostty 认 `9;4` 进度条）当成子命令，不当通知。
+#[test]
+fn a_session_title_cannot_turn_osc9_into_a_conemu_subcommand() {
+    let config = Config::builtin().unwrap();
+    let mut n = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        env(&[("TERM_PROGRAM", "ghostty")]),
+        None,
+    );
+    n.about(Some("4;3;99".into()), None);
+    n.tell_elsewhere(Event::Asking);
+    let out = n.outbox().concat();
+    assert!(
+        !out.starts_with("\x1b]9;4;"),
+        "标题拼进 OSC 9 以后成了 ConEmu 的进度条子命令：{out:?}"
+    );
+}
+
+/// 发布前第五批审查 T5-5（纵深防御）：kitty 通知的编号 `i=` 直接拼会话编号，不转义、不查字；OSC 99 的别的几格都 base64 了，
+/// 这一格是唯一原样进序列的外来字。会话编号现在是核心生成的 UUID，这条测的是「编号里只出现 kitty 认的字」这个前提没人守着。
+#[test]
+fn a_kitty_notice_id_only_carries_the_characters_kitty_accepts() {
+    let config = Config::builtin().unwrap();
+    let mut n = Notifier::new(
+        config.notify.clone(),
+        config.text.notify.clone(),
+        env(&[("TERM", "xterm-kitty")]),
+        None,
+    );
+    n.tell_finished(Some("A".into()), "回答完了", "s\x1b\\\x1b]2;x\x07".into());
+    let out = n.outbox().concat();
+    let ids: Vec<&str> = out
+        .split("\x1b]99;")
+        .skip(1)
+        .filter_map(|part| part.split([':', ';']).find_map(|kv| kv.strip_prefix("i=")))
+        .collect();
+    assert!(
+        !ids.is_empty()
+            && ids.iter().all(|id| id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || "-_+.".contains(c))),
+        "编号里混进了 kitty 不认的字（ESC、BEL）：{out:?}"
+    );
+}

@@ -139,10 +139,10 @@ fn terminal_colors_hide_the_background_row_and_keep_its_value() {
         "{:?}",
         oobe.theme.slots()
     );
-    // 换成 Tokyo Night：这一格出来，还是关。
+    // 换成自动：这一格出来，还是关。
     oobe.theme.colors = crate::theme::choice::COLORS
         .iter()
-        .position(|c| *c == "tokyonight")
+        .position(|c| *c == "auto")
         .unwrap();
     assert!(oobe.theme.slots().contains(&Slot::Ground));
     assert!(

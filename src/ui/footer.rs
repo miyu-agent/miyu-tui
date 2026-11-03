@@ -9,6 +9,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::app::{Screen, Seen};
 use crate::config::Config;
+use crate::config::slots::{FOOTER_LEFT, FOOTER_RIGHT, Slot, arrange};
 use crate::core::Usage;
 use crate::focus::{Button, Focus};
 use crate::meter;
@@ -51,13 +52,26 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, screen: &Screen) -> (Rec
         .talk
         .preview
         .filter(|_| seen.talk.transcript.session.is_none());
-    cells.extend(right(&seen.talk.transcript, &total, seen.config, preview));
-    // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定）。
+    let mut named = right(&seen.talk.transcript, &total, seen.config, preview);
+    // 花了多少：接在累计后面，只写算得出的那部分（2026-10-07 项目主人定），和累计算同一件 `usage`。
     if let Some(amounts) = seen.spent() {
-        cells.push(Part {
-            keep: 2,
-            spans: vec![Span::styled(amounts, theme::dim())],
-        });
+        named.push((
+            FOOTER_RIGHT[1],
+            Part {
+                keep: 2,
+                spans: vec![Span::styled(amounts, theme::dim())],
+            },
+        ));
+    }
+    // 照配置排右段的几件（「挂载位」第 4 条 SL-2）：藏起来的不写，一件几格的照原来的先后挨着。
+    let (order, _) = arrange(&FOOTER_RIGHT, &seen.config.layout.footer);
+    for (name, _) in order {
+        cells.extend(
+            named
+                .iter()
+                .filter(|(n, _)| *n == name)
+                .map(|(_, p)| p.clone()),
+        );
     }
     let widths: Vec<usize> = cells
         .iter()
@@ -212,6 +226,7 @@ fn middle(left: usize, right: usize, button: usize, width: usize) -> Option<usiz
 }
 
 /// 右边的一格：放不下时先丢 `keep` 小的。
+#[derive(Clone)]
 struct Part {
     keep: u8,
     spans: Vec<Span<'static>>,
@@ -287,23 +302,23 @@ fn left<'a>(seen: &Seen<'a>, model: Model, named: bool) -> Vec<Span<'a>> {
     match &t.link {
         Link::Connecting => vec![Span::styled(text.connecting.as_str(), theme::dim())],
         Link::Reconnecting => vec![Span::styled(text.reconnecting.as_str(), theme::warn())],
-        Link::Down(reason) => vec![Span::styled(reason.as_str(), theme::error())],
+        // 整句红字折行写在输入框上面（`above.rs`），这里只写前面那一截。
+        Link::Down(reason) => vec![Span::styled(super::above::head(reason), theme::error())],
         Link::Ready => {
             let level = t.level;
             let name = text.levels.get(&level).map_or("", String::as_str);
             let icon = seen.config.layout.level_icons.get(&level);
             let (label, sep) = level_label(icon.map(String::as_str), name, named);
-            let mut spans = vec![Span::styled(label, theme::level(level))];
+            let level_part = vec![Span::styled(label, theme::level(level))];
+            let mut spans = Vec::new();
             // 都在冷却：模型那一格变黄写原因，到点了变回原样（「配置与模型」第 7 条）。
             let now = jiff::Timestamp::now();
             let cooling = t
                 .cooling()
                 .and_then(|until| cooling_word(until, now, &text.models));
             if let Some(word) = cooling {
-                spans.push(Span::styled(sep, theme::dim()));
                 spans.push(Span::styled(word, theme::warn()));
             } else if let Some((shown, endpoint)) = t.shown_model() {
-                spans.push(Span::styled(sep, theme::dim()));
                 spans.extend(model_spans(shown, &endpoint, model));
                 // 思考强度（`/effort`）：什么都不发的不写。
                 if let Some(effort) = t.effort() {
@@ -312,9 +327,40 @@ fn left<'a>(seen: &Seen<'a>, model: Model, named: bool) -> Vec<Span<'a>> {
                     spans.push(Span::styled(effort.to_string(), theme::accent()));
                 }
             }
-            spans
+            arranged(&seen.config.layout.footer, (level_part, sep), spans)
         }
     }
+}
+
+/// 照配置排左段的两件（「挂载位」第 4 条 SL-2）：藏起来的、空的不写；权限级别后面接它自己的分隔（只留图标时是一个空格），
+/// 别的之间 ` · `。
+fn arranged<'a>(
+    config: &[Slot],
+    (level, level_sep): (Vec<Span<'a>>, String),
+    model: Vec<Span<'a>>,
+) -> Vec<Span<'a>> {
+    let (order, _) = arrange(&FOOTER_LEFT, config);
+    let mut parts = [Some(level), Some(model)];
+    let mut out = Vec::new();
+    // 前一件是不是权限级别；还没写的是 `None`。
+    let mut after_level = None;
+    for (name, _) in order {
+        let at = usize::from(name == FOOTER_LEFT[1]);
+        let Some(part) = parts[at].take().filter(|p| !p.is_empty()) else {
+            continue;
+        };
+        if let Some(level) = after_level {
+            let sep = if level {
+                level_sep.clone()
+            } else {
+                crate::sheet::sep()
+            };
+            out.push(Span::styled(sep, theme::dim()));
+        }
+        after_level = Some(at == 0);
+        out.extend(part);
+    }
+    out
 }
 
 /// 模型那一格：全的写模型编号接暗色的供应商名；窄的先只写编号最后一段、供应商名照写，最窄才收掉供应商名（2026-10-19 项目主人：
@@ -357,40 +403,33 @@ fn cooling_word(
     Some(texts.cooling_until.replace("{n}", &minutes.to_string()))
 }
 
-/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢速度（1）、花费（2，接在累计后面，见调用处），
-/// 这几样比权限级别的字先丢（[`EARLY`]，2026-10-19 项目主人）；再丢累计（3），上下文留到最后（4）。还是 0 的格子不写
-/// （`tui.md`「框下面那一行」）。
+/// 右边的格子，照显示的先后；`keep` 越大越晚丢：先丢界面块的格子（0），再丢花费（2，接在累计后面，见调用处），这几样
+/// 比权限级别的字先丢（[`EARLY`]，2026-10-19 项目主人）；再丢累计（3），上下文留到最后（4）。还是 0 的格子不写
+/// （`tui.md`「框下面那一行」）。出字速度不写（2026-11-02 项目主人：每一轮回答末尾那一行已经有了，`speed` 那句字只给收尾行用）。
 fn right(
     t: &Transcript,
     total: &Usage,
     config: &Config,
     preview: Option<(u64, Option<u64>)>,
-) -> Vec<Part> {
-    let text = &config.text;
+) -> Vec<(&'static str, Part)> {
     let mut parts = Vec::new();
-    if let Some(speed) = t.speed.last {
-        let rate = format!("{speed:.0}");
-        let speed = Span::styled(text.speed.replace("{rate}", &rate), theme::dim());
-        parts.push(Part {
-            keep: 1,
-            spans: vec![speed],
-        });
-    }
     let context = match preview {
         Some((used, window)) => context_words(used, window, config),
         None => context_text(t, config),
     };
     if let Some(context) = context {
-        parts.push(Part {
+        let part = Part {
             keep: 4,
             spans: vec![Span::styled(context, theme::dim())],
-        });
+        };
+        parts.push((FOOTER_RIGHT[0], part));
     }
     if let Some(total) = total_text(total, config) {
-        parts.push(Part {
+        let part = Part {
             keep: 3,
             spans: vec![Span::styled(total, theme::dim())],
-        });
+        };
+        parts.push((FOOTER_RIGHT[1], part));
     }
     parts
 }

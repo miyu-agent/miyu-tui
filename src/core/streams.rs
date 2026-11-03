@@ -1,4 +1,4 @@
-//! 连上以后订的几条流（从 `serve.rs` 分出来）：配置、会话列表、软件包、给人的通知。回应都记进 `awaiting`，由 `take.rs` 认。
+//! 连上以后订的几条流（从 `serve.rs` 分出来）：配置、会话列表、软件包、给人的通知、唤醒表。回应都记进 `awaiting`，由 `take.rs` 认。
 
 use std::collections::HashMap;
 
@@ -24,5 +24,10 @@ pub(super) async fn follow(
     );
     // 订阅给人的通知（核心 J-3 中）：定时跑完了这类，界面照「系统通知」第 8 条弹。
     awaiting.insert(super::notices::follow(rpc).await?, Awaiting::NoticesStream);
+    // 订阅唤醒表（核心 J-1 下）：这个会话挂着的循环写在输入框上面、侧边栏（「循环」）。
+    awaiting.insert(
+        super::schedules::follow(rpc).await?,
+        Awaiting::SchedulesStream,
+    );
     Ok(())
 }

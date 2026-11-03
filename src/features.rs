@@ -1,12 +1,16 @@
-//! 预设里的功能和工具（蓝图 `tui.md`「配置页」第 38 条、「第一次打开的引导」第 26 条；核心 F-3 下 `preset.get` 的
-//! `features`）：一个个功能，各带归它的工具。平铺成一行行（2026-10-09 项目主人：「每一个工具都是一个功能，直接平铺，
-//! 然后用组名做分隔线」）：功能那一行管整个功能，下面它的工具一件一行；只有一件或没有工具的功能只有它自己那一行。
-//! 空格切一行要写的键（`features.<id>`、`tools.<name>`）也在这里算，配置页、引导共用。编号、工具名不上界面。
-//! 核心 ENV-1 起每个功能带它归哪个包（`package`）：照包分组，每组前面一行包的名字（2026-10-26 核心转达项目主人要的样子：
-//! 开关挂在「注入环境信息」这样的包名下面）；不归包的排在最前面、不写组名；旧核心一个都不带的照旧平铺。核心 BS-1下上 起包
-//! 能在组里（出厂的十八个在「基础系统」里）：在组里的照组收在一起、写组名，不在组里的照包。
+//! 预设里的功能和工具（蓝图 `tui.md`「配置页」第 38 条「功能树」、「第一次打开的引导」第 24、26 条；核心 FG-1，设计 52）：
+//! 核心照 `preset.get` 的 `sections` 排好一组一组（组名、先后、语言、重名的括号都排好了），一组里一个个功能，各带归它的
+//! 工具。头不翻译、不排序、不认编号。这里读成一棵树、平铺成一行行（组名一行，功能一行，它的工具一件一行；只有一件或没有
+//! 工具的只有功能那一行），切一行要写的键（`features.<id>`、`tools.<name>`）也在这里算，配置页、引导共用。两列怎么排、
+//! 光标怎么走在 `grid.rs`。旧核心没有 `sections` 的照 `features` 排成一组、不写组名。
+
+mod grid;
+
+use std::ops::{Deref, DerefMut};
 
 use serde_json::Value;
+
+pub use grid::Grid;
 
 /// 一件工具。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,120 +34,169 @@ pub struct Feature {
     pub on: bool,
     /// 这台机器上装了；没装的切不了。
     pub installed: bool,
-    /// 归它的工具，照名字排。
+    /// 归它的工具（核心只列多于一件的）。
     pub tools: Vec<Tool>,
-    /// 归哪个包（核心 ENV-1）：包的编号，机主私人的写 `~home`；不归包的、没装的是 `None`。
-    pub package: Option<String>,
-    /// 组名那一行写的（照 `package.list` 查，[`name_packages`]）：包在组里的是组的名字，不在的是包的名字；查不到的是 `None`，
-    /// 照编号写。
-    pub package_name: Option<String>,
-    /// 包在的组的编号（核心 BS-1下上）：同组的收在一起；不在组里的是 `None`，照包收。
-    pub group: Option<String>,
+    /// 在第几组（[`Tree::sections`]）。
+    pub section: usize,
 }
 
-/// `package.list` 里分组要用的（[`name_packages`]）：包的编号 → 名字、它在的组（编号、名字）。
+/// 一组（`sections` 的一项）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Section {
+    /// 组名，核心照连接的语言给的；旧核心排成的那一组是空的，不画组名那一行。
+    pub name: String,
+    /// 哪一种：`group`、`package`、`extensions`、`skills`、`scripts`、`mcp`（没有东西的组照它写「还没有…」）。
+    pub kind: String,
+}
+
+/// 读来的一棵：几组，和平铺的功能（照组的先后）。当成功能的列表用（`Deref`），切、改、新建照旧。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct Packages {
-    /// 包的编号 → 名字。
-    pub names: std::collections::HashMap<String, String>,
-    /// 包的编号 → 它在的组（编号、名字）。
-    pub groups: std::collections::HashMap<String, (String, String)>,
+pub struct Tree {
+    /// 一组一组，照核心给的先后。
+    pub sections: Vec<Section>,
+    /// 功能，照组、组里的先后。
+    pub features: Vec<Feature>,
+}
+
+impl Deref for Tree {
+    type Target = Vec<Feature>;
+    fn deref(&self) -> &Vec<Feature> {
+        &self.features
+    }
+}
+
+impl DerefMut for Tree {
+    fn deref_mut(&mut self) -> &mut Vec<Feature> {
+        &mut self.features
+    }
 }
 
 impl Feature {
-    /// 工具多于一件：下面一件一行，功能那一行当分隔。
+    /// 工具多于一件：下面一件一行。
     pub fn spread(&self) -> bool {
         self.installed && self.tools.len() > 1
     }
 }
 
-/// 读 `preset.get` 的 `features`。
-pub fn read(got: &Value) -> Vec<Feature> {
+/// 读 `preset.get`（`preset.set` 的回应同）：照 `sections` 排；装没装照 `features` 里同一个编号的（`sections` 不写）。
+/// 旧核心没有 `sections` 的照 `features` 排成一组。
+pub fn read(got: &Value) -> Tree {
     let text = |v: &Value| v.as_str().unwrap_or_default().to_string();
-    got["features"]
+    let missing: Vec<&str> = got["features"]
         .as_array()
         .into_iter()
         .flatten()
-        .map(|f| Feature {
-            id: text(&f["id"]),
-            name: f["name"]
-                .as_str()
-                .map_or_else(|| text(&f["id"]), str::to_string),
-            on: f["on"] == true,
-            installed: f["installed"] != false,
-            tools: f["tools"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .map(|t| Tool {
-                    name: text(&t["name"]),
-                    label: t["label"]
-                        .as_str()
-                        .map_or_else(|| text(&t["name"]), str::to_string),
-                    on: t["on"] == true,
-                })
-                .collect(),
-            package: f["package"].as_str().map(str::to_string),
-            package_name: None,
-            group: None,
-        })
-        .collect()
-}
-
-/// 照 `package.list` 填上每个功能的组：包在组里的记组、写组名，不在的写包名。
-pub fn name_packages(features: &mut [Feature], packages: &Packages) {
-    for feature in features {
-        let Some(package) = feature.package.as_ref() else {
-            continue;
+        .filter(|f| f["installed"] == false)
+        .filter_map(|f| f["id"].as_str())
+        .collect();
+    let tool = |t: &Value, key: &str, label: &str| Tool {
+        name: text(&t[key]),
+        label: t[label]
+            .as_str()
+            .map_or_else(|| text(&t[key]), str::to_string),
+        on: t["on"] == true,
+    };
+    let feature = |f: &Value, section: usize, tools: Vec<Tool>| Feature {
+        id: text(&f["id"]),
+        name: f["name"]
+            .as_str()
+            .map_or_else(|| text(&f["id"]), str::to_string),
+        on: f["on"] == true,
+        installed: f["installed"] != false
+            && !missing.contains(&f["id"].as_str().unwrap_or_default()),
+        tools,
+        section,
+    };
+    let list = |v: &Value| v.as_array().cloned().unwrap_or_default();
+    let Some(sections) = got["sections"].as_array() else {
+        let features = list(&got["features"])
+            .iter()
+            .map(|f| {
+                feature(
+                    f,
+                    0,
+                    list(&f["tools"])
+                        .iter()
+                        .map(|t| tool(t, "name", "label"))
+                        .collect(),
+                )
+            })
+            .collect();
+        return Tree {
+            sections: vec![Section {
+                name: String::new(),
+                kind: String::new(),
+            }],
+            features,
         };
-        let group = packages.groups.get(package);
-        feature.group = group.map(|(id, _)| id.clone());
-        feature.package_name = group
-            .map(|(_, name)| name)
-            .or_else(|| packages.names.get(package))
-            .cloned();
+    };
+    let mut tree = Tree::default();
+    for (s, section) in sections.iter().enumerate() {
+        tree.sections.push(Section {
+            name: text(&section["name"]),
+            kind: text(&section["kind"]),
+        });
+        for item in list(&section["items"]) {
+            let tools = list(&item["tools"])
+                .iter()
+                .map(|t| tool(t, "id", "name"))
+                .collect();
+            tree.features.push(feature(&item, s, tools));
+        }
     }
-}
-
-/// 照什么收在一起：在组里的照组，不在的照包；不归包的是 `None`。
-fn key(feature: &Feature) -> Option<&str> {
-    feature.group.as_deref().or(feature.package.as_deref())
-}
-
-/// 组名那一行写的：照 `package.list` 的名字；机主私人的（`~home`）写 `mine`（「我的」）；查不到的写编号。
-pub fn group_name<'a>(feature: &'a Feature, mine: &'a str) -> &'a str {
-    match (feature.package.as_deref(), feature.package_name.as_deref()) {
-        (Some("~home"), _) => mine,
-        (_, Some(name)) => name,
-        (Some(id), None) => id,
-        (None, None) => "",
+    // 预设写了、这台机器没装的（`features` 里 `installed: false`）核心不排进组：照旧列出来、暗着写「未安装」（「配置页」
+    // 第 38 条），排在最后一段，不写组名。
+    let stray: Vec<Value> = list(&got["features"])
+        .into_iter()
+        .filter(|f| f["installed"] == false)
+        .filter(|f| {
+            !tree
+                .features
+                .iter()
+                .any(|t| Some(t.id.as_str()) == f["id"].as_str())
+        })
+        .collect();
+    if !stray.is_empty() {
+        let s = tree.sections.len();
+        tree.sections.push(Section {
+            name: String::new(),
+            kind: String::new(),
+        });
+        for f in &stray {
+            tree.features.push(feature(f, s, Vec::new()));
+        }
     }
+    tree
 }
 
 /// 平铺的一行。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Row {
-    /// 一组的组名（这一组第一个功能是第几个）：选不上，只当分隔（核心 ENV-1）。
-    Group(usize),
+    /// 组名那一行（第几组）：空格整组切（2026-10-30 项目主人）。
+    Section(usize),
+    /// 一组什么都没有：写「还没有…」（第几组），停不上。
+    Empty(usize),
+    /// 组和组之间空的一行。
+    Blank,
     /// 功能那一行（第几个功能）。
     Feature(usize),
-    /// 一件工具（第几个功能的第几件）。
+    /// 工具那一行（第几个功能的第几件工具）。
     Tool(usize, usize),
 }
 
-/// 功能那一行的勾。
+/// 勾怎么写。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mark {
-    /// 开着，工具都开着。
+    /// 开着、工具都开着：`[*]`。
     On,
-    /// 开着，关了几件工具。
+    /// 开着、关了几件工具：`[~]`。
     Some,
-    /// 关着。
+    /// 关着：`[ ]`。
     Off,
 }
 
 impl Mark {
-    /// 画成的字。
+    /// 写出来的样子。
     pub fn text(self) -> &'static str {
         match self {
             Mark::On => "[*]",
@@ -153,7 +206,7 @@ impl Mark {
     }
 }
 
-/// 一个功能的勾。
+/// 功能那一行的勾。
 pub fn mark(feature: &Feature) -> Mark {
     match (feature.on, feature.tools.iter().all(|t| t.on)) {
         (false, _) => Mark::Off,
@@ -162,45 +215,41 @@ pub fn mark(feature: &Feature) -> Mark {
     }
 }
 
-/// 平铺的一行行：功能一行，工具多于一件的接着一件一行。带包的照组、包分组（[`key`]，照第一次出现的先后，组里照功能的先后），
-/// 有两个及以上功能的组前面一行组名；不归包的排在最前面、不写组名。
-pub fn rows(features: &[Feature]) -> Vec<Row> {
+/// 一组的几行：组名（旧核心排成的那一组没有）、什么都没有的写「还没有…」、功能和它的工具。
+pub fn section_rows(tree: &Tree, s: usize) -> Vec<Row> {
     let mut out = Vec::new();
-    let push = |out: &mut Vec<Row>, i: usize| {
+    if !tree.sections[s].name.is_empty() {
+        out.push(Row::Section(s));
+    }
+    let members: Vec<usize> = (0..tree.features.len())
+        .filter(|&i| tree.features[i].section == s)
+        .collect();
+    if members.is_empty() {
+        out.push(Row::Empty(s));
+    }
+    for i in members {
         out.push(Row::Feature(i));
-        if features[i].spread() {
-            out.extend((0..features[i].tools.len()).map(|j| Row::Tool(i, j)));
-        }
-    };
-    let loose = (0..features.len()).filter(|&i| features[i].package.is_none());
-    for i in loose {
-        push(&mut out, i);
-    }
-    let mut groups: Vec<&str> = Vec::new();
-    for group in features.iter().filter_map(key) {
-        if !groups.contains(&group) {
-            groups.push(group);
-        }
-    }
-    for group in groups {
-        let members: Vec<usize> = (0..features.len())
-            .filter(|&i| key(&features[i]) == Some(group))
-            .collect();
-        // 只有一个功能的包（核心 BS-1 起基础系统拆成的十八个包都是）不写组名：组名和功能名重复。
-        if members.len() > 1 {
-            out.push(Row::Group(members[0]));
-        }
-        for i in members {
-            push(&mut out, i);
+        if tree.features[i].spread() {
+            out.extend((0..tree.features[i].tools.len()).map(|j| Row::Tool(i, j)));
         }
     }
     out
 }
 
-/// 光标停得上（没装的、组名停不上）。
+/// 一组里装了的功能：开着几个、一共几个（组名后面写）。
+pub fn tally(tree: &Tree, s: usize) -> (usize, usize) {
+    let installed = tree
+        .features
+        .iter()
+        .filter(|f| f.section == s && f.installed);
+    installed.fold((0, 0), |(on, all), f| (on + usize::from(f.on), all + 1))
+}
+
+/// 光标停不停得上：组名那一行组里有装了的功能才停；没装的功能、什么都没有的、空行停不上。
 pub fn selectable(features: &[Feature], row: Row) -> bool {
     match row {
-        Row::Group(_) => false,
+        Row::Section(s) => features.iter().any(|f| f.section == s && f.installed),
+        Row::Empty(_) | Row::Blank => false,
         Row::Feature(i) | Row::Tool(i, _) => features.get(i).is_some_and(|f| f.installed),
     }
 }
@@ -214,7 +263,16 @@ pub fn tool_on(feature: &Feature, tool: &Tool) -> bool {
 /// 工具都关上（2026-10-23 项目主人：「激活读取会激活整个文件读写，不合理」，原来只写功能，工具回到各自原来的开关）。
 pub fn toggle(features: &[Feature], row: Row) -> Vec<(String, bool)> {
     match row {
-        Row::Group(_) => Vec::new(),
+        Row::Empty(_) | Row::Blank => Vec::new(),
+        // 组名那一行整组切（2026-10-30 项目主人：「可以整组，也可以 ctrl+A 切换全选」）：同全开全关，只看这一组。
+        Row::Section(s) => {
+            let members: Vec<Feature> = features
+                .iter()
+                .filter(|f| f.section == s)
+                .cloned()
+                .collect();
+            toggle_all(&members)
+        }
         Row::Feature(i) => features
             .get(i)
             .filter(|f| f.installed)

@@ -1,6 +1,8 @@
 //! 侧边栏「最近会话」（蓝图 `tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人）：照会话列表的先后列，当前这个
-//! 在原位、行首实心圆点（2026-10-27 项目主人：切过去就顶到最上面，难找）；在跑的转圈，等人确认、等回答的写黄色 `?`。一共几个
-//! 照 `tui.sidebar_sessions`。
+//! 在原位（2026-10-27 项目主人：切过去就顶到最上面，难找）。行首一列记号：等人确认、等回答的黄色 `?`，在跑的转圈，做完了
+//! 还没看的圆点，当前这个箭头（2026-10-30 项目主人：有前面几种的照那几种）。一共几个照 `tui.sidebar_sessions`。
+
+use std::collections::HashSet;
 
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
@@ -14,15 +16,27 @@ use crate::theme;
 struct Row<'a> {
     id: &'a str,
     name: &'a str,
-    current: bool,
-    busy: bool,
-    waiting: bool,
+    status: Status,
+}
+
+/// 一个会话的几样状态，挑行首记号用（[`mark`]）。
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct Status {
+    /// 当前这个。
+    pub current: bool,
+    /// 有一轮在跑。
+    pub busy: bool,
+    /// 在等人确认、回答。
+    pub waiting: bool,
+    /// 做完了还没看。
+    pub done: bool,
 }
 
 /// 「最近会话」那一段：标题加一行行，一行是两格记号接名字（记号就挂在别的几段缩进的那两格里，名字和它们的内容对齐），
 /// 一并交回每一行是哪个会话（标题那一行是 `None`）。`count` 是一共列几个，0 和没有可列的是空的。`current` 是正在看的会话和它的名字（没有标题的照列表里的写）。
+/// `unseen` 是在后台做完了还没看的。
 pub fn recent_lines(
-    list: &[SessionInfo],
+    (list, unseen): (&[SessionInfo], &HashSet<String>),
     current: Option<(&str, Option<&str>)>,
     count: usize,
     (width, frame): (u16, usize),
@@ -34,13 +48,16 @@ pub fn recent_lines(
         .map(|s| Row {
             id: &s.session,
             name: name(s).unwrap_or(&config.text.untitled),
-            current: Some(s.session.as_str()) == me,
-            busy: s.busy,
-            waiting: s.waiting,
+            status: Status {
+                current: Some(s.session.as_str()) == me,
+                busy: s.busy,
+                waiting: s.waiting,
+                done: unseen.contains(&s.session),
+            },
         })
         .collect();
     if let Some((id, title)) = current {
-        match rows.iter().position(|r| r.current) {
+        match rows.iter().position(|r| r.status.current) {
             // 正文里有标题的照它（列表里的可能还是旧的）。
             Some(at) => rows[at].name = title.unwrap_or(rows[at].name),
             // 还没进列表（刚开的）：它最新，排第一行。
@@ -49,15 +66,16 @@ pub fn recent_lines(
                 Row {
                     id,
                     name: title.unwrap_or(&config.text.untitled),
-                    current: true,
-                    busy: false,
-                    waiting: false,
+                    status: Status {
+                        current: true,
+                        ..Status::default()
+                    },
                 },
             ),
         }
     }
     // 当前这个排在名额以外的：前面的少列一个，它接在最后（先后不乱，自己也看得见）。
-    if let Some(at) = rows.iter().position(|r| r.current)
+    if let Some(at) = rows.iter().position(|r| r.status.current)
         && count > 0
         && at >= count
     {
@@ -74,9 +92,9 @@ pub fn recent_lines(
     // 记号两格（挂在缩进里）。
     let room = width.saturating_sub(2);
     for row in rows {
-        let (mark, mark_style) = mark(&row, frame, config);
+        let (mark, mark_style) = mark(&row.status, frame, config);
         let text = super::rows::clip(row.name, room);
-        let style = if row.current {
+        let style = if row.status.current {
             Style::new()
         } else {
             theme::dim()
@@ -96,8 +114,9 @@ fn name(info: &SessionInfo) -> Option<&str> {
     info.title.as_deref().or(info.preview.as_deref())
 }
 
-/// 行首的记号：等人的黄色 `?`，在跑的转圈，当前这个强调色的实心圆点，别的空着。
-fn mark(row: &Row, frame: usize, config: &Config) -> (String, Style) {
+/// 行首的记号，照这个先后取一个：等人的黄色 `?`，在跑的转圈，做完了还没看的强调色圆点，当前这个强调色箭头，别的空着。
+/// 会话列表也照这一套（2026-11-02 项目主人）。
+pub(super) fn mark(row: &Status, frame: usize, config: &Config) -> (String, Style) {
     let spinner = &config.timeline.spinner;
     let lead = if row.current {
         theme::accent()
@@ -108,8 +127,10 @@ fn mark(row: &Row, frame: usize, config: &Config) -> (String, Style) {
         ("?".to_string(), theme::warn())
     } else if row.busy {
         (spinner[frame % spinner.len().max(1)].clone(), lead)
+    } else if row.done {
+        (config.layout.side_done_mark.clone(), theme::accent())
     } else if row.current {
-        (config.layout.current_mark.clone(), lead)
+        (config.layout.side_here_mark.clone(), lead)
     } else {
         (String::new(), lead)
     }

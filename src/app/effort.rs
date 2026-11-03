@@ -1,7 +1,8 @@
-//! `/effort`：换正在用的模型的思考强度（蓝图 `tui.md`「配置与模型」思考强度，核心 8-18 补；2026-10-02 项目主人定：只要
-//! 这个框）。开框时向核心要一次 `model.list`，照正在请求的模型（没有的照会话的引用、默认的聊天模型）列它的几级；
-//! `Enter` 写进系统配置（默认的去掉这一项），关框，不弹提示，所有会话下一轮起照它，底栏当场变。用的是模型池的提示一句，
-//! 不开框（2026-10-02 项目主人定）。
+//! `/effort`：换这个会话的思考强度（蓝图 `tui.md`「配置与模型」思考强度，核心 SM-1；2026-10-30 项目主人定：`/effort` 只管
+//! 当前会话，设置页管新会话的默认）。开框时向核心要一次 `model.list`，照正在请求的模型（没有的照会话的引用、默认的聊天
+//! 模型）列它的几级，第一行「跟随设置」；`Enter` 交给核心（`session.configure {effort}`），关框，不弹提示，成了底栏当场
+//! 变。还没开会话的记着，开会话时带上。用的是模型池的提示一句，不开框（2026-10-02、10-30 项目主人定：池不能设）；开框
+//! 以前就看（2026-10-30 项目主人报：先闪一下大框才关）。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
@@ -13,6 +14,17 @@ impl App {
     /// 开框，向核心要几级。
     pub(super) fn open_effort(&mut self) {
         if !self.reachable() {
+            return;
+        }
+        // 会话的引用、没开会话时默认的聊天模型是池的：当场提示，不开框。还不知道的（刚连上）照旧开框等核心交回来再看。
+        let reference = self
+            .talk
+            .transcript
+            .model_ref()
+            .or(self.link.default_chat.as_deref());
+        if reference.is_some_and(|r| r.starts_with('@')) {
+            let note = self.config.text.effort.need_model.clone();
+            self.hint(note, false);
             return;
         }
         self.boxes.efforts = None;
@@ -63,12 +75,16 @@ impl App {
             self.hint(note, false);
             return;
         };
+        // 框里标的「现在用的」是这个会话自己定的那一档，跟着配置的标第一行（不是配置的默认，核心 SM-1）。
+        let mut target = target;
+        target.current = self.talk.transcript.own_effort().map(str::to_string);
         let selected = crate::ui::effort_list::initial(&target);
         self.boxes.panel = Some(Panel::Effort { selected });
         self.boxes.efforts = Some(target);
     }
 
-    /// 底栏：还没开会话的照默认的聊天模型写模型和这一档；开了的、改的就是正在用的那个，照新的最终值写这一档。
+    /// 底栏：还没开会话的照默认的聊天模型写模型和这一档；开了的、改的就是正在用的那个，照新的最终值写这一档。会话自己定了
+    /// 一档的照它，不拿配置的盖掉（核心 SM-1）。
     fn footer_effort(&mut self, list: &EffortList) {
         let Some(target) = self.effort_target(list).cloned() else {
             return;
@@ -85,7 +101,9 @@ impl App {
             .model
             .as_ref()
             .map(|(m, e)| format!("{e}/{m}"));
-        if in_use.as_deref() == Some(target.reference.as_str()) {
+        if in_use.as_deref() == Some(target.reference.as_str())
+            && self.talk.transcript.own_effort().is_none()
+        {
             self.talk.transcript.set_effort(target.current);
         }
     }
@@ -134,8 +152,8 @@ impl App {
         true
     }
 
-    /// 换成第 `index` 行（第 0 行默认）：写系统配置，关框，不弹提示（2026-10-01 项目主人：改模型、思考强度不要通知）。
-    /// 和配置的默认一样的只关框。
+    /// 换成第 `index` 行（第 0 行跟随设置）：交给核心，关框，不弹提示（2026-10-01 项目主人：改模型、思考强度不要通知）。
+    /// 和现在一样的只关框。成了底栏照 [`App::effort_set`] 变。
     fn choose_effort(&mut self, index: usize) {
         self.boxes.panel = None;
         let Some(target) = self.boxes.efforts.take() else {
@@ -147,11 +165,16 @@ impl App {
         if index > 0 && level.is_none() || level == target.current {
             return;
         }
-        self.link.core.send(Command::SetEffort {
-            key: target.key,
-            level,
-        });
-        // 写完马上再要一次，底栏当场照新的最终值写（个人的去掉了，系统配置里可能还有一档）。
-        self.refresh_effort();
+        self.link.core.send(Command::SessionEffort(level));
+    }
+
+    /// 这个会话的思考强度换成了（核心答应了，或者还没开会话、当场算换成了）：定了一档的底栏当场写它；回到跟随设置的再要
+    /// 一次 `model.list`，底栏照配置的那一档写（核心只改思考强度时不当场推 `model.changed`，SM-1）。
+    pub(super) fn effort_set(&mut self, level: Option<String>) {
+        let back = level.is_none();
+        self.talk.transcript.own_effort_set(level);
+        if back {
+            self.refresh_effort();
+        }
     }
 }

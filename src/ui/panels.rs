@@ -53,6 +53,7 @@ fn rows(
                 session_list::Marks {
                     current: seen.talk.main_session().as_deref(),
                     asking: &seen.talk.drawers.held_owners(),
+                    unseen: Some(&seen.talk.unseen),
                 },
                 seen.cwd,
                 seen.config,

@@ -59,8 +59,8 @@ pub struct Texts {
     pub deleted: String,
     /// 有确认、提问在等你回答的会话，右边写的（「确认和提问的抽屉」第 10 条）。
     pub asking: String,
-    /// 正在用的不能删。
-    pub delete_current: String,
+    /// 删的里有正在用的、它有一轮在跑：先打断再删。
+    pub delete_running: String,
     /// 置顶了、取消了。
     pub pinned: String,
     /// 取消置顶了。
@@ -71,13 +71,15 @@ pub struct Texts {
     pub tokens: String,
 }
 
-/// 哪个会话是正在用的，哪几个有确认、提问在等你（「确认和提问的抽屉」第 10 条）。
+/// 哪个会话是正在用的，哪几个有确认、提问在等你（「确认和提问的抽屉」第 10 条），哪几个做完了还没看。
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Marks<'a> {
     /// 正在用的会话。
     pub current: Option<&'a str>,
     /// 在问你的会话。
     pub asking: &'a [String],
+    /// 在后台做完了、还没切过去看的会话（`app/unseen.rs`）。
+    pub unseen: Option<&'a std::collections::HashSet<String>>,
 }
 
 /// 框（标题、提示）、排好的行、每一行是对得上的第几个；`marks.current` 是正在用的会话，放不下 `max` 行时离选中的远的少露。
@@ -167,11 +169,13 @@ pub fn lines(
         .unwrap_or(0);
     // 放不下时标题先让：编号、总 token 一列、右边那一格照全写，标题一列截短（最少留 `TITLE_MIN` 列；2026-10-19 真数据上
     // 看到窄的框里总 token 被右边的目录挤成「Σ4…」）。
+    // 右边那一格先只留时间、「在问」的宽，工作目录拿标题以后剩下的（2026-11-02 项目主人：原来照整张列表最宽的「目录 +
+    // 时间」先留，露出来的几行没写目录也留着，标题被挤成 8 列）。
     let right_of = |info: &SessionInfo| {
         if marks.asking.contains(&info.session) {
             texts.asking.width()
         } else {
-            right(info, marks.current, here, now, config).width()
+            when(info, marks.current, now, texts).width()
         }
     };
     let widest_right = found.iter().map(|info| right_of(info)).max().unwrap_or(0);
@@ -246,14 +250,16 @@ pub fn lines(
                 format!("  {:>tokens_width$}", tokens(info)),
                 theme::faint(),
             ));
-            let Marks { current, asking } = marks;
-            let right = if asking.contains(&info.session) {
+            let right = if marks.asking.contains(&info.session) {
                 // 这个会话在问你（「确认和提问的抽屉」第 10 条）：切过去就弹。
                 Span::styled(texts.asking.clone(), theme::accent())
             } else {
-                Span::styled(right(info, current, here, now, config), theme::faint())
+                let used: usize = content.iter().map(Span::width).sum();
+                let room = usize::from(width).saturating_sub(2 + used + 1);
+                let cell = right(info, marks.current, (here, room), now, config);
+                Span::styled(cell, theme::faint())
             };
-            let lead = marker(info, current, frame, config);
+            let lead = marker(info, marks, frame, config);
             let line = panel::item_with(i == list.selected, lead, content, Some(right), width);
             (Some(i), line)
         });
@@ -266,30 +272,30 @@ pub fn lines(
 /// 框窄了标题一列最少留几列。
 const TITLE_MIN: usize = 8;
 
-/// 标题前面的记号，写在选中的 `❯` 那一列（不另占一列，2026-10-16 项目主人）：在跑的转圈，选中了也转；正在用的 `●`，
-/// 选中了让给 `❯`（选中的那一行整行铺了底）；都是的转圈、强调色；别的没有。
+/// 标题前面的记号，写在选中的 `❯` 那一列（不另占一列，2026-10-16 项目主人）：照侧边栏「最近会话」那一列的先后取一个
+/// （2026-11-02 项目主人）：等人的黄色 `?`、在跑的转圈、做完了还没看的圆点、当前这个箭头，选中了也照旧写、不让给 `❯`
+/// （2026-10-19 项目主人定各个框统一）；都没有的交回 `None`。
 fn marker(
     info: &SessionInfo,
-    current: Option<&str>,
+    marks: Marks<'_>,
     frame: usize,
     config: &Config,
 ) -> Option<(Span<'static>, bool)> {
-    let spinner = &config.timeline.spinner;
-    let is_current = current == Some(info.session.as_str());
-    let mark = if info.busy {
-        spinner[frame % spinner.len().max(1)].clone()
-    } else if is_current {
-        config.layout.current_mark.clone()
-    } else {
+    let status = super::recent::Status {
+        current: marks.current == Some(info.session.as_str()),
+        busy: info.busy,
+        waiting: info.waiting || marks.asking.contains(&info.session),
+        done: marks.unseen.is_some_and(|u| u.contains(&info.session)),
+    };
+    let (mark, style) = super::recent::mark(&status, frame, config);
+    if mark.is_empty() {
         return None;
-    };
-    let style = if is_current {
-        theme::accent()
-    } else {
-        theme::dim()
-    };
-    // 正在用的选中了也照旧写 `●`、不让给 `❯`（2026-10-19 项目主人定各个框统一）；在跑的选中了也照样转。
-    Some((Span::styled(format!("{mark} "), style), true))
+    }
+    let pad = 2usize.saturating_sub(mark.width()).max(1);
+    Some((
+        Span::styled(format!("{mark}{}", " ".repeat(pad)), style),
+        true,
+    ))
 }
 
 /// 标题那一列有多宽：置顶的记号加标题（没起名的写「未命名会话」）。
@@ -325,28 +331,35 @@ fn head(info: &SessionInfo, config: &Config, column: usize) -> Vec<Span<'static>
     spans
 }
 
-/// 右边那一格：工作目录（和界面现在所在的目录 `here` 不一样时才写），再写「当前」「在忙」或者多久以前。
+/// 多久以前有过动静：正在用的、在跑的标题前面有记号，不写。
+fn when(info: &SessionInfo, current: Option<&str>, now: jiff::Timestamp, texts: &Texts) -> String {
+    if current == Some(info.session.as_str()) || info.busy {
+        return String::new();
+    }
+    info.last_active
+        .map(|at| ago(at, now, texts))
+        .unwrap_or_default()
+}
+
+/// 右边那一格：不在这里的工作目录，接时间。目录只用 `room` 里时间剩下的地方：放不下的从前面截、打头写 `…`，一格都放不下的
+/// 不写（2026-11-02 项目主人：标题先占宽）。
 fn right(
     info: &SessionInfo,
     current: Option<&str>,
-    here: &str,
+    (here, room): (&str, usize),
     now: jiff::Timestamp,
     config: &Config,
 ) -> String {
-    let texts = &config.text.sessions;
-    // 正在用的、在跑的标题前面有记号，右边不再写「当前」「在忙」。
-    let when = if current == Some(info.session.as_str()) || info.busy {
-        String::new()
-    } else {
-        info.last_active
-            .map(|at| ago(at, now, texts))
-            .unwrap_or_default()
-    };
+    let when = when(info, current, now, &config.text.sessions);
+    let gap = if when.is_empty() { 0 } else { 2 };
+    let left = room.saturating_sub(when.width() + gap);
     let elsewhere = info
         .cwd
         .as_deref()
         .filter(|cwd| crate::local::home_short(cwd) != here)
-        .map(|cwd| short_path(cwd, config.layout.session_cwd_width));
+        .map(|cwd| short_path(cwd, config.layout.session_cwd_width))
+        .map(|cwd| crate::cells::tail_marked(&cwd, left))
+        .filter(|cwd| cwd.width() > crate::sheet::ellipsis().width());
     match elsewhere {
         Some(cwd) if when.is_empty() => cwd,
         Some(cwd) => format!("{cwd}  {when}"),

@@ -1,5 +1,8 @@
 use serde_json::json;
 
+mod package_config;
+mod picks;
+
 use super::schema::Schema;
 use super::{Entry, More};
 
@@ -22,8 +25,8 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
     let mut more = More::default();
     assert_eq!(
         more.entries(),
-        [Entry::Models, Entry::Personas],
-        "没读到清单以前"
+        [Entry::Models, Entry::Personas, Entry::Packages],
+        "没读到清单以前（软件包一直列，第 43c 条）"
     );
     // 核心 F-4 再补、F-6 上起只给这几页：「权限」并进了「通用」，「接入」并进了「软件包」（2026-10-10 项目主人）。
     more.schema = Some(schema(&[
@@ -35,7 +38,7 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("general".into()),
             Entry::Models,
             Entry::Personas,
-            Entry::Page("packages".into()),
+            Entry::Packages,
             Entry::Page("voice".into()),
             Entry::Page("advanced".into()),
         ]
@@ -49,6 +52,7 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("appearance".into()),
             Entry::Models,
             Entry::Personas,
+            Entry::Packages,
             Entry::Page("advanced".into()),
         ]
     );
@@ -68,6 +72,7 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Models,
             Entry::Page("user".into()),
             Entry::Personas,
+            Entry::Packages,
             Entry::Page("advanced".into()),
         ]
     );
@@ -89,6 +94,7 @@ fn the_menu_puts_general_first_and_personas_before_advanced() {
             Entry::Page("user".into()),
             Entry::Page("privacy".into()),
             Entry::Personas,
+            Entry::Packages,
             Entry::Page("advanced".into()),
         ]
     );
@@ -151,24 +157,43 @@ fn icon_sets_are_named_in_the_interface_language() {
 }
 
 #[test]
-fn the_colors_list_hides_the_wallpaper_until_one_is_found() {
-    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。
+fn the_colors_list_hides_what_cannot_give_colors_and_tokyonight() {
+    // 2026-10-14 项目主人定：找不到壁纸的，配色里不列「跟随壁纸」。2026-11-02 项目主人：有了自动就不要默认了（tokyonight
+    // 不列，只兜底）、没设置头像的跟随人格也不用出现；正用着的照列。
     let choice = |value: &str| crate::settings::pages::choose::Choice {
         value: json!(value),
         label: value.into(),
         note: None,
         off: None,
     };
-    let list = || vec![choice("persona"), choice("wallpaper"), choice("tokyonight")];
+    let list = || {
+        ["auto", "persona", "wallpaper", "tokyonight", "terminal"]
+            .map(choice)
+            .to_vec()
+    };
+    let values = |more: &More| -> Vec<String> {
+        more.offered("tui.theme", list())
+            .iter()
+            .map(|c| c.value.as_str().unwrap_or_default().to_string())
+            .collect()
+    };
     let mut more = More::default();
-    assert_eq!(more.offered("tui.theme", list()).len(), 2);
+    assert_eq!(values(&more), ["auto", "terminal"]);
     assert_eq!(
         more.offered("tui.theme_mode", list()).len(),
-        3,
+        5,
         "别的项不管"
     );
     more.wallpaper = true;
-    assert_eq!(more.offered("tui.theme", list()).len(), 3);
+    more.persona_colors = true;
+    assert_eq!(values(&more), ["auto", "persona", "wallpaper", "terminal"]);
+    more.persona_colors = false;
+    more.theme_now = "persona".into();
+    assert_eq!(
+        values(&more),
+        ["auto", "persona", "wallpaper", "terminal"],
+        "正用着的照列"
+    );
 }
 
 #[test]

@@ -4,8 +4,7 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::{Value, json};
 
-use super::choose::{Choose, LineEdit, PersonaView, PresetView, Pressed};
-use super::packages::PACKAGES;
+use super::choose::{Choose, LineEdit, PersonaView, PresetView};
 use super::schema::{Row, Schema};
 use super::{Entry, Section, choices, current, is_named, personas};
 use crate::core::Refusal;
@@ -20,6 +19,16 @@ impl Settings {
         self.ask("preset.list", json!({}), Waiting::Presets);
         self.ask("package.list", json!({}), Waiting::Mascots);
         self.ask("mcp.list", json!({}), Waiting::Mcp);
+        self.ask("kb.list", json!({}), Waiting::Knowledge);
+        // 目录在配置页开着的时候不会变：读到过一次就不再读。
+        if self.more.featured.is_none() && !self.more.featured_asked {
+            self.more.featured_asked = true;
+            self.ask(
+                "provider.catalog",
+                json!({"featured": true}),
+                Waiting::Catalog(false),
+            );
+        }
     }
 
     /// 清单、人格、人格详情回来了：记下；核心不认的（旧核心）当没有，菜单里不列那几页。
@@ -42,11 +51,14 @@ impl Settings {
                 self.more.schema = Some(schema);
             }
             (Waiting::Personas, Ok(got)) => self.more.personas = Some(personas::read(&got)),
+            (Waiting::Knowledge, Ok(got)) => self.more.knowledge = Some(super::picks::bases(&got)),
             (Waiting::Presets, Ok(got)) => {
                 self.more.raw.1 = Some(got.clone());
                 self.more.presets = Some(crate::core::read_preset_files(&got));
             }
             (Waiting::Mascots, Ok(got)) => {
+                self.more.store.local = Some(super::store::read::locals(&got));
+                self.more.store.settle();
                 self.more.summaries = super::packages::summaries(&got);
                 self.more.origins = super::packages::origins(&got);
                 self.more.mcp_bundled = super::mcp::bundled(&got);
@@ -93,12 +105,11 @@ impl Settings {
                 self.status = None;
                 self.more.section = match self.more.selected() {
                     Entry::Models => None,
-                    // 「软件包」先列包，进去一包一页（第 43a 条）。
-                    Entry::Page(id) if id == PACKAGES => Some(Section::Packages(0)),
                     Entry::Page(id) => Some(Section::Page(id, 0)),
                     Entry::Personas => Some(Section::Personas(0)),
                     Entry::Presets => Some(Section::Presets(0)),
                     Entry::Mcp => Some(Section::Mcp(0)),
+                    Entry::Packages => self.store_enter(),
                 };
             }
             KeyCode::Esc | KeyCode::Char('q') => return self.back(),
@@ -112,6 +123,14 @@ impl Settings {
         let Some(section) = self.more.section.clone() else {
             return Outcome::Stay;
         };
+        if section == Section::Store {
+            return self.store_key(key, texts);
+        }
+        if let Section::Page(id, at) = &section
+            && self.slide_key(id, *at, key, texts)
+        {
+            return Outcome::Stay;
+        }
         self.status = self.status.take().filter(|(_, t)| *t == Tone::Busy);
         let count = self.section_count(&section);
         let (at, rebuild): (usize, fn(usize, &Section) -> Section) = match &section {
@@ -121,7 +140,7 @@ impl Settings {
             }),
             Section::Personas(at) => (*at, |n, _| Section::Personas(n)),
             Section::Presets(at) => (*at, |n, _| Section::Presets(n)),
-            Section::Packages(at) => (*at, |n, _| Section::Packages(n)),
+            Section::Store => return Outcome::Stay,
             Section::Mcp(at) => (*at, |n, _| Section::Mcp(n)),
         };
         match key.code {
@@ -134,7 +153,7 @@ impl Settings {
                 self.more.section = Some(rebuild(at.saturating_sub(1), &section));
             }
             KeyCode::Enter => match &section {
-                Section::Packages(at) => self.open_package(*at),
+                Section::Store => {}
                 Section::Page(id, at) => self.change(id, *at, texts),
                 Section::Personas(at) => self.open_persona(*at),
                 Section::Presets(at) => self.open_preset(*at),
@@ -166,13 +185,11 @@ impl Settings {
                         self.ask_delete_persona(&id, texts);
                     }
                 }
-                Section::Packages(_) | Section::Mcp(_) => {}
+                Section::Store | Section::Mcp(_) => {}
             },
             // 预设页、人格页 `a`：新建（第 37、39 条，同旧版）。
-            KeyCode::Char('a') if matches!(section, Section::Presets(_)) => self.new_preset(texts),
-            KeyCode::Char('a') if matches!(section, Section::Personas(_)) => {
-                self.new_persona(texts)
-            }
+            KeyCode::Char('a') if matches!(section, Section::Presets(_)) => self.new_preset(),
+            KeyCode::Char('a') if matches!(section, Section::Personas(_)) => self.new_persona(),
             _ => {}
         }
         Outcome::Stay
@@ -184,30 +201,25 @@ impl Settings {
             Section::Page(id, _) => self.page_items(id).len(),
             Section::Personas(_) => self.more.personas.as_ref().map_or(0, Vec::len),
             Section::Presets(_) => self.more.presets.as_ref().map_or(0, Vec::len),
-            Section::Packages(_) => self.more.packages().len(),
+            Section::Store => 0,
             Section::Mcp(_) => self.more.servers().len(),
         }
     }
 
-    /// 从一页退出来：包自己那一页回到包的列表、停在它上面；别的回主菜单。
+    /// 从一页退出来：包自己那一页回到「软件包」的「已安装」、停在它上面（第 43c 条）；别的回主菜单。
     fn leave_section(&mut self, section: &Section) {
         let back = match section {
             Section::Page(page, _) => super::packages::package_of(page).map(|id| {
-                let at = self.more.packages().iter().position(|p| p.id == id);
-                Section::Packages(at.unwrap_or(0))
+                let store = &mut self.more.store;
+                store.tab = super::store::Tab::Installed;
+                store.keep = Some((store.tab, id.to_string()));
+                store.settle();
+                Section::Store
             }),
             _ => None,
         };
         self.on_menu = back.is_none();
         self.more.section = back;
-    }
-
-    /// 包的列表里 `Enter`：进这个包自己那一页。
-    fn open_package(&mut self, at: usize) {
-        if let Some(listed) = self.more.packages().get(at) {
-            let page = super::packages::page_of(&listed.id);
-            self.more.section = Some(Section::Page(page, 0));
-        }
     }
 
     /// 一页里的项，照画的先后（第几项）。
@@ -254,8 +266,10 @@ impl Settings {
             return self.toggle_service(value == Value::Bool(true), texts);
         }
         // 默认人格不管清单写什么控件（核心写的是填名字），都照 `persona.list` 开列表（2026-10-07 项目主人报）。
-        let control = if is_named(&item.key) {
+        let control = if is_named(&item.key) || self.more.named_item(&item).is_some() {
             "select"
+        } else if item.kind == "reference" {
+            "reference"
         } else {
             item.control.as_str()
         };
@@ -264,7 +278,7 @@ impl Settings {
         }
         match control {
             "select" => {
-                let list = choices(&item, self.more.named(&item.key), &texts.more);
+                let list = choices(&item, self.more.named_item(&item), &texts.more);
                 let list = self.more.offered(&item.key, list);
                 self.popup = Some(Popup::Choose(Choose::open(
                     &item.key, &item.name, list, &value,
@@ -277,16 +291,20 @@ impl Settings {
                 self.save(false, texts);
             }
             "combo" => self.open_combo(&item, &value, texts),
+            // 选模型（第 33 条子规则）：开选默认模型的那个窗，写回这一项。
+            "reference" => self.open_reference(super::target::Target::Setting, &item.key, &value),
             "textarea" => self.open_textarea(&item, &value),
             // 带选项的（隐私页的去掉出厂私密目录）勾选，不手打（第 47a 条）。
+            // 记录列表（第 47b 条）：开列表窗。
+            "list" if item.element == "record" => self.open_records(&item, &value),
             "list" if !item.options.is_empty() => self.open_ticks(&item, &value),
             "list" if super::list::editable(&item) => self.open_list(&item, &value),
             "list" => self.list_not_editable(texts),
-            "number" | "text" => {
-                let number = item.control == "number";
-                self.popup = Some(Popup::Line(LineEdit::open(
-                    &item.key, &item.name, number, &value,
-                )));
+            // 滑块在行上调，`Enter` 开数的编辑窗打精确值（第 33 条子规则）。
+            "number" | "text" | "slider" => {
+                let number = item.control != "text";
+                let edit = LineEdit::open(&item.key, &item.name, number, &value);
+                self.popup = Some(Popup::Line(edit.float(item.kind == "float")));
             }
             _ => self.say(words.no_editor.clone(), Tone::Note),
         }
@@ -369,6 +387,7 @@ impl Settings {
             detail: None,
             error: None,
             cursor: 0,
+            two: Default::default(),
         }));
     }
 
@@ -385,100 +404,5 @@ impl Settings {
             error: None,
             cursor: 0,
         }));
-    }
-
-    /// 选择窗、编辑窗、详情窗的按键。
-    pub(in crate::settings) fn more_popup_key(
-        &mut self,
-        popup: Popup,
-        key: KeyEvent,
-        texts: &Texts,
-    ) {
-        match popup {
-            Popup::Choose(mut choose) => match choose.press(key) {
-                Pressed::Picked(value) => self.write_to(choose.target, &choose.key, value, texts),
-                Pressed::Cancelled => self.edit_cancel(choose.target),
-                Pressed::Moved | Pressed::Ignored => self.popup = Some(Popup::Choose(choose)),
-            },
-            Popup::Line(mut edit) => {
-                match key.code {
-                    KeyCode::Esc => return self.edit_cancel(edit.target),
-                    KeyCode::Enter => {
-                        // 列表的一条（第 47 条）：清空了是去掉这一条，整数的写了别的照整数说。
-                        let item = matches!(edit.target, super::target::Target::ListItem(..));
-                        let blank = edit.editor.text().trim().is_empty();
-                        match edit.value() {
-                            _ if item && blank => {
-                                let value = Value::String(String::new());
-                                return self.write_to(edit.target, &edit.key, value, texts);
-                            }
-                            Some(value) => {
-                                return self.write_to(edit.target, &edit.key, value, texts);
-                            }
-                            None if item => edit.error = Some(texts.more.list.whole.clone()),
-                            None => edit.error = Some(texts.more.bad_number.clone()),
-                        }
-                    }
-                    _ => {}
-                }
-                let editor = &mut edit.editor;
-                match key.code {
-                    KeyCode::Backspace => editor.backspace(),
-                    KeyCode::Delete => editor.delete(),
-                    KeyCode::Left => editor.left(false),
-                    KeyCode::Right => editor.right(false),
-                    KeyCode::Home => editor.move_to(0, false),
-                    KeyCode::End => editor.move_to(editor.text().len(), false),
-                    KeyCode::Char(c) => editor.insert(&c.to_string()),
-                    _ => {}
-                }
-                self.popup = Some(Popup::Line(edit));
-            }
-            Popup::Sheet(edit) => self.sheet_key(edit, key, texts),
-            Popup::List(edit) => self.list_key(edit, key, texts),
-            Popup::Ticks(edit) => self.ticks_key(edit, key, texts),
-            // 人格的窗（第 36 条）、示范对话列表和两格窗（第 41 条）。
-            Popup::Persona(view) => self.persona_key(view, key, texts),
-            Popup::Dialogs(view) => self.dialogs_key(view, key),
-            Popup::Pair(edit) => self.pair_key(edit, key, texts),
-            // 能改的预设详情窗（第 39 条）。
-            Popup::Preset(view) => self.preset_key(view, key, texts),
-            other => self.popup = Some(other),
-        }
-    }
-
-    /// 选择窗、编辑窗选好了：改预设的照它办（`preset_edit.rs`），别的写系统配置。
-    fn write_to(&mut self, target: super::target::Target, key: &str, value: Value, texts: &Texts) {
-        // 跟随头像的主色写在人格上（`persona.set` 的 `seed`）。
-        if let super::target::Target::PersonaSeed(persona) = &target {
-            let params = json!({"persona": persona, "seed": value});
-            self.ask("persona.set", params, Waiting::PersonaSeed);
-            return;
-        }
-        if !self.model_or_write(&target, key, &value)
-            && !self.list_write(&target, &value, texts)
-            && !self.secret_write(&target, key, &value, texts)
-            && !self.combo_write(&target, key, &value)
-            && !self.preset_write(target.clone(), key, value.clone())
-            && !self.avatar_write(target.clone(), &value)
-            && !self.persona_write(target, key, value.clone())
-        {
-            self.write_setting(key, value, texts);
-        }
-    }
-
-    /// 写一项（不写层，核心写系统配置，「设置只剩一份」第 1 条），当场存（关窗；没存成的原因写在状态行）。
-    pub(in crate::settings) fn write_setting(&mut self, key: &str, value: Value, texts: &Texts) {
-        let Some(data) = self.data.as_ref() else {
-            return;
-        };
-        // 选了「无人格」这类空的、填的字清空了的：去掉这一项（2026-10-26 项目主人报：「用户名称」删空了存不进，核心不收空字）。
-        if value.is_null() || value.as_str().is_some_and(|t| t.trim().is_empty()) {
-            self.draft.unset(key, data);
-        } else {
-            self.draft.set(key, value, data);
-        }
-        self.refresh();
-        self.save(false, texts);
     }
 }

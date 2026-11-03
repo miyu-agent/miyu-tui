@@ -7,9 +7,10 @@ mod dialog_popups;
 mod fields;
 mod mcp_list;
 mod more_popups;
-mod package_list;
 mod pages;
 mod popup;
+mod records;
+mod store;
 
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
@@ -63,6 +64,8 @@ pub fn draw(frame: &mut Frame, page: &mut Settings, config: &Config, caret: &mut
     let stage = stage(area, look);
     if page.on_menu {
         pages::menu(frame, stage, page, texts, look.menu_gap);
+    } else if page.more.section == Some(crate::settings::pages::Section::Store) {
+        store::draw(frame, stage, page, texts, caret);
     } else if page.more.section.is_some() {
         pages::draw(frame, stage, page, texts);
     } else {
@@ -71,7 +74,15 @@ pub fn draw(frame: &mut Frame, page: &mut Settings, config: &Config, caret: &mut
     if page.popup.is_some() {
         let buf = frame.buffer_mut();
         buf.set_style(area, Style::new().add_modifier(Modifier::DIM));
-        popup::draw(frame, area, page, texts, look, caret);
+        popup::draw(
+            frame,
+            area,
+            page,
+            texts,
+            look,
+            caret,
+            &config.text.feature_tree,
+        );
     } else {
         // 下一个窗从头露起（`popup.rs` 照上一帧接着露）。
         page.popup_top = 0;

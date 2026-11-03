@@ -17,6 +17,8 @@ pub fn rows(command: &str, width: u16) -> Vec<String> {
     let bar = u16::try_from(crate::sheet::mark(|m| &m.quote).width()).unwrap_or(2);
     let room = width.saturating_sub(bar + 2).max(1);
     let mut out = Vec::new();
+    // 屏上要和真正要跑的一样：看不见的字换成记号再排（发布前审查 T2-2，`tabs::shown`）。
+    let command = crate::tabs::shown(command);
     for line in command.lines() {
         let mut lead = "$ ";
         let parts = pieces(line, room);

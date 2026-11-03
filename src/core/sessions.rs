@@ -35,6 +35,9 @@ pub struct SessionInfo {
     pub terminal: bool,
     /// 在等人确认、等回答（核心 SL-1 的 `waiting`，嵌套调用的确认也算）：侧边栏「最近会话」写黄色的 `?`。旧核心没有这一格。
     pub waiting: bool,
+    /// 有一个头（别的终端、网页）开着它（核心 HV-1 的 `viewed`）：它做完、在问时由开着的那个通知，这边不替它弹。旧核心没有
+    /// 这一格。
+    pub viewed: bool,
 }
 
 /// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话、整理会话不要，照核心交回的先后（新的
@@ -53,7 +56,12 @@ fn entry(s: &Value) -> Option<SessionInfo> {
     if !s["parent"].is_null() || s["oneshot"] == true || s["kind"] == "dream" {
         return None;
     }
-    let text = |v: &Value| v.as_str().filter(|t| !t.is_empty()).map(str::to_string);
+    // 标题、预览是模型起的、写的：图格字、标签字符这种外来的读进来时就去掉（发布前第五批审查 T5-3）。
+    let text = |v: &Value| {
+        v.as_str()
+            .filter(|t| !t.is_empty())
+            .map(|t| crate::tabs::printable(t).into_owned())
+    };
     Some(SessionInfo {
         session: s["session"].as_str()?.to_string(),
         title: text(&s["title"]),
@@ -71,6 +79,7 @@ fn entry(s: &Value) -> Option<SessionInfo> {
             .map(|used| (used, s["context"]["window"].as_u64().filter(|w| *w > 0))),
         terminal: s["origin"] == "terminal",
         waiting: s["waiting"] == true,
+        viewed: s["viewed"] == true,
     })
 }
 

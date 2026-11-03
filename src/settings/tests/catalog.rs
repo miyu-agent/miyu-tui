@@ -7,6 +7,7 @@ use super::{opened, press, texts};
 use crate::settings::Settings;
 use crate::settings::pages::catalog::Row;
 use crate::settings::popup::Popup;
+use crate::settings::test_support::{config_all, model_list};
 
 /// 常用的几家：一家接不上的夹在中间，一家编号不合写法，一家和配置里的撞了。
 fn featured() -> Value {
@@ -28,6 +29,31 @@ fn catalog() -> Settings {
     assert_eq!(asks[0].2, json!({"featured": true}));
     page.answer(asks[0].0, Ok(featured()), &texts());
     page
+}
+
+/// 开配置页时先读好常用的几家（2026-10-30 项目主人：「每次加载的画面都很短，会闪一下」）：按 `a` 当场列出来，不再问。
+#[test]
+fn the_featured_providers_read_on_opening_show_at_once() {
+    let mut page = Settings::open(false, true);
+    let asks = page.take_asks();
+    assert!(
+        asks.iter()
+            .any(|(_, method, params)| *method == "provider.catalog" && params["featured"] == true),
+        "开的时候就读常用的几家"
+    );
+    for (tag, method, _) in asks {
+        let got = match method {
+            "model.list" => model_list(),
+            "config.get" => config_all(),
+            "provider.catalog" => featured(),
+            _ => json!({}),
+        };
+        page.answer(tag, Ok(got), &texts());
+    }
+    press(&mut page, KeyCode::Enter);
+    press(&mut page, KeyCode::Char('a'));
+    assert!(page.take_asks().is_empty(), "读好了的不再问");
+    assert_eq!(chosen(&page), "deepseek", "当场列出来，光标在第一家");
 }
 
 /// `a` 开目录、目录回来是空的，选「自定义…」：开空的编辑窗（别的测试新加供应商用）。

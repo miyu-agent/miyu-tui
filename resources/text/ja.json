@@ -13,6 +13,7 @@
     "バックグラウンドコマンドがあるとき、入力欄が空の状態で ↓ を押すとパネルを開く"
   ],
   "untitled": "無題のセッション",
+  "slot_unknown": "スロットに不明な部品があります：{names}",
   "queued_withdraw": "クリックで取り消し",
   "side_id": "#{id}",
   "side_cwd": "ワークスペース",
@@ -212,6 +213,17 @@
     "done": "名前を変更しました：{title}",
     "removed": "タイトルを外しました",
     "too_long": "タイトルは {max} 文字まで"
+  },
+  "feature_tree": {
+    "empty": {"skills": "スキルはまだありません", "scripts": "スクリプトはまだありません", "mcp": "MCP サーバーはまだありません", "other": "まだありません"},
+    "missing": "未インストール"
+  },
+  "loops": {
+    "title": "ループ",
+    "paused": "一時停止中",
+    "next": "次回 {time}",
+    "dynamic": "動的間隔",
+    "every": ["{n} 秒ごと", "{n} 分ごと", "{n} 時間ごと", "{n} 日ごと"]
   },
   "goal": {
     "mark": "● ",
@@ -553,7 +565,7 @@
     "stopped": "（停止済み）",
     "main": "メインセッション",
     "more": "他 {count} 件",
-    "todo": "ToDo {done}/{total}",
+    "todo": "ToDo {done}/{total}", "todo_more": "あと {n} 件",
     "done_note": "バックグラウンドコマンド完了 · {title} · {elapsed}",
     "failed_note": "バックグラウンドコマンド失敗 · {title} · 終了コード {code}",
     "stopped_note": "バックグラウンドコマンド停止 · {title}{why}",
@@ -752,7 +764,7 @@
     "delete_again": "もう一度 Ctrl+D で「{title}」を削除",
     "deleted": "「{title}」を削除しました",
     "asking": "質問中",
-    "delete_current": "使用中のセッションは削除できません。先に切り替えてください",
+    "delete_running": "応答中です。中断してから今のセッションを削除してください",
     "pinned": "ピン留めしました",
     "unpinned": "ピン留めを外しました",
     "tokens": "Σ{tokens}",
@@ -765,7 +777,7 @@
     "title": "思考の強さ · {model}",
     "loading_title": "思考の強さ",
     "hint": "↑/↓ 選択 · Enter 切替 · Esc 閉じる",
-    "default": "デフォルト（プロバイダーが決める）",
+    "default": "設定に従う",
     "loading": "モデルを読み込み中…",
     "none": "このモデルには選べる強さがありません",
     "need_model": "モデルプールを使用中です"
@@ -844,9 +856,9 @@
       "": "自動",
       "on": "オン",
       "off": "オフ",
-      "rotate": "ローテーション",
-      "pin": "固定",
-      "ordered": "順番",
+      "rotate": "リクエストごとに交代",
+      "pin": "会話ごとに固定",
+      "ordered": "使えない時に切り替え",
       "secret": "API key",
       "env": "環境変数",
       "text": "テキスト",
@@ -867,7 +879,7 @@
       "model": "モデル",
       "inputs": "入力",
       "window": "コンテキスト長",
-      "effort": "既定の思考",
+      "effort": "新しい会話の既定の思考",
       "temperature": "温度",
       "price": "価格 · 100万トークンあたり",
       "input": "入力",
@@ -1166,7 +1178,6 @@
         "プリセット",
         "どの機能をオンにするかを決める"
       ],
-      "package_mine": "自分用",
       "preset_detail": [
         "機能 {on}/{all}",
         "未インストール",
@@ -1197,8 +1208,6 @@
       "default_mark": "既定",
       "no_personas": "ペルソナがまだありません",
       "loading": "読み込み中…",
-      "no_packages": "設定のあるパッケージはありません",
-      "package_items": "{n} 項目",
       "counted": "{n} 件",
       "detail": [
         "名前",
@@ -1307,6 +1316,10 @@
             "選択"
           ],
           [
+            "←/→",
+            "列を切替"
+          ],
+          [
             "Space",
             "切り替え"
           ],
@@ -1375,7 +1388,6 @@
         ]
       ],
       "persona_edit": {
-        "new_name": "新しいペルソナの名前",
         "deleted": "削除しました（ごみ箱に 7 日残ります）",
         "restored": "出荷時の状態に戻しました",
         "avatar": "アバター",
@@ -1399,7 +1411,6 @@
         }
       },
       "preset_edit": {
-        "new_name": "新しいプリセットの名前",
         "deleted": "削除しました",
         "restored": "出荷時の状態に戻しました",
         "remove": {
@@ -1436,14 +1447,18 @@
       "own_groups": {"look": "テーマ", "theme": "配色", "timeline": "タイムライン", "mascot": "キャラクター", "icons": "アイコン", "keys": "操作"},
       "appearance": "外観",
       "service": {"group": "起動", "name": "ログイン時にコアを起動", "enabling": "ログイン時の起動を設定中…", "disabling": "ログイン時の起動を解除中…", "enabled": "ログイン時に起動します：{file}", "disabled": "ログイン時に起動しなくなりました", "failed": "失敗：{step}：{said}", "no_home": "ホームディレクトリが見つかりません", "windows": "MIYU_HOME を設定した Windows では使えません"},
-      "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}, "tui.sidebar_sessions": {"0": "表示しない"}, "tui.keys": {"arrows": "矢印キー", "vim": "Vim"}},
+      "choice_names": {"tui.icons": {"nerd": "Nerd Font アイコン", "plain": "普通の文字"}, "tui.theme": {"auto": "自動", "persona": "アバターに合わせる", "wallpaper": "壁紙に合わせる", "tokyonight": "Tokyo Night", "terminal": "ターミナルの配色"}, "tui.theme_mode": {"auto": "自動", "dark": "ダーク", "light": "ライト"}, "tui.sidebar_sessions": {"0": "表示しない"}, "tui.keys": {"arrows": "矢印キー", "vim": "Vim"}},
       "unavailable": "未インストール",
       "custom_model": "モデルを入力…",
       "combo": ["設定しない", "その他…"],
       "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]],
       "list": {"empty": "まだありません", "whole": "整数を入力してください", "hints": [["Enter", "変更"], ["a", "追加"], ["d", "削除"], ["J/K", "移動"], ["Esc", "完了"]]},
       "ticks": {"empty": "選べるものがありません", "hints": [["Space", "チェック"], ["Ctrl+A", "すべて"], ["j/k", "移動"], ["Enter", "保存"], ["Esc", "キャンセル"]]}, "package_from": {"shipped": "同梱", "official": "公式ソース", "local": "ローカルからインストール"},
-      "mcp": {"entry": ["MCP", "MCP サーバーの状態とログイン"], "states": {"off": "オフ", "starting": "起動中", "running": "実行中", "waiting": "再接続待ち", "stopped": "停止", "needs_login": "ログインが必要"}, "tools": "ツール {n} 個", "login": "ログイン", "asking": "{name} の認可ページを取得中", "opened": "{name} の認可ページをブラウザで開きました", "no_browser": "ブラウザを開けません。認可ページ：{url}", "unregistered": "このサーバーはクライアント登録が必要です。client_id をサーバーの設定に書いてください", "failed": "ログインに失敗しました：{why}", "logout": "ログアウト", "leaving": "{name} からログアウト中", "left": "{name} からログアウトしました", "not_logged_in": "{name} にはログインしていません", "hints": [["Enter", "ログイン・ログアウト"], ["Esc", "戻る"]]}
+      "mcp": {"entry": ["MCP", "MCP サーバーの状態とログイン"], "states": {"off": "オフ", "starting": "起動中", "running": "実行中", "waiting": "再接続待ち", "stopped": "停止", "needs_login": "ログインが必要"}, "tools": "ツール {n} 個", "login": "ログイン", "asking": "{name} の認可ページを取得中", "opened": "{name} の認可ページをブラウザで開きました", "no_browser": "ブラウザを開けません。認可ページ：{url}", "unregistered": "このサーバーはクライアント登録が必要です。client_id をサーバーの設定に書いてください", "failed": "ログインに失敗しました：{why}", "logout": "ログアウト", "leaving": "{name} からログアウト中", "left": "{name} からログアウトしました", "not_logged_in": "{name} にはログインしていません", "hints": [["Enter", "ログイン・ログアウト"], ["Esc", "戻る"]]},
+      "slider_hints": [["←/→", "調整"], ["Enter", "数値を入力"], ["d", "既定に戻す"], ["Esc", "戻る"]],
+      "records": {"nth": "{n} 番目", "empty": "まだありません", "hints": [["Enter", "編集"], ["a", "追加"], ["d", "削除"], ["J/K", "移動"], ["Esc", "閉じる"]], "form_hints": [["↑/↓", "選択"], ["Enter", "変更"], ["←/→", "スライダー"], ["Esc", "一覧に戻る"]]},
+      "create": {"titles": ["新しいプリセット", "新しいペルソナ"], "sides": ["id", "名前"], "id_hint": "空欄なら自動", "name_missing": "名前を入力してください", "id_bad": "id は小文字で始め、小文字・数字・-・_ だけを使います", "id_taken": "この id は使われています", "id_unchecked": "一覧を読み込み中です"},
+      "store": {"entry": ["パッケージ", "ダウンロード、インストール済み、バックステージ"], "tabs": ["ダウンロード", "インストール済み", "バックステージ"], "sort": "並び順", "sorts": ["新着", "ダウンロード数", "トレンド"], "search": "検索：", "states": {"installed": "インストール済み", "upgradable": "更新あり", "blocked": "ブロック", "off": "オフ", "upgrade_to": "更新あり → {to}"}, "loading_source": "パッケージソースを読み込み中…", "loading": "読み込み中…", "empty": ["一致するパッケージがありません", "バックステージのあるパッケージはまだありません"], "keys": {"name": "名前", "version": "バージョン", "summary": "説明", "author": "作者", "upstream": "アップストリーム", "source": "ソース", "from": "入手元", "depends": "依存", "required_by": "必要とするもの", "provides": "含むもの", "needs": "必要な権限", "download": "ダウンロードサイズ", "installed_size": "インストール後のサイズ", "published": "公開日", "downloads": "ダウンロード数", "installed": "インストール日", "settings": "設定"}, "values": {"installed_as": "（インストール済み {v}）", "downloads": "{n}（今週 {w}）", "settings_yes": "あり、Enter で開く", "settings_no": "なし", "none": "なし", "sep": "、", "replace": "{from} → {to}"}, "provides": {"program": "プログラム", "command": "コマンド", "commands": "コマンド", "page": "バックステージ", "mascot": "マスコット", "theme": "外観", "connection": "接続", "settings": "設定", "mcp": "MCP サーバー", "skills": "スキル", "scripts": "スクリプト", "slash": "スラッシュコマンド", "personas": "人格", "presets": "プリセット"}, "ask": {"install": "{n} 個のパッケージをインストール：", "with": "一緒に入る依存", "recommends": "おすすめ（入れない）", "remove": "{name} を削除：", "drop": "一緒に削除", "drop_settings": "設定 {n} 項目", "drop_state": "状態ディレクトリ", "upgrade": "{n} 個のパッケージを更新：", "approve": "{name} をオンにするには次の権限が必要：", "go": "続けますか？ [Y/n]", "above": "↑ 上にあと {n} 行", "below": "↓ あと {n} 行", "downloading": "ダウンロード中…", "verifying": "検証中…", "installing": "インストール中…", "size": "サイズ"}, "status": {"installed": "{names} をインストールしました", "removed": "{name} を削除しました", "upgraded": "{names} を更新しました", "on": "{name} をオンにしました", "off": "{name} をオフにしました", "latest": "{name} は最新です", "all_latest": "すべて最新です", "cancelled": "キャンセルしました", "no_settings": "このパッケージには設定がありません", "blocked": "ブロック：{why}", "opened": "{name} のバックステージをブラウザで開きました", "run_web": "ターミナルで miyu web --package {id} を実行してください", "no_browser": "ブラウザを開けません。バックステージ：{url}", "previewing": "確認中…", "unread": "未確認の行があと {n} 行", "too_small": "ウィンドウが小さすぎます"}, "hints": {"source": [["↑/↓", "選択"], ["/", "検索"], ["Tab", "選ぶ"], ["Enter", "インストール"], ["s", "並び順"], [", .", "ページ"], ["Esc", "戻る"]], "typing": [["Ctrl+J/K", "選択"], ["Enter", "完了"], ["Esc", "キャンセル"]], "installed": [["↑/↓", "選択"], ["Enter", "設定"], ["スペース", "オン/オフ"], ["d", "削除"], ["u", "更新"], ["U", "すべて更新"], ["Esc", "戻る"]], "backstage": [["↑/↓", "選択"], ["Enter", "ブラウザで開く"], [", .", "ページ"], ["Esc", "戻る"]], "confirm": [["y/Enter", "続ける"], ["n/Esc", "キャンセル"]], "confirm_scroll": [["↑/↓", "スクロール"], ["y/Enter", "続ける"], ["n/Esc", "キャンセル"]], "running": [["", "お待ちください"]]}, "programs": {"ui": "画面プログラム", "process": "拡張プログラム", "worker": "ワーカー", "builtin": "組み込み機能"}}
     }
   },
   "oobe": {
@@ -1465,7 +1480,7 @@
       "persona": "Enter 編集 · j/k 移動 · Esc 戻る",
       "edit": "Enter 編集 · j/k 移動 · Esc 戻る",
       "writing": "Enter 改行 · Ctrl+G 外部エディタ · Esc 完了",
-      "custom": "Space 切替 · Ctrl+A すべて · j/k 移動 · Esc 閉じる",
+      "custom": "Space 切替 · Ctrl+A すべて · j/k 移動 · h/l 列を切替 · Esc 閉じる",
       "custom_name": "Enter 編集 · j/k 移動 · Esc 閉じる",
       "create": "Enter 作成 · j/k 移動 · Esc 閉じる",
       "view": "j/k スクロール · Space 閉じる",
@@ -1591,7 +1606,6 @@
       "avatar_set": "設定済み"
     },
     "preset": {
-      "mine": "自分用",
       "title": "プリセットを選ぶ",
       "sub": "プリセットはどの機能を使うかを決めます。設定やセッションごとに変えられます",
       "custom": "カスタム",
@@ -1607,7 +1621,7 @@
       "sub": "明暗と配色を選択します。すぐに反映され、あとで設定で変更できます",
       "rows": ["明暗", "配色", "キャラクター", "メインカラー", "背景を塗る"],
       "modes": ["自動", "ダーク", "ライト"],
-      "colors": ["アバターに合わせる", "壁紙に合わせる", "Tokyo Night", "ターミナルの配色"],
+      "colors": ["自動", "アバターに合わせる", "壁紙に合わせる", "ターミナルの配色"],
       "from_avatar": "「{name}」のアバターから取得",
       "from_seed": "「{name}」のメインカラーを使用",
       "no_avatar": "「{name}」はアバター未設定のため Tokyo Night を使用", "from_wallpaper": "デスクトップの壁紙から取得", "no_wallpaper": "デスクトップの壁紙が見つからないため Tokyo Night を使用",
@@ -1634,7 +1648,7 @@
       "sub": "記憶・ナレッジベース・スタンプなどの検索の質が大きく上がります。ただしメモリ使用量が大きく増え、検索ごとに CPU を使います",
       "on": ["はい", "おすすめ"],
       "off": ["いいえ", "キーワード検索だけ"],
-      "download": {"size": "ダウンロード {size}", "preparing": "ダウンロードの準備中…", "progress": "{percent}% · {done} / {total}", "retry": "再試行", "skip": "スキップ"}
+      "download": {"size": "ダウンロード {size}", "preparing": "ダウンロードの準備中…", "progress": "{percent}% · {done} / {total}", "verifying": "検証中…", "installing": "インストール中…", "retry": "再試行", "skip": "スキップ"}
     },
     "done": {
       "title": "準備完了",

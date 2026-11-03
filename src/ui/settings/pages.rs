@@ -9,9 +9,11 @@ use unicode_width::UnicodeWidthStr;
 
 use super::{bar, crumb, fit, footer};
 use crate::core::Persona;
-use crate::settings::pages::packages::{PACKAGES, package_of};
+use crate::settings::pages::packages::package_of;
 use crate::settings::pages::schema::Row;
-use crate::settings::pages::{DEFAULT_PERSONA, DEFAULT_PRESET, Entry, Section, current, shown};
+use crate::settings::pages::{
+    DEFAULT_PERSONA, DEFAULT_PRESET, Entry, Section, current, shown, slider,
+};
 use crate::settings::{Hit, Settings, Texts};
 use crate::theme;
 
@@ -78,21 +80,19 @@ fn entry_words(page: &Settings, entry: &Entry, texts: &Texts) -> (String, String
             texts.more.mcp.entry[0].clone(),
             texts.more.mcp.entry[1].clone(),
         ),
+        Entry::Packages => (
+            texts.more.store.entry[0].clone(),
+            texts.more.store.entry[1].clone(),
+        ),
         Entry::Page(id) => {
             let schema = page.more.schema.as_ref();
             let name = schema
                 .and_then(|s| s.page_name(id))
                 .unwrap_or(id)
                 .to_string();
-            // 「软件包」照包列（一个包几组的只写一次，2026-10-20 项目主人验收：联网搜索的 key 那一组像是另一个包）。
-            let note = if id == PACKAGES {
-                let names: Vec<String> = page.more.packages().into_iter().map(|p| p.name).collect();
-                names.join("、")
-            } else {
-                schema
-                    .map(|s| s.group_names(id).join("、"))
-                    .unwrap_or_default()
-            };
+            let note = schema
+                .map(|s| s.group_names(id).join("、"))
+                .unwrap_or_default();
             (name, note)
         }
     }
@@ -103,7 +103,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
     let Some(section) = page.more.section.clone() else {
         return;
     };
-    let packages = || entry_words(page, &Entry::Page(PACKAGES.to_string()), texts).0;
+    let packages = || texts.more.store.entry[0].clone();
     let (title, hints) = match &section {
         // 包自己那一页：「软件包 › 包名」（第 43a 条）。
         Section::Page(id, _) if package_of(id).is_some() => {
@@ -113,13 +113,16 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
                 .iter()
                 .find(|p| p.id == id)
                 .map_or(id, |p| p.name.as_str());
-            (format!("{} › {name}", packages()), &texts.more.hints[0])
+            (
+                format!("{} › {name}", packages()),
+                page_hints(page, &section, texts),
+            )
         }
         Section::Page(id, _) => (
             entry_words(page, &Entry::Page(id.clone()), texts).0,
-            &texts.more.hints[0],
+            page_hints(page, &section, texts),
         ),
-        Section::Packages(_) => (packages(), &texts.more.hints[10]),
+        Section::Store => return,
         Section::Mcp(_) => (texts.more.mcp.entry[0].clone(), &texts.more.mcp.hints),
         Section::Personas(_) => (texts.more.personas[0].clone(), &texts.more.hints[5]),
         Section::Presets(_) => (texts.more.presets[0].clone(), &texts.more.hints[5]),
@@ -165,11 +168,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
             let lines = list_lines(page, (list, DEFAULT_PRESET, false), *at, texts, body.width);
             (lines, *at, list.map_or(0, <[_]>::len))
         }
-        Section::Packages(at) => {
-            let list = page.more.packages();
-            let lines = super::package_list::lines(&list, *at, texts, body.width);
-            (lines, *at, list.len())
-        }
+        Section::Store => return,
         Section::Mcp(at) => {
             let list = page.more.servers();
             let lines = super::mcp_list::lines(&list, *at, texts, body.width);
@@ -180,7 +179,7 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         Section::Page(id, _) => id.clone(),
         Section::Personas(_) => "personas".into(),
         Section::Presets(_) => "presets".into(),
-        Section::Packages(_) => "packages".into(),
+        Section::Store => return,
         Section::Mcp(_) => "mcp".into(),
     };
     if page.page_top.0 != key {
@@ -192,6 +191,36 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
     }
     let counter = format!("{}/{count}", if count == 0 { 0 } else { at + 1 });
     footer(frame, stage, page, texts, hints, None, Some(counter));
+}
+
+/// 照清单画的一页的按键提示：光标停在滑块上的换成滑块的那一套（第 33 条子规则）。
+fn page_hints<'a>(page: &Settings, section: &Section, texts: &'a Texts) -> &'a Vec<[String; 2]> {
+    let Section::Page(id, at) = section else {
+        return &texts.more.hints[0];
+    };
+    let slider = page.more.schema.as_ref().is_some_and(|schema| {
+        page.page_items(id)
+            .get(*at)
+            .and_then(|&i| schema.items.get(i))
+            .is_some_and(|i| i.slide.is_some() && i.writable())
+    });
+    if slider {
+        &texts.more.slider_hints
+    } else {
+        &texts.more.hints[0]
+    }
+}
+
+/// 滑块的短条（第 33 条子规则）：16 格，到当前值的那一截强调色、后面暗色，当前值处一个圆点（记号照记号表）。
+pub(super) fn track(fraction: f64) -> Vec<Span<'static>> {
+    const WIDTH: usize = 16;
+    let at = (fraction * (WIDTH - 1) as f64).round() as usize;
+    let (rule, dot) = crate::sheet::read(|s| (s.marks.rule.clone(), s.marks.on.clone()));
+    vec![
+        Span::styled(rule.repeat(at), theme::accent()),
+        Span::styled(dot, theme::accent()),
+        Span::styled(rule.repeat(WIDTH - 1 - at), theme::faint()),
+    ]
 }
 
 /// 一行：字、是不是选中的那一行。
@@ -260,9 +289,17 @@ pub(super) fn page_lines(
                 let item = &schema.items[i];
                 // 值后面不写来自哪一层（2026-10-08 项目主人：「所有的这种默认文字都去掉」）。
                 let (value, _) = current(item, data);
+                // 滑块调着、还没存的照调着的画（第 33 条子规则）。
+                let value = page
+                    .more
+                    .sliding
+                    .as_ref()
+                    .filter(|s| s.key == item.key)
+                    .map_or(value, |s| &s.value);
+                let slid = slider::fraction(item, value);
                 // 没设的密钥「未设置」暗着写、不加粗（2026-10-19 项目主人），设了的照常。
                 let unset = crate::settings::pages::secret::is_secret(item) && value.is_null();
-                let value = shown(item, value, page.more.named(&item.key), &texts.more);
+                let value = shown(item, value, page.more.named_item(item), &texts.more);
                 let style = if item.writable() {
                     Style::new()
                 } else {
@@ -283,6 +320,11 @@ pub(super) fn page_lines(
                         spans.push(Span::styled(hex, style.add_modifier(Modifier::BOLD)));
                     }
                     None if unset => spans.push(Span::styled(fit(&value, room), theme::dim())),
+                    None if slid.is_some() => {
+                        spans.extend(track(slid.unwrap_or(0.0)));
+                        let text = format!("  {}", fit(&value, room.saturating_sub(18)));
+                        spans.push(Span::styled(text, style.add_modifier(Modifier::BOLD)));
+                    }
                     None => spans.push(Span::styled(
                         fit(&value, room),
                         style.add_modifier(Modifier::BOLD),

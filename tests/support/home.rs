@@ -38,16 +38,17 @@ fn welcomed(settings: &str) -> String {
 /// `edit` 改一改清单再装（装着旧清单的样子）。
 fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("miyu-tui/package.toml");
-    let to = dir.join("packages/miyu-tui");
+    let packages = super::data_of(dir).packages();
+    let to = packages.join("miyu-tui");
     std::fs::create_dir_all(&to).expect("建得了包的目录");
     let text = std::fs::read_to_string(manifest).expect("读得了终端的清单");
     std::fs::write(to.join("package.toml"), edit(text)).expect("装得上终端的清单");
-    // 默认主题和纯 ASCII 样板两个主题包（蓝图「主题」第 4、6 条）：装终端时一起装。
-    for theme in ["miyu-tui-theme-default", "miyu-tui-theme-ascii"] {
+    // 纯 ASCII 样板主题包（蓝图「主题」第 6 条）。默认主题编进了程序，不发（第 4 条），不装。
+    for theme in ["miyu-tui-theme-ascii"] {
         let from = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("packages")
             .join(theme);
-        let to = dir.join("packages").join(theme);
+        let to = packages.join(theme);
         std::fs::create_dir_all(&to).expect("建得了主题包的目录");
         for file in ["package.toml", "theme.json"] {
             std::fs::copy(from.join(file), to.join(file)).expect("装得上主题包");
@@ -141,7 +142,7 @@ impl Home {
         install_the_terminal(&dir, manifest);
         // 软件源指到连不上的地方：测试不碰网，引导看一眼语义模型的包时是「连不上」（第 26b 条，2026-10-19 实测原来
         // 照默认地址去了 GitHub）。接在测试写的设置后面：设置里可能有不在表里的键。
-        let system = dir.join("config.toml");
+        let system = root.config_file();
         std::fs::create_dir_all(system.parent().expect("有上一层")).expect("建得了");
         std::fs::write(
             &system,
@@ -184,9 +185,14 @@ impl Home {
         &self.dir
     }
 
+    /// 核心的数据根，各样东西放在哪照核心算（设计 55「数据根仿 FHS」：`etc/`、`opt/`、`var/` 这些，测试不自己拼）。
+    pub fn data(&self) -> DataRoot {
+        super::data_of(&self.dir)
+    }
+
     /// 在数据根的 `personas/` 里放一个人格（核心 P-1 上）：`persona.toml` 写 `toml`，人设写 `prompt`（`None` 不写）。
     pub fn persona(&self, id: &str, toml: &str, prompt: Option<&str>) {
-        let dir = self.dir.join("personas").join(id);
+        let dir = self.data().personas().join(id);
         std::fs::create_dir_all(dir.join("prompts")).expect("建得了");
         std::fs::write(dir.join("persona.toml"), toml).expect("写得进去");
         if let Some(prompt) = prompt {
@@ -199,9 +205,9 @@ impl Home {
         std::fs::read_to_string(self.settings_file()).unwrap_or_default()
     }
 
-    /// 系统配置那个文件：测试手改了再重起核心。
+    /// 系统配置那个文件：测试手改了再重起核心（核心 FH-3 起在 `etc/`，照核心算的位置）。
     pub fn settings_file(&self) -> PathBuf {
-        self.dir.join("config.toml")
+        self.data().config_file()
     }
 
     /// 在伪终端里起界面，连这份核心；`lang` 是系统语言（`LANG`）。

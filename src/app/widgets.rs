@@ -63,7 +63,6 @@ impl App {
             }
             // 扩展的整页带的命令，交给核心认出来的：开那一页（「界面块」第 10 条）。
             Update::OpenPage(page) => {
-                self.slash_ran();
                 self.open_widget_page(page.clone());
             }
             Update::PackageCallRefused { message } => {

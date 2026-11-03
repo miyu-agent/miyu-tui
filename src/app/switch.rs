@@ -43,6 +43,7 @@ impl App {
         if !self.talk.deleting.admits(&change) {
             return;
         }
+        self.note_finished(&change);
         let Some(seen) = self.talk.sessions_seen.as_mut() else {
             return;
         };
@@ -124,15 +125,13 @@ impl App {
                 }
             }
             KeyCode::Char(' ') => {
-                let main = self.talk.main_session();
                 if let Some(list) = self.boxes.session_list.as_mut() {
-                    list.tick(main.as_deref());
+                    list.tick();
                 }
             }
             KeyCode::Char('a') if ctrl => {
-                let main = self.talk.main_session();
                 if let Some(list) = self.boxes.session_list.as_mut() {
-                    list.tick_all(main.as_deref());
+                    list.tick_all();
                 }
             }
             KeyCode::Char('p') if ctrl => self.toggle_pin(),
@@ -219,15 +218,22 @@ impl App {
         self.hint(note.clone(), true);
     }
 
-    /// `Ctrl+D`：删勾了的全部、没勾的删选中的那一个；整批按第一次提示再按一次，第二次才删；正在用的不能删（第 2 条）。
+    /// `Ctrl+D`：删勾了的全部、没勾的删选中的那一个；整批按第一次提示再按一次，第二次才删（第 2 条）。正在用的也能删
+    /// （2026-11-02 项目主人）：先切到剩下的里最近有动静的那个，一个都不剩的开新会话，再删；它有一轮在跑的先打断。
     fn delete_picked(&mut self) {
         let main = self.talk.main_session();
+        let running = self.talk.transcript.running.is_some();
         let texts = self.config.text.sessions.clone();
         let untitled = self.config.text.untitled.clone();
         let Some(list) = self.boxes.session_list.as_mut() else {
             return;
         };
-        let doomed = list.doomed(main.as_deref());
+        let doomed = list.doomed();
+        let mine = main.as_ref().is_some_and(|m| doomed.contains(m));
+        if mine && running {
+            self.hint(texts.delete_running, false);
+            return;
+        }
         let title = |list: &SessionList, id: &str| {
             let found = list.all.iter().find(|s| s.session == id);
             found
@@ -235,10 +241,7 @@ impl App {
                 .unwrap_or(untitled.clone())
         };
         let note = match doomed.as_slice() {
-            [] => {
-                self.hint(texts.delete_current, false);
-                return;
-            }
+            [] => return,
             [one] => title(list, one),
             many => many.len().to_string(),
         };
@@ -253,7 +256,15 @@ impl App {
             self.hint(ask, false);
             return;
         }
+        let next = list.next_after(&doomed);
         list.remove(&doomed);
+        // 删的里有正在用的：先切走（切到最近的那个，都删光了开新会话），旧的照切走的规矩退订，再删。
+        if mine {
+            match next {
+                Some(next) => self.switch_session(next),
+                None => self.new_session(),
+            }
+        }
         // 手上那一份会话列表也当场拿掉，记着删着的（`core/sessions.rs` 的 `Deleting`）。
         self.talk
             .deleting
@@ -278,6 +289,7 @@ impl App {
     /// 切到 `session`（第 4、5 条）：停放着的（切走时还忙着的）直接换上来；别的先开一份停放着的空正文收补发来的，
     /// 补完了再换上来，这之间照旧显示原来那个（不闪空会话的首页）。
     pub(super) fn switch_session(&mut self, session: String) {
+        self.talk.unseen.remove(&session);
         self.close_sessions();
         self.leave_child();
         if self.talk.transcript.session.as_deref() == Some(session.as_str()) {

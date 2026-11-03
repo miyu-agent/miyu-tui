@@ -28,7 +28,16 @@ fn resources() -> PathBuf {
 mod core;
 mod home;
 
+#[allow(
+    unused_imports,
+    reason = "不起核心的测试（连不上、数据根认不认）用不到它"
+)]
 pub use home::Home;
+
+/// `dir` 当数据根时各样东西放在哪：照核心算（设计 55「数据根仿 FHS」：`etc/`、`opt/`、`var/` 这些），测试不自己拼。
+pub fn data_of(dir: &std::path::Path) -> miyu_store::root::DataRoot {
+    miyu_store::root::DataRoot::at(dir.to_path_buf())
+}
 
 /// 伪终端里跑着的界面。
 /// 一个颜色的三个字节。
@@ -53,6 +62,11 @@ pub struct Tui {
 }
 
 impl Tui {
+    /// 在伪终端起界面，数据根是 `home`（不经 [`Home`]、不起核心：测连不上、数据根本身认不认这种）。
+    pub fn at(home: &Path, work: &Path, lang: &str, env: &[(&str, &str)]) -> Tui {
+        Self::spawn(home, work, lang, env, &[])
+    }
+
     fn spawn(home: &Path, work: &Path, lang: &str, env: &[(&str, &str)], args: &[&str]) -> Tui {
         Self::program(home, work, lang, env, args, env!("CARGO_BIN_EXE_miyu-tui"))
     }

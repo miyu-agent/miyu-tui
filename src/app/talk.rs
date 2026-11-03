@@ -29,6 +29,8 @@ pub struct Talk {
     pub opening: Option<(String, bool)>,
     /// 上次交回的会话列表：再开框先照它画（`switch.rs`）。
     pub sessions_seen: Option<Vec<crate::core::SessionInfo>>,
+    /// 在后台做完了、还没切过去看的会话（`unseen.rs`）：侧边栏「最近会话」画圆点。
+    pub unseen: std::collections::HashSet<String>,
     /// 发了删除、核心还没推来「删掉了」的会话：这之间推来的它们的变化不要（会把删了的又加回列表，「会话列表」第 2 条）。
     pub(super) deleting: crate::core::DeletingSessions,
     /// 最近发出去的一句：没发出去时撤回来（`redo.rs`）。

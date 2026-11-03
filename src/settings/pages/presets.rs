@@ -3,7 +3,7 @@
 
 use serde_json::Value;
 
-use crate::features::{self, Feature};
+use crate::features::{self, Tree};
 
 /// `preset.get` 读来的一个预设的详情。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -14,8 +14,8 @@ pub struct Detail {
     pub name: Option<String>,
     /// 说明。
     pub summary: Option<String>,
-    /// 一个个功能，照核心给的先后（核心 F-3 下起 `features`，原来的 `software`、`tools` 撤了）。
-    pub features: Vec<Feature>,
+    /// 一组组功能，照核心给的分组和先后（核心 FG-1 的 `sections`，`crate::features`）。
+    pub features: Tree,
     /// 能不能删（核心 P-3 补）：`delete` 自己建的，`restore` 改过的出厂的，`None` 没改过的出厂的。
     pub remove: Option<String>,
 }

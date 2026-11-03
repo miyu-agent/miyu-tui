@@ -65,6 +65,7 @@ fn a_message_to_another_session_names_it_by_its_short_id() {
     );
     let steps = vec![thought(t0, 0), send];
     let shown = text(&rows(0, &segment(steps, Some(true)), &f.ctx())).join("\n");
-    assert!(shown.contains("留言 · 会话 22334455"), "{shown}");
+    // 显示名照核心（FG-1 起 send_message 叫「发消息」）。
+    assert!(shown.contains("发消息 · 会话 22334455"), "{shown}");
     assert!(!shown.contains("0192f3a0"), "{shown}");
 }

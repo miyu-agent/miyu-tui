@@ -17,14 +17,20 @@ pub struct ThemeBox {
 }
 
 impl App {
-    /// 开框：列几种配色（找不到桌面壁纸的不列跟随壁纸，正用着的照列），选着现在用的那种。
+    /// 开框：列几种配色（找不到桌面壁纸的不列跟随壁纸、人格交不出颜色的不列跟随头像，正用着的照列；「主题」第 2 条子规则），
+    /// 选着现在用的那种。
     pub(super) fn open_themes(&mut self) {
         let before = self.screen.theme_choice.colors.clone();
         let wallpaper = self.screen.wallpaper.available();
+        let persona = self.colors_source().is_some();
         let options: Vec<&'static str> = COLORS
             .iter()
             .copied()
-            .filter(|c| wallpaper || *c != "wallpaper" || *c == before)
+            .filter(|c| match *c {
+                "wallpaper" => wallpaper || *c == before,
+                "persona" => persona || *c == before,
+                _ => true,
+            })
             .collect();
         let selected = options.iter().position(|c| *c == before).unwrap_or(0);
         self.boxes.theme_box = Some(ThemeBox { before, options });

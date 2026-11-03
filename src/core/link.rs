@@ -26,6 +26,8 @@ pub struct Link {
     pub pending_model: Option<String>,
     /// 新会话的人格框选的：开会话时带上，造成了才清（人格写错被拒的，下一次照样带，不悄悄换默认）。
     pub pending_persona: Option<String>,
+    /// 还没开会话时 `/effort` 选的（核心 SM-1）：开会话以后 `session.configure {effort}` 补上；`Some(None)` 是跟着配置。
+    pub pending_effort: Option<Option<String>>,
     /// 新会话的预设框选的：和 `pending_persona` 一样。
     pub pending_preset: Option<String>,
     /// 还没开会话时 `/workspace` 换的、验过的目录：开会话时带上（核心 9-7 下）。

@@ -25,10 +25,6 @@ about = { en = "Talk to Miyu from your shell", zh = "在 shell 里和 Miyu 说�
 [ui]
 opens = ["config"]
 
-# 推荐一起装默认主题（终端蓝图 `docs/blueprint/tui.md`「主题」第 4 条：装终端时一起装）：没装也能用，同一份编进了程序。
-[recommends]
-packages = ["miyu-tui-theme-default"]
-
 # 第一次打开的引导里「图标」那一步写它（终端蓝图 `docs/blueprint/tui.md`「第一次打开的引导」第 14 条、「图标」第 4 条）。
 [settings.icons]
 type = "option"
@@ -102,6 +98,91 @@ applies = "now"
 name = { en = "Recent sessions in the sidebar", zh = "侧边栏最近会话", ja = "サイドバーの最近のセッション" }
 description = { en = "How many sessions the sidebar lists, the current one included. Off hides the list.", zh = "侧边栏列几个会话，算上当前这个。选不显示就不列。", ja = "サイドバーに並べるセッションの数（今のセッションを含む）。表示しないにすると並べない。" }
 
+# 侧边栏挂哪几件、什么先后、最多几行（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 2、4 条，2026-11-02 项目主人：只在配置
+# 文件里写）：一条一件，写了的照写的先后，没写到的照出厂的先后接在后面。配置页不画。
+[settings.side]
+type = "list"
+element = "record"
+title = "part"
+hidden = true
+applies = "now"
+name = { en = "Sidebar parts", zh = "侧边栏部件", ja = "サイドバーの部品" }
+description = { en = "Which parts the sidebar shows, in which order, and at most how many rows each.", zh = "侧边栏挂哪几件、什么先后、每件最多几行。", ja = "サイドバーに並べる部品、その順番、それぞれの最大行数。" }
+
+# 部件名：出厂的 avatar、session、cwd、context、usage、loops、recent，包的块写 `pkg:<包>/<块>`；认不出的终端不画、提示一次。
+[settings.side.fields.part]
+type = "text"
+max = 100
+name = { en = "Part", zh = "部件", ja = "部品" }
+
+[settings.side.fields.hidden]
+type = "bool"
+default = false
+name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+
+[settings.side.fields.rows]
+type = "int"
+min = 0
+max = 200
+default = 0
+name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+
+# 底栏两段挂哪几件、什么先后（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条 SL-2）：左段 level、model，右段 context、usage，
+# 各在各的那一段里排；只有一行，rows 不管。配置页不画。
+[settings.footer]
+type = "list"
+element = "record"
+title = "part"
+hidden = true
+applies = "now"
+name = { en = "Status line parts", zh = "底栏部件", ja = "ステータス行の部品" }
+description = { en = "Which parts the line under the input box shows and in which order.", zh = "输入框下面那一行挂哪几件、什么先后。", ja = "入力欄の下の行に並べる部品とその順番。" }
+
+[settings.footer.fields.part]
+type = "text"
+max = 100
+name = { en = "Part", zh = "部件", ja = "部品" }
+
+[settings.footer.fields.hidden]
+type = "bool"
+default = false
+name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+
+[settings.footer.fields.rows]
+type = "int"
+min = 0
+max = 200
+default = 0
+name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+
+# 输入框上面那一块挂哪几件、什么先后、最多几行（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条 SL-2）：出厂只有 todo。
+# 配置页不画。
+[settings.above]
+type = "list"
+element = "record"
+title = "part"
+hidden = true
+applies = "now"
+name = { en = "Parts above the input box", zh = "输入框上面的部件", ja = "入力欄の上の部品" }
+description = { en = "Which parts show above the input box, in which order, and at most how many rows each.", zh = "输入框上面挂哪几件、什么先后、每件最多几行。", ja = "入力欄の上に並べる部品、その順番、それぞれの最大行数。" }
+
+[settings.above.fields.part]
+type = "text"
+max = 100
+name = { en = "Part", zh = "部件", ja = "部品" }
+
+[settings.above.fields.hidden]
+type = "bool"
+default = false
+name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+
+[settings.above.fields.rows]
+type = "int"
+min = 0
+max = 200
+default = 0
+name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+
 # 按键模式（终端蓝图 `docs/blueprint/tui.md`「按键」表「按键模式」那一行，2026-10-21 项目主人）：`vim` 时会话列表、`/model`
 # 里 `j`、`k` 挪，`/` 才开始搜；`arrows` 照方向键的用法，打字就搜。配置页排在「通用」页「按键模式」一组；出厂方向键，引导里「你喜欢的操作方式」那一步选。
 [settings.keys]
@@ -141,11 +222,11 @@ description = { en = "Which theme package draws the frames, marks and text style
 # 第一次打开的引导里「主题」那一步写前两项；配置页「通用」里一组「主题」，名字照终端的字写。
 [settings.theme]
 type = "option"
-choices = ["persona", "wallpaper", "tokyonight", "terminal"]
-default = "tokyonight"
+choices = ["auto", "persona", "wallpaper", "tokyonight", "terminal"]
+default = "auto"
 applies = "now"
 name = { en = "Colors", zh = "配色", ja = "配色" }
-description = { en = "Follow the persona's avatar, follow the desktop wallpaper, Tokyo Night, or the terminal's own colors.", zh = "跟随人格的头像生成、跟随桌面壁纸生成、tokyonight，或者跟着终端自己的配色。", ja = "ペルソナのアバターから作る配色、デスクトップの壁紙から作る配色、Tokyo Night、またはターミナル自身の配色。" }
+description = { en = "Auto follows the persona's avatar, else the desktop wallpaper, else the terminal's colors, else Tokyo Night. Or pick one of them.", zh = "自动：有头像的跟随人格的头像，没有的跟随桌面壁纸，再没有的跟着终端的配色，都没有的用 tokyonight。也可以只选其中一种。", ja = "自動：アバターがあればペルソナのアバター、なければデスクトップの壁紙、それもなければターミナルの配色、どれもなければ Tokyo Night。どれか一つを選ぶこともできる。" }
 
 # 跟随壁纸、终端配色自选的主色（终端蓝图「主题」的「主色」，2026-10-14 项目主人定；终端配色 2026-10-19 起共这一项）：从几个候选里挑，`#rrggbb`；没写的、不在
 # 候选里的（换了壁纸）照打分最高的那个。跟随头像的主色存在人格上（`persona.set` 的 `seed`），不在这里。

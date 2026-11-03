@@ -9,6 +9,10 @@ impl App {
     /// 收一条核心那边的消息。撤销成了、排队的消息被退回了，字放回输入框（`tui.md`「输入框」第 7、8 条）。
     pub fn core(&mut self, update: Update) {
         // 断开了：在途的请求不会回来了，等着的几处先复位（`lost.rs`）；下面各处照样收到这一条。
+        // 连上、重连了：核心照连接记开着哪个会话，断了就忘，再说一遍（`viewing.rs`）。
+        if matches!(update, Update::Ready(_) | Update::Reconnected) {
+            self.link.viewing = None;
+        }
         if matches!(update, Update::Disconnected) {
             self.lost_requests();
             // 界面块跟着扩展一起停了：清掉，重连以后核心照记着的订阅重推（`widgets.rs`）。
@@ -93,8 +97,26 @@ impl App {
             self.notice(notice);
             return;
         }
+        // 这个会话的思考强度换成了（`/effort`，核心 SM-1）：底栏当场变（`effort.rs`）。
+        if let Update::EffortSet(level) = &update {
+            self.effort_set(level.clone());
+            return;
+        }
+        // 唤醒表里的循环变了：改手上那一份，下一帧照它画（「循环」）。
+        if let Update::Loops(change) = &update {
+            crate::core::apply_loops(&mut self.link.loops, change.clone());
+            return;
+        }
         // 工具目录变了：照现在的语言重取给人看的字，新装的脚本、MCP、扩展工具的显示名跟着换（核心 9-8 七补）；重取软件包
         // 列表，包的图标跟着换（`packages.rs`）。
+        // 模型列表在核心后台变了（核心 V-26）：`/model` 的框开着的再要一次，底栏再要一次模型资料。
+        if matches!(update, Update::ModelsChanged) {
+            if self.boxes.model_list.is_some() {
+                self.link.core.send(Command::ListChoices);
+            }
+            self.refresh_effort();
+            return;
+        }
         if matches!(update, Update::ToolsChanged) {
             let code = self.config.language.code().to_string();
             self.link.core.send(Command::FetchHuman(code));
@@ -258,9 +280,9 @@ impl App {
         if self.widget_update(&update) {
             return;
         }
-        if let Update::SlashRefused { message, reason } = &update {
+        if let Update::SlashRefused { message } = &update {
             self.dream_refused();
-            self.slash_refused(message, reason.as_deref());
+            self.slash_refused(message);
             return;
         }
         // `/dream` 的回执：看着整理的醒一下再收成回执（`dream.rs`）。
@@ -268,11 +290,9 @@ impl App {
             && command == "dream"
             && self.dream_woke(said)
         {
-            self.slash_ran();
             return;
         }
         if let Update::CommandRan { command, said } = &update {
-            self.slash_ran();
             let said = said.trim_end().trim_end_matches(['。', '.']);
             // `/goal` 看进度的：原文长了截原文，在哪一步、第几轮留着（「长期目标」第 1 条）。
             let (text, tail) = match command.as_str() {

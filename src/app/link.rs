@@ -8,6 +8,8 @@ use crate::human::Human;
 pub struct Link {
     /// 连着核心的一头。
     pub core: Core,
+    /// 上回告诉核心开着的会话（`viewing.rs`）：变了才再说；连上、重连以后是 `None`，再说一遍。
+    pub viewing: Option<Option<String>>,
     /// 每个模型、池收哪几种附件（`attachments.rs`，照 `model.list`）。
     pub abilities: crate::core::Abilities,
     /// 工具给人看的显示名（仓库 `resources/software/basesystem/human/`）。
@@ -28,8 +30,10 @@ pub struct Link {
     pub widgets: crate::widgets::Widgets,
     /// 开机启动核心：在后台跑 `miyu service`（配置页「开机启动」，`crate::service`）。
     pub service: crate::service::Service,
+    /// 「软件后台」打开后台页：在后台跑 `miyu web --package`（配置页第 43c 条，`crate::backstage`）。
+    pub backstage: crate::backstage::Backstage,
     /// 一轮结束时问了这个会话换算好的金额（`bill_refresh.rs`）：问的是哪个会话。
     pub bill_asked: Option<String>,
-    /// 包的名字、在哪个组（`package.list`）：预设的功能照组、包分组时写组名（`features.rs`）。
-    pub package_names: crate::features::Packages,
+    /// 唤醒表里跑在已有会话上的循环（`schedules` 流，蓝图「循环」）：输入框上面、侧边栏照看着的会话挑。
+    pub loops: Vec<crate::core::Loop>,
 }

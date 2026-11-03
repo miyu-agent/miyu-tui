@@ -8,8 +8,9 @@ use base64::engine::general_purpose::STANDARD;
 /// 同一个界面的新通知顶掉旧的；两段要一次写完，不能被别的输出劈开。照旧版 09-18 验过的写法。
 /// 有图标（PNG 的内容，第 3 条）的，标题和正文中间多一段 `p=icon`，`g=` 照内容算，kitty 照它缓存。
 /// `report` 的（点了要切会话的，第 8 条）点一下 kitty 还往输入里回一句 `99;i=<编号>;`（`a=focus,report`）。
+/// `always` 的（别的会话来的，2026-11-02 项目主人）窗口在前台也弹（`o=always`）。
 pub fn kitty(
-    (id, report): (&str, bool),
+    (id, report, always): (&str, bool, bool),
     app: &str,
     (title, body): (&str, &str),
     icon: Option<&[u8]>,
@@ -26,8 +27,9 @@ pub fn kitty(
             STANDARD.encode(data)
         )
     });
+    let when = if always { "always" } else { "unfocused" };
     format!(
-        "\x1b]99;i={id}:e=1:d=0:a={action}:o=unfocused:u=1:f={}:s={}:p=title;{}\x1b\\{picture}\x1b]99;i={id}:e=1:d=1:p=body;{}\x1b\\",
+        "\x1b]99;i={id}:e=1:d=0:a={action}:o={when}:u=1:f={}:s={}:p=title;{}\x1b\\{picture}\x1b]99;i={id}:e=1:d=1:p=body;{}\x1b\\",
         b(app),
         b("silent"),
         b(title),
@@ -35,13 +37,20 @@ pub fn kitty(
     )
 }
 
-/// OSC 9：iTerm2、WezTerm、ghostty 认，只有一段字。标题和正文拼成一句；字里的控制字符去掉，免得提前收尾。
+/// OSC 9：iTerm2、WezTerm、ghostty 认，只有一段字。标题和正文拼成一句；字里的控制字符去掉，免得提前收尾。数字打头的
+/// 前面垫一个空格：`9;4;…` 这种是 ConEmu 那一套子命令（ghostty 认 `9;4` 进度条），标题是会话标题，写成 `4;3;` 打头
+/// 时整句就不当通知了（发布前第五批审查 T5-4）。
 pub fn osc9(title: &str, body: &str) -> String {
     let text: String = format!("{title}: {body}")
         .chars()
         .filter(|c| !c.is_control())
         .collect();
-    format!("\x1b]9;{text}\x07")
+    let pad = if text.starts_with(|c: char| c.is_ascii_digit()) {
+        " "
+    } else {
+        ""
+    };
+    format!("\x1b]9;{pad}{text}\x07")
 }
 
 #[cfg(test)]
@@ -54,7 +63,7 @@ mod tests {
     #[test]
     fn kitty_gets_two_base64_parts_that_jump_back_and_stay_quiet() {
         let seq = kitty(
-            ("miyu-42", false),
+            ("miyu-42", false, false),
             "Miyu",
             ("Miyu", "回答好了 · 3.2s"),
             None,
@@ -88,5 +97,6 @@ mod tests {
     #[test]
     fn osc9_is_one_line_without_controls() {
         assert_eq!(osc9("Miyu", "出错\x07"), "\x1b]9;Miyu: 出错\x07");
+        assert_eq!(osc9("4;3;99", "等你回答"), "\x1b]9; 4;3;99: 等你回答\x07");
     }
 }

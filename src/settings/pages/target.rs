@@ -21,19 +21,15 @@ pub struct RemoveTexts {
 }
 
 /// 选择窗、编辑窗写到哪。
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub enum Target {
     /// 系统配置里的一项。
     #[default]
     Setting,
     /// 一个预设的一个键；关窗回到它的详情窗。
     Preset(Box<PresetView>),
-    /// 新建预设：填的是名字。
-    NewPreset,
     /// 一个人格的一个键；关窗回到它的详情窗。
     Persona(Box<PersonaView>),
-    /// 新建人格：填的是名字。
-    NewPersona,
     /// 一个人格的头像：填的是图片的路径；关窗回到它的详情窗（「配置页」第 36 条）。
     Avatar(Box<PersonaView>),
     /// `model_or` 那种项（语义模型）：选了「填一个模型…」开编辑窗，别的照旧写系统配置（「配置页」第 21 条）。
@@ -46,6 +42,8 @@ pub enum Target {
     Secret,
     /// 跟随头像的「主色」：写这个人格的主题色（`persona.set` 的 `seed`，存在人格上，两个头看到的是同一个；2026-10-14）。
     PersonaSeed(String),
+    /// 记录列表一条里的一个字段（「配置页」第 47b 条）：哪个表单、哪个字段、是不是密钥（编辑窗遮住）；写好、`Esc` 回到表单窗。
+    RecordField(Box<super::records::RecordForm>, String, bool),
 }
 
 impl Settings {
@@ -55,6 +53,7 @@ impl Settings {
             Target::Preset(view) => Some(Popup::Preset(*view)),
             Target::Persona(view) | Target::Avatar(view) => Some(Popup::Persona(*view)),
             Target::ListItem(list, _) => Some(Popup::List(*list)),
+            Target::RecordField(form, ..) => Some(Popup::Record(*form)),
             _ => None,
         };
     }

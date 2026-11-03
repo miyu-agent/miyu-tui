@@ -127,18 +127,32 @@ fn entries(catalog: &Value, all: bool) -> Vec<Entry> {
 }
 
 impl Settings {
-    /// `a`（供应商页）：开目录窗，问常用的几家。
+    /// `a`（供应商页）：开目录窗。常用的几家开配置页时读好了的当场列出来；还没读到的（刚开、读得慢）问一次。
     pub(in crate::settings) fn open_catalog(&mut self) {
-        self.popup = Some(Popup::Catalog(CatalogPick::new()));
-        self.ask(
-            "provider.catalog",
-            json!({"featured": true}),
-            Waiting::Catalog(false),
-        );
+        let mut pick = CatalogPick::new();
+        match &self.more.featured {
+            Some(featured) => {
+                pick.providers = Some(featured.clone());
+                pick.top();
+            }
+            None => self.ask(
+                "provider.catalog",
+                json!({"featured": true}),
+                Waiting::Catalog(false),
+            ),
+        }
+        self.popup = Some(Popup::Catalog(pick));
     }
 
-    /// 目录回来了：窗还开着、列的还是这一份才换上；没拿到的当空的（「更多」「自定义」照样能选）。
+    /// 目录回来了：常用的那一份记下；窗还开着、列的还是这一份才换上；没拿到的当空的（「更多」「自定义」照样能选），
+    /// 也不记，下次开窗再问。
     pub(in crate::settings) fn catalog_answer(&mut self, all: bool, result: Option<Value>) {
+        if !all {
+            self.more.featured_asked = false;
+            if let Some(got) = &result {
+                self.more.featured = Some(entries(got, false));
+            }
+        }
         if let Some(Popup::Catalog(pick)) = &mut self.popup
             && pick.all == all
         {

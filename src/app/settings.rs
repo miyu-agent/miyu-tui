@@ -23,7 +23,6 @@ impl App {
             &self.config.text.settings,
         );
         self.boxes.settings = Some(page);
-        self.share_package_names();
         // 开机启动开没开着：问一次（`settings/service.rs`）。
         self.link.service.run(crate::service::Verb::Status);
         self.send_settings_asks();
@@ -33,7 +32,6 @@ impl App {
     pub(super) fn open_connect(&mut self) {
         let online = matches!(self.talk.transcript.link, Link::Ready);
         self.boxes.settings = Some(Settings::connect(online));
-        self.share_package_names();
         self.send_settings_asks();
     }
 
@@ -43,11 +41,15 @@ impl App {
             return;
         };
         let runs = page.take_service_runs();
+        let web = page.more.store.web.take();
         for (tag, method, params) in page.take_asks() {
             self.send_ask(tag, method, params);
         }
         for verb in runs {
             self.link.service.run(verb);
+        }
+        if let Some((id, name)) = web {
+            self.link.backstage.open(id, name);
         }
     }
 
@@ -58,6 +60,24 @@ impl App {
             && let Some(page) = self.boxes.settings.as_mut()
         {
             page.service_replied(&reply, &self.config.text.settings);
+        }
+        // 「软件后台」拿到了后台页的网址：用系统的打开方式开（配置页第 43c 条）。
+        if let Some(reply) = self.link.backstage.take()
+            && let Some(page) = self.boxes.settings.as_mut()
+        {
+            let opened = reply.url.as_ref().map(|url| crate::open::open(url).is_ok());
+            page.store_web(&reply, opened, &self.config.text.settings);
+        }
+    }
+
+    /// 配置页的滑块停手到点了：存掉、发出去（「配置页」第 33 条子规则）。
+    pub(super) fn settings_slide_due(&mut self) {
+        let due = self.boxes.settings.as_ref().and_then(|p| p.slide_due());
+        if due.is_some_and(|d| d <= std::time::Instant::now())
+            && let Some(page) = self.boxes.settings.as_mut()
+        {
+            page.slide_flush(&self.config.text.settings);
+            self.send_settings_asks();
         }
     }
 
@@ -161,7 +181,11 @@ impl App {
                 self.link.core.send(Command::ListPersonas);
                 self.link.core.send(Command::ListPresets);
                 // 从人格框、预设框按 `e` 进来的：回框，改了正在用的先问要不要压缩（第 2b 条）。
-                self.pick_returned(page.as_ref().map_or(&[][..], |p| &p.watch.saved));
+                let watch = page.as_ref().map(|p| &p.watch);
+                self.pick_returned(
+                    watch.map_or(&[][..], |w| &w.saved),
+                    watch.and_then(|w| w.created.as_ref()),
+                );
             }
             Outcome::Quit => self.quit = true,
         }
@@ -191,8 +215,14 @@ impl App {
                 page.tools_changed();
                 false
             }
-            Update::ConfigChanged => {
+            // 模型列表在核心后台变了（核心 V-26）：同配置变了，整份重读。
+            Update::ConfigChanged | Update::ModelsChanged => {
                 page.changed();
+                false
+            }
+            // 装包的进度：「软件包」正在装的写进预览块（第 43c 条）。
+            Update::PackageProgress(progress) => {
+                page.store_progress(progress);
                 false
             }
             Update::Ready(_) | Update::Reconnected => {

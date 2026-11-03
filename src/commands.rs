@@ -16,6 +16,10 @@ pub struct Commands {
     /// 核心认的、终端自己没有的那几条（`command.catalog` 读来的，`app/catalog.rs` 放进来）：接在后面列、照样能打。
     #[serde(skip)]
     pub core: Vec<Spec>,
+    /// 核心的清单到过了。没到之前认不出的 `/名字 字` 也交给核心认，不当一句话发给她（2026-10-30：刚连上就打 `/loop 10m`，
+    /// 清单还没回来，整句当话发出去了）。
+    #[serde(skip)]
+    pub core_known: bool,
 }
 
 /// 一条命令。
@@ -171,6 +175,7 @@ impl Commands {
     /// 照核心认的那一份换上（`command.catalog` 的回应）：终端自己有的名字、别名不要，能接参数。终端自己有、又交给核心办
     /// 的同名命令（`/goal`），参数提示、几种写法照核心的（2026-10-17 项目主人：菜单照 shell 的语法提要，两个头别各拼各的）。
     pub fn take_core(&mut self, listed: &[crate::core::CoreCommand]) {
+        self.core_known = true;
         for spec in &mut self.commands {
             let same = listed.iter().find(|c| c.name == spec.name);
             spec.gone = spec.follows_core && same.is_none();
@@ -216,7 +221,7 @@ impl Commands {
             (Some(spec), true) => Line::Command(spec, None),
             (Some(spec), false) if spec.args => Line::Command(spec, Some(words)),
             (None, true) => Line::Unknown,
-            (None, false) if gone => Line::Unknown,
+            (None, false) if gone || !self.core_known => Line::Unknown,
             _ => Line::Talk,
         }
     }
@@ -251,7 +256,8 @@ mod tests {
 
     #[test]
     fn a_command_that_takes_words_keeps_them() {
-        let c = commands();
+        let mut c = commands();
+        c.take_core(&[]);
         match c.read("/compact 重点保留 数据库设计") {
             Line::Command(spec, Some(words)) => {
                 assert_eq!(spec.name, "compact");
@@ -281,6 +287,16 @@ mod tests {
         assert!(matches!(c.read("你好"), Line::Talk));
         assert!(matches!(c.read("/你吃了吗"), Line::Talk));
         assert!(matches!(c.read("/ compact"), Line::Talk), "名字要紧挨着 /");
+    }
+
+    /// 核心的清单还没到：认不出的 `/名字 字` 交给核心认（刚连上就打 `/loop 10m`），到了以后照旧当一句话。
+    #[test]
+    fn before_the_core_list_arrives_an_unknown_name_with_words_goes_to_the_core() {
+        let mut c = commands();
+        assert!(matches!(c.read("/loop 10m 看一眼 CI"), Line::Unknown));
+        assert!(matches!(c.read("你好"), Line::Talk));
+        c.take_core(&[]);
+        assert!(matches!(c.read("/etc 目录是干什么的"), Line::Talk));
     }
 
     #[test]

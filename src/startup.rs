@@ -32,6 +32,18 @@ pub struct Launch {
     pub page: Option<&'static str>,
     /// 只印用法（`-h`、`--help`）。
     pub help: bool,
+    /// 另起的取色进程（隐藏的 `--wallpaper-seeds`，`theme/seeds.rs`）：从标准输入读图、印候选主色就退。
+    pub seeds: bool,
+}
+
+/// 不进界面、当场办完就退的：印用法、取色。办了的交回 `true`。
+pub fn early(launch: &Launch) -> bool {
+    if launch.help {
+        println!("{USAGE}");
+    } else if launch.seeds {
+        crate::theme::seeds::print_from_stdin();
+    }
+    launch.help || launch.seeds
 }
 
 /// 读参数：不带的照配置启动；`--resume <完整会话编号>`；`--page <页名>` 或 `config`。
@@ -41,11 +53,16 @@ pub fn launch(args: impl IntoIterator<Item = String>) -> io::Result<Launch> {
         start: Start::Usual,
         page: None,
         help: false,
+        seeds: false,
     };
     match args.as_slice() {
         [] => Ok(usual),
         [flag] if flag == "-h" || flag == "--help" => Ok(Launch {
             help: true,
+            ..usual
+        }),
+        [flag] if flag == crate::theme::seeds::SEEDS_FLAG => Ok(Launch {
+            seeds: true,
             ..usual
         }),
         [flag, id] if flag == "--resume" && miyu_client::protocol::SessionId::parse(id).is_ok() => {
@@ -66,6 +83,7 @@ fn page_named(name: &str) -> Option<Launch> {
         start: Start::Bare,
         page: Some(page),
         help: false,
+        seeds: false,
     })
 }
 
@@ -84,6 +102,9 @@ mod tests {
         assert_eq!(launch(Vec::new()).unwrap().start, Start::Usual);
         assert!(launch(args(&["-h"])).unwrap().help);
         assert!(launch(args(&["--help"])).unwrap().help);
+        // 隐藏的取色参数（另起的取色进程用，2026-11-02）：不进界面。
+        let seeds = launch(args(&["--wallpaper-seeds"])).unwrap();
+        assert!(seeds.seeds && !seeds.help);
         assert_eq!(
             launch(args(&["--resume", id])).unwrap().start,
             Start::Resume(id.into())
@@ -105,6 +126,7 @@ mod tests {
             start: Start::Bare,
             page: Some("config"),
             help: false,
+            seeds: false,
         };
         assert_eq!(launch(args(&["--page", "config"])).unwrap(), config);
         assert_eq!(launch(args(&["config"])).unwrap(), config);

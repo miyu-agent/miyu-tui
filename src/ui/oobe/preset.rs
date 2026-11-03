@@ -6,10 +6,11 @@ use ratatui::text::Span;
 use unicode_width::UnicodeWidthStr;
 
 use super::content::Content;
-use crate::features::{self, Feature, Row};
+use crate::config::FeatureTreeTexts;
 use crate::oobe::Texts;
 use crate::oobe::preset::PresetStep;
 use crate::theme;
+use crate::ui::feature_tree::{self, Focus};
 
 /// 照读回来的拼：一块两行，选着的两行都铺底，右边 `✓`。
 pub fn content(step: &PresetStep, texts: &Texts, width: u16) -> Content {
@@ -47,18 +48,23 @@ pub fn content(step: &PresetStep, texts: &Texts, width: u16) -> Content {
     c
 }
 
-/// 开着的浮窗：标题、里面的一块、按键提示；没开的是 `None`。看的浮窗只列功能、工具，照 `view_top` 滚；自定义的浮窗是名字、
-/// 功能和工具的开关、「创建 →」（第 24、26 条）。
+/// 开着的浮窗：标题、里面的一块、按键提示；没开的是 `None`。看的浮窗只列功能树（只读），照 `view_top` 滚；自定义的浮窗是
+/// 名字、功能树的开关、「创建 →」（第 24、26 条；功能树照「配置页」第 38 条，核心设计 52）。
 pub fn popup(
     step: &mut PresetStep,
     texts: &Texts,
     (width, height): (u16, u16),
+    tree: &FeatureTreeTexts,
 ) -> Option<(String, Content, String)> {
     let words = &texts.preset;
+    // 光标那一格：同列表选着的那一行，打头的记号、铺底色（`content.rs` 的 `row`）。
+    let focus = Focus {
+        lead: Span::styled(super::content::pointer(), theme::accent()),
+        bg: theme::row_focus(),
+    };
     if step.viewing {
         let card = step.cards.get(step.cursor)?;
-        let list = card.features.as_deref().unwrap_or_default();
-        let rows = features::rows(list);
+        let list = card.features.clone().unwrap_or_default();
         let mut c = Content::new(width);
         // 最上面先写描述、空一行，再列功能（2026-10-27 项目主人报：空格打开的详情没有描述）。
         let mut height = height;
@@ -67,7 +73,8 @@ pub fn popup(
             c.blank();
             height = height.saturating_sub(u16::try_from(c.lines.len()).unwrap_or(u16::MAX));
         }
-        // 放不下的上下各留一行暗色「还有 N 个」，滚到底就停（照搜模型的列表）。
+        let rows = feature_tree::draw(&list, None, width.saturating_sub(2), (tree, &focus)).lines;
+        // 放不下的上下各留一行暗色「还有 N 行」，滚到底就停（照搜模型的列表）。
         let height = usize::from(height.max(3));
         let room = if rows.len() > height {
             height - 2
@@ -90,11 +97,7 @@ pub fn popup(
             });
         }
         let shown = rows.len().min(step.view_top + room);
-        for &row in &rows[step.view_top..shown] {
-            let mut spans = vec![Span::raw("  ")];
-            spans.extend(feature_spans(list, row, &words.mine));
-            c.lines.push(ratatui::text::Line::from(spans));
-        }
+        c.lines.extend(rows[step.view_top..shown].iter().cloned());
         if shown < rows.len() {
             c.lines.push(note(below, rows.len() - shown));
         }
@@ -116,14 +119,20 @@ pub fn popup(
     );
     // 名称下面空一行，不和功能挤在一起（第 26 条，2026-10-10 项目主人）。
     c.blank();
-    // 功能、工具平铺（「配置页」第 38 条）：功能那一行勾在前、加粗，工具缩进两格。
-    for (i, row) in step.rows().into_iter().enumerate() {
-        c.row(
-            step.inner == i + 1,
-            feature_spans(&step.features, row, &words.mine),
-            None,
-        );
+    // 功能树（「配置页」第 38 条，核心设计 52）：两列，光标那一格自己画，浮窗照它滚。
+    let rows = step.rows();
+    let cursor = step.inner.checked_sub(1).and_then(|i| rows.get(i)).copied();
+    let drawn = feature_tree::draw(
+        &step.features,
+        cursor,
+        width.saturating_sub(2),
+        (tree, &focus),
+    );
+    step.two.set(drawn.two);
+    if let Some(at) = drawn.focus {
+        c.focus = Some(u16::try_from(c.lines.len() + at).unwrap_or(u16::MAX));
     }
+    c.lines.extend(drawn.lines);
     c.blank();
     c.action(
         step.inner == step.create_row(),
@@ -146,53 +155,6 @@ pub fn popup(
     Some((words.custom.clone(), c, hint.clone()))
 }
 
-/// 平铺的一行：功能那一行勾在前、加粗，工具缩进两格。
-fn feature_spans(list: &[Feature], row: Row, mine: &str) -> Vec<Span<'static>> {
-    match row {
-        // 组名（核心 ENV-1）：暗色加粗。
-        Row::Group(f) => vec![Span::styled(
-            features::group_name(&list[f], mine).to_string(),
-            theme::dim().add_modifier(Modifier::BOLD),
-        )],
-        Row::Feature(f) => {
-            let feature = &list[f];
-            let mark = features::mark(feature);
-            vec![
-                Span::styled(format!("{} ", mark.text()), check(feature.on)),
-                Span::styled(
-                    feature.name.clone(),
-                    named(feature.on).add_modifier(Modifier::BOLD),
-                ),
-            ]
-        }
-        Row::Tool(f, t) => {
-            let feature = &list[f];
-            let tool = &feature.tools[t];
-            let on = features::tool_on(feature, tool);
-            let mark = if on { "[*] " } else { "[ ] " };
-            vec![
-                Span::raw("  "),
-                Span::styled(mark, check(on)),
-                Span::styled(tool.label.clone(), named(on)),
-            ]
-        }
-    }
-}
-
 fn bold() -> ratatui::style::Style {
     ratatui::style::Style::new().add_modifier(Modifier::BOLD)
-}
-
-/// 勾：开着强调色，关着暗。
-fn check(on: bool) -> ratatui::style::Style {
-    if on { theme::accent() } else { theme::dim() }
-}
-
-/// 名字：开着照常，关着暗。
-fn named(on: bool) -> ratatui::style::Style {
-    if on {
-        ratatui::style::Style::new()
-    } else {
-        theme::dim()
-    }
 }

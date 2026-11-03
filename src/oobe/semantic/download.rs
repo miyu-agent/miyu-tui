@@ -3,7 +3,7 @@
 
 use serde_json::{Value, json};
 
-use crate::core::Refusal;
+use crate::core::{Refusal, Stage};
 
 /// 软件源里语义模型的包。
 pub const PACKAGE: &str = "miyu-embed";
@@ -35,8 +35,10 @@ impl Offer {
 pub enum Phase {
     /// 还没下：两行是「是」「否」。
     Choose,
-    /// 在下：下了多少、一共多少（还没推来的都是 0）。
+    /// 在装：到了哪一段，下了多少、一共多少（还没推来的都是 0；下完以后核对、装的时候留着下完的数）。
     Installing {
+        /// 下载、核对还是装。
+        stage: Stage,
         /// 下了多少字节。
         done: u64,
         /// 一共多少字节。

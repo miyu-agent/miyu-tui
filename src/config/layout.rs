@@ -37,6 +37,15 @@ pub struct Layout {
     pub mascot_sidebar: bool,
     /// 侧边栏「最近会话」列几个（算上当前这个），0 是不画（`tui.sidebar_sessions`，「后台命令、子代理和侧边栏」第 7 条）。
     pub sidebar_sessions: usize,
+    /// 侧边栏挂哪几件、什么先后、最多几行（`tui.side`，「挂载位」第 2 条）；没配的照出厂。
+    #[serde(default)]
+    pub side: Vec<super::slots::Slot>,
+    /// 底栏两段挂哪几件、什么先后（`tui.footer`，「挂载位」第 4 条 SL-2）；没配的照出厂。
+    #[serde(default)]
+    pub footer: Vec<super::slots::Slot>,
+    /// 输入框上面那一块挂哪几件、什么先后、最多几行（`tui.above`，「挂载位」第 4 条 SL-2）；没配的照出厂。
+    #[serde(default)]
+    pub above: Vec<super::slots::Slot>,
     /// 按键模式是 Vim（蓝图「按键」表「按键模式」那一行）：会话列表、`/model` 里 `j`、`k` 挪，`/` 才搜；`false` 是方向键。
     pub vim: bool,
     /// 新会话不问人格、预设，直接用默认的（`tui.skip_pick`，「新会话：人格、工作区」第 1a 条）。
@@ -149,6 +158,10 @@ pub struct Layout {
     pub link_icon_cols: u16,
     /// 会话列表里正在用的那个标题前面的记号（2026-10-02）。
     pub current_mark: String,
+    /// 侧边栏「最近会话」里当前这个会话的记号（2026-10-30 项目主人：用箭头）。
+    pub side_here_mark: String,
+    /// 侧边栏「最近会话」里做完了还没看的会话的记号（2026-10-30）。
+    pub side_done_mark: String,
     /// 撤销点开以后，改回了的文件前面的记号，连同它后面的空格（2026-10-02）。
     pub undo_restored_mark: String,
     /// 撤销点开以后，没动的文件前面的记号，连同它后面的空格。

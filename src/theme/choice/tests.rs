@@ -1,5 +1,3 @@
-//! 挑主题、主色的测试。
-
 use ratatui::style::Color;
 use serde_json::json;
 
@@ -204,6 +202,27 @@ fn following_the_avatar_overlays_tokyonight_once_there_is_a_seed() {
         "tokyonight-night",
         "不是跟随头像的不看主色"
     );
+}
+
+/// 「自动」的先后（2026-11-02 项目主人）：人格交得出颜色 → 壁纸 → 终端配色 → tokyonight；以前写的 tokyonight 当自动读。
+#[test]
+fn auto_follows_the_persona_then_the_wallpaper_then_the_terminal_then_tokyonight() {
+    use super::resolve;
+    assert_eq!(resolve("auto", (true, true, true)), "persona");
+    assert_eq!(resolve("auto", (false, true, true)), "wallpaper");
+    assert_eq!(resolve("auto", (false, false, true)), "terminal");
+    assert_eq!(resolve("auto", (false, false, false)), "tokyonight");
+    assert_eq!(
+        resolve("wallpaper", (true, false, false)),
+        "wallpaper",
+        "选了哪种照哪种"
+    );
+    let mut choice = Choice::default();
+    assert_eq!(choice.colors, "auto", "出厂自动");
+    choice.apply(&json!({"items": {"tui.theme": {"value": "terminal"}}}));
+    assert_eq!(choice.colors, "terminal");
+    choice.apply(&json!({"items": {"tui.theme": {"value": "tokyonight"}}}));
+    assert_eq!(choice.colors, "auto", "以前选的 tokyonight 当自动");
 }
 
 #[test]

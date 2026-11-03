@@ -37,6 +37,8 @@ pub(super) enum Awaiting {
     PackagesStream,
     /// 订阅给人的通知（核心 J-3 中，`notices.rs`）：回应不用；老核心不认的不说。
     NoticesStream,
+    /// 订阅唤醒表（核心 J-1 下，`schedules.rs`）：回应的整张交给界面画循环；老核心不认的不说。
+    SchedulesStream,
     /// 读界面语言：回应交给界面。
     UiLanguage,
     /// 要给人看的字：回应交给界面。
@@ -57,6 +59,8 @@ pub(super) enum Awaiting {
     Files(crate::mention::Word),
     /// 换模型：成了交给界面（引用）。
     Configure(String),
+    /// 换这个会话的思考强度（核心 SM-1）：成了交给界面（哪一级）。
+    EffortSet(Option<String>),
     /// 配置页的一条请求：界面给的编号。
     Ask(u64),
     /// 列人格：回应交给界面。

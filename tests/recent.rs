@@ -63,20 +63,20 @@ fn the_sidebar_lists_recent_sessions_and_a_click_switches() {
         );
         tui.pump(std::time::Duration::from_millis(50));
     }
-    // 切过去的不顶到最上面（2026-10-27 项目主人：「正常按照时间顺序就好了。否则很难找」）：照旧 topic-two 在上，圆点挪到
-    // topic-one 那一行。
+    // 切过去的不顶到最上面（2026-10-27 项目主人：「正常按照时间顺序就好了。否则很难找」）：照旧 topic-two 在上，当前这个的
+    // 箭头（2026-10-30 起，原来是圆点）挪到 topic-one 那一行。
     let end = std::time::Instant::now() + support::WAIT;
     loop {
         let lines = tui.lines();
         let (two, one) = (side(&lines, "topic-two"), side(&lines, "topic-one"));
-        let marked = one.is_some_and(|row| lines[row].contains("● topic-one"));
+        let marked = one.is_some_and(|row| lines[row].contains("❱ topic-one"));
         if marked {
             assert!(two < one, "切过去的不挪：\n{}", lines.join("\n"));
             break;
         }
         assert!(
             std::time::Instant::now() < end,
-            "圆点没挪到切过去的那一行：\n{}",
+            "箭头没挪到切过去的那一行：\n{}",
             lines.join("\n")
         );
         tui.pump(std::time::Duration::from_millis(50));

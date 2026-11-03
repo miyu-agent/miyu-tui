@@ -11,7 +11,8 @@ pub struct Opt {
     pub value: Value,
     /// 给人看的名字。
     pub name: String,
-    /// 核心查得出的一句，接在名字后面暗色写（核心 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字）。
+    /// 核心查得出的一句，接在名字后面暗色写（核心 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字）；没有的照
+    /// 包写的说明（`description`，核心 PC-1）。
     pub note: Option<String>,
     /// 用得了：核心查得出用不了的（没装内置语义模型的包）列着、灰的、选不了（核心 R-5 三补）。
     pub available: bool,
@@ -48,6 +49,12 @@ pub struct Item {
     /// 带选项的列表反着勾（核心给的 `"ticks": "unlisted"`）：勾着的是不在值里的（「配置页」第 47a 条，2026-10-21 项目主人：
     /// 「默认私密目录」进去是几个已经勾着的目录，空格取消勾选）。
     pub unlisted: bool,
+    /// 滑块（`control: "slider"`，核心 PC-1）的范围和一步：最小、最大、一步；别的控件是 `None`。
+    pub slide: Option<(f64, f64, f64)>,
+    /// 记录列表（`element: "record"`，核心 PC-2）拿哪个字段当每一条的标题；没写的是 `None`。
+    pub title: Option<String>,
+    /// 记录列表每一条的字段，照清单的先后（`hidden` 的不在）；别的是空的。
+    pub fields: Vec<Item>,
 }
 
 impl Item {
@@ -153,7 +160,6 @@ impl OwnGroups {
 impl Schema {
     /// 读 `config.schema` 的回应。
     pub fn read(got: &Value) -> Schema {
-        let text = |v: &Value| v.as_str().unwrap_or_default().to_string();
         let pages = got["pages"]
             .as_array()
             .into_iter()
@@ -176,42 +182,7 @@ impl Schema {
             .flatten()
             // 标了 `hidden` 的设置页不画（照样能写、能查，核心 9-1 下）。
             .filter(|i| i["hidden"] != true)
-            .map(|i| Item {
-                key: text(&i["key"]),
-                control: text(&i["control"]),
-                kind: text(&i["type"]),
-                element: text(&i["element"]),
-                suggestions: i["suggestions"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .filter_map(|s| s.as_str().map(str::to_string))
-                    .collect(),
-                options: i["options"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .map(|o| Opt {
-                        value: o["value"].clone(),
-                        name: text(&o["name"]),
-                        note: o["note"].as_str().map(str::to_string),
-                        available: o["available"] != false,
-                    })
-                    .collect(),
-                layers: i["layers"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .map(text)
-                    .collect(),
-                default: i["default"].clone(),
-                name: text(&i["name"]),
-                page: text(&i["page"]),
-                group: text(&i["group"]),
-                package: text(&i["package"]),
-                common: i["common"] == true,
-                unlisted: i["ticks"] == "unlisted",
-            })
+            .map(read_item)
             // 键里有人起的名字的归供应商和模型；别的头专有的不列（蓝图「配置页」第 5 条）。
             .filter(|i: &Item| !i.key.contains('<') && !i.key.starts_with("web."))
             .collect();
@@ -344,6 +315,82 @@ impl Schema {
             .filter(|id| *id != MODELS && !self.rows(id).is_empty())
             .collect()
     }
+}
+
+/// 一格字：不是字的当空的。
+fn text(v: &Value) -> String {
+    v.as_str().unwrap_or_default().to_string()
+}
+
+/// 读一项（记录列表的字段同样读）。
+fn read_item(i: &Value) -> Item {
+    Item {
+        key: text(&i["key"]),
+        control: text(&i["control"]),
+        kind: text(&i["type"]),
+        element: text(&i["element"]),
+        suggestions: i["suggestions"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|s| s.as_str().map(str::to_string))
+            .collect(),
+        options: i["options"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|o| Opt {
+                value: o["value"].clone(),
+                name: text(&o["name"]),
+                note: o["note"]
+                    .as_str()
+                    .or(o["description"].as_str())
+                    .filter(|s| !s.is_empty())
+                    .map(str::to_string),
+                available: o["available"] != false,
+            })
+            .collect(),
+        layers: i["layers"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(text)
+            .collect(),
+        default: i["default"].clone(),
+        name: text(&i["name"]),
+        page: text(&i["page"]),
+        group: text(&i["group"]),
+        package: text(&i["package"]),
+        common: i["common"] == true,
+        unlisted: i["ticks"] == "unlisted",
+        slide: slide(i),
+        title: i["title"].as_str().map(str::to_string),
+        // 记录列表的字段（核心 PC-2）：写法同一项，`hidden` 的不画。
+        fields: i["fields"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|f| f["hidden"] != true)
+            .map(read_item)
+            .collect(),
+    }
+}
+
+/// 滑块的范围和一步：要有 `min`、`max`；`step` 没写的整数是 1、小数是范围的百分之一（同核心）。
+fn slide(item: &Value) -> Option<(f64, f64, f64)> {
+    if item["control"] != "slider" {
+        return None;
+    }
+    let (min, max) = (item["min"].as_f64()?, item["max"].as_f64()?);
+    let step = item["step"]
+        .as_f64()
+        .filter(|s| *s > 0.0)
+        .unwrap_or(if item["type"] == "float" {
+            (max - min) / 100.0
+        } else {
+            1.0
+        });
+    (max > min).then_some((min, max, step))
 }
 
 #[cfg(test)]
