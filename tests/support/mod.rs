@@ -34,6 +34,11 @@ mod home;
 )]
 pub use home::Home;
 
+/// `dir` 当数据根时各样东西放在哪：照核心算（设计 55「数据根仿 FHS」：`etc/`、`opt/`、`var/` 这些），测试不自己拼。
+pub fn data_of(dir: &std::path::Path) -> miyu_store::root::DataRoot {
+    miyu_store::root::DataRoot::at(dir.to_path_buf())
+}
+
 /// 伪终端里跑着的界面。
 /// 一个颜色的三个字节。
 type Rgb = (u8, u8, u8);
