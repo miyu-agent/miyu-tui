@@ -28,6 +28,10 @@ fn resources() -> PathBuf {
 mod core;
 mod home;
 
+#[allow(
+    unused_imports,
+    reason = "不起核心的测试（连不上、数据根认不认）用不到它"
+)]
 pub use home::Home;
 
 /// `dir` 当数据根时各样东西放在哪：照核心算（设计 55「数据根仿 FHS」：`etc/`、`opt/`、`var/` 这些），测试不自己拼。
@@ -58,9 +62,9 @@ pub struct Tui {
 }
 
 impl Tui {
-    /// 在伪终端起界面，数据根是 `home`（不经 [`Home`]、不起核心：测数据根本身认不认，旧版的数据根这种）。
-    pub fn at(home: &Path, work: &Path, lang: &str) -> Tui {
-        Self::spawn(home, work, lang, &[], &[])
+    /// 在伪终端起界面，数据根是 `home`（不经 [`Home`]、不起核心：测连不上、数据根本身认不认这种）。
+    pub fn at(home: &Path, work: &Path, lang: &str, env: &[(&str, &str)]) -> Tui {
+        Self::spawn(home, work, lang, env, &[])
     }
 
     fn spawn(home: &Path, work: &Path, lang: &str, env: &[(&str, &str)], args: &[&str]) -> Tui {
