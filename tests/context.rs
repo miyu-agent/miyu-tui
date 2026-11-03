@@ -45,7 +45,7 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     tui.say("/context");
     tui.wait_for("核心说明");
     assert!(
-        tui.shows("估算") && !tui.shows("本会话累计"),
+        tui.shows("估算") && !tui.shows("累计消耗"),
         "{}",
         tui.lines().join("\n")
     );
@@ -54,13 +54,13 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/context");
-    tui.wait_for("本会话累计");
+    tui.wait_for("累计消耗");
     let screen = tui.lines().join("\n");
     for text in ["已用", "系统提示", "对话", "主对话", "合计", "次数"] {
         assert!(screen.contains(text), "少了「{text}」：\n{screen}");
     }
     tui.key(b"\x1b");
-    until_gone(&mut tui, "本会话累计");
+    until_gone(&mut tui, "累计消耗");
 }
 
 #[test]

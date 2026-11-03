@@ -30,10 +30,15 @@ fn sample() -> serde_json::Value {
 fn text(data: &ContextData, width: u16) -> Vec<String> {
     let config = Config::builtin().unwrap();
     let money = |_: &Bill| Some("$0.42".to_string());
-    rows(Some(data), &config, &money, width)
-        .iter()
-        .map(|l| l.to_string().trim_end().to_string())
-        .collect()
+    rows(
+        Some(data),
+        &config,
+        (&money, &super::Tail::default()),
+        width,
+    )
+    .iter()
+    .map(|l| l.to_string().trim_end().to_string())
+    .collect()
 }
 
 #[test]
@@ -62,14 +67,15 @@ fn the_composition_is_one_row_a_part_with_a_blank_line_between_the_big_parts() {
         uses: None,
     };
     let got = text(&data, 80);
+    assert_eq!(got[0], "上下文", "第 7 条：段头");
     assert!(
-        got[0].ends_with("已用 45.2k / 128k · 压缩线 102.4k"),
+        got[1].ends_with("已用 45.2k / 128k · 压缩线 102.4k"),
         "{}",
-        got[0]
+        got[1]
     );
-    assert_eq!(got[1], "");
-    assert_eq!(got[2], "系统提示           6,299   13.9%");
-    assert_eq!(got[3], "  技能目录           929    2.1%");
+    assert_eq!(got[2], "");
+    assert_eq!(got[3], "系统提示           6,299   13.9%");
+    assert_eq!(got[4], "  技能目录           929    2.1%");
     assert!(
         got.iter().any(|l| l == "    常驻记忆         826    1.8%"),
         "{got:#?}"
@@ -81,10 +87,15 @@ fn the_composition_is_one_row_a_part_with_a_blank_line_between_the_big_parts() {
         .unwrap_or(0);
     assert_eq!(got[tools - 1], "", "{got:#?}");
     assert!(!got.iter().any(|l| l.starts_with("空余")), "{got:#?}");
-    assert!(
-        got.last().is_some_and(|l| l.starts_with("  工具结果")),
-        "{got:#?}"
-    );
+    // 各块最后是工具结果，空一行接已压缩、缓存断裂（第 7 条；没开会话的这里是 0）。
+    let done = got
+        .iter()
+        .position(|l| l.starts_with("已压缩"))
+        .expect("有已压缩");
+    assert!(got[done - 2].starts_with("  工具结果"), "{got:#?}");
+    assert!(got[done].ends_with("0 次"), "{got:#?}");
+    assert!(got[done + 1].starts_with("缓存断裂") && got[done + 1].ends_with("0 次"));
+    assert_eq!(got.len(), done + 2, "没卡住不写原因：{got:#?}");
     let config = Config::builtin().unwrap();
     assert_eq!(title(&config.text.context_box, Some(&data)), "上下文明细");
 }
@@ -100,8 +111,9 @@ fn estimated_and_windowless_replies_say_so() {
         uses: None,
     };
     let got = text(&data, 80);
-    assert_eq!(got[0], "已用 45.2k · 估算");
-    assert_eq!(got[2], "系统提示           6,299   13.9%", "占已用");
+    assert_eq!(got[1], "已用 45.2k · 估算");
+    assert_eq!(got[3], "系统提示           6,299   13.9%", "占已用");
+    assert!(!got[1].contains("压缩线"), "没压缩线的不写");
 }
 
 #[test]
@@ -119,9 +131,13 @@ fn usage_by_purpose_is_a_table_sorted_by_tokens_with_a_total() {
         uses: Some(Ok(uses)),
     };
     let wide = text(&data, 90);
-    let at = wide.iter().position(|l| l == "本会话累计").unwrap();
+    let at = wide.iter().position(|l| l == "按用途").unwrap();
+    let end = wide[at..]
+        .iter()
+        .position(String::is_empty)
+        .map_or(wide.len(), |n| at + n);
     assert_eq!(
-        &wide[at + 1..],
+        &wide[at + 1..end],
         [
             "          次数  输入  缓存读  缓存写  输出   花费",
             "主对话      12    9k    300k      1k    7k  $0.42",
@@ -131,13 +147,13 @@ fn usage_by_purpose_is_a_table_sorted_by_tokens_with_a_total() {
     );
     // 窄的先去掉缓存写，再去掉缓存读。
     let narrow = text(&data, 44);
-    let head = &narrow[narrow.iter().position(|l| l == "本会话累计").unwrap() + 1];
+    let head = &narrow[narrow.iter().position(|l| l == "按用途").unwrap() + 1];
     assert!(
         !head.contains("缓存写") && head.contains("缓存读"),
         "{head}"
     );
     let narrower = text(&data, 36);
-    let head = &narrower[narrower.iter().position(|l| l == "本会话累计").unwrap() + 1];
+    let head = &narrower[narrower.iter().position(|l| l == "按用途").unwrap() + 1];
     assert!(!head.contains("缓存"), "{head}");
 }
 
@@ -157,8 +173,107 @@ fn a_new_session_preview_has_no_totals() {
         uses: None,
     };
     let got = text(&data, 80);
-    assert_eq!(got[0], "已用 3.4k · 估算");
+    assert_eq!(got[1], "已用 3.4k · 估算");
     assert!(got.iter().any(|l| l.starts_with("  核心说明")), "{got:#?}");
-    assert!(!got.iter().any(|l| l.contains("本会话累计")));
+    assert!(
+        !got.iter()
+            .any(|l| l.contains("按用途") || l.contains("累计消耗"))
+    );
     assert_eq!(text(&ContextData::default(), 80), ["正在读…"]);
+}
+
+/// 第 7 条：累计消耗的段头写命中率，四种 token 一种一行；花费那一段照 `converted_parts` 加起来按种类分。
+#[test]
+fn spent_and_cost_sections_split_by_kind() {
+    let uses = read_uses(&json!({"rows": [
+        {"use": "main", "requests": 2,
+         "usage": {"uncached": 1000, "cache_read": 8000, "cache_write": 1000, "output": 0},
+         "amounts": [{"currency": "USD", "amount": 0.3}],
+         "converted": {"currency": "USD", "amount": 0.3},
+         "converted_parts": {"uncached": 0.1, "cache_read": 0.1, "cache_write": 0.1, "output": 0}},
+        {"use": "subagent", "requests": 1,
+         "usage": {"uncached": 0, "cache_read": 0, "cache_write": 0, "output": 10000},
+         "amounts": [{"currency": "USD", "amount": 0.1}],
+         "converted": {"currency": "USD", "amount": 0.1},
+         "converted_parts": {"uncached": 0, "cache_read": 0, "cache_write": 0, "output": 0.1}}
+    ]}));
+    let data = ContextData {
+        parts: None,
+        uses: Some(Ok(uses)),
+    };
+    let config = Config::builtin().unwrap();
+    let money = |bill: &Bill| {
+        let c = bill.converted.as_ref()?;
+        Some(format!("${:.2}", c.total.amount))
+    };
+    let got: Vec<String> = rows(Some(&data), &config, (&money, &super::Tail::default()), 60)
+        .iter()
+        .map(|l| l.to_string().trim_end().to_string())
+        .collect();
+    let at = |word: &str| {
+        got.iter()
+            .position(|l| l.starts_with(word))
+            .unwrap_or_else(|| panic!("没有「{word}」：{got:#?}"))
+    };
+    let spent = at("累计消耗 20k");
+    assert!(got[spent].ends_with("缓存命中 80%"), "{got:#?}");
+    // 缓存读、缓存写、输出、输入（未命中），占累计（2 万）的百分比。
+    assert!(
+        got[spent + 1].starts_with("缓存读") && got[spent + 1].ends_with("8k     40%"),
+        "{got:#?}"
+    );
+    assert!(got[spent + 3].starts_with("输出") && got[spent + 3].ends_with("10k     50%"));
+    assert!(got[spent + 4].starts_with("输入（未命中）"));
+    assert_eq!(got[spent + 5], "按用途");
+    let cost = at("花费");
+    assert!(got[cost].ends_with("$0.40"), "{got:#?}");
+    assert!(got[cost + 3].starts_with("输出") && got[cost + 3].ends_with("$0.10     25%"));
+    assert_eq!(got.len(), cost + 5, "{got:#?}");
+    // 有一行是老账（没有 converted_parts）：按种类的不写，总数照写。
+    let mut old = read_uses(&json!({"rows": [
+        {"use": "main", "requests": 1, "usage": {"uncached": 10, "output": 1},
+         "amounts": [{"currency": "USD", "amount": 0.2}],
+         "converted": {"currency": "USD", "amount": 0.2}}]}));
+    old[0].requests = 1;
+    let data = ContextData {
+        parts: None,
+        uses: Some(Ok(old)),
+    };
+    let got: Vec<String> = rows(Some(&data), &config, (&money, &super::Tail::default()), 60)
+        .iter()
+        .map(|l| l.to_string().trim_end().to_string())
+        .collect();
+    assert!(got.last().unwrap().starts_with("花费") && got.last().unwrap().ends_with("$0.20"));
+}
+
+/// 第 7 条：卡住的，上下文那一段底下再一行红字说为什么。
+#[test]
+fn a_stuck_session_says_why_under_the_context_section() {
+    use crate::transcript::Stuck;
+    let data = ContextData {
+        parts: Some(Ok(read_parts(&sample()))),
+        uses: None,
+    };
+    let config = Config::builtin().unwrap();
+    let money = |_: &Bill| None;
+    let tail = super::Tail {
+        compactions: 2,
+        breaks: 1,
+        stuck: Some(Stuck::Over {
+            used: 203_000,
+            window: 128_000,
+        }),
+    };
+    let laid = rows(Some(&data), &config, (&money, &tail), 80);
+    let last = laid.last().unwrap();
+    assert_eq!(last.to_string(), "超出这个模型的窗口，压缩后才能继续。");
+    assert_eq!(
+        last.style.fg.or(last.spans[0].style.fg),
+        crate::theme::error().fg
+    );
+    let text: Vec<String> = laid
+        .iter()
+        .map(|l| l.to_string().trim_end().to_string())
+        .collect();
+    assert!(text[text.len() - 3].ends_with("2 次") && text[text.len() - 2].ends_with("1 次"));
 }
