@@ -14,6 +14,10 @@ impl App {
     pub(super) fn notice(&mut self, notice: &Notice) {
         let texts = &self.config.text.notify;
         match notice {
+            // 有人认领了（托盘）：没人开着的会话由它弹，这个头只弹自己开着的那一个（核心 TR-1，2026-11-03 项目主人定）。
+            Notice::ScheduleRan { session, .. }
+                if self.link.notices_claimed
+                    && self.talk.transcript.session.as_deref() != Some(session.as_str()) => {}
             Notice::ScheduleRan { session, ok } => {
                 let body = if *ok {
                     texts.schedule_ran.clone()
@@ -24,10 +28,12 @@ impl App {
                 self.notifier
                     .tell_notice(title, &body, Some(session.clone()));
             }
-            Notice::SchedulesReset => {
+            Notice::SchedulesReset if !self.link.notices_claimed => {
                 let body = texts.schedules_reset.clone();
                 self.notifier.tell_notice(None, &body, None);
             }
+            Notice::SchedulesReset => {}
+            Notice::Claimed(claimed) => self.link.notices_claimed = *claimed,
         }
     }
 

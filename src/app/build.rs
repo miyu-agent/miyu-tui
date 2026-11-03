@@ -92,6 +92,7 @@ impl App {
             link: super::link::Link {
                 core,
                 viewing: None,
+                notices_claimed: false,
                 abilities: crate::core::Abilities::default(),
                 human,
                 currency: "USD".to_string(),

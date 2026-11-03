@@ -29,6 +29,10 @@ impl App {
         self.talk.unseen.insert(info.session.clone());
         let body = self.config.text.notify.replied.clone();
         let title = self.notice_title(&info.session);
+        // 有人认领了后台通知（托盘，核心 TR-1）：没人开着的会话由它弹，这边只画圆点。
+        if self.link.notices_claimed {
+            return;
+        }
         // 在前台也弹、不响（2026-11-02 项目主人：在会话 B 里干活，A 的循环跑完了没有任何提示）。
         self.notifier
             .tell_finished(title, &body, info.session.clone());

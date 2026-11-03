@@ -208,7 +208,12 @@ pub(super) async fn take(
         Some(Awaiting::List | Awaiting::SessionsStream) => {
             return notify(Update::Sessions(sessions::read(&message["result"])));
         }
-        Some(Awaiting::PackagesStream | Awaiting::NoticesStream) => return true,
+        Some(Awaiting::PackagesStream) => return true,
+        Some(Awaiting::NoticesStream) => {
+            return notify(Update::Notice(super::notices::subscribed(
+                &message["result"],
+            )));
+        }
         Some(Awaiting::SchedulesStream) => {
             let all = super::schedules::table(&message["result"]);
             return notify(Update::Loops(super::LoopChange::All(all)));
