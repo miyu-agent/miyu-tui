@@ -10,13 +10,13 @@ pub struct HistoryTexts {
     pub title: String,
     /// 标题后面的条数，`{count}`。
     pub count: String,
-    /// 搜了字时接在条数后面，再跟打的字。
-    pub query: String,
+    /// 框里最下面搜索那一行没打字时暗色写的（「输入历史列表」第 1 条）。
+    pub placeholder: String,
     /// 一条都对不上时那一行。
     pub empty: String,
     /// 好几行的，第一行后面跟着的，`{count}` 还有几行。
     pub lines: String,
-    /// 展开的一条太长时最后一行，`{count}` 还有几行。
+    /// 预览太长时最后一行，`{count}` 还有几行。
     pub more: String,
     /// 最后一行按键提示。
     pub hints: String,
