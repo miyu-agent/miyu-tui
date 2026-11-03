@@ -128,6 +128,8 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
             &mut seen.media.figures.borrow_mut(),
         );
     });
+    // 往上翻过时顶上钉一行你说的那句话（排期第 16 条，`pinned.rs`）。
+    super::pinned::draw(frame, area, (&rows, first, indent), seen, screen);
     // 鼠标、复制照这一帧的行；共享记着的那一份，不复制。
     screen.view.rows = rows.clone();
     screen.view.older_shown =

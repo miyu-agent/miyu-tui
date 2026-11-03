@@ -35,6 +35,12 @@ pub const FOOTER_RIGHT: [&str; 2] = ["context", "usage"];
 /// 底栏那一项在终端软件包里的名字（`[settings.footer]`）。
 pub const FOOTER_KEY: &str = "tui.footer";
 
+/// 正文顶上出厂的部件名（「挂载位」第 4 条，排期第 16 条）：往上翻过时钉着的你说的那句话。
+pub const TOP_PARTS: [&str; 1] = ["prompt"];
+
+/// 正文顶上那一项在终端软件包里的名字（`[settings.top]`）。
+pub const TOP_KEY: &str = "tui.top";
+
 /// 输入框上面那一块出厂的部件名（「挂载位」第 4 条 SL-2）：待办。
 pub const ABOVE_PARTS: [&str; 1] = ["todo"];
 

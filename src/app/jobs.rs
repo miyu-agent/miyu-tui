@@ -389,6 +389,7 @@ impl App {
             || over(self.screen.areas.todo)
             || over(self.screen.areas.recent)
             || over(self.screen.areas.jumps)
+            || over(self.screen.areas.pinned)
             // 长期目标那一截字（点了开浮窗，`goal_box.rs`）。
             || over(self.screen.areas.goal_text)
             || over(self.screen.areas.bottom)

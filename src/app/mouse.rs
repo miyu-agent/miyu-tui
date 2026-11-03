@@ -60,6 +60,15 @@ impl App {
         if !captured && matches!(mouse.kind, MouseEventKind::Down(_)) && self.goal_clicked(at) {
             return Action::None;
         }
+        // 正文顶上钉着的你说的话：点一下跳回那句话（排期第 16 条，`ui/pinned.rs`）。
+        if !captured && self.screen.areas.pinned.contains(at) {
+            if matches!(mouse.kind, MouseEventKind::Down(_))
+                && let Some(id) = self.screen.pinned
+            {
+                self.jump_to(id);
+            }
+            return Action::None;
+        }
         // 回到底部的按钮（`ui/bottom_button.rs`）。
         if !captured && self.screen.areas.bottom.contains(at) {
             if matches!(mouse.kind, MouseEventKind::Down(_)) {
