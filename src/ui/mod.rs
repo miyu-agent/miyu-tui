@@ -3,6 +3,7 @@
 //! 版式照网页的聊天输入框：框居中、跟着窗口变宽，正文和框一样宽；框里只有文字，
 //! 框下面一行左边是模式和模型，右边是临时的状态和用量。
 
+mod above;
 mod agents;
 mod avatar_view;
 mod background;
@@ -138,14 +139,13 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .collect();
     let count = u16::try_from(queued.len()).unwrap_or(u16::MAX);
     let agent_rows = agents::height(app.talk.listed_agents().len(), app.config.layout.agent_rows);
-    // 输入框上面那一块是挂载位（「挂载位」第 4 条 SL-2），出厂只有待办（第 4a 条）；首页的框收窄了，照首页框里的字宽排。
+    // 输入框上面那一块（`above.rs`）：首页的框收窄了，照首页框里的字宽排。
     let todo_width = if home {
         home::text_width(main.width, &app.config.layout)
     } else {
         text_width(main.width, &app.config.layout)
     };
-    let todo = todos::todo_lines(&app.talk.board, &app.config, todo_width, app.talk.todo_full);
-    let todo_lines = layout::slot::column(vec![("todo", todo)], (&app.config.layout.above, 1));
+    let todo_lines = above::lines(app, todo_width);
     let todo_rows = u16::try_from(todo_lines.len()).unwrap_or(u16::MAX);
     // 首页的界面块照首页框里的字宽排好，要几行交给 `place` 定位（蓝图「界面块」第 4 条）。
     let home_blocks = if home {
