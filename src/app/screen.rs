@@ -36,6 +36,12 @@ pub struct Screen {
     pub grab: Option<Grab>,
     /// 侧边栏的选字（`tui.md`「后台命令、子代理和侧边栏」第 7 条）。
     pub side_select: SideSelect,
+    /// 侧边栏「跳转消息」每一行是哪一条（条目编号），照 `areas.jumps` 从上往下；上一帧排出来的。
+    pub jumps: Vec<u64>,
+    /// 正文顶上钉着的那一行是哪一句你说的话（条目编号）；没钉的是 `None`（排期第 16 条）。
+    pub pinned: Option<u64>,
+    /// 侧边栏从第几行露起（排期第 14 条：内容比侧边栏高时滚轮滚它，画的时候照一共多高限住）。
+    pub side_top: u16,
     /// 当前主题的名字（出厂那一份的）。
     pub theme: String,
     /// 主题的几个配置项（`tui.theme*`，「主题」第 6 条）。
@@ -90,6 +96,9 @@ impl Screen {
             pointer: None,
             grab: None,
             side_select: SideSelect::default(),
+            jumps: Vec::new(),
+            pinned: None,
+            side_top: 0,
             theme,
             theme_choice: crate::theme::choice::Choice::default(),
             terminal_dark: None,

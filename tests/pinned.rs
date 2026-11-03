@@ -1,0 +1,126 @@
+//! 伪终端里的端到端测试：往上翻过时正文顶上钉一行这一段对应的你说的话，点一下跳回那句话（排期第 16 条，2026-11-02 项目主人：
+//! 「照 Claude Code」；挂载位 `top` 的 `prompt`）。
+
+mod support;
+
+use std::time::Duration;
+
+use miyu_session::testkit::{Play, Script};
+use support::Home;
+
+/// 一段回答：每段一行，`tag` 打头好认，比一屏短（同 `tests/jump.rs`）。
+fn long(tag: &str) -> &'static str {
+    let text: Vec<String> = (1..=10).map(|i| format!("{tag} 第 {i} 段。")).collect();
+    Box::leak(text.join("\n\n").into_boxed_str())
+}
+
+/// 有这句的那几行。
+fn rows_with(lines: &[String], word: &str) -> Vec<usize> {
+    lines
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| l.contains(word))
+        .map(|(i, _)| i)
+        .collect()
+}
+
+#[test]
+fn scrolled_up_the_top_pins_the_question_and_a_click_jumps_back() {
+    let home = Home::new(Script::new([
+        Play::Says(long("甲")),
+        Play::Says(long("乙")),
+        Play::Says(long("丙")),
+    ]));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    for (said, last) in [
+        ("第一问 alpha", "甲 第 10 段。"),
+        ("第二问 beta", "乙 第 10 段。"),
+        ("第三问 gamma", "丙 第 10 段。"),
+    ] {
+        tui.say(said);
+        tui.wait_for(last);
+    }
+    tui.pump(Duration::from_millis(300));
+    // 正文上滚轮一格一格往上，直到第二问整句滚出视口、顶上钉着它：只有正文第一行有它，下面露着乙的回答。
+    let mut pinned = false;
+    for _ in 0..30 {
+        tui.key(b"\x1b[<64;20;10M");
+        tui.pump(Duration::from_millis(80));
+        let lines = tui.lines();
+        // 正文区顶上空一行（`top_gap`），钉着的那一行在屏幕第 1 行；下面不是你说的话自带的那一行空竖线。
+        let at = rows_with(&lines, "第二问 beta");
+        if at.len() == 1
+            && at[0] <= 1
+            && lines[at[0] + 1].trim() != "┃"
+            && lines[at[0] + 1..at[0] + 6]
+                .iter()
+                .any(|l| l.contains("乙 第"))
+        {
+            pinned = true;
+            break;
+        }
+    }
+    assert!(
+        pinned,
+        "往上翻到乙的回答，顶上钉着第二问：\n{}",
+        tui.lines().join("\n")
+    );
+    // 点钉着的那一行：跳回第二问，它自己那一行顶到视口最上面（竖线那一行之下），不再钉着。
+    let lines = tui.lines();
+    let row = rows_with(&lines, "第二问 beta")[0];
+    let col = lines[row][..lines[row].find("第二问").expect("在")]
+        .chars()
+        .count()
+        + 1;
+    tui.key(format!("\x1b[<0;{col};{0}M\x1b[<0;{col};{0}m", row + 1).as_bytes());
+    let start = std::time::Instant::now();
+    loop {
+        tui.pump(Duration::from_millis(20));
+        let lines = tui.lines();
+        let at = rows_with(&lines, "第二问 beta");
+        if at.len() == 1 && (1..=3).contains(&at[0]) && lines[at[0] - 1].trim() == "┃" {
+            break;
+        }
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "没跳回去：\n{}",
+            lines.join("\n")
+        );
+    }
+}
+
+/// `[[tui.top]]` 藏起 `prompt`：一路往上翻，顶上不钉（「挂载位」第 4 条）。
+#[test]
+fn a_hidden_prompt_part_never_pins() {
+    let home = Home::with_settings(
+        Script::new([
+            Play::Says(long("甲")),
+            Play::Says(long("乙")),
+            Play::Says(long("丙")),
+        ]),
+        "[[tui.top]]\npart = \"prompt\"\nhidden = true\n",
+    );
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    for (said, last) in [
+        ("第一问 alpha", "甲 第 10 段。"),
+        ("第二问 beta", "乙 第 10 段。"),
+        ("第三问 gamma", "丙 第 10 段。"),
+    ] {
+        tui.say(said);
+        tui.wait_for(last);
+    }
+    tui.pump(Duration::from_millis(300));
+    for _ in 0..30 {
+        tui.key(b"\x1b[<64;20;10M");
+        tui.pump(Duration::from_millis(80));
+        let lines = tui.lines();
+        let at = rows_with(&lines, "第二问 beta");
+        assert!(
+            !(at.len() == 1 && at[0] <= 1 && lines[at[0] + 1].trim() != "┃"),
+            "藏起来的不钉：\n{}",
+            lines.join("\n")
+        );
+    }
+}

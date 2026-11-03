@@ -56,12 +56,25 @@ pub struct Tui {
     bytes: Receiver<Vec<u8>>,
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     child: Box<dyn Child + Send + Sync>,
-    _master: Box<dyn MasterPty + Send>,
+    master: Box<dyn MasterPty + Send>,
     /// 起进程以前的那一刻（量首帧，[`Tui::wait_for_at`]）。
     pub started: Instant,
 }
 
 impl Tui {
+    /// 改窗口大小：伪终端和这边读的屏一起改，界面收到 `SIGWINCH` 照新的大小重画。
+    pub fn resize(&mut self, rows: u16, cols: u16) {
+        let size = PtySize {
+            rows,
+            cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        };
+        self.master.resize(size).expect("改得了伪终端的大小");
+        self.screen.screen_mut().set_size(rows, cols);
+        self.cols = cols;
+    }
+
     /// 在伪终端起界面，数据根是 `home`（不经 [`Home`]、不起核心：测连不上、数据根本身认不认这种）。
     pub fn at(home: &Path, work: &Path, lang: &str, env: &[(&str, &str)]) -> Tui {
         Self::spawn(home, work, lang, env, &[])
@@ -161,7 +174,7 @@ impl Tui {
             bytes,
             writer,
             child,
-            _master: pty.master,
+            master: pty.master,
             started,
         }
     }

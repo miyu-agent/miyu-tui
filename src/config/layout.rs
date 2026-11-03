@@ -37,6 +37,8 @@ pub struct Layout {
     pub mascot_sidebar: bool,
     /// 侧边栏「最近会话」列几个（算上当前这个），0 是不画（`tui.sidebar_sessions`，「后台命令、子代理和侧边栏」第 7 条）。
     pub sidebar_sessions: usize,
+    /// 侧边栏「跳转消息」列几条，0 是不画（`tui.sidebar_jumps`，排期第 15 条）。
+    pub sidebar_jumps: usize,
     /// 侧边栏挂哪几件、什么先后、最多几行（`tui.side`，「挂载位」第 2 条）；没配的照出厂。
     #[serde(default)]
     pub side: Vec<super::slots::Slot>,
@@ -46,6 +48,9 @@ pub struct Layout {
     /// 输入框上面那一块挂哪几件、什么先后、最多几行（`tui.above`，「挂载位」第 4 条 SL-2）；没配的照出厂。
     #[serde(default)]
     pub above: Vec<super::slots::Slot>,
+    /// 正文顶上挂哪几件（`tui.top`，排期第 16 条）；没配的照出厂。
+    #[serde(default)]
+    pub top: Vec<super::slots::Slot>,
     /// 按键模式是 Vim（蓝图「按键」表「按键模式」那一行）：会话列表、`/model` 里 `j`、`k` 挪，`/` 才搜；`false` 是方向键。
     pub vim: bool,
     /// 新会话不问人格、预设，直接用默认的（`tui.skip_pick`，「新会话：人格、工作区」第 1a 条）。
@@ -196,7 +201,15 @@ impl Layout {
         if let Some(n) = value.as_str().and_then(|v| v.parse().ok()) {
             self.sidebar_sessions = n;
         }
+        // 「跳转消息」几条和它一起问（同一个请求编号，`head_settings.rs`）。
+        let value = &got["items"][Self::SIDEBAR_JUMPS_KEY]["value"];
+        if let Some(n) = value.as_str().and_then(|v| v.parse().ok()) {
+            self.sidebar_jumps = n;
+        }
     }
+
+    /// 侧边栏「跳转消息」几条在终端软件包里的名字（`[settings.sidebar_jumps]`，排期第 15 条）。
+    pub const SIDEBAR_JUMPS_KEY: &'static str = "tui.sidebar_jumps";
 
     /// 按键模式在终端软件包里的名字（`[settings.keys]`：`arrows` 方向键、`vim`，2026-10-21 项目主人）。
     pub const KEYS_KEY: &'static str = "tui.keys";
@@ -319,12 +332,15 @@ mod tests {
     }
 
     #[test]
-    fn the_sidebar_lists_five_recent_sessions_until_the_setting_says_otherwise() {
+    fn the_sidebar_lists_eight_recent_sessions_until_the_setting_says_otherwise() {
         // 2026-10-26 项目主人（反馈第 21 条）：默认 5 个、个数可配、整个功能可关（`0`）。
         let mut layout = Config::builtin().unwrap().layout;
-        assert_eq!(layout.sidebar_sessions, 5, "出厂 5 个");
+        assert_eq!(
+            layout.sidebar_sessions, 8,
+            "出厂 8 个（2026-11-03 排期第 14 条，原来 5 个）"
+        );
         layout.apply_sidebar_sessions(&json!({"items": {}}));
-        assert_eq!(layout.sidebar_sessions, 5, "没写的照出厂");
+        assert_eq!(layout.sidebar_sessions, 8, "没写的照出厂");
         layout.apply_sidebar_sessions(&json!({"items": {"tui.sidebar_sessions": {"value": "0"}}}));
         assert_eq!(layout.sidebar_sessions, 0);
         layout.apply_sidebar_sessions(&json!({"items": {"tui.sidebar_sessions": {"value": "8"}}}));

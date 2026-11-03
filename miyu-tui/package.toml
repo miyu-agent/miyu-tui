@@ -88,12 +88,12 @@ applies = "now"
 name = { en = "Show the figure in the sidebar", zh = "侧边栏显示形象", ja = "サイドバーにキャラクターを表示" }
 description = { en = "Show the persona's avatar, or the built-in mascot without one, at the top of the sidebar.", zh = "在侧边栏顶部显示人格的头像，没有头像的显示内置吉祥物。", ja = "サイドバーの上部にペルソナのアバター（なければ内蔵のマスコット）を表示する。" }
 
-# 侧边栏「最近会话」列几个（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人：默认 5 个、
+# 侧边栏「最近会话」列几个（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人：默认 5 个（2026-11-03 改 8 个，排期第 14 条）、
 # 个数可配、整个功能可关，放在通用页终端自己那几项里）。0 是不显示。
 [settings.sidebar_sessions]
 type = "option"
 choices = ["0", "3", "5", "8", "10"]
-default = "5"
+default = "8"
 applies = "now"
 name = { en = "Recent sessions in the sidebar", zh = "侧边栏最近会话", ja = "サイドバーの最近のセッション" }
 description = { en = "How many sessions the sidebar lists, the current one included. Off hides the list.", zh = "侧边栏列几个会话，算上当前这个。选不显示就不列。", ja = "サイドバーに並べるセッションの数（今のセッションを含む）。表示しないにすると並べない。" }
@@ -109,7 +109,7 @@ applies = "now"
 name = { en = "Sidebar parts", zh = "侧边栏部件", ja = "サイドバーの部品" }
 description = { en = "Which parts the sidebar shows, in which order, and at most how many rows each.", zh = "侧边栏挂哪几件、什么先后、每件最多几行。", ja = "サイドバーに並べる部品、その順番、それぞれの最大行数。" }
 
-# 部件名：出厂的 avatar、session、cwd、context、usage、loops、recent，包的块写 `pkg:<包>/<块>`；认不出的终端不画、提示一次。
+# 部件名：出厂的 avatar、session、cwd、context、usage、loops、recent、jump，包的块写 `pkg:<包>/<块>`；认不出的终端不画、提示一次。
 [settings.side.fields.part]
 type = "text"
 max = 100
@@ -177,6 +177,44 @@ default = false
 name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
 
 [settings.above.fields.rows]
+type = "int"
+min = 0
+max = 200
+default = 0
+name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+
+# 侧边栏「跳转消息」列几条（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，排期第 15 条，2026-11-02 项目主人：
+# 出厂 8 条、可配）：这个会话里你说的话，新的在上，点一条跳过去。0 是不显示。
+[settings.sidebar_jumps]
+type = "option"
+choices = ["0", "3", "5", "8", "10"]
+default = "8"
+applies = "now"
+name = { en = "Messages to jump to in the sidebar", zh = "侧边栏跳转消息", ja = "サイドバーのジャンプ先メッセージ" }
+description = { en = "How many of your own messages in this session the sidebar lists, newest first; click one to jump to it. Off hides the list.", zh = "侧边栏列这个会话里你说的几句话，新的在上，点一句跳过去。选不显示就不列。", ja = "このセッションで自分が送ったメッセージをサイドバーに何件並べるか（新しい順）。クリックでそこへ移動。表示しないにすると並べない。" }
+
+# 正文顶上挂哪几件（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条、「跳到说过的话」第 5 条）：出厂只有 prompt（往上翻时钉一行
+# 你说的那句话）。配置页不画。
+[settings.top]
+type = "list"
+element = "record"
+title = "part"
+hidden = true
+applies = "now"
+name = { en = "Parts at the top of the conversation", zh = "正文顶上的部件", ja = "本文上部の部品" }
+description = { en = "Which parts show at the top of the conversation while it is scrolled up.", zh = "往上翻时正文顶上挂哪几件。", ja = "上にスクロールしているとき本文の上部に並べる部品。" }
+
+[settings.top.fields.part]
+type = "text"
+max = 100
+name = { en = "Part", zh = "部件", ja = "部品" }
+
+[settings.top.fields.hidden]
+type = "bool"
+default = false
+name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+
+[settings.top.fields.rows]
 type = "int"
 min = 0
 max = 200

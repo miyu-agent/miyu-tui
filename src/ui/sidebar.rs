@@ -242,16 +242,27 @@ pub fn draw(
     screen.areas.session_id = Rect::default();
     screen.areas.recent = Rect::default();
     screen.recent.clear();
+    screen.areas.jumps = Rect::default();
+    screen.jumps.clear();
     let body = Rect::new(area.x + 1, area.y + 1, inner, area.height.saturating_sub(1));
-    let (mut avatar, mut session, mut cwd, mut context, mut usage, mut loops, mut recent) =
-        parts::all();
+    let (
+        mut avatar,
+        mut session,
+        mut cwd,
+        mut context,
+        mut usage,
+        mut loops,
+        mut recent,
+        mut jumps,
+    ) = parts::all();
+    let top = screen.side_top;
     let stacked = {
         let mut side = parts::Side {
             seen,
             screen: &mut *screen,
             pet,
         };
-        let mut all: [&mut dyn Part<parts::Side>; 7] = [
+        let mut all: [&mut dyn Part<parts::Side>; 8] = [
             &mut avatar,
             &mut session,
             &mut cwd,
@@ -259,15 +270,18 @@ pub fn draw(
             &mut usage,
             &mut loops,
             &mut recent,
+            &mut jumps,
         ];
         stack(
             frame,
             body,
             &mut all,
-            (&seen.config.layout.side, 1),
+            (&seen.config.layout.side, 1, top),
             &mut side,
         )
     };
+    // 滚到哪照排好的限过（排期第 14 条：像正文那样滚，滚轮在 `app/mouse.rs`）。
+    screen.side_top = stacked.top;
     // 写了字的行记下来，给侧边栏的选字用（第 7 条）。
     let mut text_rows: Vec<TextRow> = stacked
         .written

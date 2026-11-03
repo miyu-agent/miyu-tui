@@ -109,3 +109,48 @@ fn a_hidden_todo_list_does_not_show_above_the_input_box() {
         tui.lines().join("\n")
     );
 }
+
+#[test]
+fn the_wheel_scrolls_a_sidebar_taller_than_the_window() {
+    // 排期第 14 条：侧边栏比窗口高时，滚轮在侧边栏上像正文那样滚。说过一句以后会话、工作区、上下文、用量、最近会话几段，
+    // 窗口矮到 14 行时最近会话排不下；在侧边栏上往下滚，它露出来，上面几段跟着往上走。
+    let script = Script::new([Play::Says("answer-one")]);
+    let home = Home::with_settings(script, "");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+    tui.wait_for("工作区");
+    tui.say("topic-one");
+    tui.wait_for("answer-one");
+    tui.wait_for("最近会话");
+    tui.resize(14, 140);
+    let end = std::time::Instant::now() + support::WAIT;
+    while side(&tui.lines(), "最近会话").is_some() || side(&tui.lines(), "工作区").is_none()
+    {
+        assert!(
+            std::time::Instant::now() < end,
+            "矮了排不下最近会话：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(std::time::Duration::from_millis(50));
+    }
+    let before = side(&tui.lines(), "工作区").expect("在");
+    // 滚轮在侧边栏上（第 120 列、第 5 行）往下滚几格。
+    for _ in 0..4 {
+        tui.key(b"\x1b[<65;120;5M");
+    }
+    let end = std::time::Instant::now() + support::WAIT;
+    while side(&tui.lines(), "最近会话").is_none() {
+        assert!(
+            std::time::Instant::now() < end,
+            "滚下去露出最近会话：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(std::time::Duration::from_millis(50));
+    }
+    // 上面几段跟着往上走（滚到底就停，这里只比窗口高几行，工作区那一段还在）。
+    let after = side(&tui.lines(), "工作区");
+    assert!(
+        after.is_none_or(|row| row < before),
+        "上面几段跟着往上走：\n{}",
+        tui.lines().join("\n")
+    );
+}

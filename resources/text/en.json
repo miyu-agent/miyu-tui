@@ -13,6 +13,7 @@
     "With background commands running, ↓ on an empty input opens the panel"
   ],
   "untitled": "Untitled session",
+  "side_jumps": "Jump to",
   "slot_unknown": "Unknown parts in a slot: {names}",
   "queued_withdraw": "click to take back",
   "side_id": "#{id}",
