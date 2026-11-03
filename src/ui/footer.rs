@@ -302,7 +302,8 @@ fn left<'a>(seen: &Seen<'a>, model: Model, named: bool) -> Vec<Span<'a>> {
     match &t.link {
         Link::Connecting => vec![Span::styled(text.connecting.as_str(), theme::dim())],
         Link::Reconnecting => vec![Span::styled(text.reconnecting.as_str(), theme::warn())],
-        Link::Down(reason) => vec![Span::styled(reason.as_str(), theme::error())],
+        // 整句红字折行写在输入框上面（`above.rs`），这里只写前面那一截。
+        Link::Down(reason) => vec![Span::styled(super::above::head(reason), theme::error())],
         Link::Ready => {
             let level = t.level;
             let name = text.levels.get(&level).map_or("", String::as_str);
