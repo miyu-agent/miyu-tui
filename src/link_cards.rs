@@ -152,6 +152,13 @@ impl LinkCards {
         self.blobs.insert(blob, path);
     }
 
+    /// 有要了、还没回来的 blob（shell 里收工前等展示的图，`shellhook/say/picture.rs`）。
+    pub fn waiting_blobs(&self) -> bool {
+        self.blobs
+            .iter()
+            .any(|(blob, path)| path.is_none() && !self.unreadable.contains(blob))
+    }
+
     /// 这个 blob 回来了、读不成。
     pub fn unreadable(&self, blob: &str) -> bool {
         self.unreadable.contains(blob)

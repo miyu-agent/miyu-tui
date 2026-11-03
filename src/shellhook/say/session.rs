@@ -16,7 +16,7 @@ use super::paint::Painter;
 use super::turn::{Incoming, Turn};
 use super::view::{Media, Scope, View};
 use crate::config::Config;
-use crate::core::{Command, Core, EndReason, Start};
+use crate::core::{Command, Core, EndReason, Start, Update};
 use crate::notify::{self, Notifier};
 
 /// 这一轮结束后等多久看核心是不是叫醒她（`turn.rs` 的 `lingering`）：核心是同一刻开的，留够推送路上的时间。
@@ -26,6 +26,8 @@ const LINGER: Duration = Duration::from_millis(500);
 const DRAWER_SETTLE: Duration = Duration::from_millis(150);
 /// 画一帧以前最多先办几件：补发的一页再长也不至于一直不画。
 const BATCH: usize = 512;
+/// 收工前最多等展示的图多久（`wait_pictures`）。
+const PICTURE_WAIT: Duration = Duration::from_secs(2);
 
 /// 一次在 shell 里画：从连上到收工。
 pub struct Session {
@@ -150,6 +152,10 @@ impl Session {
             let view = self.view(turn, width, height, frame);
             // 不印运行状态行（词、用时）：shell 里只要转圈（2026-10-20 项目主人验收：不要文字进度条）。
             let (mut lines, held) = view.lines_held(&turn.transcript, turn.scope(), true);
+            // 排的时候记下要读的图（展示的图，`picture.rs`），发给核心；链接卡片 shell 里不画，不要。
+            for blob in self.media.cards.borrow_mut().take().1 {
+                self.core.send(Command::FetchBlob(blob));
+            }
             if let Some(dream) = &turn.dream {
                 lines.extend(view.dream_lines(&turn.transcript, dream));
             }
@@ -192,13 +198,18 @@ impl Session {
                 let over = lines.len().saturating_sub(committed + room);
                 let more = over.min(held.saturating_sub(committed));
                 if more > 0 {
-                    scrolled = self
-                        .painter
-                        .lines(width, &lines[committed..committed + more])?;
+                    let going = &lines[committed..committed + more];
+                    scrolled = self.painter.lines(width, going)?;
+                    self.media.pictures.borrow().settle(going, &mut scrolled);
                     committed += more;
                 }
             }
-            let rest = &lines[committed.min(lines.len())..];
+            // 活动区里还不印图：记号那一行写「[图片] 标题」（`picture.rs`）。
+            let rest = &self
+                .media
+                .pictures
+                .borrow()
+                .live(&lines[committed.min(lines.len())..]);
             let tail = rest.len().saturating_sub(room);
             // 还是长过的：最上面那一行留空，和提示符那一行隔开，同没长过时开头空的那一行（2026-10-26 项目主人看截图：
             // 「这里如果能留一个空行就更好了」，原来那一行跟着截掉了，正文贴着提示符）。印进历史以后提示符已经滚上去了，不留。
@@ -249,6 +260,7 @@ impl Session {
             self.ime.typing(!settled_open || turn.asking.editing());
             self.send_out()?;
         }
+        self.wait_pictures(turn);
         // 收工以前读按键的线程已经读走、还没处理的字也收下：先让它停下，再把排着的拿完（实测：答得快时最后几个字会丢）。
         self.reader.pause();
         for event in self.incoming.try_iter() {
@@ -261,9 +273,9 @@ impl Session {
         let (width, height) = size();
         let view = self.view(turn, width, height, 0);
         let lines = view.lines(&turn.transcript, turn.scope(), turn.todos_changed);
-        let settled = self
-            .painter
-            .lines(width, &lines[committed.min(lines.len())..])?;
+        let rest = &lines[committed.min(lines.len())..];
+        let mut settled = self.painter.lines(width, rest)?;
+        self.media.pictures.borrow().settle(rest, &mut settled);
         self.painter.finish()?;
         self.painter.frame(&settled, &[])?;
         if !self.hooked {
@@ -280,6 +292,11 @@ impl Session {
     /// 办一件：核心来的交给这一轮，按键先看焦点再交给这一轮。交回 `true` 是不等了（按了两下 Ctrl+C）。
     fn take(&mut self, turn: &mut Turn, incoming: Incoming) -> bool {
         match incoming {
+            // 展示的图读回来了（`picture.rs`，排期第 33 条）：记进账，下一帧排的时候画。
+            Incoming::Core(Update::BlobSaved { blob, path }) => {
+                self.media.cards.borrow_mut().saved(blob, path);
+                false
+            }
             Incoming::Core(update) => {
                 turn.core(update, &mut self.config, &self.core);
                 false
@@ -299,6 +316,32 @@ impl Session {
                     _ => {}
                 }
                 turn.key(&event, &self.core, &self.config)
+            }
+        }
+    }
+
+    /// 展示的图还在路上的（回答得快，这一轮先结束了）：最多等 [`PICTURE_WAIT`] 再印最后那一段，不然只印出标题（`picture.rs`）。
+    /// 等的时候敲的字照旧留着，核心别的推送照常交给这一轮。
+    fn wait_pictures(&mut self, turn: &mut Turn) {
+        // 先照最后的样子排一遍：这一轮在主循环排到那张图以前就结束了的，要的图这时才记上。
+        let (width, height) = size();
+        drop(
+            self.view(turn, width, height, 0)
+                .lines(&turn.transcript, turn.scope(), false),
+        );
+        for blob in self.media.cards.borrow_mut().take().1 {
+            self.core.send(Command::FetchBlob(blob));
+        }
+        let until = Instant::now() + PICTURE_WAIT;
+        while self.media.cards.borrow().waiting_blobs() {
+            let left = until.saturating_duration_since(Instant::now());
+            match self.incoming.recv_timeout(left) {
+                Ok(Incoming::Core(Update::BlobSaved { blob, path })) => {
+                    self.media.cards.borrow_mut().saved(blob, path);
+                }
+                Ok(Incoming::Core(update)) => turn.core(update, &mut self.config, &self.core),
+                Ok(Incoming::Key(event)) => turn.keep_typed(&event),
+                Err(_) => break,
             }
         }
     }

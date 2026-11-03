@@ -12,6 +12,7 @@ mod look;
 mod pack;
 mod paint;
 mod pick;
+mod picture;
 pub use pick::run::Act;
 pub mod report;
 mod session;

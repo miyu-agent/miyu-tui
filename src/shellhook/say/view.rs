@@ -11,7 +11,7 @@ use crate::figures::Figures;
 use crate::human::Human;
 use crate::link_cards::LinkCards;
 use crate::transcript::Transcript;
-use crate::ui::rows::{Ctx, MdCache, Row, entry_rows, shown};
+use crate::ui::rows::{Ctx, MdCache, Row, Target, entry_rows, shown};
 
 /// 排哪几条。
 #[derive(Debug, Clone)]
@@ -23,12 +23,15 @@ pub enum Scope {
     All,
 }
 
-/// 排版要的几样：Markdown 的缓存、图、链接卡片、mermaid 图。shell 里不显示图（还没做），图那几样照空的。
+/// 排版要的几样：Markdown 的缓存、图、链接卡片、mermaid 图。回答里的图、公式不画（还没做），那几样照空的；她展示的图在
+/// kitty 里画（`picture.rs`，排期第 33 条）。
 pub struct Media {
     md: RefCell<MdCache>,
     figures: RefCell<Figures>,
-    cards: RefCell<LinkCards>,
+    pub(super) cards: RefCell<LinkCards>,
     diagrams: RefCell<Diagrams>,
+    /// 她展示的图（`picture.rs`）。
+    pub(super) pictures: RefCell<super::picture::Pictures>,
 }
 
 impl Media {
@@ -39,6 +42,15 @@ impl Media {
             figures: RefCell::new(Figures::start(None, &config.figures, None, |_| true)),
             cards: RefCell::default(),
             diagrams: RefCell::default(),
+            // 测试里不画（照跑测试那台机器的终端认会变）。
+            pictures: RefCell::new(if cfg!(test) {
+                super::picture::Pictures::none()
+            } else {
+                super::picture::Pictures::detect(
+                    |name| std::env::var(name).ok(),
+                    super::picture::Pictures::cell(),
+                )
+            }),
         }
     }
 }
@@ -107,7 +119,14 @@ impl View<'_> {
             if held.is_none() && entry.segment.as_ref().is_some_and(|s| !s.settled()) {
                 held = Some(rows.len());
             }
-            rows.extend(entry_rows(i, entry, &ctx));
+            // 展示的那几行记上是哪一条（排的时候不一定带）：图、路径照它找（`lines_held`）。
+            let shown = entry.shown.is_some();
+            rows.extend(entry_rows(i, entry, &ctx).into_iter().map(|mut row| {
+                if shown && row.target.is_none() {
+                    row.target = Some(Target::Entry(i));
+                }
+                row
+            }));
         }
         let held = held.unwrap_or(rows.len());
         if transcript.waiting() {
@@ -133,9 +152,29 @@ impl View<'_> {
         let mut lines: Vec<Line<'static>> = Vec::new();
         let (rows, held_rows) = self.rows_held(transcript, scope);
         let mut held = None;
+        let mut pictured = None;
         for (i, row) in rows.into_iter().enumerate() {
             if i == held_rows {
                 held = Some(lines.len());
+            }
+            // 她展示的图那一条的头一行（排期第 33 条）：画得了的换成图，画不了、读到了本地的下面接一行路径。
+            if let Some(Target::Entry(at)) = row.target
+                && pictured != Some(at)
+                && let Some(shown) = transcript.entries.get(at).and_then(|e| e.shown.as_ref())
+                && shown.image()
+            {
+                pictured = Some(at);
+                if let Some(picture) = self.picture(shown, &row) {
+                    lines.extend(picture);
+                    continue;
+                }
+                if let Some(path) = self.media.cards.borrow_mut().file(&shown.blob) {
+                    let indent = " ".repeat(usize::from(row.content_x));
+                    let path = format!("{indent}{}", path.display());
+                    lines.push(row.line);
+                    lines.push(Line::styled(path, crate::theme::dim()));
+                    continue;
+                }
             }
             if row.plain.trim() == open.trim() {
                 if let Some(path) = shown_path(transcript, row.target) {
@@ -189,6 +228,24 @@ impl View<'_> {
                 .collect();
         lines.insert(0, Line::default());
         lines
+    }
+
+    /// 展示的图排成的行：读到了本地、终端画得了的，记号那一行加垫着的空行（`picture.rs`）；别的是 `None`。最高照终端高的一半。
+    fn picture(&self, shown: &crate::core::Shown, row: &Row) -> Option<Vec<Line<'static>>> {
+        let path = self
+            .media
+            .cards
+            .borrow_mut()
+            .file(&shown.blob)?
+            .to_path_buf();
+        let title = shown.title.as_deref().unwrap_or(&shown.name);
+        let label = format!("{} {title}", self.config.text.sent.image);
+        let max_rows = (self.height / 2).max(3);
+        self.media.pictures.borrow_mut().lines(
+            (&shown.blob, &path),
+            (row.content_x, self.width, max_rows),
+            &label,
+        )
     }
 
     fn ctx(&self, transcript: &Transcript) -> Ctx<'_> {
