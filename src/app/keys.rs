@@ -381,7 +381,7 @@ impl App {
     }
 
     /// 输入历史列表开着时的按键：`↑`、`Ctrl+R` 往更早的走，`↓` 往更新的走，打字进搜索，
-    /// `Enter` 挑中放进输入框，`Tab` 展开全文，`Esc` 关掉（`tui.md`「输入历史列表」第 2–4、7 条）。
+    /// `Enter` 挑中放进输入框，`Esc` 关掉（`tui.md`「输入历史列表」第 2–4 条；`Tab` 不做什么，第 7 条）。
     fn history_key(&mut self, key: KeyEvent) {
         use ratatui::crossterm::event::KeyModifiers;
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
@@ -392,14 +392,6 @@ impl App {
             KeyCode::Char('r') if ctrl => self.typing.history.older(count),
             KeyCode::Down => self.typing.history.newer(),
             KeyCode::Enter => self.pick_history(),
-            KeyCode::Tab => {
-                let selected = self.typing.history.selected;
-                let (list, _) = self.list_items();
-                let found = self.typing.history.matches(&list);
-                if let Some(at) = found.get(selected).map(|s| s.at) {
-                    self.typing.history.toggle_full(at);
-                }
-            }
             KeyCode::Esc => self.typing.history.close(),
             KeyCode::Backspace => self.typing.history.backspace(),
             KeyCode::Char(c) if plain => self.typing.history.type_text(&c.to_string()),

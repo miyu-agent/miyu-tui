@@ -55,3 +55,68 @@ fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
             .unwrap();
     assert_eq!(saved.lines().count(), 1, "记在包的状态目录里：{saved}");
 }
+
+/// 排期第 17 条（2026-11-03 照 Claude Code 改版）：`Ctrl+R` 每条左边时间、右边一行预览，下面露选中那条的全文，最下面是搜索
+/// 那一行；直接打字就是模糊搜索（框线上不写「搜索：」），`Enter` 填进输入框。
+#[test]
+fn ctrl_r_shows_times_a_preview_and_a_search_row_and_typing_filters() {
+    let home = Home::new(Script::new([Play::Says("好。"), Play::Says("嗯。")]));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("帮我跑一下门禁");
+    tui.wait_for("好。");
+    tui.say("改一下侧边栏的顺序");
+    tui.wait_for("嗯。");
+    tui.pump(Duration::from_millis(300));
+    tui.key(b"\x12");
+    tui.wait_for("历史  2 条");
+    tui.wait_for("筛选历史…");
+    let lines = tui.lines();
+    let row = |word: &str| {
+        lines
+            .iter()
+            .position(|l| l.contains(word))
+            .unwrap_or_else(|| panic!("没有「{word}」：\n{}", lines.join("\n")))
+    };
+    let list = row("刚才 ");
+    assert!(
+        lines[list].find("刚才").unwrap() < lines[list].find("门禁").unwrap(),
+        "时间在左边：\n{}",
+        lines.join("\n")
+    );
+    // 选中的是最新的那条：下面的预览又写了一遍它。
+    let picked = lines
+        .iter()
+        .filter(|l| l.contains("改一下侧边栏的顺序") && l.contains('│'))
+        .count();
+    assert_eq!(picked, 2, "列表一行、预览一行：\n{}", lines.join("\n"));
+    // 隔开三段的横线接上左右的框线。
+    assert_eq!(
+        lines
+            .iter()
+            .filter(|l| l.trim().starts_with('├') && l.trim().ends_with('┤'))
+            .count(),
+        2,
+        "{}",
+        lines.join("\n")
+    );
+    assert!(
+        row("筛选历史…") > row("改一下侧边栏的顺序"),
+        "搜索那一行在最下面"
+    );
+    // 模糊搜索：「跑门」照先后对得上「帮我跑一下门禁」。
+    tui.type_text("跑门");
+    tui.wait_for("历史  1 条");
+    assert!(
+        !tui.shows("搜索："),
+        "框线上不写搜索：\n{}",
+        tui.lines().join("\n")
+    );
+    tui.key(b"\r");
+    tui.pump(Duration::from_millis(300));
+    assert!(
+        input(&tui).contains("帮我跑一下门禁") && !tui.shows("历史  1 条"),
+        "填进输入框、列表关了：\n{}",
+        tui.lines().join("\n")
+    );
+}
