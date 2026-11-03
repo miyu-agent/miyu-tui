@@ -37,6 +37,8 @@ pub struct Layout {
     pub mascot_sidebar: bool,
     /// 侧边栏「最近会话」列几个（算上当前这个），0 是不画（`tui.sidebar_sessions`，「后台命令、子代理和侧边栏」第 7 条）。
     pub sidebar_sessions: usize,
+    /// 侧边栏「跳转消息」列几条，0 是不画（`tui.sidebar_jumps`，排期第 15 条）。
+    pub sidebar_jumps: usize,
     /// 侧边栏挂哪几件、什么先后、最多几行（`tui.side`，「挂载位」第 2 条）；没配的照出厂。
     #[serde(default)]
     pub side: Vec<super::slots::Slot>,
@@ -196,7 +198,15 @@ impl Layout {
         if let Some(n) = value.as_str().and_then(|v| v.parse().ok()) {
             self.sidebar_sessions = n;
         }
+        // 「跳转消息」几条和它一起问（同一个请求编号，`head_settings.rs`）。
+        let value = &got["items"][Self::SIDEBAR_JUMPS_KEY]["value"];
+        if let Some(n) = value.as_str().and_then(|v| v.parse().ok()) {
+            self.sidebar_jumps = n;
+        }
     }
+
+    /// 侧边栏「跳转消息」几条在终端软件包里的名字（`[settings.sidebar_jumps]`，排期第 15 条）。
+    pub const SIDEBAR_JUMPS_KEY: &'static str = "tui.sidebar_jumps";
 
     /// 按键模式在终端软件包里的名字（`[settings.keys]`：`arrows` 方向键、`vim`，2026-10-21 项目主人）。
     pub const KEYS_KEY: &'static str = "tui.keys";

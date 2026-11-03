@@ -42,6 +42,15 @@ impl App {
     }
 }
 
+impl App {
+    /// 点了侧边栏「跳转消息」第 `row` 行（排期第 15 条）：跳到那一条，同 `/jump` 选它。
+    pub(super) fn jump_clicked(&mut self, row: u16) {
+        if let Some(id) = self.screen.jumps.get(usize::from(row)).copied() {
+            self.jump_to(id);
+        }
+    }
+}
+
 /// 正文里你说的话（别处来的也算，撤掉的不算），照先后：列表的一条和它的条目编号。
 fn spoken(entries: &[Entry]) -> Vec<(Sent, u64)> {
     entries

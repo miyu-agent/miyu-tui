@@ -101,7 +101,7 @@ applies = "now"
 name = { en = "Sidebar parts", zh = "侧边栏部件", ja = "サイドバーの部品" }
 description = { en = "Which parts the sidebar shows, in which order, and at most how many rows each.", zh = "侧边栏挂哪几件、什么先后、每件最多几行。", ja = "サイドバーに並べる部品、その順番、それぞれの最大行数。" }
 
-# 部件名：出厂的 avatar、session、cwd、context、usage、loops、recent，包的块写 `pkg:<包>/<块>`；认不出的终端不画、提示一次。
+# 部件名：出厂的 avatar、session、cwd、context、usage、loops、recent、jump，包的块写 `pkg:<包>/<块>`；认不出的终端不画、提示一次。
 [settings.side.fields.part]
 type = "text"
 max = 100
@@ -174,6 +174,16 @@ min = 0
 max = 200
 default = 0
 name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+
+# 侧边栏「跳转消息」列几条（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，排期第 15 条，2026-11-02 项目主人：
+# 出厂 8 条、可配）：这个会话里你说的话，新的在上，点一条跳过去。0 是不显示。
+[settings.sidebar_jumps]
+type = "option"
+choices = ["0", "3", "5", "8", "10"]
+default = "8"
+applies = "now"
+name = { en = "Messages to jump to in the sidebar", zh = "侧边栏跳转消息", ja = "サイドバーのジャンプ先メッセージ" }
+description = { en = "How many of your own messages in this session the sidebar lists, newest first; click one to jump to it. Off hides the list.", zh = "侧边栏列这个会话里你说的几句话，新的在上，点一句跳过去。选不显示就不列。", ja = "このセッションで自分が送ったメッセージをサイドバーに何件並べるか（新しい順）。クリックでそこへ移動。表示しないにすると並べない。" }
 
 # 按键模式（终端蓝图 `docs/blueprint/tui.md`「按键」表「按键模式」那一行，2026-10-21 项目主人）：`vim` 时会话列表、`/model`
 # 里 `j`、`k` 挪，`/` 才开始搜；`arrows` 照方向键的用法，打字就搜。配置页排在「通用」页「按键模式」一组；出厂方向键，引导里「你喜欢的操作方式」那一步选。

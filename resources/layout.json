@@ -101,6 +101,7 @@
   "sidebar_from": 120,
   "sidebar_width": 38,
   "sidebar_sessions": 8,
+  "sidebar_jumps": 8,
   "agent_rows": 5,
   "output": {
     "panel_rows": 12,
