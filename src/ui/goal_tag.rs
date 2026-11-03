@@ -65,6 +65,30 @@ pub(crate) fn elapsed(since: jiff::Timestamp, now: jiff::Timestamp) -> u64 {
     u64::try_from(now.as_second() - since.as_second()).unwrap_or_default()
 }
 
+/// 框上面那一行（`area`）：长期目标的进度右对齐，看着子会话时、首页（`home`）不写（「长期目标」第 5 条，2026-10-14 项目主人
+/// 定），后面接循环标记（`loop_tag.rs`）。列表、面板开着时盖在它上面（后画）。
+pub(super) fn draw_line(frame: &mut Frame, app: &mut crate::app::App, area: Rect, home: bool) {
+    let goal = app
+        .talk
+        .viewing_title()
+        .is_none()
+        .then(|| {
+            let now = jiff::Timestamp::now();
+            goal(app.talk.transcript.goal.as_ref(), &app.config, now)
+        })
+        .flatten()
+        .filter(|_| !home);
+    app.screen.areas.goal_text = goal.as_deref().map_or(Rect::default(), |g| spot(area, g));
+    if let Some(goal) = goal {
+        let spot = app.screen.areas.goal_text;
+        let hover = app.screen.pointer.is_some_and(|p| spot.contains(p));
+        draw(frame, area, &goal, hover);
+    }
+    if let Some(shown) = super::loop_tag::shown(app) {
+        super::loop_tag::draw(frame, area, app.screen.areas.goal_text, &shown);
+    }
+}
+
 /// 画在框上面那一行，右对齐、暗色：右端和框下面那一行的用量对齐（`area` 是框里放字那么宽的一行）。点得动（开浮窗），
 /// 指针停在字上时加下划线（2026-10-27 项目主人报：原来悬停没下划线、指针不变手）。
 pub(super) fn draw(frame: &mut Frame, area: Rect, text: &str, hover: bool) {

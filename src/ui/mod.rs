@@ -44,6 +44,7 @@ mod oobe;
 mod pinned;
 pub mod shown_rows;
 pub use oobe::idle_look as oobe_idle_look;
+mod overlay;
 mod panel;
 mod panels;
 pub mod persona_list;
@@ -389,68 +390,16 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         hovered,
     };
     status::queued(frame, areas.queued, &queued, &look);
-    // 长期目标的进度：框上面那一行右对齐，看着子会话时不写（「长期目标」第 5 条，2026-10-14 项目主人定）；列表、面板开着时
-    // 盖在它上面（下面才画）。
-    let goal = app
-        .talk
-        .viewing_title()
-        .is_none()
-        .then(|| {
-            let now = jiff::Timestamp::now();
-            goal_tag::goal(app.talk.transcript.goal.as_ref(), &app.config, now)
-        })
-        .flatten()
-        .filter(|_| !home);
-    app.screen.areas.goal_text = goal
-        .as_deref()
-        .map_or(Rect::default(), |g| goal_tag::spot(areas.goal, g));
-    if let Some(goal) = goal {
-        let spot = app.screen.areas.goal_text;
-        let hover = app.screen.pointer.is_some_and(|p| spot.contains(p));
-        goal_tag::draw(frame, areas.goal, &goal, hover);
-    }
-    if let Some(shown) = loop_tag::shown(app) {
-        loop_tag::draw(frame, areas.goal, app.screen.areas.goal_text, &shown);
-    }
-    if let Some(matches) = &matches {
-        let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);
-        let (chrome, lines) = menu::lines(
-            matches,
-            app.typing.menu.selected,
-            app.typing.menu.pinned,
-            rows,
-            areas.menu_text.width,
-            &app.config.text.menu,
-        );
-        menu::draw(frame, areas.menu, areas.menu_text, chrome, lines);
-    }
-    if let Some(found) = &mentions {
-        let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);
-        let (chrome, lines) = mention::lines(
-            found,
-            app.typing.mention.selected,
-            app.typing.mention.pinned,
-            rows,
-            areas.menu_text.width,
-            &app.config.text.mention,
-        );
-        menu::draw(frame, areas.menu, areas.menu_text, chrome, lines);
-    }
-    if app.typing.history.open {
-        history::draw(
-            frame,
-            areas.menu,
-            areas.menu_text,
-            history_chrome,
-            history_rows,
-        );
-    }
-    background::draw(
+    goal_tag::draw_line(frame, app, areas.goal, home);
+    let lists = crate::app::Lists { mentions, matches };
+    let history = (history_chrome, history_rows);
+    overlay::draw(
         frame,
-        areas.menu,
-        areas.menu_text,
-        panel_chrome,
-        panel_lines,
+        app,
+        areas,
+        &lists,
+        history,
+        (panel_chrome, panel_lines),
     );
     let (button, status_spots) = section("footer", || {
         footer::draw(frame, areas.footer, &app.seen(), &app.screen)
