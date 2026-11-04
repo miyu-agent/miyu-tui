@@ -8,6 +8,13 @@ use crate::transcript::Kind;
 impl App {
     /// 收一条核心那边的消息。撤销成了、排队的消息被退回了，字放回输入框（`tui.md`「输入框」第 7、8 条）。
     pub fn core(&mut self, update: Update) {
+        // 核心起不来、认得出是哪一种的：照界面的语言换成一句话，往下当连不上办（排期第 43 条）。
+        let update = match update {
+            Update::StartRefused(refusal) => {
+                Update::Failed(refusal.say(self.config.language.code()))
+            }
+            update => update,
+        };
         // 断开了：在途的请求不会回来了，等着的几处先复位（`lost.rs`）；下面各处照样收到这一条。
         // 连上、重连了：核心照连接记开着哪个会话，断了就忘，再说一遍（`viewing.rs`）。
         if matches!(update, Update::Ready(_) | Update::Reconnected) {

@@ -18,6 +18,8 @@ pub enum Update {
     SessionGone(String),
     /// 连不上、握手或开会话被拒：原因。
     Failed(String),
+    /// 核心起不来、认得出是哪一种（核心 LC-1）：界面照自己的语言换成一句话，当 [`Update::Failed`] 办（`app/updates.rs`）。
+    StartRefused(StartRefusal),
     /// 一条请求被拒绝：原因码（`data.reason`，没有的是 `None`），和核心照握手时的语言说的原话。
     Refused {
         /// 原因码，例如 `nothing_to_unrevert`（`protocol/undo.md`）。
