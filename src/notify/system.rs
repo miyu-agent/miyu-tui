@@ -29,6 +29,42 @@ pub fn command(
     }
 }
 
+/// 测试里不许真弹系统通知、真放声音（core1 11-04：伪终端测试起的界面走了系统通知，真调了 `notify-send`，弹到了项目主人的桌面
+/// 上）：单元测试里、测具设了 `MIYU_TUI_FAKES`（假程序的目录）的界面里，要拉起的程序只许在临时目录、测试的数据根里；照 `PATH`
+/// 找到的是别处的（真的系统程序）当场崩，测试跟着失败。找不到的不管（照样拉不起来）。
+pub fn guard(program: &str) {
+    if !cfg!(test) && std::env::var_os("MIYU_TUI_FAKES").is_none() {
+        return;
+    }
+    let Some(found) = which(program) else {
+        return;
+    };
+    let real = |p: &std::path::Path| std::fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+    let found = real(&found);
+    let mut allowed = vec![real(&std::env::temp_dir())];
+    allowed.extend(std::env::var_os("MIYU_HOME").map(|h| real(std::path::Path::new(&h))));
+    assert!(
+        allowed.iter().any(|dir| found.starts_with(dir)),
+        "测试里要拉起真的 {}（{}）：系统通知、放音要用测具的假程序（MIYU_TUI_FAKES）",
+        program,
+        found.display()
+    );
+}
+
+/// 照 `PATH` 找程序（带路径的照它）；找不到的是 `None`。
+fn which(program: &str) -> Option<std::path::PathBuf> {
+    let path = std::path::Path::new(program);
+    if path.components().count() > 1 {
+        return path.is_file().then(|| path.to_path_buf());
+    }
+    std::env::split_paths(&std::env::var_os("PATH")?)
+        .flat_map(|dir| {
+            let exe = dir.join(program);
+            [exe.with_extension("exe"), exe]
+        })
+        .find(|candidate| candidate.is_file())
+}
+
 /// AppleScript 的字符串里，反斜杠和引号要转义。
 fn quoted(text: &str) -> String {
     text.replace('\\', "\\\\").replace('"', "\\\"")
@@ -36,6 +72,7 @@ fn quoted(text: &str) -> String {
 
 /// 跑一个命令，不等它：输入输出接空，另起一个线程等它退出（不留僵尸进程）。拉不起来的交回 `false`。
 pub fn spawn(program: &str, args: &[String]) -> bool {
+    guard(program);
     let child = Command::new(program)
         .args(args)
         .stdin(Stdio::null())

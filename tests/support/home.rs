@@ -264,5 +264,7 @@ impl Drop for Home {
     fn drop(&mut self) {
         drop(std::fs::remove_dir_all(&self.work));
         drop(std::fs::remove_dir_all(&self.dir));
+        // 数据根旁边放假通知程序的目录（`fake_notifiers`）也删，不在临时目录里越攒越多。
+        drop(std::fs::remove_dir_all(super::fakes::fakes_dir(&self.dir)));
     }
 }

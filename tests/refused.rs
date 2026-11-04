@@ -38,9 +38,11 @@ fn copied(home: &Home, path: &str) -> String {
     std::fs::write(&fake, script).expect("写得进去");
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).expect("改得了权限");
+    // 假剪贴板在最前面，接着测具的假通知、放音程序（`support::fake_notifiers`），再是原来的 `PATH`。
     format!(
-        "{}:{}",
+        "{}:{}:{}",
         bin.display(),
+        support::fake_notifiers(home.root()).display(),
         std::env::var("PATH").unwrap_or_default()
     )
 }
