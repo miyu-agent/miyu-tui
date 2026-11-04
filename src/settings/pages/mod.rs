@@ -291,10 +291,16 @@ impl More {
         }
     }
 
-    /// 一项照哪份列表选、写名字：默认人格这类照键，`persona`、`knowledge` 类型的照人格、知识库（第 33 条子规则）。
+    /// 一项照哪份列表选、写名字：默认人格这类照键，`persona`、`preset`、`knowledge` 类型的照人格、预设、知识库（第 33 条
+    /// 子规则，`preset` 是排期第 41 条）；列表照元素的类型（`element`）认，一项一个。
     pub fn named_item(&self, item: &schema::Item) -> Option<&[Persona]> {
-        self.named(&item.key).or(match item.kind.as_str() {
+        let kind = match item.kind.as_str() {
+            "list" => item.element.as_str(),
+            kind => kind,
+        };
+        self.named(&item.key).or(match kind {
             "persona" => self.personas.as_deref(),
+            "preset" => self.presets.as_deref(),
             "knowledge" => self.knowledge.as_deref(),
             _ => None,
         })
@@ -344,6 +350,8 @@ pub struct Texts {
     pub counted: String,
     /// 默认人格没设、选择窗第一行：不带人格（2026-10-08 项目主人定叫「无人格」）。
     pub no_persona: String,
+    /// 软件包里选人格、选预设、选知识库的项没设、选择窗第一行：不选（排期第 41 条，选了交 `null`、去掉这一项）。
+    pub unpicked: String,
     /// 吉祥物没设、选择窗第一行：内置的那只（「吉祥物包」第 3 条）。
     pub builtin_mascot: String,
     /// 主题没设、选择窗第一行：默认主题（「主题」第 5 条）。

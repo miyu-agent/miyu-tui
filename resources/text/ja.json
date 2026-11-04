@@ -1413,6 +1413,7 @@
         "both": "両方とも入力してください"
       },
       "no_persona": "人格なし",
+      "unpicked": "選択しない",
       "builtin_mascot": "内蔵",
       "default_look": "デフォルトテーマ",
       "mascot_missing": "{id}（未インストール）",
