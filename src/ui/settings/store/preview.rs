@@ -14,15 +14,13 @@ use crate::theme;
 /// 一行「键 : 值」：键、值、值的样子。
 type Pair = (String, String, Style);
 
-/// 平常的预览：光标停的那一个。`from` 是「来源」的几种叫法（`settings.more.package_from`）。
+/// 平常的预览：光标停的那一个。`from` 是「来源」的几种叫法（`settings.more.package_from`）。装、卸、升级的那几步不写在这里，
+/// 画在弹窗里（[`flowing`]，排期第 42 条）。
 pub fn lines(
     store: &Store,
     texts: &StoreTexts,
     from: &std::collections::BTreeMap<String, String>,
 ) -> Vec<Line<'static>> {
-    if let Some(flow) = &store.flow {
-        return flowing(store, flow, texts);
-    }
     let Some(item) = store.current() else {
         return Vec::new();
     };
@@ -222,7 +220,7 @@ pub fn grouped(n: u64) -> String {
 }
 
 /// 问的时候、做的时候。
-fn flowing(store: &Store, flow: &Flow, texts: &StoreTexts) -> Vec<Line<'static>> {
+pub fn flowing(store: &Store, flow: &Flow, texts: &StoreTexts) -> Vec<Line<'static>> {
     let a = |key: &str| StoreTexts::say(&texts.ask, key);
     match flow {
         Flow::Previewing { .. } => vec![Line::styled(
