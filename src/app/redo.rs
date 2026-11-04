@@ -88,6 +88,8 @@ impl App {
             self.typing.input.start_edit(original);
         }
         self.typing.input.editor.set_draft(draft);
+        // 没发出去的是跑命令的（`!` 打头）：回到跑命令的模式（「人自己跑命令 `!`」第 6 条）。
+        self.typing.input.absorb_bang();
     }
 
     /// 能不能重做：在回答时、最后一轮不是你说的话开的，提示一句交回 `None`（不找核心）；能的交回那句的字和块。

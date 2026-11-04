@@ -145,9 +145,14 @@ impl App {
             draft.append(back, "\n\n");
         }
         if !self.typing.input.editor.is_empty() {
-            draft.append(self.typing.input.draft(), "\n\n");
+            draft.append(
+                self.typing.input.as_typed(&self.typing.input.draft()),
+                "\n\n",
+            );
         }
         self.typing.input.editor.set_draft(draft);
+        // 退回来的是跑命令的（`!` 打头）：回到跑命令的模式（「人自己跑命令 `!`」第 2 条）。
+        self.typing.input.absorb_bang();
     }
 }
 

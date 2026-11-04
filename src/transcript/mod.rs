@@ -11,6 +11,7 @@ mod clock;
 mod compaction;
 mod entry;
 mod failure;
+mod shell;
 pub use failure::RetryAfter;
 mod foreign;
 mod fresh;
@@ -49,7 +50,7 @@ use crate::core::{Bill, CallError, EndReason, Level, Limits, Push, ToolStatus, U
 pub use cache::CacheWatch;
 pub use chips::Chip;
 pub use climb::Progress;
-pub use entry::{Entry, JobMark, JobNote, Kind};
+pub use entry::{Entry, JobMark, JobNote, Kind, Shell};
 pub use stuck::Stuck;
 
 pub use steps::{Segment, Step, StepKind, Tally, ToolState};
@@ -404,6 +405,8 @@ impl Transcript {
             | Push::JobEnded(_)
             | Push::JobLines(_)
             | Push::PeerIdle { .. } => {}
+            Push::ShellAsked(seq) => self.shell_asked(seq),
+            Push::ShellRan(ran) => self.shell_ran(ran),
             Push::Usage(usage) => self.used(usage),
             Push::Billed(cost) => self.bill.add(cost.as_ref()),
             Push::Sent {

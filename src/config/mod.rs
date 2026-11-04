@@ -53,7 +53,7 @@ pub use open::OpenTexts;
 pub use panels::{HistoryTexts, MenuTexts, UsageCellTexts};
 pub use timeline::{Body, Summary, Timeline, ToolKind};
 pub use widgets::{WidgetLayout, WidgetMarks};
-pub use words::{JobTexts, ModelTexts, RecapTexts, RenameTexts, UndoFileTexts};
+pub use words::{JobTexts, ModelTexts, RecapTexts, RenameTexts, ShellTexts, UndoFileTexts};
 
 /// 界面上给人看的字。`{count}` 这样的占位由代码填。
 #[derive(Debug, Clone, Deserialize)]
@@ -96,6 +96,8 @@ pub struct Texts {
     pub side_cost: String,
     /// 后台命令、子代理、待办的字。
     pub jobs: JobTexts,
+    /// 人用 `!` 跑命令的字。
+    pub shell: ShellTexts,
     /// 帮助框里的字（`/help`）。
     pub help: crate::ui::help::Texts,
     /// 界面块上的字（蓝图「界面块」）。

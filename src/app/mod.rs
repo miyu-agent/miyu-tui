@@ -63,6 +63,7 @@ mod seen;
 mod session;
 mod sessions;
 mod settings;
+mod shell_send;
 mod shown;
 mod start_entered;
 mod status;

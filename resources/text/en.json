@@ -529,6 +529,7 @@
     "not_running": "{source} is not running",
     "page_keys": [["↑/↓", "select"], ["Enter", "confirm"], ["PgUp/PgDn", "page"], ["Esc", "back"]]
   },
+  "shell": {"placeholder": "Type a command to run", "no_attachments": "Commands can't carry attachments", "running": "Running", "exited": "Exit {code} · {elapsed}", "signal": "Signal {signal} · {elapsed}", "timed_out": "Timed out (120s)", "interrupted": "Interrupted", "aborted": "Core restarted before it finished"},
   "jobs": {
     "button": "Background: {count}",
     "title": "Background",

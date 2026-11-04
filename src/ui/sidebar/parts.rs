@@ -258,8 +258,8 @@ impl Part<Side<'_, '_>> for Jumps {
             crate::theme::side_title(),
         )];
         lines.extend(spoken.iter().map(|e| {
-            let first = e
-                .text
+            let said = e.listed();
+            let first = said
                 .lines()
                 .find(|l| !l.trim().is_empty())
                 .unwrap_or_default();

@@ -19,6 +19,10 @@ pub fn rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     if let Some(from) = &entry.from {
         return super::foreign_rows::rows(i, entry, from, ctx);
     }
+    // 你用 `!` 打的命令（「人自己跑命令 `!`」第 4 条）。
+    if let Some(shell) = &entry.shell {
+        return super::shell_rows::rows(entry, shell, ctx);
+    }
     // 别处来的话：竖线暗色（「别处来的话」第 1 条）；你说的照发出去那一刻的权限级别上色。
     let bar_style = if entry.from.is_some() {
         theme::dim()
