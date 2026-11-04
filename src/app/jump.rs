@@ -59,7 +59,7 @@ fn spoken(entries: &[Entry]) -> Vec<(Sent, u64)> {
         .map(|e| {
             let at = e.at.map_or_else(SystemTime::now, SystemTime::from);
             let sent = Sent {
-                draft: Draft::plain(&e.text),
+                draft: Draft::plain(&e.listed()),
                 at,
             };
             (sent, e.id)

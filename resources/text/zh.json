@@ -142,6 +142,7 @@
     "read_only": "只读"
   },
   "home_placeholder": "Tab 切换权限级别",
+  "archived_placeholder": "这是存档",
   "exit_hint": "按 Ctrl+D 退出",
   "input_cleared": "已清空 · ↑ 恢复",
   "editing": " 编辑上一条 · Esc 取消 ",
@@ -183,6 +184,7 @@
     "owner_only": "仅主人可用",
     "session_not_found": "会话不存在",
     "session_sealed": "会话已封存",
+    "archived": "这是存档，不能接着说",
     "nothing_to_rename": "会话尚未创建，无法重命名",
     "nothing_to_recap": "没有可回顾的内容",
     "recap_failed": "生成回顾失败",
@@ -527,6 +529,7 @@
     "not_running": "{source} 没有运行",
     "page_keys": [["↑/↓", "选"], ["Enter", "确定"], ["PgUp/PgDn", "翻页"], ["Esc", "返回"]]
   },
+  "shell": {"placeholder": "输入要跑的命令", "no_attachments": "跑命令不能带附件", "running": "运行中", "exited": "退出码 {code} · {elapsed}", "signal": "信号 {signal} · {elapsed}", "timed_out": "超时（120s）", "interrupted": "已打断", "aborted": "核心重启，没跑完"},
   "jobs": {
     "button": "{count} 个后台命令",
     "title": "后台",
@@ -551,6 +554,9 @@
     "restarted": "（核心重启时已停止）",
     "timed_out": "（超时已停止）",
     "too_large": "（输出太大已停止）",
+    "too_chatty": "（输出太频繁已停止）",
+    "lines_note": "监视 · {title} · {lines} 行",
+    "lines_mark": "◆ ",
     "no_output": "没有输出",
     "more_ended": "已收起 {count} 个",
     "less_ended": "收起已结束的",
@@ -560,6 +566,7 @@
     "why_restarted": " · 核心重启时已停止",
     "why_timed_out": " · 超时已停止",
     "why_too_large": " · 输出太大已停止",
+    "why_too_chatty": " · 输出太频繁已停止",
     "doing_thinking": "思考中",
     "doing_replying": "回答中",
     "from_person": "收到你在其他端发送的消息",
@@ -741,7 +748,7 @@
     "pinned": "已置顶",
     "unpinned": "已取消置顶",
     "tokens": "Σ{tokens}",
-    "groups": ["最近", "近 7 天", "近 30 天", "30 天前"],
+    "groups": ["最近", "近 7 天", "近 30 天", "30 天前", "存档"],
     "ticked": " · 已选 {count}",
     "delete_many": "再按一次 Ctrl+D 删除 {count} 个会话",
     "deleted_many": "已删除 {count} 个会话"
@@ -1413,6 +1420,7 @@
         "both": "两项都需填写"
       },
       "no_persona": "无人格",
+      "unpicked": "不选",
       "builtin_mascot": "内置",
       "default_look": "默认主题",
       "mascot_missing": "{id}（未安装）",

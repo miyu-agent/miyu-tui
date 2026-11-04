@@ -51,6 +51,8 @@ pub enum JobState {
     TimedOut,
     /// 输出太大停掉的（核心 7-12 下）。
     TooLarge,
+    /// 监视的命令出得太勤，被核心停下（核心 MN-1，`too_chatty`）。
+    TooChatty,
 }
 
 /// 后台任务表的一项。
@@ -195,6 +197,7 @@ impl Board {
             (JobReason::Restarted, ..) => JobState::Restarted,
             (JobReason::TimedOut, ..) => JobState::TimedOut,
             (JobReason::TooLarge, ..) => JobState::TooLarge,
+            (JobReason::TooChatty, ..) => JobState::TooChatty,
             (JobReason::Finished, Some(code), _) if code != 0 => JobState::Failed(code),
             (JobReason::Finished, None, Some(signal)) => JobState::Killed(signal),
             (JobReason::Finished, ..) => JobState::Done,
@@ -269,6 +272,11 @@ impl Board {
             .iter()
             .filter(|j| j.kind == JobKind::Shell && j.running())
             .count()
+    }
+
+    /// 核心的任务编号是 `job` 的那一条，只读。
+    pub fn by_job(&self, job: &str) -> Option<&Job> {
+        self.jobs.iter().find(|j| j.job == job)
     }
 
     /// 核心的任务编号是 `job` 的那一条。

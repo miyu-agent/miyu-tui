@@ -40,6 +40,8 @@ mod session_effort;
 mod sessions;
 mod snapshot;
 mod spawn;
+mod start_words;
+pub use start_words::StartRefusal;
 mod streams;
 mod switch;
 mod take;
@@ -76,8 +78,8 @@ pub use personas::{
     Persona, Preset, preset_param, read_personas, read_preset_files, read_presets, session_preset,
 };
 pub use push::{
-    Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobReason, JobStart,
-    Push, Sender, Sent, Shown, Usage,
+    Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobLines, JobReason,
+    JobStart, Push, Sender, Sent, ShellRan, Shown, Usage,
 };
 use rpc::Rpc;
 pub use sessions::{
@@ -101,6 +103,8 @@ pub enum Command {
         files: Vec<std::path::PathBuf>,
         /// 这一句换到哪个目录说（`session.send` 的 `cwd`，核心 05eb8159）：shellhook 每句带上 shell 所在的目录，全屏不带。
         cwd: Option<String>,
+        /// 人用 `!` 打的命令（核心 SH-1，排期第 21 条）：`text` 是命令行，核心照会话的工作目录跑；不能带附件。
+        shell: bool,
     },
     /// 打断在进行的这一轮。`send` 为真时排着队的消息接着发（两下 Esc），为假时退回来（Ctrl+C）。
     Interrupt {

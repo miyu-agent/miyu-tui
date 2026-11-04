@@ -70,19 +70,28 @@ impl Transcript {
         self.opened_by = moved
             .iter()
             .rev()
-            .map(|e| (e.text.clone(), e.pasted.clone()))
+            .map(|e| (e.typed(), e.pasted.clone()))
             .collect();
-        let mut moved = moved.into_iter().rev();
-        if let Some(mut first) = moved.next() {
-            for next in moved {
-                first.text.push('\n');
-                first.text.push_str(&next.text);
-                first.pasted.extend(next.pasted);
+        // 挨着的几句话拼成一段；跑命令的各自一条（结果照序号挂回去，「人自己跑命令 `!`」第 4 条）。
+        let mut joined: Option<Entry> = None;
+        for mut next in moved.into_iter().rev() {
+            next.turn = Some(turn);
+            next.queued = false;
+            if next.shell.is_some() {
+                self.entries.extend(joined.take());
+                self.entries.push(next);
+                continue;
             }
-            first.turn = Some(turn);
-            first.queued = false;
-            self.entries.push(first);
+            match &mut joined {
+                Some(first) => {
+                    first.text.push('\n');
+                    first.text.push_str(&next.text);
+                    first.pasted.extend(next.pasted);
+                }
+                None => joined = Some(next),
+            }
         }
+        self.entries.extend(joined);
     }
 
     /// 排着队、还在框上面画着的话，照先后（运行状态行下面那几行 `↳`）。
@@ -98,7 +107,7 @@ impl Transcript {
             self.entries
                 .iter()
                 .filter(|e| back(e))
-                .map(|e| (e.text.clone(), e.pasted.clone())),
+                .map(|e| (e.typed(), e.pasted.clone())),
         );
         for j in (0..self.entries.len()).rev() {
             if back(&self.entries[j]) {
@@ -155,7 +164,7 @@ impl Transcript {
             .entries
             .iter()
             .filter(|e| e.kind == Kind::User && e.turn == Some(turn))
-            .map(|e| (e.text.clone(), e.pasted.clone()))
+            .map(|e| (e.typed(), e.pasted.clone()))
             .collect();
         (!opening.is_empty()).then_some(opening)
     }

@@ -10,6 +10,7 @@ mod pasted;
 mod place;
 mod recall;
 mod saved;
+mod shell;
 mod wrap;
 
 #[cfg(test)]
@@ -90,6 +91,8 @@ pub struct InputBox {
     editing: Option<Draft>,
     /// `Ctrl+C` 刚清掉的那一句，只留最近一份：空着按 `↑` 先拿回它；发出去一句话、再清一次就换掉。
     cleared: Option<Draft>,
+    /// 在跑命令的模式里（`shell.rs`，「人自己跑命令 `!`」第 1 条）。
+    shell: bool,
     /// 在附件块上按下去、还没拖：松开时打开这个文件，光标不动（`mouse.rs`）。
     pressed: Option<(std::path::PathBuf, usize)>,
     /// 鼠标悬停在哪个附件块上（字节范围）：画的时候加下划线，指针变手。
@@ -126,6 +129,7 @@ impl InputBox {
             put_back: None,
             paste_rule: PasteRule::never(),
             cleared: None,
+            shell: false,
             editing: None,
             pressed: None,
             hover: None,
@@ -224,6 +228,17 @@ impl InputBox {
         if !matches!(key.code, KeyCode::Up | KeyCode::Down) {
             self.goal_col = None;
         }
+        if self.shell_key(key) {
+            return Action::None;
+        }
+        let action = self.edit_key(key, ctrl, shift, alt);
+        // 头一个字打成了 `!`：进跑命令的模式（`shell.rs`）。
+        self.absorb_bang();
+        action
+    }
+
+    /// 照按键改框里的字（[`InputBox::key`] 分出来的）。
+    fn edit_key(&mut self, key: KeyEvent, ctrl: bool, shift: bool, alt: bool) -> Action {
         match key.code {
             // Shift+Enter 要终端报得出来（kitty 键盘协议）；报不出来的终端用 Alt+Enter 或 Ctrl+J。
             KeyCode::Enter if shift || alt => self.editor.insert("\n"),
@@ -295,6 +310,7 @@ impl InputBox {
         } else {
             self.editor.insert(&clean);
         }
+        self.absorb_bang();
     }
 
     /// 放一个附件（拖进来的、剪贴板里的）：输入框里出一块，编号照先后接着正文里这一种已有的（「输入框」第 12 条）。
@@ -397,16 +413,16 @@ impl InputBox {
             return;
         };
         if self.browsing.is_none() {
-            self.draft = self.editor.draft();
+            self.draft = self.as_typed(&self.editor.draft());
         }
         self.goal_col = None;
         if next == newest {
             self.browsing = None;
             let draft = std::mem::take(&mut self.draft);
-            self.editor.set_draft(draft);
+            self.load(draft);
         } else {
             self.browsing = Some(next);
-            self.editor.set_draft(self.history[next].draft.clone());
+            self.load(self.history[next].draft.clone());
         }
     }
 
@@ -434,8 +450,7 @@ impl InputBox {
             .rev()
             .find(|s| s.draft.text == text)
             .map(|s| s.draft.clone());
-        self.editor
-            .set_draft(picked.unwrap_or_else(|| Draft::plain(text)));
+        self.load(picked.unwrap_or_else(|| Draft::plain(text)));
     }
 
     /// 记下一句发出去的话或命令，连同粘贴块，翻历史用。和上一条一样的不重复记。

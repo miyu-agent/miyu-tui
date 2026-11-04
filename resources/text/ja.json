@@ -142,6 +142,7 @@
     "read_only": "読み取り専用"
   },
   "home_placeholder": "Tab で権限レベルを切り替え",
+  "archived_placeholder": "これはアーカイブです",
   "exit_hint": "Ctrl+D で終了",
   "input_cleared": "クリアしました · ↑ で復元",
   "editing": " 直前のメッセージを編集中 · Esc でキャンセル ",
@@ -183,6 +184,7 @@
     "owner_only": "持ち主のみ使えます",
     "session_not_found": "そのセッションはもうありません",
     "session_sealed": "セッションは締め切られています",
+    "archived": "これはアーカイブで、続けられません",
     "nothing_to_rename": "まだセッションがありません。何か話してから名前を変えてください",
     "nothing_to_recap": "まだ振り返る内容がありません",
     "recap_failed": "振り返りを作れませんでした。もう一度試してください",
@@ -527,6 +529,7 @@
     "not_running": "{source} は実行されていません",
     "page_keys": [["↑/↓", "選択"], ["Enter", "決定"], ["PgUp/PgDn", "ページ"], ["Esc", "戻る"]]
   },
+  "shell": {"placeholder": "実行するコマンドを入力", "no_attachments": "コマンドには添付できません", "running": "実行中", "exited": "終了コード {code} · {elapsed}", "signal": "シグナル {signal} · {elapsed}", "timed_out": "タイムアウト（120s）", "interrupted": "中断しました", "aborted": "コアが再起動し、終わりませんでした"},
   "jobs": {
     "button": "バックグラウンド：{count}",
     "title": "バックグラウンド",
@@ -551,6 +554,9 @@
     "restarted": "（コア再起動で停止）",
     "timed_out": "（時間切れで停止）",
     "too_large": "（出力が大きすぎて停止）",
+    "too_chatty": "（出力が多すぎて停止）",
+    "lines_note": "監視 · {title} · {lines} 行",
+    "lines_mark": "◆ ",
     "no_output": "出力なし",
     "more_ended": "{count} 件を折りたたみ済み",
     "less_ended": "終了したものを折りたたむ",
@@ -560,6 +566,7 @@
     "why_restarted": " · コア再起動で停止",
     "why_timed_out": " · 時間切れで停止",
     "why_too_large": " · 出力が大きすぎて停止",
+    "why_too_chatty": " · 出力が多すぎて停止",
     "doing_thinking": "考え中",
     "doing_replying": "返信中",
     "from_person": "他の場所からのメッセージ",
@@ -741,7 +748,7 @@
     "pinned": "ピン留めしました",
     "unpinned": "ピン留めを外しました",
     "tokens": "Σ{tokens}",
-    "groups": ["最近", "過去 7 日", "過去 30 日", "30 日より前"],
+    "groups": ["最近", "過去 7 日", "過去 30 日", "30 日より前", "アーカイブ"],
     "ticked": " · {count} 件選択",
     "delete_many": "もう一度 Ctrl+D で {count} 件のセッションを削除",
     "deleted_many": "{count} 件のセッションを削除しました"
@@ -1413,6 +1420,7 @@
         "both": "両方とも入力してください"
       },
       "no_persona": "人格なし",
+      "unpicked": "選択しない",
       "builtin_mascot": "内蔵",
       "default_look": "デフォルトテーマ",
       "mascot_missing": "{id}（未インストール）",

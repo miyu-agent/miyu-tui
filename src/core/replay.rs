@@ -55,6 +55,10 @@ impl Replay {
                         .unwrap_or_else(|| text_of(&event["body"])),
                     attached: push::read_attached(&event["body"]),
                 });
+                // 人用 `!` 打的命令（核心 SH-1）。
+                if event["body"]["shell"] == true {
+                    out.push(Push::ShellAsked(event["seq"].as_u64().unwrap_or_default()));
+                }
             }
             _ => {
                 tick(&mut out, at(event));

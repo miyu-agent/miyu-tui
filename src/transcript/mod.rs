@@ -11,6 +11,7 @@ mod clock;
 mod compaction;
 mod entry;
 mod failure;
+mod shell;
 pub use failure::RetryAfter;
 mod foreign;
 mod fresh;
@@ -49,7 +50,7 @@ use crate::core::{Bill, CallError, EndReason, Level, Limits, Push, ToolStatus, U
 pub use cache::CacheWatch;
 pub use chips::Chip;
 pub use climb::Progress;
-pub use entry::{Entry, JobMark, JobNote, Kind};
+pub use entry::{Entry, JobMark, JobNote, Kind, Shell};
 pub use stuck::Stuck;
 
 pub use steps::{Segment, Step, StepKind, Tally, ToolState};
@@ -279,6 +280,10 @@ impl Transcript {
             Update::Failed(reason) => {
                 self.link = Link::Down(texts.core_failed.replace("{reason}", &reason));
             }
+            // 界面照它的语言换成 `Failed` 才交来（`app/updates.rs`）；直接交来的照核心的原话。
+            Update::StartRefused(refusal) => {
+                self.link = Link::Down(texts.core_failed.replace("{reason}", &refusal.reason));
+            }
             // 核心断开了：在进行的那一轮当场收尾，马上重连（「连核心」第 7 条）。
             Update::Disconnected => {
                 self.starting = Starting::No;
@@ -393,7 +398,10 @@ impl Transcript {
             | Push::JobMessaged(_)
             | Push::Reported(_)
             | Push::JobEnded(_)
+            | Push::JobLines(_)
             | Push::PeerIdle { .. } => {}
+            Push::ShellAsked(seq) => self.shell_asked(seq),
+            Push::ShellRan(ran) => self.shell_ran(ran),
             Push::Usage(usage) => self.used(usage),
             Push::Billed(cost) => self.bill.add(cost.as_ref()),
             Push::Sent {

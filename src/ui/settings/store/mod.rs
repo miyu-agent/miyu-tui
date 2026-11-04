@@ -2,6 +2,7 @@
 //! 版本、右边一格状态，不写说明）、预览块（浅一档的底），最下面照旧状态行、细线、按键提示。
 
 mod asking;
+mod popup;
 mod preview;
 
 use ratatui::Frame;
@@ -66,15 +67,11 @@ pub(super) fn draw(
             );
         }
     }
-    // 列表、空一行、预览块，下面留给状态行、细线、按键提示（`footer` 的四行）再空一行。
+    // 列表、空一行、预览块，下面留给状态行、细线、按键提示（`footer` 的四行）再空一行。装、卸、升级的那几步画在弹窗里
+    // （`popup.rs`，排期第 42 条），列表照常。
     let room = stage.height.saturating_sub(4 + 5 + 1);
-    // 问的时候列表收成光标那一行，高度让给预览块：要批的、要装的尽量一窗写完（发布前第五批审查 T5-1）。
     let confirming = matches!(store.flow, Some(Flow::Confirm { .. }));
-    let list_h = if confirming {
-        1
-    } else {
-        LIST_ROWS.min(room / 2).max(1)
-    };
+    let list_h = LIST_ROWS.min(room / 2).max(1);
     let body = Rect::new(stage.x, stage.y + 4, stage.width, list_h);
     // 软件源给的名字、说明是外来的字：图格字、标签字符不进画面（发布前第五批审查 T5-3），列表、预览块都过一遍。
     let mut lines = rows(store, words, body.width);
@@ -87,30 +84,45 @@ pub(super) fn draw(
     page.more.store.top[tab] = top;
     let store = &page.more.store;
     let pv_y = body.bottom() + 1;
-    let pv_h = stage.bottom().saturating_sub(5).saturating_sub(pv_y);
-    let pv = Rect::new(stage.x, pv_y, stage.width, pv_h);
+    let room = stage.bottom().saturating_sub(5).saturating_sub(pv_y);
     let mut shown = preview::lines(store, words, &texts.more.package_from);
     crate::tabs::printable_lines(&mut shown);
-    if pv.height > 0 && !shown.is_empty() {
+    // 预览块只有内容那么高（上下各空一行），紧跟在列表下面，剩下的空着；放不下的截掉（排期第 39 条，2026-11-04 项目主人：
+    // 「详情页稍微有点太高了，和列表之间的比例不是很好」）。
+    let wrapped = wrap(&shown, stage.width.saturating_sub(4));
+    let pv_h = u16::try_from(wrapped.len() + 2)
+        .unwrap_or(u16::MAX)
+        .min(room);
+    let pv = Rect::new(stage.x, pv_y, stage.width, pv_h);
+    if pv.height > 2 && !shown.is_empty() {
         frame.buffer_mut().set_style(pv, theme::panel());
         let inner = Rect::new(
             pv.x + 2,
             pv.y + 1,
             pv.width.saturating_sub(4),
-            pv.height.saturating_sub(2),
+            pv.height - 2,
         );
-        let mut wrapped = wrap(&shown, inner.width);
-        let height = usize::from(inner.height);
-        if confirming {
-            wrapped = asking_window(&mut page.more.store.ask, wrapped, height, words);
-        }
-        for (n, line) in wrapped.iter().take(height).enumerate() {
+        for (n, line) in wrapped.iter().take(usize::from(inner.height)).enumerate() {
             let y = inner.y + u16::try_from(n).unwrap_or(0);
             frame.buffer_mut().set_line(inner.x, y, line, inner.width);
         }
     }
+    let flow = page.more.store.flow.as_ref().map(|flow| {
+        let mut lines = preview::flowing(&page.more.store, flow, words);
+        crate::tabs::printable_lines(&mut lines);
+        lines
+    });
+    let drawn = flow.is_some_and(|lines| {
+        popup::draw(
+            frame,
+            stage,
+            lines,
+            (confirming, &mut page.more.store.ask),
+            words,
+        )
+    });
     let store = &mut page.more.store;
-    if !confirming || pv.height < 3 {
+    if !confirming || !drawn {
         store.ask = AskView::default();
     }
     let hints = hints(store, words);

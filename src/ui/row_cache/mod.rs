@@ -221,6 +221,10 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
     if entry.progress.is_some() {
         return None;
     }
+    // 跑着的命令末尾在转圈（「人自己跑命令 `!`」第 4 条）：每帧重排。
+    if entry.shell.as_ref().is_some_and(|s| s.ran.is_none()) && !entry.queued {
+        return None;
+    }
     let mut h = DefaultHasher::new();
     // 排版的条件：行里带着条目的位置（点中的东西），颜色、图标烤在行里，图占几行看图做好没有（只算带图的条目）。
     // 权限级别只有没记下当时级别的「你说的话」用得上：它的竖线照现在的级别上色（「正文」第 8 条）。
@@ -249,6 +253,7 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
     let text = entry.text.as_bytes();
     (text.len(), &text[text.len().saturating_sub(64)..]).hash(&mut h);
     (entry.hidden, entry.queued, entry.open, entry.level).hash(&mut h);
+    entry.shell.hash(&mut h);
     // 写完了才换链接卡片（蓝图「链接卡片」第 1 条）：写完那一刻字没变，也要重排。
     (ctx.writing == Some(entry.id)).hash(&mut h);
     (entry.pasted.len(), &entry.details, &entry.from).hash(&mut h);

@@ -221,6 +221,7 @@ impl Turn {
                 text,
                 files: self.files.clone(),
                 cwd: self.cwd.clone(),
+                shell: false,
             });
         }
     }

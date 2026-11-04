@@ -53,7 +53,7 @@ pub use open::OpenTexts;
 pub use panels::{HistoryTexts, MenuTexts, UsageCellTexts};
 pub use timeline::{Body, Summary, Timeline, ToolKind};
 pub use widgets::{WidgetLayout, WidgetMarks};
-pub use words::{JobTexts, ModelTexts, RecapTexts, RenameTexts, UndoFileTexts};
+pub use words::{JobTexts, ModelTexts, RecapTexts, RenameTexts, ShellTexts, UndoFileTexts};
 
 /// 界面上给人看的字。`{count}` 这样的占位由代码填。
 #[derive(Debug, Clone, Deserialize)]
@@ -96,6 +96,8 @@ pub struct Texts {
     pub side_cost: String,
     /// 后台命令、子代理、待办的字。
     pub jobs: JobTexts,
+    /// 人用 `!` 跑命令的字。
+    pub shell: ShellTexts,
     /// 帮助框里的字（`/help`）。
     pub help: crate::ui::help::Texts,
     /// 界面块上的字（蓝图「界面块」）。
@@ -130,6 +132,8 @@ pub struct Texts {
     pub clipboard_empty: String,
     /// 空会话的首页上，输入框空着时固定写的提示（蓝图「输入框」第 9 条）。
     pub home_placeholder: String,
+    /// 打开的是导进来的只读存档：输入框空着时写的那一行（排期第 38 条，核心设计 58 第三节第 3 条）。
+    pub archived_placeholder: String,
     /// 权限级别的叫法：`workspace`、`full`、`read_only`（`kernel/events-bodies.md` 的 `permission`）。
     pub levels: HashMap<Level, String>,
     /// 一轮做完的收尾行：`{time}` 做完的时刻，`{endpoint}` 端点，`{model}` 模型名，`{elapsed}` 用时（和「已思考」一个写法）。

@@ -57,6 +57,8 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     for (reason, want) in [
         ("timed_out", JobReason::TimedOut),
         ("too_large", JobReason::TooLarge),
+        // 核心 MN-1：监视的命令出得太勤被停下（排期第 37 条）。
+        ("too_chatty", JobReason::TooChatty),
     ] {
         let ended = json!({"seq": 13, "kind": "job.reported", "by": {"kind": "kernel"},
             "body": {"job": "j3", "reason": reason}});
@@ -175,4 +177,20 @@ fn a_forked_subagent_is_marked_in_both_shapes() {
     assert!(listed.fork);
     let plain = crate::core::push::JobStart::listed(&json!({"job": "j3", "what": "agent"}));
     assert!(!plain.fork, "不写的不是 fork");
+}
+
+#[test]
+fn a_batch_of_lines_from_a_watched_command_is_read() {
+    // 核心 MN-1（排期第 37 条）：`job.lines` 不带 turn，不是了结。
+    use crate::core::push::JobLines;
+    let event = json!({"seq": 20, "kind": "job.lines", "by": {"kind": "kernel"},
+        "body": {"job": "j4", "text": "a\nb\n", "lines": 2, "omitted": 0}});
+    assert_eq!(
+        read_mine(&event),
+        [Push::JobLines(JobLines {
+            job: "j4".into(),
+            text: "a\nb\n".into(),
+            lines: 2,
+        })]
+    );
 }

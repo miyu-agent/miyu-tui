@@ -24,9 +24,11 @@ fn a_reply_reports_to_herdr_and_sends_one_desktop_notification() {
         .expect("假命令");
         std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o755)).expect("可执行");
     }
+    // 自己的假命令在最前面，接着测具的假通知、放音程序（提示音别真响：`support::fake_notifiers`），再是原来的 `PATH`。
     let path = format!(
-        "{}:{}",
+        "{}:{}:{}",
         bin.display(),
+        support::fake_notifiers(home.root()).display(),
         std::env::var("PATH").unwrap_or_default()
     );
     let binary = bin.join("herdr-test").display().to_string();
@@ -121,9 +123,11 @@ fn a_goal_running_two_rounds_notifies_once_when_it_is_done() {
         .expect("假命令");
         std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o755)).expect("可执行");
     }
+    // 自己的假命令在最前面，接着测具的假通知、放音程序（提示音别真响：`support::fake_notifiers`），再是原来的 `PATH`。
     let path = format!(
-        "{}:{}",
+        "{}:{}:{}",
         bin.display(),
+        support::fake_notifiers(home.root()).display(),
         std::env::var("PATH").unwrap_or_default()
     );
     let log_name = log.display().to_string();
@@ -167,9 +171,11 @@ fn a_goal_round_that_waits_for_you_notifies_once() {
         .expect("假命令");
         std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o755)).expect("可执行");
     }
+    // 自己的假命令在最前面，接着测具的假通知、放音程序（提示音别真响：`support::fake_notifiers`），再是原来的 `PATH`。
     let path = format!(
-        "{}:{}",
+        "{}:{}:{}",
         bin.display(),
+        support::fake_notifiers(home.root()).display(),
         std::env::var("PATH").unwrap_or_default()
     );
     let log_name = log.display().to_string();

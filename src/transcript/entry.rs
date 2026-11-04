@@ -50,6 +50,8 @@ pub enum JobMark {
     Failed,
     /// 停掉了（连同抽屉取消）：暗 `●`，整行暗。
     Stopped,
+    /// 监视的命令出了一批行（排期第 37 条）：强调色 `◆`，命令照旧在跑。
+    Lines,
 }
 
 /// 通知里的记号，和点开看的全文（子代理的报告；没有的是空的）。
@@ -112,6 +114,15 @@ pub struct Entry {
     pub at: Option<jiff::Timestamp>,
     /// 整理回执点开列的：日志里真正存下的改、删、摘要。别的条是空的。
     pub kept: Vec<crate::dream::Kept>,
+    /// 你用 `!` 打的命令（蓝图「人自己跑命令 `!`」第 4 条）：`text` 是命令行，跑完了带结果。别的条是 `None`。
+    pub shell: Option<Shell>,
+}
+
+/// 你用 `!` 打的一条命令。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct Shell {
+    /// 跑完了的结果；还在跑、还排着的是 `None`。
+    pub ran: Option<crate::core::ShellRan>,
 }
 
 impl Entry {
@@ -141,6 +152,23 @@ impl Entry {
             unopened: None,
             at: None,
             kept: Vec::new(),
+            shell: None,
+        }
+    }
+
+    /// `/jump`、侧边栏「跳转消息」列的样子：跑命令的写成「! 命令行」（「人自己跑命令 `!`」第 5 条）。
+    pub fn listed(&self) -> String {
+        match self.shell {
+            Some(_) => format!("! {}", self.text),
+            None => self.text.clone(),
+        }
+    }
+
+    /// 放回输入框、记进输入历史时的样子：跑命令的前面加 `!`（「人自己跑命令 `!`」第 5 条）。
+    pub fn typed(&self) -> String {
+        match self.shell {
+            Some(_) => format!("!{}", self.text),
+            None => self.text.clone(),
         }
     }
 }

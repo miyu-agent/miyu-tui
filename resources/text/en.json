@@ -142,6 +142,7 @@
     "read_only": "Read-only"
   },
   "home_placeholder": "Tab switches the permission level",
+  "archived_placeholder": "This is an archive",
   "exit_hint": "Press Ctrl+D to exit",
   "input_cleared": "Cleared · ↑ to bring it back",
   "editing": " Editing your last message · Esc to cancel ",
@@ -183,6 +184,7 @@
     "owner_only": "Owner only",
     "session_not_found": "That session no longer exists",
     "session_sealed": "Session sealed",
+    "archived": "This is an archive and can't be continued",
     "nothing_to_rename": "No session yet; say something first, then rename",
     "nothing_to_recap": "Nothing to recap yet",
     "recap_failed": "The recap could not be written, try again",
@@ -527,6 +529,7 @@
     "not_running": "{source} is not running",
     "page_keys": [["↑/↓", "select"], ["Enter", "confirm"], ["PgUp/PgDn", "page"], ["Esc", "back"]]
   },
+  "shell": {"placeholder": "Type a command to run", "no_attachments": "Commands can't carry attachments", "running": "Running", "exited": "Exit {code} · {elapsed}", "signal": "Signal {signal} · {elapsed}", "timed_out": "Timed out (120s)", "interrupted": "Interrupted", "aborted": "Core restarted before it finished"},
   "jobs": {
     "button": "Background: {count}",
     "title": "Background",
@@ -551,6 +554,9 @@
     "restarted": "(stopped when the core restarted)",
     "timed_out": " (stopped: ran too long)",
     "too_large": " (stopped: too much output)",
+    "too_chatty": " (stopped: too chatty)",
+    "lines_note": "Watch · {title} · {lines} lines",
+    "lines_mark": "◆ ",
     "no_output": "No output",
     "more_ended": "{count} collapsed",
     "less_ended": "Collapse finished ones",
@@ -560,6 +566,7 @@
     "why_restarted": " · stopped when the core restarted",
     "why_timed_out": " · stopped: ran too long",
     "why_too_large": " · stopped: too much output",
+    "why_too_chatty": " · stopped: too chatty",
     "doing_thinking": "Thinking",
     "doing_replying": "Replying",
     "from_person": "Message from you elsewhere",
@@ -741,7 +748,7 @@
     "pinned": "Pinned",
     "unpinned": "Unpinned",
     "tokens": "Σ{tokens}",
-    "groups": ["Recent", "Past 7 days", "Past 30 days", "Older"],
+    "groups": ["Recent", "Past 7 days", "Past 30 days", "Older", "Archived"],
     "ticked": " · {count} ticked",
     "delete_many": "Press Ctrl+D again to delete {count} sessions",
     "deleted_many": "Deleted {count} sessions"
@@ -1413,6 +1420,7 @@
         "both": "Fill in both"
       },
       "no_persona": "No persona",
+      "unpicked": "None",
       "builtin_mascot": "Built-in",
       "default_look": "Default theme",
       "mascot_missing": "{id} (not installed)",

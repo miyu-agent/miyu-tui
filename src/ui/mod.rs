@@ -74,6 +74,7 @@ pub mod tool_list;
 mod undo_rows;
 pub use timeline::{release_on_fold, tail_rows};
 pub use {dream_rows::rows as dream_rows, todos::todo_lines};
+mod shell_rows;
 mod usage_cell;
 mod user_rows;
 pub mod wide;
@@ -141,7 +142,14 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .talk
         .transcript
         .queued()
-        .map(|e| e.text.split_whitespace().collect::<Vec<_>>().join(" "))
+        .map(|e| {
+            let said = e.text.split_whitespace().collect::<Vec<_>>().join(" ");
+            // 跑命令的写成「! 命令」（「人自己跑命令 `!`」第 2 条）。
+            match e.shell {
+                Some(_) => format!("! {said}"),
+                None => said,
+            }
+        })
         .collect();
     let count = u16::try_from(queued.len()).unwrap_or(u16::MAX);
     let agent_rows = agents::height(app.talk.listed_agents().len(), app.config.layout.agent_rows);

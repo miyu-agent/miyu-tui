@@ -32,7 +32,13 @@ impl Facts {
     pub(super) fn of(seen: &Seen, home: bool) -> Self {
         Self {
             level: seen.talk.transcript.level,
-            placeholder: placeholder(seen.config, home, seen.typing.tips.at()).to_string(),
+            placeholder: if seen.typing.input.shell() {
+                seen.config.text.shell.placeholder.clone()
+            } else if seen.talk.archived() {
+                seen.config.text.archived_placeholder.clone()
+            } else {
+                placeholder(seen.config, home, seen.typing.tips.at()).to_string()
+            },
             tag: super::goal_tag::border(
                 seen.talk.viewing_title(),
                 seen.talk
@@ -131,9 +137,11 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
         placeholder,
         tag,
     } = look;
+    // 跑命令的模式：框线品红（「人自己跑命令 `!`」第 1 条，照 Claude Code 的 bash 模式）。
+    let shell = input.shell();
     let mut border = Block::bordered()
         .border_set(crate::sheet::read(|s| s.frame.input.set()))
-        .border_style(theme::dim());
+        .border_style(if shell { theme::picked() } else { theme::dim() });
     // 编辑上一句：上边框写一句，框线的颜色（「输入框」第 13 条）。
     if input.editing() {
         border = border.title(Line::styled(config.text.editing.as_str(), theme::dim()));
@@ -188,12 +196,18 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
     }
     // 提示符画在第一行文字的左边，住在 pad_left 那几列里，颜色跟着权限级别；放不下就不画。
     // 暂存着东西换成这一套图标的 `stash`（`tui.md`「输入框」第 6 条、「图标」）。
-    let prompt = if input.stashed() {
+    let prompt = if shell {
+        SHELL_PROMPT
+    } else if input.stashed() {
         config.icons.stash.as_str()
     } else {
         config.layout.prompt.as_str()
     };
-    let prompt_style = theme::level(level);
+    let prompt_style = if shell {
+        theme::picked()
+    } else {
+        theme::level(level)
+    };
     let width = u16::try_from(prompt.width()).unwrap_or(u16::MAX);
     // 框里左边那几列（边线和字之间）放得下提示符才画；紧凑版面正好放下（`tui.md`「输入框」第 10 条）。
     let room = areas.text.x.saturating_sub(areas.frame.x + 1);
@@ -202,6 +216,9 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
         frame.render_widget(Paragraph::new(Line::styled(prompt, prompt_style)), at);
     }
 }
+
+/// 跑命令的模式里提示符换成的（「人自己跑命令 `!`」第 1 条）。
+const SHELL_PROMPT: &str = "!";
 
 /// 空着时提示前面空的那一格：光标停在它上面。
 const PLACEHOLDER_GAP: &str = " ";

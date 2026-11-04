@@ -40,4 +40,4 @@ Linux 隔离验收（需要 herdr）：`cargo test --test herdr_resume -- --igno
 
 这个仓库自己写的代码和资源用 AGPL-3.0-or-later，见 `LICENSE`：改过的终端界面拿去给别人用，包括只在网上提供服务，要把改过的源码交给用它的人。
 
-不是这个仓库自己写的东西照它们原来的许可证，AGPL 只管这里自己写的部分：Rust 依赖照各自的 `license`（`Cargo.lock` 里列着，`cargo metadata` 查得到）；用到的第三方资源照各自的许可证，发行时随包附上原文。
+不是这个仓库自己写的东西照它们原来的许可证，AGPL 只管这里自己写的部分：编进程序的 Rust 依赖照各自的 `license`；`tokyonight` 两套配色照 folke/tokyonight.nvim 的颜色移植（Apache-2.0，原文 `resources/themes/LICENSE-tokyonight.txt`）。这些的版权和许可证原文合在 `THIRD-PARTY-LICENSES.txt`（`cargo xtask notices` 生成），随发行包发。

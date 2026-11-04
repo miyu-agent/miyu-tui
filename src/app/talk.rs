@@ -73,6 +73,17 @@ impl Talk {
         self.tree().listed(self.viewing())
     }
 
+    /// 正在看的会话是导进来的只读存档（照会话列表里那一项的 `archived`，排期第 38 条）。
+    pub fn archived(&self) -> bool {
+        let Some(session) = self.transcript.session.as_deref() else {
+            return false;
+        };
+        self.sessions_seen
+            .iter()
+            .flatten()
+            .any(|s| s.archived && s.session == session)
+    }
+
     /// 正在看的子会话的子代理叫什么（输入框右上角写，「切进子会话」第 2 条）；看着主会话是 `None`。
     pub fn viewing_title(&self) -> Option<String> {
         self.viewing().and_then(|child| self.agent_title(child))

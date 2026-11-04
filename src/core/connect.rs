@@ -2,7 +2,7 @@
 //! 都换令牌，连上以后再读（门面 `miyu_client::connect` 连的时候读）。
 
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command as Process;
 
 use serde_json::json;
@@ -11,26 +11,39 @@ use miyu_client::connect::{ConnectError, StartError};
 use miyu_client::places::DataRoot;
 use miyu_client::places::Env;
 
-use super::Update;
 use super::limits::Limits;
 use super::rpc::{Failure, Rpc};
+use super::{StartRefusal, Update};
 
 /// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来；没给的只连。
 pub(super) async fn connect() -> Result<Rpc, Update> {
     let env = Env::current();
     let root = DataRoot::locate(&env).map_err(|e| Update::Failed(e.to_string()))?;
-    root.prepare().map_err(|e| Update::Failed(e.to_string()))?;
-    let connected = match std::env::var_os("MIYU_CORE_BIN") {
+    let core_bin = std::env::var_os("MIYU_CORE_BIN")
+        .map(|bin| crate::local::expand_home(bin, std::env::home_dir().as_deref()));
+    root.prepare().map_err(|e| {
+        let refusal = |code: &str| StartRefusal {
+            code: code.to_string(),
+            reason: e.to_string(),
+            root: root.path().to_path_buf(),
+            bin: core_bin.as_deref().map(PathBuf::from),
+        };
+        e.code().map_or_else(
+            || Update::Failed(e.to_string()),
+            |code| Update::StartRefused(refusal(code)),
+        )
+    })?;
+    let connected = match core_bin {
         Some(bin) => {
-            let bin = crate::local::expand_home(bin, std::env::home_dir().as_deref());
             let path = Path::new(&bin).to_path_buf();
+            let at = root.path().to_path_buf();
             miyu_client::connect::connect_or_start(&root, move || {
                 let mut core = Process::new(bin);
                 core.arg("core");
                 core
             })
             .await
-            .map_err(|e| start_failed(e, &path))
+            .map_err(|e| start_failed(e, &path, &at))
         }
         None => miyu_client::connect::connect(&root)
             .await
@@ -136,13 +149,23 @@ pub(super) fn refused(failure: Failure) -> Update {
     }
 }
 
-/// 拉不起核心：`bin` 指的程序不存在，说清是哪个路径（第 8 条）；别的照原样。
-fn start_failed(error: StartError, bin: &Path) -> Update {
+/// 拉不起核心：`bin` 指的程序不存在，说清是哪个路径（第 8 条）；认得出是哪一种的交给界面照它的语言说（`root` 是数据根，
+/// 排期第 43 条）；别的照原样。
+fn start_failed(error: StartError, bin: &Path, root: &Path) -> Update {
+    let words = error.to_string();
     match error {
         StartError::Io(e) if e.kind() == io::ErrorKind::NotFound && !bin.exists() => {
             Update::Missing(bin.display().to_string())
         }
-        e => Update::Failed(e.to_string()),
+        StartError::Refused {
+            code: Some(code), ..
+        } => Update::StartRefused(StartRefusal {
+            code,
+            reason: words,
+            root: root.to_path_buf(),
+            bin: Some(bin.to_path_buf()),
+        }),
+        _ => Update::Failed(words),
     }
 }
 
@@ -163,16 +186,34 @@ mod tests {
     #[test]
     fn a_missing_core_program_names_its_path() {
         let gone = Path::new("/nonexistent/miyu");
+        let root = Path::new("/home/me/.miyu");
         let not_found = || StartError::Io(io::Error::from(io::ErrorKind::NotFound));
         assert!(
-            matches!(start_failed(not_found(), gone), Update::Missing(p) if p == "/nonexistent/miyu")
+            matches!(start_failed(not_found(), gone, root), Update::Missing(p) if p == "/nonexistent/miyu")
         );
         // 程序在，别的东西没找到：照原样。
         let here = Path::new("/");
-        assert!(matches!(start_failed(not_found(), here), Update::Failed(_)));
         assert!(matches!(
-            start_failed(StartError::Busy, gone),
+            start_failed(not_found(), here, root),
             Update::Failed(_)
+        ));
+        assert!(matches!(
+            start_failed(StartError::Busy, gone, root),
+            Update::Failed(_)
+        ));
+        // 认得出是哪一种的交给界面照它的语言说（排期第 43 条）；没有代码的照原话。
+        let refused = |code: Option<&str>| StartError::Refused {
+            code: code.map(str::to_string),
+            reason: "原话".into(),
+        };
+        assert!(matches!(
+            start_failed(refused(Some("data_root_old_layout")), gone, root),
+            Update::StartRefused(r) if r.code == "data_root_old_layout"
+                && r.root == root && r.bin.as_deref() == Some(gone) && r.reason.contains("原话")
+        ));
+        assert!(matches!(
+            start_failed(refused(None), gone, root),
+            Update::Failed(r) if r.contains("原话")
         ));
     }
 

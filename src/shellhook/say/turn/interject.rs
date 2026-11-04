@@ -49,6 +49,7 @@ impl Turn {
             text: text.clone(),
             files: Vec::new(),
             cwd: self.cwd.clone(),
+            shell: false,
         });
         // 她在答：正文里记成排着的（`queued`），听到了再挪进这一轮（同全屏）。
         self.transcript.user(text, Vec::new());
