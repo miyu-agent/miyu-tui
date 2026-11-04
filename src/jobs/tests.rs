@@ -76,6 +76,10 @@ fn a_command_starts_with_its_own_text_and_ends_by_its_exit() {
             ended("j2", JobReason::TooLarge, None, Some(9)),
             JobState::TooLarge,
         ),
+        (
+            ended("j2", JobReason::TooChatty, None, None),
+            JobState::TooChatty,
+        ),
     ];
     for (end, state) in cases {
         let mut board = Board::default();

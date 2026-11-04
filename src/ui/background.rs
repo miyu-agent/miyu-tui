@@ -184,6 +184,7 @@ pub(super) fn state(job: &Job, config: &Config, now: Instant) -> (String, Style)
         JobState::Restarted => (words.restarted.clone(), theme::faint()),
         JobState::TimedOut => (words.timed_out.clone(), theme::warn()),
         JobState::TooLarge => (words.too_large.clone(), theme::warn()),
+        JobState::TooChatty => (words.too_chatty.clone(), theme::warn()),
     }
 }
 
