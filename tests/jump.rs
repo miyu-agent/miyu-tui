@@ -157,6 +157,14 @@ fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
         })
     };
     assert!(main_has(&lines).is_none(), "第二问早滚出视口了");
+    // 排期第 44 条（2026-11-04 项目主人：「箭头。不要用原点。」）：当前这一句打头写箭头，跟着最新的是最后一句。
+    let marked =
+        |lines: &[String], word: &str| lines.iter().any(|l| l.contains(&format!("❯ {word}")));
+    assert!(
+        marked(&lines, "第三问 gamma") && !marked(&lines, "第二问 beta"),
+        "跟着最新的标最后一句：\n{}",
+        lines.join("\n")
+    );
     // 点侧边栏里「第二问 beta」那一行：正文里那一句顶到视口最上面。
     let row = beta.expect("列着");
     let col = lines[row][..lines[row].find("第二问").expect("在")]
@@ -176,4 +184,15 @@ fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
             tui.lines().join("\n")
         );
     }
+    // 跳过去了：视口最上面是第二问那一段，箭头挪到它。
+    let start = std::time::Instant::now();
+    while !marked(&tui.lines(), "第二问 beta") {
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "箭头没挪到跳到的那一句：\n{}",
+            tui.lines().join("\n")
+        );
+        tui.pump(Duration::from_millis(20));
+    }
+    assert!(!marked(&tui.lines(), "第三问 gamma"), "只标一句");
 }
