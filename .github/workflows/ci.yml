@@ -19,8 +19,18 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    # 测试只带行号级的调试信息：报错照样有文件和行号，每个测试程序小很多（2026-11-04 Ubuntu 机器两次磁盘满：链接器
+    # 「Bus error」、「No space left on device」；`tests/*.rs` 每个单独链一个程序）。本机的编译配置不动。
+    env:
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
     steps:
       - uses: actions/checkout@v7
+      # Ubuntu 机器预装的 .NET、Android SDK、GHC 用不上，先删掉腾出空间（同上）。
+      - name: 腾磁盘
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup
+          df -h /
       - name: 装上 rust-toolchain.toml 钉住的工具链
         run: rustup toolchain install
       - name: 取编译缓存
