@@ -6,7 +6,7 @@ use std::time::Instant;
 use crate::human::Human;
 
 use crate::config::JobTexts;
-use crate::core::{Bill, Usage};
+use crate::core::{Bill, JobLines, Usage};
 use crate::jobs::{Board, JobKind, JobState};
 use crate::meter;
 use crate::transcript::{Entry, JobMark, Kind, StepKind, Transcript};
@@ -28,6 +28,7 @@ pub(super) fn announce(
         JobState::Restarted => words.why_restarted.as_str(),
         JobState::TimedOut => words.why_timed_out.as_str(),
         JobState::TooLarge => words.why_too_large.as_str(),
+        JobState::TooChatty => words.why_too_chatty.as_str(),
         _ => "",
     };
     let stopped = matches!(
@@ -37,6 +38,7 @@ pub(super) fn announce(
             | JobState::Restarted
             | JobState::TimedOut
             | JobState::TooLarge
+            | JobState::TooChatty
     );
     let (mark, text) = match (job.kind, job.state) {
         (JobKind::Agent, _) if stopped => (JobMark::Stopped, words.agent_stopped_note.clone()),
@@ -62,6 +64,24 @@ pub(super) fn announce(
         JobKind::Shell => job.title.trim().to_string(),
     };
     transcript.job_from(mark, text, detail, Some(job.job.clone()));
+}
+
+/// 监视的命令出了一批行：正文末尾一行「监视 · 标题 · N 行」，记号强调色、字暗；点开看这一批（排期第 37 条，核心设计 56
+/// 「照回报那样画一行、点开看全文」）。不记任务编号：命令了结时读回来的整份输出补进了结那一行，不补进这里。
+pub(super) fn lines(
+    board: &Board,
+    transcript: &mut Transcript,
+    lines: &JobLines,
+    words: &JobTexts,
+) {
+    let title = board
+        .by_job(&lines.job)
+        .map_or_else(|| lines.job.clone(), |job| job.headline());
+    let text = words
+        .lines_note
+        .replace("{title}", &title)
+        .replace("{lines}", &lines.lines.to_string());
+    transcript.job(JobMark::Lines, text, lines.text.clone());
 }
 
 /// 子会话正在做什么：在想、在说，或者最新那一步「显示名 · 对象」（显示名照 `lang` 挑，`Human::step_name`）；没在跑的空着。

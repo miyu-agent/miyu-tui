@@ -135,6 +135,11 @@ impl App {
                     self.prune();
                 }
             }
+            Push::JobLines(lines) => {
+                if let Some((transcript, board)) = self.slot(session) {
+                    notes::lines(board, transcript, lines, &words);
+                }
+            }
             Push::PeerIdle {
                 session: peer,
                 reason,

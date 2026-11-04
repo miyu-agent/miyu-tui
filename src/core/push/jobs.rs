@@ -67,6 +67,8 @@ pub enum JobReason {
     TimedOut,
     /// 输出超过上限停掉的（核心 7-12 下，5 GB）。
     TooLarge,
+    /// 监视的命令一小时里出了 120 批，被核心停下（核心 MN-1，排期第 37 条）。
+    TooChatty,
 }
 
 impl JobReason {
@@ -77,6 +79,7 @@ impl JobReason {
             "restarted" | "aborted" => Self::Restarted,
             "timed_out" => Self::TimedOut,
             "too_large" => Self::TooLarge,
+            "too_chatty" => Self::TooChatty,
             _ => Self::Finished,
         }
     }
@@ -140,6 +143,26 @@ impl JobStart {
     pub fn list(jobs: &Value) -> Option<Vec<JobStart>> {
         Some(jobs.as_array()?.iter().map(JobStart::listed).collect())
     }
+}
+
+/// 监视的后台命令出了一批行（`job.lines`，核心 MN-1，排期第 37 条）：不是任务了结，命令照旧在跑。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JobLines {
+    /// 任务编号。
+    pub job: String,
+    /// 这一批全文（最多 4000 个字，截过的中间有一行写省了多少）。
+    pub text: String,
+    /// 几行。
+    pub lines: u64,
+}
+
+/// `job.lines`。
+pub(super) fn lines(body: &Value) -> Push {
+    Push::JobLines(JobLines {
+        job: body["job"].as_str().unwrap_or_default().to_string(),
+        text: body["text"].as_str().unwrap_or_default().to_string(),
+        lines: body["lines"].as_u64().unwrap_or_default(),
+    })
 }
 
 /// `job.reported`、`child.reported`。

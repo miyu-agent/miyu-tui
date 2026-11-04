@@ -78,8 +78,8 @@ pub use personas::{
     Persona, Preset, preset_param, read_personas, read_preset_files, read_presets, session_preset,
 };
 pub use push::{
-    Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobReason, JobStart,
-    Push, Sender, Sent, Shown, Usage,
+    Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobLines, JobReason,
+    JobStart, Push, Sender, Sent, Shown, Usage,
 };
 use rpc::Rpc;
 pub use sessions::{

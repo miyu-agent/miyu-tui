@@ -30,7 +30,7 @@ pub use sent::Sent;
 pub use shown::Shown;
 pub use usage::Usage;
 
-pub use jobs::{JobEnd, JobReason, JobStart, Said as Foreign, Sender};
+pub use jobs::{JobEnd, JobLines, JobReason, JobStart, Said as Foreign, Sender};
 
 /// 一次请求出的错（`model.called` 的 `error`）。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,6 +105,8 @@ pub enum Push {
     JobMessaged(String),
     /// 一个后台任务结束了：后台命令（`job.reported`）、子代理（`child.reported`）。
     JobEnded(JobEnd),
+    /// 监视的后台命令出了一批行（`job.lines`，核心 MN-1）：正文里写一行，点开看这一批。
+    JobLines(JobLines),
     /// 这几条排着队的消息被退回了（`message.withdrawn`），照序号。
     Withdrawn(Vec<u64>),
     /// 别处、这里用了一条斜杠命令（`command.ran`，核心 O-6）：不画；`/stop` 留着的排队话照它放进正文。
@@ -316,6 +318,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         )),
         "message.user" => out.extend(jobs::said(event, mine)),
         "job.reported" | "child.reported" => out.push(jobs::reported(body)),
+        "job.lines" => out.push(jobs::lines(body)),
         "command.ran" => out.push(Push::CommandRan),
         "message.withdrawn" => out.push(Push::Withdrawn(turns(&body["messages"]))),
         // 认不出的级别（新版本才有的）不画，照旧显示上一次的。
