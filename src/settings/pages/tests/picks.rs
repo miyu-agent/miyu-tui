@@ -13,7 +13,8 @@ fn texts() -> Texts {
     Config::builtin().unwrap().text.settings
 }
 
-/// 画图包三项：画图用的人格、查资料的知识库、画图模型；另一项账号（记录列表），字段里有一个画图模型。
+/// 画图包三项：画图用的人格、查资料的知识库、画图模型；另一项账号（记录列表），字段里有一个画图模型；再一项画图用的预设、
+/// 一项轮着用的几个人格（排期第 41 条）。
 fn opened(kb: Option<Value>) -> Settings {
     let item = |key: &str, kind: &str| {
         json!({"key": key, "type": kind, "control": "text", "layers": ["system"], "name": key,
@@ -24,16 +25,21 @@ fn opened(kb: Option<Value>) -> Settings {
     accounts["control"] = json!("list");
     accounts["fields"] =
         json!([{"key": "model", "type": "reference", "control": "text", "name": "模型"}]);
+    let mut rota = item("draw.rota", "list");
+    rota["element"] = json!("persona");
     let schema = json!({"pages": [{"id": "packages", "name": "软件包"}],
         "groups": [{"id": "draw", "name": "画图", "page": "packages"}],
         "items": [item("draw.persona", "persona"), item("draw.kb", "knowledge"),
-                  item("draw.model", "reference"), accounts]});
+                  item("draw.model", "reference"), accounts, item("draw.preset", "preset"), rota]});
     let layer = |v: &str| {
         json!({"value": v, "layers": [
         {"origin": {"layer": "system", "line": 1}, "value": v, "used": true}]})
     };
     let config = json!({"items": {"draw.persona": layer("miyu"),
-        "draw.model": layer("relay/zhipu/glm-5v")}});
+        "draw.model": layer("relay/zhipu/glm-5v"),
+        "draw.preset": layer("full"),
+        "draw.rota": {"value": ["dev", "gone"], "layers": [
+            {"origin": {"layer": "system", "line": 2}, "value": ["dev", "gone"], "used": true}]}}});
     let mut page = Settings::open(false, true);
     for (tag, method, _) in page.take_asks() {
         let got = match method {
@@ -42,6 +48,9 @@ fn opened(kb: Option<Value>) -> Settings {
             "model.list" => Ok(model_list()),
             "persona.list" => Ok(
                 json!({"personas": [{"persona": "miyu", "name": "美羽"}, {"persona": "dev", "name": "开发"}]}),
+            ),
+            "preset.list" => Ok(
+                json!({"presets": [{"preset": "full", "name": "全部"}, {"preset": null, "name": "无工具"}]}),
             ),
             "kb.list" => kb.clone().ok_or_else(|| crate::core::Refusal {
                 reason: Some("unknown_method".into()),
@@ -82,10 +91,82 @@ fn personas_and_knowledge_bases_are_picked_from_their_lists() {
         "那一行写名字"
     );
     page.change("packages/draw", 0, &texts());
-    assert_eq!(labels(&page), ["美羽", "开发"]);
+    assert_eq!(labels(&page), ["不选", "美羽", "开发"], "第一行不选");
     page.popup = None;
     page.change("packages/draw", 1, &texts());
-    assert_eq!(labels(&page), ["笔记", "docs"], "没名字的照编号");
+    assert_eq!(labels(&page), ["不选", "笔记", "docs"], "没名字的照编号");
+}
+
+#[test]
+fn a_preset_item_is_picked_from_the_presets_and_none_unsets_it() {
+    // 排期第 41 条（核心 e9c2b52cd）：`type = "preset"` 照 `preset.list` 选（「无工具」不是文件，不列），「不选」交 `null`。
+    let mut page = opened(None);
+    let item = page.more.schema.as_ref().unwrap().items[4].clone();
+    assert_eq!(
+        crate::settings::pages::shown(
+            &item,
+            &json!("full"),
+            page.more.named_item(&item),
+            &texts().more
+        ),
+        "全部"
+    );
+    assert_eq!(
+        crate::settings::pages::shown(
+            &item,
+            &Value::Null,
+            page.more.named_item(&item),
+            &texts().more
+        ),
+        "不选",
+        "没设的写不选"
+    );
+    page.change("packages/draw", 4, &texts());
+    assert_eq!(labels(&page), ["不选", "全部"]);
+    page.take_asks();
+    press(&mut page, KeyCode::Up);
+    press(&mut page, KeyCode::Enter);
+    let set = page
+        .take_asks()
+        .into_iter()
+        .find(|(_, m, _)| *m == "config.set")
+        .expect("存了");
+    let change = &set.2["changes"][0];
+    assert_eq!(change["key"], "draw.preset");
+    assert_eq!(change["value"], Value::Null, "不选：去掉这一项");
+}
+
+#[test]
+fn a_list_of_personas_is_ticked_from_the_personas_and_keeps_ones_that_are_gone() {
+    // 排期第 41 条：`type = "list"`、`element = "persona"` 照人格列表勾；写着、列表里没有了的接在后面勾着，不悄悄丢掉。
+    let mut page = opened(None);
+    let item = page.more.schema.as_ref().unwrap().items[5].clone();
+    assert_eq!(
+        crate::settings::pages::shown(
+            &item,
+            &json!(["dev", "gone"]),
+            page.more.named_item(&item),
+            &texts().more
+        ),
+        "开发、gone",
+        "那一行写名字"
+    );
+    page.change("packages/draw", 5, &texts());
+    let Some(Popup::Ticks(ticks)) = &page.popup else {
+        panic!("开勾选窗：{:?}", page.popup);
+    };
+    let names: Vec<&str> = ticks.options.iter().map(|(_, n)| n.as_str()).collect();
+    assert_eq!(names, ["美羽", "开发", "gone"]);
+    assert_eq!(ticks.on, [false, true, true]);
+    page.take_asks();
+    press(&mut page, KeyCode::Char(' '));
+    press(&mut page, KeyCode::Enter);
+    let set = page
+        .take_asks()
+        .into_iter()
+        .find(|(_, m, _)| *m == "config.set")
+        .expect("存了");
+    assert_eq!(set.2["changes"][0]["value"], json!(["miyu", "dev", "gone"]));
 }
 
 #[test]

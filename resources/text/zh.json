@@ -1413,6 +1413,7 @@
         "both": "两项都需填写"
       },
       "no_persona": "无人格",
+      "unpicked": "不选",
       "builtin_mascot": "内置",
       "default_look": "默认主题",
       "mascot_missing": "{id}（未安装）",

@@ -16,6 +16,9 @@ pub fn current<'a>(item: &'a Item, data: &'a Data) -> (&'a Value, &'a str) {
     }
 }
 
+/// 软件包里选 Miyu 自己的东西的类型（核心 PC-3）：人格、预设、知识库，存编号。
+pub const PICKED_KINDS: [&str; 3] = ["persona", "preset", "knowledge"];
+
 /// 名字照列表写、下拉照列表列的项（默认人格、默认预设）：不管清单写什么控件，一律开选择窗。
 pub fn is_named(key: &str) -> bool {
     key == DEFAULT_PERSONA || key == DEFAULT_PRESET || key == MASCOT || key == LOOK
@@ -32,6 +35,21 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
         && let Some(p) = list.iter().find(|p| p.id == id)
     {
         return p.label().to_string();
+    }
+    // 选人格、预设的列表（排期第 41 条）：一项照名字写，列表里没有的照编号。
+    if let (Some(list), Value::Array(ids)) = (named, value)
+        && !ids.is_empty()
+    {
+        return ids
+            .iter()
+            .map(|v| {
+                let id = v.as_str().unwrap_or_default();
+                list.iter()
+                    .find(|p| p.id == id)
+                    .map_or_else(|| id.to_string(), |p| p.label().to_string())
+            })
+            .collect::<Vec<_>>()
+            .join("、");
     }
     // 选着的吉祥物包、主题包卸掉了：编号后面写没装（「吉祥物包」第 3 条、「主题」第 5 条）。
     if (item.key == MASCOT || item.key == LOOK)
@@ -64,6 +82,8 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
     match (item.control.as_str(), value) {
         // 默认人格没设：就是无人格。
         (_, Value::Null) if item.key == DEFAULT_PERSONA => texts.no_persona.clone(),
+        // 软件包里选人格、预设、知识库的没设：不选。
+        (_, Value::Null) if PICKED_KINDS.contains(&item.kind.as_str()) => texts.unpicked.clone(),
         // 吉祥物没设：就是内置的。
         (_, Value::Null) if item.key == MASCOT => texts.builtin_mascot.clone(),
         // 主题没设：就是默认主题。
@@ -102,6 +122,8 @@ pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Cho
             MASCOT => Some(&texts.builtin_mascot),
             // 主题第一行「默认主题」：选了就不设（「主题」第 5 条）。
             LOOK => Some(&texts.default_look),
+            // 软件包里选人格、预设、知识库的第一行「不选」：选了交 `null`、去掉这一项（排期第 41 条）。
+            _ if PICKED_KINDS.contains(&item.kind.as_str()) => Some(&texts.unpicked),
             _ => None,
         };
         let none = first.map(|label| Choice {

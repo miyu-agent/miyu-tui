@@ -266,10 +266,14 @@ impl Settings {
             return self.toggle_service(value == Value::Bool(true), texts);
         }
         // 默认人格不管清单写什么控件（核心写的是填名字），都照 `persona.list` 开列表（2026-10-07 项目主人报）。
-        let control = if is_named(&item.key) || self.more.named_item(&item).is_some() {
+        let named = self.more.named_item(&item).filter(|_| item.kind != "list");
+        let control = if is_named(&item.key) || named.is_some() {
             "select"
         } else if item.kind == "reference" {
             "reference"
+        } else if item.kind == "list" && self.more.named_item(&item).is_some() {
+            // 一项一个人格、预设、知识库的列表：核心写的控件是 `text`，照类型、元素认（排期第 41 条）。
+            "named_list"
         } else {
             item.control.as_str()
         };
@@ -297,6 +301,11 @@ impl Settings {
             // 带选项的（隐私页的去掉出厂私密目录）勾选，不手打（第 47a 条）。
             // 记录列表（第 47b 条）：开列表窗。
             "list" if item.element == "record" => self.open_records(&item, &value),
+            // 一项一个人格、预设、知识库的列表（排期第 41 条）：照列表勾。
+            "named_list" => {
+                let list = self.more.named_item(&item).unwrap_or_default().to_vec();
+                self.open_named_ticks(&item, &list, &value);
+            }
             "list" if !item.options.is_empty() => self.open_ticks(&item, &value),
             "list" if super::list::editable(&item) => self.open_list(&item, &value),
             "list" => self.list_not_editable(texts),

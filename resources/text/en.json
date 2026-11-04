@@ -1413,6 +1413,7 @@
         "both": "Fill in both"
       },
       "no_persona": "No persona",
+      "unpicked": "None",
       "builtin_mascot": "Built-in",
       "default_look": "Default theme",
       "mascot_missing": "{id} (not installed)",
