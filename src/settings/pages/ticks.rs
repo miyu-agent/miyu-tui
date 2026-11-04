@@ -75,6 +75,31 @@ impl TickEdit {
         }
     }
 
+    /// 照人格、预设、知识库的列表开（排期第 41 条，`element` 是它们的列表）：一个一行，写名字，存编号；现在的值里有、列表里
+    /// 没有的（删掉了的）也列着、勾着，接在后面写编号，不悄悄丢掉。
+    pub fn named(item: &Item, list: &[crate::core::Persona], value: &Value) -> Self {
+        let now = value.as_array().cloned().unwrap_or_default();
+        let mut options: Vec<(Value, String)> = list
+            .iter()
+            .map(|p| (Value::from(p.id.clone()), p.label().to_string()))
+            .collect();
+        for v in &now {
+            if !options.iter().any(|(o, _)| o == v) {
+                options.push((v.clone(), v.as_str().unwrap_or_default().to_string()));
+            }
+        }
+        let on = options.iter().map(|(v, _)| now.contains(v)).collect();
+        Self {
+            key: item.key.clone(),
+            title: item.name.clone(),
+            options,
+            on,
+            sel: 0,
+            changed: false,
+            unlisted: false,
+        }
+    }
+
     /// 存进去的值，照选项的先后：勾着的那几个；反着勾的是没勾的那几个。
     pub fn value(&self) -> Value {
         let picked = self
@@ -122,6 +147,16 @@ impl Settings {
     /// 开窗（`item` 现在的值是 `value`）。
     pub(in crate::settings) fn open_ticks(&mut self, item: &Item, value: &Value) {
         self.popup = Some(Popup::Ticks(TickEdit::open(item, value)));
+    }
+
+    /// 开照人格、预设、知识库的列表勾的窗（[`TickEdit::named`]）。
+    pub(in crate::settings) fn open_named_ticks(
+        &mut self,
+        item: &Item,
+        list: &[crate::core::Persona],
+        value: &Value,
+    ) {
+        self.popup = Some(Popup::Ticks(TickEdit::named(item, list, value)));
     }
 
     /// 窗里按了一个键：`Enter` 收起，动过的整份存；`Esc` 收起不存。
