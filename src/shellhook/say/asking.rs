@@ -133,16 +133,19 @@ impl Asking {
         if !self.drawers.open() {
             return false;
         }
-        // 没在写字时 `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面，vim 的上下）。
-        let key = crate::app::vim_step(key, !self.drawers.editing());
+        // 没在写字时 `Ctrl+J`、`Ctrl+K` 当 `↓`、`↑`（同终端界面，vim 的上下）；命令那一块放不下、能滚的归抽屉滚它（同全屏
+        // `app/vim.rs`，2026-11-04 项目主人报 shellhook 里 Ctrl+J/K 滚不动命令）。
+        let scrolls = self.drawers.command_scrolls() && !self.drawers.editing();
+        let key = crate::app::vim_step(key, !self.drawers.editing() && !scrolls);
         // 按键模式开着、没在写字：`j`、`k` 也当 `↓`、`↑`（同全屏）。
         let key = crate::app::vim::plain(key, config.layout.vim && !self.drawers.editing());
         let newline = self.drawers.editing() && key.code == KeyCode::Char('j');
+        let scroll = scrolls && matches!(key.code, KeyCode::Char('j' | 'k'));
         if crate::app::is_paste(&key) {
             self.clipboard(config);
             return true;
         }
-        if key.modifiers.contains(KeyModifiers::CONTROL) && !newline {
+        if key.modifiers.contains(KeyModifiers::CONTROL) && !newline && !scroll {
             return false;
         }
         let window = Duration::from_millis(config.layout.esc_window_ms);
