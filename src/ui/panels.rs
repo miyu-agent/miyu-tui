@@ -70,6 +70,13 @@ fn rows(
             width,
             max,
         ),
+        Some(crate::app::Panel::Export { selected }) => super::export_box::lines(
+            seen.config,
+            seen.boxes.export.as_ref(),
+            selected,
+            width,
+            max,
+        ),
         Some(crate::app::Panel::Language { selected }) => languages::lines(
             seen.config,
             &seen.link.system_language,

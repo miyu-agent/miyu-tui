@@ -290,6 +290,15 @@
       "run": "language"
     },
     {
+      "name": "export",
+      "summary": {
+        "zh": "导出这个会话",
+        "en": "Export this session",
+        "ja": "このセッションを書き出す"
+      },
+      "run": "export"
+    },
+    {
       "name": "exit",
       "summary": {
         "zh": "退出",
