@@ -257,6 +257,9 @@ impl Part<Side<'_, '_>> for Jumps {
             seen.config.text.side_jumps.clone(),
             crate::theme::side_title(),
         )];
+        // 当前这一句的箭头照主题的 `marks.pointer`（两格宽），别的行空同样宽。
+        let pointer = crate::sheet::read(|s| s.marks.pointer.clone());
+        let blank = " ".repeat(unicode_width::UnicodeWidthStr::width(pointer.as_str()));
         lines.extend(spoken.iter().map(|e| {
             let said = e.listed();
             let first = said
@@ -264,7 +267,16 @@ impl Part<Side<'_, '_>> for Jumps {
                 .find(|l| !l.trim().is_empty())
                 .unwrap_or_default();
             let text = super::super::rows::clip(first.trim(), room);
-            ratatui::text::Line::styled(format!("  {text}"), crate::theme::dim())
+            // 当前这一句打头写箭头（排期第 44 条，2026-11-04 项目主人：「箭头。不要用圆点。」）。
+            let lead = if side.screen.current_said == Some(e.id) {
+                ratatui::text::Span::styled(pointer.clone(), crate::theme::accent())
+            } else {
+                ratatui::text::Span::raw(blank.clone())
+            };
+            ratatui::text::Line::from(vec![
+                lead,
+                ratatui::text::Span::styled(text, crate::theme::dim()),
+            ])
         }));
         Laid::Lines(lines)
     }
