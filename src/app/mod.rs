@@ -17,6 +17,8 @@ mod drawer;
 mod drawer_attach;
 mod dream;
 mod effort;
+mod export;
+pub use export::{ExportBox, Preview, Use};
 mod frame;
 mod goal;
 mod goal_box;

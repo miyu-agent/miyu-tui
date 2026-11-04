@@ -24,6 +24,7 @@ impl App {
                         Panel::Pick { .. }
                             | Panel::Changed { .. }
                             | Panel::Language { .. }
+                            | Panel::Export { .. }
                             | Panel::Theme { .. }
                             | Panel::Effort { .. }
                             | Panel::Background { .. }

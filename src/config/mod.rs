@@ -260,6 +260,8 @@ pub struct Texts {
     pub language_switched: String,
     /// `/language` 开的框里的字。
     pub languages: crate::ui::languages::Texts,
+    /// `/export` 开的框里的字（`ui/export_box.rs`）。
+    pub export: crate::ui::export_box::Texts,
     /// `/theme` 开的框里的字。
     pub themes: crate::ui::themes::Texts,
     /// 新会话的人格框（蓝图「新会话：人格、工作区」）。

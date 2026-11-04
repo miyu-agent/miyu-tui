@@ -62,8 +62,8 @@ impl App {
         if self.tool_list_update(&update) {
             return;
         }
-        // `/context` 的两样回应归它（`context_box.rs`）。
-        if self.context_update(&update) {
+        // `/context` 的两样回应归它（`context_box.rs`）；`/export` 的估算、存文件归它（`export.rs`）。
+        if self.context_update(&update) || self.export_update(&update) {
             return;
         }
         // 人格头像的回应归它（`avatars.rs`）。

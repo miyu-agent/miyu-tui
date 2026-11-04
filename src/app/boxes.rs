@@ -6,6 +6,8 @@
 pub struct Boxes {
     /// 开着的面板（后台）。
     pub panel: Option<super::Panel>,
+    /// `/export` 开着时的框：导哪个会话、第几步、估的（`export.rs`）。
+    pub export: Option<super::ExportBox>,
     /// `/sessions` 开着时的会话列表（`switch.rs`）。
     pub session_list: Option<crate::session_list::SessionList>,
     /// `/model` 开着时的框（`models.rs`）。
