@@ -36,6 +36,7 @@ fn info(session: &str, title: Option<&str>, cwd: &str) -> SessionInfo {
         terminal: false,
         waiting: false,
         viewed: false,
+        archived: false,
     }
 }
 
@@ -482,3 +483,5 @@ fn marks_follow_the_recent_list_and_titles_come_before_directories() {
         "目录只拿剩下的，不撑出框：{text:#?}"
     );
 }
+
+mod archived;

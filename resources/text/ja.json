@@ -142,6 +142,7 @@
     "read_only": "読み取り専用"
   },
   "home_placeholder": "Tab で権限レベルを切り替え",
+  "archived_placeholder": "これはアーカイブです",
   "exit_hint": "Ctrl+D で終了",
   "input_cleared": "クリアしました · ↑ で復元",
   "editing": " 直前のメッセージを編集中 · Esc でキャンセル ",
@@ -183,6 +184,7 @@
     "owner_only": "持ち主のみ使えます",
     "session_not_found": "そのセッションはもうありません",
     "session_sealed": "セッションは締め切られています",
+    "archived": "これはアーカイブで、続けられません",
     "nothing_to_rename": "まだセッションがありません。何か話してから名前を変えてください",
     "nothing_to_recap": "まだ振り返る内容がありません",
     "recap_failed": "振り返りを作れませんでした。もう一度試してください",
@@ -739,7 +741,7 @@
     "pinned": "ピン留めしました",
     "unpinned": "ピン留めを外しました",
     "tokens": "Σ{tokens}",
-    "groups": ["最近", "過去 7 日", "過去 30 日", "30 日より前"],
+    "groups": ["最近", "過去 7 日", "過去 30 日", "30 日より前", "アーカイブ"],
     "ticked": " · {count} 件選択",
     "delete_many": "もう一度 Ctrl+D で {count} 件のセッションを削除",
     "deleted_many": "{count} 件のセッションを削除しました"

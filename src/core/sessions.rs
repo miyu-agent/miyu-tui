@@ -38,6 +38,8 @@ pub struct SessionInfo {
     /// 有一个头（别的终端、网页）开着它（核心 HV-1 的 `viewed`）：它做完、在问时由开着的那个通知，这边不替它弹。旧核心没有
     /// 这一格。
     pub viewed: bool,
+    /// 导进来的只读存档（核心 SE-1 下的 `archived`）：会话列表排在最后单独一段，打开了输入框空着时写「这是存档」（排期第 38 条）。
+    pub archived: bool,
 }
 
 /// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话、整理会话不要，照核心交回的先后（新的
@@ -80,6 +82,7 @@ fn entry(s: &Value) -> Option<SessionInfo> {
         terminal: s["origin"] == "terminal",
         waiting: s["waiting"] == true,
         viewed: s["viewed"] == true,
+        archived: s["archived"] == true,
     })
 }
 
