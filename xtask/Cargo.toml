@@ -1,0 +1,11 @@
+[package]
+name = "xtask"
+description = "终端界面仓库的杂事：第三方许可证清单（cargo xtask notices）、许可证检查（cargo xtask licenses）"
+version = "0.0.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[dependencies]
+# 只用来读 cargo metadata 的输出。
+serde_json = "1.0"

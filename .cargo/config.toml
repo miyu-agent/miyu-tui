@@ -1,0 +1,3 @@
+[alias]
+# cargo xtask notices | licenses：第三方许可证清单和许可证检查，见 xtask/src/main.rs。
+xtask = "run --quiet --package xtask --"
