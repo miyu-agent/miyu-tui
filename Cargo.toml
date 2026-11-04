@@ -100,5 +100,7 @@ opt-level = 1
 lto = "fat"
 codegen-units = 1
 
-# 演示程序不进仓库的 workspace，自己单独编，门禁不查它。
+# 演示程序不进仓库的 workspace，自己单独编，门禁不查它。`xtask` 是仓库的杂事（第三方许可证清单），不随包发；在仓库根目录
+# `cargo build`、`cargo test` 照旧只管终端本体（根包是默认成员）。
 [workspace]
+members = ["xtask"]
