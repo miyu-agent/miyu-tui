@@ -305,6 +305,21 @@ fn an_open_list_follows_changes_from_elsewhere_and_shows_a_preview_for_untitled_
         );
         tui.pump(Duration::from_millis(50));
     }
+    // 另一个会话答完了，这一个界面当后台会话做完了弹系统通知：只进测具的假程序（core1 11-04：原来真弹到了项目主人的
+    // 桌面上），记在 `support::notify_log`。
+    #[cfg(unix)]
+    {
+        let log = support::notify_log(home.root());
+        let until = Instant::now() + support::WAIT;
+        loop {
+            let said = std::fs::read_to_string(&log).unwrap_or_default();
+            if said.contains("notify-send") || said.contains("osascript") {
+                break;
+            }
+            assert!(Instant::now() < until, "系统通知要进假程序：{said:?}");
+            tui.pump(Duration::from_millis(50));
+        }
+    }
 }
 
 #[test]

@@ -73,6 +73,7 @@ pub fn spawn_waiting(
     plain: Vec<String>,
     (clicked, session): (Clicked, String),
 ) {
+    super::system::guard(&program);
     std::thread::spawn(move || {
         let child = Command::new(&program)
             .args(&args)
@@ -123,13 +124,21 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_click_on_a_waiting_system_notice_is_queued_and_a_refusal_is_not() {
-        // 冒充 `notify-send`：点了的印 `default`，关掉的什么都不印。
+        // 冒充 `notify-send`：点了的印 `default`，关掉的什么都不印。放在临时目录里（测试里只许拉起临时目录的程序，`system::guard`），
+        // 转给 `sh` 跑参数里的那一句。
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("miyu-click-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let fake = dir.join("fake-notify-send");
+        std::fs::write(&fake, "#!/bin/sh\nexec /bin/sh \"$@\"\n").unwrap();
+        std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let fake = fake.display().to_string();
         let (tx, rx) = std::sync::mpsc::channel();
         let mut queue = Clicked::default();
         queue.set_wake(std::sync::Arc::new(move || if tx.send(()).is_err() {}));
         let sh = |script: &str| vec!["-c".to_string(), script.to_string()];
         super::spawn_waiting(
-            "sh".into(),
+            fake.clone(),
             sh("echo default"),
             sh("true"),
             (queue.clone(), "s-1".into()),
@@ -138,7 +147,7 @@ mod tests {
             .expect("点了叫醒主循环");
         assert_eq!(queue.take(), ["s-1"]);
         super::spawn_waiting(
-            "sh".into(),
+            fake,
             sh("exit 0"),
             sh("true"),
             (queue.clone(), "s-2".into()),

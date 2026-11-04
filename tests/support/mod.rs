@@ -26,8 +26,11 @@ fn resources() -> PathBuf {
 }
 
 mod core;
+mod fakes;
 mod home;
 
+#[allow(unused_imports, reason = "只有自己拼 PATH、要看通知记下了什么的测试用")]
+pub use fakes::{fake_notifiers, notify_log};
 #[allow(
     unused_imports,
     reason = "不起核心的测试（连不上、数据根认不认）用不到它"
@@ -138,6 +141,7 @@ impl Tui {
         // 新会话照功能全开、不弹预设框；测预设框的测试把它设成空的。
         command.env("MIYU_TUI_PRESET", "full");
         command.env("MIYU_RESOURCES", resources());
+        fakes::wire(&mut command, home);
         command.env("XDG_CACHE_HOME", home.join("cache"));
         // macOS 的缓存目录照家目录（`~/Library/Caches/Miyu`），不认 `XDG_CACHE_HOME`：家目录也指测试的，不往跑测试的这台
         // 电脑的缓存里写，几个测试也不共用一份（2026-10-15 先画后连记下的样子在 macOS 上被别的测试盖掉）。

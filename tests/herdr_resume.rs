@@ -114,13 +114,19 @@ fn real_herdr_restores_two_panes_to_their_own_sessions() {
                     .display()
                     .to_string(),
             ),
+            // 测具的假通知、放音程序排在系统的前面，界面照 `MIYU_TUI_FAKES` 不许拉起真的（core1 11-04：测试真弹到了桌面上）。
             (
                 "PATH".into(),
                 format!(
-                    "{}:{}",
+                    "{}:{}:{}",
                     bin.display(),
+                    support::fake_notifiers(home.root()).display(),
                     std::env::var("PATH").expect("隔离 herdr 验收前提成立")
                 ),
+            ),
+            (
+                "MIYU_TUI_FAKES".into(),
+                support::fake_notifiers(home.root()).display().to_string(),
             ),
             ("SHELL".into(), "/bin/sh".into()),
             ("HERDR_DISABLE_SOUND".into(), "1".into()),
