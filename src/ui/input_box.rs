@@ -32,7 +32,11 @@ impl Facts {
     pub(super) fn of(seen: &Seen, home: bool) -> Self {
         Self {
             level: seen.talk.transcript.level,
-            placeholder: placeholder(seen.config, home, seen.typing.tips.at()).to_string(),
+            placeholder: if seen.talk.archived() {
+                seen.config.text.archived_placeholder.clone()
+            } else {
+                placeholder(seen.config, home, seen.typing.tips.at()).to_string()
+            },
             tag: super::goal_tag::border(
                 seen.talk.viewing_title(),
                 seen.talk

@@ -142,6 +142,7 @@
     "read_only": "Read-only"
   },
   "home_placeholder": "Tab switches the permission level",
+  "archived_placeholder": "This is an archive",
   "exit_hint": "Press Ctrl+D to exit",
   "input_cleared": "Cleared · ↑ to bring it back",
   "editing": " Editing your last message · Esc to cancel ",
@@ -183,6 +184,7 @@
     "owner_only": "Owner only",
     "session_not_found": "That session no longer exists",
     "session_sealed": "Session sealed",
+    "archived": "This is an archive and can't be continued",
     "nothing_to_rename": "No session yet; say something first, then rename",
     "nothing_to_recap": "Nothing to recap yet",
     "recap_failed": "The recap could not be written, try again",
@@ -739,7 +741,7 @@
     "pinned": "Pinned",
     "unpinned": "Unpinned",
     "tokens": "Σ{tokens}",
-    "groups": ["Recent", "Past 7 days", "Past 30 days", "Older"],
+    "groups": ["Recent", "Past 7 days", "Past 30 days", "Older", "Archived"],
     "ticked": " · {count} ticked",
     "delete_many": "Press Ctrl+D again to delete {count} sessions",
     "deleted_many": "Deleted {count} sessions"

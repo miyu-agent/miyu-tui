@@ -28,12 +28,14 @@ pub struct SessionList {
 
 impl SessionList {
     /// 对得上的，照先后：正在用的最上面，置顶的接着，别的照最近动静，新的在前；没有最近动静的照核心交回的先后（第 3 条）。
+    /// 存档排在别的后面（第 3 条子条，排期第 38 条）。
     pub fn matches(&self) -> Vec<&SessionInfo> {
         let mut found: Vec<(usize, &SessionInfo)> = self.all.iter().enumerate().collect();
         let current = |s: &SessionInfo| self.current.as_deref() == Some(s.session.as_str());
         found.sort_by(|(i, a), (j, b)| {
             current(b)
                 .cmp(&current(a))
+                .then(a.archived.cmp(&b.archived))
                 .then(b.pinned.cmp(&a.pinned))
                 .then(b.last_active.cmp(&a.last_active))
                 .then(i.cmp(j))
@@ -188,6 +190,7 @@ mod tests {
             terminal: false,
             waiting: false,
             viewed: false,
+            archived: false,
         }
     }
 
@@ -227,6 +230,34 @@ mod tests {
             order(&list),
             ["0000-aaaaaaaa", "0000-cccccccc", "0000-bbbbbbbb"]
         );
+    }
+
+    #[test]
+    fn archives_come_after_every_other_session_even_pinned_but_not_the_current_one() {
+        // 排期第 38 条（核心设计 58 第三节第 4 条）：存档单独一段，排在别的会话后面。
+        let archive = |session: &str, pinned: bool, active: &str| SessionInfo {
+            archived: true,
+            ..info(session, None, pinned, Some(active))
+        };
+        let mut list = SessionList::default();
+        list.replace(vec![
+            archive("0000-aaaaaaaa", true, "2026-10-01T10:00:00Z"),
+            info("0000-bbbbbbbb", None, false, Some("2026-10-01T08:00:00Z")),
+            archive("0000-cccccccc", false, "2026-10-01T11:00:00Z"),
+            info("0000-dddddddd", None, true, None),
+        ]);
+        assert_eq!(
+            order(&list),
+            [
+                "0000-dddddddd",
+                "0000-bbbbbbbb",
+                "0000-aaaaaaaa",
+                "0000-cccccccc"
+            ]
+        );
+        list.current = Some("0000-cccccccc".into());
+        list.replace(list.all.clone());
+        assert_eq!(order(&list)[0], "0000-cccccccc", "正在看的存档照旧最上面");
     }
 
     #[test]

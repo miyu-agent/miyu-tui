@@ -65,8 +65,8 @@ pub struct Texts {
     pub pinned: String,
     /// 取消置顶了。
     pub unpinned: String,
-    /// 段头（第 10 条）：最近、近 7 天、近 30 天、30 天前。
-    pub groups: [String; 4],
+    /// 段头（第 10 条）：最近、近 7 天、近 30 天、30 天前、存档。
+    pub groups: [String; 5],
     /// 编号后面那一列：一共用了多少 token，`{tokens}`。
     pub tokens: String,
 }

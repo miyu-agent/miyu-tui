@@ -1,5 +1,6 @@
 //! 会话列表照时间分段（蓝图 `tui.md`「会话列表」第 10 条，2026-10-19 项目主人定「算作标题式」）：正在用的、置顶的在最上面
-//! 不带段头，别的照最近动静分「最近」「近 7 天」「近 30 天」「30 天前」，每段前面一行段头，选不中、不能收起。
+//! 不带段头，别的照最近动静分「最近」「近 7 天」「近 30 天」「30 天前」，存档最后单独一段「存档」（排期第 38 条），每段前面
+//! 一行段头，选不中、不能收起。
 
 use jiff::Timestamp;
 use jiff::civil::Date;
@@ -21,6 +22,8 @@ pub enum Age {
     Month,
     /// 30 天前，没有最近动静的也在这里。
     Older,
+    /// 导进来的只读存档，不管多久以前（排期第 38 条）。
+    Archived,
 }
 
 impl Age {
@@ -45,10 +48,15 @@ pub fn age(at: Option<Timestamp>, today: Date, tz: &TimeZone) -> Age {
     }
 }
 
-/// 这一行属于哪一段：正在用的、置顶的不分段（`None`）。
+/// 这一行属于哪一段：正在用的不分段（`None`）；存档都在「存档」那一段，置顶了的也是；别的置顶的不分段。
 pub fn group(info: &SessionInfo, current: Option<&str>, today: Date, tz: &TimeZone) -> Option<Age> {
-    let on_top = info.pinned || current == Some(info.session.as_str());
-    (!on_top).then(|| age(info.last_active, today, tz))
+    if current == Some(info.session.as_str()) {
+        return None;
+    }
+    if info.archived {
+        return Some(Age::Archived);
+    }
+    (!info.pinned).then(|| age(info.last_active, today, tz))
 }
 
 /// 段头那一行：标题那一列起头，暗色加粗。

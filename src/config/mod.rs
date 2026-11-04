@@ -130,6 +130,8 @@ pub struct Texts {
     pub clipboard_empty: String,
     /// 空会话的首页上，输入框空着时固定写的提示（蓝图「输入框」第 9 条）。
     pub home_placeholder: String,
+    /// 打开的是导进来的只读存档：输入框空着时写的那一行（排期第 38 条，核心设计 58 第三节第 3 条）。
+    pub archived_placeholder: String,
     /// 权限级别的叫法：`workspace`、`full`、`read_only`（`kernel/events-bodies.md` 的 `permission`）。
     pub levels: HashMap<Level, String>,
     /// 一轮做完的收尾行：`{time}` 做完的时刻，`{endpoint}` 端点，`{model}` 模型名，`{elapsed}` 用时（和「已思考」一个写法）。
