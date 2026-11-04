@@ -17,6 +17,7 @@ mod goal;
 mod jobs;
 mod result;
 mod sent;
+mod shell;
 mod shown;
 mod usage;
 
@@ -27,6 +28,7 @@ pub use compaction::Compaction;
 pub(crate) use goal::read as read_goal;
 pub use goal::{Goal, GoalState};
 pub use sent::Sent;
+pub use shell::ShellRan;
 pub use shown::Shown;
 pub use usage::Usage;
 
@@ -83,6 +85,10 @@ pub enum Push {
     TurnStarted(u64, Option<u64>),
     /// 你说的一句落了盘（`message.user`，这个界面发的），带着它的序号。
     UserMessage(u64),
+    /// 序号是这个的那句话是人用 `!` 打的命令（`message.user` 的 `shell: true`，核心 SH-1）：跟在那一句的推送后面。
+    ShellAsked(u64),
+    /// 人用 `!` 打的命令跑完了（`shell.ran`）。
+    ShellRan(ShellRan),
     /// 不是这个界面发的一句落了盘：别的 harness、子代理的留言、主会话的交代、同一个人在别处说的（蓝图「别处来的话」）。
     Foreign(Foreign),
     /// 长期目标开一轮的那一句落了盘（`message.user`，模块 `goal` 发的；蓝图「长期目标」第 4 条）：它的序号，第几轮（认不出
@@ -316,7 +322,11 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
             event["turn"].as_u64().unwrap_or_default(),
             body["trigger"].as_u64(),
         )),
-        "message.user" => out.extend(jobs::said(event, mine)),
+        "message.user" => {
+            out.extend(jobs::said(event, mine));
+            out.extend(shell::asked(event));
+        }
+        "shell.ran" => out.extend(shell::ran(body)),
         "job.reported" | "child.reported" => out.push(jobs::reported(body)),
         "job.lines" => out.push(jobs::lines(body)),
         "command.ran" => out.push(Push::CommandRan),

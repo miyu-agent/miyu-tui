@@ -79,7 +79,7 @@ pub use personas::{
 };
 pub use push::{
     Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobLines, JobReason,
-    JobStart, Push, Sender, Sent, Shown, Usage,
+    JobStart, Push, Sender, Sent, ShellRan, Shown, Usage,
 };
 use rpc::Rpc;
 pub use sessions::{
@@ -101,6 +101,8 @@ pub enum Command {
         text: String,
         /// 附件：照先后。
         files: Vec<std::path::PathBuf>,
+        /// 人用 `!` 打的命令（核心 SH-1，排期第 21 条）：`text` 是命令行，核心照会话的工作目录跑；不能带附件。
+        shell: bool,
     },
     /// 打断在进行的这一轮。`send` 为真时排着队的消息接着发（两下 Esc），为假时退回来（Ctrl+C）。
     Interrupt {

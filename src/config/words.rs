@@ -194,3 +194,25 @@ impl UndoFileTexts {
         }
     }
 }
+
+/// 人用 `!` 跑命令的字（蓝图「人自己跑命令 `!`」，排期第 21 条）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShellTexts {
+    /// 框空着时写的。
+    pub placeholder: String,
+    /// 框里有附件时回车弹的。
+    pub no_attachments: String,
+    /// 跑着。
+    pub running: String,
+    /// 跑完了：`{code}` 退出码、`{elapsed}` 用时。
+    pub exited: String,
+    /// 被信号杀掉：`{signal}`、`{elapsed}`。
+    pub signal: String,
+    /// 跑满 120 秒被杀。
+    pub timed_out: String,
+    /// 你打断的。
+    pub interrupted: String,
+    /// 核心重启、崩了，没跑完。
+    pub aborted: String,
+}

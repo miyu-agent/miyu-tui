@@ -24,7 +24,7 @@ impl InputBox {
     pub fn recalled(&self) -> bool {
         self.browsing
             .and_then(|at| self.history.get(at))
-            .is_some_and(|sent| sent.draft == self.editor.draft())
+            .is_some_and(|sent| sent.draft == self.as_typed(&self.editor.draft()))
     }
 
     /// 恢复了：撤销时放回来的那句还没动过的，收回去，免得回车再发一遍（`tui.md`「正文」第 6 条）。

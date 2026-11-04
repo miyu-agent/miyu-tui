@@ -11,6 +11,12 @@ pub(super) fn request(
 ) -> Option<(&'static str, serde_json::Value)> {
     Some(match command {
         // 不再带 `cwd`：工作区是会话的属性，核心照收不理（核心 9-7 上）。
+        Command::Send {
+            text, shell: true, ..
+        } => (
+            "session.send",
+            json!({"session": session, "text": text, "shell": true}),
+        ),
         Command::Send { text, .. } => ("session.send", json!({"session": session, "text": text})),
         Command::Interrupt { send } => {
             let queued = if send { "send" } else { "return" };
@@ -163,9 +169,18 @@ mod tests {
         let said = Command::Send {
             text: "你好".into(),
             files: Vec::new(),
+            shell: false,
         };
         let expected = json!({"session": "s", "text": "你好"});
         assert_eq!(request(said, "s"), Some(("session.send", expected)));
+        // 人用 `!` 打的命令（核心 SH-1）：多 `shell: true`。
+        let ran = Command::Send {
+            text: "ls".into(),
+            files: Vec::new(),
+            shell: true,
+        };
+        let expected = json!({"session": "s", "text": "ls", "shell": true});
+        assert_eq!(request(ran, "s"), Some(("session.send", expected)));
     }
 
     #[test]

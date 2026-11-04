@@ -529,6 +529,7 @@
     "not_running": "{source} は実行されていません",
     "page_keys": [["↑/↓", "選択"], ["Enter", "決定"], ["PgUp/PgDn", "ページ"], ["Esc", "戻る"]]
   },
+  "shell": {"placeholder": "実行するコマンドを入力", "no_attachments": "コマンドには添付できません", "running": "実行中", "exited": "終了コード {code} · {elapsed}", "signal": "シグナル {signal} · {elapsed}", "timed_out": "タイムアウト（120s）", "interrupted": "中断しました", "aborted": "コアが再起動し、終わりませんでした"},
   "jobs": {
     "button": "バックグラウンド：{count}",
     "title": "バックグラウンド",
