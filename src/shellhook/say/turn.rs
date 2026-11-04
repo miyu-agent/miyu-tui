@@ -80,8 +80,8 @@ pub struct Turn {
     pub woken: Vec<u64>,
     /// 问终端会话问得怎样：这个终端的键、只问不开、闲置久了换了新的（`terminal.rs`）。
     pub terminal: super::terminal::Asked,
-    /// 这期间提前敲的字：交还给 shell 的命令行。
-    pub typed: String,
+    /// 这期间提前敲的字（全屏输入框那一套，`ahead.rs`）：回车插话，没发出去的交还给 shell 的命令行。
+    pub typed: super::ahead::Ahead,
     /// 按过 Ctrl+C。
     pub interrupted: bool,
     /// 这句话开的那一轮怎么结束的：收工时照它弹通知。
@@ -169,7 +169,7 @@ impl Turn {
             lingering: false,
             woken: Vec::new(),
             terminal: super::terminal::Asked::default(),
-            typed: String::new(),
+            typed: super::ahead::Ahead::default(),
             interrupted: false,
             ended: None,
             done: false,

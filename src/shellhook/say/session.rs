@@ -233,7 +233,7 @@ impl Session {
             live.extend(box_lines);
             let caret = caret
                 .map(|(x, y)| (above + usize::from(y), x))
-                .or_else(|| typed_col.map(|col| (above.saturating_sub(1), col)));
+                .or_else(|| typed_col.map(|(below, col)| (above.saturating_sub(1 + below), col)));
             let mut settled = match banner(turn).filter(|_| !bannered) {
                 Some(line) => {
                     bannered = true;
@@ -265,7 +265,7 @@ impl Session {
         self.reader.pause();
         for event in self.incoming.try_iter() {
             if let Incoming::Key(event) = event {
-                turn.keep_typed(&event);
+                turn.keep_typed(&event, &self.config);
             }
         }
         self.reader.resume();
@@ -340,7 +340,7 @@ impl Session {
                     self.media.cards.borrow_mut().saved(blob, path);
                 }
                 Ok(Incoming::Core(update)) => turn.core(update, &mut self.config, &self.core),
-                Ok(Incoming::Key(event)) => turn.keep_typed(&event),
+                Ok(Incoming::Key(event)) => turn.keep_typed(&event, &self.config),
                 Err(_) => break,
             }
         }

@@ -72,13 +72,14 @@ pub fn run(
             }
             Record::Turn { session: id, turn } => {
                 let mut woken = Turn::attach(id.clone(), turn, current);
+                woken.typed.set_shell(Some(shell));
                 woken.human = human.clone();
                 session.core.send(Command::Open {
                     session: id,
                     keep: false,
                 });
                 session.drive(&mut woken, |_| None)?;
-                typed.push_str(&woken.typed);
+                typed.push_str(&woken.typed.hand_back());
                 human = woken.human.clone();
                 look = Some(woken.into_look());
             }

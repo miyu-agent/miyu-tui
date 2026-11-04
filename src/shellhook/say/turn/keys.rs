@@ -7,22 +7,19 @@ use crate::config::Config;
 use crate::core::{Command, Core};
 
 impl Turn {
-    /// 收工以后才处理到的按键：只记字，不再打断、不再答抽屉。
-    pub fn keep_typed(&mut self, event: &Event) {
+    /// 收工以后才处理到的按键：只记字（照全屏输入框，`ahead.rs`），不再打断、不再答抽屉、不插话。
+    pub fn keep_typed(&mut self, event: &Event, config: &Config) {
         match event {
             Event::Key(key) if key.kind != KeyEventKind::Release => {
-                let plain = !key
-                    .modifiers
-                    .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT);
+                let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
                 match key.code {
-                    KeyCode::Char(c) if plain => self.typed.push(c),
-                    KeyCode::Backspace => {
-                        self.typed.pop();
-                    }
-                    _ => {}
+                    KeyCode::Char('c') if ctrl => {}
+                    KeyCode::Enter if key.modifiers.is_empty() || ctrl => {}
+                    _ if crate::app::is_paste(key) => self.typed.clipboard(config),
+                    _ => self.typed.key(*key, config),
                 }
             }
-            Event::Paste(text) => self.typed.push_str(text),
+            Event::Paste(text) => self.typed.paste(text, config),
             _ => {}
         }
     }
@@ -50,16 +47,17 @@ impl Turn {
                         }
                         core.send(Command::Interrupt { send: false });
                     }
-                    // 回车插话，Ctrl+回车当场打断、插的马上发（`interject.rs`）。
-                    KeyCode::Enter => self.interject(core, ctrl),
-                    KeyCode::Char(c) if !ctrl && !alt => self.typed.push(c),
-                    KeyCode::Backspace => {
-                        self.typed.pop();
+                    // 回车插话，Ctrl+回车当场打断、插的马上发（`interject.rs`）；Shift+回车、Alt+回车换行（同全屏）。
+                    KeyCode::Enter if !alt && !key.modifiers.contains(KeyModifiers::SHIFT) => {
+                        self.interject(core, ctrl);
                     }
-                    _ => {}
+                    // Ctrl+V：照全屏读剪贴板，图、文件收成块（`ahead.rs`）。
+                    _ if crate::app::is_paste(key) => self.typed.clipboard(config),
+                    // 别的照全屏输入框：左右、Home/End、删词、换行（`ahead.rs`）。
+                    _ => self.typed.key(*key, config),
                 }
             }
-            Event::Paste(text) => self.typed.push_str(text),
+            Event::Paste(text) => self.typed.paste(text, config),
             _ => {}
         }
         false

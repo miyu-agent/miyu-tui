@@ -232,7 +232,7 @@ pub(super) fn placeholder(config: &Config, home: bool, tip: usize) -> &str {
 }
 
 /// 一行字，选中的那一段反色；鼠标悬停着的附件块（`hover`）加下划线（「输入框」第 12 条）。
-fn styled_line<'a>(
+pub(crate) fn styled_line<'a>(
     text: &'a str,
     line: VisualLine,
     selection: Option<(usize, usize)>,

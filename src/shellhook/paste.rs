@@ -50,24 +50,45 @@ fn load(shell: u32) -> Vec<Stored> {
 pub fn run(shell: u32) -> io::Result<ExitCode> {
     sweep();
     let config = super::say::config()?;
-    let mut stored = load(shell);
     let mut input = InputBox::new(1, std::time::Duration::ZERO);
+    rules(&mut input, &config, shell);
+    if let Err(hint) = grab(&mut input, shell, &config) {
+        drop(writeln!(io::stderr(), "{hint}"));
+        return Ok(ExitCode::FAILURE);
+    }
+    let draft = input.draft();
+    remember(shell, &draft)?;
+    let mut out = io::stdout();
+    out.write_all(draft.text.as_bytes())?;
+    out.flush()?;
+    Ok(ExitCode::SUCCESS)
+}
+
+/// 收块的规矩照全屏（大段的字折成块、附件怎么写），附件照这个 shell 已经贴过的接着编号（`[图片 2]`）。
+pub(crate) fn rules(input: &mut InputBox, config: &Config, shell: u32) {
     input.set_paste_rule(PasteRule {
         lines: config.layout.paste_fold_lines,
         chars: config.layout.paste_fold_chars,
         label: config.text.paste_label.clone(),
     });
-    input.set_attach_rule(crate::app::attach_rule(&config));
-    // 这一句里已经贴过的附件：接着编号（`[图片 2]`）。
+    input.set_attach_rule(crate::app::attach_rule(config));
     let mut base = std::collections::HashMap::new();
-    for kind in stored.iter().filter_map(|s| s.kind.clone()) {
+    for kind in load(shell).iter().filter_map(|s| s.kind.clone()) {
         *base.entry(kind).or_insert(0) += 1;
     }
     input.renumber(base);
-    if !grab(&mut input, shell, &config) {
-        return Ok(ExitCode::FAILURE);
+}
+
+/// 一句里的块记进这个 shell 的那一份：交还给命令行以后，说这句话时（[`take`]）照它换回原文、带上附件。
+///
+/// # Errors
+///
+/// 没有缓存目录、写不进去。
+pub(crate) fn remember(shell: u32, draft: &Draft) -> io::Result<()> {
+    if draft.blocks.is_empty() {
+        return Ok(());
     }
-    let draft = input.draft();
+    let mut stored = load(shell);
     stored.extend(draft.blocks.iter().map(|b| Stored {
         label: draft.text[b.start..b.end].to_string(),
         text: b.text.clone(),
@@ -75,23 +96,21 @@ pub fn run(shell: u32) -> io::Result<ExitCode> {
         kind: b.attachment.as_ref().map(|a| a.kind.clone()),
         path: b.path.clone(),
     }));
-    if !draft.blocks.is_empty() {
-        let path = store(shell).ok_or_else(|| io::Error::other("no cache directory"))?;
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        std::fs::write(path, serde_json::to_vec(&stored).map_err(io::Error::other)?)?;
+    let path = store(shell).ok_or_else(|| io::Error::other("no cache directory"))?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
     }
-    let mut out = io::stdout();
-    out.write_all(draft.text.as_bytes())?;
-    out.flush()?;
-    Ok(ExitCode::SUCCESS)
+    std::fs::write(path, serde_json::to_vec(&stored).map_err(io::Error::other)?)
 }
 
-/// 照全屏的先后读：复制的文件，图，字。读到了交回 `true`；读不到、是空的，提示一句交回 `false`。
-fn grab(input: &mut InputBox, shell: u32, config: &Config) -> bool {
+/// 照全屏的先后读：复制的文件，图，字。读不到、是空的，交回该提示的那一句。
+pub(crate) fn grab<'a>(
+    input: &mut InputBox,
+    shell: u32,
+    config: &'a Config,
+) -> Result<(), &'a str> {
     if crate::clipboard::read_files().is_some_and(|files| input.paste_files(&files)) {
-        return true;
+        return Ok(());
     }
     // 截图暂存在全屏同一处（`tui/pasted/<shell 的编号>/`）：shell 不在了，下次起全屏时清掉。
     let dir = miyu_client::places::cache_root(&miyu_client::places::Env::current())
@@ -99,21 +118,19 @@ fn grab(input: &mut InputBox, shell: u32, config: &Config) -> bool {
         .map(|root| crate::clipboard::staging_root(&root).join(shell.to_string()));
     if let Some(file) = dir.as_deref().and_then(crate::clipboard::read_image) {
         input.attach(file, IMAGE);
-        return true;
+        return Ok(());
     }
-    let hint = match crate::clipboard::read() {
+    match crate::clipboard::read() {
         // 读来的字全是本机现成的文件、目录（复制的路径）的也收成块（同全屏，2026-10-20 项目主人验收：原来只认复制的文件）。
         Ok(text) if !text.is_empty() => {
             if !input.paste_files(&text) {
                 input.paste(&text);
             }
-            return true;
+            Ok(())
         }
-        Ok(_) => &config.text.clipboard_empty,
-        Err(_) => &config.text.clipboard_unreadable,
-    };
-    drop(writeln!(io::stderr(), "{hint}"));
-    false
+        Ok(_) => Err(&config.text.clipboard_empty),
+        Err(_) => Err(&config.text.clipboard_unreadable),
+    }
 }
 
 /// 说这一句（`say`）：照字里还在的块换回原文、带上附件。记着的那一份留着（发出去的这一句进了 shell 的历史，从历史里

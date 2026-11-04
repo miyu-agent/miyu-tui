@@ -40,19 +40,24 @@ impl Turn {
 
     /// 回车：提前敲的字插进这一轮；`now`（Ctrl+回车）当场打断，排着的马上发。她没在答的不插，字留着交还给 shell。
     pub(super) fn interject(&mut self, core: &Core, now: bool) {
-        let text = self.typed.trim().to_string();
-        if text.is_empty() || self.transcript.running.is_none() || !self.live() {
+        if self.typed.is_empty() || self.transcript.running.is_none() || !self.live() {
             return;
         }
-        self.typed.clear();
+        // 块换回原文、图跟着发（同全屏，`ahead.rs`）；正文里照框里的样子写（块还是块）。
+        let draft = self.typed.take();
+        let (said, files) = (draft.expand().trim().to_string(), draft.attachments());
+        if said.is_empty() && files.is_empty() {
+            return;
+        }
         core.send(Command::Send {
-            text: text.clone(),
-            files: Vec::new(),
+            text: said,
+            files,
             cwd: self.cwd.clone(),
             shell: false,
         });
         // 她在答：正文里记成排着的（`queued`），听到了再挪进这一轮（同全屏）。
-        self.transcript.user(text, Vec::new());
+        self.transcript
+            .user(draft.text.trim().to_string(), Vec::new());
         if let Some(entry) = self.transcript.entries.last() {
             self.interject.entries.push(entry.id);
         }
@@ -94,7 +99,7 @@ impl Turn {
                     .filter(|s| seqs.contains(s))
                     .collect();
                 self.interject.queued.retain(|s| !seqs.contains(s));
-                let mut back: Vec<String> = self
+                let back: Vec<String> = self
                     .transcript
                     .entries
                     .iter()
@@ -102,10 +107,7 @@ impl Turn {
                     .map(|e| e.text.clone())
                     .collect();
                 if !back.is_empty() {
-                    if !self.typed.is_empty() {
-                        back.push(std::mem::take(&mut self.typed));
-                    }
-                    self.typed = back.join("\n");
+                    self.typed.put_back(back);
                 }
             }
             Update::Push(Push::TurnStarted(turn, Some(trigger)))

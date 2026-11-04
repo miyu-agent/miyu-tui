@@ -31,6 +31,7 @@ pub mod hint_keys;
 mod history;
 mod home;
 mod input_box;
+pub(crate) use input_box::styled_line;
 mod job_rows;
 pub mod languages;
 mod layout;

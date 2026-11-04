@@ -5,6 +5,7 @@
 //! `terminal.rs`）。答完还有派出去没结束的后台任务的，起一个盯后台的（`follow.rs`），回报回来时 shell 在提示符上印
 //! （`report.rs`）。
 
+mod ahead;
 mod asking;
 mod dreaming;
 pub mod follow;
@@ -86,6 +87,7 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         .map(|d| d.to_string_lossy().into_owned());
     let turn_text = text.clone();
     let mut turn = Turn::new(text, cwd, look);
+    turn.typed.set_shell(ask.shell);
     turn.files = files;
     turn.redo = ask.redo;
     turn.bare_redo = bare_redo;
@@ -120,7 +122,7 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     if let Some(path) = &ask.leftover
         && !turn.typed.is_empty()
     {
-        std::fs::write(path, &turn.typed)?;
+        std::fs::write(path, turn.typed.hand_back())?;
     }
     // 早先派的、盯后台的也记了的，这里已经印过的拿掉。
     if let Some(shell) = ask.shell {
