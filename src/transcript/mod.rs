@@ -402,6 +402,7 @@ impl Transcript {
             | Push::JobEarlier(_)
             | Push::JobMessaged(_)
             | Push::JobEnded(_)
+            | Push::JobLines(_)
             | Push::PeerIdle { .. } => {}
             Push::Usage(usage) => self.used(usage),
             Push::Billed(cost) => self.bill.add(cost.as_ref()),

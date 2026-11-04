@@ -13,6 +13,7 @@ use crate::jobs::{Board, Job, JobKind};
 use crate::transcript::Transcript;
 
 pub(super) mod notes;
+mod watched;
 use notes::{Relation, announce, doing, tokens, untrusted};
 
 /// 停放着的一个会话。
@@ -133,6 +134,11 @@ impl App {
                 }
                 if live {
                     self.prune();
+                }
+            }
+            Push::JobLines(lines) => {
+                if let Some((transcript, board)) = self.slot(session) {
+                    watched::lines(board, transcript, lines, &words);
                 }
             }
             Push::PeerIdle {

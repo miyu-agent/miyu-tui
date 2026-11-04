@@ -72,6 +72,12 @@ pub struct JobTexts {
     pub timed_out: String,
     /// 输出太大停掉的（核心 7-12 下）。
     pub too_large: String,
+    /// 监视的命令出得太勤停掉的（核心 MN-1）。
+    pub too_chatty: String,
+    /// 监视的命令出了一批行，正文那一行：`{title}`、`{lines}`（排期第 37 条）。
+    pub lines_note: String,
+    /// 那一行的记号。
+    pub lines_mark: String,
     /// 展开一条命令、点开结束的那一行：它一个字都没输出。
     pub no_output: String,
     /// 后台面板里结束了的多于一个时收起来的那一行：`{count}` 收了几条。
@@ -90,6 +96,8 @@ pub struct JobTexts {
     pub why_timed_out: String,
     /// 输出太大。
     pub why_too_large: String,
+    /// 监视的命令出得太勤。
+    pub why_too_chatty: String,
     /// 子代理在想。
     pub doing_thinking: String,
     /// 子代理在说。

@@ -28,6 +28,7 @@ pub(super) fn announce(
         JobState::Restarted => words.why_restarted.as_str(),
         JobState::TimedOut => words.why_timed_out.as_str(),
         JobState::TooLarge => words.why_too_large.as_str(),
+        JobState::TooChatty => words.why_too_chatty.as_str(),
         _ => "",
     };
     let stopped = matches!(
@@ -37,6 +38,7 @@ pub(super) fn announce(
             | JobState::Restarted
             | JobState::TimedOut
             | JobState::TooLarge
+            | JobState::TooChatty
     );
     let (mark, text) = match (job.kind, job.state) {
         (JobKind::Agent, _) if stopped => (JobMark::Stopped, words.agent_stopped_note.clone()),
