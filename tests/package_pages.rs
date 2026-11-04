@@ -107,6 +107,24 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
         home.data().packages().join("weather").exists(),
         "问的时候还没卸"
     );
+    // 排期第 42 条（2026-11-04 项目主人）：问的那几行画在弹窗里（圆角框，「继续？」左右是框线），列表照常不收起（别的包还看得见）。
+    let lines = tui.lines();
+    let ask = lines.iter().position(|l| l.contains("继续？")).expect("在");
+    assert!(
+        lines[ask].contains("│ 继续？") && lines[ask].trim_end().ends_with('│'),
+        "弹窗：\n{}",
+        lines.join("\n")
+    );
+    assert!(
+        lines[..ask].iter().any(|l| l.contains("╭──")),
+        "弹窗上边框：\n{}",
+        lines.join("\n")
+    );
+    assert!(
+        lines.iter().any(|l| l.contains("人格记忆")),
+        "列表照常：\n{}",
+        lines.join("\n")
+    );
     tui.key(b"y");
     tui.wait_for("已卸载 Weather");
     assert!(!home.data().packages().join("weather").exists(), "卸了");
@@ -216,4 +234,40 @@ fn a_record_with_a_secret_is_saved_as_a_reference() {
     until(&mut tui, "页里那一行写标题", |t| {
         row(t, "账号").contains("备用")
     });
+}
+
+/// 排期第 39 条（2026-11-04 项目主人：详情页太高、和列表比例不好）：预览块只有内容那么高，最后一行内容下面空一行，再往下
+/// 就不是预览块的底色了（原来一直铺到状态行上面）。
+#[test]
+fn the_preview_is_only_as_tall_as_what_it_says() {
+    let home = Home::prepared(Script::new([Play::Says("好。")]), "", weather);
+    let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
+    installed(&mut tui);
+    reach(&mut tui, "Weather");
+    tui.wait_for("技能 notes");
+    tui.pump(Duration::from_millis(200));
+    let lines = tui.lines();
+    let first = lines
+        .iter()
+        .position(|l| l.contains("名字"))
+        .expect("有预览");
+    let last = lines
+        .iter()
+        .position(|l| l.contains("技能 notes"))
+        .expect("有包含那一行");
+    // 预览块的左边：字往左两格。
+    let x = lines[first].chars().take_while(|c| *c == ' ').count() - 2;
+    let (x, first, last) = (
+        u16::try_from(x).unwrap(),
+        u16::try_from(first).unwrap(),
+        u16::try_from(last).unwrap(),
+    );
+    let panel = tui.background(first, x);
+    assert_eq!(tui.background(last + 1, x), panel, "最后一行下面留一行白");
+    assert_ne!(
+        tui.background(last + 2, x),
+        panel,
+        "再往下不是预览块：\n{}",
+        lines.join("\n")
+    );
 }
