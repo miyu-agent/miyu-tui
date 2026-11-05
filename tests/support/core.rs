@@ -181,7 +181,8 @@ fn frozen(orders: &mut UnboundedReceiver<Switch>) -> bool {
 /// 发行包的样子：程序都算在），环境变量一个都不认。
 fn build(root: &DataRoot, script: Arc<Script>, tools: Tools, token: String) -> Core {
     let shipped_root = ResourceRoot::at(resources());
-    let found = || miyu_store::packages::Packages::new(&shipped_root, root).read();
+    // 系统加装层（核心 SD-1）不看这台机器上装了什么：一处都不给。
+    let found = || miyu_store::packages::Packages::new(&shipped_root, root, Vec::new()).read();
     let config = Config::load(
         root,
         None,
