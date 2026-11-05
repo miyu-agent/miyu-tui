@@ -105,6 +105,16 @@ impl ExportBox {
     }
 }
 
+/// 存到哪个目录：终端所在的目录。`shown` 是侧边栏写的那份，家目录写成了 `~`，展开回去（核心只收绝对路径；2026-11-05
+/// 验收：工作目录在家目录下时存文件回「参数错误」）。
+fn export_dir(shown: &str, home: Option<&Path>) -> PathBuf {
+    match home {
+        // 正好在家目录：侧边栏写的是单独一个 `~`。
+        Some(home) if shown == "~" => home.to_path_buf(),
+        _ => crate::local::expand_home(shown.into(), home),
+    }
+}
+
 /// `dir` 里还没有的 `<stem>.<ext>`、`<stem>-2.<ext>`……（Markdown 连同附件文件夹 `<stem>_files` 也算）。
 fn free_name(dir: &Path, stem: &str, ext: &str) -> PathBuf {
     (1..)
@@ -133,7 +143,7 @@ impl App {
         }
         self.boxes.export = Some(ExportBox {
             session,
-            dir: PathBuf::from(&self.cwd),
+            dir: export_dir(&self.cwd, std::env::home_dir().as_deref()),
             previews: std::array::from_fn(|_| Preview::Waiting),
             chosen: None,
         });
