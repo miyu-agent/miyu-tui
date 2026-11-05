@@ -199,6 +199,26 @@ fn turning_on_an_extension_that_needs_approval_asks_then_approves() {
     assert_eq!(status(&page), Some(("名字memes 已打开".into(), Tone::Good)));
 }
 
+/// 卸掉的系统安装、只带技能的包没有开关（`enable` 回 `not_switchable`）：空格照编号装回（核心 SD-1补），状态行照旧说打开了。
+#[test]
+fn space_on_a_removed_package_restores_it() {
+    let mut page = opened();
+    page.more.store.tab = Tab::Installed;
+    if let Some(local) = &mut page.more.store.local {
+        local[0].on = false;
+        local[0].removed = true;
+    }
+    sent(&mut page);
+    press(&mut page, KeyCode::Char(' '));
+    let asked = sent(&mut page);
+    assert_eq!(
+        (asked[0].1, &asked[0].2),
+        ("package.install", &json!({"package": "im"}))
+    );
+    page.answer(asked[0].0, Ok(json!({"package": "im"})), &texts());
+    assert_eq!(status(&page), Some(("名字im 已打开".into(), Tone::Good)));
+}
+
 #[test]
 fn upgrading_one_needs_an_update_and_all_upgrades_everything() {
     let mut page = opened();

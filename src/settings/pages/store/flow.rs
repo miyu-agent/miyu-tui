@@ -149,7 +149,7 @@ impl Settings {
         });
     }
 
-    /// 「已安装」空格：开着的关、关着的开（不问；回 `needs_approval` 的再问，`answer.rs`）。
+    /// 「已安装」空格：开着的关、关着的开、卸掉的装回（不问；回 `needs_approval` 的再问，`answer.rs`）。
     pub(super) fn store_toggle(&mut self) {
         let Some(p) = self
             .more
@@ -159,10 +159,11 @@ impl Settings {
         else {
             return;
         };
-        let (method, on) = if p.on {
-            ("package.disable", false)
-        } else {
-            ("package.enable", true)
+        // 卸掉了的照编号装回（核心：出厂的、系统加装的编号 `package.install` 就是装回）；只带技能的没有开关，`enable` 会拒。
+        let (method, on) = match (p.on, p.removed) {
+            (true, _) => ("package.disable", false),
+            (false, true) => ("package.install", true),
+            (false, false) => ("package.enable", true),
         };
         let id = p.id.clone();
         self.ask(

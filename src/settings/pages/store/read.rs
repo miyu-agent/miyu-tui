@@ -49,6 +49,8 @@ pub struct Local {
     pub on: bool,
     /// 有后台页（`page: true`）。
     pub page: bool,
+    /// 卸掉了的出厂、系统安装的包（`removed`）：空格照编号装回（`package.install {package}`），不是开。
+    pub removed: bool,
     /// 它盖住的那一份（核心 SD-1）；没盖住别的是 `None`。
     pub covers: Option<Covered>,
 }
@@ -108,6 +110,8 @@ fn provides(v: &Value) -> Vec<(String, Vec<String>)> {
     };
     let mut out: Vec<(String, Vec<String>)> = map
         .iter()
+        // `command` 是第一个子命令、`commands` 是全部：有了全部的不再写第一个，不然「命令 memes」写两遍。
+        .filter(|(kind, _)| !(*kind == "command" && map.contains_key("commands")))
         .filter_map(|(kind, names)| {
             let names = match names {
                 Value::Array(_) => ids(names),
@@ -180,6 +184,7 @@ pub fn locals(got: &Value) -> Vec<Local> {
                 summary: text(&p["summary"]).unwrap_or_default(),
                 on: p["enabled"] != Value::Bool(false) && p["removed"] != Value::Bool(true),
                 page: p["page"] == Value::Bool(true),
+                removed: p["removed"] == Value::Bool(true),
                 covers: covered.remove(&id),
                 id,
             })

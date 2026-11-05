@@ -181,6 +181,7 @@ impl Settings {
             .to_string();
         match result {
             Ok(_) => {
+                // 卸掉的装回来也说「已打开」：人按的是开关，看到的是「关」。
                 let key = if on { "on" } else { "off" };
                 self.say(say(&words.status, key).replace("{name}", &name), Tone::Good);
                 self.store_reload();
