@@ -147,17 +147,35 @@ pub fn status(words: &Words) -> io::Result<()> {
     Ok(())
 }
 
-/// 默认调哪个程序：这个程序旁边的 `miyu`（随 Miyu 装的界面放在它旁边，设计 32 第六节），没有的调自己。PATH 上有
-/// 指着同一个文件的，记 PATH 上那个（[`on_path`]）。
+/// 默认调哪个程序：核心转交 `miyu shellhook …` 时设的 `MIYU_PROGRAM`（主程序解开链接以后的真实位置，核心
+/// `miyu-cli` 的 `packages.rs`；设计 60 系统源分包以后终端在 `/usr/share/miyu/packages/miyu-tui/bin/`，旁边没有 `miyu`，排期
+/// 第 47 条），没有的照这个程序旁边的 `miyu`（随 Miyu 装的界面放在它旁边，设计 32 第六节），再没有的调自己。PATH 上有
+/// 指着同一个文件的，记 PATH 上那个（[`on_path`]）：真实位置带版本号（Homebrew 的 `Cellar/miyu-core/<版本>/…`）、在
+/// `/usr/lib/miyu/` 里，升级就断。
 ///
 /// # Errors
 ///
 /// 认不出自己在哪。
 pub fn default_program() -> io::Result<PathBuf> {
-    let me = std::env::current_exe()?;
-    let miyu = me.with_file_name(if cfg!(windows) { "miyu.exe" } else { "miyu" });
-    let program = if miyu.is_file() { miyu } else { me };
-    Ok(on_path(&program, std::env::var_os("PATH").as_deref()).unwrap_or(program))
+    Ok(pick_program(
+        std::env::var_os("MIYU_PROGRAM").map(PathBuf::from),
+        &std::env::current_exe()?,
+        std::env::var_os("PATH").as_deref(),
+    ))
+}
+
+/// [`default_program`] 的挑法：`given` 是 `MIYU_PROGRAM`（空的、不是文件的不算），`me` 是这个程序。
+pub(super) fn pick_program(
+    given: Option<PathBuf>,
+    me: &Path,
+    path: Option<&std::ffi::OsStr>,
+) -> PathBuf {
+    let beside = me.with_file_name(if cfg!(windows) { "miyu.exe" } else { "miyu" });
+    let program = given
+        .filter(|p| p.is_file())
+        .or_else(|| beside.is_file().then_some(beside))
+        .unwrap_or_else(|| me.to_path_buf());
+    on_path(&program, path).unwrap_or(program)
 }
 
 /// PATH（`path`）上同名、指着同一个文件的另一个路径。认自己在哪会解开链接（Linux 读 `/proc/self/exe`）：Homebrew 这类

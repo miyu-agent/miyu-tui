@@ -215,6 +215,40 @@ fn the_program_is_recorded_by_its_link_on_path_not_its_versioned_real_path() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn the_forwarding_program_wins_and_is_recorded_by_its_link_on_path() {
+    // 排期第 47 条（core1 11-05，设计 60 系统源分包）：终端在包文件夹里、旁边没有 `miyu`；核心转交时设的 `MIYU_PROGRAM` 是
+    // 解开链接以后的真实位置（`/usr/lib/miyu/miyu`），钩子里写 PATH 上指着它的那个链接（`/usr/bin/miyu`）。
+    let dir = Dir::new("forwarded");
+    let (lib, bin, tui) = (
+        dir.0.join("lib"),
+        dir.0.join("bin"),
+        dir.0.join("packages/miyu-tui/bin"),
+    );
+    for d in [&lib, &bin, &tui] {
+        fs::create_dir_all(d).unwrap();
+    }
+    let real = lib.join("miyu");
+    fs::write(&real, "core").unwrap();
+    std::os::unix::fs::symlink(&real, bin.join("miyu")).unwrap();
+    let me = tui.join("miyu-tui");
+    fs::write(&me, "tui").unwrap();
+    let path = std::env::join_paths([&bin]).unwrap();
+    let pick = |given: Option<&std::path::Path>| {
+        super::install::pick_program(given.map(std::path::Path::to_path_buf), &me, Some(&path))
+    };
+    assert_eq!(pick(Some(&real)), bin.join("miyu"), "写 PATH 上的链接");
+    let none = std::env::join_paths([&tui]).unwrap();
+    assert_eq!(
+        super::install::pick_program(Some(real.clone()), &me, Some(&none)),
+        real,
+        "PATH 上找不到的写真实位置"
+    );
+    assert_eq!(pick(None), me, "没转交、旁边也没有 miyu 的写自己");
+    assert_eq!(pick(Some(&dir.0.join("gone"))), me, "指着不存在的不算");
+}
+
 #[test]
 fn old_shells_are_told_to_reopen_when_the_script_changed() {
     let (hook, rest) = super::hook(args(&["--hook", "abc", "say", "--shell", "fish"]));
