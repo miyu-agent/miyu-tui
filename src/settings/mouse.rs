@@ -98,6 +98,14 @@ impl Settings {
                     return self.key(enter, texts);
                 }
             }
+            // 「软件包」卸载弹窗的按钮（PK-5）。
+            Hit::Button(b)
+                if self.popup.is_none()
+                    && self.more.section == Some(super::pages::Section::Store) =>
+            {
+                self.more.store.button = b;
+                return self.key(enter, texts);
+            }
             Hit::Button(b) => {
                 match &mut self.popup {
                     Some(Popup::Form(form)) => form.focus = Focus::Button(b),

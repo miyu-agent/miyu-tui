@@ -14,6 +14,8 @@ use unicode_width::UnicodeWidthStr;
 use super::pages::{Painted, paint};
 use super::{crumb, footer};
 use crate::caret::Caret;
+use crate::settings::pages::store::flow::Doing;
+use crate::settings::pages::store::remove::{self, Button};
 use crate::settings::pages::store::{AskView, Flow, Item, Listing, Store, StoreTexts, Tab};
 use crate::settings::{Hit, Settings, Texts};
 use crate::theme;
@@ -112,14 +114,23 @@ pub(super) fn draw(
         crate::tabs::printable_lines(&mut lines);
         lines
     });
-    let drawn = flow.is_some_and(|lines| {
+    let labels = remove_buttons(&page.more.store, words);
+    let selected = (!labels.is_empty()).then_some(page.more.store.button);
+    let drawn = flow.and_then(|lines| {
         popup::draw(
             frame,
             stage,
             lines,
             (confirming, &mut page.more.store.ask),
+            (&labels, selected),
             words,
         )
+    });
+    let drawn = drawn.is_some_and(|rects| {
+        let buttons = rects.into_iter().enumerate();
+        page.hits
+            .extend(buttons.map(|(i, rect)| (rect, Hit::Button(i))));
+        true
     });
     let store = &mut page.more.store;
     if !confirming || !drawn {
@@ -263,10 +274,41 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
         .collect()
 }
 
+/// 问卸载时弹窗最下面那排按钮（PK-5）；不在问卸载的没有。
+fn remove_buttons(store: &Store, words: &StoreTexts) -> Vec<(String, bool)> {
+    let Some(Flow::Confirm {
+        doing: Doing::Remove(_),
+        previews,
+    }) = &store.flow
+    else {
+        return Vec::new();
+    };
+    let say = |key: &str| StoreTexts::say(&words.ask, key);
+    remove::buttons(previews.first())
+        .iter()
+        .map(|b| match b {
+            Button::Keep => (say("keep"), false),
+            Button::Purge => (say("purge"), true),
+            Button::Cancel => (say("cancel"), false),
+        })
+        .collect()
+}
+
 /// 这一页这时候的按键提示。
 fn hints<'a>(store: &Store, words: &'a StoreTexts) -> &'a [[String; 2]] {
+    let scroll = store.ask.rows > store.ask.room;
     match &store.flow {
-        Some(Flow::Confirm { .. }) if store.ask.rows > store.ask.room => {
+        Some(Flow::Confirm {
+            doing: Doing::Remove(_),
+            ..
+        }) => {
+            return words.hint(if scroll {
+                "confirm_remove_scroll"
+            } else {
+                "confirm_remove"
+            });
+        }
+        Some(Flow::Confirm { .. }) if scroll => {
             return words.hint("confirm_scroll");
         }
         Some(Flow::Confirm { .. }) => return words.hint("confirm"),

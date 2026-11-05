@@ -106,3 +106,28 @@ fn the_state_directory_says_where_and_how_big_when_the_core_tells() {
     assert_eq!(super::state_item(&serde_json::Value::Null, both), None);
     assert_eq!(super::state_item(&serde_json::json!(false), both), None);
 }
+
+#[test]
+fn removing_says_whether_the_config_directory_stays_or_goes() {
+    // 核心 PK-5（11-05 core1）：预览带 `config: {path, kept}`，留着写留在哪、`purge` 的写会删掉哪；没有这一格的不写。
+    let home = std::env::home_dir().unwrap_or_default();
+    let path = home.join(".miyu/etc/im").display().to_string();
+    let row = |config: serde_json::Value| {
+        let preview = json!({"package": "im", "config": config});
+        planned(json!({"tool": "package", "remove": "im", "preview": preview}))
+            .unwrap()
+            .rows
+    };
+    assert_eq!(
+        row(json!({"path": path, "kept": true})),
+        ["配置：留在 ~/.miyu/etc/im"]
+    );
+    assert_eq!(
+        row(json!({"path": path, "kept": false})),
+        ["配置：会删掉 ~/.miyu/etc/im"]
+    );
+    assert!(
+        row(serde_json::Value::Null).is_empty(),
+        "旧核心、没有配置目录的不写"
+    );
+}

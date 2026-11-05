@@ -424,6 +424,7 @@ mod pools;
 mod presets;
 mod records;
 mod slider;
+mod store_remove;
 mod store_scroll;
 
 #[test]

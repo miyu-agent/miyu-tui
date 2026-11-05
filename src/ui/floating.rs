@@ -235,24 +235,14 @@ fn paint<H: Copy>(
                 .set_string(inner.x, above, text, theme::error());
         }
     }
-    let mut x = inner.x;
-    let buttons = if inside(y) {
-        lines.buttons.as_slice()
-    } else {
-        &[]
-    };
-    for (i, (label, danger)) in buttons.iter().enumerate() {
-        let text = format!("[ {label} ]");
-        let on = lines.button == Some(i);
-        let style = match (on, danger) {
-            (true, true) => theme::error().add_modifier(Modifier::REVERSED),
-            (true, false) => theme::picked_bar(),
-            _ => Style::new(),
-        };
-        let w = text.width() as u16;
-        frame.buffer_mut().set_string(x, y, &text, style);
-        hits.push((Rect::new(x, y, w, 1), button(i)));
-        x += w + 2;
+    if inside(y) {
+        let at = Position::new(inner.x, y);
+        for (i, rect) in button_row(frame, at, &lines.buttons, lines.button)
+            .into_iter()
+            .enumerate()
+        {
+            hits.push((rect, button(i)));
+        }
     }
     // 按钮和按键提示之间空一行（2026-10-07 项目主人）。
     y += 2;
@@ -261,6 +251,30 @@ fn paint<H: Copy>(
             .buffer_mut()
             .set_line(inner.x, y, &hint_line(&lines.hints), inner.width);
     }
+}
+
+/// 一排按钮从 `at` 往右画：`[ 名字 ]`，隔两列；停着的铺选中色，危险的停着时反白红色。交回每个按钮占的地方（点按钮用）。
+pub fn button_row(
+    frame: &mut Frame,
+    at: Position,
+    buttons: &[(String, bool)],
+    selected: Option<usize>,
+) -> Vec<Rect> {
+    let mut x = at.x;
+    let mut rects = Vec::new();
+    for (i, (label, danger)) in buttons.iter().enumerate() {
+        let text = format!("[ {label} ]");
+        let style = match (selected == Some(i), danger) {
+            (true, true) => theme::error().add_modifier(Modifier::REVERSED),
+            (true, false) => theme::picked_bar(),
+            _ => Style::new(),
+        };
+        let w = text.width() as u16;
+        frame.buffer_mut().set_string(x, at.y, &text, style);
+        rects.push(Rect::new(x, at.y, w, 1));
+        x += w + 2;
+    }
+    rects
 }
 
 /// 报错折成几行：最多三行，还放不下的第三行截掉加「…」。

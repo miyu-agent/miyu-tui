@@ -1,10 +1,10 @@
-//! 「软件包」三页的按键（蓝图「配置页」第 43c 条）：问的时候只认 `y`、`n`；做的时候不收；打筛的字时字归筛；平常换页、
+//! 「软件包」三页的按键（蓝图「配置页」第 43c 条）：问的时候只认 `y`、`n`（卸的是按钮，见 `remove.rs`）；做的时候不收；打筛的字时字归筛；平常换页、
 //! 挪、各页自己的那几样。`Esc` 先收打字、再清筛的字、再清勾选，都没有了才回主菜单。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
 use super::Tab;
-use super::flow::{Flow, say};
+use super::flow::{Doing, Flow, say};
 use crate::settings::pages::Section;
 use crate::settings::pages::packages::page_of;
 use crate::settings::{Outcome, Settings, Texts, Tone, Waiting};
@@ -23,6 +23,14 @@ impl Settings {
     pub(in crate::settings) fn store_key(&mut self, key: KeyEvent, texts: &Texts) -> Outcome {
         self.status = self.status.take().filter(|(_, t)| *t == Tone::Busy);
         match &self.more.store.flow {
+            // 卸载的弹窗是按钮（PK-5）。
+            Some(Flow::Confirm {
+                doing: Doing::Remove(_),
+                ..
+            }) => {
+                self.store_remove_key(key, texts);
+                return Outcome::Stay;
+            }
             // 预览块放不下的能滚；没看到最后一行之前 `y`、`Enter` 不做（发布前第五批审查 T5-1）。
             Some(Flow::Confirm { .. }) => {
                 let view = &mut self.more.store.ask;
@@ -31,7 +39,9 @@ impl Settings {
                     KeyCode::Char('k') | KeyCode::Up => view.scroll(-1),
                     KeyCode::PageDown => view.page(true),
                     KeyCode::PageUp => view.page(false),
-                    KeyCode::Char('y' | 'Y') | KeyCode::Enter if view.seen() => self.store_go(),
+                    KeyCode::Char('y' | 'Y') | KeyCode::Enter if view.seen() => {
+                        self.store_go(false)
+                    }
                     KeyCode::Char('y' | 'Y') | KeyCode::Enter => self.store_unread(texts),
                     KeyCode::Char('n' | 'N') | KeyCode::Esc => self.store_cancel(texts),
                     _ => {}

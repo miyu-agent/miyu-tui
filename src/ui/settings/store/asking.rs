@@ -1,5 +1,5 @@
 //! 问之前写在预览块里的（蓝图「配置页」第 43c 条）：照看一眼的回应（`preview: true`）列出要装的、一起装的依赖、需要的
-//! 能力、下载多大、装好多大、推荐的；卸的写一并删除什么、多大；升级的写旧版到新版、下载多大；批能力的一项一行。
+//! 能力、下载多大、装好多大、推荐的；卸的写一并删除什么、配置目录留着还是删、多大；升级的写旧版到新版、下载多大；批能力的一项一行。
 
 use ratatui::text::{Line, Span};
 use serde_json::Value;
@@ -8,6 +8,7 @@ use unicode_width::UnicodeWidthStr;
 use super::preview::name_of;
 use crate::drawer::size;
 use crate::settings::pages::store::flow::Doing;
+use crate::settings::pages::store::remove::{self, Button};
 use crate::settings::pages::store::{Store, StoreTexts};
 use crate::theme;
 
@@ -101,6 +102,13 @@ pub fn lines(
             let (plain, with_path) = (a("drop_state"), a("drop_state_path"));
             drop.extend(crate::drawer::state_item(&p["state"], (&plain, &with_path)));
             extra.push((a("drop"), drop.join(&sep), true));
+            // 配置目录（PK-5）：照停着的按钮写留着还是会删掉。
+            if let Some(path) = p["config"]["path"].as_str() {
+                let purge = remove::selected(store) == Some(Button::Purge);
+                let say = a(if purge { "config_purge" } else { "config_kept" });
+                let path = crate::local::home_short(path);
+                extra.push((a("config"), say.replace("{path}", &path), purge));
+            }
             extra.push((
                 a("size"),
                 p["size"].as_u64().map(size).unwrap_or_default(),

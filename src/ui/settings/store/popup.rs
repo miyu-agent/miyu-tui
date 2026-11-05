@@ -3,7 +3,7 @@
 //! 上下左右各空一格。照旧（发布前第五批审查 T5-1）：放不下的滚着看，最后一行写下面还有几行，没看完不让批（`asking_window`）。
 
 use ratatui::Frame;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use ratatui::text::Line;
 use ratatui::widgets::Clear;
 
@@ -14,30 +14,36 @@ use crate::theme;
 /// 弹窗最宽几列（窄的照窗口）。
 const WIDTH: u16 = 72;
 
-/// 画弹窗：`lines` 是那几步的字；`confirming` 的照 `ask` 滚。画不下（窗口太矮、太窄）的交回 `false`，问的时候算没看完。
+/// 弹窗最下面那排按钮（卸载的，PK-5）：名字、危险不危险，停着第几个；别的弹窗没有按钮。
+pub(super) type Buttons<'a> = (&'a [(String, bool)], Option<usize>);
+
+/// 画弹窗：`lines` 是那几步的字；`confirming` 的照 `ask` 滚；有按钮的钉在最下面（不跟着滚），上面空一行。画不下（窗口太矮、
+/// 太窄）的交回 `None`，问的时候算没看完；画了的交回每个按钮占的地方。
 pub(super) fn draw(
     frame: &mut Frame,
     stage: Rect,
     lines: Vec<Line<'static>>,
     (confirming, ask): (bool, &mut AskView),
+    (buttons, selected): Buttons,
     words: &StoreTexts,
-) -> bool {
+) -> Option<Vec<Rect>> {
     // 上面是面包屑、分页条（2 行起），下面留给状态行、细线、按键提示（5 行）。
     let top = stage.y + 2;
     let bottom = stage.bottom().saturating_sub(5);
     let room = bottom.saturating_sub(top);
     let width = WIDTH.min(stage.width.saturating_sub(4));
-    if room < 5 || width < 12 || lines.is_empty() {
-        return false;
+    let below: u16 = if buttons.is_empty() { 0 } else { 2 };
+    if room < 5 + below || width < 12 || lines.is_empty() {
+        return None;
     }
     let inner_w = width - 4;
-    let max_rows = usize::from(room - 4);
+    let max_rows = usize::from(room - 4 - below);
     let mut wrapped = wrap(&lines, inner_w);
     if confirming {
         wrapped = asking_window(ask, wrapped, max_rows, words);
     }
     let rows = wrapped.len().min(max_rows);
-    let height = u16::try_from(rows).unwrap_or(0) + 4;
+    let height = u16::try_from(rows).unwrap_or(0) + 4 + below;
     let outer = Rect::new(
         stage.x + (stage.width - width) / 2,
         top + (room - height) / 2,
@@ -57,5 +63,8 @@ pub(super) fn draw(
         let y = inner.y + u16::try_from(n).unwrap_or(0);
         frame.buffer_mut().set_line(inner.x, y, line, inner.width);
     }
-    true
+    let at = Position::new(inner.x, inner.bottom().saturating_sub(1));
+    Some(crate::ui::floating::button_row(
+        frame, at, buttons, selected,
+    ))
 }
