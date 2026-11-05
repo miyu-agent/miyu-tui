@@ -25,6 +25,26 @@ pub struct PackageEntry {
     pub group: Option<(String, String)>,
 }
 
+/// `package.list` 的一项被上面一层盖住时的那一格 `{by, version, over, newer}`（核心 SD-1）；认的那份是 `None`。核心
+/// SD-1补把它从 `covered` 改名 `shadowed`，两个都认；只认对象：认的那份也可能带 `covered: true`（F-9补，包里的 MCP 全被
+/// 同名自制服务替代），那不是被盖住。
+pub fn shadowed(package: &Value) -> Option<&Value> {
+    ["shadowed", "covered"]
+        .into_iter()
+        .map(|key| &package[key])
+        .find(|v| v.is_object())
+}
+
+/// `package.list` 回应里认的那几份（核心 SD-1）：同一个编号几层都有时，被上面一层盖住的那份另列一项、不加载，读包的
+/// 地方都跳过它，不然同一个包多出一份（`find` 还可能先找到被盖住的那份）。
+pub fn live_packages(got: &Value) -> impl Iterator<Item = &Value> {
+    got["packages"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|p| shadowed(p).is_none())
+}
+
 /// 读 `package.list` 的回应；没有编号的那一项不要。
 pub(super) fn listed(result: &Value) -> Vec<PackageEntry> {
     let names: std::collections::HashMap<&str, &str> = result["groups"]
@@ -33,10 +53,7 @@ pub(super) fn listed(result: &Value) -> Vec<PackageEntry> {
         .flatten()
         .filter_map(|g| Some((g["id"].as_str()?, g["name"].as_str().or(g["id"].as_str())?)))
         .collect();
-    result["packages"]
-        .as_array()
-        .into_iter()
-        .flatten()
+    live_packages(result)
         .filter_map(|p| {
             Some(PackageEntry {
                 id: p["package"].as_str()?.to_string(),
@@ -150,6 +167,27 @@ mod tests {
         assert_eq!(stage("verify"), Some(super::Stage::Verify));
         assert_eq!(stage("install"), Some(super::Stage::Install));
         assert_eq!(stage("unpack"), None);
+    }
+
+    /// 核心 SD-1：同编号几层都有时，被盖住的那份另列一项、带 `covered`；读包的地方只认上面那份。
+    #[test]
+    fn a_covered_copy_is_not_listed_twice() {
+        let got = json!({"packages": [
+            {"package": "im", "layer": "distro", "state": "/s/old",
+             "covered": {"by": "home", "version": "1.3.0", "over": "1.2.0", "newer": true}},
+            {"package": "im", "layer": "home", "state": "/s/im"},
+        ]});
+        let ids: Vec<_> = listed(&got).into_iter().map(|p| p.state).collect();
+        assert_eq!(ids, [Some("/s/im".into())]);
+        assert_eq!(super::live_packages(&got).count(), 1);
+        // SD-1补改名 `shadowed`；认的那份带 `covered: true`（F-9补：包里的 MCP 全被自制的替代）不是被盖住。
+        let got = json!({"packages": [
+            {"package": "im", "layer": "distro",
+             "shadowed": {"by": "home", "version": "1.3.0", "over": "1.2.0", "newer": true}},
+            {"package": "im", "layer": "home", "covered": true},
+        ]});
+        let live: Vec<_> = super::live_packages(&got).map(|p| &p["layer"]).collect();
+        assert_eq!(live, ["home"]);
     }
 
     #[test]

@@ -213,3 +213,15 @@ fn signing_out_says_so_and_a_server_not_signed_in_says_why() {
     press(&mut page, &config, KeyCode::Enter);
     assert!(page.take_asks().is_empty());
 }
+
+/// 核心 SD-1：被盖住的那份包带的服务不再多列一份。
+#[test]
+fn a_covered_package_does_not_list_its_servers_twice() {
+    let mcp = json!([{"name": "fs", "command": ["fs-mcp"], "state": "running"}]);
+    let got = json!({"packages": [
+        {"package": "fs", "layer": "distro", "mcp": mcp,
+         "covered": {"by": "home", "version": "1.0.0", "over": "1.1.0", "newer": false}},
+        {"package": "fs", "layer": "home", "mcp": mcp}
+    ]});
+    assert_eq!(super::bundled(&got).len(), 1);
+}

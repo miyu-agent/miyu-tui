@@ -92,7 +92,7 @@ pub fn home(got: &Value) -> Vec<Server> {
 
 /// 读 `package.list` 的回应：包里带的服务，照包、照包里的先后。
 pub fn bundled(got: &Value) -> Vec<Server> {
-    let packages = got["packages"].as_array().into_iter().flatten();
+    let packages = crate::core::live_packages(got);
     let list = packages.flat_map(|p| p["mcp"].as_array().into_iter().flatten());
     list.filter_map(server).collect()
 }

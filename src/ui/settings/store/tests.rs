@@ -212,3 +212,59 @@ fn a_dependency_with_a_version_floor_is_named_by_its_package() {
     assert_eq!(preview::name_of(&store, "im"), "接入QQ");
     assert_eq!(preview::name_of(&store, "gone>=1.0.0"), "gone >=1.0.0");
 }
+
+/// 核心 SD-1：被盖住的那份并进认的那一行（2026-11-05 项目主人）：状态格写「下面有新版」，预览写「盖住 : 系统安装 1.3.0」；
+/// 卸系统安装的，问的时候多一行暗色提示。
+#[test]
+fn a_covered_copy_shows_on_the_row_that_covers_it() {
+    use crate::settings::pages::store::read::Covered;
+    let mut store = store();
+    store.tab = Tab::Installed;
+    let from: BTreeMap<String, String> = [("distro".to_string(), "系统安装".to_string())].into();
+    if let Some(local) = &mut store.local {
+        local[1].covers = Some(Covered {
+            layer: "distro".into(),
+            version: "1.3.0".into(),
+            newer: true,
+        });
+    }
+    store.go(1);
+    let lines = texts(&store, 50);
+    assert!(lines[1].ends_with("下面有新版"), "{lines:?}");
+    let shown: Vec<String> = preview::lines(&store, &words(), &from)
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    assert!(
+        shown
+            .iter()
+            .any(|l| l.ends_with(": 系统安装 1.3.0（更新，卸掉这份就换回它）")),
+        "{shown:?}"
+    );
+    if let Some(local) = &mut store.local {
+        local[1].covers.as_mut().unwrap().newer = false;
+    }
+    assert!(!texts(&store, 50)[1].contains("下面有新版"));
+    let shown: Vec<String> = preview::lines(&store, &words(), &from)
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    assert!(
+        shown.iter().any(|l| l.ends_with(": 系统安装 1.3.0")),
+        "{shown:?}"
+    );
+    let remove = Doing::Remove("render".into());
+    let ask = |layer: &str| -> Vec<String> {
+        asking::lines(&store, &remove, &[json!({"layer": layer})], &words())
+            .iter()
+            .map(ToString::to_string)
+            .collect()
+    };
+    let note = "系统安装的包只是不再加载，文件要用系统的包管理器删";
+    assert!(
+        ask("distro").iter().any(|l| l.ends_with(note)),
+        "{:?}",
+        ask("distro")
+    );
+    assert!(!ask("home").iter().any(|l| l.contains(note)));
+}

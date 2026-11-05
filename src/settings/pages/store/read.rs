@@ -49,6 +49,19 @@ pub struct Local {
     pub on: bool,
     /// 有后台页（`page: true`）。
     pub page: bool,
+    /// 它盖住的那一份（核心 SD-1）；没盖住别的是 `None`。
+    pub covers: Option<Covered>,
+}
+
+/// 被上面一层盖住的那一份（核心 SD-1，`package.list` 一项的 `covered`）：不单列，并进认的那一行（2026-11-05 项目主人）。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Covered {
+    /// 它在哪一层：`shipped`、`distro`。
+    pub layer: String,
+    /// 它的版本；没写的是空的。
+    pub version: String,
+    /// 它比认的那一份新：卸掉认的那份就换回它。
+    pub newer: bool,
 }
 
 /// 照光标要来的一个包的详情（`package.info`）：预览块照它写。
@@ -137,11 +150,28 @@ pub fn remotes(got: &Value) -> Vec<Remote> {
 }
 
 /// 读 `package.list` 的回应：照名字排（2026-10-31 项目主人选的一张平铺的表），一样的照编号。
+/// 被盖住的那几份并进盖住它的那一行；同一个编号盖住了几份的（三层都有），记更新的那一份，都不更新的记上面那一层的。
 pub fn locals(got: &Value) -> Vec<Local> {
-    let mut out: Vec<Local> = got["packages"]
-        .as_array()
-        .into_iter()
-        .flatten()
+    let mut covered: HashMap<String, Covered> = HashMap::new();
+    for p in got["packages"].as_array().into_iter().flatten() {
+        let (Some(id), Some(c)) = (text(&p["package"]), crate::core::shadowed(p)) else {
+            continue;
+        };
+        let one = Covered {
+            layer: text(&p["layer"]).unwrap_or_default(),
+            version: text(&c["version"])
+                .or_else(|| text(&p["version"]))
+                .unwrap_or_default(),
+            newer: c["newer"] == Value::Bool(true),
+        };
+        let keep = covered
+            .get(&id)
+            .is_some_and(|was| was.newer || (!one.newer && was.layer == "distro"));
+        if !keep {
+            covered.insert(id, one);
+        }
+    }
+    let mut out: Vec<Local> = crate::core::live_packages(got)
         .filter_map(|p| {
             let id = text(&p["package"])?;
             Some(Local {
@@ -150,6 +180,7 @@ pub fn locals(got: &Value) -> Vec<Local> {
                 summary: text(&p["summary"]).unwrap_or_default(),
                 on: p["enabled"] != Value::Bool(false) && p["removed"] != Value::Bool(true),
                 page: p["page"] == Value::Bool(true),
+                covers: covered.remove(&id),
                 id,
             })
         })

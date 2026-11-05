@@ -120,9 +120,7 @@ impl App {
     /// `package.list` 里在读的那个包的模型路径：得是读成了的吉祥物包。
     fn model_of(&self, got: &Value) -> Option<String> {
         let id = self.media.mascot_pick.loading.as_deref()?;
-        got["packages"]
-            .as_array()?
-            .iter()
+        crate::core::live_packages(got)
             .find(|p| p["package"] == id && p["kind"] == "mascot")
             .and_then(|p| p["mascot"]["model"].as_str())
             .map(str::to_string)

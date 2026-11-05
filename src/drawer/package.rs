@@ -66,6 +66,10 @@ pub struct PackageTexts {
     pub config_kept: String,
     /// 见 `config_kept`。
     pub config_purge: String,
+    /// 卸系统安装的包（核心 SD-1）那一行打头的。
+    pub note: String,
+    /// 见 `note`：只是不再加载，文件要用系统的包管理器删。
+    pub distro_note: String,
     /// 多大、几个文件，`{size}`、`{n}`：一个文件的、几个的。
     pub files: [String; 2],
     /// 一行里几样之间隔开的。
@@ -141,6 +145,9 @@ pub fn plan(detail: &Detail, texts: &PackageTexts) -> Option<Plan> {
     if doing == Doing::Remove {
         row(&texts.also_deletes, deleted(preview, texts));
         row(&texts.config, config(preview, texts).into_iter().collect());
+        if preview["layer"] == "distro" {
+            row(&texts.note, vec![texts.distro_note.clone()]);
+        }
     }
     if let (Some(files), Some(bytes)) = (preview["files"].as_u64(), preview["size"].as_u64()) {
         let line = counted(files, &texts.files).replace("{size}", &size(bytes));

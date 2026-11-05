@@ -228,6 +228,10 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
                 Item::Local(p) => {
                     let state = match store.upgrades.get(&p.id) {
                         Some(to) => (say("upgrade_to").replace("{to}", to), theme::accent()),
+                        // 被它盖住的那份更新（核心 SD-1）：卸掉这份就换回去。
+                        None if p.covers.as_ref().is_some_and(|c| c.newer) => {
+                            (say("covered_newer"), theme::accent())
+                        }
                         None if !p.on => (say("off"), theme::dim()),
                         None => (String::new(), Style::new()),
                     };
