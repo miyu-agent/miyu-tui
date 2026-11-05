@@ -122,3 +122,30 @@ fn a_covered_copy_joins_the_row_that_covers_it() {
     let memes = list.iter().find(|p| p.id == "memes").unwrap();
     assert_eq!(memes.covers, None);
 }
+
+/// `command` 是第一个子命令、`commands` 是全部：两格都有的只留全部的（2026-11-06 实测见到「命令 memes、命令 memes」）。
+#[test]
+fn the_first_command_is_not_listed_again_beside_all_of_them() {
+    let got = info(&json!({"package": "miyu-memes",
+        "provides": {"command": "memes", "commands": ["memes"], "page": true}}));
+    let kinds: Vec<&str> = got.provides.iter().map(|(k, _)| k.as_str()).collect();
+    assert_eq!(kinds, ["commands", "page"]);
+    let only = info(&json!({"package": "x", "provides": {"command": "x"}}));
+    assert_eq!(
+        only.provides,
+        [("command".to_string(), vec!["x".to_string()])]
+    );
+}
+
+/// 核心 SD-1补：卸掉的出厂、系统安装的包记着 `removed`，空格照编号装回。
+#[test]
+fn a_removed_package_is_marked() {
+    let list = locals(&json!({"packages": [
+        {"package": "tarot", "layer": "distro", "removed": true},
+        {"package": "im", "enabled": false}]}));
+    let removed: Vec<(&str, bool, bool)> = list
+        .iter()
+        .map(|p| (p.id.as_str(), p.removed, p.on))
+        .collect();
+    assert_eq!(removed, [("im", false, false), ("tarot", true, false)]);
+}
