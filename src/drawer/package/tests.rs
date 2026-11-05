@@ -87,3 +87,22 @@ fn without_a_preview_the_title_takes_the_folder_name_and_other_asks_are_not_this
     assert_eq!(got.map(|p| p.title).as_deref(), Some("安装 weather"));
     assert_eq!(planned(json!({"tool": "write", "paths": []})), None);
 }
+
+#[test]
+fn the_state_directory_says_where_and_how_big_when_the_core_tells() {
+    // 核心 PK-4（11-05 core1）：`state` 从真假改成 `{path, size}`；旧核心的 `true` 照旧只写「状态目录」，没有的不写。
+    let both = ("状态目录", "状态目录 {path}（{size}）");
+    let home = std::env::home_dir().unwrap_or_default();
+    let path = home.join(".miyu/var/lib/xx").display().to_string();
+    let new = serde_json::json!({"path": path, "size": 3_355_443});
+    assert_eq!(
+        super::state_item(&new, both).as_deref(),
+        Some("状态目录 ~/.miyu/var/lib/xx（3.2 MiB）")
+    );
+    assert_eq!(
+        super::state_item(&serde_json::json!(true), both).as_deref(),
+        Some("状态目录")
+    );
+    assert_eq!(super::state_item(&serde_json::Value::Null, both), None);
+    assert_eq!(super::state_item(&serde_json::json!(false), both), None);
+}

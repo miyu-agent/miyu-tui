@@ -58,6 +58,8 @@ pub struct PackageTexts {
     pub deleted_settings: String,
     /// 一并删除的状态目录。
     pub state_dir: String,
+    /// 新核心说了状态目录在哪、多大（PK-4）：`{path}`、`{size}`。
+    pub state_path: String,
     /// 多大、几个文件，`{size}`、`{n}`：一个文件的、几个的。
     pub files: [String; 2],
     /// 一行里几样之间隔开的。
@@ -196,10 +198,25 @@ fn deleted(preview: &Value, texts: &PackageTexts) -> Vec<String> {
                 .replace("{keys}", &keys.join(&texts.separator)),
         );
     }
-    if preview["state"] == true {
-        items.push(texts.state_dir.clone());
-    }
+    items.extend(state_item(
+        &preview["state"],
+        (&texts.state_dir, &texts.state_path),
+    ));
     items
+}
+
+/// 卸的时候要删的状态目录那一项（`package.remove` 预览的 `state`）：新核心（PK-4）给 `{path, size}`，写「状态目录 路径（大小）」；
+/// 旧核心给 `true`，只写「状态目录」；没有这一格、`false` 的不写。`plain`、`with_path` 是两种写法。
+pub fn state_item(state: &Value, (plain, with_path): (&str, &str)) -> Option<String> {
+    if *state == Value::Bool(true) {
+        return Some(plain.to_string());
+    }
+    let path = state["path"].as_str()?;
+    Some(
+        with_path
+            .replace("{path}", &crate::local::home_short(path))
+            .replace("{size}", &size(state["size"].as_u64().unwrap_or(0))),
+    )
 }
 
 /// 一格数组里的每一项；不是数组的没有。
