@@ -19,19 +19,33 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState
     let Some(start) = seen.talk.transcript.running else {
         return;
     };
+    let line = pulse_line(
+        start,
+        seen.talk.transcript.beat(),
+        seen.talk.transcript.retry.as_deref(),
+        &mut mascot.pulse,
+        seen.config,
+    );
+    frame.render_widget(Paragraph::new(line), area);
+}
+
+/// 运行状态行的那一行（shellhook 也照它画，图纸 `shellhook.md`）：这一轮从 `start` 起跑、出过 `beat` 件事，在重试的带着
+/// 给人看的那一句。
+pub fn pulse_line(
+    start: Instant,
+    beat: usize,
+    retry: Option<&str>,
+    pulse: &mut crate::pulse::Pulse,
+    config: &crate::config::Config,
+) -> Line<'static> {
     let now = Instant::now();
-    let beat = seen.talk.transcript.beat();
-    let word = mascot
-        .pulse
-        .word(start, beat, now, &seen.config.pulse)
-        .to_string();
-    let layout = &seen.config.layout;
+    let word = pulse.word(start, beat, now, &config.pulse).to_string();
+    let layout = &config.layout;
     // 流光一直照工作区那一档的颜色，不跟着权限级别变（2026-10-17 项目主人：开放权限时整行变红不对）；照级别的颜色算、
     // 不写死强调色，终端配色时和模式字对得上（2026-10-14 项目主人定）。
     let base = theme::level_color(crate::core::Level::Workspace);
     // 换了词，亮光从头扫（`tui.md`「运行状态行和排队的消息」第 1 条）。
-    let t = mascot
-        .pulse
+    let t = pulse
         .shown()
         .map_or(0.0, |s| now.saturating_duration_since(s).as_secs_f64());
     let chars: Vec<char> = swept(&word, &layout.dots, t, layout.shimmer.sweep_seconds)
@@ -48,18 +62,18 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState
         })
         .collect();
     // 补到词库里最宽的词那么宽，用时的位置不跟着词长短跳。
-    let pad = seen.config.pulse.widest().saturating_sub(word.width()) + 1;
+    let pad = config.pulse.widest().saturating_sub(word.width()) + 1;
     spans.push(Span::raw(" ".repeat(pad)));
     let rest = theme::shimmer_rest_on(base, &layout.shimmer);
     spans.push(Span::styled(
         crate::meter::clock(start.elapsed().as_secs()),
         rest,
     ));
-    if let Some(retry) = &seen.talk.transcript.retry {
+    if let Some(retry) = retry {
         spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
-        spans.push(Span::styled(retry.clone(), theme::warn()));
+        spans.push(Span::styled(retry.to_string(), theme::warn()));
     }
-    frame.render_widget(Paragraph::new(Line::from(spans)), area);
+    Line::from(spans)
 }
 
 /// 被流光扫的那一截：词后面接着点，同一道亮光一路扫过去；点的个数跟着流光轮换，一趟亮光轮一圈，

@@ -2583,6 +2583,8 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "crossterm",
+ "crossterm_winapi",
+ "filedescriptor",
  "futures-core",
  "image",
  "jiff",
@@ -2609,6 +2611,7 @@ dependencies = [
  "serde",
  "serde_json",
  "similar",
+ "sys-locale",
  "terminal-colorsaurus",
  "tokio",
  "unicode-segmentation",

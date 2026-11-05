@@ -5,8 +5,9 @@ use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
+use super::Sources;
 use super::amounts;
-use crate::app::{Seen, UsageData};
+use crate::app::UsageData;
 use crate::core::UsageRow;
 use crate::usage::{self, Day};
 use crate::{meter, theme};
@@ -16,22 +17,22 @@ const LABEL: usize = 4;
 
 /// 总览：四个数、空一行、热度图。
 pub(super) fn page(
-    seen: &Seen,
+    src: &Sources<'_>,
     data: &UsageData,
     rows: &[UsageRow],
     by_money: bool,
     width: u16,
 ) -> Vec<Line<'static>> {
-    let days = usage::days(rows, &seen.link.currency);
-    let mut out = stats(seen, data, &days, width);
+    let days = usage::days(rows, src.currency);
+    let mut out = stats(src, data, &days, width);
     out.push(Line::default());
-    out.extend(heat(seen, data, &days, by_money, width));
+    out.extend(heat(src, data, &days, by_money, width));
     out
 }
 
 /// 四个数，每个三行：暗色的名字、加粗的数、暗色的补充；一个占四分之一宽。
-fn stats(seen: &Seen, data: &UsageData, days: &[Day], width: u16) -> Vec<Line<'static>> {
-    let texts = &seen.config.text.usage;
+fn stats(src: &Sources<'_>, data: &UsageData, days: &[Day], width: u16) -> Vec<Line<'static>> {
+    let texts = &src.config.text.usage;
     let missing = || "—".to_string();
     let total = match &data.total {
         Some(Ok(rows)) => rows.first(),
@@ -42,7 +43,7 @@ fn stats(seen: &Seen, data: &UsageData, days: &[Day], width: u16) -> Vec<Line<'s
             format!("{} {}", meter::short(r.tokens), texts.by_tokens)
         }),
         total
-            .and_then(|r| amounts(seen, &r.bill))
+            .and_then(|r| amounts(src, &r.bill))
             .unwrap_or_default(),
     );
     let peak = usage::peak(days).map_or_else(
@@ -62,7 +63,7 @@ fn stats(seen: &Seen, data: &UsageData, days: &[Day], width: u16) -> Vec<Line<'s
         || (missing(), String::new()),
         |r| {
             let id = r.session.clone().unwrap_or_default();
-            (meter::short(r.tokens), seen.usage_name(&id))
+            (meter::short(r.tokens), src.name(&id))
         },
     );
     let cells = [
@@ -91,15 +92,15 @@ fn stats(seen: &Seen, data: &UsageData, days: &[Day], width: u16) -> Vec<Line<'s
 
 /// 热度图：月份一行、七天七行、图例一行。照花费的那种币一笔都没有的照 token。
 fn heat(
-    seen: &Seen,
+    src: &Sources<'_>,
     data: &UsageData,
     days: &[Day],
     by_money: bool,
     width: u16,
 ) -> Vec<Line<'static>> {
-    let texts = &seen.config.text.usage;
+    let texts = &src.config.text.usage;
     let by_money = by_money && days.iter().any(|d| d.amount > 0.0);
-    let weeks = usize::from(seen.config.layout.usage.weeks)
+    let weeks = usize::from(src.config.layout.usage.weeks)
         .min(usize::from(width).saturating_sub(LABEL) / 2)
         .max(1);
     let value = |d: &Day| if by_money { d.amount } else { d.tokens as f64 };
@@ -121,7 +122,7 @@ fn heat(
         }
         out.push(Line::from(spans));
     }
-    out.push(legend(seen, by_money, LABEL + weeks * 2));
+    out.push(legend(src, by_money, LABEL + weeks * 2));
     out
 }
 
@@ -147,16 +148,16 @@ fn months(texts: &super::Texts, marks: &[(usize, i8)], weeks: usize) -> Line<'st
 }
 
 /// 图例：右对齐到热度图的右边，「token   少 ■ ■ ■ ■ ■ 多」（照花费的写「花费（$）」）。
-fn legend(seen: &Seen, by_money: bool, right: usize) -> Line<'static> {
-    let texts = &seen.config.text.usage;
+fn legend(src: &Sources<'_>, by_money: bool, right: usize) -> Line<'static> {
+    let texts = &src.config.text.usage;
     let metric = if by_money {
-        let symbol = seen
+        let symbol = src
             .config
             .layout
             .currencies
-            .get(&seen.link.currency)
+            .get(src.currency)
             .cloned()
-            .unwrap_or_else(|| seen.link.currency.clone());
+            .unwrap_or_else(|| src.currency.to_string());
         format!("{}（{symbol}）", texts.by_money)
     } else {
         texts.by_tokens.clone()

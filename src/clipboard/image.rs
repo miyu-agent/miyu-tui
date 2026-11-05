@@ -11,7 +11,7 @@ use std::fs;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
-use super::read::{WAIT, run_bytes};
+use super::read::{run_bytes, wait};
 
 /// 认的几种图（核心只收这几种），先后是挑的先后：媒体类型和存成的扩展名。
 const KINDS: [(&str, &str); 4] = [
@@ -38,9 +38,12 @@ pub fn read_image(dir: &Path) -> Option<PathBuf> {
 }
 
 /// 剪贴板里是复制的文件：交回 `text/uri-list` 那几行（`file://` 开头，一行一个）；不是的、读不到的交回 `None`。
-/// macOS 不读（Finder 复制的文件另有一套，先不做）。
+/// Windows 是路径一行一个（`windows.rs`）；macOS 不读（Finder 复制的文件另有一套，先不做）。
 pub fn read_files() -> Option<String> {
-    if cfg!(target_os = "macos") || cfg!(windows) {
+    if cfg!(windows) {
+        return super::windows::files();
+    }
+    if cfg!(target_os = "macos") {
         return None;
     }
     let wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
@@ -50,15 +53,19 @@ pub fn read_files() -> Option<String> {
 /// 照这台机器的剪贴板命令取图：字节和扩展名。
 fn grab() -> Option<(Vec<u8>, &'static str)> {
     if cfg!(target_os = "macos") {
-        let info = run_bytes("osascript", &["-e", "clipboard info"], WAIT)?;
+        let info = run_bytes("osascript", &["-e", "clipboard info"], wait())?;
         if mac_has_files(&String::from_utf8_lossy(&info)) {
             return None;
         }
-        let out = run_bytes("osascript", &["-e", "the clipboard as «class PNGf»"], WAIT)?;
+        let out = run_bytes(
+            "osascript",
+            &["-e", "the clipboard as «class PNGf»"],
+            wait(),
+        )?;
         return mac_png(&String::from_utf8_lossy(&out)).map(|png| (png, "png"));
     }
     if cfg!(windows) {
-        return None;
+        return super::windows::image().map(|png| (png, "png"));
     }
     let wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
     linux_image(wayland, &System)
@@ -81,7 +88,7 @@ impl Runner for System {
     }
 
     fn run(&self, cmd: &str, args: &[&str]) -> Option<Vec<u8>> {
-        run_bytes(cmd, args, WAIT)
+        run_bytes(cmd, args, wait())
     }
 }
 

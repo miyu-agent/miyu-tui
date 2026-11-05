@@ -159,7 +159,7 @@ impl App {
 
 /// 在 `transcript` 里写一问的结果：回答不进时间线，另起一块照你说的话的样子画（`ui/answered_rows.rs`，2026-10-26 项目
 /// 主人定）；不允许的末尾一行红 `✗`（第 6 条）。按页读更早的一页时写进那一份临时的正文（`pages.rs`）。
-pub(super) fn report_into(
+pub(crate) fn report_into(
     transcript: &mut crate::transcript::Transcript,
     drawer: &Drawer,
     outcome: &Outcome,
@@ -179,8 +179,8 @@ pub(super) fn report_into(
     }
 }
 
-/// 回答里贴的图：第几道的（拒绝的是外面的）、本机的文件，照贴的先后。
-fn answer_files(outcome: &Outcome) -> Vec<(Option<usize>, std::path::PathBuf)> {
+/// 回答里贴的图：第几道的（拒绝的是外面的）、本机的文件，照贴的先后。shellhook 的抽屉也照它交。
+pub(crate) fn answer_files(outcome: &Outcome) -> Vec<(Option<usize>, std::path::PathBuf)> {
     match outcome {
         Outcome::Answered(a) => a
             .answers

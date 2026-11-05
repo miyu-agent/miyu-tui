@@ -10,7 +10,21 @@ use super::{Depth, degrade, fit};
 
 fn detect(vars: &[(&str, &str)]) -> Depth {
     let vars: HashMap<&str, &str> = vars.iter().copied().collect();
-    Depth::detect(|name| vars.get(name).map(|v| (*v).to_string()))
+    Depth::detect_on(|name| vars.get(name).map(|v| (*v).to_string()), false)
+}
+
+#[test]
+fn windows_without_term_is_true_color() {
+    // Windows 一般不设 `TERM`：不当成哑终端（2026-10-23 Windows 虚拟机里 shellhook 全是白字）。
+    let none = |_: &str| None;
+    assert_eq!(Depth::detect_on(none, true), Depth::True);
+    assert_eq!(Depth::detect_on(none, false), Depth::Mono);
+    let no_color = |name: &str| (name == "NO_COLOR").then(|| "1".to_string());
+    assert_eq!(
+        Depth::detect_on(no_color, true),
+        Depth::Mono,
+        "NO_COLOR 照旧"
+    );
 }
 
 #[test]

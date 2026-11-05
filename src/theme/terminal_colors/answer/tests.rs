@@ -1,6 +1,6 @@
 //! 读终端的回话：16 色、字色和底色。
 
-use super::{all_query, answered, ground, sixteen};
+use super::{Rebuilt, all_query, answered, ground, sixteen};
 
 /// 照 kitty 的样子答 16 色：4 位十六进制、`ESC \` 收尾；第 4 号（蓝）是 `#4080ff`。
 fn reply() -> Vec<u8> {
@@ -68,4 +68,27 @@ fn the_ground_reply_reads_both_colors_and_judges_dark_like_colorsaurus() {
     let query = all_query();
     assert!(query.starts_with("\x1b]10;?\x1b\\\x1b]11;?\x1b\\\x1b]4;0;?"));
     assert!(query.ends_with("\x1b[c"));
+}
+
+#[test]
+fn windows_events_without_their_esc_still_read_into_sixteen_colors() {
+    // 2026-10-24 虚拟机里记下的：Windows 上回话打头的 ESC 读不到。照 reply() 去掉所有 ESC 一个字一个字喂进去，拼回来照样读得出。
+    let lost: String = String::from_utf8(reply())
+        .unwrap()
+        .chars()
+        .filter(|&c| c != '\x1b')
+        .collect();
+    let mut got = Rebuilt::default();
+    for c in lost.chars() {
+        got.push_char(c);
+    }
+    assert!(answered(&got.bytes), "DA1 认得出");
+    assert_eq!(sixteen(&got.bytes), sixteen(&reply()));
+    assert!(sixteen(&got.bytes).is_some());
+    // ESC 在的照原样，不多补。
+    let mut kept = Rebuilt::default();
+    for byte in reply() {
+        kept.push(byte);
+    }
+    assert_eq!(kept.bytes, reply());
 }

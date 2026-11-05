@@ -8,8 +8,8 @@ use super::{Answer, Decided, Decision, Drawer, Edit, Item, Outcome, Pasted, Step
 impl Drawer {
     /// 按一下（抽屉开着时按键都先归它）。
     pub fn key(&mut self, key: KeyEvent) -> Step {
-        // 按了别的键：上一下 `Esc` 不算了。写「不允许」的理由不算在编辑（光标落上去就在写，第 4 条）。
-        let typing = matches!(self.editing, Some(Edit::Other | Edit::Notes));
+        // 按了别的键：上一下 `Esc` 不算了。
+        let typing = self.editing.is_some();
         if key.code != KeyCode::Esc || typing {
             self.armed = None;
         }
@@ -72,30 +72,22 @@ impl Drawer {
             KeyCode::Char(c) if plain => return self.char(c),
             _ => {}
         }
-        self.follow_cursor();
         Step::Stay
     }
 
-    /// 光标落在「不允许」上就在写理由，离开就不写了（字留着；2026-10-07 项目主人：原来要先按一下回车才能写）。
-    fn follow_cursor(&mut self) {
-        let on_deny = self.current() == Some(Item::Decision(Decision::Deny));
-        if on_deny && self.editing.is_none() {
-            self.editing = Some(Edit::Reason);
-        } else if !on_deny && self.editing == Some(Edit::Reason) {
-            self.editing = None;
-        }
-    }
-
-    /// 贴一张图（核心 Q-A）：提问贴给光标所在的这一道（「确认」页不收），确认只有光标在「不允许」上时收；收不了的交回
-    /// `false`。能多选的当场重记这一道的回答（只贴了图也算答了）。
+    /// 贴一张图（核心 Q-A）：提问贴给光标所在的这一道（「确认」页不收），确认只有光标在「不允许」上时收，收了就是在写理由
+    /// （同按 `n`，不用先按）；收不了的交回 `false`。能多选的当场重记这一道的回答（只贴了图也算答了）。
     pub fn attach(&mut self, pasted: Pasted) -> bool {
         let takes = if self.is_question() {
             !self.on_review()
         } else {
-            self.editing == Some(Edit::Reason)
+            self.current() == Some(Item::Decision(Decision::Deny))
         };
         if !takes {
             return false;
+        }
+        if !self.is_question() {
+            self.editing = Some(Edit::Reason);
         }
         self.images[self.tab].push(pasted);
         if self.is_question() && self.multiple(self.tab) {
@@ -123,9 +115,7 @@ impl Drawer {
     pub fn click(&mut self, index: usize) -> Step {
         self.editing = None;
         self.armed = None;
-        let step = self.pick(index);
-        self.follow_cursor();
-        step
+        self.pick(index)
     }
 
     /// 编辑时的按键：`Enter` 保存，`Shift+Enter`、`Alt+Enter`、`Ctrl+J` 换行，`Esc` 退出编辑（「输入其他答案」的字留着，补充的清空：
@@ -139,20 +129,9 @@ impl Drawer {
             Edit::Notes => &mut self.notes[self.tab],
             Edit::Other | Edit::Reason => &mut self.typed[self.tab],
         };
-        // 理由：方向键照样上下选，`Esc` 照旧是两下取消的一下（光标在「不允许」上就在写，没有「退出编辑」）。
-        if edit == Edit::Reason {
-            match key.code {
-                KeyCode::Esc => return Step::Escape,
-                KeyCode::Up | KeyCode::Down => {
-                    self.editing = None;
-                    return self.key(key);
-                }
-                _ => {}
-            }
-        }
         match key.code {
             KeyCode::Esc => {
-                if edit == Edit::Notes {
+                if matches!(edit, Edit::Notes | Edit::Reason) {
                     text.clear();
                 }
                 self.editing = None;
@@ -203,11 +182,21 @@ impl Drawer {
         match c {
             ' ' => self.toggle(),
             'n' if self.is_question() && !self.on_review() => self.editing = Some(Edit::Notes),
+            // 确认：`n` 写「不允许」的理由，光标挪到「不允许」上（2026-10-22 项目主人：照提问的 `n` 补充改，原来光标落到
+            // 「不允许」上就在写）。
+            'n' if !self.is_question() => {
+                let items = self.items(self.tab);
+                if let Some(at) = items
+                    .iter()
+                    .position(|i| *i == Item::Decision(Decision::Deny))
+                {
+                    self.cursor[self.tab] = at;
+                    self.editing = Some(Edit::Reason);
+                }
+            }
             _ => {
                 if let Some(d @ 1..=9) = c.to_digit(10) {
-                    let step = self.pick(d as usize - 1);
-                    self.follow_cursor();
-                    return step;
+                    return self.pick(d as usize - 1);
                 }
             }
         }
@@ -265,10 +254,6 @@ impl Drawer {
         match self.current() {
             Some(Item::Other) => {
                 self.editing = Some(Edit::Other);
-                Step::Stay
-            }
-            Some(Item::Decision(Decision::Deny)) => {
-                self.editing = Some(Edit::Reason);
                 Step::Stay
             }
             Some(Item::Decision(decision)) => Step::Done(Outcome::Decided(Decided {

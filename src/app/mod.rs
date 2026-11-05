@@ -28,6 +28,7 @@ mod widget_page;
 mod widgets;
 
 pub use avatars::{Avatar, Place};
+pub(crate) use drawer::{answer_files, report_into};
 pub use frame::Lists;
 pub use jobs::Panel;
 pub use mascot::MascotState;
@@ -58,6 +59,7 @@ mod output;
 mod packages;
 mod pages;
 mod paste;
+pub(crate) use paste::attach_rule;
 mod pick_edit;
 mod redo;
 mod screen;
@@ -83,6 +85,8 @@ mod updates;
 pub mod usage;
 mod viewing;
 pub(crate) mod vim;
+pub(crate) use keys::is_paste;
+pub(crate) use vim::step as vim_step;
 mod workspace;
 
 #[cfg(test)]
