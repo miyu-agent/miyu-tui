@@ -5,7 +5,7 @@ mod event;
 mod keys;
 mod package;
 /// 多少字节写成给人看的（引导下载语义模型也用，同软件包页）。
-pub use package::{size, state_item};
+pub use package::{ConfigWords, config_item, size, state_item};
 mod report;
 mod texts;
 

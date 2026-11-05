@@ -66,6 +66,20 @@ pub struct PackageTexts {
     pub config_kept: String,
     /// 见 `config_kept`。
     pub config_purge: String,
+    /// 设置项留在配置里，`{n}`（核心 PK-5补；删掉的键照旧列在「一并删除」）。
+    pub settings_kept: String,
+    /// 目录、设置项两样之间接的字。
+    pub config_join: String,
+    /// 装的时候「来源」那一行打头的（核心 PK-3 上）。
+    pub from: String,
+    /// 从哪来的叫法：`official`、`community`、`file`、`shipped`、`distro`。
+    pub sources: std::collections::HashMap<String, String>,
+    /// 批过的能力后面接的（`held`）。
+    pub held: String,
+    /// 核心给的「注意」那一行打头的。
+    pub notice: String,
+    /// 「注意」几句之间接的字。
+    pub notice_join: String,
     /// 卸系统安装的包（核心 SD-1）那一行打头的。
     pub note: String,
     /// 见 `note`：只是不再加载，文件要用系统的包管理器删。
@@ -127,6 +141,10 @@ pub fn plan(detail: &Detail, texts: &PackageTexts) -> Option<Plan> {
             rows.push(format!("{label}{}", items.join(&texts.separator)));
         }
     };
+    row(
+        &texts.from,
+        source::from(preview, texts).into_iter().collect(),
+    );
     row(&texts.includes, included(preview, doing, texts));
     let skipped = list(&preview["skipped"])
         .map(|one| {
@@ -137,11 +155,8 @@ pub fn plan(detail: &Detail, texts: &PackageTexts) -> Option<Plan> {
         })
         .collect();
     row(&texts.skipped, skipped);
-    let needs = list(&preview["capabilities"])
-        .filter_map(|capability| capability["name"].as_str())
-        .map(str::to_string)
-        .collect();
-    row(&texts.needs, needs);
+    row(&texts.needs, source::needs(preview, texts));
+    row(&texts.notice, source::notice(preview, texts));
     if doing == Doing::Remove {
         row(&texts.also_deletes, deleted(preview, texts));
         row(&texts.config, config(preview, texts).into_iter().collect());
@@ -219,17 +234,16 @@ fn deleted(preview: &Value, texts: &PackageTexts) -> Vec<String> {
     items
 }
 
-/// 卸的时候配置目录那一项（PK-5，`package.remove` 预览的 `config`）：`kept` 为真写留在哪，为假写会删掉哪；没有这一格（旧核心、
-/// 没有配置目录）的不写。
+/// 卸的时候配置那一项（`config.rs`）：删的设置项照预览的键列在「一并删除」，这里只写目录。
 fn config(preview: &Value, texts: &PackageTexts) -> Option<String> {
-    let config = &preview["config"];
-    let path = crate::local::home_short(config["path"].as_str()?);
-    let template = if config["kept"] == false {
-        &texts.config_purge
-    } else {
-        &texts.config_kept
+    let words = ConfigWords {
+        kept: &texts.config_kept,
+        purge: &texts.config_purge,
+        settings_kept: &texts.settings_kept,
+        settings_purge: "",
+        join: &texts.config_join,
     };
-    Some(template.replace("{path}", &path))
+    config_item(&preview["config"], None, words)
 }
 
 /// 卸的时候要删的状态目录那一项（`package.remove` 预览的 `state`）：新核心（PK-4）给 `{path, size}`，写「状态目录 路径（大小）」；
@@ -279,6 +293,10 @@ pub fn size(bytes: u64) -> String {
     }
     format!("{value:.1} {}", UNITS[unit])
 }
+
+mod config;
+mod source;
+pub use config::{ConfigWords, config_item};
 
 #[cfg(test)]
 mod tests;

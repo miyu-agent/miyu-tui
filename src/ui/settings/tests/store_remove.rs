@@ -77,3 +77,16 @@ fn clicking_a_button_presses_it() {
         .collect();
     assert_eq!(sent, [json!({"package": "im", "purge": true})]);
 }
+
+/// 核心 PK-5补：只有设置项、没有配置目录的也给三个按钮，写「N 项设置留在配置里」。
+#[test]
+fn settings_alone_still_offer_the_purge_button() {
+    let config = Config::builtin().unwrap();
+    let mut p = asking(&config, false);
+    if let Some(Flow::Confirm { previews, .. }) = &mut p.more.store.flow {
+        previews[0]["config"] = json!({"kept": true, "settings": 2});
+    }
+    let (text, _) = screen(&mut p, &config, 90, 24);
+    assert!(text.contains("[ 卸载并删除配置 ]"), "{text}");
+    assert!(text.contains("配置 : 2 项设置留在配置里"), "{text}");
+}

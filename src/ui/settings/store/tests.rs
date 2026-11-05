@@ -268,3 +268,55 @@ fn a_covered_copy_shows_on_the_row_that_covers_it() {
     );
     assert!(!ask("home").iter().any(|l| l.contains(note)));
 }
+
+/// 核心 PK-3 上：装、升级问的时候写来源、能力一项一行（批过的标「已批准」）、核心给的「注意」，有要批的问「并批准」。
+#[test]
+fn installing_says_where_from_what_it_needs_and_the_notice() {
+    let store = store();
+    let install = Doing::Install(vec!["tarot".into()]);
+    let preview = json!({"package": "tarot", "version": "1.0.0", "source": "community", "feed": "official",
+        "capabilities": [{"id": "net", "name": "联网", "summary": "连外网", "held": true},
+                         {"id": "fs.read", "name": "读文件", "summary": "读你的文件"}],
+        "notice": ["这个包没经过官方审核。", "它带的程序会以你的身份在这台机器上跑，不在沙盒里。"]});
+    let lines: Vec<String> =
+        asking::lines(&store, &install, std::slice::from_ref(&preview), &words())
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+    let has = |want: &str| lines.iter().any(|l| l.ends_with(want));
+    assert!(has(": 社区"), "{lines:?}");
+    assert!(has(": 联网：连外网（已批准）"), "{lines:?}");
+    let at = lines
+        .iter()
+        .position(|l| l.ends_with("读文件：读你的文件"))
+        .expect("第二项另起一行");
+    assert!(!lines[at].contains(':'), "第二行起不再写键：{lines:?}");
+    assert_eq!(
+        lines.last().map(String::as_str),
+        Some("注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。")
+    );
+    let flow = crate::settings::pages::store::Flow::Confirm {
+        doing: install,
+        previews: vec![preview],
+    };
+    let go = preview::flowing(&store, &flow, &words());
+    assert_eq!(go.last().unwrap().to_string(), "安装并批准要的能力？ [Y/n]");
+    // 升级只说新要的。
+    let upgrade = Doing::Upgrade(None);
+    let up = json!({"upgrades": [{"package": "im", "from": "0.8.4", "to": "0.9.0", "source": "official",
+        "feed": "official", "capabilities": [{"id": "net", "name": "联网", "held": true},
+                                              {"id": "mic", "name": "麦克风"}]}], "with": []});
+    let lines: Vec<String> = asking::lines(&store, &upgrade, &[up], &words())
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    assert!(lines.iter().any(|l| l.ends_with(": 麦克风")), "{lines:?}");
+    assert!(
+        !lines.iter().any(|l| l.contains("联网")),
+        "批过的不列：{lines:?}"
+    );
+    assert!(
+        lines.iter().any(|l| l.ends_with(": 官方软件源")),
+        "{lines:?}"
+    );
+}

@@ -1,11 +1,13 @@
 //! 问之前写在预览块里的（蓝图「配置页」第 43c 条）：照看一眼的回应（`preview: true`）列出要装的、一起装的依赖、需要的
 //! 能力、下载多大、装好多大、推荐的；卸的写一并删除什么、配置目录留着还是删、多大；升级的写旧版到新版、下载多大；批能力的一项一行。
+//! 装、升级的另写来源、能力一项一行、核心给的「注意」（核心 PK-3 上，`caps.rs`）。
 
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use serde_json::Value;
 use unicode_width::UnicodeWidthStr;
 
+use super::caps;
 use super::preview::name_of;
 use crate::drawer::size;
 use crate::settings::pages::store::flow::Doing;
@@ -25,7 +27,9 @@ pub fn lines(
     let sep = v("sep");
     let mut out = Vec::new();
     let mut rows: Vec<(String, String)> = Vec::new();
-    let mut extra: Vec<(String, String, Style)> = Vec::new();
+    // 键、一行行的值：多数一行，能力一项一行，第二行起和第一行的值对齐。
+    let mut extra: Vec<(String, Vec<(String, Style)>)> = Vec::new();
+    let one = |k: String, v: String, style: Style| (k, vec![(v, style)]);
     match doing {
         Doing::Install(_) => {
             out.push(head(
@@ -53,10 +57,9 @@ pub fn lines(
                     )
                 })
                 .collect();
-            let needs: Vec<String> = previews
+            let items: Vec<&Value> = previews
                 .iter()
-                .flat_map(|p| list(&p["capabilities"]))
-                .filter_map(|c| c["name"].as_str().or(c["id"].as_str()).map(str::to_string))
+                .chain(previews.iter().flat_map(|p| list(&p["with"])))
                 .collect();
             let recommends: Vec<String> = previews
                 .iter()
@@ -64,24 +67,24 @@ pub fn lines(
                 .map(|r| name_of(store, &text(&r["package"])))
                 .collect();
             let total = |key: &str| previews.iter().filter_map(|p| p[key].as_u64()).sum::<u64>();
+            extra.push(one(a("from"), caps::sources(&items, texts), Style::new()));
             // 「需要」排在依赖前面：依赖一长折成几行，也挤不走要批的能力（发布前第五批审查 T5-1）。
             extra.push((
                 StoreTexts::say(&texts.keys, "needs"),
-                needs.join(&sep),
-                theme::warn(),
+                caps::capabilities(store, &items, false, texts),
             ));
-            extra.push((a("with"), with.join(&sep), Style::new()));
-            extra.push((
+            extra.push(one(a("with"), with.join(&sep), Style::new()));
+            extra.push(one(
                 StoreTexts::say(&texts.keys, "download"),
                 sized(total("download")),
                 Style::new(),
             ));
-            extra.push((
+            extra.push(one(
                 StoreTexts::say(&texts.keys, "installed_size"),
                 sized(total("installed")),
                 Style::new(),
             ));
-            extra.push((a("recommends"), recommends.join(&sep), Style::new()));
+            extra.push(one(a("recommends"), recommends.join(&sep), Style::new()));
         }
         Doing::Remove(id) => {
             let p = previews.first().cloned().unwrap_or_default();
@@ -102,20 +105,32 @@ pub fn lines(
             }
             let (plain, with_path) = (a("drop_state"), a("drop_state_path"));
             drop.extend(crate::drawer::state_item(&p["state"], (&plain, &with_path)));
-            extra.push((a("drop"), drop.join(&sep), theme::warn()));
-            // 配置目录（PK-5）：照停着的按钮写留着还是会删掉。
-            if let Some(path) = p["config"]["path"].as_str() {
-                let purge = remove::selected(store) == Some(Button::Purge);
-                let say = a(if purge { "config_purge" } else { "config_kept" });
-                let path = crate::local::home_short(path);
+            extra.push(one(a("drop"), drop.join(&sep), theme::warn()));
+            // 配置目录、设置项（PK-5、PK-5补）：照停着的按钮写留着还是会删掉。
+            let purge = remove::selected(store) == Some(Button::Purge);
+            let (kept, purged, settings_kept, settings_purge, join) = (
+                a("config_kept"),
+                a("config_purge"),
+                a("settings_kept"),
+                a("settings_purge"),
+                a("config_join"),
+            );
+            let words = crate::drawer::ConfigWords {
+                kept: &kept,
+                purge: &purged,
+                settings_kept: &settings_kept,
+                settings_purge: &settings_purge,
+                join: &join,
+            };
+            if let Some(said) = crate::drawer::config_item(&p["config"], Some(purge), words) {
                 let style = if purge { theme::warn() } else { Style::new() };
-                extra.push((a("config"), say.replace("{path}", &path), style));
+                extra.push(one(a("config"), said, style));
             }
             // 系统安装的（核心 SD-1）：卸了只是不再加载，文件不动。
             if p["layer"] == "distro" {
-                extra.push((a("note"), a("distro_note"), theme::dim()));
+                extra.push(one(a("note"), a("distro_note"), theme::dim()));
             }
-            extra.push((
+            extra.push(one(
                 a("size"),
                 p["size"].as_u64().map(size).unwrap_or_default(),
                 Style::new(),
@@ -124,7 +139,16 @@ pub fn lines(
         Doing::Upgrade(_) => {
             let p = previews.first().cloned().unwrap_or_default();
             let ups: Vec<&Value> = list(&p["upgrades"]).collect();
+            let with: Vec<&Value> = list(&p["with"]).collect();
             out.push(head(a("upgrade").replace("{n}", &ups.len().to_string())));
+            let all: Vec<&Value> = ups.iter().chain(&with).copied().collect();
+            extra.push(one(a("from"), caps::sources(&all, texts), Style::new()));
+            // 升级只说新要的（批过的不列），一起装的新依赖照装的写「需要」（同核心命令行）。
+            extra.push((a("new_caps"), caps::capabilities(store, &ups, true, texts)));
+            extra.push((
+                StoreTexts::say(&texts.keys, "needs"),
+                caps::capabilities(store, &with, false, texts),
+            ));
             for u in ups {
                 let shown = v("replace")
                     .replace("{from}", &text(&u["from"]))
@@ -132,7 +156,7 @@ pub fn lines(
                 rows.push((name_of(store, &text(&u["package"])), shown));
             }
             let download = p["download"].as_u64().map(size).unwrap_or_default();
-            extra.push((
+            extra.push(one(
                 StoreTexts::say(&texts.keys, "download"),
                 download,
                 Style::new(),
@@ -155,15 +179,28 @@ pub fn lines(
     }
     let extra: Vec<_> = extra
         .into_iter()
-        .filter(|(_, v, _)| !v.is_empty())
+        .map(|(k, values)| (k, values.into_iter().filter(|(v, _)| !v.is_empty())))
+        .map(|(k, values)| (k, values.collect::<Vec<_>>()))
+        .filter(|(_, values)| !values.is_empty())
         .collect();
-    let key_w = extra.iter().map(|(k, _, _)| k.width()).max().unwrap_or(0);
-    for (k, value, style) in extra {
+    let key_w = extra.iter().map(|(k, _)| k.width()).max().unwrap_or(0);
+    for (k, values) in extra {
         let pad = " ".repeat(key_w - k.width());
-        out.push(Line::from(vec![
-            Span::styled(format!("{k}{pad} : "), theme::dim()),
-            Span::styled(value, style),
-        ]));
+        for (n, (value, style)) in values.into_iter().enumerate() {
+            let lead = if n == 0 {
+                format!("{k}{pad} : ")
+            } else {
+                " ".repeat(key_w + 3)
+            };
+            out.push(Line::from(vec![
+                Span::styled(lead, theme::dim()),
+                Span::styled(value, style),
+            ]));
+        }
+    }
+    // 核心给的「注意」（社区的、本机文件的），写在最后、问的那一句上面。
+    if matches!(doing, Doing::Install(_) | Doing::Upgrade(_)) {
+        out.extend(caps::notice(previews, texts));
     }
     out
 }

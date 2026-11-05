@@ -5,6 +5,7 @@
 use serde_json::{Value, json};
 
 use super::answer::Ask;
+use super::approve::approve;
 use super::{Item, Listing, Tab};
 use crate::core::Progress;
 use crate::settings::{Settings, Texts, Tone, Waiting};
@@ -173,12 +174,17 @@ impl Settings {
 
     /// 问的时候按 `y`、`Enter`（卸的按了「卸载」「卸载并删除配置」）：真做。`purge` 的连配置目录一起删（PK-5）。
     pub(super) fn store_go(&mut self, purge: bool) {
-        let Some(Flow::Confirm { doing, .. }) = self.more.store.flow.take() else {
+        let Some(Flow::Confirm { doing, previews }) = self.more.store.flow.take() else {
             return;
         };
         let mut queue = Vec::new();
         match &doing {
             Doing::Install(ids) => {
+                // 答「是」就照看一眼列的批（核心 PK-3 上）：一个个装，各带各的。
+                self.more.store.approvals = previews
+                    .iter()
+                    .filter_map(|p| Some((p["package"].as_str()?.to_string(), approve(p)?)))
+                    .collect();
                 queue = ids.clone();
                 let first = queue.remove(0);
                 self.store_install_one(first);
@@ -192,7 +198,10 @@ impl Settings {
                 self.ask("package.remove", params, Waiting::Store(Ask::Done));
             }
             Doing::Upgrade(target) => {
-                let params = upgrade_params(target.as_deref(), false);
+                let mut params = upgrade_params(target.as_deref(), false);
+                if let Some(approve) = previews.first().and_then(approve) {
+                    params["approve"] = approve;
+                }
                 self.ask("package.upgrade", params, Waiting::Store(Ask::Done));
             }
             Doing::Enable(id, caps) => {
@@ -210,7 +219,10 @@ impl Settings {
 
     /// 装一个（几个的一个个来）。
     pub(super) fn store_install_one(&mut self, id: String) {
-        let params = json!({"source": id});
+        let mut params = json!({"source": id});
+        if let Some(approve) = self.more.store.approvals.remove(&id) {
+            params["approve"] = approve;
+        }
         self.ask("package.install", params, Waiting::Store(Ask::Install(id)));
     }
 

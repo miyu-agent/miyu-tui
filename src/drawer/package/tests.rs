@@ -147,3 +147,27 @@ fn removing_a_system_package_says_the_files_stay() {
     );
     assert!(rows("home").is_empty());
 }
+
+#[test]
+fn installing_says_where_from_which_capabilities_are_held_and_the_notice() {
+    // 核心 PK-3 上（11-06 core1）：来源、批过的标「已批准」、社区的「注意」。
+    let got = planned(json!({"tool": "package", "install": "/home/alice/tarot", "preview": {
+        "package": "tarot", "version": "1.0.0", "source": "community", "feed": "official",
+        "capabilities": [{"id": "net", "name": "联网", "held": true}, {"id": "fs", "name": "读文件"}],
+        "notice": ["这个包没经过官方审核。"]}}))
+    .unwrap();
+    assert_eq!(
+        got.rows,
+        [
+            "来源：社区",
+            "需要：联网（已批准）、读文件",
+            "注意：这个包没经过官方审核。"
+        ]
+    );
+    // 卸的时候只有设置项留下（核心 PK-5补）。
+    let rows = planned(json!({"tool": "package", "remove": "im", "preview": {
+        "package": "im", "config": {"kept": true, "settings": 2}}}))
+    .unwrap()
+    .rows;
+    assert_eq!(rows, ["配置：2 项设置留在配置里"]);
+}

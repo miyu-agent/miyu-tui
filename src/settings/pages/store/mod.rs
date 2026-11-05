@@ -3,6 +3,7 @@
 //! `keys.rs`，先问再做的流程在 `flow.rs`，回应在 `answer.rs`，画在 `ui/settings/store/`。
 
 mod answer;
+pub mod approve;
 pub mod ask_view;
 pub mod flow;
 mod keys;
@@ -11,6 +12,7 @@ pub mod remove;
 pub mod sort;
 pub mod texts;
 
+use serde_json::Value;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 pub use answer::Ask;
@@ -89,6 +91,8 @@ pub struct Store {
     pub ask: AskView,
     /// 卸载的弹窗停在第几个按钮（PK-5）：进卸载时回到「卸载」。
     pub button: usize,
+    /// 装的时候各带的 `approve`（核心 PK-3 上）：编号到那一份，答「是」时照看一眼拼好，装到它时带上。
+    pub approvals: HashMap<String, Value>,
     /// 做完重读以后光标停回去的那个包：（哪一页，编号）。
     pub keep: Option<(Tab, String)>,
     /// 要 App 在后台打开后台页的包：（编号，名字），App 拿走一次（`backstage.rs`）。
