@@ -721,6 +721,7 @@
     "title": "配色",
     "hint": "↑/↓ 選択 · Enter 決定 · Esc キャンセル"
   },
+  "export": {"title": "書き出し", "step_title": "書き出し · {use}", "hints": ["↑/↓ 選択 · Enter 次へ · Esc 閉じる", "↑/↓ 選択 · Enter 決定 · Esc 戻る"], "uses": ["アーカイブ（元のパッケージ）", "別の agent 向け", "Web チャットに貼る", "自分で読む"], "bundle_note": "ZIP · ファイルのみ", "estimate": "{size} · 約 {tokens} tokens", "estimating": "見積もり中…", "too_big": "512 KiB 超 · ファイルのみ", "actions": ["クリップボードにコピー", "ファイルに保存"], "copied": "コピーしました · 約 {tokens} tokens", "saved": "{path} に書き出しました（{size}）", "no_session": "書き出せるセッションはまだありません"},
   "languages": {
     "title": "表示言語",
     "hint": "↑/↓ 選択 · Enter 切り替え · Esc 閉じる",

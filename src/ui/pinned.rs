@@ -23,6 +23,7 @@ pub(super) fn draw(
 ) {
     screen.areas.pinned = Rect::default();
     screen.pinned = None;
+    screen.current_said = current(rows, first, seen, screen.view.top.is_none());
     let shown = arrange(&TOP_PARTS, &seen.config.layout.top).0;
     if screen.view.top.is_none()
         || area.height < 3
@@ -46,6 +47,8 @@ pub(super) fn draw(
     }
     let entry = &t.entries[k];
     let row = Rect::new(area.x, area.y, area.width, 1);
+    // 先把这一行清空再写：只盖字的话，句子后面露出底下正文那一行剩下的字（2026-11-05 验收）。
+    frame.render_widget(ratatui::widgets::Clear, row);
     frame.buffer_mut().set_style(row, theme::panel());
     let bar = &seen.config.layout.user_bar;
     let lead = format!("{}{bar} ", " ".repeat(usize::from(indent)));
@@ -70,4 +73,18 @@ pub(super) fn draw(
         .set_line(area.x, area.y, &line, area.width);
     screen.areas.pinned = row;
     screen.pinned = Some(entry.id);
+}
+
+/// 当前这一句（排期第 44 条）：跟着最新的（`following`）是最后一句你说的话；往上翻着的是视口第一行那一条往前最近的一句。
+fn current(rows: &Rows, first: usize, seen: &Seen, following: bool) -> Option<u64> {
+    let entries = &seen.talk.transcript.entries;
+    let said =
+        |i: &usize| entries[*i].kind == Kind::User && !entries[*i].hidden && !entries[*i].queued;
+    let last = if following {
+        entries.len().checked_sub(1)?
+    } else {
+        rows.entry_at(first)?.min(entries.len().checked_sub(1)?)
+    };
+    let k = (0..=last).rev().find(said)?;
+    Some(entries[k].id)
 }

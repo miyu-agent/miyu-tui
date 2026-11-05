@@ -33,6 +33,7 @@ pub fn lines(
         | Some(
             Panel::Help { .. }
             | Panel::Language { .. }
+            | Panel::Export { .. }
             | Panel::Theme { .. }
             | Panel::Sessions
             | Panel::Models

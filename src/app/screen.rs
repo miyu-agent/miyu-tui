@@ -40,6 +40,9 @@ pub struct Screen {
     pub jumps: Vec<u64>,
     /// 正文顶上钉着的那一行是哪一句你说的话（条目编号）；没钉的是 `None`（排期第 16 条）。
     pub pinned: Option<u64>,
+    /// 这一帧的「当前这一句」：往上翻着是视口最上面那一段对应的你说的话，跟着最新的是最后一句（条目编号）；侧边栏
+    /// 「跳转消息」照它在那一行打头写箭头（排期第 44 条）。正文没你说的话的是 `None`。
+    pub current_said: Option<u64>,
     /// 侧边栏从第几行露起（排期第 14 条：内容比侧边栏高时滚轮滚它，画的时候照一共多高限住）。
     pub side_top: u16,
     /// 当前主题的名字（出厂那一份的）。
@@ -98,6 +101,7 @@ impl Screen {
             side_select: SideSelect::default(),
             jumps: Vec::new(),
             pinned: None,
+            current_said: None,
             side_top: 0,
             theme,
             theme_choice: crate::theme::choice::Choice::default(),

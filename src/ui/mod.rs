@@ -19,6 +19,7 @@ mod dreamt_rows;
 // shellhook 照同一套画抽屉、等第一个字的转圈、待办（图纸 `shellhook.md`）。
 pub use drawer::{PreviewLook, draw as draw_drawer, rows as drawer_rows};
 pub mod effort_list;
+pub mod export_box;
 pub mod feature_tree;
 mod figure_rows;
 mod floating;

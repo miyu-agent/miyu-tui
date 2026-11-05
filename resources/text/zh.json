@@ -721,6 +721,7 @@
     "title": "配色",
     "hint": "↑/↓ 选择 · Enter 确定 · Esc 取消"
   },
+  "export": {"title": "导出", "step_title": "导出 · {use}", "hints": ["↑/↓ 选择 · Enter 下一步 · Esc 关闭", "↑/↓ 选择 · Enter 确定 · Esc 返回"], "uses": ["存档（原始包）", "给别的 agent", "贴进网页 chat", "自己看"], "bundle_note": "ZIP · 只能存文件", "estimate": "{size} · 约 {tokens} tokens", "estimating": "估算中…", "too_big": "超过 512 KiB · 只能存文件", "actions": ["复制到剪贴板", "存成文件"], "copied": "已复制 · 约 {tokens} tokens", "saved": "已导出到 {path}（{size}）", "no_session": "还没有会话可以导出"},
   "languages": {
     "title": "界面语言",
     "hint": "↑/↓ 选择 · Enter 切换 · Esc 关闭",

@@ -10,7 +10,12 @@ use support::Home;
 
 /// 一段回答：每段一行，`tag` 打头好认，比一屏短（同 `tests/jump.rs`）。
 fn long(tag: &str) -> &'static str {
-    let text: Vec<String> = (1..=10).map(|i| format!("{tag} 第 {i} 段。")).collect();
+    // 每段写长一点：比钉着的那句话长，盖不住时露得出来。
+    let text: Vec<String> = (1..=10)
+        .map(|i| {
+            format!("{tag} 第 {i} 段。这一段写得比问的那句话长一些，好看出下面的字有没有露出来。")
+        })
+        .collect();
     Box::leak(text.join("\n\n").into_boxed_str())
 }
 
@@ -65,6 +70,14 @@ fn scrolled_up_the_top_pins_the_question_and_a_click_jumps_back() {
         pinned,
         "往上翻到乙的回答，顶上钉着第二问：\n{}",
         tui.lines().join("\n")
+    );
+    // 钉着的那一行整行盖住下面的正文：句子后面不露出底下那一行剩下的字（2026-11-05 验收：钉的字后面露出半截回答）。
+    let lines = tui.lines();
+    let row = rows_with(&lines, "第二问 beta")[0];
+    assert!(
+        lines[row].trim_end().ends_with("第二问 beta"),
+        "钉着的那一行后面不该有残字：{:?}",
+        lines[row]
     );
     // 点钉着的那一行：跳回第二问，它自己那一行顶到视口最上面（竖线那一行之下），不再钉着。
     let lines = tui.lines();

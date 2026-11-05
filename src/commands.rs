@@ -132,6 +132,8 @@ pub enum Run {
     Help,
     /// 在中英文之间切换界面语言（蓝图「界面语言」）。
     Language,
+    /// 把正在看的会话导出来（`/export`，蓝图「导出 `/export`」）。
+    Export,
     /// 核心认的命令（命令模板、扩展声明的）：整行交给核心（`command.run`，核心 X-14）。
     Core,
 }
@@ -323,8 +325,8 @@ mod tests {
             .map(|s| s.name.as_str())
             .collect();
         assert_eq!(
-            names[..3],
-            ["edit", "effort", "exit"],
+            names[..4],
+            ["edit", "effort", "export", "exit"],
             "开头对得上的在前，照登记的先后"
         );
         assert!(names.contains(&"redo"), "含着 e 的也在：{names:?}");

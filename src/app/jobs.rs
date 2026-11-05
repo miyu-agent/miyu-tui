@@ -33,6 +33,11 @@ pub enum Panel {
         /// 选中语言表里的第几种。
         selected: usize,
     },
+    /// 导出（`/export`，`export.rs`）：选中第几行；第几步、估的在 [`App::boxes`](super::App) 的 `export` 上。
+    Export {
+        /// 选中第几行。
+        selected: usize,
+    },
     /// 配色（`/theme`）：选中第几种；列哪几种、打开以前用的哪种在 [`App::boxes`](super::App) 的 `theme_box` 上。
     Theme {
         /// 选中第几种。
@@ -196,6 +201,7 @@ impl App {
             } => (selected, open, all),
             Panel::Help { scroll } => return self.help_key(scroll, key),
             Panel::Language { selected } => return self.language_key(selected, key),
+            Panel::Export { selected } => return self.export_key(selected, key),
             Panel::Theme { selected } => return self.theme_key(selected, key),
             Panel::Sessions => return self.sessions_key(key),
             Panel::Models => return self.models_key(key),
