@@ -222,8 +222,11 @@ pub fn flowing(store: &Store, flow: &Flow, texts: &StoreTexts) -> Vec<Line<'stat
         )],
         Flow::Confirm { doing, previews } => {
             let mut out = super::asking::lines(store, doing, previews, texts);
-            out.push(Line::default());
-            out.push(Line::from(vec![Span::styled(a("go"), theme::accent())]));
+            // 卸的问法是弹窗最下面那排按钮（PK-5），不写「继续？」。
+            if !matches!(doing, Doing::Remove(_)) {
+                out.push(Line::default());
+                out.push(Line::from(vec![Span::styled(a("go"), theme::accent())]));
+            }
             out
         }
         Flow::Running {

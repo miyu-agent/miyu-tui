@@ -109,6 +109,7 @@ impl Settings {
         };
         let params = json!({"package": id, "preview": true});
         self.ask("package.remove", params, Waiting::Store(Ask::Preview));
+        self.more.store.button = 0;
         self.more.store.flow = Some(Flow::Previewing {
             doing: Doing::Remove(id),
             left: 1,
@@ -170,8 +171,8 @@ impl Settings {
         );
     }
 
-    /// 问的时候按 `y`、`Enter`：真做。
-    pub(super) fn store_go(&mut self) {
+    /// 问的时候按 `y`、`Enter`（卸的按了「卸载」「卸载并删除配置」）：真做。`purge` 的连配置目录一起删（PK-5）。
+    pub(super) fn store_go(&mut self, purge: bool) {
         let Some(Flow::Confirm { doing, .. }) = self.more.store.flow.take() else {
             return;
         };
@@ -183,7 +184,11 @@ impl Settings {
                 self.store_install_one(first);
             }
             Doing::Remove(id) => {
-                let params = json!({"package": id});
+                let mut params = json!({"package": id});
+                // 不删配置的不写这一格：旧核心不认没见过的参数（PK-5）。
+                if purge {
+                    params["purge"] = json!(true);
+                }
                 self.ask("package.remove", params, Waiting::Store(Ask::Done));
             }
             Doing::Upgrade(target) => {

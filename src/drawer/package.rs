@@ -1,5 +1,5 @@
 //! 装、卸软件包，打开扩展的确认（蓝图 `tui.md`「确认和提问的抽屉」第 3 条，核心 F-10 下）：照 `miyu pkg install` 印的那一份写，
-//! 问题行是做哪一件，下面几行是包含、读不成、需要、一并删除、大小，照 `detail.preview`（核心看一眼的回应）。
+//! 问题行是做哪一件，下面几行是包含、读不成、需要、一并删除、配置、大小，照 `detail.preview`（核心看一眼的回应）。
 
 use serde::Deserialize;
 use serde_json::Value;
@@ -60,6 +60,12 @@ pub struct PackageTexts {
     pub state_dir: String,
     /// 新核心说了状态目录在哪、多大（PK-4）：`{path}`、`{size}`。
     pub state_path: String,
+    /// 配置目录那一行打头的（PK-5）。
+    pub config: String,
+    /// 配置目录留着、会删掉，`{path}`。
+    pub config_kept: String,
+    /// 见 `config_kept`。
+    pub config_purge: String,
     /// 多大、几个文件，`{size}`、`{n}`：一个文件的、几个的。
     pub files: [String; 2],
     /// 一行里几样之间隔开的。
@@ -134,6 +140,7 @@ pub fn plan(detail: &Detail, texts: &PackageTexts) -> Option<Plan> {
     row(&texts.needs, needs);
     if doing == Doing::Remove {
         row(&texts.also_deletes, deleted(preview, texts));
+        row(&texts.config, config(preview, texts).into_iter().collect());
     }
     if let (Some(files), Some(bytes)) = (preview["files"].as_u64(), preview["size"].as_u64()) {
         let line = counted(files, &texts.files).replace("{size}", &size(bytes));
@@ -203,6 +210,19 @@ fn deleted(preview: &Value, texts: &PackageTexts) -> Vec<String> {
         (&texts.state_dir, &texts.state_path),
     ));
     items
+}
+
+/// 卸的时候配置目录那一项（PK-5，`package.remove` 预览的 `config`）：`kept` 为真写留在哪，为假写会删掉哪；没有这一格（旧核心、
+/// 没有配置目录）的不写。
+fn config(preview: &Value, texts: &PackageTexts) -> Option<String> {
+    let config = &preview["config"];
+    let path = crate::local::home_short(config["path"].as_str()?);
+    let template = if config["kept"] == false {
+        &texts.config_purge
+    } else {
+        &texts.config_kept
+    };
+    Some(template.replace("{path}", &path))
 }
 
 /// 卸的时候要删的状态目录那一项（`package.remove` 预览的 `state`）：新核心（PK-4）给 `{path, size}`，写「状态目录 路径（大小）」；

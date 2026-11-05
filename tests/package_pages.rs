@@ -102,17 +102,26 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
     reach(&mut tui, "Weather");
     tui.key(b"d");
     tui.wait_for("要卸载 Weather 1.2.0");
-    tui.wait_for("继续？");
+    // 卸的问法是按钮（PK-5）；核心没说配置目录的只有「卸载」「取消」。
+    tui.wait_for("[ 卸载 ]");
     assert!(
         home.data().packages().join("weather").exists(),
         "问的时候还没卸"
     );
-    // 排期第 42 条（2026-11-04 项目主人）：问的那几行画在弹窗里（圆角框，「继续？」左右是框线），列表照常不收起（别的包还看得见）。
+    // 排期第 42 条（2026-11-04 项目主人）：问的那几行画在弹窗里（圆角框，按钮左右是框线），列表照常不收起（别的包还看得见）。
     let lines = tui.lines();
-    let ask = lines.iter().position(|l| l.contains("继续？")).expect("在");
+    let ask = lines
+        .iter()
+        .position(|l| l.contains("[ 卸载 ]"))
+        .expect("在");
     assert!(
-        lines[ask].contains("│ 继续？") && lines[ask].trim_end().ends_with('│'),
+        lines[ask].contains("│ [ 卸载 ]  [ 取消 ]") && lines[ask].trim_end().ends_with('│'),
         "弹窗：\n{}",
+        lines.join("\n")
+    );
+    assert!(
+        !lines.iter().any(|l| l.contains("继续？")),
+        "按钮代替「继续？」：\n{}",
         lines.join("\n")
     );
     assert!(
@@ -125,7 +134,7 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
         "列表照常：\n{}",
         lines.join("\n")
     );
-    tui.key(b"y");
+    tui.key(b"\r");
     tui.wait_for("已卸载 Weather");
     assert!(!home.data().packages().join("weather").exists(), "卸了");
     until(&mut tui, "列表里没了 Weather", |t| {

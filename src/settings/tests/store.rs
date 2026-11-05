@@ -164,7 +164,7 @@ fn removing_asks_first_and_no_does_nothing() {
     assert_eq!(preview[0].2, json!({"package": "im", "preview": true}));
     let got = json!({"package": "im", "version": "0.8.4", "settings": ["im.token"], "state": true});
     page.answer(preview[0].0, Ok(got), &texts());
-    press(&mut page, KeyCode::Char('n'));
+    press(&mut page, KeyCode::Esc);
     assert_eq!(page.more.store.flow, None);
     assert_eq!(status(&page), Some(("已取消".into(), Tone::Note)));
     assert!(sent(&mut page).is_empty(), "不卸");
@@ -284,6 +284,8 @@ fn a_package_without_settings_says_so_instead_of_an_empty_page() {
     );
     assert_eq!(page.more.section, Some(Section::Store));
 }
+
+mod remove;
 
 /// 预览块画过一帧、`rows` 行一窗放得下（看完了）。
 fn read_through(rows: usize) -> crate::settings::pages::store::AskView {

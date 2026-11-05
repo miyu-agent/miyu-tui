@@ -7,6 +7,7 @@ pub mod ask_view;
 pub mod flow;
 mod keys;
 pub mod read;
+pub mod remove;
 pub mod sort;
 pub mod texts;
 
@@ -86,6 +87,8 @@ pub struct Store {
     pub flow: Option<Flow>,
     /// 问的时候预览块滚到哪（发布前第五批审查 T5-1）。
     pub ask: AskView,
+    /// 卸载的弹窗停在第几个按钮（PK-5）：进卸载时回到「卸载」。
+    pub button: usize,
     /// 做完重读以后光标停回去的那个包：（哪一页，编号）。
     pub keep: Option<(Tab, String)>,
     /// 要 App 在后台打开后台页的包：（编号，名字），App 拿走一次（`backstage.rs`）。
