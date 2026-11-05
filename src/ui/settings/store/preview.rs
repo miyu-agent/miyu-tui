@@ -7,6 +7,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::core::{Progress, Stage};
 use crate::drawer::size;
+use crate::settings::pages::store::approve;
 use crate::settings::pages::store::flow::Doing;
 use crate::settings::pages::store::{Flow, Info, Item, Local, Remote, Store, StoreTexts, Tab};
 use crate::theme;
@@ -235,8 +236,15 @@ pub fn flowing(store: &Store, flow: &Flow, texts: &StoreTexts) -> Vec<Line<'stat
             let mut out = super::asking::lines(store, doing, previews, texts);
             // 卸的问法是弹窗最下面那排按钮（PK-5），不写「继续？」。
             if !matches!(doing, Doing::Remove(_)) {
+                // 还有没批过的能力：问「并批准」（核心 PK-3 上，答「是」就批）。
+                let approving = previews.iter().any(approve::asks_approval);
+                let go = match doing {
+                    Doing::Install(_) if approving => a("go_install_approve"),
+                    Doing::Upgrade(_) if approving => a("go_upgrade_approve"),
+                    _ => a("go"),
+                };
                 out.push(Line::default());
-                out.push(Line::from(vec![Span::styled(a("go"), theme::accent())]));
+                out.push(Line::from(vec![Span::styled(go, theme::accent())]));
             }
             out
         }

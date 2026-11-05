@@ -2,6 +2,7 @@
 //! 版本、右边一格状态，不写说明）、预览块（浅一档的底），最下面照旧状态行、细线、按键提示。
 
 mod asking;
+mod caps;
 mod popup;
 mod preview;
 

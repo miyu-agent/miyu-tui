@@ -1,5 +1,5 @@
 //! 卸载的弹窗给按钮（PK-5，蓝图「配置页」第 43c 条之六）：「卸载」（配置留着）、「卸载并删除配置」、「取消」；核心没说这个包
-//! 有配置目录的（预览里没有 `config`）只给「卸载」「取消」。`←`、`→`、`Tab` 挪，`Enter` 按，`Esc` 取消，鼠标点按钮也行；
+//! 有配置目录、设置项的（预览里没有 `config`）只给「卸载」「取消」。`←`、`→`、`Tab` 挪，`Enter` 按，`Esc` 取消，鼠标点按钮也行；
 //! 预览块照旧能滚，没看到最后一行之前两个卸的按钮不做，「取消」随时能按。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
@@ -21,7 +21,8 @@ pub enum Button {
 
 /// 这一份预览给哪几个按钮：说了配置目录在哪的三个，没说的两个。
 pub fn buttons(preview: Option<&Value>) -> &'static [Button] {
-    let has_config = preview.is_some_and(|p| p["config"]["path"].is_string());
+    // 目录、设置项有一样留着的就有这一格（核心 PK-5补：只有设置项的是 `{kept, settings}`）。
+    let has_config = preview.is_some_and(|p| p["config"].is_object());
     if has_config {
         &[Button::Keep, Button::Purge, Button::Cancel]
     } else {
