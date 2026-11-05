@@ -203,3 +203,12 @@ fn a_program_is_named_by_what_it_is() {
         "{lines:?}"
     );
 }
+
+#[test]
+fn a_dependency_with_a_version_floor_is_named_by_its_package() {
+    // 核心 PK-2：依赖可以写 `im>=0.8.0`，照 `>=` 前面那半截找名字，下限照原样接在后面；找不到的照原样。
+    let store = store();
+    assert_eq!(preview::name_of(&store, "im>=0.8.0"), "接入QQ >=0.8.0");
+    assert_eq!(preview::name_of(&store, "im"), "接入QQ");
+    assert_eq!(preview::name_of(&store, "gone>=1.0.0"), "gone >=1.0.0");
+}
