@@ -164,14 +164,7 @@ fn local(
 
 /// 几个编号照名字写（装着的、软件源里的找得到名字的），用顿号接。
 fn names(store: &Store, ids: &[String], texts: &StoreTexts) -> String {
-    let name = |id: &String| {
-        store
-            .local(id)
-            .map(|p| p.name.clone())
-            .or_else(|| store.remote(id).map(|p| p.name.clone()))
-            .unwrap_or_else(|| id.clone())
-    };
-    let all: Vec<String> = ids.iter().map(name).collect();
+    let all: Vec<String> = ids.iter().map(|id| name_of(store, id)).collect();
     all.join(&StoreTexts::say(&texts.values, "sep"))
 }
 
@@ -288,9 +281,18 @@ fn running(
 
 /// 编号照名字写：软件源里的、装着的找得到的。
 pub(super) fn name_of(store: &Store, id: &str) -> String {
-    store
-        .remote(id)
+    // 依赖、推荐可以带版本下限（核心 PK-2，`onebot>=1.2.0`）：照第一个 `>=` 前面那半截找名字，下限照原样接在后面。
+    let (base, floor) = match id.split_once(">=") {
+        Some((base, floor)) => (base, Some(floor)),
+        None => (id, None),
+    };
+    let name = store
+        .remote(base)
         .map(|p| p.name.clone())
-        .or_else(|| store.local(id).map(|p| p.name.clone()))
-        .unwrap_or_else(|| id.to_string())
+        .or_else(|| store.local(base).map(|p| p.name.clone()))
+        .unwrap_or_else(|| base.to_string());
+    match floor {
+        Some(floor) => format!("{name} >={floor}"),
+        None => name,
+    }
 }
