@@ -98,9 +98,8 @@ pub fn lines(
             if settings > 0 {
                 drop.push(a("drop_settings").replace("{n}", &settings.to_string()));
             }
-            if p["state"] == Value::Bool(true) {
-                drop.push(a("drop_state"));
-            }
+            let (plain, with_path) = (a("drop_state"), a("drop_state_path"));
+            drop.extend(crate::drawer::state_item(&p["state"], (&plain, &with_path)));
             extra.push((a("drop"), drop.join(&sep), true));
             extra.push((
                 a("size"),
