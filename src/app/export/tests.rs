@@ -1,4 +1,4 @@
-use super::{ExportBox, Preview, Use, free_name, preview};
+use super::{ExportBox, Preview, Use, export_dir, free_name, preview};
 use crate::core::Refusal;
 
 fn open(dir: &std::path::Path) -> ExportBox {
@@ -55,4 +55,19 @@ fn an_estimate_keeps_the_text_unless_it_is_too_big_to_copy() {
         data: serde_json::Value::Null,
     }));
     assert_eq!(gone, Preview::Failed("会话不存在".into()));
+}
+
+#[test]
+fn a_directory_under_home_is_written_back_in_full() {
+    // 2026-11-05 验收：侧边栏那份目录把家目录写成 `~`，拿它拼路径核心回「参数错误」（只收绝对路径）。
+    let home = std::path::Path::new("/home/me");
+    assert_eq!(
+        export_dir("~/src/miyu", Some(home)),
+        std::path::PathBuf::from("/home/me/src/miyu")
+    );
+    assert_eq!(export_dir("~", Some(home)), home, "正好在家目录");
+    assert_eq!(
+        export_dir("/tmp/x", Some(home)),
+        std::path::PathBuf::from("/tmp/x")
+    );
 }
