@@ -96,9 +96,7 @@ impl App {
     /// `package.list` 里在读的那个包的主题文件：得是读成了的主题包。
     fn theme_file_of(&self, got: &Value) -> Option<String> {
         let id = self.media.theme_pick.loading.as_deref()?;
-        got["packages"]
-            .as_array()?
-            .iter()
+        crate::core::live_packages(got)
             .find(|p| p["package"] == id && p["kind"] == "theme")
             .and_then(crate::settings::pages::mascots::tui_file)
             .map(str::to_string)

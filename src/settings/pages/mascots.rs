@@ -15,10 +15,7 @@ pub fn read(got: &Value) -> Vec<Persona> {
 pub fn looks(got: &Value) -> Vec<Persona> {
     let mut list = of_kind(got, "theme", Some(crate::sheet::DEFAULT_PACKAGE));
     list.retain(|p| {
-        got["packages"]
-            .as_array()
-            .into_iter()
-            .flatten()
+        crate::core::live_packages(got)
             .any(|item| item["package"] == p.id.as_str() && tui_file(item).is_some())
     });
     list
@@ -35,10 +32,7 @@ pub fn tui_file(item: &Value) -> Option<&str> {
 /// 这一种（`kind`）读成了的包，跳过 `skip` 那一个。
 fn of_kind(got: &Value, kind: &str, skip: Option<&str>) -> Vec<Persona> {
     let text = |v: &Value| v.as_str().map(str::to_string);
-    got["packages"]
-        .as_array()
-        .into_iter()
-        .flatten()
+    crate::core::live_packages(got)
         .filter(|p| p["kind"] == kind && p["package"].as_str() != skip)
         .map(|p| Persona {
             id: text(&p["package"]).unwrap_or_default(),
@@ -83,6 +77,17 @@ mod tests {
             (list[0].id.as_str(), list[0].label()),
             ("miyu-tui-theme-ascii", "纯 ASCII")
         );
+    }
+
+    /// 核心 SD-1：被盖住的那份（带 `covered`）不再列一行。
+    #[test]
+    fn a_covered_theme_is_listed_once() {
+        let got = json!({"packages": [
+            {"package": "night", "kind": "theme", "layer": "distro", "theme": {"file": "old.json"},
+             "covered": {"by": "home", "version": "1.0.0", "over": "1.1.0", "newer": false}},
+            {"package": "night", "kind": "theme", "layer": "home", "theme": {"file": "t.json"}}
+        ]});
+        assert_eq!(super::looks(&got).len(), 1);
     }
 
     /// 外观包（2026-11-02 核心定：`[theme.tui] file`、`[theme.web] dir`，带一样就行）：只带网页主题的不列；新形状

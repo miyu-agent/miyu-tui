@@ -50,10 +50,7 @@ pub struct Origin {
 /// 读 `package.list` 的回应：每个包的作者、从哪来、上游。
 pub fn origins(got: &Value) -> HashMap<String, Origin> {
     let text = |v: &Value| v.as_str().filter(|s| !s.is_empty()).map(str::to_string);
-    got["packages"]
-        .as_array()
-        .into_iter()
-        .flatten()
+    crate::core::live_packages(got)
         .filter_map(|p| {
             let id = p["package"].as_str()?;
             let origin = Origin {
@@ -102,10 +99,7 @@ impl More {
 
 /// 读 `package.list` 的回应：每个包的一句说明。
 pub fn summaries(got: &Value) -> HashMap<String, String> {
-    got["packages"]
-        .as_array()
-        .into_iter()
-        .flatten()
+    crate::core::live_packages(got)
         .filter_map(|p| {
             let id = p["package"].as_str()?;
             let summary = p["summary"].as_str().filter(|s| !s.is_empty())?;

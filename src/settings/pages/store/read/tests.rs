@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use super::{info, locals, remotes, upgrades};
+use super::{Covered, info, locals, remotes, upgrades};
 
 #[test]
 fn a_source_package_keeps_what_the_three_pages_show() {
@@ -93,4 +93,32 @@ fn upgrades_and_info_are_read() {
         (Some(2048), Some(1024)),
         "没装的照安装后大小"
     );
+}
+
+/// 核心 SD-1：被盖住的那份不单列，并进认的那一行（2026-11-05 项目主人）；盖住几份的记更新的那一份。
+#[test]
+fn a_covered_copy_joins_the_row_that_covers_it() {
+    let got = json!({"packages": [
+        {"package": "im", "layer": "distro", "version": "1.3.0",
+         "covered": {"by": "home", "version": "1.3.0", "over": "1.2.0", "newer": true}},
+        {"package": "im", "layer": "shipped", "version": "1.0.0",
+         "covered": {"by": "home", "version": "1.0.0", "over": "1.2.0", "newer": false}},
+        {"package": "im", "layer": "home", "version": "1.2.0", "name": "接入QQ"},
+        // F-9补：认的那份带 `covered: true`（包里的 MCP 全被自制的替代），不是被盖住。
+        {"package": "memes", "layer": "home", "version": "0.1.0", "covered": true},
+    ]});
+    let list = locals(&got);
+    assert_eq!(list.len(), 2, "一包一行：{list:?}");
+    let im = list.iter().find(|p| p.id == "im").unwrap();
+    assert_eq!(im.version, "1.2.0", "认的那份");
+    assert_eq!(
+        im.covers,
+        Some(Covered {
+            layer: "distro".into(),
+            version: "1.3.0".into(),
+            newer: true,
+        })
+    );
+    let memes = list.iter().find(|p| p.id == "memes").unwrap();
+    assert_eq!(memes.covers, None);
 }

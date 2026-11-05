@@ -109,9 +109,7 @@ impl Pack {
     /// `package.list` 里在读的那个包的主题文件：得是读成了的主题包（同 `app/theme_pick.rs`）。
     fn file_of(&self, got: &Value) -> Option<String> {
         let id = self.loading.as_deref()?;
-        got["packages"]
-            .as_array()?
-            .iter()
+        crate::core::live_packages(got)
             .find(|p| p["package"] == id && p["kind"] == "theme")
             .and_then(|p| p["theme"]["file"].as_str())
             .map(str::to_string)

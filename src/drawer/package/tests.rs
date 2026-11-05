@@ -131,3 +131,19 @@ fn removing_says_whether_the_config_directory_stays_or_goes() {
         "旧核心、没有配置目录的不写"
     );
 }
+
+#[test]
+fn removing_a_system_package_says_the_files_stay() {
+    // 核心 SD-1（11-05 core1）：卸系统安装的只记一笔、文件不动；主人定写一行提示。
+    let rows = |layer: &str| {
+        let preview = json!({"package": "im", "layer": layer});
+        planned(json!({"tool": "package", "remove": "im", "preview": preview}))
+            .unwrap()
+            .rows
+    };
+    assert_eq!(
+        rows("distro"),
+        ["提示：系统安装的包只是不再加载，文件要用系统的包管理器删"]
+    );
+    assert!(rows("home").is_empty());
+}

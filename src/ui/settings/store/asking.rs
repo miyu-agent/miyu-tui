@@ -1,6 +1,7 @@
 //! 问之前写在预览块里的（蓝图「配置页」第 43c 条）：照看一眼的回应（`preview: true`）列出要装的、一起装的依赖、需要的
 //! 能力、下载多大、装好多大、推荐的；卸的写一并删除什么、配置目录留着还是删、多大；升级的写旧版到新版、下载多大；批能力的一项一行。
 
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use serde_json::Value;
 use unicode_width::UnicodeWidthStr;
@@ -24,7 +25,7 @@ pub fn lines(
     let sep = v("sep");
     let mut out = Vec::new();
     let mut rows: Vec<(String, String)> = Vec::new();
-    let mut extra: Vec<(String, String, bool)> = Vec::new();
+    let mut extra: Vec<(String, String, Style)> = Vec::new();
     match doing {
         Doing::Install(_) => {
             out.push(head(
@@ -67,20 +68,20 @@ pub fn lines(
             extra.push((
                 StoreTexts::say(&texts.keys, "needs"),
                 needs.join(&sep),
-                true,
+                theme::warn(),
             ));
-            extra.push((a("with"), with.join(&sep), false));
+            extra.push((a("with"), with.join(&sep), Style::new()));
             extra.push((
                 StoreTexts::say(&texts.keys, "download"),
                 sized(total("download")),
-                false,
+                Style::new(),
             ));
             extra.push((
                 StoreTexts::say(&texts.keys, "installed_size"),
                 sized(total("installed")),
-                false,
+                Style::new(),
             ));
-            extra.push((a("recommends"), recommends.join(&sep), false));
+            extra.push((a("recommends"), recommends.join(&sep), Style::new()));
         }
         Doing::Remove(id) => {
             let p = previews.first().cloned().unwrap_or_default();
@@ -101,18 +102,23 @@ pub fn lines(
             }
             let (plain, with_path) = (a("drop_state"), a("drop_state_path"));
             drop.extend(crate::drawer::state_item(&p["state"], (&plain, &with_path)));
-            extra.push((a("drop"), drop.join(&sep), true));
+            extra.push((a("drop"), drop.join(&sep), theme::warn()));
             // 配置目录（PK-5）：照停着的按钮写留着还是会删掉。
             if let Some(path) = p["config"]["path"].as_str() {
                 let purge = remove::selected(store) == Some(Button::Purge);
                 let say = a(if purge { "config_purge" } else { "config_kept" });
                 let path = crate::local::home_short(path);
-                extra.push((a("config"), say.replace("{path}", &path), purge));
+                let style = if purge { theme::warn() } else { Style::new() };
+                extra.push((a("config"), say.replace("{path}", &path), style));
+            }
+            // 系统安装的（核心 SD-1）：卸了只是不再加载，文件不动。
+            if p["layer"] == "distro" {
+                extra.push((a("note"), a("distro_note"), theme::dim()));
             }
             extra.push((
                 a("size"),
                 p["size"].as_u64().map(size).unwrap_or_default(),
-                false,
+                Style::new(),
             ));
         }
         Doing::Upgrade(_) => {
@@ -126,7 +132,11 @@ pub fn lines(
                 rows.push((name_of(store, &text(&u["package"])), shown));
             }
             let download = p["download"].as_u64().map(size).unwrap_or_default();
-            extra.push((StoreTexts::say(&texts.keys, "download"), download, false));
+            extra.push((
+                StoreTexts::say(&texts.keys, "download"),
+                download,
+                Style::new(),
+            ));
         }
         Doing::Enable(id, caps) => {
             out.push(head(a("approve").replace("{name}", &name_of(store, id))));
@@ -148,13 +158,8 @@ pub fn lines(
         .filter(|(_, v, _)| !v.is_empty())
         .collect();
     let key_w = extra.iter().map(|(k, _, _)| k.width()).max().unwrap_or(0);
-    for (k, value, warn) in extra {
+    for (k, value, style) in extra {
         let pad = " ".repeat(key_w - k.width());
-        let style = if warn {
-            theme::warn()
-        } else {
-            ratatui::style::Style::new()
-        };
         out.push(Line::from(vec![
             Span::styled(format!("{k}{pad} : "), theme::dim()),
             Span::styled(value, style),

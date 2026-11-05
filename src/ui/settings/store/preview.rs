@@ -130,10 +130,20 @@ fn local(
         }
         None => (p.version.clone(), plain),
     };
-    let came = info
-        .from
-        .as_ref()
-        .map(|f| from.get(f).cloned().unwrap_or_else(|| f.clone()));
+    let named = |f: &String| from.get(f).cloned().unwrap_or_else(|| f.clone());
+    let came = info.from.as_ref().map(named);
+    // 它盖住的那一份（核心 SD-1）：「系统安装 1.3.0」，那份更新的接着写卸掉这份就换回它。
+    let (covers, covers_style) = match &p.covers {
+        Some(c) => {
+            let mut text = format!("{} {}", named(&c.layer), c.version);
+            if c.newer {
+                text.push_str(&v("covers_newer"));
+            }
+            let style = if c.newer { theme::accent() } else { plain };
+            (text.trim_end().to_string(), style)
+        }
+        None => (String::new(), plain),
+    };
     vec![
         (k("name"), p.name.clone(), plain),
         (k("version"), version, style),
@@ -145,6 +155,7 @@ fn local(
             theme::md_url(),
         ),
         (k("from"), came.unwrap_or_default(), plain),
+        (k("covers"), covers, covers_style),
         (k("installed"), date(info.installed.as_deref()), plain),
         (
             k("installed_size"),
