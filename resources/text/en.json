@@ -531,6 +531,7 @@
     "page_keys": [["↑/↓", "select"], ["Enter", "confirm"], ["PgUp/PgDn", "page"], ["Esc", "back"]]
   },
   "shell": {"placeholder": "Type a command to run", "no_attachments": "Commands can't carry attachments", "running": "Running", "exited": "Exit {code} · {elapsed}", "signal": "Signal {signal} · {elapsed}", "timed_out": "Timed out (120s)", "interrupted": "Interrupted", "aborted": "Core restarted before it finished"},
+  "prefix": {"title": "The next turn won't hit the cache", "files": "These files changed:", "more": "{n} more", "buttons": ["Send anyway", "Compact and send", "Cancel"]},
   "jobs": {
     "button": "Background: {count}",
     "title": "Background",

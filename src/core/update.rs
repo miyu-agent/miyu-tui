@@ -181,6 +181,16 @@ pub enum Update {
     /// 字放回输入框（「输入框」第 12、13 条）。
     /// 回答里贴的图传不上（核心的原话）：回答照样交了，只是不带图（抽屉已经关了，不交她会一直等）。
     AnswerFilesLost(String),
+    /// 开新一轮被拒成 `prefix_changing`（蓝图「前缀要变」第 2、3 条）：先画上的那句留着，问人「直接发送」「压缩上下文并发送」
+    /// 「取消」。
+    PrefixChanging {
+        /// 改了的、真进这个会话前缀的文件（数据根的相对路径）。
+        files: Vec<String>,
+        /// 没列出来的还有几个。
+        more: u64,
+        /// 开轮命令（`command.run`）的原话：取消时放回框里；说的话、重做的是 `None`（照「没发出去」放回）。
+        command: Option<String>,
+    },
     Unsent {
         /// 原因码，例如 `not_redoable`。
         reason: Option<String>,

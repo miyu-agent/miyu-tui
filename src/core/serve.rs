@@ -303,11 +303,19 @@ pub(super) async fn serve(
                         Err(_) => return Served::Lost,
                     }
                 }
+                // 前缀要变、人选了：照记着的那一条再发（`prefix.rs`）。
+                if let Command::Retry(choice) = command {
+                    if !super::prefix::retry(rpc, link, choice, &mut awaiting).await {
+                        return Served::Lost;
+                    }
+                    continue;
+                }
                 match send(rpc, command, &session, notify).await {
                     Sent::Lost => return Served::Lost,
                     Sent::Quit => return Served::Quit,
                     Sent::Skipped => {}
-                    Sent::Awaiting(id, kind) => {
+                    Sent::Awaiting(id, kind, opened) => {
+                        link.opened = opened.or(link.opened.take());
                         awaiting.insert(id, kind);
                     }
                 }
@@ -324,8 +332,8 @@ pub(super) async fn serve(
 
 /// 一个命令发出去的结果。
 enum Sent {
-    /// 发出去了，回应要另外办。
-    Awaiting(String, Awaiting),
+    /// 发出去了，回应要另外办；开轮的另带拼好的请求（[`super::prefix::Opened`]）。
+    Awaiting(String, Awaiting, Option<super::prefix::Opened>),
     /// 发出去了不用管，或者没发（没有对应的方法、附件传不上已经告诉界面了）。
     Skipped,
     /// 连接断了。
@@ -428,9 +436,10 @@ async fn send(
     if let Some(files) = answer_files {
         place_answer_files(&mut params, files);
     }
+    let opened = super::prefix::record(kind.as_ref(), method, &params);
     match (rpc.send(method, params).await, kind) {
         (Err(_), _) => Sent::Lost,
-        (Ok(id), Some(kind)) => Sent::Awaiting(id, kind),
+        (Ok(id), Some(kind)) => Sent::Awaiting(id, kind, opened),
         (Ok(_), None) => Sent::Skipped,
     }
 }

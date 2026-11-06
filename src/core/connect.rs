@@ -60,7 +60,8 @@ pub(super) async fn connect() -> Result<Rpc, Update> {
         "head": {"kind": "tui", "version": env!("CARGO_PKG_VERSION")},
         // 系统的语言（核心 8-2：`ui.language` 是 `auto` 时核心照它说话），照 `miyu_client::places::locale`，和命令行认的一样。
         "locale": miyu_client::places::locale().unwrap_or_default(),
-        "caps": {"input": true},
+        // 前缀要变时先问人（蓝图「前缀要变」第 1 条）。
+        "caps": {"input": true, "prefix_ask": true},
         "token": token,
     });
     rpc.call("hello", hello).await.map_err(refused)?;

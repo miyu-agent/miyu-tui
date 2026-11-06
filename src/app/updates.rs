@@ -253,6 +253,21 @@ impl App {
             return;
         }
         self.takeback_on(&update);
+        // 前缀要变：先画上的那句留着，弹框问人（`prefix_ask.rs`）。
+        if let Update::PrefixChanging {
+            files,
+            more,
+            command,
+        } = update
+        {
+            let ask = super::prefix_ask::PrefixAsk {
+                files,
+                more,
+                command,
+            };
+            self.prefix_changing(ask);
+            return;
+        }
         // 没发出去：先撤掉先画上的那句、字放回输入框，接着照一般的拒绝办（`redo.rs`）。
         let update = match update {
             Update::Unsent { reason, message } => {

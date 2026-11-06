@@ -45,6 +45,7 @@ mod media_rows;
 pub mod model_list;
 mod oobe;
 mod pinned;
+mod prefix_ask;
 pub mod shown_rows;
 pub use oobe::idle_look as oobe_idle_look;
 mod overlay;
