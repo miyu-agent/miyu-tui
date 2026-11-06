@@ -149,3 +149,14 @@ fn a_removed_package_is_marked() {
         .collect();
     assert_eq!(removed, [("im", false, false), ("tarot", true, false)]);
 }
+
+/// 核心 PK-6：装着的照 `source` 写从哪来；没装的（`from` 是 `source`）那一格是软件源的名字，照旧读 `from`。
+#[test]
+fn where_a_package_came_from_follows_source_when_installed() {
+    let installed = info(&json!({"package": "x", "from": "official", "source": "community"}));
+    assert_eq!(installed.from.as_deref(), Some("community"));
+    let remote = info(&json!({"package": "x", "from": "source", "source": "my-feed"}));
+    assert_eq!(remote.from.as_deref(), Some("source"));
+    let old = info(&json!({"package": "x", "from": "shipped"}));
+    assert_eq!(old.from.as_deref(), Some("shipped"));
+}

@@ -198,7 +198,8 @@
     "nothing_to_revert": "Nothing to undo",
     "turn_running": "Still replying: interrupt first, or wait for it to finish",
     "unknown_turn": "Can't find the turn to undo",
-    "restoring": "The last undo or restore is still in progress, one moment"
+    "restoring": "The last undo or restore is still in progress, one moment",
+    "shell_unavailable": "Shell commands aren't available in this session"
   },
   "models": {
     "failover": "↻ Switched model: {from} → {to}",
@@ -1448,7 +1449,7 @@
       "combo": ["Not set", "Other…"],
       "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]],
       "list": {"empty": "None yet", "whole": "Enter a whole number", "hints": [["Enter", "edit"], ["a", "add"], ["d", "delete"], ["J/K", "move"], ["Esc", "done"]]},
-      "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["Ctrl+A", "all"], ["j/k", "move"], ["Enter", "save"], ["Esc", "cancel"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally", "distro": "System package"},
+      "ticks": {"empty": "Nothing to choose", "hints": [["Space", "tick"], ["Ctrl+A", "all"], ["j/k", "move"], ["Enter", "save"], ["Esc", "cancel"]]}, "package_from": {"shipped": "Built in", "official": "Official source", "local": "Installed locally", "distro": "System package", "community": "Community", "file": "Local file", "unknown": "Unknown"},
       "mcp": {"entry": ["MCP", "Status and sign-in of MCP servers"], "states": {"off": "Off", "starting": "Starting", "running": "Running", "waiting": "Reconnecting", "stopped": "Stopped", "needs_login": "Sign-in needed"}, "tools": "{n} tools", "login": "Sign in", "asking": "Getting the sign-in page for {name}", "opened": "Opened the sign-in page for {name} in the browser", "no_browser": "Can't open a browser. Sign-in page: {url}", "unregistered": "This server needs a registered client. Put its client_id in the server's settings", "failed": "Sign-in failed: {why}", "logout": "Sign out", "leaving": "Signing out of {name}", "left": "Signed out of {name}", "not_logged_in": "{name} was not signed in", "hints": [["Enter", "sign in / out"], ["Esc", "back"]]},
       "slider_hints": [["←/→", "adjust"], ["Enter", "type a value"], ["d", "reset"], ["Esc", "back"]],
       "records": {"nth": "Item {n}", "empty": "None yet", "hints": [["Enter", "edit"], ["a", "add"], ["d", "delete"], ["J/K", "move"], ["Esc", "close"]], "form_hints": [["↑/↓", "select"], ["Enter", "change"], ["←/→", "slider"], ["Esc", "back to list"]]},

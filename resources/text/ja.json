@@ -198,7 +198,8 @@
     "nothing_to_revert": "取り消せるものがありません",
     "turn_running": "返信中です：先に中断するか、終わるまでお待ちください",
     "unknown_turn": "取り消す対象のやり取りが見つかりません",
-    "restoring": "前回の取り消し・復元がまだ終わっていません、少々お待ちください"
+    "restoring": "前回の取り消し・復元がまだ終わっていません、少々お待ちください",
+    "shell_unavailable": "このセッションではコマンドを実行できません"
   },
   "models": {
     "failover": "↻ モデルを切り替えました：{from} → {to}",
@@ -1448,7 +1449,7 @@
       "combo": ["設定しない", "その他…"],
       "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]],
       "list": {"empty": "まだありません", "whole": "整数を入力してください", "hints": [["Enter", "変更"], ["a", "追加"], ["d", "削除"], ["J/K", "移動"], ["Esc", "完了"]]},
-      "ticks": {"empty": "選べるものがありません", "hints": [["Space", "チェック"], ["Ctrl+A", "すべて"], ["j/k", "移動"], ["Enter", "保存"], ["Esc", "キャンセル"]]}, "package_from": {"shipped": "同梱", "official": "公式ソース", "local": "ローカルからインストール", "distro": "システムでインストール"},
+      "ticks": {"empty": "選べるものがありません", "hints": [["Space", "チェック"], ["Ctrl+A", "すべて"], ["j/k", "移動"], ["Enter", "保存"], ["Esc", "キャンセル"]]}, "package_from": {"shipped": "同梱", "official": "公式ソース", "local": "ローカルからインストール", "distro": "システムでインストール", "community": "コミュニティ", "file": "ローカルファイル", "unknown": "不明"},
       "mcp": {"entry": ["MCP", "MCP サーバーの状態とログイン"], "states": {"off": "オフ", "starting": "起動中", "running": "実行中", "waiting": "再接続待ち", "stopped": "停止", "needs_login": "ログインが必要"}, "tools": "ツール {n} 個", "login": "ログイン", "asking": "{name} の認可ページを取得中", "opened": "{name} の認可ページをブラウザで開きました", "no_browser": "ブラウザを開けません。認可ページ：{url}", "unregistered": "このサーバーはクライアント登録が必要です。client_id をサーバーの設定に書いてください", "failed": "ログインに失敗しました：{why}", "logout": "ログアウト", "leaving": "{name} からログアウト中", "left": "{name} からログアウトしました", "not_logged_in": "{name} にはログインしていません", "hints": [["Enter", "ログイン・ログアウト"], ["Esc", "戻る"]]},
       "slider_hints": [["←/→", "調整"], ["Enter", "数値を入力"], ["d", "既定に戻す"], ["Esc", "戻る"]],
       "records": {"nth": "{n} 番目", "empty": "まだありません", "hints": [["Enter", "編集"], ["a", "追加"], ["d", "削除"], ["J/K", "移動"], ["Esc", "閉じる"]], "form_hints": [["↑/↓", "選択"], ["Enter", "変更"], ["←/→", "スライダー"], ["Esc", "一覧に戻る"]]},

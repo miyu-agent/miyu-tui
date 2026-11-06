@@ -73,7 +73,7 @@ pub struct Info {
     pub author: Option<String>,
     /// 上游。
     pub upstream: Option<String>,
-    /// 从哪来：`shipped`、`official`、`local`、`source`。
+    /// 从哪来：照 [`came`]，`official`、`community`、`file`、`shipped`、`distro`、`unknown`，旧核心的 `local`，没装的 `source`。
     pub from: Option<String>,
     /// 装的时刻。
     pub installed: Option<String>,
@@ -204,6 +204,15 @@ pub fn upgrades(got: &Value) -> HashMap<String, String> {
         .collect()
 }
 
+/// 从哪来（核心 PK-6）：装着的照 `source`（official、community、file、shipped、distro、unknown，比 `from` 分得细，社区的不当
+/// 成官方），旧核心没有的照 `from`；没装的（`from` 是 `source`）的 `source` 是软件源的名字，照旧读 `from`。
+pub fn came(got: &Value) -> Option<String> {
+    if got["from"] == "source" {
+        return text(&got["from"]);
+    }
+    text(&got["source"]).or_else(|| text(&got["from"]))
+}
+
 /// 读 `package.info` 的回应。
 pub fn info(got: &Value) -> Info {
     let needs = got["capabilities"]
@@ -219,7 +228,7 @@ pub fn info(got: &Value) -> Info {
     Info {
         author: text(&got["author"]),
         upstream: text(&got["upstream"]),
-        from: text(&got["from"]),
+        from: came(got),
         installed: text(&got["installed"]),
         size: got["size"]
             .as_u64()
