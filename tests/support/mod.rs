@@ -25,6 +25,7 @@ fn resources() -> PathBuf {
     Path::new(miyu_client::WORKSPACE_ROOT).join("resources")
 }
 
+pub mod clipboard;
 mod core;
 mod fakes;
 mod home;
