@@ -7,6 +7,9 @@ mod support;
 
 use miyu_session::testkit::{Play, Script};
 use support::Home;
+use support::clipboard::picture;
+#[cfg(target_os = "linux")]
+use support::clipboard::with_clipboard;
 
 /// 一家、一个模型，配置里写明它只收文字。
 #[cfg(target_os = "linux")]
@@ -14,50 +17,9 @@ const BLIND: &str = "[providers.fake]\ndriver = \"openai-chat\"\nbase_url = \"ht
 /// 同一个模型，收图。
 const SEEING: &str = "[providers.fake]\ndriver = \"openai-chat\"\nbase_url = \"http://127.0.0.1:9/v1\"\n\n[providers.fake.models.m]\ninputs = [\"text\", \"image\"]\n\n[models]\nchat = \"fake/m\"\n";
 
-/// 在工作目录里放一张图，交回它的路径。
-fn picture(home: &Home) -> String {
-    let path = home.work.join("晚霞.png");
-    std::fs::write(&path, b"\x89PNG\r\n\x1a\n").expect("写得进去");
-    path.display().to_string()
-}
-
 /// 把路径当一次粘贴送进去（终端拖文件进来、`Ctrl+Shift+V` 都是这样）。
 fn drop_in(tui: &mut support::Tui, path: &str) {
     tui.key(format!("\x1b[200~{path}\x1b[201~").as_bytes());
-}
-
-/// 一个假的 `wl-paste`：剪贴板里是文件管理器复制的这个文件（`text/uri-list`）。交回要设的 `PATH`。
-#[cfg(target_os = "linux")]
-fn copied(home: &Home, path: &str) -> String {
-    let bin = home.work.join("bin");
-    std::fs::create_dir_all(&bin).expect("建得了目录");
-    let script = format!(
-        "#!/bin/sh\ncase \"$1\" in\n  --list-types) printf 'text/uri-list\\ntext/plain\\n' ;;\n  --type) [ \"$2\" = text/uri-list ] && printf 'file://%s\\n' '{path}' ;;\n  *) printf '%s' '{path}' ;;\nesac\n"
-    );
-    let fake = bin.join("wl-paste");
-    std::fs::write(&fake, script).expect("写得进去");
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).expect("改得了权限");
-    // 假剪贴板在最前面，接着测具的假通知、放音程序（`support::fake_notifiers`），再是原来的 `PATH`。
-    format!(
-        "{}:{}:{}",
-        bin.display(),
-        support::fake_notifiers(home.root()).display(),
-        std::env::var("PATH").unwrap_or_default()
-    )
-}
-
-/// 起界面：剪贴板是上面那个假的。
-#[cfg(target_os = "linux")]
-fn with_clipboard(home: &Home, path: &str) -> support::Tui {
-    let path_env = copied(home, path);
-    home.tui_with(
-        "zh_CN.UTF-8",
-        &[
-            ("PATH", path_env.as_str()),
-            ("WAYLAND_DISPLAY", "miyu-test"),
-        ],
-    )
 }
 
 #[test]
