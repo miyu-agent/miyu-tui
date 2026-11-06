@@ -44,7 +44,8 @@ pub fn lines(
             | Panel::Tools { .. }
             | Panel::Context { .. }
             | Panel::Pick { .. }
-            | Panel::Changed { .. },
+            | Panel::Changed { .. }
+            | Panel::Prefix { .. },
         ) => (Chrome::default(), Vec::new(), Vec::new()),
         Some(Panel::Background {
             selected,

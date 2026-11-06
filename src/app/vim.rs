@@ -23,6 +23,7 @@ impl App {
                     Some(
                         Panel::Pick { .. }
                             | Panel::Changed { .. }
+                            | Panel::Prefix { .. }
                             | Panel::Language { .. }
                             | Panel::Export { .. }
                             | Panel::Theme { .. }

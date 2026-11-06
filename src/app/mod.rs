@@ -61,6 +61,7 @@ mod pages;
 mod paste;
 pub(crate) use paste::attach_rule;
 mod pick_edit;
+pub mod prefix_ask;
 mod redo;
 mod screen;
 mod seen;

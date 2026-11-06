@@ -216,3 +216,17 @@ pub struct ShellTexts {
     /// 核心重启、崩了，没跑完。
     pub aborted: String,
 }
+
+/// 前缀要变时问人的框（蓝图「前缀要变」，排期第 59 条）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PrefixTexts {
+    /// 框的标题。
+    pub title: String,
+    /// 文件列表上面那一行。
+    pub files: String,
+    /// 没列出来的：`{n}`。
+    pub more: String,
+    /// 三个按钮：直接发送、压缩上下文并发送、取消。
+    pub buttons: [String; 3],
+}

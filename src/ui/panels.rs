@@ -114,6 +114,10 @@ fn rows(
         Some(crate::app::Panel::Pick { kind, selected }) => {
             pick_rows(seen, kind, selected, width, max)
         }
+        Some(crate::app::Panel::Prefix { button }) => {
+            let words = &seen.config.text.prefix;
+            super::prefix_ask::lines(seen.talk.prefix_ask.as_ref(), button, words, width, max)
+        }
         Some(crate::app::Panel::Changed { kind, yes, .. }) => {
             let words = &seen.config.text.settings.in_use;
             persona_list::changed_lines(kind, yes, words, width, max)

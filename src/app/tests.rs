@@ -97,6 +97,7 @@ mod goal;
 mod models_changed;
 mod notices;
 mod pools;
+mod prefix;
 mod status;
 mod switching;
 mod theme_auto;

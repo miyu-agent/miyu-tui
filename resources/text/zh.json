@@ -531,6 +531,7 @@
     "page_keys": [["↑/↓", "选"], ["Enter", "确定"], ["PgUp/PgDn", "翻页"], ["Esc", "返回"]]
   },
   "shell": {"placeholder": "输入要跑的命令", "no_attachments": "跑命令不能带附件", "running": "运行中", "exited": "退出码 {code} · {elapsed}", "signal": "信号 {signal} · {elapsed}", "timed_out": "超时（120s）", "interrupted": "已打断", "aborted": "核心重启，没跑完"},
+  "prefix": {"title": "下一轮的缓存会失效", "files": "这些文件改了：", "more": "还有 {n} 个", "buttons": ["直接发送", "压缩上下文并发送", "取消"]},
   "jobs": {
     "button": "{count} 个后台命令",
     "title": "后台",

@@ -35,6 +35,8 @@ pub struct Talk {
     pub(super) deleting: crate::core::DeletingSessions,
     /// 最近发出去的一句：没发出去时撤回来（`redo.rs`）。
     pub(super) unsent: Option<Unsent>,
+    /// 前缀要变时核心给的改了的文件（`prefix_ask.rs`）：框开着时有。
+    pub prefix_ask: Option<super::prefix_ask::PrefixAsk>,
     /// Ctrl+C 打断时要退回排着的话，走到哪一步了（`takeback.rs`）。
     pub takeback: Option<takeback::Takeback>,
     /// 核心推来的确认、提问：问过的、了结过的（`asking.rs`）。

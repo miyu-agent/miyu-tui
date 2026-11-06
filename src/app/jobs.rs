@@ -59,6 +59,11 @@ pub enum Panel {
         /// 选中第几个。
         selected: usize,
     },
+    /// 前缀要变：问「直接发送」「压缩上下文并发送」「取消」，停在第几个按钮（`prefix_ask.rs`）。
+    Prefix {
+        /// 停在第几个按钮。
+        button: usize,
+    },
     /// 从框进去改了正在用的人格、预设、存成了：问要不要压缩（`pick_edit.rs`）。回到哪个框、停哪一行，光标在不在「是」。
     Changed {
         /// 人格还是预设。
@@ -219,6 +224,7 @@ impl App {
                 selected,
                 yes,
             } => return self.changed_key((kind, selected, yes), key),
+            Panel::Prefix { button } => return self.prefix_key(button, key),
         };
         let items = self.talk.board.panel_items(all);
         let at = |selected| {
@@ -330,6 +336,9 @@ impl App {
             } else if press && row >= 2 {
                 self.enter_agent(row - 2);
             }
+            return true;
+        }
+        if self.prefix_click(at, press) {
             return true;
         }
         if let Some(Panel::Background { open, all, .. }) = self.boxes.panel

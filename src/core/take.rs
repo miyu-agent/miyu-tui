@@ -22,6 +22,10 @@ pub(super) async fn take(
 ) -> bool {
     let kind = message["id"].as_str().and_then(|id| awaiting.remove(id));
     if let Some(error) = message.get("error") {
+        // 前缀要变：先问人（蓝图「前缀要变」）。
+        if let Some(update) = super::prefix::changing(error, kind.as_ref(), link) {
+            return notify(update);
+        }
         let reason = error["data"]["reason"].as_str().map(str::to_string);
         // 用不了的斜杠命令照连接的语言说为什么（`data.why`，核心 O-6 再补），比原话具体（蓝图「长期目标」第 2 条）。扩展办
         // 命令出了错的（`command_failed`，核心 X-14 下）：`why` 是扩展的原话，接在「命令执行失败」下一行，两句都给人看。

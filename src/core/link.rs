@@ -36,6 +36,8 @@ pub struct Link {
     pub replay_main: bool,
     /// 界面块照什么订阅着（「界面块」第 8 条）：重连、掉队时照它重新订阅；`None` 是没订阅。
     pub widgets: Option<crate::widgets::View>,
+    /// 最近一条开轮的请求：前缀要变、人选了以后照它再发一次（[`super::prefix`]）。
+    pub opened: Option<super::prefix::Opened>,
     /// 下一条斜杠命令是人打的 `/dream`：交出去以前先订阅那个会话的记忆流（[`super::Command::Dream`]）。
     pub dream_next: bool,
 }

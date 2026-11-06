@@ -80,6 +80,7 @@ impl App {
                 unseen: Default::default(),
                 deleting: Default::default(),
                 unsent: None,
+                prefix_ask: None,
                 takeback: None,
                 asks: Default::default(),
                 drawers: Drawers::default(),

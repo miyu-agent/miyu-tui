@@ -107,7 +107,9 @@ pub(super) fn request(
             }
             ("session.redo", params)
         }
-        Command::New { .. }
+        // 照记着的那一条再发，在 `serve.rs` 里办（`prefix.rs`）。
+        Command::Retry(_)
+        | Command::New { .. }
         | Command::Watch(_)
         | Command::Unwatch(_)
         | Command::View(_)

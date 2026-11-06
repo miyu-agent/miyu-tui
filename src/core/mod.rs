@@ -29,6 +29,7 @@ mod packages;
 pub use packages::{PackageEntry, Progress, Stage, live_packages, shadowed};
 mod page;
 mod personas;
+mod prefix;
 mod push;
 mod replay;
 mod request;
@@ -220,6 +221,8 @@ pub enum Command {
     ListPresets,
     /// 下一个新会话用这个预设，和 [`Command::Persona`] 一样。
     Preset(String),
+    /// 前缀要变时人选了（蓝图「前缀要变」第 4 条）：照最近那条开轮的请求加 `"prefix": "keep"` 或 `"compact"` 再发一次。
+    Retry(&'static str),
     /// 要这个会话更早的一页（`view.page {before}`，核心 9-6 下）：往上滚到顶、`more` 是真的。
     Older(String),
     /// 开着的会话换工作区（`command.run "/workspace <路径>"`，核心 9-7 下）：打的路径、终端所在的目录（接相对的）。
