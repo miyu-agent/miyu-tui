@@ -28,6 +28,7 @@ fn resources() -> PathBuf {
 mod core;
 mod fakes;
 mod home;
+mod waits;
 
 #[allow(unused_imports, reason = "只有自己拼 PATH、要看通知记下了什么的测试用")]
 pub use fakes::{fake_notifiers, notify_log};
@@ -299,33 +300,6 @@ impl Tui {
         self.lines().iter().any(|l| l.contains(text))
     }
 
-    /// 等到屏幕上出现这串字，最多 [`WAIT`]；等不到的把屏幕打出来再报错。
-    pub fn wait_for(&mut self, text: &str) {
-        let end = Instant::now() + WAIT;
-        while !self.shows(text) {
-            assert!(
-                Instant::now() < end,
-                "等不到「{text}」，屏幕是：\n{}",
-                self.lines().join("\n")
-            );
-            self.pump(Duration::from_millis(50));
-        }
-    }
-
-    /// 等到屏幕上有一整行（去掉两头的空白）就是 `text`，最多 [`WAIT`]。别处带着这几个字的不算：比如首页的工作目录放不下时
-    /// 以 `…` 打头（macOS 的临时目录很长），等她吐出的那个 `…` 就要只认整行。
-    pub fn wait_for_line(&mut self, text: &str) {
-        let end = Instant::now() + WAIT;
-        while !self.lines().iter().any(|l| l.trim() == text) {
-            assert!(
-                Instant::now() < end,
-                "等不到整行「{text}」，屏幕是：\n{}",
-                self.lines().join("\n")
-            );
-            self.pump(Duration::from_millis(50));
-        }
-    }
-
     /// 配置页主菜单上挪到名字是 `name` 的那一项、回车进去：照选中那一行（左边的 `┃`，纯 ASCII 主题是 `|`）认，不数第几项
     /// （2026-10-14 主菜单加了「外观」，数行的全错一位）。清单没读到以前菜单短几项，挪过头的往回找。
     pub fn open_menu(&mut self, name: &str) {
@@ -415,23 +389,6 @@ impl Tui {
 }
 
 impl Tui {
-    /// 等到屏幕上出现这串字，交回带出它的那一块字节到的时刻：一块一块地看，不等满一拍（量首帧用）。
-    pub fn wait_for_at(&mut self, text: &str) -> Instant {
-        let end = Instant::now() + WAIT;
-        while !self.shows(text) {
-            let left = end.saturating_duration_since(Instant::now());
-            let data = self.bytes.recv_timeout(left).unwrap_or_else(|_| {
-                panic!("等不到「{text}」，屏幕是：\n{}", self.lines().join("\n"))
-            });
-            let at = Instant::now();
-            self.feed(&data);
-            if self.shows(text) {
-                return at;
-            }
-        }
-        Instant::now()
-    }
-
     /// 界面的进程号。
     pub fn pid(&self) -> Option<u32> {
         self.child.process_id()
