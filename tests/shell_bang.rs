@@ -37,3 +37,24 @@ fn a_bang_command_runs_in_the_session_and_she_answers() {
     let screen = tui.lines().join("\n");
     assert_eq!(screen.matches("退出码 0").count(), 2, "{screen}");
 }
+
+/// 核心 XG-1 下（2026-11-06 core1）：会话里没有内置 shell 的，`!` 发出去回 `shell_unavailable`：弹提示「这个会话不能跑命令」，
+/// 不写进正文，打的命令放回框里。
+#[test]
+fn a_bang_command_without_a_shell_says_so_and_keeps_the_command() {
+    let home = Home::new(Script::new([Play::Says("不该轮到我。")]));
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.type_text("!");
+    tui.wait_for("输入要跑的命令");
+    tui.type_text("echo no-shell-here");
+    tui.key(b"\r");
+    tui.wait_for("这个会话不能跑命令");
+    let screen = tui.lines().join("\n");
+    assert!(!screen.contains("退出码"), "没跑：\n{screen}");
+    assert!(!screen.contains("不该轮到我"), "她没接着说：\n{screen}");
+    assert!(
+        screen.contains("echo no-shell-here"),
+        "命令放回框里：\n{screen}"
+    );
+}

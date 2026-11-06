@@ -41,7 +41,7 @@ pub struct Listed {
 pub struct Origin {
     /// 作者。
     pub author: Option<String>,
-    /// 从哪来：`shipped`、`official`、`local`。
+    /// 从哪来：照 `source`（核心 PK-6），旧核心照 `from`（[`crate::settings::pages::store::read::came`]）。
     pub from: Option<String>,
     /// 上游源码仓库的网址。
     pub upstream: Option<String>,
@@ -55,7 +55,7 @@ pub fn origins(got: &Value) -> HashMap<String, Origin> {
             let id = p["package"].as_str()?;
             let origin = Origin {
                 author: text(&p["author"]),
-                from: text(&p["from"]),
+                from: crate::settings::pages::store::read::came(p),
                 upstream: text(&p["upstream"]),
             };
             Some((id.to_string(), origin))

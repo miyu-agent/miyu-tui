@@ -182,3 +182,22 @@ fn a_package_page_names_its_author_origin_and_upstream() {
     );
     assert_eq!(page.more.origin_line("nope", words), None);
 }
+
+#[test]
+fn the_origin_follows_how_the_package_came() {
+    // 核心 PK-6（2026-11-06 core1）：每项多 `source`，社区的不当成官方；旧核心没有的照 `from`。
+    let config = Config::builtin().unwrap();
+    let words = &config.text.settings.more.package_from;
+    let got = json!({"packages": [
+        {"package": "fan", "from": "official", "source": "community", "feed": "official"},
+        {"package": "mine", "from": "local", "source": "file"},
+        {"package": "old", "from": "official", "source": "unknown"},
+        {"package": "older", "from": "local"}]});
+    let mut page = Settings::open(false, true);
+    page.more.origins = super::super::packages::origins(&got);
+    let line = |id: &str| page.more.origin_line(id, words);
+    assert_eq!(line("fan").as_deref(), Some("社区"));
+    assert_eq!(line("mine").as_deref(), Some("本机文件"));
+    assert_eq!(line("old").as_deref(), Some("不明"));
+    assert_eq!(line("older").as_deref(), Some("本机安装"), "旧核心照 from");
+}
