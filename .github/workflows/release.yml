@@ -1,5 +1,6 @@
 # 发版（照官方打包模板 miyu-agent/packages 的 pack.yml，写法同 miyu-embed、miyu-render）：推 `v*` 标签（v 加上清单里的
-# 版本，本体和主题包写一样的）时，终端本体一种系统打一个 `.miyu`、ASCII 主题打一个，都传进这个标签的 Release；软件源每天
+# 版本；本体、主题包和 Cargo.toml 写同一个号，同核心、网页、托盘一起发版时的「年.月.这个月第几版」，如 v2026.11.0，核心 VR-1；
+# `tests/versions.rs` 守着三处一样）时，终端本体一种系统打一个 `.miyu`、ASCII 主题打一个，都传进这个标签的 Release；软件源每天
 # 收一次，收进索引以后 `miyu pkg install miyu-tui` 就装得上。一个 Release 里几个包，核心 G-16 起认。
 #
 # 默认主题不发（2026-10-30 项目主人定不推荐、不发：它编进了程序，`packages/miyu-tui-theme-default` 只当来源和样板，
