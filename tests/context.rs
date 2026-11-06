@@ -53,11 +53,12 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     until_gone(&mut tui, "核心说明");
     tui.say("在吗");
     tui.wait_for("好。");
+    // 这一轮收尾了再看：没收尾时运行状态行还占着，框矮一截，最下面的「按用途」露不全（11-06 CI 偶发红「少了『主对话』」）。
+    tui.wait_for("▣  ");
     tui.say("/context");
     tui.wait_for("累计消耗");
-    let screen = tui.lines().join("\n");
     for text in ["已用", "系统提示", "对话", "主对话", "合计", "次数"] {
-        assert!(screen.contains(text), "少了「{text}」：\n{screen}");
+        tui.wait_for(text);
     }
     tui.key(b"\x1b");
     until_gone(&mut tui, "累计消耗");

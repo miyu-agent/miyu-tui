@@ -101,3 +101,4 @@ mod prefix;
 mod status;
 mod switching;
 mod theme_auto;
+mod unseen;
