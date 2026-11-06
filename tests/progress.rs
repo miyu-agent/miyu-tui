@@ -75,7 +75,7 @@ fn a_toast_over_a_running_step_clears_its_rows() {
     let mut tui = home.tui_wide("zh_CN.UTF-8", 80);
     tui.wait_for("开放权限");
     tui.say("先说很多");
-    tui.wait_for("第60行");
+    tui.wait_at_bottom_for("第60行");
     tui.say("跑一下");
     tui.wait_for("第 1 步");
     tui.key(b"\x1b");

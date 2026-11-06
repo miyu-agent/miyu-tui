@@ -323,7 +323,7 @@ fn page_up_with_a_drawer_open_scrolls_the_body_and_the_drawer_steps_aside() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("说长一点");
-    tui.wait_for("第60行");
+    tui.wait_at_bottom_for("第60行");
     tui.say("写个文件");
     tui.wait_for("允许本次");
     // PgUp 翻正文：抽屉让开。

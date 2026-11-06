@@ -282,7 +282,7 @@ fn a_jump_to_bottom_hint_floats_over_the_body_and_brings_the_view_back() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("说长一点");
-    wait_for_done_at_bottom(&mut tui);
+    tui.wait_at_bottom_for("▣  ");
     let hint = |tui: &support::Tui| {
         tui.lines().iter().enumerate().find_map(|(y, l)| {
             l.find("跳转到底部（Ctrl+End）↓")
@@ -344,7 +344,7 @@ fn ctrl_end_goes_back_to_the_bottom() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("工作区");
     tui.say("说长一点");
-    wait_for_done_at_bottom(&mut tui);
+    tui.wait_at_bottom_for("▣  ");
     tui.key(b"\x1b[5~");
     tui.pump(Duration::from_millis(300));
     assert!(!tui.shows("第 80 行"));
@@ -456,18 +456,4 @@ fn mouse_selection_copies_expanded_text_to_osc52() {
         "正文松开只复制一次原文"
     );
     assert!(tui.shows("[已粘贴 12 行]"), "复制不展开屏幕内容");
-}
-
-/// 分帧长回答会正常停在开头；准备滚动场景时明确回底，等待收尾行可见。
-fn wait_for_done_at_bottom(tui: &mut support::Tui) {
-    let end = std::time::Instant::now() + support::WAIT;
-    while !tui.shows("▣  ") {
-        assert!(
-            std::time::Instant::now() < end,
-            "收尾没到：{}",
-            tui.lines().join("\n")
-        );
-        tui.send(b"\x1b[1;5F");
-        tui.pump(Duration::from_millis(50));
-    }
 }
