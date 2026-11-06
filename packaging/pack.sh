@@ -45,6 +45,14 @@ if [ -z "$bin" ]; then
 fi
 [ -f "$bin" ] || die "$bin 不存在"
 
+# 两个包的版本跟程序走（核心 VR-1，2026-11-06：本体、ASCII 主题包和 Cargo.toml 同号，「年.月.这个月第几版」）。
+version_of() { sed -n '/^\[package\]/,/^\[/s/^version *= *"\(.*\)"/\1/p' "$1" | head -n 1; }
+want=$(version_of "$repo/Cargo.toml")
+for manifest in miyu-tui/package.toml packages/miyu-tui-theme-ascii/package.toml; do
+  got=$(version_of "$repo/$manifest")
+  [ "$got" = "$want" ] || die "$manifest 的版本 $got 和程序的 $want 不一样"
+done
+
 # 清单里的 targets 要写了这一种，核心才打（写了 targets 的必须挑一种）。
 grep -q "\"$target\"" "$repo/miyu-tui/package.toml" || die "miyu-tui/package.toml 的 targets 没写 $target"
 
