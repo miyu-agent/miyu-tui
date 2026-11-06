@@ -83,6 +83,7 @@ fn a_changed_prefix_is_asked_and_send_anyway_or_cancel() {
 const SEEING: &str = "[providers.fake]\ndriver = \"openai-chat\"\nbase_url = \"http://127.0.0.1:9/v1\"\n\n[providers.fake.models.m]\ninputs = [\"text\", \"image\"]\n\n[models]\nchat = \"fake/m\"\n";
 
 /// 数据根里记着 `said` 那一句的 `message.user`（会话日志一行一件，不管放在哪个目录）。
+#[cfg(target_os = "linux")]
 fn logged_message(root: &std::path::Path, said: &str) -> Option<serde_json::Value> {
     let mut dirs = vec![root.to_path_buf()];
     while let Some(dir) = dirs.pop() {

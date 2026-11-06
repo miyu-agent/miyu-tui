@@ -2,7 +2,9 @@
 //! `PATH` 前面），剪贴板里是文件管理器复制的那个文件，不碰跑测试那台机器上的剪贴板。`wl-paste` 只有 Linux 上读，按
 //! `Ctrl+V` 贴图的测试只在 Linux 上跑。
 
-use super::{Home, Tui};
+use super::Home;
+#[cfg(target_os = "linux")]
+use super::Tui;
 
 /// 在工作目录里放一张图，交回它的路径。
 pub fn picture(home: &Home) -> String {
