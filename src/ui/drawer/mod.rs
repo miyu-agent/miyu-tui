@@ -165,6 +165,14 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     if !d.is_question() {
         v.pinned = v.lines.len();
     }
+    // 包的守卫的话（核心 HK-1）：照原样写在问题下面，折行写全（核心截在 300 字）。
+    if let Some(reason) = d.guard_reason() {
+        for line in reason.lines() {
+            for (piece, _) in pieces(line, width) {
+                v.push(Line::raw(piece), None);
+            }
+        }
+    }
     // 装、卸软件包，打开扩展的：包含、读不成、需要、一并删除、大小，一样一行（第 3 条，2026-10-12 项目主人定）。
     for row in d
         .package_plan(texts)

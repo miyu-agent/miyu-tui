@@ -12,6 +12,8 @@ pub struct Texts {
     pub asking: String,
     /// 跑命令的确认不在沙盒里跑时写的那一行（核心 D-4）。
     pub unsandboxed: String,
+    /// 包的守卫要人确认时的问题行（核心 HK-1）：`{package}` 包编号、`{tool}` 要调的工具。
+    pub guard: String,
     /// 跑命令的确认被认成高危命令时写的那一行（核心 5-17，2026-10-20 项目主人：「可以加『高危命令』四个字」）。
     pub hazard: String,
     /// 选项预览面板第一行。

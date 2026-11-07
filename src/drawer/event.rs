@@ -99,6 +99,12 @@ pub struct Detail {
     /// 打开扩展的：编号。
     #[serde(default)]
     pub enable: Option<String>,
+    /// 包的守卫要人确认的（核心 HK-1）：哪个包的守卫（包编号）。
+    #[serde(default)]
+    pub guard: Option<String>,
+    /// 守卫给人看的话（最多 300 字，照原样写）。
+    #[serde(default)]
+    pub reason: Option<String>,
     /// 装、卸、打开扩展的：核心看一眼的回应（`package.install`、`package.remove` 带 `preview: true` 的）。
     #[serde(default)]
     pub preview: Option<serde_json::Value>,

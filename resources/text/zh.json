@@ -591,6 +591,7 @@
     "asking": "{who} 在问",
     "preview": "预览",
     "unsandboxed": "沙盒外运行",
+    "guard": "{package} 的守卫在问：要用 {tool}",
     "hazard": "高危命令",
     "agent": "子代理 {name}",
     "elsewhere": "「{title}」在问你 · /resume 切过去",
