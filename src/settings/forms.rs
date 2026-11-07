@@ -2,6 +2,7 @@
 //! 资料填好；「确定」照 `apply.rs` 记进草稿。
 
 mod apply;
+pub mod drivers;
 
 pub use apply::apply;
 use serde_json::Value;
@@ -273,7 +274,8 @@ impl Form {
 
 /// 照目录新加一家（`pages/catalog.rs`）：编号先填好 `id`，存的时候和目录的编号不一样的另写 `catalog`。
 pub fn listed(view: &Data, data: &Data, draft: &Draft, id: &str, catalog: &str) -> Form {
-    let mut form = provider(view, data, draft, None);
+    // 目录里的供应商只用内置的驱动。
+    let mut form = provider(view, data, draft, None, &drivers::known(None));
     if let Some(row) = form.rows.iter_mut().find(|r| r.field == Field::Id) {
         *row = Row::text(Field::Id, id);
     }
@@ -282,8 +284,14 @@ pub fn listed(view: &Data, data: &Data, draft: &Draft, id: &str, catalog: &str) 
     form
 }
 
-/// 编辑一家供应商（`None` 是新加）。
-pub fn provider(view: &Data, data: &Data, draft: &Draft, id: Option<&str>) -> Form {
+/// 编辑一家供应商（`None` 是新加）；`drivers` 是能选的驱动（[`drivers::known`]）。
+pub fn provider(
+    view: &Data,
+    data: &Data,
+    draft: &Draft,
+    id: Option<&str>,
+    drivers: &[String],
+) -> Form {
     let p = id.and_then(|id| view.provider(id));
     let table = id.map(keys::provider).unwrap_or_default();
     let written = |item: &str| draft.value(&format!("{table}.{item}"), data).cloned();
@@ -294,11 +302,8 @@ pub fn provider(view: &Data, data: &Data, draft: &Draft, id: Option<&str>) -> Fo
         Some(env) => format!("env:{env}"),
         None => v.as_str().unwrap_or_default().to_string(),
     });
-    let drivers = ["", "openai-chat", "anthropic", "openai-responses"];
-    let driver = written("driver").and_then(|v| {
-        let v = v.as_str()?.to_string();
-        drivers.iter().position(|d| *d == v)
-    });
+    let driver = written("driver").and_then(|v| v.as_str().map(str::to_string));
+    let (drivers, driver) = drivers::choices(drivers, driver.as_deref());
     // 认证：照这一家的 key 的引用（一家一个，核心 8-25）；没有的当 API Key。
     let first = p.and_then(|p| p.key.as_ref());
     let env = first.and_then(|(r, _)| r.strip_prefix("env:"));
@@ -324,8 +329,8 @@ pub fn provider(view: &Data, data: &Data, draft: &Draft, id: Option<&str>) -> Fo
         Row::new(
             Field::Driver,
             Val::Choice {
-                options: drivers.iter().map(|d| d.to_string()).collect(),
-                at: Some(driver.unwrap_or(0)),
+                options: drivers,
+                at: Some(driver),
             },
         ),
         Row::new(

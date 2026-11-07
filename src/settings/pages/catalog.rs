@@ -247,7 +247,10 @@ impl Settings {
                 let id = forms::unique(forms::path_name(&catalog), &existing);
                 forms::listed(&self.view, data, &self.draft, &id, &catalog).key_only(name)
             }
-            None => forms::provider(&self.view, data, &self.draft, None),
+            None => {
+                let drivers = forms::drivers::known(self.more.raw.0.as_ref());
+                forms::provider(&self.view, data, &self.draft, None, &drivers)
+            }
         };
         self.popup = Some(Popup::Form(form));
     }

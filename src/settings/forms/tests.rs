@@ -25,7 +25,7 @@ fn windows_read_and_write_in_k_and_m() {
 fn a_new_provider_needs_a_valid_unused_id_and_its_key_goes_to_the_secret_store() {
     let data = sample();
     let mut draft = Draft::default();
-    let mut form = provider(&data, &data, &draft, None);
+    let mut form = provider(&data, &data, &draft, None, &super::drivers::known(None));
     assert!(matches!(form.focus, Focus::Row(0)), "新加的先填 ID");
     set_text(&mut form, Field::Id, "Zen");
     assert_eq!(
@@ -50,7 +50,13 @@ fn a_new_provider_needs_a_valid_unused_id_and_its_key_goes_to_the_secret_store()
 fn an_existing_provider_writes_only_what_moved() {
     let data = sample();
     let mut draft = Draft::default();
-    let mut form = provider(&data, &data, &draft, Some("relay"));
+    let mut form = provider(
+        &data,
+        &data,
+        &draft,
+        Some("relay"),
+        &super::drivers::known(None),
+    );
     assert!(
         matches!(form.rows[0].val, Val::Text { .. }),
         "已有的 ID 也能改"
@@ -169,7 +175,13 @@ fn the_provider_form_has_no_constrained_decoding_any_more() {
     // 不再有「约束解码」这一行，存的时候也不写它。
     let data = sample();
     let mut draft = Draft::default();
-    let form = provider(&data, &data, &draft, Some("relay"));
+    let form = provider(
+        &data,
+        &data,
+        &draft,
+        Some("relay"),
+        &super::drivers::known(None),
+    );
     let names: Vec<&str> = form.rows.iter().map(|r| r.field.name()).collect();
     assert!(!names.contains(&"strict_tools"), "{names:?}");
     apply(&form, &data, &data, &mut draft).unwrap();
@@ -181,7 +193,13 @@ fn editing_a_text_row_keeps_the_old_text_and_types_after_it() {
     // 2026-10-20 项目主人：回车进编辑整段选中，一敲就替换了全部的字，不对。光标停在末尾、不选中。
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     let data = sample();
-    let mut form = provider(&data, &data, &Draft::default(), Some("relay"));
+    let mut form = provider(
+        &data,
+        &data,
+        &Draft::default(),
+        Some("relay"),
+        &super::drivers::known(None),
+    );
     let row = form
         .rows
         .iter()
@@ -204,7 +222,13 @@ fn renaming_a_provider_keeps_its_changes_under_the_old_id_until_the_core_renames
     // 引用；终端先照旧编号存窗里别的改动，存完再改编号（`saving.rs`）。
     let data = sample();
     let mut draft = Draft::default();
-    let mut form = provider(&data, &data, &draft, Some("relay"));
+    let mut form = provider(
+        &data,
+        &data,
+        &draft,
+        Some("relay"),
+        &super::drivers::known(None),
+    );
     set_text(&mut form, Field::Id, "Relay2");
     assert_eq!(
         apply(&form, &data, &data, &mut draft),

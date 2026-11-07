@@ -232,3 +232,5 @@ fn picking_one_asks_only_for_its_key_enter_saves_and_esc_drops_it() {
     assert!(!matches!(page.popup, Some(Popup::Form(_))), "Esc 关掉");
     assert!(page.take_asks().is_empty(), "不存");
 }
+
+mod drivers;
