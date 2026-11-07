@@ -179,8 +179,7 @@ impl Part<Side<'_, '_>> for Recent {
 
     fn lay(&mut self, side: &Side, width: u16) -> Laid {
         let seen = side.seen;
-        let t = &seen.talk.transcript;
-        let current = t.session.as_deref().map(|id| (id, t.title.as_deref()));
+        let current = seen.talk.listed_current();
         let list = seen.talk.sessions_seen.as_deref().unwrap_or_default();
         let count = seen.config.layout.sidebar_sessions;
         let (mut lines, ids) = super::super::recent::recent_lines(
