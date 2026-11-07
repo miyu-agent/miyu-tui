@@ -1,6 +1,6 @@
 # 终端界面的软件包清单（施工 9-1 上，`docs/blueprint/packages.md`）：核心照它列出这个包、找它的程序和认的页。
 [package]
-version = "0.1.0"
+version = "2026.11.0"
 # 编号是 `miyu-tui`（文件夹名，核心设计 48）；配置键、扩展事件照前缀起，照旧是 `tui.*`。
 prefix = "tui"
 protocol = [1, 1]
