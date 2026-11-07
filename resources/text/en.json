@@ -591,6 +591,7 @@
     "asking": "{who} is asking",
     "preview": "Preview",
     "unsandboxed": "Runs outside the sandbox",
+    "guard": "The guard of {package} asks: use {tool}?",
     "hazard": "Dangerous command",
     "agent": "Subagent {name}",
     "elsewhere": "\"{title}\" is asking you · /resume to switch",

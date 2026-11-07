@@ -71,6 +71,13 @@ impl Drawer {
         if let Some((Some(title), _)) = &self.command {
             return title.clone();
         }
+        // 包的守卫在问（核心 HK-1）：哪个包的守卫、要调哪件工具；守卫的话写在下面（`ui/drawer`）。
+        if let Some((package, tool)) = self.guard_asked() {
+            return texts
+                .guard
+                .replace("{package}", &package)
+                .replace("{tool}", &tool);
+        }
         // 装、卸软件包，打开扩展的：「安装 weather 1.2.0」这类（`package.rs`）。
         if let Some(plan) = self.package_plan(texts) {
             return plan.title;
@@ -80,6 +87,26 @@ impl Drawer {
         template
             .replace("{count}", &detail.paths.len().to_string())
             .replace("{tool}", detail.tool.as_deref().unwrap_or(&a.access))
+    }
+
+    /// 包的守卫要人确认的（核心 HK-1，`detail.guard`）：包编号、要调的工具；别的是 `None`。
+    pub fn guard_asked(&self) -> Option<(String, String)> {
+        let Ask::Approval(a) = &self.ask else {
+            return None;
+        };
+        let detail = a.detail.as_ref()?;
+        let package = detail.guard.clone()?;
+        Some((package, detail.tool.clone().unwrap_or_default()))
+    }
+
+    /// 守卫给人看的话（核心 HK-1 的 `detail.reason`）：照原样；没有的是 `None`。
+    pub fn guard_reason(&self) -> Option<&str> {
+        let Ask::Approval(a) = &self.ask else {
+            return None;
+        };
+        let detail = a.detail.as_ref()?;
+        detail.guard.as_ref()?;
+        detail.reason.as_deref().filter(|r| !r.trim().is_empty())
     }
 
     /// 装、卸软件包，打开扩展的确认写成的样子（核心 F-10 下，`package.rs`）；别的确认、提问没有。
