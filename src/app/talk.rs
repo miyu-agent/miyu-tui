@@ -172,6 +172,19 @@ impl Talk {
         self.home.as_ref().and(self.transcript.session.as_deref())
     }
 
+    /// 侧边栏「最近会话」里当前这一行（排期第 64 条）：看着主会话的照它（连同标题）；切进了子会话的照主会话（子会话不列，
+    /// 原来把子会话当成「还没进列表的」插到了第一行），主会话的标题照列表里的写。
+    pub fn listed_current(&self) -> Option<(&str, Option<&str>)> {
+        match self.home.as_deref() {
+            Some(main) => Some((main, None)),
+            None => self
+                .transcript
+                .session
+                .as_deref()
+                .map(|id| (id, self.transcript.title.as_deref())),
+        }
+    }
+
     /// 主会话：切进了子会话的是停放着的那个。
     pub fn main_session(&self) -> Option<String> {
         self.home

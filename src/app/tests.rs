@@ -98,6 +98,7 @@ mod models_changed;
 mod notices;
 mod pools;
 mod prefix;
+mod recent;
 mod status;
 mod switching;
 mod theme_auto;
