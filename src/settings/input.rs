@@ -171,7 +171,8 @@ impl Settings {
         match col {
             Col::Provider => {
                 if let Some(id) = self.nav.provider(&self.view).map(|p| p.id.clone()) {
-                    self.open_form(|v, d, dr| forms::provider(v, d, dr, Some(&id)));
+                    let drivers = forms::drivers::known(self.more.raw.0.as_ref());
+                    self.open_form(|v, d, dr| forms::provider(v, d, dr, Some(&id), &drivers));
                 }
             }
             Col::Org => self.nav.sideways(true, &self.view),
