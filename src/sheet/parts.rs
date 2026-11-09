@@ -181,6 +181,8 @@ pub struct Marks {
     pub chart: [String; 8],
     /// 用量那一页的条形。
     pub block: String,
+    /// 横着的小条一格里八分之一到八分之八宽（`/context` 一行一根小条，发版前 check 32）。
+    pub fill: [String; 8],
     /// 框下面那一行用量那一格的环：上下文占窗口不到 1/8、到 3/8、5/8、7/8、再往上（「框下面那一行」用量那一格）。
     pub ring: [String; 5],
 }

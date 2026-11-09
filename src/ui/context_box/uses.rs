@@ -1,12 +1,13 @@
-//! 下一段，本会话累计（蓝图「上下文 `/context`」第 4 条）：一行一种用途，照 token 多少排；列是次数、输入（没命中缓存的）、
-//! 缓存读、缓存写、输出、花费，最后一行合计。窄得放不下时先去掉缓存写、再去掉缓存读。
+//! 按用途（蓝图「上下文 `/context`」第 4 条）：一行一种用途，照 token 多少排；列是次数、token（四种加起来）、花费，不止一行的
+//! 最后一行合计（发版前 check 32，2026-11-09 项目主人挑的样板：原来的六列表拆成三列，四种 token 挪到上面那一段的条里）。
+//! 第一行暗字「按用途」兼列名。窄得放不下时去掉花费。
 
 use ratatui::text::{Line, Span};
 use serde_json::Value;
 use unicode_width::UnicodeWidthStr;
 
 use super::{Texts, pad_left, pad_right};
-use crate::core::{Bill, Split, UsageRow};
+use crate::core::{Bill, UsageRow};
 use crate::meter;
 use crate::theme;
 
@@ -18,25 +19,17 @@ pub fn read_uses(got: &Value) -> Vec<UsageRow> {
 /// 没价格的写它。
 const NO_PRICE: &str = "—";
 
-/// 一行的几格：名字，次数、四项用量，花费。
+/// 一行的几格：名字、次数、token、花费。
 struct Cells {
     name: String,
-    numbers: [u64; 5],
+    requests: u64,
+    tokens: u64,
     cost: String,
 }
 
-fn cells(name: String, requests: u64, split: &Split, cost: String) -> Cells {
-    Cells {
-        name,
-        numbers: [
-            requests,
-            split.uncached,
-            split.cache_read,
-            split.cache_write,
-            split.output,
-        ],
-        cost,
-    }
+/// 一行用掉的四种 token 加起来。
+fn tokens_of(r: &UsageRow) -> u64 {
+    r.split.uncached + r.split.cache_read + r.split.cache_write + r.split.output
 }
 
 /// 排好的一行行；一次都没有的是空的。
@@ -56,82 +49,67 @@ pub(super) fn rows(
         .iter()
         .map(|r| {
             let id = r.used_for.clone().unwrap_or_default();
-            let name = texts.uses.get(&id).cloned().unwrap_or(id);
-            cells(name, r.requests, &r.split, cost(&r.bill))
+            Cells {
+                name: texts.uses.get(&id).cloned().unwrap_or(id),
+                requests: r.requests,
+                tokens: tokens_of(r),
+                cost: cost(&r.bill),
+            }
         })
         .collect();
-    let mut total = Split::default();
-    let mut bill = Bill::default();
-    for r in &sorted {
-        total.uncached += r.split.uncached;
-        total.cache_read += r.split.cache_read;
-        total.cache_write += r.split.cache_write;
-        total.output += r.split.output;
-        bill.merge(&r.bill);
+    if sorted.len() > 1 {
+        let mut bill = Bill::default();
+        sorted.iter().for_each(|r| bill.merge(&r.bill));
+        table.push(Cells {
+            name: texts.sum.clone(),
+            requests: sorted.iter().map(|r| r.requests).sum(),
+            tokens: sorted.iter().map(|r| tokens_of(r)).sum(),
+            cost: cost(&bill),
+        });
     }
-    let requests = sorted.iter().map(|r| r.requests).sum();
-    table.push(cells(texts.sum.clone(), requests, &total, cost(&bill)));
     layout(&table, texts, room)
 }
 
-/// 列宽照最宽的那格（列名也算），放不下的先去掉缓存写、再去掉缓存读。
+/// 列宽照最宽的那格（列名也算）；放不下的去掉花费。全是暗字（2026-10-23 项目主人：内容暗色）。
 fn layout(table: &[Cells], texts: &Texts, room: usize) -> Vec<Line<'static>> {
     let c = &texts.columns;
-    let heads = [
-        &c.requests,
-        &c.uncached,
-        &c.cache_read,
-        &c.cache_write,
-        &c.output,
-    ];
-    let name_width = table.iter().map(|r| r.name.width()).max().unwrap_or(0) + 2;
-    let width_of = |i: usize| {
-        table
-            .iter()
-            .map(|r| meter::short(r.numbers[i]).width())
-            .chain([heads[i].width()])
+    let name_width = table
+        .iter()
+        .map(|r| r.name.width())
+        .chain([texts.totals.width()])
+        .max()
+        .unwrap_or(0)
+        + 2;
+    let wide = |head: &str, cells: &mut dyn Iterator<Item = String>| {
+        cells
+            .map(|s| s.width())
+            .chain([head.width()])
             .max()
             .unwrap_or(0)
             + 2
     };
-    let cost_width = table
-        .iter()
-        .map(|r| r.cost.width())
-        .chain([c.cost.width()])
-        .max()
-        .unwrap_or(0)
-        + 2;
-    let mut shown: Vec<usize> = (0..5).collect();
-    for drop in [3, 2] {
-        let need: usize =
-            name_width + shown.iter().map(|i| width_of(*i)).sum::<usize>() + cost_width;
-        if need <= room {
-            break;
+    let requests_width = wide(
+        &c.requests,
+        &mut table.iter().map(|r| r.requests.to_string()),
+    );
+    let tokens_width = wide(&c.tokens, &mut table.iter().map(|r| meter::short(r.tokens)));
+    let cost_width = wide(&c.cost, &mut table.iter().map(|r| r.cost.clone()));
+    let show_cost = name_width + requests_width + tokens_width + cost_width <= room;
+    let line = |name: &str, requests: &str, tokens: &str, cost: &str| {
+        let mut spans = vec![
+            Span::styled(pad_right(name, name_width), theme::dim()),
+            Span::styled(pad_left(requests, requests_width), theme::dim()),
+            Span::styled(pad_left(tokens, tokens_width), theme::dim()),
+        ];
+        if show_cost {
+            spans.push(Span::styled(pad_left(cost, cost_width), theme::dim()));
         }
-        shown.retain(|i| *i != drop);
-    }
-    // 标题正常色，下面的表都是暗色，合计也不另亮（2026-10-23 项目主人：小标题正常色、内容暗色）。
-    let mut out = vec![Line::raw(texts.totals.clone())];
-    let mut head = vec![Span::raw(pad_right("", name_width))];
-    for i in &shown {
-        head.push(Span::styled(
-            pad_left(heads[*i], width_of(*i)),
-            theme::dim(),
-        ));
-    }
-    head.push(Span::styled(pad_left(&c.cost, cost_width), theme::dim()));
-    out.push(Line::from(head));
+        Line::from(spans)
+    };
+    let mut out = vec![line(&texts.totals, &c.requests, &c.tokens, &c.cost)];
     for r in table {
-        let style = theme::dim();
-        let mut spans = vec![Span::styled(pad_right(&r.name, name_width), style)];
-        for i in &shown {
-            spans.push(Span::styled(
-                pad_left(&meter::short(r.numbers[*i]), width_of(*i)),
-                style,
-            ));
-        }
-        spans.push(Span::styled(pad_left(&r.cost, cost_width), style));
-        out.push(Line::from(spans));
+        let tokens = meter::short(r.tokens);
+        out.push(line(&r.name, &r.requests.to_string(), &tokens, &r.cost));
     }
     out
 }

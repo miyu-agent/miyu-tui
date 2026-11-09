@@ -1,17 +1,18 @@
-//! 三段里新加的那几行（蓝图「上下文 `/context`」第 7 条，反馈 1102 第 22 条，照网页 W-1053）：上下文那一段底下的压缩线、
-//! 压缩次数、缓存断裂次数和卡住的原因；累计消耗的段头和四种 token；花费那一段。
+//! 三段里新加的那几行（蓝图「上下文 `/context`」第 7 条，反馈 1102 第 22 条，照网页 W-1053）：上下文那一段底下的压缩次数、
+//! 缓存断裂次数和卡住的原因；累计消耗的段头和四种 token。发版前 check 32（2026-11-09 项目主人挑的「每行一根小条」）起四种
+//! token 一种一根条，单独的「花费」那一段（按种类分的钱）不再写，钱只在按用途那张表里。
 //!
 //! 只排，不碰界面：数由 `context_box.rs` 收好（[`Tail`]）。
 
-use ratatui::text::{Line, Span};
+use ratatui::text::Line;
 
-use super::{Texts, pad_left, pad_right};
-use crate::core::{Bill, Converted, Cost, KindMoney, Split, UsageRow};
+use super::{Texts, bars};
+use crate::core::{Split, UsageRow};
 use crate::meter;
 use crate::theme;
 use crate::transcript::Stuck;
 
-/// 上下文那一段底下要写的：压缩了几次、缓存断了几次、卡住了没有（照正在看的会话）。压缩线照旧写在那根条后面（第 3 条）。
+/// 上下文那一段底下要写的：压缩了几次、缓存断了几次、卡住了没有（照正在看的会话）。压缩线写在段头右边（第 3 条）。
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Tail {
     pub compactions: u64,
@@ -19,38 +20,18 @@ pub struct Tail {
     pub stuck: Option<Stuck>,
 }
 
-/// 名目那一列、数那一列各多宽（数那一列放不下的照剩下的）。
-fn columns(rows: &[(String, String)], room: usize) -> (usize, usize) {
-    let name_width = rows.iter().map(|(n, _)| width(n)).max().unwrap_or(0) + 2;
-    let value_width = rows.iter().map(|(_, v)| width(v)).max().unwrap_or(0);
-    (name_width, value_width.min(room.saturating_sub(name_width)))
-}
-
-/// 名目在左、数在右的几行：名目暗色，数右对齐到同一列。
-fn pairs(rows: &[(String, String)], room: usize) -> Vec<Line<'static>> {
-    let (name_width, value_width) = columns(rows, room);
-    rows.iter()
-        .map(|(name, value)| {
-            Line::from(vec![
-                Span::styled(pad_right(name, name_width), theme::dim()),
-                Span::styled(pad_left(value, value_width), theme::dim()),
-            ])
-        })
-        .collect()
-}
-
-fn width(text: &str) -> usize {
-    unicode_width::UnicodeWidthStr::width(text)
-}
-
-/// 上下文那一段底下：已压缩、缓存断裂；卡住的再一行红字说为什么。
-pub(super) fn context_tail(tail: &Tail, texts: &Texts, room: usize) -> Vec<Line<'static>> {
+/// 上下文那一段底下：一行暗字「已压缩 N 次 · 缓存断裂 N 次」；卡住的再一行红字说为什么。
+pub(super) fn context_tail(tail: &Tail, texts: &Texts) -> Vec<Line<'static>> {
     let times = |n: u64| texts.times.replace("{n}", &n.to_string());
-    let rows = vec![
-        (texts.compactions.clone(), times(tail.compactions)),
-        (texts.breaks.clone(), times(tail.breaks)),
-    ];
-    let mut out = pairs(&rows, room);
+    let text = format!(
+        "{} {}{}{} {}",
+        texts.compactions,
+        times(tail.compactions),
+        crate::sheet::sep(),
+        texts.breaks,
+        times(tail.breaks)
+    );
+    let mut out = vec![Line::styled(text, theme::dim())];
     let why = match tail.stuck {
         Some(Stuck::Failed { .. }) => Some(&texts.stuck_failed),
         Some(Stuck::Over { .. }) => Some(&texts.stuck_over),
@@ -60,31 +41,6 @@ pub(super) fn context_tail(tail: &Tail, texts: &Texts, room: usize) -> Vec<Line<
         out.push(Line::styled(why.clone(), theme::error()));
     }
     out
-}
-
-/// 段头：左边正常色，右边暗色，收尾对齐到下面那张表（`rows`）的右边，和表里的数在同一列；下面没有表的接在左边后面
-/// 空两格（发版前 check 第 19 条，2026-11-09 项目主人：原来贴着整个框的右边，窗口宽时和左边、下面的数离得太远）。
-fn head(
-    left: String,
-    right: Option<String>,
-    rows: &[(String, String)],
-    room: usize,
-) -> Line<'static> {
-    let Some(right) = right else {
-        return Line::raw(left);
-    };
-    let span = if rows.is_empty() {
-        0
-    } else {
-        let (name_width, value_width) = columns(rows, room);
-        name_width + value_width
-    };
-    let gap = span.saturating_sub(width(&left) + width(&right)).max(2);
-    Line::from(vec![
-        Span::raw(left),
-        Span::raw(" ".repeat(gap)),
-        Span::styled(right, theme::dim()),
-    ])
 }
 
 /// 按用途那几行（一次都没有的不算）加起来的四种 token。
@@ -99,7 +55,8 @@ fn split_of(list: &[UsageRow]) -> Split {
     total
 }
 
-/// 累计消耗的段头和四种 token 一种一行（缓存读、缓存写、输出、输入（未命中）：数、占累计的百分比）；一次都没有的是空的。
+/// 累计消耗的段头（右边缓存命中，收尾和下面的数一列）和四种 token 一种一根条（照多少从大到小排：数、占累计的百分比）；
+/// 一次都没有的是空的。
 pub(super) fn spent(list: &[UsageRow], texts: &Texts, room: usize) -> Vec<Line<'static>> {
     let split = split_of(list);
     let all = split.uncached + split.cache_read + split.cache_write + split.output;
@@ -117,83 +74,16 @@ pub(super) fn spent(list: &[UsageRow], texts: &Texts, room: usize) -> Vec<Line<'
         split.output,
         split.uncached,
     ];
-    let rows: Vec<(String, String)> = texts
+    let mut kinds: Vec<bars::Row> = texts
         .kinds
         .iter()
         .zip(counts)
-        .map(|(name, n)| {
-            let share = format!("{}%", meter::percent_tenths(n, all));
-            (
-                name.clone(),
-                format!("{}  {}", meter::short(n), pad_left(&share, 6)),
-            )
-        })
+        .map(|(name, n)| (0, name.clone(), n))
         .collect();
-    let mut out = vec![head(title, Some(hit), &rows, room)];
-    out.extend(pairs(&rows, room));
-    out
-}
-
-/// 花费那一段：段头「花费」右边总数（照按用途那几行的 `converted` 加起来，`money` 照界面的币种写）；算不出钱的写暗字
-/// 「没有价格」。下面按种类一种一行（`converted_parts` 加起来，核心 UP-1）：有一行没有、某一种不知道的，那一种不写。
-/// 一次都没有的是空的。
-pub(super) fn cost(
-    list: &[UsageRow],
-    texts: &Texts,
-    money: super::Money,
-    room: usize,
-) -> Vec<Line<'static>> {
-    let used: Vec<&UsageRow> = list.iter().filter(|r| r.requests > 0).collect();
-    if used.is_empty() {
-        return Vec::new();
-    }
-    let mut bill = Bill::default();
-    used.iter().for_each(|r| bill.merge(&r.bill));
-    let Some(total) = money(&bill) else {
-        return vec![head(
-            texts.cost.clone(),
-            Some(texts.no_price.clone()),
-            &[],
-            room,
-        )];
-    };
-    let alone = |total: String| vec![head(texts.cost.clone(), Some(total), &[], room)];
-    let Some(converted) = bill.converted.as_ref() else {
-        return alone(total);
-    };
-    let Some(kinds) = KindMoney::sum(used.iter().map(|r| r.kinds.as_ref())) else {
-        return alone(total);
-    };
-    let sum: f64 = kinds.all().iter().flatten().sum();
-    let one = |amount: f64| {
-        let only = Bill {
-            converted: Some(Converted {
-                total: Cost {
-                    amount,
-                    currency: converted.total.currency.clone(),
-                },
-                rest: Vec::new(),
-            }),
-            ..Bill::default()
-        };
-        money(&only).unwrap_or_default()
-    };
-    let rows: Vec<(String, String)> = texts
-        .kinds
-        .iter()
-        .zip(kinds.all())
-        .filter_map(|(name, amount)| {
-            let amount = amount?;
-            // 照 token 那几行的写法（`meter::percent_tenths`）：钱换成十亿分之一的整数比。
-            let scale = |v: f64| (v * 1e9).round() as u64;
-            let share = format!("{}%", meter::percent_tenths(scale(amount), scale(sum)));
-            Some((
-                name.clone(),
-                format!("{}  {}", one(amount), pad_left(&share, 6)),
-            ))
-        })
-        .collect();
-    let mut out = vec![head(texts.cost.clone(), Some(total), &rows, room)];
-    out.extend(pairs(&rows, room));
+    // 多的在上（稳定排序：一样多的照缓存读、缓存写、输出、输入）。
+    kinds.sort_by_key(|(_, _, n)| std::cmp::Reverse(*n));
+    let laid = bars::rows(&kinds, all, room);
+    let mut out = vec![bars::head(&title, &hit, laid.width)];
+    out.extend(laid.lines);
     out
 }
