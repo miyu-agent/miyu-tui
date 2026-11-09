@@ -10,7 +10,12 @@
     "PgUp and PgDn scroll the conversation",
     "Ctrl+Z suspends, fg brings it back",
     "/undo undoes the last turn, /restore brings it back",
-    "With background commands running, ↓ on an empty input opens the panel"
+    "With background commands running, ↓ on an empty input opens the panel",
+    "$ names a skill, several per message",
+    "@ mentions a file or folder",
+    "Ctrl+G writes this message in your editor",
+    "/delete deletes this session",
+    "/jump goes back to something you said"
   ],
   "untitled": "Untitled session",
   "side_jumps": "Jump to",
