@@ -44,7 +44,7 @@ pub struct StoreTexts {
     /// `cancel`。
     pub ask: HashMap<String, String>,
     /// 状态行：`installed`（`{names}`）、`removed`、`upgraded`、`on`、`off`、`latest`、`all_latest`、`cancelled`、
-    /// `no_settings`、`blocked`（`{why}`）、`opened`、`run_web`（`{id}`）、`no_browser`（`{url}`）、`unread`（`{n}`）、
+    /// `no_settings`、`blocked`（`{why}`）、`opened`、`run_page`（`{id}`）、`no_browser`（`{url}`）、`unread`（`{n}`）、
     /// `too_small`（没看完就按 `y`）。
     pub status: HashMap<String, String>,
     /// 按键提示：`source`、`typing`、`installed`、`backstage`、`confirm`、`confirm_scroll`（放不下要滚）、

@@ -157,7 +157,7 @@ impl Settings {
         }
     }
 
-    /// 「软件后台」`Enter`：交给 App 在后台跑 `miyu web --package`（`backstage.rs`）。
+    /// 「软件后台」`Enter`：交给 App 在后台跑 `miyu pkg page`（`backstage.rs`）。
     fn store_backstage_key(&mut self, key: KeyEvent, texts: &Texts) {
         if key.code != KeyCode::Enter {
             return;
@@ -171,8 +171,7 @@ impl Settings {
             return;
         };
         if crate::backstage::program().is_none() {
-            let line = say(&texts.more.store.status, "run_web").replace("{id}", &id);
-            return self.say(line, Tone::Note);
+            return self.say(run_page(texts, &id), Tone::Note);
         }
         self.more.store.web = Some((id, name));
     }
@@ -189,4 +188,9 @@ impl Settings {
             self.say(line, Tone::Note);
         }
     }
+}
+
+/// 不知道核心程序在哪时状态行写的：自己在终端里跑哪条命令（发版前 check 14：`miyu pkg page <编号>`，不用装网页）。
+pub(super) fn run_page(texts: &Texts, id: &str) -> String {
+    say(&texts.more.store.status, "run_page").replace("{id}", id)
 }

@@ -66,3 +66,12 @@ fn details_are_asked_once_per_package_and_not_for_the_backstage() {
     store.tab = Tab::Backstage;
     assert_eq!(store.wants_info(), None);
 }
+
+/// 不知道核心程序在哪时，「软件后台」`Enter` 叫人自己跑 `miyu pkg page <编号>`（发版前 check 14，2026-11-09 验收时项目主人：
+/// 金色提示还是旧的 `miyu web --package`）。
+#[test]
+fn without_the_core_program_the_hint_names_pkg_page() {
+    let texts = crate::config::Config::builtin().unwrap().text.settings;
+    let line = super::keys::run_page(&texts, "miyu-im");
+    assert_eq!(line, "在终端里运行 miyu pkg page miyu-im");
+}
