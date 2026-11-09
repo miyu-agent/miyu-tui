@@ -20,6 +20,9 @@ pub struct Commands {
     /// 清单还没回来，整句当话发出去了）。
     #[serde(skip)]
     pub core_known: bool,
+    /// 能用 `$` 点名的技能（`command.catalog` 顶层的 `skills`，核心 SK-1，发版前 check 26）：不在命令列表里。
+    #[serde(skip)]
+    pub skills: Vec<crate::core::CoreSkill>,
 }
 
 /// 一条命令。

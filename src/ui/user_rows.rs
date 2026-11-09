@@ -35,6 +35,13 @@ pub fn rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     let clickable = entry.pasted.iter().any(Chip::expandable);
     let hovered = clickable && ctx.hover == Some(Target::Entry(i));
     let (text, pieces) = shaped(said, &entry.pasted, entry.open, hovered);
+    // 用 `$` 点了的技能：照字上色，不展开正文（「`$` 点名技能」，发版前 check 26）；落在块里的不管。
+    let named: Vec<(usize, usize, Style)> =
+        crate::skill_word::marks(&text, &ctx.config.commands.skills)
+            .into_iter()
+            .filter(|(s, e, _)| !pieces.iter().any(|p| p.from < *e && *s < p.to))
+            .map(|(s, e, _)| (s, e, theme::accent()))
+            .collect();
     let mut out = vec![ctx.row(bar.clone(), Vec::new())];
     // 来处写在竖线里第一行，暗色；复制时不带。
     if let Some(from) = &entry.from {
@@ -69,8 +76,10 @@ pub fn rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
                 continue;
             }
         }
-        let styled: Vec<(usize, usize, Style)> =
+        let mut styled: Vec<(usize, usize, Style)> =
             pieces.iter().map(|p| (p.from, p.to, p.style)).collect();
+        styled.extend(named.iter().copied());
+        styled.sort_by_key(|&(s, _, _)| s);
         if std::mem::take(&mut gap_after) && line.start < line.end {
             out.push(ctx.row(bar.clone(), Vec::new()));
         }
@@ -245,4 +254,35 @@ pub(super) fn spans(
         out.push(Span::styled(text[at..end].to_string(), Style::new()));
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::core::CoreSkill;
+    use crate::theme;
+    use crate::ui::test_support::Fixture;
+
+    #[test]
+    fn named_skills_are_colored_and_not_expanded() {
+        // 发版前 check 26（2026-11-09 项目主人）：时间线上照人打的字写，`$技能名` 着色，技能正文不展开。
+        let _theme = theme::hold();
+        let mut fixture = Fixture::new();
+        fixture.config.commands.skills = vec![CoreSkill {
+            name: "pdf".into(),
+            summary: String::new(),
+        }];
+        let mut transcript = crate::transcript::Transcript::default();
+        transcript.user("读一下 $pdf 和 $nope".into(), Vec::new());
+        let rows = super::rows(0, &transcript.entries[0], &fixture.ctx());
+        let spans: Vec<_> = rows.iter().flat_map(|r| r.line.spans.iter()).collect();
+        let named = spans
+            .iter()
+            .find(|s| s.content == "$pdf")
+            .expect("单独一段");
+        assert_eq!(named.style.fg, theme::accent().fg);
+        assert!(
+            spans.iter().all(|s| s.content != "$nope"),
+            "没有这个技能的不上色"
+        );
+    }
 }

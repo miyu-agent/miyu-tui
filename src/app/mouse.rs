@@ -132,6 +132,8 @@ impl App {
             Some(Grab::Menu) => {
                 if let Some(found) = self.mention_found() {
                     self.mention_mouse(mouse, &found)
+                } else if let Some(found) = self.skill_found() {
+                    self.skill_mouse(mouse, &found)
                 } else if let Some(matches) = self.menu_matches() {
                     self.menu_mouse(mouse, &matches)
                 } else {

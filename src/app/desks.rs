@@ -19,6 +19,7 @@ impl App {
         let own = to.and_then(|to| self.typing.drafts.remove(to));
         self.typing.input.put_desk(own.unwrap_or_default());
         self.typing.mention.forget();
+        self.typing.skill_word.forget();
         if self.typing.history.jump {
             self.typing.history.close();
         }

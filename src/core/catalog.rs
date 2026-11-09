@@ -22,6 +22,31 @@ pub struct CoreCommand {
     pub usage: Vec<(String, String)>,
 }
 
+/// 能用 `$` 点名的一个技能（核心 SK-1，发版前 check 26：从 `commands` 挪到回应顶层的 `skills`）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CoreSkill {
+    /// 名字，不带 `$`。
+    pub name: String,
+    /// 一句说明（照连接的语言）。
+    pub summary: String,
+}
+
+/// 读回应顶层的 `skills`：没有这一格的（SK-1 以前的核心，技能还在 `commands` 里）是 `None`；读不懂的那一条不要。
+pub fn skills(result: &Value) -> Option<Vec<CoreSkill>> {
+    let listed = result["skills"].as_array()?;
+    Some(
+        listed
+            .iter()
+            .filter_map(|s| {
+                Some(CoreSkill {
+                    name: s["name"].as_str().filter(|n| !n.is_empty())?.to_string(),
+                    summary: s["summary"].as_str().unwrap_or_default().to_string(),
+                })
+            })
+            .collect(),
+    )
+}
+
 /// 读回应的 `commands`；读不懂的那一条不要。
 pub fn read(result: &Value) -> Vec<CoreCommand> {
     let text = |v: &Value| v.as_str().map(str::to_string);
@@ -61,7 +86,27 @@ pub fn read(result: &Value) -> Vec<CoreCommand> {
 mod tests {
     use serde_json::json;
 
-    use super::{CoreCommand, read};
+    use super::{CoreCommand, CoreSkill, read, skills};
+
+    #[test]
+    fn skills_come_from_the_top_level_and_old_cores_have_none() {
+        let got = json!({"commands": [], "skills": [
+            {"name": "pdf", "summary": "读写 PDF"}, {"name": "", "summary": "坏的"}, {"name": "review"}]});
+        assert_eq!(
+            skills(&got),
+            Some(vec![
+                CoreSkill {
+                    name: "pdf".into(),
+                    summary: "读写 PDF".into()
+                },
+                CoreSkill {
+                    name: "review".into(),
+                    summary: String::new()
+                },
+            ])
+        );
+        assert_eq!(skills(&json!({"commands": []})), None, "SK-1 以前的核心");
+    }
 
     #[test]
     fn the_catalog_is_read_with_aliases_and_argument_hints() {

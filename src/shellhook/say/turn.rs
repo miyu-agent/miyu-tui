@@ -222,6 +222,7 @@ impl Turn {
                 files: self.files.clone(),
                 cwd: self.cwd.clone(),
                 shell: false,
+                skills: Vec::new(),
             });
         }
     }
@@ -280,7 +281,7 @@ impl Turn {
                     self.send(core);
                 }
             }
-            Update::Catalog(list) if self.terminal.none => {
+            Update::Catalog(list, _) if self.terminal.none => {
                 if let Some(name) = &self.terminal.unknown {
                     self.terminal.missing = super::terminal::missing(name, &list);
                 }

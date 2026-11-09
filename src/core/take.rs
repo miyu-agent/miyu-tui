@@ -154,7 +154,9 @@ pub(super) async fn take(
             return notify(Update::UsageRows { kind, rows, rates });
         }
         Some(Awaiting::Catalog) => {
-            return notify(Update::Catalog(super::catalog::read(&message["result"])));
+            let result = &message["result"];
+            let skills = super::catalog::skills(result);
+            return notify(Update::Catalog(super::catalog::read(result), skills));
         }
         Some(Awaiting::CommandRun | Awaiting::Slash) => return notify(ran(&message["result"])),
         Some(Awaiting::Output(session, job, after)) => {

@@ -102,7 +102,9 @@ impl App {
             return Action::None;
         }
         // Tab、Shift+Tab（终端报成 BackTab）轮换权限级别；命令列表、`@` 文件列表开着时 Tab 归列表（`tui.md`「按键」）。
-        let menu_open = self.menu_matches().is_some() || self.mention_found().is_some();
+        let menu_open = self.menu_matches().is_some()
+            || self.mention_found().is_some()
+            || self.skill_found().is_some();
         // 整屏看输出、后台面板、后台按钮先拿按键（`tui.md`「后台命令、子代理和侧边栏」）。
         if self.jobs_key(key, menu_open) {
             return Action::None;
@@ -203,6 +205,12 @@ impl App {
         {
             return action;
         }
+        // `$` 点名技能的列表开着：选、选定、关（「`$` 点名技能」，发版前 check 26）。
+        if let Some(found) = self.skill_found()
+            && let Some(action) = self.skill_key(key, &found)
+        {
+            return action;
+        }
         let Some(matches) = self.menu_matches() else {
             return self.typing.input.key(key);
         };
@@ -287,11 +295,14 @@ impl App {
         self.dream_wake_up();
         self.talk.transcript.user(text, chips);
         self.awaiting_turn();
+        // 用 `$` 点了的技能（发版前 check 26，`skill_word.rs`）：字照原样发，点了哪几个另交。
+        let skills = crate::skill_word::named(&full, &self.config.commands.skills);
         self.link.core.send(Command::Send {
             text: full,
             files,
             cwd: None,
             shell: false,
+            skills,
         });
     }
 

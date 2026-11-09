@@ -43,6 +43,7 @@ impl App {
             text: command,
             files: Vec::new(),
             shell: true,
+            skills: Vec::new(),
             cwd: None,
         });
     }

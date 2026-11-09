@@ -18,6 +18,8 @@ pub struct Typing {
     pub menu: Menu,
     /// `@` 文件列表。
     pub mention: crate::mention::Mention,
+    /// `$` 点名技能的列表（发版前 check 26）。
+    pub skill_word: crate::skill_word::Picker,
     /// 输入历史列表（`Ctrl+R`）。
     pub history: History,
     /// 输入历史放好了（照 `package.list` 定了在哪、读进来了）。

@@ -5,7 +5,7 @@
 //! 历史；原来只有后两种不放回）。
 
 use super::App;
-use crate::core::{Command, CoreCommand};
+use crate::core::{Command, CoreCommand, CoreSkill};
 use crate::input::Draft;
 
 impl App {
@@ -15,9 +15,11 @@ impl App {
         self.link.core.send(Command::Catalog(session));
     }
 
-    /// 核心的清单到了：接在终端自己的命令后面（同名的照终端自己的）。
-    pub(super) fn catalog_arrived(&mut self, listed: &[CoreCommand]) {
+    /// 核心的清单到了：接在终端自己的命令后面（同名的照终端自己的）。能用 `$` 点名的技能另记（核心 SK-1，发版前 check 26）；
+    /// 旧核心不给的空着，技能照旧在命令里。
+    pub(super) fn catalog_arrived(&mut self, listed: &[CoreCommand], skills: Option<&[CoreSkill]>) {
         self.config.commands.take_core(listed);
+        self.config.commands.skills = skills.map(<[CoreSkill]>::to_vec).unwrap_or_default();
     }
 
     /// 一行斜杠命令交给核心（核心清单里的、终端不认的名字）：没连上的字留在输入框。

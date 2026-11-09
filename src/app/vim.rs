@@ -52,8 +52,10 @@ impl App {
     /// 按键是 `j`、`k` 这些、不是在打字：不能打字的框开着，或者按键模式是 Vim、`@` 文件列表里按了 `Esc` 在选。输入法照它关成
     /// 英文（发版前 check 16，2026-11-09 验收时项目主人：「这个没改啊？」——中文输入法开着，`j`、`k` 进了输入法，到不了列表）。
     pub(super) fn keys_not_typing(&self) -> bool {
+        let picking = crate::mention::Mode::Picking;
         self.no_typing()
-            || (self.config.layout.vim && self.typing.mention.mode == crate::mention::Mode::Picking)
+            || (self.config.layout.vim
+                && (self.typing.mention.mode == picking || self.typing.skill_word.mode == picking))
     }
 
     /// 按键模式是 Vim，会话列表、`/model`、输入历史列表（发版前 check 第 31 条）开着、没在打搜索的字（`list_search.rs`）。

@@ -35,3 +35,23 @@ pub struct MentionTexts {
     /// 按键模式是 Vim、按了 `/` 在筛时的。
     pub filtering: String,
 }
+
+/// `$` 点名技能的列表上写的字（`text/zh.json` 的 `skill_word`，发版前 check 26）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SkillWordTexts {
+    /// 上边框的开头：`{query}` 打的字。
+    pub title: String,
+    /// 条数：`{count}`。
+    pub count: String,
+    /// 一条都对不上。
+    pub empty: String,
+    /// 下边框的按键说明。
+    pub hints: String,
+    /// 按键模式是 Vim、在打字时的。
+    pub vim_hints: String,
+    /// 按键模式是 Vim、`Esc` 以后在列表里选时的。
+    pub picking: String,
+    /// 按键模式是 Vim、按了 `/` 在筛时的。
+    pub filtering: String,
+}

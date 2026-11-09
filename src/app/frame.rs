@@ -5,10 +5,12 @@ use super::App;
 use crate::commands::Spec;
 use crate::mention::Found;
 
-/// 这一帧输入框上面的两个列表。
+/// 这一帧输入框上面的几个列表。
 pub struct Lists {
     /// 开着的 `@` 文件列表。
     pub mentions: Option<Found>,
+    /// 开着的 `$` 点名技能的列表（发版前 check 26）。
+    pub skills: Option<crate::skill_word::Found>,
     /// 斜杠命令列表对得上的几条；不开的是 `None`。
     pub matches: Option<Vec<Spec>>,
 }
@@ -22,11 +24,21 @@ impl App {
             self.config.text.tips.len(),
         );
         let mentions = crate::frame_log::section("mention", || self.mention_found());
+        let skills = if mentions.is_some() {
+            None
+        } else {
+            self.skill_found()
+        };
         let blocked = self.typing.history.open
             || self.boxes.panel.is_some()
             || self.talk.drawers.open()
-            || mentions.is_some();
+            || mentions.is_some()
+            || skills.is_some();
         let matches = if blocked { None } else { self.menu_matches() };
-        Lists { mentions, matches }
+        Lists {
+            mentions,
+            skills,
+            matches,
+        }
     }
 }
