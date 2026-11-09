@@ -391,6 +391,8 @@ fn left<'a>(seen: &Seen<'a>, model: Model, named: bool) -> Vec<Span<'a>> {
             if let Some(word) = cooling {
                 spans.push(Span::styled(word, theme::warn()));
             } else if let Some((shown, endpoint)) = t.shown_model() {
+                // 固定的三个池写 `@旗舰池`（`pools.rs`，2026-11-09 项目主人：选了以后底栏不写 `@flagship`）
+                let shown = crate::pools::label(&shown, &text.settings.pool_names).unwrap_or(shown);
                 spans.extend(model_spans(shown, &endpoint, model));
                 // 思考强度（`/effort`）：什么都不发的不写。
                 if let Some(effort) = t.effort() {
