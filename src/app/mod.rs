@@ -12,6 +12,7 @@ mod catalog;
 mod compose;
 mod config_asks;
 mod deadline;
+mod desks;
 mod diagrams;
 mod drawer;
 mod drawer_attach;

@@ -123,14 +123,19 @@ impl Mention {
         }
     }
 
+    /// 忘掉现在的词：没有词了、换了会话（换上来的框里的字是那个会话的，发版前 check 第 17 条）；回到打字。
+    pub fn forget(&mut self) {
+        self.typed = None;
+        self.dismissed = None;
+        self.asked = None;
+        self.reply = None;
+        self.mode = Mode::Typing;
+    }
+
     /// 照输入框里的字和光标，定开不开、列哪些；不开的是 `None`。只看记着的回应，不收发。
     pub fn find(&mut self, text: &str, cursor: usize) -> Option<Found> {
         let Some(word) = token::token(text, cursor) else {
-            self.typed = None;
-            self.dismissed = None;
-            self.asked = None;
-            self.reply = None;
-            self.mode = Mode::Typing;
+            self.forget();
             return None;
         };
         if self.typed.as_ref() != Some(&word) {
