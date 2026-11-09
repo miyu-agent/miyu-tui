@@ -133,15 +133,15 @@ mod tests {
                 "少了「{start}」那条：{zh:?}"
             );
         }
-        for lang in ["en", "ja"] {
+        // 条数照字表文件比：没有作业控制的系统（Windows）读进来时去掉了 `Ctrl+Z` 那条（`fit`）。
+        let count = |lang: &str| {
             let path = format!("{}/resources/text/{lang}.json", env!("CARGO_MANIFEST_DIR"));
             let text: serde_json::Value =
                 serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
-            assert_eq!(
-                text["tips"].as_array().map(Vec::len),
-                Some(zh.len()),
-                "{lang}"
-            );
+            text["tips"].as_array().map(Vec::len)
+        };
+        for lang in ["en", "ja"] {
+            assert_eq!(count(lang), count("zh"), "{lang}");
         }
     }
 }
