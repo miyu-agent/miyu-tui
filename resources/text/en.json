@@ -1442,6 +1442,7 @@
       },
       "no_persona": "No persona",
       "unpicked": "None",
+      "follow_new": "Same as new sessions",
       "builtin_mascot": "Built-in",
       "default_look": "Default theme",
       "mascot_missing": "{id} (not installed)",

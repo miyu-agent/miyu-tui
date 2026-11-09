@@ -30,7 +30,8 @@ fn opened(kb: Option<Value>) -> Settings {
     let schema = json!({"pages": [{"id": "packages", "name": "软件包"}],
         "groups": [{"id": "draw", "name": "画图", "page": "packages"}],
         "items": [item("draw.persona", "persona"), item("draw.kb", "knowledge"),
-                  item("draw.model", "reference"), accounts, item("draw.preset", "preset"), rota]});
+                  item("draw.model", "reference"), accounts, item("draw.preset", "preset"), rota,
+                  item("terminal.persona", "persona")]});
     let layer = |v: &str| {
         json!({"value": v, "layers": [
         {"origin": {"layer": "system", "line": 1}, "value": v, "used": true}]})
@@ -233,4 +234,23 @@ fn a_model_field_in_a_record_comes_back_to_the_form() {
         panic!("回到表单窗：{:?}", page.popup);
     };
     assert!(form.record.get("model").is_some_and(Value::is_string));
+}
+
+/// 发版前 check 第 21 条（2026-11-09 项目主人：「`不选`的意思应该是`跟随新会话设置`」）：终端集成会话的人格没设，写「跟随新会话
+/// 设置」，选择窗第一行也是它；别的包的人格项照旧「不选」。
+#[test]
+fn the_terminal_session_persona_unset_follows_new_sessions() {
+    let mut page = opened(None);
+    let item = page.more.schema.as_ref().unwrap().items[6].clone();
+    assert_eq!(
+        crate::settings::pages::shown(
+            &item,
+            &Value::Null,
+            page.more.named_item(&item),
+            &texts().more
+        ),
+        "跟随新会话设置"
+    );
+    page.change("packages/draw", 6, &texts());
+    assert_eq!(labels(&page), ["跟随新会话设置", "美羽", "开发"]);
 }
