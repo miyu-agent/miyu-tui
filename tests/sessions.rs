@@ -369,12 +369,14 @@ fn deleting_the_current_session_moves_to_the_latest_one_and_then_to_an_empty_one
 }
 
 /// `/delete`（发版前 check 12，2026-11-09 项目主人：「直接删除当前会话并去到新建会话的页面」）：不再问一次，删了回新会话的
-/// 首页，列表里也没了它；刚回首页还没说话时再按，当场说没有可删的。
+/// 首页，列表里也没了它；刚回首页还没说话时再按，当场说没有可删的。删好的通知框照普通通知的颜色，不用绿色（同一天验收时
+/// 项目主人）。
 #[test]
 fn delete_removes_the_current_session_and_lands_on_a_new_one() {
     let (home, mut tui) = sessions(2);
     tui.say("/delete");
     tui.wait_for("已删除「");
+    let deleted = notice_border(&tui, "已删除「");
     tui.wait_for("工作区");
     assert!(
         !tui.shows("第 2 号的回答。"),
@@ -383,6 +385,11 @@ fn delete_removes_the_current_session_and_lands_on_a_new_one() {
     );
     tui.say("/delete");
     tui.wait_for("没有可删除的会话");
+    assert_eq!(
+        deleted,
+        notice_border(&tui, "没有可删除的会话"),
+        "删好的通知框和普通通知一个颜色"
+    );
     // 核心那头真删了：重开一个终端，列表里只剩一个（本地删着的先藏起来，看不出核心删没删）。
     tui.pump(Duration::from_millis(300));
     drop(tui);
@@ -395,4 +402,22 @@ fn delete_removes_the_current_session_and_lands_on_a_new_one() {
         "删掉的不在列表里：\n{}",
         tui.lines().join("\n")
     );
+}
+
+/// 写着 `text` 的通知框左边框的颜色：从字往左找到的第一个不空的格。
+fn notice_border(tui: &Tui, text: &str) -> vt100::Color {
+    let lines = tui.lines();
+    let row = lines
+        .iter()
+        .position(|l| l.contains(text))
+        .expect("有这条通知");
+    let first = text.chars().next().map(String::from).unwrap_or_default();
+    let col = (0..200u16)
+        .find(|&c| tui.cell(row as u16, c) == first)
+        .expect("找到字");
+    let border = (0..col)
+        .rev()
+        .find(|&c| !tui.cell(row as u16, c).trim().is_empty())
+        .expect("左边有框");
+    tui.foreground(row as u16, border)
 }
