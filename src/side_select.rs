@@ -12,6 +12,8 @@ pub struct TextRow {
     pub x: u16,
     /// 写的字。
     pub text: String,
+    /// 是上一行放不下折下来的（工作区路径这类，发版前 check 29）：复制时接在上一行后面，不换行。
+    pub joined: bool,
 }
 
 /// 选区和上一帧写了字的行。
@@ -102,18 +104,24 @@ impl SideSelect {
         (from < to).then_some((from, to.min(end_of_row)))
     }
 
-    /// 选中的字：一行一行，照屏幕的样子，行首的缩进、行尾的空格不要。
+    /// 选中的字：一行一行，照屏幕的样子，行首的缩进、行尾的空格不要；折下来的行接回上一行（发版前 check 29，2026-11-09
+    /// 项目主人：复制软换行的内容，进剪贴板的是真换行）。
     pub fn text(&self) -> String {
-        self.rows
-            .iter()
-            .filter_map(|row| {
-                let (from, to) = self.cols(row.y)?;
-                let piece =
-                    crate::body_view::slice(&row.text, from - row.x.min(from), to - row.x.min(to));
-                Some(piece.trim().to_string())
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
+        let mut out = String::new();
+        let mut first = true;
+        for row in &self.rows {
+            let Some((from, to)) = self.cols(row.y) else {
+                continue;
+            };
+            let piece =
+                crate::body_view::slice(&row.text, from - row.x.min(from), to - row.x.min(to));
+            if !first && !row.joined {
+                out.push('\n');
+            }
+            out.push_str(piece.trim());
+            first = false;
+        }
+        out
     }
 }
 
@@ -128,16 +136,19 @@ mod tests {
                 y: 10,
                 x: 100,
                 text: "工作目录".into(),
+                joined: false,
             },
             TextRow {
                 y: 11,
                 x: 100,
                 text: "  ~/Documents/github/".into(),
+                joined: false,
             },
             TextRow {
                 y: 12,
                 x: 100,
                 text: "  miyu-agent-remake".into(),
+                joined: true,
             },
         ]);
         s
@@ -153,7 +164,8 @@ mod tests {
         assert!(!s.release(), "拖过了，不算点");
         assert!(!s.pressing(), "松开后不再抓后续的鼠标事件");
         assert!(s.active());
-        assert_eq!(s.text(), "~/Documents/github/\nmiyu");
+        // 第 12 行是路径折下来的：接回一行，不换行（发版前 check 29）。
+        assert_eq!(s.text(), "~/Documents/github/miyu");
         assert_eq!(
             s.cols(11),
             Some((102, 121)),
@@ -161,6 +173,15 @@ mod tests {
         );
         assert_eq!(s.cols(12), Some((100, 106)));
         assert_eq!(s.cols(10), None);
+    }
+
+    #[test]
+    fn a_title_and_a_wrapped_path_copy_as_two_lines() {
+        let mut s = select();
+        s.press(100, 10);
+        s.drag(119, 12);
+        s.release();
+        assert_eq!(s.text(), "工作目录\n~/Documents/github/miyu-agent-remake");
     }
 
     #[test]

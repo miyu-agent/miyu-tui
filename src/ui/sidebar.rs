@@ -298,7 +298,7 @@ pub fn draw(
     let mut text_rows: Vec<TextRow> = stacked
         .written
         .into_iter()
-        .map(|(y, x, text)| TextRow { y, x, text })
+        .map(|(y, x, text, joined)| TextRow { y, x, text, joined })
         .collect();
     // 扩展包放的界面块：接在后面（蓝图「界面块」第 2 条）。
     let after = stacked.next;
@@ -310,10 +310,12 @@ pub fn draw(
     );
     let pointer = screen.pointer;
     let rows = super::widget::sidebar(frame, rest, seen, pointer, &mut screen.widget_spots);
-    text_rows.extend(
-        rows.into_iter()
-            .map(|(y, text)| TextRow { y, x: rest.x, text }),
-    );
+    text_rows.extend(rows.into_iter().map(|(y, text)| TextRow {
+        y,
+        x: rest.x,
+        text,
+        joined: false,
+    }));
     // 选中的反色。
     for row in &text_rows {
         if let Some((from, to)) = screen.side_select.cols(row.y) {
