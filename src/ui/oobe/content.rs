@@ -95,6 +95,16 @@ impl Content {
         self.blank();
     }
 
+    /// 同 [`Content::heading`]，标题右边空两格暗色接 `aside`（引导「选择预设」的「空格 查看详情」，发版前 check 23）。
+    pub fn heading_aside(&mut self, title: &str, aside: &str, sub: &str) {
+        let at = self.lines.len();
+        self.heading(title, sub);
+        self.lines[at] = Line::from(vec![
+            Span::styled(title.to_string(), Style::new().add_modifier(Modifier::BOLD)),
+            Span::styled(format!("  {aside}"), theme::dim()),
+        ]);
+    }
+
     /// 空一行。
     pub fn blank(&mut self) {
         self.lines.push(Line::default());

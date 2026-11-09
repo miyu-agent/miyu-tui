@@ -1617,7 +1617,8 @@
       "name_hint": "输入名称",
       "name_needed": "请填写名称",
       "loading": "正在加载…",
-      "create": "创建"
+      "create": "创建",
+      "view_hint": "空格 查看详情"
     },
     "theme": {
       "title": "配色方案",

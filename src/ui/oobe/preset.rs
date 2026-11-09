@@ -16,7 +16,8 @@ use crate::ui::feature_tree::{self, Focus};
 pub fn content(step: &PresetStep, texts: &Texts, width: u16) -> Content {
     let words = &texts.preset;
     let mut c = Content::new(width);
-    c.heading(&words.head.title, &words.head.sub);
+    // 标题右边暗色写「空格 查看详情」：描述放不下截掉了，详情要靠空格看，按键提示又不显眼（发版前 check 23，2026-11-09 项目主人）。
+    c.heading_aside(&words.head.title, &words.view_hint, &words.head.sub);
     if step.busy && step.cards.is_empty() {
         c.note(&words.loading, theme::dim());
         return c;

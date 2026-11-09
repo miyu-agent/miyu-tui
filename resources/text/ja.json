@@ -1617,7 +1617,8 @@
       "name_hint": "名前をつける",
       "name_needed": "名前を入れてください",
       "loading": "読み込んでいます…",
-      "create": "作成"
+      "create": "作成",
+      "view_hint": "スペースで詳細"
     },
     "theme": {
       "title": "配色",

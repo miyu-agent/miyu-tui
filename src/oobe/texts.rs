@@ -386,6 +386,8 @@ pub struct Preset {
     pub loading: String,
     /// 自定义最后一行「创建」。
     pub create: String,
+    /// 标题右边暗色写的：空格看详情（发版前 check 23）。
+    pub view_hint: String,
 }
 
 /// 好了那一屏。
