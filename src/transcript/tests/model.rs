@@ -233,3 +233,25 @@ fn before_a_session_the_current_model_is_the_one_the_footer_shows() {
     );
     assert_eq!(t.model_ref(), None, "会话用的照旧是空的");
 }
+
+#[test]
+fn a_pool_as_the_default_and_after_a_turn_on_a_pool_stays_the_pool() {
+    // 发版前 check 第 15 条（2026-11-09 项目主人报）：用池聊过一轮再 `/new`，新会话页底栏写的是上一轮轮到的那个模型。
+    let mut t = Transcript::default();
+    t.show_default("@normal", None);
+    assert_eq!(t.shown_model(), Some(("@normal".into(), String::new())));
+    assert_eq!(
+        t.current_ref().as_deref(),
+        Some("@normal"),
+        "不拼成 /@normal"
+    );
+    // 会话用池，轮到一个成员：带去新会话的是池，不是成员
+    let mut s = Transcript::default();
+    s.configured("@normal".into());
+    s.show_model("deepseek-v4".into(), "deepseek".into());
+    let carried = s.footer_model();
+    assert_eq!(carried.0, Some(("@normal".into(), String::new())));
+    let mut fresh = Transcript::default();
+    fresh.keep_footer_model(carried);
+    assert_eq!(fresh.shown_model(), Some(("@normal".into(), String::new())));
+}
