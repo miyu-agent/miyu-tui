@@ -301,6 +301,10 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
                         discriminant(status).hash(&mut h);
                     }
                 }
+                StepKind::Report { note, text, .. } => {
+                    (text.len(), note.detail.len()).hash(&mut h);
+                    discriminant(&note.mark).hash(&mut h);
+                }
             }
         }
     }

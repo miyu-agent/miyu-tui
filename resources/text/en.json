@@ -123,6 +123,7 @@
       "1 err",
       "{count} err"
     ],
+    "reports": [["1 background command finished", "{count} background commands finished"], ["1 background task finished", "{count} background tasks finished"], ["1 report", "{count} reports"]],
     "thought_for": "Thought for {elapsed}",
     "spawned": ["Spawned 1 agent", "Spawned {count} agents"],
     "messaged": ["Messaged 1 agent", "Messaged {count} agents"],

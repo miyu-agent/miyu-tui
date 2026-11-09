@@ -45,7 +45,8 @@ pub(super) fn doing(
             }
             out
         }
-        None => String::new(),
+        // 回报不是她在做的事：照没在做事写（发版前 check 21）。
+        Some((StepKind::Report { .. }, _)) | None => String::new(),
     }
 }
 

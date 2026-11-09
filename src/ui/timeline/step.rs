@@ -45,6 +45,10 @@ pub fn title(
     width: u16,
     ctx: &Ctx,
 ) -> (Vec<Span<'static>>, Vec<(u16, u16, String)>) {
+    // 一轮进行中来的回报（发版前 check 21）：记号照原来那一行的颜色，字暗，悬停变亮。
+    if let StepKind::Report { note, text, .. } = &step.kind {
+        return (report_title(note.mark, text, style, width, ctx), Vec::new());
+    }
     let text = &ctx.config.text;
     // 对象在 `label` 里的哪一截（字节）、打开时交的路径。
     let mut path = None;
@@ -169,6 +173,8 @@ pub fn title(
                 (label, extra)
             }
         }
+        // 上面已经交回。
+        StepKind::Report { .. } => (String::new(), Vec::new()),
     };
     // 图标取当前那一套（蓝图「图标」）。
     let icons = &ctx.config.icons;
@@ -176,6 +182,7 @@ pub fn title(
         _ if step.failed() => &icons.error,
         StepKind::Thought { .. } => &icons.think,
         StepKind::Tool { name, .. } => icons.tool_in(name, ctx.human.package_icon(name)),
+        StepKind::Report { .. } => &icons.think,
     };
     let icon = format!("{icon} ");
     let room = usize::from(width)
@@ -190,6 +197,30 @@ pub fn title(
     let mut spans = vec![Span::styled(icon, style), Span::styled(clipped, style)];
     spans.extend(extra);
     (spans, links)
+}
+
+/// 回报那一步的标题：记号（完成绿、失败红、停掉暗、出了一批行强调色，同正文里单独的那一行 `job_rows.rs`），字照这一步的样子。
+fn report_title(
+    mark: crate::transcript::JobMark,
+    text: &str,
+    style: Style,
+    width: u16,
+    ctx: &Ctx,
+) -> Vec<Span<'static>> {
+    use crate::transcript::JobMark;
+    let words = &ctx.config.text.jobs;
+    let (mark, mark_style) = match mark {
+        JobMark::Done => (words.ok_mark.as_str(), theme::good()),
+        JobMark::Failed => (words.fail_mark.as_str(), theme::error()),
+        JobMark::Stopped => (words.stop_mark.as_str(), theme::dim()),
+        JobMark::Lines => (words.lines_mark.as_str(), theme::accent()),
+    };
+    let room = usize::from(width).saturating_sub(mark.width());
+    let clipped = clip(text, u16::try_from(room).unwrap_or(width));
+    vec![
+        Span::styled(mark.to_string(), mark_style),
+        Span::styled(clipped, style),
+    ]
 }
 
 /// 对象那一截截完以后还露着的列（`clip` 截掉的部分、`…` 不算）；一列都不露的不算链接。
@@ -316,6 +347,10 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
     };
     match &step.kind {
         StepKind::Thought { text } => each(text.trim(), theme::thought()).collect(),
+        // 回报点开看的全文（子代理的报告、命令和它的输出），同正文里单独的那一行；行首的空格留着。
+        StepKind::Report { note, .. } => {
+            each(note.detail.trim_matches('\n'), Style::new()).collect()
+        }
         StepKind::Tool {
             output,
             parsed,
@@ -419,7 +454,7 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
 fn kind(step: &Step, ctx: &Ctx) -> Option<ToolKind> {
     match &step.kind {
         StepKind::Tool { name, .. } => ctx.config.timeline.kinds.get(name).copied(),
-        StepKind::Thought { .. } => None,
+        StepKind::Thought { .. } | StepKind::Report { .. } => None,
     }
 }
 

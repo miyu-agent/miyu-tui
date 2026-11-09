@@ -174,7 +174,7 @@ pub(crate) fn report_into(
                 .join("\n");
             transcript.note(Kind::Answered, text);
         }
-        Report::Denied(text, full) => transcript.job(JobMark::Failed, text, full),
+        Report::Denied(text, full) => transcript.job_line(JobMark::Failed, text, full),
         Report::Nothing => {}
     }
 }

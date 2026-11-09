@@ -21,6 +21,7 @@ mod lone;
 mod mcp;
 mod memory;
 mod message;
+mod reports;
 mod settled;
 mod tabs;
 mod thought_tokens;

@@ -52,6 +52,7 @@ impl Segment {
         let writing = self.steps.last().is_some_and(|s| match &s.kind {
             StepKind::Thought { .. } => s.busy(),
             StepKind::Tool { state, .. } => *state == ToolState::Preparing,
+            StepKind::Report { .. } => false,
         });
         if writing {
             return Some(self.steps.len() - 1);
@@ -120,6 +121,26 @@ pub enum StepKind {
         /// 结果那一句（`human`），标题后面照它写。
         said: Option<Said>,
     },
+    /// 一轮进行中来的回报（后台命令完成、子代理报完这类，发版前 check 21）：不再切断时间线，当成里面的一步。
+    Report {
+        /// 记号、点开看的全文、哪条任务的。
+        note: super::JobNote,
+        /// 那一行的字。
+        text: String,
+        /// 收起那一行照它数。
+        class: ReportClass,
+    },
+}
+
+/// 回报是哪一类：收起那一行各数各的（「N 个后台命令完成」）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReportClass {
+    /// 后台命令结束了（完成、失败、停掉）。
+    Command,
+    /// 后台任务（子代理）结束了。
+    Task,
+    /// 别的：监视的命令出了一批行、别的会话停了。
+    Other,
 }
 
 /// 一件工具进行到哪了。
@@ -152,6 +173,7 @@ impl Step {
                     )
                     | None => false,
                 },
+                StepKind::Report { .. } => false,
             }
         })
     }
@@ -191,6 +213,7 @@ impl Step {
         match &self.kind {
             StepKind::Thought { .. } => self.took.is_none(),
             StepKind::Tool { state, .. } => !matches!(state, ToolState::Done(_)),
+            StepKind::Report { .. } => false,
         }
     }
 
@@ -215,7 +238,7 @@ impl Step {
     pub fn arg(&self, key: &str) -> Option<&str> {
         match &self.kind {
             StepKind::Tool { parsed, .. } => parsed[key].as_str(),
-            StepKind::Thought { .. } => None,
+            StepKind::Thought { .. } | StepKind::Report { .. } => None,
         }
     }
 }
@@ -245,6 +268,8 @@ pub struct Tally {
     pub thoughts: usize,
     /// 出错。
     pub errors: usize,
+    /// 一轮里来的回报，照 [`ReportClass`] 的先后：后台命令、后台任务、别的（发版前 check 21）。
+    pub reports: [usize; 3],
     /// 思考加起来用了多久。
     pub thinking: Duration,
     /// 这一段从第一步开始到最后一步结束的实际时长（收起那一行末尾写它，`tui.md`「时间线」第 17 条）。
@@ -292,6 +317,7 @@ impl Tally {
                     Some(ToolKind::Fetch) => tally.fetched += 1,
                     None => tally.tools += 1,
                 },
+                StepKind::Report { class, .. } => tally.reports[*class as usize] += 1,
             }
         }
         let first = segment.steps.iter().map(|s| s.started).min();

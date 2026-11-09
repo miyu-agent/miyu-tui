@@ -46,6 +46,8 @@ pub struct Summary {
     /// 不打头的「1 page」「{count} pages」。
     pub pages: [String; 2],
     /// 只想过：`{elapsed}` 是想了多久。
+    /// 一轮里来的回报，照 `ReportClass` 的先后：后台命令完成、后台任务完成、回报（发版前 check 21）。
+    pub reports: [[String; 2]; 3],
     pub thought_for: String,
 }
 
