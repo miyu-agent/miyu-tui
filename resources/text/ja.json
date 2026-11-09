@@ -719,7 +719,7 @@
     "preset_title": "プリセットを選んでください",
     "preset_need": "先にプリセットを選んでください",
     "cant_edit": "この項目は編集できません",
-    "preset_chosen": "プリセット {name}",
+    "preset_chosen": "プリセット {name}", "tokens": "約 {n}",
     "no_tools": "ツールなし",
     "none": "人格なし",
     "none_note": "人物設定なし",

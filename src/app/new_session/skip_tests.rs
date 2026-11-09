@@ -16,6 +16,7 @@ fn row(id: &str, problem: Option<&str>) -> Persona {
         avatar: None,
         seed: None,
         seeds: None,
+        tokens: None,
     }
 }
 

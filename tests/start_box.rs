@@ -78,3 +78,27 @@ fn a_in_the_pick_box_creates_one_and_comes_back_to_it() {
         tui.pump(Duration::from_millis(50));
     }
 }
+
+/// 发版前 check 4（2026-11-09 项目主人：「preset 列表中显示出 preset 消耗的 token」「新建会话页的选择列表也要有这个消耗显示」）：
+/// 预设框每一行右边暗色写核心估的 token 数（核心 DM-4 的 `tokens`）。
+#[test]
+fn the_preset_box_shows_how_many_tokens_each_preset_takes() {
+    let home = Home::new(Script::new([]));
+    let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_PRESET", "")]);
+    tui.wait_for("全部功能");
+    let end = Instant::now() + support::WAIT;
+    loop {
+        let lines = tui.lines();
+        let row = lines.iter().find(|l| l.contains("全部功能"));
+        let shown = row.and_then(|l| l.split("约 ").nth(1));
+        if shown.is_some_and(|t| t.trim_start().starts_with(|c: char| c.is_ascii_digit())) {
+            break;
+        }
+        assert!(
+            Instant::now() < end,
+            "「全部功能」那一行右边写「约 N」：\n{}",
+            lines.join("\n")
+        );
+        tui.pump(Duration::from_millis(50));
+    }
+}

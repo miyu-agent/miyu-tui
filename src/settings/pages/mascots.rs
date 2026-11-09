@@ -42,6 +42,7 @@ fn of_kind(got: &Value, kind: &str, skip: Option<&str>) -> Vec<Persona> {
             avatar: None,
             seed: None,
             seeds: None,
+            tokens: None,
         })
         .collect()
 }
