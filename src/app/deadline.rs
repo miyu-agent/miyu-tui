@@ -20,8 +20,12 @@ impl App {
                 .session_list
                 .as_ref()
                 .is_some_and(|l| l.all.iter().any(|s| s.busy));
-        let moving =
-            self.talk.transcript.busy() || self.talk.transcript.running.is_some() || listing_busy;
+        // 麦克风停了在等字：那一格转圈（`ui/input_box.rs`，设计 20）。
+        let recognizing = self.link.voice.mic == crate::voice::Mic::Recognizing;
+        let moving = self.talk.transcript.busy()
+            || self.talk.transcript.running.is_some()
+            || listing_busy
+            || recognizing;
         let spin =
             moving.then(|| Instant::now() + Duration::from_millis(self.config.timeline.spinner_ms));
         notice

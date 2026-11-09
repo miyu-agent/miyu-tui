@@ -308,6 +308,13 @@ impl App {
             }
             return true;
         }
+        // 输入框右边的麦克风：点了开始听、再点停（设计 20 第七节，`voice.rs`）。
+        if areas.mic.contains(at) {
+            if press {
+                self.voice_input();
+            }
+            return true;
+        }
         // 用量那一格：「压缩」同 `/compact`，别处开 `/context`（「框下面那一行」用量那一格）。
         if areas.compact.contains(at) {
             if press {

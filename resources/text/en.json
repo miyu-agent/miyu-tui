@@ -756,6 +756,7 @@
     "title": "Colors",
     "hint": "↑/↓ select · Enter confirm · Esc cancel"
   },
+  "voice": {"codes": {"mic_busy": "The microphone is in use", "no_microphone": "No microphone found", "bad_audio": "Couldn't recognize that audio", "too_long": "Too long to recognize", "not_configured": "Voice isn't set up yet", "no_speaker": "No speaker found", "empty_text": "Nothing to read aloud", "no_provider": "No voice package installed"}, "failed": "Voice error: {why}", "unclear": "Didn't catch that, try again", "nothing_to_read": "No reply to read aloud yet", "auto": ["Auto read-aloud on", "Auto read-aloud off"], "auto_tag": "Auto read"},
   "export": {"title": "Export", "step_title": "Export · {use}", "hints": ["↑/↓ select · Enter next · Esc close", "↑/↓ select · Enter confirm · Esc back"], "uses": ["Full archive", "For another agent to continue", "For a web chat", "Conversation only, as Markdown"], "bundle_note": "ZIP · file only", "estimate": "{size} · ~{tokens} tokens", "estimating": "Estimating…", "too_big": "Over 512 KiB · file only", "actions": ["Copy to clipboard", "Save as a file"], "copied": "Copied · ~{tokens} tokens", "saved": "Exported to {path} ({size})", "no_session": "No session to export yet"},
   "languages": {
     "title": "Interface language",

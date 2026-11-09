@@ -29,5 +29,7 @@ pub(super) async fn follow(
         super::schedules::follow(rpc).await?,
         Awaiting::SchedulesStream,
     );
+    // 订阅总线（核心 BUS-2）：语音包提供的 `stt`、`tts` 可不可用（设计 20，`crate::voice`）。
+    awaiting.insert(super::bus::follow(rpc).await?, Awaiting::BusStream);
     Ok(())
 }

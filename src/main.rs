@@ -76,6 +76,7 @@ mod trim;
 mod ui;
 mod usage;
 mod view_stream;
+mod voice;
 mod widgets;
 
 use std::io::{self, Write, stdout};

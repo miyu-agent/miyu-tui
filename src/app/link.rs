@@ -36,6 +36,8 @@ pub struct Link {
     pub backstage: crate::backstage::Backstage,
     /// 问了这个会话换算好的金额（`bill_refresh.rs`）：问的是哪个会话。
     pub bill_asked: Option<String>,
+    /// 语音：总线上的 `stt`、`tts`，麦克风、朗读在哪一步（`app/voice.rs`，设计 20）。
+    pub voice: crate::voice::Voice,
     /// 唤醒表里跑在已有会话上的循环（`schedules` 流，蓝图「循环」）：输入框上面、侧边栏照看着的会话挑。
     pub loops: Vec<crate::core::Loop>,
 }

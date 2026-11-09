@@ -70,8 +70,13 @@ impl App {
         if self.avatar_update(&update) {
             return;
         }
-        // 一轮结束问的换算好的金额归它（`bill_refresh.rs`）。
-        if self.bill_answer(&update) || self.status_update(&update) {
+        // 一轮结束问的换算好的金额归它（`bill_refresh.rs`）；语音录完、念完归它（`voice.rs`）。
+        if self.bill_answer(&update) || self.status_update(&update) || self.voice_answer(&update) {
+            return;
+        }
+        // 总线上可用的名字变了（核心 BUS-2）：语音的麦克风、命令照它（`voice.rs`）。
+        if let Update::Bus(names) = update {
+            self.voice_bus(names);
             return;
         }
         // 配置页的回应归它；配置变了、断开、连上也告诉它（`settings.rs`）。
@@ -236,6 +241,8 @@ impl App {
         };
         // 正在看的会话一轮结束：问一次换算好的金额（`bill_refresh.rs`）。
         self.bill_turn_ended(&update);
+        // 自动朗读开着：念这一轮的回答（`voice.rs`）。
+        self.voice_turn_ended(&update);
         if let Update::Push(push) = &update
             && self.visible_push(push)
         {

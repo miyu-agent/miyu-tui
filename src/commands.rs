@@ -23,6 +23,9 @@ pub struct Commands {
     /// 能用 `$` 点名的技能（`command.catalog` 顶层的 `skills`，核心 SK-1，发版前 check 26）：不在命令列表里。
     #[serde(skip)]
     pub skills: Vec<crate::core::CoreSkill>,
+    /// 总线上可用的名字（`bus.list`，核心 BUS-2）：写了 `needs` 的命令照它列（语音，设计 20）。
+    #[serde(skip)]
+    pub bus: Vec<String>,
 }
 
 /// 一条命令。
@@ -56,6 +59,9 @@ pub struct Spec {
     /// 照上一条藏起来了（[`Commands::take_core`]）。
     #[serde(skip)]
     pub gone: bool,
+    /// 总线上要有这个名字可用才列、才能打（`/voice-input` 要 `stt`，设计 20 第七节）。
+    #[serde(default)]
+    pub needs: Option<String>,
 }
 
 /// 回车时输入框里那一行是什么（蓝图「斜杠命令列表」第 4、5 条）。
@@ -139,6 +145,12 @@ pub enum Run {
     Language,
     /// 把正在看的会话导出来（`/export`，蓝图「导出 `/export`」）。
     Export,
+    /// 说话代替打字：开始听，再打一次停（`stt.record`、`stt.stop`，设计 20 第七节）。
+    VoiceInput,
+    /// 朗读她上一轮的回答，在念的再打一次停（`tts.play`、`tts.stop`）。
+    ReadAloud,
+    /// 开关自动朗读（只在这个终端里）。
+    AutoRead,
     /// 核心认的命令（命令模板、扩展声明的）：整行交给核心（`command.run`，核心 X-14）。
     Core,
 }
@@ -174,9 +186,12 @@ impl Commands {
             .find(|s| s.name == name || s.aliases.iter().any(|a| a == name))
     }
 
-    /// 全部：终端自己的在前，核心认的接在后面。
+    /// 全部：终端自己的在前，核心认的接在后面。要总线上的名字、那个名字不可用的不算。
     pub fn all(&self) -> impl Iterator<Item = &Spec> + Clone {
-        self.commands.iter().filter(|s| !s.gone).chain(&self.core)
+        self.commands
+            .iter()
+            .filter(|s| !s.gone && s.needs.as_ref().is_none_or(|n| self.bus.contains(n)))
+            .chain(&self.core)
     }
 
     /// 照核心认的那一份换上（`command.catalog` 的回应）：终端自己有的名字、别名不要，能接参数。终端自己有、又交给核心办
@@ -208,6 +223,7 @@ impl Commands {
                 usage: c.usage.clone(),
                 follows_core: false,
                 gone: false,
+                needs: None,
             })
             .collect();
         self.core = core;

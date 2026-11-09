@@ -106,6 +106,7 @@ impl App {
                 service: Default::default(),
                 backstage: Default::default(),
                 bill_asked: None,
+                voice: Default::default(),
                 loops: Vec::new(),
             },
             typing: super::typing::Typing {

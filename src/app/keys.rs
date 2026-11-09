@@ -366,6 +366,10 @@ impl App {
             Run::Connect => self.open_connect(),
             Run::Effort => self.open_effort(),
             Run::Copy => self.copy_reply(),
+            // 语音（设计 20 第七节，`voice.rs`）。
+            Run::VoiceInput => self.voice_input(),
+            Run::ReadAloud => self.read_aloud(),
+            Run::AutoRead => self.auto_read(),
             Run::Usage => self.open_usage(),
             Run::Status => self.open_status(),
             Run::ToolList => self.open_tool_list(),

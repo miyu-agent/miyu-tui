@@ -89,6 +89,7 @@ mod updates;
 pub mod usage;
 mod viewing;
 pub(crate) mod vim;
+mod voice;
 pub(crate) use keys::is_paste;
 pub(crate) use vim::step as vim_step;
 mod workspace;

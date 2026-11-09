@@ -70,7 +70,8 @@ pub(super) async fn take(
                 | Awaiting::SessionsStream
                 | Awaiting::PackagesStream
                 | Awaiting::NoticesStream
-                | Awaiting::SchedulesStream,
+                | Awaiting::SchedulesStream
+                | Awaiting::BusStream,
             ) => true,
             Some(Awaiting::Choices) => notify(Update::Choices(Vec::new())),
             Some(Awaiting::Efforts) => notify(Update::Efforts(super::EffortList::default())),
@@ -224,6 +225,9 @@ pub(super) async fn take(
             let all = super::schedules::table(&message["result"]);
             return notify(Update::Loops(super::LoopChange::All(all)));
         }
+        Some(Awaiting::BusStream) => {
+            return notify(Update::Bus(crate::voice::ready(&message["result"])));
+        }
         // 最新一页到了：画进去，再带 `after` 订阅（`page.rs`）。
         Some(Awaiting::Page(session)) => {
             return super::page::take_latest(
@@ -357,6 +361,16 @@ pub(super) async fn take(
     if super::schedules::lost(message) {
         if let Ok(id) = super::schedules::follow(rpc).await {
             awaiting.insert(id, Awaiting::SchedulesStream);
+        }
+        return true;
+    }
+    // 总线上的名字变了（核心 BUS-2）：整份交给界面；掉了队重新订，回应是整份。
+    if let Some(names) = super::bus::changed(message) {
+        return notify(Update::Bus(names));
+    }
+    if super::bus::lost(message) {
+        if let Ok(id) = super::bus::follow(rpc).await {
+            awaiting.insert(id, Awaiting::BusStream);
         }
         return true;
     }
