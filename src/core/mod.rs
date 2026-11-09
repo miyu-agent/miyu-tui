@@ -65,9 +65,7 @@ use connect::connect;
 pub use abilities::Abilities;
 pub use catalog::CoreCommand;
 pub use config::HeadConfig;
-pub use cost::{
-    Bill, Converted, Cost, KindMoney, Split, UsageAsk, UsageKind, UsageRow, rows as usage_rows,
-};
+pub use cost::{Bill, Cost, Split, UsageAsk, UsageKind, UsageRow, rows as usage_rows};
 pub use efforts::{EffortList, Efforts, wanted as wanted_models};
 pub use kinds::{EndReason, Level, ToolStatus};
 pub use limits::Limits;

@@ -1,13 +1,11 @@
-//! 上一段，组成：一根条接用了多少，一块一行（子块缩进、暗色），右边 token 数和占已用的百分比；大块和大块之间空一行
-//! （2026-10-23 项目主人）。数照 `used` 摊（蓝图「上下文 `/context`」第 3 条）。
+//! 上一段，组成：段头右边写用了多少，一块一行一根小条（子块缩进、暗色），右边 token 数和占已用的百分比（发版前 check 32
+//! 改成小条）。数照 `used` 摊（蓝图「上下文 `/context`」第 3 条）。
 
-use ratatui::text::{Line, Span};
+use ratatui::text::Line;
 use serde_json::Value;
-use unicode_width::UnicodeWidthStr;
 
-use super::{Texts, number, pad_left, pad_right};
+use super::{Texts, bars, number};
 use crate::meter;
-use crate::theme;
 
 /// `session.context` 的回应。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -90,89 +88,47 @@ pub fn read_parts(got: &Value) -> Shape {
 }
 
 /// 一块一行要的：缩进几层、名字、多少。
-fn flat(parts: &[Part], depth: usize, out: &mut Vec<(usize, String, u64)>) {
+fn flat(parts: &[Part], depth: usize, out: &mut Vec<bars::Row>) {
     for p in parts {
         out.push((depth, p.label.clone(), p.tokens));
         flat(&p.children, depth + 1, out);
     }
 }
 
-/// 排好的一行行。
-pub(super) fn rows(
-    shape: &Shape,
-    texts: &Texts,
-    marks: &crate::config::Bar,
-    room: usize,
-) -> Vec<Line<'static>> {
+/// 排好的一行行：段头「上下文」右边暗字写用了多少（发版前 check 32：不再画那根大条），下面一块一行一根小条（`bars.rs`），
+/// 大块之间不再空行。
+pub(super) fn rows(shape: &Shape, texts: &Texts, room: usize) -> Vec<Line<'static>> {
     let used = shape.used();
-    let mut out = vec![head(shape, used, texts, marks, room), Line::default()];
     let mut list = Vec::new();
     flat(&shape.apportioned(), 0, &mut list);
-    let name_width = list
-        .iter()
-        .map(|(depth, label, _)| depth * 2 + label.width())
-        .max()
-        .unwrap_or(0)
-        + 2;
-    let numbers: Vec<String> = list.iter().map(|(_, _, n)| meter::thousands(*n)).collect();
-    let number_width = numbers.iter().map(|n| n.width()).max().unwrap_or(0);
-    // 占已用的百分比：窗口大的（1M）占窗口的几乎都是 0%，看不出谁多（2026-10-23 真机自测）。
-    let row = |depth: usize, label: &str, tokens: u64| {
-        let name = pad_right(&format!("{}{label}", "  ".repeat(depth)), name_width);
-        let share = format!("{}%", meter::percent_tenths(tokens, used));
-        let style = if depth == 0 {
-            ratatui::style::Style::default()
-        } else {
-            theme::dim()
-        };
-        Line::from(vec![
-            Span::styled(name, style),
-            Span::styled(pad_left(&meter::thousands(tokens), number_width), style),
-            Span::styled(pad_left(&share, 8), theme::dim()),
-        ])
-    };
-    for (n, (depth, label, tokens)) in list.iter().enumerate() {
-        if *depth == 0 && n > 0 {
-            out.push(Line::default());
-        }
-        out.push(row(*depth, label, *tokens));
-    }
+    let laid = bars::rows(&list, used, room);
+    let mut out = vec![bars::head(
+        &texts.context,
+        &summary(shape, used, texts),
+        laid.width,
+    )];
+    out.extend(laid.lines);
     out
 }
 
-/// 头一行：一根条（同侧边栏），接用了多少、压缩线；全是本地估的接「估算」。
-fn head(
-    shape: &Shape,
-    used: u64,
-    texts: &Texts,
-    marks: &crate::config::Bar,
-    room: usize,
-) -> Line<'static> {
-    let mut spans: Vec<Span<'static>> = Vec::new();
-    let text = match shape.window {
-        Some(window) => {
-            let bar =
-                crate::ui::sidebar::bar(used, window, shape.line, marks.width.min(room / 3), marks);
-            spans.extend(bar.spans.into_iter().skip(1));
-            spans.push(Span::raw("  "));
-            texts
-                .used
-                .replace("{used}", &meter::short(used))
-                .replace("{window}", &meter::short(window))
-        }
+/// 段头右边：用了多少 / 窗口（没有窗口的只写用了多少），接压缩线；全是本地估的接「估算」。
+fn summary(shape: &Shape, used: u64, texts: &Texts) -> String {
+    let sep = crate::sheet::sep();
+    let mut text = match shape.window {
+        Some(window) => texts
+            .used
+            .replace("{used}", &meter::short(used))
+            .replace("{window}", &meter::short(window)),
         None => texts.used_only.replace("{used}", &meter::short(used)),
     };
-    spans.push(Span::raw(text));
-    let sep = crate::sheet::sep();
     if let Some(line) = shape.line {
-        let line = texts.line.replace("{line}", &meter::short(line));
-        spans.push(Span::styled(format!("{sep}{line}"), theme::dim()));
-    }
-    if shape.estimated {
-        spans.push(Span::styled(
-            format!("{sep}{}", texts.estimated),
-            theme::dim(),
+        text.push_str(&format!(
+            "{sep}{}",
+            texts.line.replace("{line}", &meter::short(line))
         ));
     }
-    Line::from(spans)
+    if shape.estimated {
+        text.push_str(&format!("{sep}{}", texts.estimated));
+    }
+    text
 }

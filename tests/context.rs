@@ -57,7 +57,8 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     tui.wait_for("▣  ");
     tui.say("/context");
     tui.wait_for("累计消耗");
-    for text in ["已用", "系统提示", "对话", "主对话", "合计", "次数"] {
+    // 发版前 check 32 起按用途只有一行的不写合计。
+    for text in ["已用", "系统提示", "对话", "按用途", "主对话", "次数"] {
         tui.wait_for(text);
     }
     tui.key(b"\x1b");

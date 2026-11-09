@@ -1,6 +1,7 @@
 //! `/context` 上下文框（蓝图 `tui.md`「上下文 `/context`」，2026-10-22 项目主人定，核心 CX-1 的 `session.context` 和
-//! `usage.query` 的 `use` 分组）：和 `/status` 一个位置、一个样子。上一段是组成（一根条、一块一行、空余），下一段是这个
-//! 会话连子代理按用途的累计（`uses.rs`；还没开会话的预览没有这一段）。
+//! `usage.query` 的 `use` 分组）：和 `/status` 一个位置、一个样子。上一段是组成（一块一行一根小条，`bars.rs`），下一段是这个
+//! 会话连子代理的累计消耗（四种 token 一种一根条）和按用途（`uses.rs`；还没开会话的预览没有这一段）。发版前 check 32
+//! （2026-11-09 项目主人从三个样板里挑的「每行一根小条」）改成现在这样。
 //!
 //! 先读成数（[`read_parts`]、[`read_uses`]），再排：排的那一半不碰界面，单元测试直接给数。
 
@@ -16,6 +17,7 @@ use crate::config::Config;
 use crate::core::UsageRow;
 use crate::theme;
 
+mod bars;
 mod parts;
 mod sections;
 mod uses;
@@ -32,16 +34,16 @@ pub struct Texts {
     pub title: String,
     /// 还没读回来。
     pub loading: String,
-    /// 条后面的字：`{used}`、`{window}`；没有窗口的照 `used_only`。
+    /// 「上下文」段头右边：`{used}`、`{window}`；没有窗口的照 `used_only`。
     pub used: String,
     pub used_only: String,
     /// 压缩线，`{line}`。
     pub line: String,
     /// 全是本地估的。
     pub estimated: String,
-    /// 累计那一段的标题。
+    /// 按用途那张表的第一格（兼标题）。
     pub totals: String,
-    /// 累计表的列名。
+    /// 按用途那张表的列名。
     pub columns: Columns,
     /// 累计表最后一行。
     pub sum: String,
@@ -49,15 +51,13 @@ pub struct Texts {
     pub uses: BTreeMap<String, String>,
     /// 下边框的按键提示。
     pub hint: String,
-    /// 三段的段头（第 7 条）：上下文；累计消耗 `{tokens}`，右边缓存命中 `{percent}`；花费，算不出钱的右边写 `no_price`。
+    /// 段头（第 7 条）：上下文；累计消耗 `{tokens}`，右边缓存命中 `{percent}`。
     pub context: String,
     pub spent: String,
     pub hit: String,
-    pub cost: String,
-    pub no_price: String,
-    /// 四种 token：缓存读、缓存写、输出、输入（未命中）。
+    /// 四种 token：缓存读、缓存写、输出、输入（没命中缓存的）。
     pub kinds: [String; 4],
-    /// 上下文那一段底下两行的名目，`times` 是「{n} 次」。
+    /// 上下文那一段底下那一行的名目，`times` 是「{n} 次」。
     pub compactions: String,
     pub breaks: String,
     pub times: String,
@@ -66,15 +66,12 @@ pub struct Texts {
     pub stuck_over: String,
 }
 
-/// 累计表的列名。
+/// 按用途那张表的列名：次数、token（四种加起来）、花费。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Columns {
     pub requests: String,
-    pub uncached: String,
-    pub cache_read: String,
-    pub cache_write: String,
-    pub output: String,
+    pub tokens: String,
     pub cost: String,
 }
 
@@ -98,7 +95,8 @@ fn title(texts: &Texts, _data: Option<&ContextData>) -> String {
 /// 一份账写成界面上的金额（照界面的币种和符号）；算不出的是 `None`。
 pub type Money<'a> = &'a dyn Fn(&crate::core::Bill) -> Option<String>;
 
-/// 框里的正文（滚动前的全部）：上下文、累计消耗、花费三段（第 7 条），段之间空一行；`tail` 是上下文那一段底下的几样。
+/// 框里的正文（滚动前的全部）：上下文、累计消耗两段，再是按用途（第 7 条，发版前 check 32 去掉了单独的花费那一段），中间
+/// 空一行；`tail` 是上下文那一段底下的几样。
 pub fn rows(
     data: Option<&ContextData>,
     config: &Config,
@@ -114,14 +112,19 @@ pub fn rows(
     if data.parts.is_none() && data.uses.is_none() {
         return note(&texts.loading);
     }
-    let mut out = vec![Line::raw(texts.context.clone())];
+    let mut out = Vec::new();
     match &data.parts {
-        None => out.extend(note(&texts.loading)),
-        Some(Err(said)) => out.push(Line::styled(said.clone(), theme::error())),
+        None => {
+            out.push(Line::raw(texts.context.clone()));
+            out.extend(note(&texts.loading));
+        }
+        Some(Err(said)) => {
+            out.push(Line::raw(texts.context.clone()));
+            out.push(Line::styled(said.clone(), theme::error()));
+        }
         Some(Ok(shape)) => {
-            out.extend(parts::rows(shape, texts, &config.layout.bar, room));
-            out.push(Line::default());
-            out.extend(sections::context_tail(tail, texts, room));
+            out.extend(parts::rows(shape, texts, room));
+            out.extend(sections::context_tail(tail, texts));
         }
     }
     if let Some(Ok(list)) = &data.uses {
@@ -129,12 +132,8 @@ pub fn rows(
         if !spent.is_empty() {
             out.push(Line::default());
             out.extend(spent);
-            out.extend(uses::rows(list, texts, money, room));
-        }
-        let cost = sections::cost(list, texts, money, room);
-        if !cost.is_empty() {
             out.push(Line::default());
-            out.extend(cost);
+            out.extend(uses::rows(list, texts, money, room));
         }
     }
     out
