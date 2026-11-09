@@ -323,7 +323,7 @@
     "picking": "j/k 選択 · h/l カーソル移動 · / 絞り込み · Enter 挿入 · Esc 閉じる",
     "filtering": "Enter 確定 · Esc 絞り込みをやめる"
   },
-  "usage_cell": {"failed": "コンテキストの圧縮に失敗", "over": "コンテキストがウィンドウを超過", "compact": "圧縮", "compacting": "コンテキストを圧縮中"},
+  "usage_cell": {"failed": "コンテキストの圧縮に失敗", "over": "コンテキストがウィンドウを超過", "compact": "圧縮", "compacting": "コンテキストを圧縮中", "cap": "セッション上限 {n}"},
   "history": {
     "title": "履歴",
     "count": "  {count}",
@@ -389,7 +389,7 @@
     "count": "{n} 件",
     "hint": "↑/↓ スクロール · c コピー · Esc 閉じる"
   },
-  "context_box": {"title": "コンテキスト内訳", "loading": "読み込み中…", "used": "使用 {used} / {window}", "used_only": "使用 {used}", "line": "圧縮ライン {line}", "estimated": "推定", "totals": "用途別", "columns": {"requests": "回数", "tokens": "トークン", "cost": "費用"}, "sum": "合計", "uses": {"main": "メイン", "compaction": "圧縮", "subagent": "サブエージェント", "recap": "振り返り", "title": "タイトル", "memory": "記憶", "other": "その他"}, "hint": "↑/↓ スクロール · c コピー · Esc 閉じる", "context": "コンテキスト", "spent": "累計 {tokens}", "hit": "キャッシュヒット {percent}%", "kinds": ["キャッシュ読", "キャッシュ書", "出力", "入力"], "compactions": "圧縮済み", "breaks": "キャッシュ断裂", "times": "{n} 回", "stuck_failed": "自動圧縮が停止中です。圧縮すると続行できます。", "stuck_over": "このモデルのウィンドウを超えています。圧縮すると続行できます。"},
+  "context_box": {"title": "コンテキスト内訳", "loading": "読み込み中…", "used": "使用 {used} / {window}", "used_only": "使用 {used}", "line": "圧縮ライン {line}", "cap": "セッション上限 {n}", "estimated": "推定", "totals": "用途別", "columns": {"requests": "回数", "tokens": "トークン", "cost": "費用"}, "sum": "合計", "uses": {"main": "メイン", "compaction": "圧縮", "subagent": "サブエージェント", "recap": "振り返り", "title": "タイトル", "memory": "記憶", "other": "その他"}, "hint": "↑/↓ スクロール · c コピー · Esc 閉じる", "context": "コンテキスト", "spent": "累計 {tokens}", "hit": "キャッシュヒット {percent}%", "kinds": ["キャッシュ読", "キャッシュ書", "出力", "入力"], "compactions": "圧縮済み", "breaks": "キャッシュ断裂", "times": "{n} 回", "stuck_failed": "自動圧縮が停止中です。圧縮すると続行できます。", "stuck_over": "このモデルのウィンドウを超えています。圧縮すると続行できます。"},
   "usage": {
     "rates": "為替レート：{source}",
     "title": "使用量",

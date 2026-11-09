@@ -15,6 +15,7 @@ mod called;
 mod compaction;
 mod goal;
 mod jobs;
+mod policy;
 mod result;
 mod sent;
 mod shell;
@@ -255,6 +256,8 @@ pub enum Push {
     },
     /// 会话自己定的思考强度换了（`session.policy_changed` 的 `effort`，核心 SM-1）：`None` 是回到跟着配置。
     EffortSet(Option<String>),
+    /// 会话的上下文上限换了（`session.policy_changed` 的 `context`，核心 CTX-1）：`None` 是去掉。
+    ContextSet(Option<u64>),
     /// 会话换了人格（`session.policy_changed` 的 `persona`，核心 P-13）：编号，空的是换成无人格。
     PersonaSet(String),
     /// 会话换了预设（`session.policy_changed` 的 `preset`，核心 P-13）：编号。
@@ -337,31 +340,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         "job.lines" => out.push(jobs::lines(body)),
         "command.ran" => out.push(Push::CommandRan),
         "message.withdrawn" => out.push(Push::Withdrawn(turns(&body["messages"]))),
-        // 认不出的级别（新版本才有的）不画，照旧显示上一次的。
-        "session.policy_changed" => {
-            if let Some(level) = Level::parse(&text(&body["permission"]["level"])) {
-                let read_only = body["permission"]["read_only"] == true;
-                out.push(Push::Policy { level, read_only });
-            }
-            // 中途换人格、预设（核心 P-13）：之后核心马上开一轮压缩，照手动压缩画。
-            if let Some(persona) = body["persona"].as_str() {
-                out.push(Push::PersonaSet(persona.to_string()));
-            }
-            if let Some(preset) = body["preset"].as_str() {
-                out.push(Push::PresetSet(preset.to_string()));
-            }
-            if let Some(effort) = body.get("effort") {
-                out.push(Push::EffortSet(
-                    effort["level"].as_str().map(str::to_string),
-                ));
-            }
-            if let Some(reference) = body["model"].as_str() {
-                out.push(Push::ModelSet {
-                    reference: reference.to_string(),
-                    replaced: body["replaced"].as_str().map(str::to_string),
-                });
-            }
-        }
+        "session.policy_changed" => policy::read(body, &mut out),
         // 写成了一段回顾：不进她的上下文，画在正文末尾（蓝图「回顾」）。
         "session.recapped" => {
             if let Some(text) = body["text"].as_str().filter(|t| !t.trim().is_empty()) {

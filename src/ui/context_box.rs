@@ -39,6 +39,8 @@ pub struct Texts {
     pub used_only: String,
     /// 压缩线，`{line}`。
     pub line: String,
+    /// 会话的上下文上限，`{n}`（核心 CTX-1）。
+    pub cap: String,
     /// 全是本地估的。
     pub estimated: String,
     /// 按用途那张表的第一格（兼标题）。

@@ -243,6 +243,8 @@ impl App {
         self.bill_turn_ended(&update);
         // 自动朗读开着：念这一轮的回答（`voice.rs`）。
         self.voice_turn_ended(&update);
+        // 上下文上限换了：重读生效的窗口、压缩线（`context_box.rs`，核心 CTX-1）。
+        self.context_cap_changed(&update);
         if let Update::Push(push) = &update
             && self.visible_push(push)
         {

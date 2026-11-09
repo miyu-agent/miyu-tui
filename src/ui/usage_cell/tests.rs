@@ -58,6 +58,7 @@ fn ring_tokens_and_money_with_nothing_before_anything_is_used() {
     t.limits = Limits {
         window: Some(1_000_000),
         compaction_line: Some(800_000),
+        context: None,
     };
     // 累计连子代理由调用的一方给（`Talk::usage_total`），这里给多少写多少。
     assert_eq!(
@@ -93,6 +94,7 @@ fn a_failed_compaction_past_the_line_turns_red_with_a_compact_button_until_it_co
     t.limits = Limits {
         window: Some(256_000),
         compaction_line: Some(190_000),
+        context: None,
     };
     t.context = 203_000;
     assert_eq!(
@@ -142,6 +144,7 @@ fn a_paused_compaction_below_the_line_is_not_stuck_and_over_the_window_is() {
     t.limits = Limits {
         window: Some(128_000),
         compaction_line: Some(100_000),
+        context: None,
     };
     t.context = 50_000;
     let paused = Compaction::Paused {
@@ -178,4 +181,21 @@ fn compacting_shows_a_spinner_instead() {
     assert_eq!(laid.len(), 1);
     assert!(laid[0].ends_with(" 正在压缩上下文"), "{laid:?}");
     assert!(laid[0].starts_with(&config.timeline.spinner[0]));
+}
+
+/// 设了会话的上下文上限（核心 CTX-1，设计 68）：环后面写「会话上限 128k」，人知道窗口是被它压小的；没设的不写。
+#[test]
+fn a_session_cap_is_named_after_the_ring() {
+    let config = Config::builtin().unwrap();
+    let mut t = Transcript::default();
+    t.context = 30_000;
+    t.limits = Limits {
+        window: Some(128_000),
+        compaction_line: Some(101_000),
+        context: Some(128_000),
+    };
+    assert_eq!(
+        lay(&t, used(5_000), Some("¥0.42"), &config),
+        ["◔ 5k", "会话上限 128k", "¥0.42"]
+    );
 }

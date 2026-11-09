@@ -127,6 +127,7 @@ fn the_core_limits_are_kept_for_the_sidebar_and_footer() {
     let limits = Limits {
         window: Some(300_000),
         compaction_line: Some(267_000),
+        context: None,
     };
     t.update(Update::Limits(limits), &texts);
     assert_eq!(t.limits, limits);
