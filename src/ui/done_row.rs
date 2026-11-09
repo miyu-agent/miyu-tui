@@ -7,7 +7,7 @@ use super::rows::clip;
 use crate::config::Layout;
 use crate::core::Level;
 
-/// 收尾行：图标，这个级别要多空的（`done_gap`，只有 `▣` 多空一格），再接字（`tui.md`「正文」第 4 条）。
+/// 收尾行：图标，这个级别要多空的（`done_gap`），再接字（`tui.md`「正文」第 4 条）。
 pub fn line(level: Option<Level>, text: &str, layout: &Layout) -> String {
     let gap = level
         .and_then(|l| layout.done_gap.get(&l))
@@ -63,11 +63,10 @@ mod tests {
     fn the_done_line_starts_with_its_level_icon() {
         let layout = Config::builtin().unwrap().layout;
         assert_eq!(mark(Some(Level::ReadOnly), &layout), "⏸ ");
-        assert_eq!(mark(Some(Level::Workspace), &layout), "▣ ");
+        assert_eq!(mark(Some(Level::Full), &layout), "⏵⏵ ");
         assert_eq!(mark(None, &layout), "✻ ", "没记着级别的兜底");
-        // 只有 `▣` 后面空两格，别的空一格。
+        // 都空一格（工作区的 `▣` 原来多空一格，LV-3 去掉了工作区）。
         let line = |level| line(level, "03:44", &layout);
-        assert_eq!(line(Some(Level::Workspace)), "▣  03:44");
         assert_eq!(line(Some(Level::Full)), "⏵⏵ 03:44");
         assert_eq!(line(Some(Level::ReadOnly)), "⏸ 03:44");
         assert_eq!(line(None), "✻ 03:44");

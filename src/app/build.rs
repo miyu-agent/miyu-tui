@@ -67,7 +67,7 @@ impl App {
             talk: super::talk::Talk {
                 preview: None,
                 tree_bill: None,
-                default_level: crate::core::Level::Workspace,
+                default_level: crate::core::Level::Full,
                 level_picked: false,
                 dream: None,
                 transcript: Transcript::default(),

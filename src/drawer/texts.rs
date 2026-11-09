@@ -10,8 +10,6 @@ use serde::Deserialize;
 pub struct Texts {
     /// 顶上一行谁在问，`{who}`。
     pub asking: String,
-    /// 跑命令的确认不在沙盒里跑时写的那一行（核心 D-4）。
-    pub unsandboxed: String,
     /// 包的守卫要人确认时的问题行（核心 HK-1）：`{package}` 包编号、`{tool}` 要调的工具。
     pub guard: String,
     /// 跑命令的确认被认成高危命令时写的那一行（核心 5-17，2026-10-20 项目主人：「可以加『高危命令』四个字」）。
@@ -38,8 +36,6 @@ pub struct Texts {
     pub notes_label: String,
     /// 确认的几项，照 `Decision::ALL` 的先后。
     pub decisions: [String; 3],
-    /// 记命令前缀的「此目录不再询问」（核心 SB-3），`{prefix}`。
-    pub decision_prefix: String,
     /// 写「不允许」的理由时，还没打字暗色写的。
     pub reason_hint: String,
     /// 光标停在「不允许」上、没在写时后面写的：怎么写理由。

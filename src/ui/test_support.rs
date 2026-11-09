@@ -54,7 +54,7 @@ impl Fixture {
             cards: &self.cards,
             diagrams: &self.diagrams,
             writing: None,
-            level: Level::Workspace,
+            level: Level::Full,
             screen_rows: self.config.figures.max_rows,
             replaced: Default::default(),
             sessions: &self.sessions,

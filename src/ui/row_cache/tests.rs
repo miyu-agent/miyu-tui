@@ -204,7 +204,7 @@ fn switching_the_level_rebuilds_only_what_you_said_without_a_level() {
         .filter(|e| matches!(e.kind, Kind::User) && e.level.is_none())
         .count();
     ctx.level = if ctx.level == crate::core::Level::ReadOnly {
-        crate::core::Level::Workspace
+        crate::core::Level::Full
     } else {
         crate::core::Level::ReadOnly
     };

@@ -94,7 +94,7 @@ fn the_done_line_keeps_the_level_its_turn_ran_with() {
     use crate::core::Level;
     let order = Config::builtin().unwrap().layout.level_cycle;
     let mut t = Transcript::default();
-    let next = t.next_level(&order); // 工作区 → 开放权限
+    let next = t.next_level(&order); // 开放权限 → 只读（LV-3：只剩两级）
     apply(&mut t, vec![super::policy(next)]);
     apply(
         &mut t,
@@ -103,11 +103,11 @@ fn the_done_line_keeps_the_level_its_turn_ran_with() {
             Push::TurnEnded(EndReason::Completed),
         ],
     );
-    assert_eq!(t.entries.last().unwrap().level, Some(Level::Full));
+    assert_eq!(t.entries.last().unwrap().level, Some(Level::ReadOnly));
     // 之后换了级别，已经写出来的不跟着变；被打断的那一行也记着。
-    let next = t.next_level(&order); // → 只读
+    let next = t.next_level(&order); // → 开放权限
     apply(&mut t, vec![super::policy(next)]);
-    assert_eq!(t.entries.last().unwrap().level, Some(Level::Full));
+    assert_eq!(t.entries.last().unwrap().level, Some(Level::ReadOnly));
     apply(
         &mut t,
         vec![
@@ -115,7 +115,7 @@ fn the_done_line_keeps_the_level_its_turn_ran_with() {
             Push::TurnEnded(EndReason::Interrupted),
         ],
     );
-    assert_eq!(t.entries.last().unwrap().level, Some(Level::ReadOnly));
+    assert_eq!(t.entries.last().unwrap().level, Some(Level::Full));
 }
 
 #[test]

@@ -29,11 +29,7 @@ fn a_turn_cut_off_by_the_core_ends_red_and_the_late_end_adds_nothing() {
     // 2026-09-30 项目主人：和被打断的「▣ 已中断」一个样子，换个颜色。
     assert_eq!(
         (last.kind.clone(), last.text.as_str(), last.level),
-        (
-            Kind::Cut,
-            "核心断开连接",
-            Some(crate::core::Level::Workspace)
-        )
+        (Kind::Cut, "核心断开连接", Some(crate::core::Level::Full))
     );
     assert!(!t.busy(), "不再转圈、不再走表");
     let count = t.entries.len();
@@ -81,7 +77,11 @@ fn a_new_session_clears_the_page_but_keeps_the_link_and_the_model() {
     let last_id = t.entries.last().unwrap().id;
     t.split_off();
     assert!(t.entries.is_empty() && t.session.is_none());
-    assert_eq!(t.level, crate::core::Level::Workspace, "新会话从工作区开始");
+    assert_eq!(
+        t.level,
+        crate::core::Level::Full,
+        "新会话从完全放开开始（LV-3）"
+    );
     assert_eq!(
         (t.link.clone(), t.model.clone()),
         (Link::Ready, Some(("flash".into(), "dev".into())))
