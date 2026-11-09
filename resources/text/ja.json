@@ -845,7 +845,7 @@
       "画像",
       "手動"
     ],
-    "pool_names": {"flagship": "フラッグシップ", "normal": "日常", "lite": "ライト"},
+    "pool_names": {"flagship": "フラッグシッププール", "normal": "日常プール", "lite": "ライトプール"},
     "pool_tag": "{how} · {n}",
     "pool_uses_head": "用途",
     "gone": "（存在しない）",
