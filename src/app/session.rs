@@ -38,6 +38,7 @@ impl App {
         // 换的就是新会话的默认，多半一样）。
         let shown = self.talk.transcript.footer_model();
         self.link.core.send(Command::New { keep });
+        self.swap_desk(None);
         self.park_current(keep);
         self.talk.transcript.keep_footer_model(shown);
         // 空会话的底栏照默认的聊天模型写（`effort.rs`）。
@@ -73,6 +74,7 @@ impl App {
             .deleting
             .start(self.talk.sessions_seen.as_mut(), &doomed);
         let [session] = doomed;
+        self.typing.drafts.remove(&session);
         // 还有后台任务、停放着的：不再订阅。
         if let Some(parked) = self.talk.parked.remove(&session) {
             self.talk.left.retain(|s| *s != session);

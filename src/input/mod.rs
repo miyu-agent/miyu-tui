@@ -3,6 +3,7 @@
 //! 画在哪、多大由 `ui` 定；这里只记着上一次画的位置，好把鼠标坐标换回文字下标。
 
 mod attach;
+mod desk;
 mod dropped;
 mod editor;
 mod mouse;
@@ -23,6 +24,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
 pub use attach::{AttachKind, AttachRule, Attachment};
+pub use desk::Desk;
 
 pub use dropped::{Dropped, dropped, quoted};
 pub use editor::Editor;

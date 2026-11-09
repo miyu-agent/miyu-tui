@@ -416,6 +416,7 @@ fn tail_pieces_match_the_end_of_a_full_wrap() {
 }
 
 mod attach;
+mod desk;
 mod paste;
 mod recover;
 mod refused;

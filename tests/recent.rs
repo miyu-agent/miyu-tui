@@ -182,6 +182,65 @@ fn switching_sessions_leaves_the_typed_text_with_its_session() {
     }
 }
 
+/// 发版前 check 第 17 条后续（2026-11-09 项目主人）：`Ctrl+C` 清掉的那一句也跟着会话走，别的会话按 `↑` 找不回它，切回来找得回。
+#[test]
+fn the_cleared_text_comes_back_only_in_its_own_session() {
+    let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
+    let home = Home::with_settings(script, "");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+    tui.wait_for("工作区");
+    tui.say("topic-one");
+    tui.wait_for("answer-one");
+    tui.say("/new");
+    tui.say("topic-two");
+    tui.wait_for("answer-two");
+    tui.wait_for("最近会话");
+    tui.type_text("cleared-in-two");
+    tui.pump(std::time::Duration::from_millis(200));
+    tui.key(b"\x03");
+    tui.pump(std::time::Duration::from_millis(200));
+    assert!(!tui.input().contains("cleared-in-two"), "{}", tui.input());
+    let click = |tui: &mut support::Tui, word: &str| {
+        let lines = tui.lines();
+        let row = lines
+            .iter()
+            .position(|l| l.find(word).is_some_and(|at| at > 100))
+            .expect("列着");
+        let col = lines[row].find(word).expect("在") + 1;
+        let at = format!("\x1b[<0;{col};{}M\x1b[<0;{col};{}m", row + 1, row + 1);
+        tui.key(at.as_bytes());
+    };
+    click(&mut tui, "topic-one");
+    tui.wait_for("answer-one");
+    let end = std::time::Instant::now() + support::WAIT;
+    while tui.shows("answer-two") {
+        assert!(std::time::Instant::now() < end, "没切过去");
+        tui.pump(std::time::Duration::from_millis(50));
+    }
+    tui.key(b"\x1b[A");
+    tui.pump(std::time::Duration::from_millis(300));
+    assert!(
+        !tui.input().contains("cleared-in-two"),
+        "别的会话按 ↑ 不该找回：{}",
+        tui.input()
+    );
+    tui.key(b"\x1b[B");
+    tui.pump(std::time::Duration::from_millis(200));
+    click(&mut tui, "topic-two");
+    tui.wait_for("answer-two");
+    tui.pump(std::time::Duration::from_millis(300));
+    tui.key(b"\x1b[A");
+    let end = std::time::Instant::now() + support::WAIT;
+    while !tui.input().contains("cleared-in-two") {
+        assert!(
+            std::time::Instant::now() < end,
+            "切回来按 ↑ 该找回：{}",
+            tui.input()
+        );
+        tui.pump(std::time::Duration::from_millis(50));
+    }
+}
+
 /// 发版前 check 第 23 条（2026-11-09 项目主人：侧边栏最近会话、跳转消息自己填数，0 是不显示）：清单里是 int，配置写成数，侧边栏照它列。
 #[test]
 fn the_sidebar_counts_are_plain_numbers_and_zero_hides_the_list() {
