@@ -75,6 +75,14 @@ fn made(home: &Home, editor: &str) -> Tui {
         "照写的 id 建，核心不另起：\n{}",
         tui.lines().join("\n")
     );
+    // 窗里名字上面一行写 id（发版前 check 28）。
+    assert!(
+        tui.lines()
+            .iter()
+            .any(|l| l.split_whitespace().collect::<Vec<_>>() == ["id", "writer"]),
+        "{}",
+        tui.lines().join("\n")
+    );
     tui
 }
 

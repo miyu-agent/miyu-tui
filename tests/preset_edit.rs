@@ -1,5 +1,5 @@
 //! 配置页改预设（蓝图 `tui.md`「配置页」第 38、39 条，核心 P-3）：`a` 填名字就建、功能照旧版空格切、`Ctrl+A` 全开全关、
-//! `d` 删除；编号核心起，界面上不出现。
+//! `d` 删除；编号核心起，窗里名字上面写 id（发版前 check 28）。
 
 mod support;
 
@@ -48,9 +48,15 @@ fn made(home: &Home) -> Tui {
     until(&mut tui, "建好的文件", || {
         text(home).contains("我的预设")
     });
-    // 建好开它的窗：名字、功能树（核心 FG-1，组名打头）；编号不出现。
+    // 建好开它的窗：名字、功能树（核心 FG-1，组名打头）；名字上面一行写 id（发版前 check 28，2026-11-09 项目主人）。
     tui.wait_for("基础系统");
-    assert!(!tui.shows("preset-1"), "{}", tui.lines().join("\n"));
+    assert!(
+        tui.lines()
+            .iter()
+            .any(|l| l.split_whitespace().collect::<Vec<_>>() == ["id", "preset-1"]),
+        "{}",
+        tui.lines().join("\n")
+    );
     tui
 }
 
