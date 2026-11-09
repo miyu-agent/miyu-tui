@@ -62,3 +62,59 @@ fn going_back_up_in_a_long_window_does_not_scroll_until_the_top_edge() {
     let (first, _) = draw(low - 1, top);
     assert_eq!(first, format!("row{:02}", low - 1), "碰到上边才挪");
 }
+
+#[test]
+fn the_buttons_stay_at_the_bottom_with_their_keys_while_a_long_list_scrolls() {
+    // 发版前 check 第 30 条（2026-11-09 项目主人）：模型池成员很多时，不挪到最底下也看得到按钮、知道按 s 存。
+    let mut lines: Lines<()> = Lines {
+        buttons: vec![("保存".into(), false), ("取消".into(), false)],
+        keys: vec!["s".into(), "Esc".into()],
+        ..Lines::default()
+    };
+    for i in 0..40 {
+        lines.body.push(Body {
+            line: Line::from(format!("row{i:02}")),
+            focused: i == 0,
+            hit: None,
+        });
+    }
+    let mut term = Terminal::new(TestBackend::new(40, 14)).unwrap();
+    term.draw(|frame| {
+        let area = frame.area();
+        centered(
+            frame,
+            area,
+            (30, 12),
+            &mut lines,
+            (&mut Vec::new(), |_| ()),
+            &mut Caret::default(),
+        );
+    })
+    .unwrap();
+    let buf = term.backend().buffer();
+    let text: Vec<String> = (0..buf.area.height)
+        .map(|y| (0..buf.area.width).map(|x| buf[(x, y)].symbol()).collect())
+        .collect();
+    let row = text
+        .iter()
+        // 宽字后面那一格读出来是空格：去掉空格再认。
+        .position(|l| {
+            let l = l.replace(' ', "");
+            l.contains("[保存s]") && l.contains("[取消Esc]")
+        })
+        .unwrap_or_else(|| panic!("按钮里写着快捷键：\n{}", text.join("\n")));
+    assert!(
+        text[..row].iter().any(|l| l.contains("row00")),
+        "列表停在最上面"
+    );
+    let y = u16::try_from(row).unwrap();
+    let at = |sym: &str| {
+        (0..buf.area.width)
+            .find(|&x| buf[(x, y)].symbol() == sym)
+            .expect("在")
+    };
+    // 按钮名后面的快捷键暗着写（和名字颜色不同）。
+    let key = buf[(at("s"), y)].fg;
+    let name = buf[(at("保"), y)].fg;
+    assert_ne!(key, name, "快捷键暗着写");
+}

@@ -21,6 +21,8 @@ pub struct Lines<H> {
     pub body: Vec<Body<H>>,
     pub error: Option<String>,
     pub buttons: Vec<(String, bool)>,
+    /// 按钮的快捷键，暗着写在按钮名字后面（发版前 check 第 30 条：长列表不用挪到按钮上也知道怎么存）；没有的不写。
+    pub keys: Vec<String>,
     pub button: Option<usize>,
     pub hints: Vec<[String; 2]>,
     /// 正在改的那一行：第几行、光标在第几列。
@@ -39,6 +41,7 @@ impl<H> Default for Lines<H> {
             body: Vec::new(),
             error: None,
             buttons: Vec::new(),
+            keys: Vec::new(),
             button: None,
             hints: Vec::new(),
             caret: None,
@@ -237,7 +240,7 @@ fn paint<H: Copy>(
     }
     if inside(y) {
         let at = Position::new(inner.x, y);
-        for (i, rect) in button_row(frame, at, &lines.buttons, lines.button)
+        for (i, rect) in keyed_row(frame, at, (&lines.buttons, &lines.keys), lines.button)
             .into_iter()
             .enumerate()
         {
@@ -260,17 +263,39 @@ pub fn button_row(
     buttons: &[(String, bool)],
     selected: Option<usize>,
 ) -> Vec<Rect> {
+    keyed_row(frame, at, (buttons, &[]), selected)
+}
+
+/// 同 [`button_row`]，第几个按钮在 `keys` 里有快捷键的，名字后面空一格暗着写它：`[ 保存 s ]`；停着的整个照选中色。
+fn keyed_row(
+    frame: &mut Frame,
+    at: Position,
+    (buttons, keys): (&[(String, bool)], &[String]),
+    selected: Option<usize>,
+) -> Vec<Rect> {
     let mut x = at.x;
     let mut rects = Vec::new();
     for (i, (label, danger)) in buttons.iter().enumerate() {
-        let text = format!("[ {label} ]");
         let style = match (selected == Some(i), danger) {
             (true, true) => theme::error().add_modifier(Modifier::REVERSED),
             (true, false) => theme::picked_bar(),
             _ => Style::new(),
         };
-        let w = text.width() as u16;
-        frame.buffer_mut().set_string(x, at.y, &text, style);
+        let key = keys.get(i).filter(|k| !k.is_empty());
+        let key_style = if selected == Some(i) {
+            style
+        } else {
+            theme::dim()
+        };
+        let mut spans = vec![Span::styled(format!("[ {label}"), style)];
+        if let Some(key) = key {
+            spans.push(Span::styled(" ", style));
+            spans.push(Span::styled(key.clone(), key_style));
+        }
+        spans.push(Span::styled(" ]", style));
+        let line = Line::from(spans);
+        let w = line.width() as u16;
+        frame.buffer_mut().set_line(x, at.y, &line, w);
         rects.push(Rect::new(x, at.y, w, 1));
         x += w + 2;
     }

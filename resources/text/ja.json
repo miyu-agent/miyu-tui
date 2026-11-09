@@ -934,6 +934,10 @@
       "保存",
       "キャンセル"
     ],
+    "button_keys": [
+      "s",
+      "Esc"
+    ],
     "popup_hints": [
       [
         [
