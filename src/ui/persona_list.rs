@@ -88,12 +88,13 @@ pub fn lines(
                 ),
                 None => {
                     // 中途换的：现在用的那一个行首写 `●`（下面），右边不写；还没开会话的：默认的右边写「默认」。预设右边再写它占
-                    // 多少 token（发版前 check 4，2026-11-09 项目主人：「preset 列表中显示出 preset 消耗的 token」），核心没给的不写。
+                    // 多少 token（发版前 check 4，2026-11-09 项目主人：「preset 列表中显示出 preset 消耗的 token」），核心没给的、是 0
+                    // 的（「无功能」，同一天项目主人：0 就不写）不写。
                     let default_mark = (current.is_none() && default == Some(p.id.as_str()))
                         .then(|| texts.default_mark.clone());
                     let tokens = p
                         .tokens
-                        .filter(|_| kind == Kind::Preset)
+                        .filter(|n| kind == Kind::Preset && *n > 0)
                         .map(|n| texts.tokens.replace("{n}", &crate::meter::short(n)));
                     let right: Vec<String> = default_mark.into_iter().chain(tokens).collect();
                     let mark =
