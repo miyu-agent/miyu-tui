@@ -1,5 +1,5 @@
 //! `/export` 的框（排期第 36 条，核心设计 58、会话导出调研第五节第 5 条；蓝图 `tui.md`「导出 `/export`」）：和帮助框、语言框
-//! 一个位置、一个样子。第一步一行一种用途（存档、给别的 agent、贴进网页 chat、自己看），右边暗色写大小和 token 估算；选了
+//! 一个位置、一个样子。第一步一行一种用途（完整存档、用于给别的 agent 继续、用于网页端聊天对话、仅导出对话为 Markdown 文件），右边暗色写大小和 token 估算；选了
 //! Markdown 的第二步选复制还是存成文件，存档直接存。
 
 use ratatui::text::{Line, Span};
@@ -20,7 +20,7 @@ pub struct Texts {
     pub step_title: String,
     /// 下边框的按键提示：第一步、第二步。
     pub hints: [String; 2],
-    /// 四种用途，照 [`Use::ALL`] 的先后：存档、给别的 agent、贴进网页 chat、自己看。
+    /// 四种用途，照 [`Use::ALL`] 的先后：完整存档、用于给别的 agent 继续、用于网页端聊天对话、仅导出对话为 Markdown 文件。
     pub uses: [String; 4],
     /// 存档那一行右边写的。
     pub bundle_note: String,
