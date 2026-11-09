@@ -99,5 +99,14 @@ fn requests_without_a_price_are_counted_not_guessed() {
     );
     // 2026-10-10 项目主人：「没有费用记录的请求不需要出现在侧边栏中」。
     assert!(!screen.contains("没有价格"), "{screen}");
-    assert!(!screen.contains('$'), "框下面那一行也不写：\n{screen}");
+    // 输入框背景里的提示可能写着「$ 点名技能」（随机挑的），不算。
+    let outside_input = tui
+        .lines()
+        .into_iter()
+        .filter(|l| !l.contains('❯'))
+        .collect::<Vec<_>>();
+    assert!(
+        !outside_input.iter().any(|l| l.contains('$')),
+        "框下面那一行也不写：\n{screen}"
+    );
 }
