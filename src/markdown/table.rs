@@ -144,7 +144,9 @@ fn row_lines(row: &[Cell], widths: &[usize], aligns: &[Alignment], head: bool) -
                     }
                 })
                 .collect();
-            fold(&pieces, u16::try_from(*w).unwrap_or(u16::MAX))
+            let mut folded = fold(&pieces, u16::try_from(*w).unwrap_or(u16::MAX));
+            folded.iter_mut().for_each(|f| fit(f, *w));
+            folded
         })
         .collect();
     let height = cells.iter().map(Vec::len).max().unwrap_or(1);
@@ -192,6 +194,28 @@ fn row_lines(row: &[Cell], widths: &[usize], aligns: &[Alignment], head: bool) -
         .collect()
 }
 
+/// 折行时满了的那一格是空白的，留在行末（`linebreak.rs`：正文里超出的看不见）；格子里它会把竖线往右顶一格（发版前
+/// check 11，2026-11-08 项目主人报框线错位），超出列宽的行末空白去掉。
+fn fit(folded: &mut Folded, width: usize) {
+    let mut over = plain(folded).width().saturating_sub(width);
+    while over > 0 {
+        let Some(last) = folded.spans.last_mut() else {
+            return;
+        };
+        let text = last.content.to_string();
+        let kept = text.trim_end_matches(char::is_whitespace);
+        let cut = (text.len() - kept.len()).min(over);
+        if cut == 0 {
+            return;
+        }
+        last.content = text[..text.len() - cut].to_string().into();
+        over -= cut;
+        if last.content.is_empty() {
+            folded.spans.pop();
+        }
+    }
+}
+
 fn line(spans: Vec<Span<'static>>) -> Folded {
     Folded {
         spans,
@@ -236,6 +260,27 @@ mod tests {
         assert!(
             lines.iter().all(|l| l.width() == lines[0].width()),
             "每行一样宽"
+        );
+    }
+
+    /// 发版前 check 11（2026-11-08 项目主人：表格框线有时略微错位，像是软换行导致的）：格子里折在空白上的那一行，空白
+    /// 留在行末超出列宽，把后面的竖线顶出去一格。
+    #[test]
+    fn a_cell_folded_on_a_space_keeps_the_rules_in_line() {
+        let head = vec![cell("甲"), cell("乙")];
+        let rows = vec![vec![
+            cell("短"),
+            cell("任何能执行命令的语言都行，比如 bash、Python"),
+        ]];
+        let aligns = [Alignment::None, Alignment::None];
+        // 宽 39：第二列收到 30 列，「…比如」正好占满，后面那个空格是满了的那一格。
+        let lines: Vec<String> = render(&head, &rows, &aligns, 39)
+            .iter()
+            .map(plain)
+            .collect();
+        assert!(
+            lines.iter().all(|l| l.width() == lines[0].width()),
+            "每行一样宽：{lines:#?}"
         );
     }
 
