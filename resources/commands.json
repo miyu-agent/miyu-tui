@@ -139,6 +139,15 @@
       "run": "new"
     },
     {
+      "name": "delete",
+      "summary": {
+        "zh": "删除当前会话",
+        "en": "Delete this session",
+        "ja": "このセッションを削除"
+      },
+      "run": "delete"
+    },
+    {
       "name": "sessions",
       "aliases": [
         "resume"

@@ -48,6 +48,42 @@ impl App {
         self.forget_workspace();
     }
 
+    /// `/delete`（发版前 check 12，2026-11-09 项目主人：「直接删除当前会话并去到新建会话的页面」）：不再问一次；
+    /// 回答进行中的先打断再删（同会话列表里删正在用的）。先照 `/new` 回首页，旧的照切走的规矩退订，再删。
+    pub(super) fn delete_current(&mut self) {
+        let Some(session) = self.talk.main_session() else {
+            return;
+        };
+        if self.talk.transcript.running.is_some() {
+            let note = self.config.text.sessions.delete_running.clone();
+            self.hint(note, false);
+            return;
+        }
+        let title = match &self.talk.home {
+            None => self.talk.transcript.title.clone(),
+            Some(_) => self.talk.sessions_seen.as_ref().and_then(|seen| {
+                let found = seen.iter().find(|s| s.session == session);
+                found.and_then(|s| s.title.clone())
+            }),
+        };
+        let title = title.unwrap_or_else(|| self.config.text.untitled.clone());
+        self.new_session();
+        let doomed = [session];
+        self.talk
+            .deleting
+            .start(self.talk.sessions_seen.as_mut(), &doomed);
+        let [session] = doomed;
+        // 还有后台任务、停放着的：不再订阅。
+        if let Some(parked) = self.talk.parked.remove(&session) {
+            self.talk.left.retain(|s| *s != session);
+            self.drop_children(&parked.board);
+            self.link.core.send(Command::Unwatch(session.clone()));
+        }
+        self.link.core.send(Command::Delete(session));
+        let done = self.config.text.sessions.deleted.replace("{title}", &title);
+        self.hint(done, true);
+    }
+
     /// 主会话不存在了（在别处删了、`--resume` 的编号不对；review B3，2026-10-11 项目主人定）：切过去的就是它的先换上来，
     /// 看着子会话的回主会话；正文末尾红字写「会话不存在」，上面的留着看，下一句话像按过 `/new` 一样开新会话。
     pub(super) fn session_gone(&mut self, session: &str) {
@@ -143,6 +179,7 @@ impl App {
             Run::Redo | Run::Edit => "not_redoable",
             Run::Recap => "nothing_to_recap",
             Run::Rename => "nothing_to_rename",
+            Run::Delete => "nothing_to_delete",
             _ => "nothing_to_compact",
         };
         self.core(Update::Refused {

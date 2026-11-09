@@ -367,3 +367,32 @@ fn deleting_the_current_session_moves_to_the_latest_one_and_then_to_an_empty_one
     }
     tui.wait_for("工作区");
 }
+
+/// `/delete`（发版前 check 12，2026-11-09 项目主人：「直接删除当前会话并去到新建会话的页面」）：不再问一次，删了回新会话的
+/// 首页，列表里也没了它；刚回首页还没说话时再按，当场说没有可删的。
+#[test]
+fn delete_removes_the_current_session_and_lands_on_a_new_one() {
+    let (home, mut tui) = sessions(2);
+    tui.say("/delete");
+    tui.wait_for("已删除「");
+    tui.wait_for("工作区");
+    assert!(
+        !tui.shows("第 2 号的回答。"),
+        "回到新会话的首页：\n{}",
+        tui.lines().join("\n")
+    );
+    tui.say("/delete");
+    tui.wait_for("没有可删除的会话");
+    // 核心那头真删了：重开一个终端，列表里只剩一个（本地删着的先藏起来，看不出核心删没删）。
+    tui.pump(Duration::from_millis(300));
+    drop(tui);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    tui.say("/sessions");
+    wait_rows(&mut tui, 1);
+    assert!(
+        rows(&tui).iter().all(|r| !r.contains("第 2 号的话")),
+        "删掉的不在列表里：\n{}",
+        tui.lines().join("\n")
+    );
+}

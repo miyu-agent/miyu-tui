@@ -106,6 +106,8 @@ pub enum Run {
     Effort,
     /// 开新会话：清界面回首页，第一句话时再开（蓝图「斜杠命令」`/new`）。
     New,
+    /// 删除当前会话，回首页（发版前 check 12）。
+    Delete,
     /// 清空上下文，会话不变（核心 `command.run` 的 `/clear`，蓝图「正文」第 9 条）。
     Clear,
     /// 全停：打断这一轮、排着的留着、停掉后台的（核心 `command.run` 的 `/stop`，蓝图「斜杠命令」`/stop`）。
