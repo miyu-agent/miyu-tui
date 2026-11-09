@@ -245,10 +245,10 @@ fn a_record_with_a_secret_is_saved_as_a_reference() {
     });
 }
 
-/// 排期第 39 条（2026-11-04 项目主人：详情页太高、和列表比例不好）：预览块只有内容那么高，最后一行内容下面空一行，再往下
-/// 就不是预览块的底色了（原来一直铺到状态行上面）。
+/// 发版前 check 13（2026-11-08 项目主人：「修改成一半一半，上半是列表，下半是详情」；取代排期第 39 条「预览块只有内容那么高」）：
+/// 预览块从下半开头，铺满下半，最后一行内容下面照样是预览块的底色。
 #[test]
-fn the_preview_is_only_as_tall_as_what_it_says() {
+fn the_preview_fills_the_bottom_half() {
     let home = Home::prepared(Script::new([Play::Says("好。")]), "", weather);
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     installed(&mut tui);
@@ -272,11 +272,15 @@ fn the_preview_is_only_as_tall_as_what_it_says() {
         u16::try_from(last).unwrap(),
     );
     let panel = tui.background(first, x);
-    assert_eq!(tui.background(last + 1, x), panel, "最后一行下面留一行白");
-    assert_ne!(
+    assert!(
+        usize::from(first) >= lines.len() / 2,
+        "预览块在下半：\n{}",
+        lines.join("\n")
+    );
+    assert_eq!(
         tui.background(last + 2, x),
         panel,
-        "再往下不是预览块：\n{}",
+        "内容下面照样是预览块：\n{}",
         lines.join("\n")
     );
 }

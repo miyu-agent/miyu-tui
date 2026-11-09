@@ -21,9 +21,6 @@ use crate::settings::pages::store::{AskView, Flow, Item, Listing, Store, StoreTe
 use crate::settings::{Hit, Settings, Texts};
 use crate::theme;
 
-/// 列表最多几行（2026-10-31 样板：放不下的跟着光标滚）。
-const LIST_ROWS: u16 = 8;
-
 /// 画一帧。
 pub(super) fn draw(
     frame: &mut Frame,
@@ -74,7 +71,9 @@ pub(super) fn draw(
     // （`popup.rs`，排期第 42 条），列表照常。
     let room = stage.height.saturating_sub(4 + 5 + 1);
     let confirming = matches!(store.flow, Some(Flow::Confirm { .. }));
-    let list_h = LIST_ROWS.min(room / 2).max(1);
+    // 一半一半：上半列表，下半预览块（发版前 check 13，2026-11-08 项目主人：「列表和选中信息全部是上对齐导致空间利用率
+    // 存在问题」）；列表放不下的跟着光标滚。
+    let list_h = (room / 2).max(1);
     let body = Rect::new(stage.x, stage.y + 4, stage.width, list_h);
     // 软件源给的名字、说明是外来的字：图格字、标签字符不进画面（发布前第五批审查 T5-3），列表、预览块都过一遍。
     let mut lines = rows(store, words, body.width);
@@ -90,12 +89,9 @@ pub(super) fn draw(
     let room = stage.bottom().saturating_sub(5).saturating_sub(pv_y);
     let mut shown = preview::lines(store, words, &texts.more.package_from);
     crate::tabs::printable_lines(&mut shown);
-    // 预览块只有内容那么高（上下各空一行），紧跟在列表下面，剩下的空着；放不下的截掉（排期第 39 条，2026-11-04 项目主人：
-    // 「详情页稍微有点太高了，和列表之间的比例不是很好」）。
+    // 预览块铺满下半（上下各空一行）；放不下的截掉。
     let wrapped = wrap(&shown, stage.width.saturating_sub(4));
-    let pv_h = u16::try_from(wrapped.len() + 2)
-        .unwrap_or(u16::MAX)
-        .min(room);
+    let pv_h = room;
     let pv = Rect::new(stage.x, pv_y, stage.width, pv_h);
     if pv.height > 2 && !shown.is_empty() {
         frame.buffer_mut().set_style(pv, theme::panel());
