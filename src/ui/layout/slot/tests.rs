@@ -82,7 +82,7 @@ fn run(
     })
     .unwrap();
     let stacked = out.unwrap();
-    let words = stacked.written.into_iter().map(|(_, _, t)| t).collect();
+    let words = stacked.written.into_iter().map(|(_, _, t, _)| t).collect();
     (stacked.next, words, placed)
 }
 
@@ -208,7 +208,7 @@ fn a_scrolled_stack_shows_the_window_from_top_and_clamps_it() {
         })
         .unwrap();
         let out = out.unwrap();
-        let words: Vec<String> = out.written.into_iter().map(|(_, _, t)| t).collect();
+        let words: Vec<String> = out.written.into_iter().map(|(_, _, t, _)| t).collect();
         (out.top, words, seen)
     };
     let (top, words, seen) = run(1);
@@ -226,4 +226,51 @@ fn a_scrolled_stack_shows_the_window_from_top_and_clamps_it() {
         [(1, 4)],
         "滚到一件中间：露出来的那一截从它自己的第 1 行起"
     );
+}
+
+/// 路径这类放不下折下来的行（发版前 check 29）：部件说第几行是接着上一行的，照字画出来的那几行带着它，滚过也照部件自己的行算。
+#[test]
+fn wrapped_rows_are_marked_by_their_own_row_even_when_scrolled() {
+    struct Path;
+    impl Part<()> for Path {
+        fn name(&self) -> &'static str {
+            "path"
+        }
+        fn lay(&mut self, _: &(), _: u16) -> Laid {
+            Laid::Lines(["标题", "~/a/", "b/", "c"].map(Line::raw).to_vec())
+        }
+        fn continues(&self, row: usize) -> bool {
+            row >= 2
+        }
+    }
+    let run = |top: u16| {
+        let mut term = Terminal::new(TestBackend::new(10, 4)).unwrap();
+        let mut out = None;
+        term.draw(|frame| {
+            let mut parts: [&mut dyn Part<()>; 1] = [&mut Path];
+            out = Some(stack(
+                frame,
+                Rect::new(0, 0, 10, 3),
+                &mut parts,
+                (&[], 1, top),
+                &mut (),
+            ));
+        })
+        .unwrap();
+        let marks: Vec<(String, bool)> = out
+            .unwrap()
+            .written
+            .into_iter()
+            .map(|(_, _, t, joined)| (t, joined))
+            .collect();
+        marks
+    };
+    let shown = |pairs: &[(&str, bool)]| -> Vec<(String, bool)> {
+        pairs.iter().map(|(t, j)| ((*t).to_string(), *j)).collect()
+    };
+    assert_eq!(
+        run(0),
+        shown(&[("标题", false), ("~/a/", false), ("b/", true)])
+    );
+    assert_eq!(run(1), shown(&[("~/a/", false), ("b/", true), ("c", true)]));
 }

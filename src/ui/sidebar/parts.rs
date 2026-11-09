@@ -108,6 +108,11 @@ impl Part<Side<'_, '_>> for Cwd {
             side.seen.current_workspace(),
         ))
     }
+
+    /// 第 0 行是标题，第 1 行起是路径：第 2 行起都是路径放不下折下来的。
+    fn continues(&self, row: usize) -> bool {
+        row >= 2
+    }
 }
 
 /// `context`：上下文。

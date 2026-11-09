@@ -37,10 +37,14 @@ pub trait Part<C> {
     /// 照字画的 `shown` 是它自己那几行露出来几行（截了的 `…` 那一行不算）。自己画的只在整块露出来时叫到（滚出去一截的
     /// 不画），在这里画；点击区照这里的位置记。
     fn placed(&mut self, _frame: &mut Frame, _area: Rect, _rows: (usize, usize), _ctx: &mut C) {}
+    /// 照字画的第 `row` 行是不是上一行放不下折下来的（软折行）：侧边栏复制时接回上一行，不换行（发版前 check 29）。
+    fn continues(&self, _row: usize) -> bool {
+        false
+    }
 }
 
-/// 照字画出来的一行：（行、列、字），侧边栏选字用。
-pub type Written = (u16, u16, String);
+/// 照字画出来的一行：（行、列、字、是不是上一行折下来的），侧边栏选字用。
+pub type Written = (u16, u16, String, bool);
 
 /// 一处挂载位画完了：排到的下一行（最后一件下面空 `gap` 行以后）、照字画出来的那几行、限过的偏移、一共多高。
 pub struct Stacked {
@@ -105,12 +109,10 @@ pub fn stack<C>(
                         to - from
                     };
                     let shown: Vec<Line<'static>> = lines[from..to].to_vec();
-                    written.extend(
-                        shown
-                            .iter()
-                            .zip(rect.y..)
-                            .map(|(line, row)| (row, rect.x, line.to_string())),
-                    );
+                    let part = &parts[at];
+                    written.extend(shown.iter().zip(rect.y..).zip(from..).map(
+                        |((line, row), own)| (row, rect.x, line.to_string(), part.continues(own)),
+                    ));
                     frame.render_widget(Paragraph::new(shown), rect);
                     parts[at].placed(frame, rect, (from, own), ctx);
                 }
