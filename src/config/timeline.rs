@@ -105,6 +105,8 @@ pub enum Body {
     Page,
     /// 留言（`send_message`）：发给谁（会话的标题、子代理的名字）、完整的消息、附件。
     Message,
+    /// 问顾问（`advisor`，核心 ADV-2，设计 69）：问的话（`question`），空一行，顾问的回答照 Markdown 画。
+    Advice,
 }
 
 impl Timeline {

@@ -91,7 +91,7 @@ pub fn pieces(
             }
         }
         Body::Page => out.extend(markdown_pieces(detail["text"].as_str()?, width, ctx)),
-        Body::None | Body::Arg(_) | Body::Diff(_) | Body::Message => return None,
+        Body::None | Body::Arg(_) | Body::Diff(_) | Body::Message | Body::Advice => return None,
     }
     Some(out)
 }
@@ -127,5 +127,18 @@ pub(super) fn markdown_pieces(text: &str, width: u16, ctx: &Ctx) -> Vec<Piece> {
                     .collect(),
             }
         })
+        .collect()
+}
+
+/// 顾问那一步点开（`advisor`，设计 69，ADV-3）：问的话下面空一行，接顾问的回答（结果就是回答的原文），照 Markdown 画。
+pub(super) fn answer(output: &str, width: u16, ctx: &Ctx) -> Vec<Piece> {
+    let gap = Piece {
+        lead: None,
+        content: Vec::new(),
+        joined: false,
+        links: Vec::new(),
+    };
+    std::iter::once(gap)
+        .chain(markdown_pieces(output, width, ctx))
         .collect()
 }
