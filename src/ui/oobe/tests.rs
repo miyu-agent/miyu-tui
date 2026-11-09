@@ -135,6 +135,8 @@ fn each_preset_says_what_it_is_in_the_list_and_in_its_window() {
         c.lines.iter().map(|l| l.to_string()).collect()
     };
     let list = text(&super::preset::content(&step, &texts, 80));
+    // 标题右边暗色写「空格 查看详情」（发版前 check 23）。
+    assert_eq!(list[0], "选择预设  空格 查看详情", "{list:?}");
     assert!(
         list.iter()
             .any(|l| l.contains("常规开发  在极简开发的基础上增加记忆")),

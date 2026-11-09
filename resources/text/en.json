@@ -1617,7 +1617,8 @@
       "name_hint": "Give it a name",
       "name_needed": "A name is needed",
       "loading": "Loading…",
-      "create": "Create"
+      "create": "Create",
+      "view_hint": "Space for details"
     },
     "theme": {
       "title": "Color scheme",
