@@ -39,6 +39,8 @@ pub(super) enum Awaiting {
     NoticesStream,
     /// 订阅唤醒表（核心 J-1 下，`schedules.rs`）：回应的整张交给界面画循环；老核心不认的不说。
     SchedulesStream,
+    /// 订阅总线（核心 BUS-2，`bus.rs`）：回应的整份名字交给界面；老核心不认的不说。
+    BusStream,
     /// 读界面语言：回应交给界面。
     UiLanguage,
     /// 要给人看的字：回应交给界面。

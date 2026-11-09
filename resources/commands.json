@@ -308,6 +308,36 @@
       "run": "export"
     },
     {
+      "name": "voice-input",
+      "summary": {
+        "zh": "说话代替打字，再打一次停",
+        "en": "Dictate instead of typing; run again to stop",
+        "ja": "話して入力する（もう一度で停止）"
+      },
+      "run": "voice_input",
+      "needs": "stt"
+    },
+    {
+      "name": "read-aloud",
+      "summary": {
+        "zh": "朗读她上一轮的回答，再打一次停",
+        "en": "Read her last reply aloud; run again to stop",
+        "ja": "直前の返答を読み上げる（もう一度で停止）"
+      },
+      "run": "read_aloud",
+      "needs": "tts"
+    },
+    {
+      "name": "auto-read",
+      "summary": {
+        "zh": "开关自动朗读（只在这个终端）",
+        "en": "Turn auto read-aloud on or off (this terminal only)",
+        "ja": "自動読み上げのオン・オフ（この端末だけ）"
+      },
+      "run": "auto_read",
+      "needs": "tts"
+    },
+    {
       "name": "exit",
       "summary": {
         "zh": "退出",

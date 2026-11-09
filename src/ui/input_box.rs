@@ -25,6 +25,8 @@ pub(super) struct Facts {
     tag: Option<String>,
     /// 焦点在输入框上：光标显示出来。
     typing: bool,
+    /// 查到 `stt`：右边画麦克风，照它在哪一步、转圈转到第几帧（设计 20 第七节）。
+    mic: Option<(crate::voice::Mic, usize)>,
 }
 
 impl Facts {
@@ -50,6 +52,11 @@ impl Facts {
             ),
             // 焦点移到框下面（按钮、子代理状态行）、后台面板开着时，框里不放光标：打的字不进这里（2026-09-30 项目主人）。
             typing: seen.focus() == crate::focus::Focus::Input && seen.boxes.panel.is_none(),
+            mic: seen.link.voice.stt().then(|| {
+                let spinner_ms = u128::from(seen.config.timeline.spinner_ms.max(1));
+                let spin = seen.started.elapsed().as_millis() / spinner_ms;
+                (seen.link.voice.mic, usize::try_from(spin).unwrap_or(0))
+            }),
         }
     }
 }
@@ -115,6 +122,9 @@ pub(super) fn draw_box(
         tag: facts.tag,
     };
     draw_input(frame, areas, input, config, look);
+    if let Some(mic) = facts.mic {
+        screen.areas.mic = draw_mic(frame, areas, mic, &config.timeline.spinner);
+    }
     // 焦点不在这里也停到插入点，只是不显示（蓝图「每一帧」）。
     if let Some(pos) = input.cursor_position() {
         screen.caret.put(pos, facts.typing);
@@ -215,6 +225,33 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
         let at = Rect::new(areas.text.x - width, areas.text.y, width, 1);
         frame.render_widget(Paragraph::new(Line::styled(prompt, prompt_style)), at);
     }
+}
+
+/// 麦克风画在框里第一行文字右边、`pad_right` 那几列的头一格（设计 20 第七节「输入框右侧现在空着的那一格」）：不在听暗、在听
+/// 红、停了等字转圈。右边没留空的（窄到没有 `pad_right`）不画。交回画在哪（点它开始、停）。
+fn draw_mic(
+    frame: &mut Frame,
+    areas: Areas,
+    (mic, spin): (crate::voice::Mic, usize),
+    spinner: &[String],
+) -> Rect {
+    use crate::voice::Mic;
+    let x = areas.text.right();
+    if x + 1 >= areas.frame.right() {
+        return Rect::default();
+    }
+    let glyph = crate::sheet::mark(|m| &m.mic);
+    let (text, style) = match mic {
+        Mic::Idle => (glyph, theme::dim()),
+        Mic::Listening => (glyph, theme::error()),
+        Mic::Recognizing => {
+            let frame_glyph = spinner.get(spin % spinner.len().max(1));
+            (frame_glyph.cloned().unwrap_or(glyph), theme::accent())
+        }
+    };
+    let at = Rect::new(x, areas.text.y, 1, 1);
+    frame.render_widget(Paragraph::new(Line::styled(text, style)), at);
+    at
 }
 
 /// 跑命令的模式里提示符换成的（「人自己跑命令 `!`」第 1 条）。

@@ -43,6 +43,8 @@ pub struct Areas {
     /// 框下面那一行用量那一格（点了开 `/context`）、卡住时的「压缩」（`footer.rs` 的 `Hits`）。
     pub usage_cell: Rect,
     pub compact: Rect,
+    /// 输入框右边的麦克风（查到 `stt` 才画，点了开始、停；`input_box.rs`，设计 20）；没画的是空的。
+    pub mic: Rect,
     /// 输入框上面常驻的待办；没有时高是 0（第 4、4a 条）。
     pub todo: Rect,
     /// 侧边栏「最近会话」一行一个会话的那几行（不含标题）；没有时高是 0（第 7 条）。哪一行是哪个会话在 `Screen::recent`。

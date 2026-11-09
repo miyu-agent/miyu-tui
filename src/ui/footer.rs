@@ -47,6 +47,13 @@ pub fn draw(
         .iter()
         .map(|(text, style, _)| Part::new(0, vec![Span::styled(text.clone(), *style)]))
         .collect();
+    // 自动朗读开着：用量前面暗色写一格「自动朗读」（设计 20 第七节；`/auto-read` 开关，只在这个终端里）。界面块那几格照下标
+    // 认，这一格放在它们后面。
+    let auto_read = seen.link.voice.auto_read && seen.link.voice.tts();
+    if auto_read {
+        let tag = seen.config.text.voice.auto_tag.clone();
+        cells.push(Part::new(0, vec![Span::styled(tag, theme::dim())]));
+    }
     // 用量那一格（`usage_cell.rs`）：环、累计、花费；卡住的红字加「压缩」，正在压的转圈。
     let facts = usage_cell::Facts {
         t: &seen.talk.transcript,

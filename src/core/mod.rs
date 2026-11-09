@@ -10,6 +10,7 @@ mod abilities;
 mod asides;
 mod awaiting;
 mod backoff;
+mod bus;
 mod catalog;
 mod config;
 mod connect;

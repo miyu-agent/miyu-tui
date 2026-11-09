@@ -240,6 +240,7 @@ impl Transcript {
             | Update::ToolsChanged
             | Update::Notice(_)
             | Update::Loops(_)
+            | Update::Bus(_)
             | Update::EffortSet(_)
             | Update::PackageProgress(_)
             | Update::Older { .. }

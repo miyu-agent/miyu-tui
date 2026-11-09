@@ -268,6 +268,8 @@ pub struct Texts {
     pub languages: crate::ui::languages::Texts,
     /// `/export` 开的框里的字（`ui/export_box.rs`）。
     pub export: crate::ui::export_box::Texts,
+    /// 语音：出错的话、没听清、自动朗读（`voice.rs`，设计 20）。
+    pub voice: crate::voice::Texts,
     /// `/theme` 开的框里的字。
     pub themes: crate::ui::themes::Texts,
     /// 新会话的人格框（蓝图「新会话：人格、工作区」）。

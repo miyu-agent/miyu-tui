@@ -81,6 +81,8 @@ pub enum Update {
     EffortSet(Option<String>),
     /// 唤醒表里的循环变了（`schedules` 流，「循环」第 1 条）：整张或一项。
     Loops(super::LoopChange),
+    /// 总线上可用的名字（`bus` 流的回应、`bus.changed`，核心 BUS-2）：整份。
+    Bus(Vec<String>),
     /// 装包的下载进度（`package.progress`，核心 G-4 上）。
     PackageProgress(Progress),
     /// 配置里头要的几项（界面语言、金额排最前的币种）：连上时读一次，别处改了再读（「界面语言」）。
