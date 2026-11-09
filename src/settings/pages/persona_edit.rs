@@ -240,6 +240,10 @@ impl Settings {
     pub(in crate::settings) fn set_persona(&mut self, id: &str, mut body: Value, open: bool) {
         if !id.is_empty() {
             body["persona"] = json!(id);
+            // 新建写了 id 的：已经有这个 id 的让核心拒，不改掉那一份（核心 ID-1，发版前 check 28）。
+            if open {
+                body["new"] = json!(true);
+            }
         }
         let waiting = Waiting::PersonaSaved(id.to_string(), open);
         self.ask("persona.set", body, waiting);

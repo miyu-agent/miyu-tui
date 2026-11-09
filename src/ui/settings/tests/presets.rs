@@ -36,7 +36,14 @@ fn a_new_preset_or_persona_window_is_titled_by_its_name_before_the_list_is_read_
         two: Default::default(),
     }));
     let (text, _) = screen(&mut p, &config, 100, 30);
-    assert!(!text.contains("preset-1"), "编号不出现：\n{text}");
+    // 标题不写编号；名字上面一行写 id（发版前 check 28，2026-11-09 项目主人：命令行里要用）。
+    let id_line = |text: &str, id: &str| {
+        text.lines().any(|l| {
+            let words: Vec<&str> = l.split_whitespace().collect();
+            words.windows(2).any(|w| w == ["id", id])
+        })
+    };
+    assert!(id_line(&text, "preset-1"), "名字上面写 id：\n{text}");
     assert!(
         text.lines().any(|l| l.trim() == "我的预设"),
         "标题写名字：\n{text}"
@@ -48,7 +55,7 @@ fn a_new_preset_or_persona_window_is_titled_by_its_name_before_the_list_is_read_
         cursor: 0,
     }));
     let (text, _) = screen(&mut p, &config, 100, 30);
-    assert!(!text.contains("persona-1"), "编号不出现：\n{text}");
+    assert!(id_line(&text, "persona-1"), "名字上面写 id：\n{text}");
 }
 
 #[test]
