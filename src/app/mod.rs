@@ -61,6 +61,7 @@ mod output;
 mod packages;
 mod pages;
 mod paste;
+mod skill_word;
 pub(crate) use paste::attach_rule;
 mod pick_edit;
 pub mod prefix_ask;
@@ -217,7 +218,9 @@ impl App {
             self.widget_page_event(event);
             return;
         }
-        let menu_open = self.menu_matches().is_some() || self.mention_found().is_some();
+        let menu_open = self.menu_matches().is_some()
+            || self.mention_found().is_some()
+            || self.skill_found().is_some();
         let event = self.vim_keys(event, menu_open);
         let action = match event {
             // Windows 上松开键也报一次，只认按下和按住。

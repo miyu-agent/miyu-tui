@@ -100,6 +100,7 @@ mod notices;
 mod pools;
 mod prefix;
 mod recent;
+mod skill_word;
 mod status;
 mod switching;
 mod theme_auto;

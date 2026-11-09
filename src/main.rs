@@ -66,6 +66,7 @@ mod sheet;
 mod shellhook;
 mod shown_files;
 mod side_select;
+mod skill_word;
 mod startup;
 mod tabs;
 mod theme;

@@ -294,8 +294,8 @@ impl App {
         // 命令的回执弹提示，去掉句末的句号，和别的提示一样；`/clear` 不弹，正文里已有「上下文已清空」那一行（蓝图
         // 「斜杠命令」`/stop`，2026-10-07 项目主人：提示框里不要句号）。
         // 核心认的斜杠命令：清单到了接上；交给核心的那一行被拒弹原话、放回输入框（`catalog.rs`）。
-        if let Update::Catalog(listed) = &update {
-            self.catalog_arrived(listed);
+        if let Update::Catalog(listed, skills) = &update {
+            self.catalog_arrived(listed, skills.as_deref());
             return;
         }
         // 界面块：整份、一块一块换；调方法被拒的弹原话（`widgets.rs`）。

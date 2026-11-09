@@ -112,6 +112,7 @@ impl App {
                 input,
                 menu: Menu::default(),
                 mention,
+                skill_word: crate::skill_word::Picker::default(),
                 history: History::default(),
                 history_placed: false,
                 old_history,

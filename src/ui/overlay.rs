@@ -5,7 +5,7 @@ use ratatui::Frame;
 use ratatui::text::Line;
 
 use super::panel::Chrome;
-use super::{Areas, background, history, mention, menu};
+use super::{Areas, background, history, mention, menu, skill_list};
 use crate::app::{App, Lists};
 
 /// 画开着的那一个：`history`、`panel` 是先排好的行（占几行由它们定，`ui::draw`）。
@@ -45,6 +45,20 @@ pub(super) fn draw(
                     &app.typing.mention.mode,
                 ),
             ),
+        );
+        menu::draw(frame, areas.menu, areas.menu_text, chrome, lines);
+    }
+    if let Some(found) = &lists.skills {
+        let rows = menu::rows(app.config.layout.menu_rows, areas.menu_text.height);
+        let picker = &app.typing.skill_word;
+        let words = &app.config.text.skill_word;
+        let hint = skill_list::hint(words, app.config.layout.vim, &picker.mode);
+        let (chrome, lines) = skill_list::lines(
+            found,
+            (picker.selected, picker.pinned),
+            rows,
+            areas.menu_text.width,
+            (words, hint),
         );
         menu::draw(frame, areas.menu, areas.menu_text, chrome, lines);
     }

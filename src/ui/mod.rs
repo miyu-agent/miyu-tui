@@ -68,6 +68,7 @@ mod mention;
 mod menu;
 pub mod row_cache;
 pub mod rows;
+mod skill_list;
 mod start_pick;
 mod status;
 pub mod status_box;
@@ -139,7 +140,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         sidebar::split(frame.area(), &app.config.layout)
     };
     // 要改状态的先做完：换提示、两个列表（几个列表占同一个地方，开哪个照 `app/frame.rs`）。
-    let crate::app::Lists { mentions, matches } = app.before_frame();
+    let crate::app::Lists {
+        mentions,
+        skills,
+        matches,
+    } = app.before_frame();
     let running = app.talk.transcript.running.is_some();
     let queued: Vec<String> = app
         .talk
@@ -305,6 +310,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         history_rows.len()
     } else if let Some(found) = &mentions {
         found.items.len().clamp(1, menu_shown)
+    } else if let Some(found) = &skills {
+        found.items.len().clamp(1, menu_shown)
     } else {
         matches.as_ref().map_or(0, |m| m.len().min(menu_shown))
     };
@@ -406,7 +413,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     };
     status::queued(frame, areas.queued, &queued, &look);
     goal_tag::draw_line(frame, app, areas.goal, home);
-    let lists = crate::app::Lists { mentions, matches };
+    let lists = crate::app::Lists {
+        mentions,
+        skills,
+        matches,
+    };
     let history = (history_chrome, history_rows);
     overlay::draw(
         frame,

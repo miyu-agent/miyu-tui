@@ -109,7 +109,8 @@ pub enum Update {
         rates: Vec<String>,
     },
     /// 核心认的斜杠命令（[`Command::Catalog`] 的回应）。
-    Catalog(Vec<CoreCommand>),
+    /// 带着能用 `$` 点名的技能（核心 SK-1；旧核心没有这一格的是 `None`）。
+    Catalog(Vec<CoreCommand>, Option<Vec<super::CoreSkill>>),
     /// 订阅界面块的回应：装着、开着的扩展声明的全部块。
     Widgets(Vec<crate::widgets::Block>),
     /// 一块界面块变了（`widget.changed`）；`None` 是关掉、卸掉了。

@@ -309,6 +309,15 @@
     "picking": "j/k select · h/l move cursor · / filter · Tab open folder · Enter insert · Esc close",
     "filtering": "Enter confirm · Esc cancel filter"
   },
+  "skill_word": {
+    "title": "$ {query}",
+    "count": " · {count}",
+    "empty": "No matches",
+    "hints": "↑/↓ select · Enter insert · Esc close",
+    "vim_hints": "Ctrl+J/K select · Enter insert · Esc pick in list",
+    "picking": "j/k select · h/l move cursor · / filter · Enter insert · Esc close",
+    "filtering": "Enter confirm · Esc cancel filter"
+  },
   "usage_cell": {"failed": "Context compaction failed", "over": "Context exceeds the window", "compact": "Compact", "compacting": "Compacting context"},
   "history": {
     "title": "History",

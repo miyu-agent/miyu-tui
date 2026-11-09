@@ -63,7 +63,7 @@ use backoff::Backoff;
 use connect::connect;
 
 pub use abilities::Abilities;
-pub use catalog::CoreCommand;
+pub use catalog::{CoreCommand, CoreSkill};
 pub use config::HeadConfig;
 pub use cost::{Bill, Cost, Split, UsageAsk, UsageKind, UsageRow, rows as usage_rows};
 pub use efforts::{EffortList, Efforts, wanted as wanted_models};
@@ -104,6 +104,8 @@ pub enum Command {
         cwd: Option<String>,
         /// 人用 `!` 打的命令（核心 SH-1，排期第 21 条）：`text` 是命令行，核心照会话的工作目录跑；不能带附件。
         shell: bool,
+        /// 这句话里用 `$` 点了的技能（核心 SK-1，发版前 check 26）：照先后；空的不带。
+        skills: Vec<String>,
     },
     /// 打断在进行的这一轮。`send` 为真时排着队的消息接着发（两下 Esc），为假时退回来（Ctrl+C）。
     Interrupt {

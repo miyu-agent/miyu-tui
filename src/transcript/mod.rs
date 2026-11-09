@@ -245,7 +245,7 @@ impl Transcript {
             | Update::Older { .. }
             | Update::Workspace { .. }
             | Update::SessionGone(_)
-            | Update::Catalog(_)
+            | Update::Catalog(..)
             | Update::SlashRefused { .. }
             | Update::Widgets(_)
             | Update::WidgetChanged { .. }

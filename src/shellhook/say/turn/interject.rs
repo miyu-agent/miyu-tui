@@ -54,6 +54,7 @@ impl Turn {
             files,
             cwd: self.cwd.clone(),
             shell: false,
+            skills: Vec::new(),
         });
         // 她在答：正文里记成排着的（`queued`），听到了再挪进这一轮（同全屏）。
         self.transcript

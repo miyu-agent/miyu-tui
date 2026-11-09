@@ -45,7 +45,7 @@ pub use goal::GoalTexts;
 pub use icons::Icons;
 pub use layout::{Bar, Dots, Layout, Shimmer, TodoMarks};
 pub use loops::LoopTexts;
-pub use mention::{MentionLook, MentionTexts};
+pub use mention::{MentionLook, MentionTexts, SkillWordTexts};
 pub use motion::CompactionMotion;
 pub use notes::CompactionTexts;
 pub use notify::{NotifyLook, NotifyTexts};
@@ -124,6 +124,8 @@ pub struct Texts {
     pub attach: AttachTexts,
     /// `@` 文件列表上写的。
     pub mention: MentionTexts,
+    /// `$` 点名技能的列表上写的（发版前 check 26）。
+    pub skill_word: SkillWordTexts,
     /// `Ctrl+V` 读不到剪贴板时的提示。
     pub clipboard_unreadable: String,
     /// 抽屉、历史搜索里 `Ctrl+V` 读不成字（多半剪贴板里是图片）：这里只收字。

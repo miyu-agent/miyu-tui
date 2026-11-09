@@ -14,9 +14,17 @@ pub(super) fn request(
         // 全屏不带 `cwd`：工作区是会话的属性（核心 9-7 上）。shellhook 带：这一句照 shell 所在的目录说（核心 05eb8159）。人用 `!`
         // 打的命令多 `shell: true`（核心 SH-1）。
         Command::Send {
-            text, cwd, shell, ..
+            text,
+            cwd,
+            shell,
+            skills,
+            ..
         } => {
             let mut params = json!({"session": session, "text": text});
+            // 点了的技能（核心 SK-1）：核心照先后把正文放在这句话前面，字照原样记。
+            if !skills.is_empty() {
+                params["skills"] = json!(skills);
+            }
             if let Some(cwd) = cwd {
                 params["cwd"] = json!(cwd);
             }
@@ -180,6 +188,7 @@ mod tests {
             files: Vec::new(),
             cwd: None,
             shell: false,
+            skills: Vec::new(),
         };
         let expected = json!({"session": "s", "text": "你好"});
         assert_eq!(request(said, "s"), Some(("session.send", expected)));
@@ -189,6 +198,7 @@ mod tests {
             files: Vec::new(),
             cwd: Some("/srv".into()),
             shell: false,
+            skills: Vec::new(),
         };
         let expected = json!({"session": "s", "text": "你好", "cwd": "/srv"});
         assert_eq!(request(here, "s"), Some(("session.send", expected)));
@@ -198,9 +208,20 @@ mod tests {
             files: Vec::new(),
             cwd: None,
             shell: true,
+            skills: Vec::new(),
         };
         let expected = json!({"session": "s", "text": "ls", "shell": true});
         assert_eq!(request(ran, "s"), Some(("session.send", expected)));
+        // 用 `$` 点了技能的带上（核心 SK-1，发版前 check 26），字照原样。
+        let named = Command::Send {
+            text: "$pdf 读一下".into(),
+            files: Vec::new(),
+            cwd: None,
+            shell: false,
+            skills: vec!["pdf".into()],
+        };
+        let expected = json!({"session": "s", "text": "$pdf 读一下", "skills": ["pdf"]});
+        assert_eq!(request(named, "s"), Some(("session.send", expected)));
     }
 
     #[test]
