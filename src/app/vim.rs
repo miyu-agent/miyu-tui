@@ -15,8 +15,18 @@ impl App {
             || (self.talk.drawers.open()
                 && !self.talk.drawers.editing()
                 && !self.talk.drawers.command_scrolls());
-        // 开着时不能打字的框；抽屉开着时按键先归抽屉（它自己认 vim 键）。
-        let no_typing = !self.talk.drawers.open()
+        let no_typing = self.no_typing();
+        match event {
+            Event::Key(key) => Event::Key(plain(step(key, listing), no_typing)),
+            other => other,
+        }
+    }
+}
+
+impl App {
+    /// 开着时不能打字的框；抽屉开着时按键先归抽屉（它自己认 vim 键）。
+    fn no_typing(&self) -> bool {
+        !self.talk.drawers.open()
             && (self.vim_list_idle()
                 || matches!(
                     self.boxes.panel,
@@ -36,15 +46,16 @@ impl App {
                             | Panel::Tools { .. }
                             | Panel::Context { .. }
                     )
-                ));
-        match event {
-            Event::Key(key) => Event::Key(plain(step(key, listing), no_typing)),
-            other => other,
-        }
+                ))
     }
-}
 
-impl App {
+    /// 按键是 `j`、`k` 这些、不是在打字：不能打字的框开着，或者按键模式是 Vim、`@` 文件列表里按了 `Esc` 在选。输入法照它关成
+    /// 英文（发版前 check 16，2026-11-09 验收时项目主人：「这个没改啊？」——中文输入法开着，`j`、`k` 进了输入法，到不了列表）。
+    pub(super) fn keys_not_typing(&self) -> bool {
+        self.no_typing()
+            || (self.config.layout.vim && self.typing.mention.mode == crate::mention::Mode::Picking)
+    }
+
     /// 按键模式是 Vim，会话列表、`/model` 开着、没在打搜索的字（`list_search.rs`）。
     fn vim_list_idle(&self) -> bool {
         if !self.config.layout.vim {
@@ -123,5 +134,21 @@ mod tests {
             "能打字的列表照常打字"
         );
         assert_eq!(super::plain(plain('x'), true), plain('x'));
+    }
+
+    /// 发版前 check 16（2026-11-09 验收时项目主人：「这个没改啊？」）：Vim 模式下 `@` 列表里按了 `Esc` 在选，`j`、`k` 不是打字，
+    /// 输入法关成英文；不是 Vim 的照旧算在打字。
+    #[test]
+    fn picking_in_the_mention_list_turns_the_input_method_off() {
+        let (mut app, _sent) = crate::app::test_support::app();
+        app.config.layout.vim = true;
+        app.tick();
+        assert_eq!(app.typing.ime.wants_typing(), Some(true), "平常在打字");
+        app.typing.mention.mode = crate::mention::Mode::Picking;
+        app.tick();
+        assert_eq!(app.typing.ime.wants_typing(), Some(false), "在列表里选");
+        app.config.layout.vim = false;
+        app.tick();
+        assert_eq!(app.typing.ime.wants_typing(), Some(true), "不是 Vim 的照旧");
     }
 }

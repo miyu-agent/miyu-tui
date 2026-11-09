@@ -71,6 +71,12 @@ impl Ime {
         self.sync();
     }
 
+    /// 界面要的是不是在打字（测试看）。
+    #[cfg(test)]
+    pub fn wants_typing(&self) -> Option<bool> {
+        self.typing
+    }
+
     /// 终端到了前台、去了后台：去了后台的不切，回来补上这期间变了的。
     pub fn focus(&mut self, gained: bool) {
         self.away = !gained;
