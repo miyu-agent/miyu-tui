@@ -141,7 +141,10 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
         (&words.detail[2], examples),
         (&words.detail[3], written(detail.reminders)),
     ];
+    let id_label = &words.create.sides[0];
     let label_w = rows.iter().map(|(n, _)| n.width()).max().unwrap_or(0);
+    let label_w = label_w.max(id_label.width());
+    id_row(lines, id_label, label_w, &view.id);
     for (i, (name, value)) in rows.into_iter().enumerate() {
         let pad = " ".repeat(label_w.saturating_sub(name.width()));
         lines.body.push(Body {
@@ -153,6 +156,20 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
             hit: None,
         });
     }
+}
+
+/// 名字上面一行 id，暗色、光标不停（发版前 check 28，2026-11-09 项目主人：「没有这个id，就没法知道cli调用的时候人格对应
+/// 哪个人格」）。
+fn id_row(lines: &mut Lines, label: &str, label_w: usize, id: &str) {
+    let pad = " ".repeat(label_w.saturating_sub(label.width()));
+    lines.body.push(Body {
+        line: Line::from(vec![
+            Span::styled(format!("  {label}{pad}  "), theme::dim()),
+            Span::styled(id.to_string(), theme::dim()),
+        ]),
+        focused: false,
+        hit: None,
+    });
 }
 
 /// 预设的窗（蓝图「配置页」第 38 条）：名字、描述，空一行，下面照功能树画（`ui/feature_tree.rs`，核心设计 52：两列、组名
@@ -201,7 +218,10 @@ pub(super) fn preset(
             &detail.summary,
         ),
     ];
+    let id_label = &words.create.sides[0];
     let label_w = rows.iter().map(|(_, _, n, _)| n.width()).max().unwrap_or(0);
+    let label_w = label_w.max(id_label.width());
+    id_row(lines, id_label, label_w, &view.id);
     for (field, key, name, value) in rows {
         let pad = " ".repeat(label_w.saturating_sub(name.width()));
         let lead = format!("  {name}{pad}  ");

@@ -83,6 +83,10 @@ fn the_id_comes_first_and_is_checked_before_the_name_is_sent() {
     press(&mut page, KeyCode::Enter);
     let params = sent(&mut page).expect("交了");
     assert_eq!(params["persona"], "writer");
+    assert_eq!(
+        params["new"], true,
+        "写了 id 的新建让核心查重（核心 ID-1，发版前 check 28）"
+    );
     assert_eq!(params["changes"][0]["value"], "写手");
     assert!(!matches!(page.popup, Some(Popup::Create(_))), "窗关上");
 }
@@ -103,6 +107,7 @@ fn an_empty_id_lets_the_core_pick_one_but_the_name_is_required() {
     press(&mut page, KeyCode::Enter);
     let params = sent(&mut page).expect("交了");
     assert!(params.get("persona").is_none(), "不写 id，核心起：{params}");
+    assert!(params.get("new").is_none(), "{params}");
 }
 
 #[test]
