@@ -19,6 +19,8 @@ pub struct History {
     pub selected: usize,
     /// 鼠标钉住的露出来的那一段（`menu::pin`）；按键选、打字放开。
     pub pinned: Option<usize>,
+    /// 按键模式是 Vim 时按了 `/` 正在打搜索的字（`list_search.rs`，发版前 check 第 31 条）；没在打时 `j` `k` 上下。
+    pub typing: bool,
 }
 
 impl History {
@@ -77,9 +79,9 @@ impl History {
         self.pinned = None;
     }
 
-    /// 删掉搜索的最后一个字，选中回到最新的一条。
-    pub fn backspace(&mut self) {
-        self.query.pop();
+    /// 搜索的字换成 `query`（`list_search.rs` 交回的），选中回到最新的一条。
+    pub fn set_query(&mut self, query: String) {
+        self.query = query;
         self.selected = 0;
         self.pinned = None;
     }
@@ -144,12 +146,7 @@ mod tests {
             (texts(h.matches(&sent())), h.selected),
             (vec!["看看 README"], 0)
         );
-        h.backspace();
-        h.backspace();
-        h.backspace();
-        h.backspace();
-        h.backspace();
-        h.backspace();
+        h.set_query(String::new());
         h.type_text("测试");
         assert_eq!(
             texts(h.matches(&sent())),

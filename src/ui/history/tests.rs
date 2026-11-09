@@ -19,6 +19,11 @@ fn sent(text: &str, ago: u64, now: SystemTime) -> Sent {
     }
 }
 
+/// 预览框里的一行去掉左右的边。
+fn inside(line: &str) -> &str {
+    line.trim_start_matches('│').trim_end_matches('│').trim()
+}
+
 fn plain(rows: &[super::Row]) -> Vec<String> {
     rows.iter()
         .map(|(_, l)| l.to_string().trim_end().to_string())
@@ -59,17 +64,26 @@ fn time_on_the_left_preview_and_search_below_and_clicks_find_their_entry() {
         "选中的铺强调色的底、字深色"
     );
     assert_eq!(rows[2].1.width(), 40);
-    // 下面一条横线、选中那条的全文、一条横线、搜索那一行（没打字写「筛选历史…」）。
+    // 下面一个圆角框装着选中那条的全文（发版前 check 第 31 条），一条横线、搜索那一行（没打字写「筛选历史…」）。
     let rule = |l: &str| !l.is_empty() && l.chars().all(|c| c == '─');
-    assert!(rule(&text[3]) && rule(&text[5]), "{text:?}");
-    assert_eq!(text[4], "  新的");
     assert!(
-        text[6].ends_with(&config.text.history.placeholder),
+        text[3].starts_with('╭') && text[3].ends_with('╮'),
         "{text:?}"
     );
-    assert_eq!(rows.len(), 7);
-    // 框里放字的那一块从第 10 行起：列表点得中那一条，预览算选中的，横线、搜索那一行点不中。
-    let text_area = Rect::new(0, 10, 40, 7);
+    assert!(text[4].starts_with("│ 新的 ") && text[4].ends_with(" │"));
+    assert!(
+        text[5].starts_with('╰') && text[5].ends_with('╯'),
+        "{text:?}"
+    );
+    assert_eq!(rows[4].1.width(), 40, "预览框和列表一样宽");
+    assert!(rule(&text[6]), "{text:?}");
+    assert!(
+        text[7].ends_with(&config.text.history.placeholder),
+        "{text:?}"
+    );
+    assert_eq!(rows.len(), 8);
+    // 框里放字的那一块从第 10 行起：列表点得中那一条，预览框算选中的，横线、搜索那一行点不中。
+    let text_area = Rect::new(0, 10, 40, 8);
     assert_eq!(index_at(text_area, &rows, 12), Some(0));
     assert_eq!(index_at(text_area, &rows, 10), Some(2));
     assert_eq!(
@@ -77,8 +91,8 @@ fn time_on_the_left_preview_and_search_below_and_clicks_find_their_entry() {
         Some(0),
         "预览算选中的那一条"
     );
-    assert_eq!(index_at(text_area, &rows, 13), None);
     assert_eq!(index_at(text_area, &rows, 16), None);
+    assert_eq!(index_at(text_area, &rows, 17), None);
     assert_eq!(index_at(text_area, &rows, 9), None, "框的上边点不中");
 }
 
@@ -157,7 +171,7 @@ fn a_long_entry_is_clipped_in_the_list_and_shown_whole_below() {
         "{text:?}"
     );
     assert_eq!(rows[0].1.width(), 30);
-    let shown: String = text[2..text.len() - 2].iter().map(|l| l.trim()).collect();
+    let shown: String = text[2..text.len() - 3].iter().map(|l| inside(l)).collect();
     assert_eq!(shown, long, "预览折行写全：{text:?}");
 }
 
@@ -189,7 +203,8 @@ fn the_preview_keeps_its_height_and_caps_long_ones() {
     let (_, tall) = lines(&history, &found, 40, &config, now, usize::MAX);
     assert_eq!(short.len(), tall.len(), "{:?}", plain(&short));
     let text = plain(&tall);
-    assert_eq!(text[3..6], ["  甲", "  乙", "  丙"], "{text:?}");
+    let body: Vec<&str> = text[3..6].iter().map(|l| inside(l)).collect();
+    assert_eq!(body, ["甲", "乙", "丙"], "{text:?}");
     // 太长的：最多 history_preview_rows 行，最后一行写还有几行。
     let long: String = (1..=20).map(|n| format!("第 {n} 行\n")).collect();
     let list = [sent(&long, 0, now)];
@@ -197,8 +212,11 @@ fn the_preview_keeps_its_height_and_caps_long_ones() {
     let (_, rows) = lines(&History::default(), &found, 40, &config, now, usize::MAX);
     let cap = config.layout.history_preview_rows;
     let text = plain(&rows);
-    assert_eq!(rows.len(), 1 + 1 + cap + 1 + 1);
-    assert_eq!(text[1 + cap], format!("  ⋮ 还有 {} 行", 20 - (cap - 1)));
+    assert_eq!(rows.len(), 1 + 1 + cap + 1 + 1 + 1);
+    assert_eq!(
+        inside(&text[1 + cap]),
+        format!("⋮ 还有 {} 行", 20 - (cap - 1))
+    );
 }
 
 #[test]
@@ -214,13 +232,13 @@ fn a_short_window_shrinks_the_preview_first_and_keeps_the_search_row() {
         sent("戊", 240, now),
     ];
     let found: Vec<&Sent> = list.iter().collect();
-    // 9 行：搜索那一行和横线 2 行，列表至少 3 条，剩下 4 行给预览（横线 + 3 行）。
+    // 9 行：搜索那一行和横线 2 行，列表至少 3 条，剩下 4 行给预览（框的上下两条边 + 2 行）。
     let (_, rows) = lines(&History::default(), &found, 40, &config, now, 9);
     let text = plain(&rows);
     assert_eq!(rows.len(), 9, "{text:?}");
     assert!(text[2].starts_with("❯ "), "列表留三条、选中的在：{text:?}");
     assert!(
-        text[4].contains("第 1 行") && text[6].contains("还有"),
+        text[4].contains("第 1 行") && text[5].contains("还有"),
         "{text:?}"
     );
     assert!(text[8].ends_with(&config.text.history.placeholder));
@@ -232,4 +250,33 @@ fn a_short_window_shrinks_the_preview_first_and_keeps_the_search_row() {
         text[3].starts_with("❯ ") && text[5].ends_with(&config.text.history.placeholder),
         "{text:?}"
     );
+}
+
+/// 发版前 check 第 31 条：按键模式是 Vim 的，下边框照会话列表写「/ 搜索 · j/k 选择」，没按 `/` 时搜索那一行不画光标；
+/// 按了 `/` 写打字的那一句、画光标。
+#[test]
+fn with_vim_keys_the_hint_and_the_caret_follow_the_slash() {
+    let mut config = Config::builtin().unwrap();
+    config.layout.vim = true;
+    let now = SystemTime::now();
+    let list = [sent("一行", 0, now)];
+    let found: Vec<&Sent> = list.iter().collect();
+    let caret = crate::sheet::mark(|m| &m.caret);
+    let (chrome, rows) = lines(&History::default(), &found, 40, &config, now, usize::MAX);
+    assert_eq!(
+        chrome.hint.as_deref(),
+        Some(config.text.history.hints_vim.as_str())
+    );
+    let search = plain(&rows).pop().unwrap();
+    assert!(!search.contains(&caret), "{search:?}");
+    let typing = History {
+        typing: true,
+        ..History::default()
+    };
+    let (chrome, rows) = lines(&typing, &found, 40, &config, now, usize::MAX);
+    assert_eq!(
+        chrome.hint.as_deref(),
+        Some(config.text.history.searching.as_str())
+    );
+    assert!(plain(&rows).pop().unwrap().contains(&caret));
 }
