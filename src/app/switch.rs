@@ -331,8 +331,19 @@ impl App {
         }
     }
 
-    /// 换上停放着的 `session`，原来那个照 `keep` 停放或者不要了。
+    /// 换上停放着的 `session`，原来那个照 `keep` 停放或者不要了。输入框里没发的那句留给原来那个会话，换上来的放回它自己的
+    /// （没有的空着；发版前 check 第 17 条）。
     fn swap_in(&mut self, session: &str, keep: bool) {
+        let typed = self.typing.input.draft();
+        if let Some(was) = self.talk.transcript.session.clone() {
+            if typed == crate::input::Draft::default() {
+                self.typing.drafts.remove(&was);
+            } else {
+                self.typing.drafts.insert(was, typed);
+            }
+        }
+        let own = self.typing.drafts.remove(session).unwrap_or_default();
+        self.typing.input.editor.set_draft(own);
         self.park_current(keep);
         if let Some(back) = self.talk.parked.remove(session) {
             self.talk.left.retain(|s| s != session);
