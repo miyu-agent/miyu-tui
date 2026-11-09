@@ -83,7 +83,8 @@ impl App {
         }
         self.link.core.send(Command::Delete(session));
         let done = self.config.text.sessions.deleted.replace("{title}", &title);
-        self.hint(done, true);
+        // 普通通知的颜色，不用绿色（同一天验收时项目主人）。
+        self.hint(done, false);
     }
 
     /// 主会话不存在了（在别处删了、`--resume` 的编号不对；review B3，2026-10-11 项目主人定）：切过去的就是它的先换上来，
