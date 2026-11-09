@@ -314,6 +314,7 @@ impl App {
             | Run::Edit
             | Run::Recap
             | Run::Rename
+            | Run::Delete
             | Run::Goal
                 if !self.reachable() =>
             {
@@ -328,6 +329,7 @@ impl App {
             | Run::Edit
             | Run::Recap
             | Run::Rename
+            | Run::Delete
                 if self.not_opened() =>
             {
                 self.nothing_yet(spec.run);
@@ -358,6 +360,7 @@ impl App {
             Run::ToolList => self.open_tool_list(),
             Run::Context => self.open_context(),
             Run::New => self.new_session(),
+            Run::Delete => self.delete_current(),
             Run::Revert => self.undo(),
             Run::Unrevert => self.link.core.send(Command::Unrevert),
             Run::Compact => self.compact(words),

@@ -186,6 +186,7 @@
     "session_sealed": "Session sealed",
     "archived": "This is an archive and can't be continued",
     "nothing_to_rename": "No session yet; say something first, then rename",
+    "nothing_to_delete": "No session to delete",
     "nothing_to_recap": "Nothing to recap yet",
     "recap_failed": "The recap could not be written, try again",
     "nothing_to_compact": "Not enough context",
