@@ -87,6 +87,13 @@ impl App {
     /// 一档的照它，不拿配置的盖掉（核心 SM-1）。
     fn footer_effort(&mut self, list: &EffortList) {
         let Some(target) = self.effort_target(list).cloned() else {
+            // 还没开会话、默认的是池（`@` 打头，没有思考强度可写）：底栏照写池（发版前 check 第 15 条，2026-11-09 项目主人报：
+            // 原来这里就返回了，新会话页一直写着上一个会话带过来的模型）
+            if self.talk.transcript.model_ref().is_none()
+                && let Some(chat) = list.chat.as_deref().filter(|c| c.starts_with('@'))
+            {
+                self.talk.transcript.show_default(chat, None);
+            }
             return;
         };
         if self.talk.transcript.model_ref().is_none() {

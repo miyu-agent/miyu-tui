@@ -111,26 +111,32 @@ impl Transcript {
     /// 2026-10-20 项目主人报：空会话里 `/model` 没有圆点。
     pub fn current_ref(&self) -> Option<String> {
         self.model_ref().map(str::to_string).or_else(|| {
-            self.model
-                .as_ref()
-                .map(|(model, endpoint)| format!("{endpoint}/{model}"))
+            // 池照写（`show_reference` 记成没有供应商的一格），不拼成 `/@池`
+            self.model.as_ref().map(|(model, endpoint)| {
+                if endpoint.is_empty() {
+                    model.clone()
+                } else {
+                    format!("{endpoint}/{model}")
+                }
+            })
         })
     }
 
-    /// 还没开会话：底栏照默认的聊天模型（`models.chat`）写模型和这一档；开了会话的不动（照推来的）。
+    /// 还没开会话：底栏照默认的聊天模型（`models.chat`）写模型和这一档；开了会话的不动（照推来的）。默认的是池的照写池
+    /// （发版前 check 第 15 条，2026-11-09 项目主人报：用池聊过一轮再 `/new`，新会话页写的是上一轮轮到的那个模型——
+    /// 原来只认 `供应商/模型`，池的不换，带过来的那个一直留着）。
     pub fn show_default(&mut self, reference: &str, effort: Option<String>) {
         if self.models.reference.is_some() {
             return;
         }
-        if let Some((endpoint, model)) = reference.split_once('/') {
-            self.model = Some((model.to_string(), endpoint.to_string()));
-        }
+        self.show_reference(reference);
         self.models.effort = effort;
     }
 
-    /// 底栏现在写的模型、思考强度：开新会话时带过去，等核心交回默认的再换（不闪一下空的）。
+    /// 底栏现在写的模型、思考强度：开新会话时带过去，等核心交回默认的再换（不闪一下空的）。带的是底栏写着的那一个：用池的
+    /// 会话带池，不带轮到的成员（发版前 check 第 15 条）。
     pub fn footer_model(&self) -> (Option<(String, String)>, Option<String>) {
-        (self.model.clone(), self.models.effort.clone())
+        (self.shown_model(), self.models.effort.clone())
     }
 
     /// 接着写带过来的模型、思考强度（[`Transcript::footer_model`]）。

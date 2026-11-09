@@ -235,3 +235,27 @@ fn with_vim_keys_a_slash_searches_and_enter_keeps_the_filter() {
     tui.pump(Duration::from_millis(300));
     assert!(!tui.shows("dev · 64k"), "再按 Esc 关框");
 }
+
+/// 发版前 check 第 10、15 条（2026-11-09 项目主人）：固定的池在底栏写 `@日常池`，不写 `@normal`；用池聊过一轮再 `/new`，
+/// 新会话页的底栏还是那个池，不是上一轮轮到的那个模型。
+#[test]
+fn a_fixed_pool_is_named_and_a_new_session_keeps_the_pool() {
+    let settings = TWO
+        .replace("chat = \"deepseek/deepseek-v4\"", "chat = \"@normal\"")
+        .replace("[pools.duo]", "[pools.normal]");
+    let home = Home::with_settings(Script::new([Play::Says("好。")]), &settings);
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("工作区");
+    wait_footer(&mut tui, "@日常池");
+    tui.say("在吗");
+    tui.wait_for("好。");
+    tui.pump(Duration::from_millis(500));
+    tui.say("/new");
+    tui.pump(Duration::from_millis(500));
+    wait_footer(&mut tui, "@日常池");
+    let line = footer(&tui);
+    assert!(
+        !line.contains("deepseek") && !line.contains("@normal"),
+        "{line}"
+    );
+}
