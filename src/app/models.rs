@@ -24,11 +24,13 @@ impl App {
 
     /// 核心交回了一行行。
     pub(super) fn models_listed(&mut self, mut all: Vec<Choice>) {
-        // 固定的三个池写给人看的名字 `@旗舰池`（`pools.rs`；2026-11-09 项目主人：写 `@旗舰池`，不写 `@flagship`，原来的 `@名字`
-        // 也不再接在暗色那一截前面）。筛的时候照旧认引用。
+        // 固定的三个池写给人看的名字 `@旗舰池`（`pools.rs`；2026-11-09 项目主人：写 `@旗舰池`，不写 `@flagship`）。编号不带 `@`
+        // 接在暗色那一截前面：`flagship · pin · 1`（同一天验收时项目主人：「id 还是要加上」）。筛的时候照旧认引用。
         let names = &self.config.text.settings.pool_names;
         for choice in &mut all {
             if let Some(name) = crate::pools::label(&choice.reference, names) {
+                let id = choice.reference.trim_start_matches('@');
+                choice.detail = format!("{id}{}{}", crate::sheet::sep(), choice.detail);
                 choice.name = name;
             }
         }

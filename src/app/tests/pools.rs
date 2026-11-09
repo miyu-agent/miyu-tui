@@ -20,9 +20,10 @@ fn the_fixed_pools_show_their_names_with_an_at() {
     let all = &app.boxes.model_list.as_ref().unwrap().all;
     assert_eq!(all[0].name, "@旗舰池");
     assert_eq!(
-        all[0].detail, "pin · 2",
-        "不再把 @flagship 接在暗色那一截前面"
+        all[0].detail, "flagship · pin · 2",
+        "编号不带 @ 接在暗色那一截前面（发版前 check 10 验收）"
     );
+    assert_eq!(all[1].detail, "pin · 2", "人建的池名字就是编号，不再接");
     assert_eq!(all[0].reference, "@flagship", "交给核心的照旧");
     assert_eq!(all[1].name, "@duo", "人建的池照旧");
     assert_eq!(all[2].name, "dev/m1");
