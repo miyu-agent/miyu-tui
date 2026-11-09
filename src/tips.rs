@@ -121,4 +121,27 @@ mod tests {
         one.see(true, 1);
         assert_eq!(one.at(), 0, "只有一条就一直是它");
     }
+
+    /// 发版前 check 25（2026-11-09 项目主人：「输入框背景里的tips需要更新了」）：这批新功能里 `$` 点名技能、`@` 引用文件、
+    /// `/delete` 等都有一条；三种语言条数一样。
+    #[test]
+    fn the_tips_cover_the_new_features_in_every_language() {
+        let zh = crate::config::Config::builtin().unwrap().text.tips;
+        for start in ["$ ", "@ ", "Ctrl+G", "/delete", "/jump"] {
+            assert!(
+                zh.iter().any(|t| t.starts_with(start)),
+                "少了「{start}」那条：{zh:?}"
+            );
+        }
+        for lang in ["en", "ja"] {
+            let path = format!("{}/resources/text/{lang}.json", env!("CARGO_MANIFEST_DIR"));
+            let text: serde_json::Value =
+                serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+            assert_eq!(
+                text["tips"].as_array().map(Vec::len),
+                Some(zh.len()),
+                "{lang}"
+            );
+        }
+    }
 }
