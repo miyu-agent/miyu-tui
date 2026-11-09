@@ -165,14 +165,15 @@ fn a_long_reply_stops_at_its_first_row_until_her_next_step() {
         10,
         "放得下：照旧跟着"
     );
+    // 开头顶到第二行就停：最上面让给往上翻着时钉的那一行（发版前 check 27）。
     assert_eq!(
-        first_row(&rows(26), area, &mut view, true),
-        15,
-        "开头顶到最上面：停住"
+        first_row(&rows(25), area, &mut view, true),
+        14,
+        "开头顶到第二行：停住"
     );
     assert_eq!(
         first_row(&rows(40), area, &mut view, true),
-        15,
+        14,
         "后面的字在下面长"
     );
     // 她开始下一步：回到最底下接着跟。
@@ -180,7 +181,7 @@ fn a_long_reply_stops_at_its_first_row_until_her_next_step() {
     assert_eq!(first_row(&rows(42), area, &mut view, true), 32);
     // 下一段正文长了，又停在它的开头。
     view.reading = Some((9, 44));
-    assert_eq!(first_row(&rows(60), area, &mut view, true), 44);
+    assert_eq!(first_row(&rows(60), area, &mut view, true), 43);
 }
 
 #[test]
@@ -190,7 +191,7 @@ fn scrolled_back_to_the_bottom_the_same_reply_does_not_stop_again() {
     view.area = area;
     view.reading = Some((7, 15));
     view.first = first_row(&rows(30), area, &mut view, true);
-    assert_eq!(view.first, 15);
+    assert_eq!(view.first, 14);
     // 人往下翻到底：跟着最新的，这一段不再停。
     while view.top.is_some() {
         view.page(true);
