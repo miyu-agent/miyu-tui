@@ -1,6 +1,6 @@
 //! 伪终端里的端到端测试：Tab、Shift+Tab 切权限级别（蓝图 `tui.md`「权限级别」第 2 条）。真界面连一份照剧本回话的核心。
-//! 2026-10-14 项目主人报「Tab 切不了权限级别了」：首页选完人格、预设以后按 Tab，底栏一直是「工作区」。`Tab`、`Shift+Tab`
-//! 都往下一档轮（工作区 → 开放权限 → 只读 → 工作区）。
+//! 2026-10-14 项目主人报「Tab 切不了权限级别了」：首页选完人格、预设以后按 Tab，底栏一直不变。`Tab`、`Shift+Tab`
+//! 都往下一档轮；LV-3（2026-11-09 项目主人定）起只剩开放权限、只读两级，来回切。
 
 mod support;
 
@@ -18,7 +18,7 @@ fn footer(tui: &Tui) -> String {
     tui.lines()
         .into_iter()
         .rev()
-        .find(|l| ["工作区", "开放权限", "只读"].iter().any(|w| l.contains(w)))
+        .find(|l| ["开放权限", "只读"].iter().any(|w| l.contains(w)))
         .unwrap_or_default()
 }
 
@@ -62,21 +62,20 @@ fn tab_cycles_the_level_on_the_home_screen_after_picking_a_persona_and_preset() 
         tui.pump(std::time::Duration::from_millis(50));
     }
     tui.wait_for("Tab 切换权限级别");
-    assert!(footer(&tui).contains("工作区"), "{}", footer(&tui));
-    press_until(&mut tui, b"\t", "开放权限");
+    assert!(footer(&tui).contains("开放权限"), "{}", footer(&tui));
     press_until(&mut tui, b"\t", "只读");
-    press_until(&mut tui, BACK_TAB, "工作区");
+    press_until(&mut tui, BACK_TAB, "开放权限");
 }
 
 #[test]
 fn tab_cycles_the_level_in_an_opened_session() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
-    press_until(&mut tui, b"\t", "开放权限");
-    press_until(&mut tui, BACK_TAB, "只读");
+    press_until(&mut tui, b"\t", "只读");
+    press_until(&mut tui, BACK_TAB, "开放权限");
 }
 
 #[test]
@@ -93,7 +92,7 @@ fn a_full_default_shows_on_the_home_screen_and_tab_goes_on_from_the_sessions_rea
     tui.wait_for("好。");
     wait_level(&mut tui, "开放权限");
     press_until(&mut tui, b"\t", "只读");
-    press_until(&mut tui, b"\t", "工作区");
+    press_until(&mut tui, b"\t", "开放权限");
 }
 
 /// 测试家目录里唯一的那个会话的编号。
@@ -113,10 +112,10 @@ fn a_resumed_session_comes_back_at_the_level_it_was_left_at() {
     for restart in [false, true] {
         let home = Home::new(Script::new([Play::Says("好。")]));
         let mut tui = home.tui("zh_CN.UTF-8");
-        tui.wait_for("工作区");
+        tui.wait_for("开放权限");
         tui.say("在吗");
         tui.wait_for("好。");
-        press_until(&mut tui, b"\t", "开放权限");
+        press_until(&mut tui, b"\t", "只读");
         drop(tui);
         if restart {
             home.stop_core();
@@ -125,7 +124,7 @@ fn a_resumed_session_comes_back_at_the_level_it_was_left_at() {
         let id = only_session(&home);
         let mut resumed = home.tui_args("zh_CN.UTF-8", &["--resume", &id]);
         resumed.wait_for("好。");
-        wait_level(&mut resumed, "开放权限");
+        wait_level(&mut resumed, "只读");
     }
 }
 
@@ -142,16 +141,17 @@ fn bar_color(tui: &Tui, text: &str) -> vt100::Color {
 
 #[test]
 fn a_resumed_session_keeps_the_bar_color_of_the_level_it_was_sent_at() {
-    // 2026-10-26 项目主人报：开放权限发的话竖线是红的，退出重开 resume 以后变成了工作区的颜色。会话中途切到开放权限，
+    // 2026-10-26 项目主人报：开放权限发的话竖线是红的，退出重开 resume 以后变成了工作区的颜色。会话中途切级别（LV-3 起
+    // 切到只读），
     // 切换那一条在更早的页里，读最新一页（默认 20 轮）时不知道这一页开头的级别。
     let mut plays = vec![Play::Says("好。")];
     plays.extend((0..21).map(|_| Play::Says("嗯。")));
     let home = Home::new(Script::new(plays));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("第一句");
     tui.wait_for("好。");
-    press_until(&mut tui, b"\t", "开放权限");
+    press_until(&mut tui, b"\t", "只读");
     for n in 0..21 {
         let text = format!("第{n}句红线");
         tui.say(&text);
@@ -163,7 +163,7 @@ fn a_resumed_session_keeps_the_bar_color_of_the_level_it_was_sent_at() {
     let id = only_session(&home);
     let mut resumed = home.tui_args("zh_CN.UTF-8", &["--resume", &id]);
     resumed.wait_for("第20句红线");
-    wait_level(&mut resumed, "开放权限");
+    wait_level(&mut resumed, "只读");
     resumed.pump(Duration::from_millis(300));
     assert_eq!(
         bar_color(&resumed, "第20句红线"),

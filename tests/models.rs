@@ -14,7 +14,7 @@ fn footer(tui: &support::Tui) -> String {
     tui.lines()
         .into_iter()
         .rev()
-        .find(|l| l.contains("工作区"))
+        .find(|l| l.contains("开放权限"))
         .unwrap_or_default()
 }
 
@@ -40,10 +40,10 @@ fn a_model_picked_by_hand_shows_its_effort_at_once_and_becomes_the_new_session_d
     // 哪个就是新会话的默认。
     let home = Home::with_settings(Script::new([Play::Says("好。")]), TWO);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     wait_footer(&mut tui, "low");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     tui.say("/model");
     tui.wait_for("deepseek-v5");
     tui.type_text("v5");
@@ -70,7 +70,7 @@ fn switching_to_a_pool_leaves_no_stale_effort_in_the_footer() {
     // 2026-10-02 项目主人报：换成池以后底栏还写着原来那个模型的强度。
     let home = Home::with_settings(Script::new([Play::Says("好。")]), TWO);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     wait_footer(&mut tui, "low");
     tui.say("/model");
     tui.wait_for("@duo");
@@ -88,9 +88,9 @@ fn choosing_a_model_shows_no_notice() {
     let settings = "[models]\nchat = \"dev/alpha\"\n\n[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"http://dev.invalid/v1\"\n\n[providers.dev.models.alpha]\nwindow = 128000\n\n[providers.dev.models.beta]\nwindow = 64000\n";
     let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     tui.say("/model");
     tui.wait_for("dev · 64k");
     // 按键模式出厂是方向键：打字就搜，`Enter` 一下就选（2026-10-21 项目主人：「新用户默认不开 vimkey」）。
@@ -109,9 +109,9 @@ fn effort_is_chosen_for_this_session_only() {
     let settings = "[models]\nchat = \"deepseek/deepseek-v4\"\n\n[providers.deepseek]\ndriver = \"openai-chat\"\nbase_url = \"http://deepseek.invalid/v1\"\n\n[providers.deepseek.models.deepseek-v4]\nwindow = 128000\nreasoning = [\"off\", \"low\", \"high\"]\n";
     let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     tui.say("/effort");
     tui.wait_for("跟随设置");
     assert!(tui.shows("high"), "{}", tui.lines().join("\n"));
@@ -145,7 +145,7 @@ fn effort_chosen_before_a_session_shows_at_once_and_goes_with_the_new_session() 
     let settings = "[models]\nchat = \"deepseek/deepseek-v4\"\n\n[providers.deepseek]\ndriver = \"openai-chat\"\nbase_url = \"http://deepseek.invalid/v1\"\n\n[providers.deepseek.models.deepseek-v4]\nwindow = 128000\nreasoning = [\"off\", \"low\", \"high\"]\neffort = \"low\"\n";
     let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     wait_footer(&mut tui, "low");
     tui.say("/effort");
     tui.wait_for("跟随设置");
@@ -171,7 +171,7 @@ fn a_pool_does_not_let_effort_change() {
     let settings = "[models]\nchat = \"@duo\"\n\n[pools.duo]\nmodels = [\"deepseek/deepseek-v4\"]\n\n[providers.deepseek]\ndriver = \"openai-chat\"\nbase_url = \"http://deepseek.invalid/v1\"\n\n[providers.deepseek.models.deepseek-v4]\nreasoning = [\"off\", \"high\"]\n";
     let home = Home::with_settings(Script::new([]), settings);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/effort");
     tui.wait_for("当前使用的是模型池");
     assert!(!tui.shows("跟随设置"), "{}", tui.lines().join("\n"));
@@ -182,9 +182,9 @@ fn a_new_session_does_not_flash_an_empty_footer() {
     // 2026-10-02 项目主人报：开新会话，底栏的思考强度闪一下。原来换上空的正文时底栏先空着，等核心交回默认的模型再写。
     let home = Home::with_settings(Script::new([Play::Says("好。")]), TWO);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     // 假核心开了会话以后不报思考强度（不照配置算）：开一下 /effort 的框（开框要一次 `model.list`），底栏照配置的那一档
     // （`TWO` 里是 low）写上；开新会话的每一帧都还写着它，不先空一下。
     tui.say("/effort");
@@ -197,7 +197,7 @@ fn a_new_session_does_not_flash_an_empty_footer() {
     let frames = support::frames(start, &tui.recorded());
     assert!(!frames.is_empty());
     for (i, frame) in frames.iter().enumerate() {
-        let footer = frame.iter().rev().find(|l| l.contains("工作区"));
+        let footer = frame.iter().rev().find(|l| l.contains("开放权限"));
         if let Some(footer) = footer {
             assert!(footer.contains("low"), "第 {i} 帧底栏闪空了：{footer}");
         }
@@ -210,7 +210,7 @@ fn with_vim_keys_a_slash_searches_and_enter_keeps_the_filter() {
     let settings = "[models]\nchat = \"dev/alpha\"\n\n[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"http://dev.invalid/v1\"\n\n[providers.dev.models.alpha]\nwindow = 128000\n\n[providers.dev.models.beta]\nwindow = 64000\n\n[tui]\nkeys = \"vim\"\n";
     let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/model");
     tui.wait_for("dev · 64k");
     tui.wait_for("/ 搜索 · j/k 选择");
@@ -245,7 +245,7 @@ fn a_fixed_pool_is_named_and_a_new_session_keeps_the_pool() {
         .replace("[pools.duo]", "[pools.normal]");
     let home = Home::with_settings(Script::new([Play::Says("好。")]), &settings);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     wait_footer(&mut tui, "@日常池");
     tui.say("在吗");
     tui.wait_for("好。");

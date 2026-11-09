@@ -124,7 +124,7 @@ fn up_and_ctrl_k_move_the_command_list_and_never_recall_input_history() {
     // 列表开着时 ↑、Ctrl+K 只在列表里往上挪。
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("历史里的一句");
     tui.wait_for("好。");
     tui.type_text("/c");
@@ -162,7 +162,7 @@ fn loop_from_the_core_is_listed_and_taken_by_the_core() {
     // 终端只做 loop）。工具面上要有 `schedule_wakeup`：测具登记出厂的工具。
     let home = Home::with_tools(Script::new([]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.type_text("/lo");
     tui.wait_for("/loop [<间隔>] <要说的话> | off");
     tui.key(b"\x7f\x7f\x7f");
@@ -185,7 +185,7 @@ fn loop_with_bad_arguments_is_only_told_and_not_put_back() {
     // 在会话里打（同平常用的样子），核心的命令清单到了再打。
     let home = Home::with_tools(Script::new([Play::Says("在。")]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("在。");
     tui.type_text("/lo");

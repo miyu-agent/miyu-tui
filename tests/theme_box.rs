@@ -16,7 +16,7 @@ const NIGHT: Color = Color::Rgb(0x1a, 0x1b, 0x26);
 fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     let home = Home::with_settings(Script::new([]), "[tui]\ntheme_mode = \"dark\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.pump(Duration::from_millis(800));
     // 出厂「自动」，测试里借不到人格、壁纸、终端的颜色：兜底 tokyonight（2026-11-02 项目主人）。
     assert_eq!(tui.background(0, 0), NIGHT, "起来是 tokyonight 深色");

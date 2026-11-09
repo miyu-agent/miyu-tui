@@ -43,7 +43,7 @@ fn a_reply_reports_to_herdr_and_sends_one_desktop_notification() {
             ("HERDR_TEST_REPORTS", &log_name),
         ],
     );
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.send(b"\x1b[O");
     tui.say("测试通知");
     tui.wait_for("通知验收回答。");
@@ -83,7 +83,7 @@ fn a_failing_herdr_report_writes_nothing_on_the_screen() {
             ("HERDR_BIN_PATH", &missing),
         ],
     );
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("你好");
     tui.wait_for("回答完了。");
     tui.pump(Duration::from_millis(500));
@@ -135,7 +135,7 @@ fn a_goal_running_two_rounds_notifies_once_when_it_is_done() {
         "zh_CN.UTF-8",
         &[("PATH", &path), ("NOTIFY_TEST_REPORTS", &log_name)],
     );
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     // 终端报「离开」：不在前台才弹（第 1、2 条）。
     tui.send(b"\x1b[O");
     tui.say("/goal 看完笔记");
@@ -183,7 +183,7 @@ fn a_goal_round_that_waits_for_you_notifies_once() {
         "zh_CN.UTF-8",
         &[("PATH", &path), ("NOTIFY_TEST_REPORTS", &log_name)],
     );
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     // 终端报「离开」：不在前台才弹（第 1、2 条）。
     tui.send(b"\x1b[O");
     tui.say("/goal 看完笔记");

@@ -19,7 +19,7 @@ fn ctrl_enter_after_the_request_took_the_message_answers_it_once() {
         Play::Says("回答插的那句。"),
     ]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("第一句");
     tui.pump(Duration::from_millis(800));
     // 她还一个字都没回：Ctrl+Enter（kitty 键盘协议）先发那句话、紧接着打断。核心把那句话带进撤掉重发的请求，打断再切断它。

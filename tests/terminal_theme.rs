@@ -6,7 +6,7 @@ mod support;
 
 use std::time::{Duration, Instant};
 
-use miyu_session::testkit::Script;
+use miyu_session::testkit::{Play, Script};
 use support::{Home, Tui};
 use vt100::Color;
 
@@ -21,15 +21,23 @@ fn sixteen(blue: (u8, u8, u8)) -> [(u8, u8, u8); 16] {
     colors
 }
 
-/// 左下角那个「工作区」的字色（权限级别那一格，主题的 `workspace`）。
+/// 照主色走的那个颜色：运行状态行第一个字（流光照配色方案原来工作区那一档，`workspace`，跟着主色；LV-3 去掉工作区一级
+/// 以前看的是左下角那个「工作区」）；没在回答的照左下角「开放权限」（主题的 `full`）。
 fn level_color(tui: &Tui) -> Option<Color> {
     let lines = tui.lines();
-    let row = lines.iter().rposition(|l| l.contains("工作区"))?;
-    let col = lines[row].split("工作区").next()?.chars().count();
+    if let Some(top) = lines.iter().position(|l| l.trim_start().starts_with('╭'))
+        && let Some(row) = top.checked_sub(2)
+        && lines[row].trim_end().ends_with('s')
+        && let Some(col) = lines[row].chars().position(|c| !c.is_whitespace())
+    {
+        return Some(tui.foreground(u16::try_from(row).ok()?, u16::try_from(col).ok()?));
+    }
+    let row = lines.iter().rposition(|l| l.contains("开放权限"))?;
+    let col = lines[row].split("开放权限").next()?.chars().count();
     Some(tui.foreground(u16::try_from(row).ok()?, u16::try_from(col).ok()?))
 }
 
-/// 等左下角那个「工作区」的颜色合 `want`，最多 10 秒。
+/// 等 [`level_color`] 合 `want`，最多 10 秒。
 fn until_level(tui: &mut Tui, want: impl Fn(Color) -> bool, what: &str) {
     let end = Instant::now() + Duration::from_secs(10);
     while !level_color(tui).is_some_and(&want) {
@@ -62,11 +70,14 @@ fn regain_focus(tui: &mut Tui) {
 
 #[test]
 fn terminal_colors_take_the_answered_bytes_and_follow_them_after_regaining_focus() {
-    let home = Home::with_settings(Script::new([]), "[tui]\ntheme = \"terminal\"\n");
+    let home = Home::with_settings(Script::new([Play::Holds]), "[tui]\ntheme = \"terminal\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.answer_ground(DARK.0, DARK.1);
     tui.answer_colors(sixteen((0x40, 0x80, 0xff)));
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
+    // 开一轮、停着：运行状态行的流光照主色走（看它）。
+    tui.say("在吗");
+    tui.wait_for_line("…");
     // 真彩色、问到了：16 色里只有 4 号带颜色，照它生成 MD3，强调色是蓝的（不再是终端那一号的原字节）。
     until_level(&mut tui, bluish, "照起来时问到的 4 号生成");
     // 闲着不去问。
@@ -89,17 +100,18 @@ fn the_automatic_mode_turns_light_when_the_terminal_does_and_focus_comes_back() 
     let home = Home::with_settings(Script::new([]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.answer_ground(DARK.0, DARK.1);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
+    // 没在回答：看左下角「开放权限」（tokyonight 的 `full`）。
     until_level(
         &mut tui,
-        |c| c == Color::Rgb(0x7a, 0xa2, 0xf7),
+        |c| c == Color::Rgb(0xf7, 0x76, 0x8e),
         "深色那一份",
     );
     tui.answer_ground(LIGHT.0, LIGHT.1);
     regain_focus(&mut tui);
     until_level(
         &mut tui,
-        |c| c == Color::Rgb(0x2e, 0x7d, 0xe9),
+        |c| c == Color::Rgb(0xf5, 0x2a, 0x65),
         "换成浅色那一份",
     );
 }

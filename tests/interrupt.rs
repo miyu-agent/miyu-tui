@@ -31,7 +31,7 @@ fn an_interrupt_after_she_has_spoken_keeps_the_turn() {
     // 剧本的 `Holds` 先吐一个「…」再停住：她开口了，打断以后这一轮留着，那一句不放回输入框。
     let home = Home::new(Script::new([Play::Holds]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("说两句");
     tui.wait_for_line("…");
     tui.key(b"\x1b");
@@ -52,7 +52,7 @@ fn an_interrupt_before_she_starts_puts_the_message_back_in_the_box() {
     // `Stalls` 一个字都不出：她还没开始做事，打断以后撤掉这一轮，那一句放回输入框。
     let home = Home::new(Script::new([Play::Stalls, Play::Says("收到。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("等一下再问");
     // 等运行状态行的读秒出来（这一轮开始跑了）再按：只等固定的 800 毫秒，CI 忙的时候两下 Esc 都落在开轮以前，什么也
     // 打断不了（2026-10-14 Ubuntu CI 截到过）。
@@ -92,7 +92,7 @@ fn slash_stop_interrupts_and_keeps_the_queued_message_without_starting_a_turn() 
     // `/stop` 交给核心 `command.run`（2026-10-07 项目主人定）：打断这一轮，排着的话留在正文里、不接着发，回执弹提示。
     let home = Home::new(Script::new([Play::Holds, Play::Says("不该开这一轮。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("说两句");
     tui.wait_for_line("…");
     tui.say("排着的一句");
@@ -122,7 +122,7 @@ fn two_escapes_right_after_sending_stop_the_turn_once_it_starts() {
     // （原来这两下没交给打断那一处，这一轮照跑）。
     let home = Home::new(Script::new([Play::Stalls, Play::Says("收到。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("发错了");
     // 两下挨着按（隔 40 毫秒，读成两下、不读成 Alt+Esc），都落在开轮以前：先记下，轮一开再打断。
     tui.send(b"\x1b");
@@ -150,7 +150,7 @@ fn a_line_sent_before_she_answers_a_word_joins_the_request_at_once() {
     // 下一步。剧本：第一次请求一个字都不回，重发的那一次回话。
     let home = Home::new(Script::new([Play::Stalls, Play::Says("两句都收到了。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("第一句");
     let end = Instant::now() + support::WAIT;
     while !running(&tui) {
@@ -172,7 +172,7 @@ fn a_line_sent_before_she_answers_a_word_joins_the_request_at_once() {
 fn two_escapes_while_idle_leave_the_typed_text_alone() {
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.type_text("还没写完的一句");
     tui.wait_for("还没写完的一句");
     tui.key(b"\x1b");

@@ -19,7 +19,7 @@ fn with_skip_pick_on_no_frame_shows_the_pick_box() {
             &[("MIYU_TUI_PERSONA", ""), ("MIYU_TUI_PRESET", "")],
         );
         let start = tui.record_from_here();
-        tui.wait_for("工作区");
+        tui.wait_for("开放权限");
         tui.pump(Duration::from_millis(800));
         let recorded = tui.recorded();
         for frame in support::frames(start, &recorded) {

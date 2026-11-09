@@ -44,7 +44,7 @@ fn a_bang_command_runs_in_the_session_and_she_answers() {
 fn a_bang_command_without_a_shell_says_so_and_keeps_the_command() {
     let home = Home::new(Script::new([Play::Says("不该轮到我。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.type_text("!");
     tui.wait_for("输入要跑的命令");
     tui.type_text("echo no-shell-here");

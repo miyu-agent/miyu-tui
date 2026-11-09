@@ -25,7 +25,7 @@ fn home() -> Home {
 
 /// 在 `tui` 里说 [`TURNS`] 轮：第 i 轮说「第 i 句」；`after_first` 在第一轮答完以后做。
 fn talk(tui: &mut Tui, after_first: impl FnOnce(&mut Tui)) {
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let mut after_first = Some(after_first);
     for i in 1..=TURNS {
         tui.say(&format!("第 {i} 句"));
@@ -92,7 +92,7 @@ fn resuming_reads_the_latest_page_and_the_earlier_one_at_the_top_without_jumping
 fn the_sidebar_title_total_and_level_come_from_the_whole_session_not_the_latest_page() {
     let home = home();
     let mut first = home.tui_wide("zh_CN.UTF-8", 140);
-    // 第一轮答完换成开放权限、改名：这两条事件落在更早的那一页里。
+    // 第一轮答完换成只读（LV-3 起 Tab 从开放权限切到只读）、改名：这两条事件落在更早的那一页里。
     talk(&mut first, |tui| {
         tui.key(TAB);
         tui.say("/rename 很长的会话");
@@ -100,13 +100,13 @@ fn the_sidebar_title_total_and_level_come_from_the_whole_session_not_the_latest_
     });
     // 剧本每次请求报 110 个 token（60 没命中、40 命中、10 输出）：22 次是 2.4k，只算最新一页的 20 次是 2.2k。
     first.wait_for("共 2.4k token");
-    assert!(first.shows("开放权限"), "{}", first.lines().join("\n"));
+    assert!(first.shows("⏸ 只读"), "{}", first.lines().join("\n"));
     drop(first);
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
     tui.wait_for("第 22 号的回答。");
     tui.pump(Duration::from_millis(500));
     assert!(tui.shows("共 2.4k token"), "{}", tui.lines().join("\n"));
-    assert!(tui.shows("开放权限"), "{}", tui.lines().join("\n"));
+    assert!(tui.shows("⏸ 只读"), "{}", tui.lines().join("\n"));
     // 标题照会话列表：最新一页里没有改名的事件。
     assert!(tui.shows("很长的会话"), "{}", tui.lines().join("\n"));
 }
@@ -137,7 +137,7 @@ fn the_earlier_page_asked_for_when_the_core_went_away_is_asked_again_after_recon
     // 断了以后一直重连，连不上时写核心没在跑。
     tui.wait_for("核心未运行");
     home.restart_core();
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     // 拼上来时视口不跳：接着往上滚找第 1 轮。
     let end = std::time::Instant::now() + Duration::from_secs(20);
     while !tui.shows("┃ 第 1 句") {

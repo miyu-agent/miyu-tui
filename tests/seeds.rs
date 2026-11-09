@@ -43,7 +43,7 @@ fn the_main_color_is_picked_from_the_avatars_candidates_and_saved_on_the_persona
     let home = Home::with_settings(Script::new([]), settings);
     four_hues(&home);
     let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_PERSONA", "duo")]);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     // 没选过：照打分最高的那个铺。
     let first = wait_ground(
         &mut tui,

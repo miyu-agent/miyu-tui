@@ -15,7 +15,7 @@ fn a_loop_shows_above_the_input_and_in_the_sidebar() {
     );
     // 宽到画侧边栏（`layout.json` 的 `sidebar_from`）。
     let mut tui = home.tui_wide("zh_CN.UTF-8", 160);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("在。");
     tui.say("/loop 10m 看一眼 CI");

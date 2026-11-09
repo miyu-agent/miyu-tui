@@ -22,9 +22,9 @@ fn rename_sets_removes_and_refuses_a_too_long_title() {
     // 2026-10-01 项目主人定先做 `/rename`（蓝图「改名」）。
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     tui.say("/rename   回文函数  ");
     tui.wait_for("已改名：回文函数");
     // 人改的标题写在输入框上边框右边（2026-10-13 项目主人定）；提示 2 秒后消失，再看边框。
@@ -57,9 +57,9 @@ fn a_title_a_person_gave_is_still_on_the_border_after_reopening() {
         "[ui]\nstartup = \"recent\"\n",
     );
     let mut first = home.tui("zh_CN.UTF-8");
-    first.wait_for("工作区");
+    first.wait_for("开放权限");
     first.say("在吗");
-    first.wait_for("▣  ");
+    first.wait_for_done();
     first.say("/rename 回文函数");
     first.wait_for("已改名：回文函数");
     drop(first);

@@ -37,7 +37,7 @@ fn scrolled_up_the_top_pins_the_question_and_a_click_jumps_back() {
         Play::Says(long("丙")),
     ]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     for (said, last) in [
         ("第一问 alpha", "甲 第 10 段。"),
         ("第二问 beta", "乙 第 10 段。"),
@@ -141,7 +141,7 @@ fn a_hidden_prompt_part_never_pins() {
         "[[tui.top]]\npart = \"prompt\"\nhidden = true\n",
     );
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     for (said, last) in [
         ("第一问 alpha", "甲 第 10 段。"),
         ("第二问 beta", "乙 第 10 段。"),

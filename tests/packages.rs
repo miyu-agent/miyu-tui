@@ -42,7 +42,7 @@ fn installing_a_package_asks_with_what_it_carries() {
         "",
     );
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("装个天气包");
     tui.wait_for("安装 weather 1.2.0");
     tui.wait_for("包含：技能 notes");

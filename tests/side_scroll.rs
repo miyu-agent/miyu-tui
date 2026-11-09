@@ -30,7 +30,7 @@ fn a_tall_sidebar_scrolls_and_shows_every_jump() {
         .collect();
     let home = Home::with_settings(Script::new(plays), "[tui]\nsidebar_jumps = 100\n");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     for i in 1..=TURNS {
         tui.say(&format!("问{i:02}号"));
         tui.wait_for(&format!("回答 {i}。"));
@@ -106,7 +106,7 @@ fn an_old_session_lists_every_jump() {
         "[ui]\nstartup = \"recent\"\n[tui]\nsidebar_jumps = 100\n",
     );
     let mut first = home.tui_wide("zh_CN.UTF-8", 140);
-    first.wait_for("工作区");
+    first.wait_for("开放权限");
     for i in 1..=TURNS {
         first.say(&format!("问{i:02}号"));
         first.wait_for(&format!("回答 {i}。"));

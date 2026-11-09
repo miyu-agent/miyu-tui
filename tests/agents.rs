@@ -20,7 +20,7 @@ fn stopping_an_agent_while_viewing_it_stops_that_agent() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("派个子代理");
     tui.wait_for("● 主会话");
     tui.wait_for("○ 查资料");
@@ -60,7 +60,7 @@ fn a_task_handed_over_with_an_image_shows_it_as_a_block_in_the_agents_session() 
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("派个子代理看图");
     tui.wait_for("○ 看图");
     tui.key(DOWN);
@@ -75,7 +75,7 @@ fn a_task_handed_over_with_an_image_shows_it_as_a_block_in_the_agents_session() 
 /// 派一个子代理、主会话这一轮停住，再打断主会话：主会话闲着、子代理接着跑。交回界面，停在主会话。
 fn idle_main_with_a_running_agent(home: &Home) -> support::Tui {
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("派个子代理");
     tui.wait_for("○ 查资料");
     // 先照原来的两下 Esc 打断主会话这一轮：子代理照常跑（`13-终端界面.md` 第十节）。

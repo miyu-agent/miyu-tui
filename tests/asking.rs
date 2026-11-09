@@ -46,7 +46,7 @@ fn a_write_outside_the_workspace_asks_and_allowing_once_lets_it_through() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("写个文件");
     tui.wait_for("允许本次");
     assert!(!target.exists(), "还没答就没写");
@@ -77,7 +77,7 @@ fn denying_with_a_reason_tells_her_and_writes_a_red_line() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("写个文件");
     tui.wait_for("允许本次");
     // `n` 写「不允许」的理由，回车交（2026-10-22 项目主人：照提问的 `n` 补充）。
@@ -100,7 +100,7 @@ fn a_command_approval_shows_its_short_title_and_the_command() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("看看系统");
     tui.wait_for("允许本次");
     let screen = tui.lines().join("\n");
@@ -110,8 +110,8 @@ fn a_command_approval_shows_its_short_title_and_the_command() {
     );
     assert!(screen.contains("$ uname -a"), "命令原文：\n{screen}");
     assert!(!screen.contains("使用 shell"), "{screen}");
-    // 测试里的核心没有沙盒助手：命令不在沙盒里跑，核心 D-4 的 `detail.sandbox` 是 `false`。
-    assert!(screen.contains("沙盒外运行"), "{screen}");
+    // 沙盒那一套去掉了（LV-3）：不再写「沙盒外运行」。
+    assert!(!screen.contains("沙盒外运行"), "{screen}");
     assert!(
         !screen.contains("此目录不再询问"),
         "跑命令的没有放行规则：{screen}"
@@ -130,7 +130,7 @@ fn a_hazardous_command_says_so_and_only_offers_once_or_deny() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("推上去");
     tui.wait_for("允许本次");
     let screen = tui.lines().join("\n");
@@ -159,7 +159,7 @@ fn ask_user_opens_the_question_drawer_and_the_answers_reach_her() {
     // 不收起时间线：回答接在「提问」那一步下面，这一段收起时跟着收（「确认和提问的抽屉」第 6 条，2026-10-11 项目主人）。
     let home = Home::with_tools(script, "[tui]\ntimeline_fold = false\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("帮我写个小工具");
     tui.wait_for("用哪种语言写？");
     tui.wait_for("fn main() {}");
@@ -184,51 +184,6 @@ fn ask_user_opens_the_question_drawer_and_the_answers_reach_her() {
 }
 
 #[test]
-fn asking_to_run_outside_the_sandbox_shows_the_line_and_allow_once_runs_it() {
-    // 核心 D-4：她带 `outside_sandbox` 请求在沙盒外跑一条，弹确认，允许这一次照办。
-    let args = serde_json::json!({
-        "command": "echo outside", "description": "在沙盒外试一下", "outside_sandbox": true
-    })
-    .to_string();
-    let script = Script::new([
-        Play::Calls(vec![("shell".into(), args)]),
-        Play::Says("跑完了。"),
-    ]);
-    let home = Home::with_tools(script, "");
-    let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
-    tui.say("试试");
-    // 等抽屉里才有的那一句：命令的短标题会先出现在时间线那一步上，那时抽屉还没开（CI 上偶发红过）。
-    tui.wait_for("沙盒外运行");
-    // 等抽屉整个画出来再看：只等到标题就读屏，慢的机器上读到的是画到一半的一帧（10-24 起 macOS CI 连着红）。
-    tui.wait_for("$ echo outside");
-    tui.wait_for("在沙盒外试一下");
-    tui.key(b"\r");
-    tui.wait_for("跑完了。");
-}
-
-#[test]
-fn a_command_outside_the_sandbox_offers_to_stop_asking_for_its_prefix() {
-    // 核心 SB-3：越过沙盒的规则带命令前缀，「不再询问」写清是哪种命令开头的（反馈第 23 条）。
-    let args = serde_json::json!({
-        "command": "echo outside", "description": "在沙盒外试一下", "outside_sandbox": true
-    })
-    .to_string();
-    let script = Script::new([
-        Play::Calls(vec![("shell".into(), args)]),
-        Play::Says("跑完了。"),
-    ]);
-    let home = Home::with_tools(script, "");
-    let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
-    tui.say("试试");
-    tui.wait_for("$ echo outside");
-    tui.wait_for("以后 `echo` 开头的命令在这个目录不再询问");
-    tui.key(b"\r");
-    tui.wait_for("跑完了。");
-}
-
-#[test]
 fn the_same_call_id_in_a_new_session_still_asks() {
     // 调用编号只在一个会话里唯一：前一个会话了结过的 `call_…`，`/new` 以后新会话又问同一个编号，照样开抽屉
     // （2026-10-07 项目主人报：接上旧会话、`/new` 以后让她在沙盒外跑一条 echo，没弹确认，看着卡住了）。
@@ -247,7 +202,7 @@ fn the_same_call_id_in_a_new_session_still_asks() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("写个文件");
     tui.wait_for("允许本次");
     tui.key(b"\r");
@@ -277,7 +232,7 @@ fn switching_to_a_session_with_an_answered_question_draws_the_answer() {
     ]);
     let home = Home::with_tools(script, "[tui]\ntimeline_fold = false\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("帮我写个小工具");
     tui.wait_for("用哪种语言写？");
     tui.key(b"\r");
@@ -321,7 +276,7 @@ fn page_up_with_a_drawer_open_scrolls_the_body_and_the_drawer_steps_aside() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("说长一点");
     tui.wait_at_bottom_for("第60行");
     tui.say("写个文件");
@@ -364,7 +319,7 @@ fn a_session_waiting_for_an_answer_shows_a_question_mark_in_the_sidebar() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.say("/new");
@@ -412,7 +367,7 @@ fn the_drawer_slides_with_the_wheel_instead_of_vanishing() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("写个文件");
     tui.wait_for("允许本次");
     let row = |lines: &[String], word: &str| lines.iter().position(|l| l.contains(word));

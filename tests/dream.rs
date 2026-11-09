@@ -15,7 +15,7 @@ use support::Home;
 fn a_refused_dream_says_why_and_leaves_no_block() {
     let home = Home::new(Script::new([Play::Says("好的。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("你好");
     tui.wait_for("好的。");
     tui.say("/dream");
@@ -37,7 +37,7 @@ fn dream_from_the_home_page_shows_the_block_and_a_receipt_that_opens() {
     let home = Home::with_settings(script.clone(), "[persona]\ndefault = \"pirate\"\n");
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("你好");
     tui.wait_for("好的。");
     tui.say("/remember 用户住在上海");
@@ -82,7 +82,7 @@ fn dream_from_the_home_page_shows_the_block_and_a_receipt_that_opens() {
 fn dream_stop_without_a_dream_says_there_is_none() {
     let home = Home::new(Script::new([Play::Says("好的。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("你好");
     tui.wait_for("好的。");
     tui.say("/dream stop");
@@ -95,7 +95,7 @@ fn dream_stop_without_a_dream_says_there_is_none() {
 
 /// 先记一条、回到首页打 `/dream`，模型一直不答（`Once::Holds`）：在做梦。
 fn dreaming_forever(tui: &mut support::Tui) {
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("你好");
     tui.wait_for("好的。");
     tui.say("/remember 用户住在杭州");

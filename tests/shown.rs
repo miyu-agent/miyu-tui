@@ -93,7 +93,7 @@ fn a_page_opens_at_once_and_its_card_opens_it_again() {
     std::fs::write(home.work.join("index.html"), "<h1>你好</h1>\n<p>一段</p>\n").expect("页面");
     let (bin, log) = fakes(&home, &["xdg-mime", "gio"], "viewer.desktop");
     let mut tui = tui(&home, &bin);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("给我看看页面");
     tui.wait_for("页面给你看了。");
     tui.wait_for("HTML · 30 B · 2 行");
@@ -131,7 +131,7 @@ fn markdown_is_a_card_and_with_nothing_to_open_it_the_card_says_where_the_copy_i
     std::fs::write(home.work.join("notes.md"), "# 笔记\n第一行\n").expect("笔记");
     let (bin, log) = fakes(&home, &["xdg-mime"], "");
     let mut tui = tui(&home, &bin);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("给我看看笔记");
     tui.wait_for("笔记给你看了。");
     tui.wait_for("Markdown · ");
@@ -160,7 +160,7 @@ fn showing_the_same_path_again_folds_the_earlier_card() {
     std::fs::write(home.work.join("notes.md"), "一行\n").expect("笔记");
     let (bin, _) = fakes(&home, &["xdg-mime"], "");
     let mut tui = tui(&home, &bin);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("看看");
     tui.wait_for("第一版。");
     std::fs::write(home.work.join("notes.md"), "一行\n两行\n").expect("改笔记");

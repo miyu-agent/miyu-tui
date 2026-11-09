@@ -26,7 +26,7 @@ fn j_and_k_move_and_a_slash_searches() {
     let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
     let home = Home::with_settings(script, "[tui]\nkeys = \"vim\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("alpha-line");
     tui.wait_for("answer-one");
     tui.say("beta-line");

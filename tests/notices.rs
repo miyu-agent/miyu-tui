@@ -11,7 +11,7 @@ fn a_clicked_kitty_notice_switches_to_its_session_and_types_nothing() {
     let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
     let home = Home::with_settings(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.say("/new");

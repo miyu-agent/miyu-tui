@@ -167,7 +167,7 @@ fn an_open_session_shows_its_persona_in_the_sidebar() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", Some("你是海盗。"));
     let mut tui = home.tui_wide_with("zh_CN.UTF-8", 140, &[("MIYU_TUI_PERSONA", "pirate")]);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.wait_for("人格 海盗");
@@ -179,7 +179,7 @@ fn a_session_without_a_persona_shows_no_persona_line() {
     // 无人格的会话订阅回应里没有 `persona`（核心 P-4 上）：侧边栏不写人格那一行。
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.wait_for("预设 全部功能");
@@ -228,7 +228,7 @@ fn a_persona_switched_midway_compacts_first_then_speaks_as_the_new_one() {
         Some("你是海盗，暗号 X1Y2。"),
     );
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/persona");
@@ -257,7 +257,7 @@ fn the_compaction_note_shows_only_when_there_is_something_to_compact() {
     let home = Home::new(script);
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/persona");

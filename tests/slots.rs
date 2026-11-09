@@ -20,7 +20,7 @@ fn the_sidebar_follows_the_configured_order_and_hides_what_is_hidden() {
         "[[tui.side]]\npart = \"recent\"\n\n[[tui.side]]\npart = \"cwd\"\nhidden = true\n";
     let home = Home::with_settings(script, settings);
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.wait_for("最近会话");
@@ -73,7 +73,7 @@ fn the_status_line_follows_the_configured_order_and_hides_what_is_hidden() {
     let end = std::time::Instant::now() + support::WAIT;
     loop {
         if let Some(footer) = footer_line(&tui.lines()) {
-            assert!(!footer.contains("工作区"), "权限级别藏起来了：{footer}");
+            assert!(!footer.contains("开放权限"), "权限级别藏起来了：{footer}");
             assert!(
                 !footer.contains('Σ') && !footer.contains("(C"),
                 "不再写 Σ、命中率：{footer}"
@@ -102,7 +102,7 @@ fn a_hidden_usage_part_leaves_the_right_side_empty() {
     let script = Script::new([Play::Says("answer-one")]);
     let home = Home::with_settings(script, "[[tui.footer]]\npart = \"usage\"\nhidden = true\n");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.pump(std::time::Duration::from_millis(500));
@@ -127,7 +127,7 @@ fn a_hidden_todo_list_does_not_show_above_the_input_box() {
     ]);
     let home = Home::with_tools(script, "[[tui.above]]\npart = \"todo\"\nhidden = true\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("排一下要做的");
     tui.wait_for("列好了。");
     tui.pump(std::time::Duration::from_millis(500));
@@ -145,7 +145,7 @@ fn the_wheel_scrolls_a_sidebar_taller_than_the_window() {
     let script = Script::new([Play::Says("answer-one")]);
     let home = Home::with_settings(script, "");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.wait_for("最近会话");

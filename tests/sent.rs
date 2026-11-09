@@ -56,7 +56,7 @@ fn install(dir: &Path) {
 /// 起终端，等扩展登记成了（核心写下登记缓存）才交回：不然她调到的时候还没有这件工具。
 fn started(home: &Home) -> support::Tui {
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let cache = home.data().provide_cache("memes");
     let end = Instant::now() + support::WAIT;
     while !cache.exists() {

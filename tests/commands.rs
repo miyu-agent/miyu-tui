@@ -13,7 +13,7 @@ fn slash_clear_goes_through_the_core_and_its_receipt_is_not_shown() {
     // 2026-10-07 项目主人要各个头统一走 `command.run`；`/clear` 的回执不弹，正文里有那一行。
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/clear");
@@ -27,7 +27,7 @@ fn slash_clear_goes_through_the_core_and_its_receipt_is_not_shown() {
 fn slash_stop_before_any_session_says_nothing_is_running() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/stop");
     tui.wait_for("没有运行中的任务");
 }
@@ -37,7 +37,7 @@ fn slash_images_turns_images_off_for_this_run_and_says_why_it_cannot_turn_them_o
     // 2026-10-18 项目主人：herdr 把图转给手机上的 Termius，贴图的指令印成了字；`/images off` 当场关、`on` 恢复。
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/images off");
     tui.wait_for("图片显示已关闭");
     tui.say("/images on");

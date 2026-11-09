@@ -9,7 +9,7 @@ use support::Home;
 fn status_lists_the_session_with_its_title_on_the_frame_and_closes_on_escape() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/status");
@@ -79,7 +79,7 @@ fn boxes_opened_by_a_command_have_a_blank_line_inside_but_typed_lists_do_not() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     home.persona("pirate", "[persona]\nname = \"海盗\"\n", None);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     for (command, title) in [
         ("/persona", "请选择人格"),
         ("/theme", "配色"),

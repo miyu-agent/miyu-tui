@@ -34,7 +34,7 @@ fn wait_gone(tui: &mut support::Tui, text: &str) {
 fn a_goal_set_on_the_home_page_opens_a_session_and_its_round_is_one_line() {
     let home = Home::with_tools(Script::new([completes(), Play::Says("测试都写完了。")]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/goal 把测试写完");
     tui.wait_for("已设定长期目标：把测试写完");
     tui.wait_for("● 长期目标 · 第 1 轮");
@@ -54,7 +54,7 @@ fn a_goal_set_on_the_home_page_opens_a_session_and_its_round_is_one_line() {
 fn a_running_goal_shows_right_above_the_input_box() {
     let home = Home::with_tools(Script::new([Play::Holds]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/goal --rounds 5 把测试写完");
     tui.wait_for("◎ 目标 · 进行中 · 第 1/5 轮");
     let lines = tui.lines();
@@ -83,7 +83,7 @@ fn a_running_goal_shows_right_above_the_input_box() {
 fn a_goal_waiting_for_a_reply_comes_back_with_its_session() {
     let home = Home::with_tools(Script::new([Play::Says("要你定一下用哪个库。")]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/goal 把测试写完");
     tui.wait_for("要你定一下用哪个库。");
     tui.wait_for("目标 · 等待回复 · 第 1 轮");
@@ -100,7 +100,7 @@ fn a_goal_waiting_for_a_reply_comes_back_with_its_session() {
 fn looking_at_or_pausing_a_goal_on_the_home_page_opens_nothing() {
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     for line in ["/goal", "/goal pause"] {
         tui.say(line);
         tui.wait_for("无长期目标");
@@ -116,7 +116,7 @@ fn looking_at_or_pausing_a_goal_on_the_home_page_opens_nothing() {
 fn pausing_without_a_goal_only_pops_the_cores_words() {
     let home = Home::with_tools(Script::new([Play::Says("你好。")]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("你好");
     tui.wait_for("你好。");
     tui.say("/goal pause");
@@ -136,7 +136,7 @@ fn a_goal_without_its_package_is_no_command() {
     home.stop_core();
     home.restart_core();
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("你好");
     tui.wait_for("你好。");
     tui.say("/goal 把测试写完");
@@ -155,7 +155,7 @@ fn a_goal_without_its_package_is_no_command() {
 fn typing_goal_then_up_brings_back_the_last_goal_with_its_words() {
     let home = Home::with_tools(Script::new([Play::Holds]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/goal 把测试写完");
     tui.wait_for("已设定长期目标");
     // 命令列表开着时 ↑ 只在列表里挪（2026-10-20 项目主人）；打了空格、列表收起以后再翻（同一天项目主人选的）。

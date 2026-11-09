@@ -31,7 +31,7 @@ fn usd() -> Tariff {
 fn the_sidebar_and_the_footer_show_what_was_spent_and_slash_usage_lists_it() {
     let home = Home::new(Script::new([Play::Says("好。")]).priced(usd()));
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.wait_for("花费 $0.0001");
@@ -87,7 +87,7 @@ fn the_sidebar_and_the_footer_show_what_was_spent_and_slash_usage_lists_it() {
 fn requests_without_a_price_are_counted_not_guessed() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.wait_for("缓存命中");

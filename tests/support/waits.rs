@@ -34,6 +34,43 @@ impl Tui {
         }
     }
 
+    /// 屏幕上有一轮的收尾行：开放权限的图标 `⏵⏵ ` 后面紧跟时间（底栏是 `⏵⏵ 开放权限`）。原来等 `▣  `（工作区的图标后面
+    /// 空两格），LV-3 去掉了工作区一级。
+    pub fn shows_done(&self) -> bool {
+        self.lines().iter().any(|l| {
+            l.split("⏵⏵ ")
+                .skip(1)
+                .any(|rest| rest.starts_with(|c: char| c.is_ascii_digit()))
+        })
+    }
+
+    /// 等到一轮的收尾行出来，最多 [`WAIT`]。
+    pub fn wait_for_done(&mut self) {
+        let end = Instant::now() + WAIT;
+        while !self.shows_done() {
+            assert!(
+                Instant::now() < end,
+                "等不到收尾行，屏幕是：\n{}",
+                self.lines().join("\n")
+            );
+            self.pump(Duration::from_millis(50));
+        }
+    }
+
+    /// 同 [`Tui::wait_at_bottom_for`]，等的是一轮的收尾行。
+    pub fn wait_at_bottom_for_done(&mut self) {
+        let end = Instant::now() + WAIT;
+        while !self.shows_done() {
+            assert!(
+                Instant::now() < end,
+                "跟到底也等不到收尾行：\n{}",
+                self.lines().join("\n")
+            );
+            self.send(b"\x1b[1;5F");
+            self.pump(Duration::from_millis(50));
+        }
+    }
+
     /// 等到屏幕上有一整行（去掉两头的空白）就是 `text`，最多 [`WAIT`]。别处带着这几个字的不算：比如首页的工作目录放不下时
     /// 以 `…` 打头（macOS 的临时目录很长），等她吐出的那个 `…` 就要只认整行。
     pub fn wait_for_line(&mut self, text: &str) {
