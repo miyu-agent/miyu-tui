@@ -1442,6 +1442,7 @@
       },
       "no_persona": "人格なし",
       "unpicked": "選択しない",
+      "follow_new": "新しいセッションと同じ",
       "builtin_mascot": "内蔵",
       "default_look": "デフォルトテーマ",
       "mascot_missing": "{id}（未インストール）",

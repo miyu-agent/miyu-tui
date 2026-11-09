@@ -352,6 +352,8 @@ pub struct Texts {
     pub no_persona: String,
     /// 软件包里选人格、选预设、选知识库的项没设、选择窗第一行：不选（排期第 41 条，选了交 `null`、去掉这一项）。
     pub unpicked: String,
+    /// 终端集成会话的人格、预设没设、选择窗第一行：跟随新会话设置（发版前 check 第 21 条）。
+    pub follow_new: String,
     /// 吉祥物没设、选择窗第一行：内置的那只（「吉祥物包」第 3 条）。
     pub builtin_mascot: String,
     /// 主题没设、选择窗第一行：默认主题（「主题」第 5 条）。

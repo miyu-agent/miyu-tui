@@ -19,6 +19,18 @@ pub fn current<'a>(item: &'a Item, data: &'a Data) -> (&'a Value, &'a str) {
 /// 软件包里选 Miyu 自己的东西的类型（核心 PC-3）：人格、预设、知识库，存编号。
 pub const PICKED_KINDS: [&str; 3] = ["persona", "preset", "knowledge"];
 
+/// 没设时跟着新会话走的两项（核心 8-33：终端集成会话的人格、预设，不设的照默认人格、默认预设）：没设写「跟随新会话设置」，
+/// 不写「不选」（发版前 check 第 21 条，2026-11-09 项目主人）。
+const FOLLOWS_NEW: [&str; 2] = ["terminal.persona", "terminal.preset"];
+
+/// 选人格、预设、知识库的项没设时写什么、选择窗第一行叫什么。
+fn unset_pick<'a>(item: &Item, texts: &'a Texts) -> &'a String {
+    match FOLLOWS_NEW.contains(&item.key.as_str()) {
+        true => &texts.follow_new,
+        false => &texts.unpicked,
+    }
+}
+
 /// 名字照列表写、下拉照列表列的项（默认人格、默认预设）：不管清单写什么控件，一律开选择窗。
 pub fn is_named(key: &str) -> bool {
     key == DEFAULT_PERSONA || key == DEFAULT_PRESET || key == MASCOT || key == LOOK
@@ -82,8 +94,10 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
     match (item.control.as_str(), value) {
         // 默认人格没设：就是无人格。
         (_, Value::Null) if item.key == DEFAULT_PERSONA => texts.no_persona.clone(),
-        // 软件包里选人格、预设、知识库的没设：不选。
-        (_, Value::Null) if PICKED_KINDS.contains(&item.kind.as_str()) => texts.unpicked.clone(),
+        // 软件包里选人格、预设、知识库的没设：不选（终端集成会话那两项写跟随新会话设置）。
+        (_, Value::Null) if PICKED_KINDS.contains(&item.kind.as_str()) => {
+            unset_pick(item, texts).clone()
+        }
         // 吉祥物没设：就是内置的。
         (_, Value::Null) if item.key == MASCOT => texts.builtin_mascot.clone(),
         // 主题没设：就是默认主题。
@@ -123,7 +137,7 @@ pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Cho
             // 主题第一行「默认主题」：选了就不设（「主题」第 5 条）。
             LOOK => Some(&texts.default_look),
             // 软件包里选人格、预设、知识库的第一行「不选」：选了交 `null`、去掉这一项（排期第 41 条）。
-            _ if PICKED_KINDS.contains(&item.kind.as_str()) => Some(&texts.unpicked),
+            _ if PICKED_KINDS.contains(&item.kind.as_str()) => Some(unset_pick(item, texts)),
             _ => None,
         };
         let none = first.map(|label| Choice {
