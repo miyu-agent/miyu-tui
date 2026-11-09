@@ -30,7 +30,15 @@ fn export_estimates_each_use_and_saves_a_markdown_and_a_bundle() {
     tui.say("帮我记一下导出测试");
     tui.wait_for("记下了。");
     tui.say("/export");
-    tui.wait_for("存档（原始包）");
+    tui.wait_for("完整存档");
+    // 四种用途的名字（发版前 check 22，2026-11-09 项目主人改的）。
+    for name in [
+        "用于给别的 agent 继续",
+        "用于网页端聊天对话",
+        "仅导出对话为 Markdown 文件",
+    ] {
+        tui.wait_for(name);
+    }
     // 三种 Markdown 都估出来了（「· 约 N tokens」）。
     let end = Instant::now() + support::WAIT;
     while tui.lines().iter().filter(|l| l.contains("tokens")).count() < 3 {
@@ -69,7 +77,7 @@ fn export_estimates_each_use_and_saves_a_markdown_and_a_bundle() {
     );
     // 存档：第一行直接存成 ZIP。
     tui.say("/export");
-    tui.wait_for("存档（原始包）");
+    tui.wait_for("完整存档");
     tui.key(b"\r");
     let zip = home.work.join(format!("miyu-{short}.zip"));
     wait_file(&mut tui, &zip);

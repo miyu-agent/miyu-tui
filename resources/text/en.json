@@ -750,7 +750,7 @@
     "title": "Colors",
     "hint": "↑/↓ select · Enter confirm · Esc cancel"
   },
-  "export": {"title": "Export", "step_title": "Export · {use}", "hints": ["↑/↓ select · Enter next · Esc close", "↑/↓ select · Enter confirm · Esc back"], "uses": ["Archive (raw bundle)", "For another agent", "Paste into a web chat", "To read"], "bundle_note": "ZIP · file only", "estimate": "{size} · ~{tokens} tokens", "estimating": "Estimating…", "too_big": "Over 512 KiB · file only", "actions": ["Copy to clipboard", "Save as a file"], "copied": "Copied · ~{tokens} tokens", "saved": "Exported to {path} ({size})", "no_session": "No session to export yet"},
+  "export": {"title": "Export", "step_title": "Export · {use}", "hints": ["↑/↓ select · Enter next · Esc close", "↑/↓ select · Enter confirm · Esc back"], "uses": ["Full archive", "For another agent to continue", "For a web chat", "Conversation only, as Markdown"], "bundle_note": "ZIP · file only", "estimate": "{size} · ~{tokens} tokens", "estimating": "Estimating…", "too_big": "Over 512 KiB · file only", "actions": ["Copy to clipboard", "Save as a file"], "copied": "Copied · ~{tokens} tokens", "saved": "Exported to {path} ({size})", "no_session": "No session to export yet"},
   "languages": {
     "title": "Interface language",
     "hint": "↑/↓ select · Enter switch · Esc close",
