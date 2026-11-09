@@ -47,6 +47,8 @@ pub struct Texts {
     pub preset_chosen: String,
     /// 预设右边暗色写它占多少 token（核心 DM-4 估的，发版前 check 4）：`{n}` 是写短了的数。
     pub tokens: String,
+    /// 占 0 个 token 的（「无功能」）右边写的。
+    pub no_tokens: String,
 }
 
 /// 框（标题照是人格还是预设、提示）、排好的行、每一行是第几个。`current` 是现在用的那一个（无人格是空的编号）：开着会话的
@@ -88,14 +90,14 @@ pub fn lines(
                 ),
                 None => {
                     // 中途换的：现在用的那一个行首写 `●`（下面），右边不写；还没开会话的：默认的右边写「默认」。预设右边再写它占
-                    // 多少 token（发版前 check 4，2026-11-09 项目主人：「preset 列表中显示出 preset 消耗的 token」），核心没给的、是 0
-                    // 的（「无功能」，同一天项目主人：0 就不写）不写。
+                    // 多少 token（发版前 check 4，2026-11-09 项目主人：「preset 列表中显示出 preset 消耗的 token」），核心没给的不写；
+                    // 是 0 的（「无功能」）写「0 tok」（同一天验收时项目主人：「无预设后面还是要加上0」）。
                     let default_mark = (current.is_none() && default == Some(p.id.as_str()))
                         .then(|| texts.default_mark.clone());
-                    let tokens = p
-                        .tokens
-                        .filter(|n| kind == Kind::Preset && *n > 0)
-                        .map(|n| texts.tokens.replace("{n}", &crate::meter::short(n)));
+                    let tokens = p.tokens.filter(|_| kind == Kind::Preset).map(|n| match n {
+                        0 => texts.no_tokens.clone(),
+                        n => texts.tokens.replace("{n}", &crate::meter::short(n)),
+                    });
                     let right: Vec<String> = default_mark.into_iter().chain(tokens).collect();
                     let mark =
                         (!right.is_empty()).then(|| Span::styled(right.join("  "), theme::dim()));

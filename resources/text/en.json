@@ -723,7 +723,7 @@
     "preset_title": "Choose a preset",
     "preset_need": "Pick a preset first",
     "cant_edit": "This one can't be edited",
-    "preset_chosen": "Preset {name}", "tokens": "~{n}",
+    "preset_chosen": "Preset {name}", "tokens": "~{n} toks", "no_tokens": "0 tok",
     "no_tools": "No tools",
     "none": "No persona",
     "none_note": "No persona prompt",
