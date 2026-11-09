@@ -60,22 +60,12 @@ fn a_finished_turn_asks_for_the_converted_total_and_takes_it() {
 }
 
 #[test]
-fn an_answer_after_the_next_turn_started_or_for_another_session_is_dropped() {
+fn an_answer_for_another_session_or_with_other_amounts_is_dropped() {
     let (mut app, mut sent) = app();
     app.talk.transcript.session = Some("s1".into());
     let before = live(json!({"currency": "CNY", "amount": 7.0}));
     app.talk.transcript.bill = before.clone();
-    app.core(ended("s1"));
-    let (tag, _) = asked(&mut sent).expect("问了");
-    // 问完又开了一轮：实时的照加，不拿旧的回应盖掉。
-    app.talk.transcript.running = Some(std::time::Instant::now());
-    app.core(Update::Answer {
-        tag,
-        result: Ok(row(9.8)),
-    });
-    assert_eq!(app.talk.bill_total(), before);
     // 换了会话：不是这个会话的不要。
-    app.talk.transcript.running = None;
     app.core(ended("s1"));
     let (tag, _) = asked(&mut sent).expect("问了");
     app.talk.transcript.session = Some("s2".into());
@@ -84,7 +74,7 @@ fn an_answer_after_the_next_turn_started_or_for_another_session_is_dropped() {
         result: Ok(row(9.8)),
     });
     assert_eq!(app.talk.bill_total(), before);
-    // 核心的账本还没记上这一轮（交回的原币种比这边的少）：不换，不把这一轮的钱丢了。
+    // 核心的账本还没记上这一笔（交回的原币种比这边的少）：不换，不把这一笔钱丢了。
     app.talk.transcript.session = Some("s1".into());
     app.core(ended("s1"));
     let (tag, _) = asked(&mut sent).expect("问了");
@@ -96,8 +86,9 @@ fn an_answer_after_the_next_turn_started_or_for_another_session_is_dropped() {
 }
 
 #[test]
-fn money_that_arrives_outside_a_turn_asks_again_and_money_inside_one_does_not() {
-    // 起标题、回顾这类旁路请求在一轮结束以后才到：再问一次，又是一个数。一轮进行中的不问，等这一轮结束。
+fn every_payment_asks_again_inside_a_turn_too() {
+    // 起标题、回顾这类旁路请求在一轮结束以后才到：再问一次，又是一个数。一轮进行中来的也问、回来对得上就换（发版前 check 24，
+    // 2026-11-09 项目主人：「一轮完全结束才换算，这不合理」；原来一轮进行中不问）。
     let (mut app, mut sent) = app();
     app.talk.transcript.session = Some("s1".into());
     let billed = || Update::Elsewhere {
@@ -110,7 +101,19 @@ fn money_that_arrives_outside_a_turn_asks_again_and_money_inside_one_does_not() 
     assert!(asked(&mut sent).is_some(), "一轮外来的钱：问");
     app.talk.transcript.running = Some(std::time::Instant::now());
     app.core(billed());
-    assert!(asked(&mut sent).is_none(), "一轮进行中：不问");
+    let (tag, _) = asked(&mut sent).expect("一轮进行中来的钱：也问");
+    // 核心账本里记上的和这边一笔笔加的一样（[`row`] 的原币种）。
+    app.talk.transcript.bill = live(json!({"currency": "CNY", "amount": 7.0,
+        "rest": [{"currency": "USD", "amount": 0.4}]}));
+    app.core(Update::Answer {
+        tag,
+        result: Ok(row(9.8)),
+    });
+    let converted = app.talk.bill_total().converted.expect("换好的");
+    assert!(
+        (converted.total.amount - 9.8).abs() < 1e-12,
+        "一轮进行中就换成一个数"
+    );
 }
 
 #[test]
