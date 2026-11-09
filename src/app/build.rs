@@ -129,6 +129,7 @@ impl App {
                     config_tips,
                 ),
                 notice: None,
+                drafts: Default::default(),
             },
             boxes: Default::default(),
             media: super::media::Media::new(md_keep, figures),

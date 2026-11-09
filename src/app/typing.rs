@@ -42,4 +42,7 @@ pub struct Typing {
     pub tips: Tips,
     /// 框下面那一行的临时提示。
     pub notice: Option<Notice>,
+    /// 切会话时输入框里没发的那句，照会话编号记着（发版前 check 第 17 条，2026-11-09 项目主人：从侧边栏「最近会话」切到
+    /// 别的会话，框里的字跟着带过去了，不该带）：切走时记在原来那个名下，切回来放回去。
+    pub drafts: std::collections::HashMap<String, crate::input::Draft>,
 }

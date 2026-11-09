@@ -123,3 +123,54 @@ fn clicking_a_recent_session_twice_never_flashes_an_empty_session() {
         );
     }
 }
+
+/// 发版前 check 第 17 条（2026-11-09 项目主人）：框里打了字再从「最近会话」切到别的会话，字不跟过去；切回来还在。
+#[test]
+fn switching_sessions_leaves_the_typed_text_with_its_session() {
+    let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
+    let home = Home::with_settings(script, "");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+    tui.wait_for("工作区");
+    tui.say("topic-one");
+    tui.wait_for("answer-one");
+    tui.say("/new");
+    tui.say("topic-two");
+    tui.wait_for("answer-two");
+    tui.wait_for("最近会话");
+    tui.type_text("draft-for-two");
+    tui.pump(std::time::Duration::from_millis(200));
+    assert!(tui.input().contains("draft-for-two"), "{}", tui.input());
+    let click = |tui: &mut support::Tui, word: &str| {
+        let lines = tui.lines();
+        let row = lines
+            .iter()
+            .position(|l| l.find(word).is_some_and(|at| at > 100))
+            .expect("列着");
+        let col = lines[row].find(word).expect("在") + 1;
+        let at = format!("\x1b[<0;{col};{}M\x1b[<0;{col};{}m", row + 1, row + 1);
+        tui.key(at.as_bytes());
+    };
+    click(&mut tui, "topic-one");
+    tui.wait_for("answer-one");
+    let end = std::time::Instant::now() + support::WAIT;
+    while tui.shows("answer-two") {
+        assert!(std::time::Instant::now() < end, "没切过去");
+        tui.pump(std::time::Duration::from_millis(50));
+    }
+    assert!(
+        !tui.input().contains("draft-for-two"),
+        "字不该跟过去：{}",
+        tui.input()
+    );
+    click(&mut tui, "topic-two");
+    tui.wait_for("answer-two");
+    let end = std::time::Instant::now() + support::WAIT;
+    while !tui.input().contains("draft-for-two") {
+        assert!(
+            std::time::Instant::now() < end,
+            "切回来字该还在：{}",
+            tui.input()
+        );
+        tui.pump(std::time::Duration::from_millis(50));
+    }
+}
