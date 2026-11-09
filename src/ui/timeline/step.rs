@@ -387,6 +387,12 @@ pub fn body(step: &Step, style: Style, width: u16, ctx: &Ctx) -> Vec<Piece> {
                         let wrap = |text: &str, style: Style| each(text, style).collect();
                         return super::message::pieces(step, style, ctx, &wrap);
                     }
+                    Body::Advice => {
+                        let mut out: Vec<Piece> =
+                            each(step.arg("question").unwrap_or_default().trim(), style).collect();
+                        out.extend(super::detail::answer(output, width, ctx));
+                        return out;
+                    }
                     // 照 `detail` 画；老日志没有、形状不对的，照下面画结果的原文。
                     Body::Memories | Body::Hits | Body::Page => {
                         let wrap = |text: &str, style: Style| each(text, style).collect();

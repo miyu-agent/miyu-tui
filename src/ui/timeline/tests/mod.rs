@@ -475,6 +475,7 @@ fn folding_and_opening_follow_the_config_until_someone_clicks() {
     assert_eq!(rows(0, &seg, &f.ctx()).len(), 1);
 }
 
+mod advisor;
 mod agent;
 mod edits;
 mod icons;
