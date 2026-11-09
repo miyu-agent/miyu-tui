@@ -79,6 +79,26 @@ fn scrolled_up_the_top_pins_the_question_and_a_click_jumps_back() {
         "钉着的那一行后面不该有残字：{:?}",
         lines[row]
     );
+    // 竖线贴最左边，竖线和字都是暗色（发版前 check 第 6 条，2026-11-09 项目主人：原来缩进照正文、竖线照权限级别的颜色、
+    // 字是亮的）：同一个颜色，竖线后面空一格就是字。
+    let line = &lines[row];
+    let bar = line.chars().take_while(|c| *c == ' ').count();
+    assert!(
+        line[bar..].starts_with("┃ 第二问"),
+        "竖线后面一格就是字：{line:?}"
+    );
+    let row16 = u16::try_from(row).expect("行号");
+    let col = u16::try_from(bar).expect("列");
+    assert_eq!(
+        tui.foreground(row16, col),
+        tui.foreground(row16, col + 2),
+        "竖线和字同一个暗色"
+    );
+    assert_ne!(
+        tui.foreground(row16, col + 2),
+        vt100::Color::Default,
+        "字不是默认的亮色"
+    );
     // 点钉着的那一行：跳回第二问，它自己那一行顶到视口最上面（竖线那一行之下），不再钉着。
     let lines = tui.lines();
     let row = rows_with(&lines, "第二问 beta")[0];
@@ -93,6 +113,12 @@ fn scrolled_up_the_top_pins_the_question_and_a_click_jumps_back() {
         let lines = tui.lines();
         let at = rows_with(&lines, "第二问 beta");
         if at.len() == 1 && (1..=3).contains(&at[0]) && lines[at[0] - 1].trim() == "┃" {
+            // 正文里你说的话，竖线前面照输入框空着缩进；钉着的那一行不空（紧凑版面两边都贴左边，不比）
+            let own = lines[at[0] - 1].chars().take_while(|c| *c == ' ').count();
+            assert!(
+                own == 0 || bar < own,
+                "钉着的竖线比正文里的靠左：{bar} / {own}"
+            );
             break;
         }
         assert!(
