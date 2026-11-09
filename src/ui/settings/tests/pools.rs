@@ -77,3 +77,38 @@ fn a_pool_row_leaves_its_uses_to_the_list_below_its_members() {
         );
     }
 }
+
+/// 发版前 check 第 30 条（2026-11-09 项目主人）：编辑模型池的窗，按钮里暗着写快捷键，长列表不用挪到最底下也知道按 `s` 存。
+#[test]
+fn the_pool_form_buttons_show_their_keys() {
+    let config = Config::builtin().unwrap();
+    let mut list = crate::settings::test_support::model_list();
+    list["pools"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"name": "lite", "strategy": "pin", "models": [], "fixed": true}));
+    let mut p = Settings::open(false, true);
+    for (tag, method, _) in p.take_asks() {
+        let got = match method {
+            "model.list" => list.clone(),
+            "config.get" => crate::settings::test_support::config_all(),
+            _ => json!({"secrets": []}),
+        };
+        p.answer(tag, Ok(got), &config.text.settings);
+    }
+    press(&mut p, &config, KeyCode::Enter);
+    p.nav.page_step(true);
+    p.nav.page_step(true);
+    press(&mut p, &config, KeyCode::Enter);
+    let (text, _) = screen(&mut p, &config, 120, 30);
+    assert!(text.contains("编辑模型池"), "开了编辑窗：\n{text}");
+    let buttons = text
+        .lines()
+        .map(|l| l.replace(' ', ""))
+        .find(|l| l.contains("[保存"))
+        .unwrap_or_default();
+    assert!(
+        buttons.contains("[保存s]") && buttons.contains("[取消Esc]"),
+        "按钮里写着快捷键：\n{text}"
+    );
+}

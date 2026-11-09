@@ -934,6 +934,10 @@
       "Save",
       "Cancel"
     ],
+    "button_keys": [
+      "s",
+      "Esc"
+    ],
     "popup_hints": [
       [
         [

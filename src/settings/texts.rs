@@ -51,6 +51,8 @@ pub struct Texts {
     pub titles: [String; 5],
     /// 「确定」「取消」。
     pub buttons: [String; 2],
+    /// 两个按钮的快捷键，暗着写在按钮里（发版前 check 第 30 条）：`s`、`Esc`。
+    pub button_keys: [String; 2],
     /// 悬浮窗的按键提示：表单、正在改一项、选模型、问一句。
     pub popup_hints: [Vec<Hint>; 4],
     /// 选模型的窗：池那一段、只列能看图的、有成员不能看图、空池用不了、搜索。

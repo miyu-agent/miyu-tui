@@ -211,6 +211,7 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
     // 只填 key 的窗不放按钮：回车存、Esc 关。
     if form.key_only.is_none() {
         lines.buttons = texts.buttons.iter().map(|b| (b.clone(), false)).collect();
+        lines.keys = texts.button_keys.to_vec();
     }
     lines.button = match form.focus {
         Focus::Button(b) => Some(b),
