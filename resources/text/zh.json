@@ -851,7 +851,7 @@
     ],
     "pool_names": {"flagship": "旗舰池", "normal": "日常池", "lite": "轻量池"},
     "pool_tag": "{how} · {n}",
-    "pool_uses_head": "用于",
+    "pool_uses_head": "用于", "pool_use_from": "{name}（{package}）",
     "gone": "（不存在）",
     "options": {
       "": "自动",

@@ -851,7 +851,7 @@
     ],
     "pool_names": {"flagship": "フラッグシッププール", "normal": "日常プール", "lite": "ライトプール"},
     "pool_tag": "{how} · {n}",
-    "pool_uses_head": "用途",
+    "pool_uses_head": "用途", "pool_use_from": "{name}（{package}）",
     "gone": "（存在しない）",
     "options": {
       "": "自動",
