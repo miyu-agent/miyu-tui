@@ -80,7 +80,7 @@ fn a_in_the_pick_box_creates_one_and_comes_back_to_it() {
 }
 
 /// 发版前 check 4（2026-11-09 项目主人：「preset 列表中显示出 preset 消耗的 token」「新建会话页的选择列表也要有这个消耗显示」）：
-/// 预设框每一行右边暗色写核心估的 token 数（核心 DM-4 的 `tokens`）。
+/// 预设框每一行右边暗色写核心估的 token 数（核心 DM-4 的 `tokens`）；是 0 的（「无功能」）不写（同一天项目主人定）。
 #[test]
 fn the_preset_box_shows_how_many_tokens_each_preset_takes() {
     let home = Home::new(Script::new([]));
@@ -101,4 +101,11 @@ fn the_preset_box_shows_how_many_tokens_each_preset_takes() {
         );
         tui.pump(Duration::from_millis(50));
     }
+    let lines = tui.lines();
+    let none = lines.iter().find(|l| l.contains("无功能"));
+    assert!(
+        none.is_some_and(|l| !l.contains("约")),
+        "「无功能」那一行右边空着：\n{}",
+        lines.join("\n")
+    );
 }
