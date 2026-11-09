@@ -1,10 +1,10 @@
-//! 核心认的斜杠命令（蓝图 `tui.md`「斜杠命令列表」第 4、6 条，核心 X-14）：家目录里放的命令模板照 `command.catalog`
+//! 核心认的斜杠命令（蓝图 `tui.md`「斜杠命令列表」第 4、6 条，核心 X-14；技能改成 `$` 点名，「`$` 点名技能」）：家目录里放的命令模板照 `command.catalog`
 //! 列进命令列表（名字后面暗色跟参数提示、说明照界面语言），打了整行交给核心；正文里是人敲的那一行，模型看到的是展开的
 //! 那段。终端不认的名字也交给核心，被拒的只弹核心的原话、字不放回输入框。
 
 mod support;
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use miyu_session::testkit::{Play, Script};
 use support::Home;
@@ -49,9 +49,9 @@ fn a_template_command_is_listed_and_shows_the_typed_line() {
 const FORECAST: &str = "---\nname: forecast\ndescription: Tell the weather.\nmetadata:\n  summary_zh: 看天气\n---\n\n# forecast\n\n先查一遍当地的预报。\n";
 
 #[test]
-fn a_skill_is_listed_and_named_by_slash_with_the_typed_line_shown() {
-    // 核心 PT-2 下：能点名的技能照 `command.catalog` 列（带 `"skill": true`），`/技能名 参数` 照 `command.run` 交给核心，
-    // 正文里是人敲的那一行，模型看到套了外壳的技能正文和参数。
+fn a_skill_is_named_with_a_dollar_not_a_slash_and_the_typed_line_is_shown() {
+    // 发版前 check 26（2026-11-09 项目主人，核心 SN-1）：技能不在斜杠命令列表里，输入框里用 `$` 点名；正文里是人敲的那一行，
+    // `$名字` 着色、技能正文不给人看，模型看到套了外壳的技能正文。原来是 `/技能名`（核心 PT-2）。
     let script = Script::new([Play::Says("查好了。")]);
     let home = Home::new(script.clone());
     let dir = home.data().skills().join("forecast");
@@ -60,21 +60,42 @@ fn a_skill_is_listed_and_named_by_slash_with_the_typed_line_shown() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("Tab 切换权限级别");
     tui.type_text("/forec");
-    tui.wait_for("/forecast");
+    tui.pump(Duration::from_millis(500));
+    assert!(
+        !tui.shows("/forecast"),
+        "斜杠命令列表里没有技能：\n{}",
+        tui.lines().join("\n")
+    );
+    for _ in 0.."/forec".len() {
+        tui.key(b"\x7f");
+    }
+    tui.type_text("$forec");
+    tui.wait_for("$forecast");
     assert!(tui.shows("看天气"), "{}", tui.lines().join("\n"));
-    tui.type_text("ast 明天");
+    tui.key(b"\r");
+    // 选定把词换成「$forecast 」、列表关上（读到的输入框去掉了行尾的空格；空格在不在看下面发出去的那一行）。
+    let end = Instant::now() + support::WAIT;
+    while tui.input() != "$forecast" || tui.shows("看天气") {
+        assert!(
+            Instant::now() < end,
+            "选定换成「$forecast 」：{:?}",
+            tui.input()
+        );
+        tui.pump(Duration::from_millis(50));
+    }
+    tui.type_text("明天");
     tui.key(b"\r");
     tui.wait_for("查好了。");
     let screen = tui.lines().join("\n");
     assert!(
-        screen.contains("/forecast 明天"),
+        screen.contains("$forecast 明天"),
         "正文里是人敲的那一行：\n{screen}"
     );
     assert!(!screen.contains("先查一遍"), "技能正文不给人看：\n{screen}");
     let sent = format!("{:?}", script.requests().last());
     assert!(
         sent.contains("先查一遍当地的预报") && sent.contains("明天"),
-        "模型看到技能正文和参数：{sent}"
+        "模型看到技能正文和那句话：{sent}"
     );
 }
 
