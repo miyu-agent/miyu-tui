@@ -255,8 +255,19 @@ fn uses(frame: &mut Frame, area: Rect, page: &Settings, texts: &Texts, listed: u
     let rows = usize::from(area.height.saturating_sub(2));
     let below = listed.max(1).min(rows) + 1;
     let width = usize::from(area.width.saturating_sub(2));
-    let lines = std::iter::once(texts.pool_uses_head.clone())
-        .chain(pool.uses.iter().map(|u| format!("  {u}")));
+    let lines = std::iter::once(texts.pool_uses_head.clone()).chain(pool.uses.iter().map(
+        |(name, package)| {
+            // 扩展包登记的写上是哪个包的（发版前 check 29，2026-11-09 项目主人：入群审批这些看不出来自哪里）。
+            let text = match package {
+                Some(package) => texts
+                    .pool_use_from
+                    .replace("{name}", name)
+                    .replace("{package}", package),
+                None => name.clone(),
+            };
+            format!("  {text}")
+        },
+    ));
     for (i, line) in lines.enumerate() {
         let Some(y) = u16::try_from(below + i)
             .ok()

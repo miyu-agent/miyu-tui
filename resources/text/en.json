@@ -851,7 +851,7 @@
     ],
     "pool_names": {"flagship": "Flagship pool", "normal": "Everyday pool", "lite": "Lite pool"},
     "pool_tag": "{how} · {n}",
-    "pool_uses_head": "Used for",
+    "pool_uses_head": "Used for", "pool_use_from": "{name} ({package})",
     "gone": " (gone)",
     "options": {
       "": "Auto",

@@ -35,6 +35,8 @@ pub struct Texts {
     pub pool_tag: String,
     /// 成员栏下面「用于」那一段的标题：选中的池走它的旁路请求一项一行写全（2026-10-27 项目主人）。
     pub pool_uses_head: String,
+    /// 「用于」里扩展包登记的那一项：`{name}` 名字、`{package}` 包的编号（发版前 check 29）。
+    pub pool_use_from: String,
     /// 固定的三个池给人看的名字：池名 → 名字（`flagship` 旗舰、`normal` 日常、`lite` 轻量，`pools.rs`）。
     pub pool_names: std::collections::HashMap<String, String>,
     /// 引用失效时接在后面的。
