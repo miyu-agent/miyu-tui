@@ -181,3 +181,30 @@ fn switching_sessions_leaves_the_typed_text_with_its_session() {
         tui.pump(std::time::Duration::from_millis(50));
     }
 }
+
+/// 发版前 check 第 23 条（2026-11-09 项目主人：侧边栏最近会话、跳转消息自己填数，0 是不显示）：清单里是 int，配置写成数，侧边栏照它列。
+#[test]
+fn the_sidebar_counts_are_plain_numbers_and_zero_hides_the_list() {
+    let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
+    let home = Home::with_settings(script, "[tui]\nsidebar_sessions = 1\nsidebar_jumps = 0\n");
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+    tui.wait_for("工作区");
+    tui.say("topic-one");
+    tui.wait_for("answer-one");
+    tui.say("/new");
+    tui.say("topic-two");
+    tui.wait_for("answer-two");
+    tui.wait_for("最近会话");
+    tui.pump(std::time::Duration::from_millis(300));
+    let lines = tui.lines();
+    let side = |word: &str| {
+        lines
+            .iter()
+            .any(|l| l.find(word).is_some_and(|at| at > 100))
+    };
+    assert!(
+        side("topic-two") && !side("topic-one") && !side("跳转消息"),
+        "最近会话只列 1 个，跳转消息不画：\n{}",
+        lines.join("\n")
+    );
+}

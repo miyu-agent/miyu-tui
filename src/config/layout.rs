@@ -192,18 +192,17 @@ impl Layout {
         }
     }
 
-    /// 侧边栏「最近会话」几个在终端软件包里的名字（`[settings.sidebar_sessions]`，值是 `0`、`3`、`5`、`8`、`10` 这样的字）。
+    /// 侧边栏「最近会话」几个在终端软件包里的名字（`[settings.sidebar_sessions]`，值是数；发版前 check 第 23 条以前是 `"8"`
+    /// 这样的字，旧清单照旧认）。
     pub const SIDEBAR_SESSIONS_KEY: &'static str = "tui.sidebar_sessions";
 
     /// 照 `config.get` 读来的「最近会话」几个改：写了的盖过 `layout.json`，没有的（旧清单）、读不成数的照原样。
     pub fn apply_sidebar_sessions(&mut self, got: &serde_json::Value) {
-        let value = &got["items"][Self::SIDEBAR_SESSIONS_KEY]["value"];
-        if let Some(n) = value.as_str().and_then(|v| v.parse().ok()) {
+        if let Some(n) = count(&got["items"][Self::SIDEBAR_SESSIONS_KEY]["value"]) {
             self.sidebar_sessions = n;
         }
         // 「跳转消息」几条和它一起问（同一个请求编号，`head_settings.rs`）。
-        let value = &got["items"][Self::SIDEBAR_JUMPS_KEY]["value"];
-        if let Some(n) = value.as_str().and_then(|v| v.parse().ok()) {
+        if let Some(n) = count(&got["items"][Self::SIDEBAR_JUMPS_KEY]["value"]) {
             self.sidebar_jumps = n;
         }
     }
@@ -297,6 +296,14 @@ pub struct OutputLook {
     pub tab: usize,
 }
 
+/// 侧边栏列几个的值：数（发版前 check 第 23 条起），或者旧清单的 `"8"` 这样的字；别的读不成。
+fn count(value: &serde_json::Value) -> Option<usize> {
+    match value.as_u64() {
+        Some(n) => usize::try_from(n).ok(),
+        None => value.as_str().and_then(|v| v.parse().ok()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
@@ -345,5 +352,11 @@ mod tests {
         assert_eq!(layout.sidebar_sessions, 0);
         layout.apply_sidebar_sessions(&json!({"items": {"tui.sidebar_sessions": {"value": "8"}}}));
         assert_eq!(layout.sidebar_sessions, 8);
+        // 发版前 check 第 23 条（2026-11-09 项目主人）：自己填数，清单里是 int，核心交回数。
+        layout.apply_sidebar_sessions(&json!({"items": {
+            "tui.sidebar_sessions": {"value": 23},
+            "tui.sidebar_jumps": {"value": 0},
+        }}));
+        assert_eq!((layout.sidebar_sessions, layout.sidebar_jumps), (23, 0));
     }
 }
