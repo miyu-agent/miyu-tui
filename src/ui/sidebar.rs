@@ -269,8 +269,8 @@ pub fn draw(
             &mut context,
             &mut usage,
             &mut loops,
-            &mut recent,
             &mut jumps,
+            &mut recent,
         ];
         stack(
             frame,

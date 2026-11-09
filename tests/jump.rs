@@ -109,7 +109,7 @@ fn jump_reads_the_earlier_pages_of_an_old_session_without_scrolling_up() {
 }
 
 /// 排期第 15 条（2026-11-02 项目主人）：侧边栏「跳转消息」列这个会话里你说的话，新的在下（发版前 check 第 18 条，2026-11-09
-/// 项目主人，原来新的在上）；点一句跳过去，同 `/jump` 选它。
+/// 项目主人，原来新的在上）；点一句跳过去，同 `/jump` 选它。这一段在「最近会话」上面（发版前 check 第 22 条，同一天项目主人）。
 #[test]
 fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
     let home = Home::new(Script::new([
@@ -129,18 +129,26 @@ fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
     }
     tui.wait_for("跳转消息");
     tui.pump(Duration::from_millis(300));
-    // 侧边栏那几列里的（窗口 140 列宽，侧边栏在右边）：新的在下。
+    // 侧边栏那几列里的（窗口 140 列宽，侧边栏在右边）：新的在下。照显示宽度认：左边正文里有中文的一行，字数比列数少。
     let lines = tui.lines();
     let side = |word: &str, from: usize| {
         lines
             .iter()
             .skip(from)
-            .position(|l| l.find(word).is_some_and(|at| l[..at].chars().count() > 100))
+            .position(|l| {
+                l.find(word)
+                    .is_some_and(|at| unicode_width::UnicodeWidthStr::width(&l[..at]) > 100)
+            })
             .map(|at| at + from)
     };
-    // 「最近会话」里会话的标题也是第一问：从「跳转消息」那一行往下找。
+    // 「最近会话」里会话的标题也是第一问：从「跳转消息」那一行往下找，它在「最近会话」上面。
     let title = side("跳转消息", 0);
-    let from = title.expect("有跳转消息那一段");
+    let from = title.unwrap_or_else(|| panic!("有跳转消息那一段：\n{}", lines.join("\n")));
+    assert!(
+        side("最近会话", 0).is_some_and(|recent| from < recent),
+        "跳转消息在最近会话上面：\n{}",
+        lines.join("\n")
+    );
     let (gamma, beta, alpha) = (
         side("第三问 gamma", from),
         side("第二问 beta", from),
@@ -154,7 +162,7 @@ fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
     let main_has = |lines: &[String]| {
         lines.iter().position(|l| {
             l.find("第二问 beta")
-                .is_some_and(|at| l[..at].chars().count() < 100)
+                .is_some_and(|at| unicode_width::UnicodeWidthStr::width(&l[..at]) < 100)
         })
     };
     assert!(main_has(&lines).is_none(), "第二问早滚出视口了");
@@ -168,10 +176,9 @@ fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
     );
     // 点侧边栏里「第二问 beta」那一行：正文里那一句顶到视口最上面。
     let row = beta.expect("列着");
-    let col = lines[row][..lines[row].find("第二问").expect("在")]
-        .chars()
-        .count()
-        + 1;
+    let col = unicode_width::UnicodeWidthStr::width(
+        &lines[row][..lines[row].find("第二问").expect("在")],
+    ) + 1;
     tui.key(format!("\x1b[<0;{col};{0}M\x1b[<0;{col};{0}m", row + 1).as_bytes());
     let start = std::time::Instant::now();
     loop {

@@ -18,11 +18,15 @@ fn the_sidebar_lists_recent_sessions_and_a_click_switches() {
     tui.say("topic-two");
     tui.wait_for("answer-two");
     tui.wait_for("最近会话");
-    // 没标题的照预览：新的（topic-two，也是当前这个）在上面，topic-one 在下面。
+    // 没标题的照预览：新的（topic-two，也是当前这个）在上面，topic-one 在下面。从「最近会话」那一行往下找：上面「跳转消息」
+    // 里也列着你说的 topic-two（发版前 check 第 22 条，跳转消息挪到了最近会话上面）。
     let side = |lines: &[String], word: &str| {
+        let from = lines.iter().position(|l| l.contains("最近会话"))?;
         lines
             .iter()
+            .skip(from)
             .position(|l| l.find(word).is_some_and(|at| at > 100))
+            .map(|at| at + from)
     };
     let lines = tui.lines();
     let (title, two, one) = (
@@ -41,7 +45,10 @@ fn the_sidebar_lists_recent_sessions_and_a_click_switches() {
             .chars()
             .count()
     };
-    let usage = side(&lines, "共 ").expect("有用量那一段");
+    let usage = lines
+        .iter()
+        .position(|l| l.find("共 ").is_some_and(|at| at > 100))
+        .expect("有用量那一段");
     assert_eq!(
         col(one.expect("列着"), "topic-one"),
         col(usage, "共 "),
