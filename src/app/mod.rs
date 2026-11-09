@@ -40,6 +40,7 @@ pub use usage::UsageData;
 mod context_box;
 mod head_settings;
 mod help;
+mod history_keys;
 mod images;
 mod keys;
 mod language;

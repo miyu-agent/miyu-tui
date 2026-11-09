@@ -90,16 +90,23 @@ fn ctrl_r_shows_times_a_preview_and_a_search_row_and_typing_filters() {
         .filter(|l| l.contains("改一下侧边栏的顺序") && l.contains('│'))
         .count();
     assert_eq!(picked, 2, "列表一行、预览一行：\n{}", lines.join("\n"));
-    // 隔开三段的横线接上左右的框线。
+    // 预览装在圆角框里（发版前 check 第 31 条），搜索那一行上面的横线接上左右的框线。
     assert_eq!(
         lines
             .iter()
             .filter(|l| l.trim().starts_with('├') && l.trim().ends_with('┤'))
             .count(),
-        2,
+        1,
         "{}",
         lines.join("\n")
     );
+    let inner = |corner: char| {
+        lines
+            .iter()
+            .filter(|l| l.trim().starts_with('│') && l.contains(corner))
+            .count()
+    };
+    assert_eq!((inner('╭'), inner('╰')), (1, 1), "{}", lines.join("\n"));
     assert!(
         row("筛选历史…") > row("改一下侧边栏的顺序"),
         "搜索那一行在最下面"

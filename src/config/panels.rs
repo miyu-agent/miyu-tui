@@ -20,6 +20,10 @@ pub struct HistoryTexts {
     pub more: String,
     /// 最后一行按键提示。
     pub hints: String,
+    /// 按键模式是 Vim、没在打搜索的字时的按键提示（发版前 check 第 31 条）。
+    pub hints_vim: String,
+    /// 按键模式是 Vim、按了 `/` 在打搜索的字时的。
+    pub searching: String,
     /// 一分钟以内发的。
     pub now: String,
     /// `{n}` 分钟前发的。

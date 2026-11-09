@@ -56,10 +56,13 @@ impl App {
             || (self.config.layout.vim && self.typing.mention.mode == crate::mention::Mode::Picking)
     }
 
-    /// 按键模式是 Vim，会话列表、`/model` 开着、没在打搜索的字（`list_search.rs`）。
+    /// 按键模式是 Vim，会话列表、`/model`、输入历史列表（发版前 check 第 31 条）开着、没在打搜索的字（`list_search.rs`）。
     fn vim_list_idle(&self) -> bool {
         if !self.config.layout.vim {
             return false;
+        }
+        if self.typing.history.open {
+            return !self.typing.history.typing;
         }
         match self.boxes.panel {
             Some(Panel::Sessions) => self.boxes.session_list.as_ref().is_some_and(|l| !l.typing),
