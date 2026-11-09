@@ -174,7 +174,7 @@ pub struct Recent {
 
 impl Part<Side<'_, '_>> for Recent {
     fn name(&self) -> &'static str {
-        NAMES[6]
+        NAMES[7]
     }
 
     fn lay(&mut self, side: &Side, width: u16) -> Laid {
@@ -233,7 +233,7 @@ pub struct Jumps {
 
 impl Part<Side<'_, '_>> for Jumps {
     fn name(&self) -> &'static str {
-        NAMES[7]
+        NAMES[6]
     }
 
     fn lay(&mut self, side: &Side, width: u16) -> Laid {

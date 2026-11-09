@@ -109,7 +109,7 @@ applies = "now"
 name = { en = "Sidebar parts", zh = "侧边栏部件", ja = "サイドバーの部品" }
 description = { en = "Which parts the sidebar shows, in which order, and at most how many rows each.", zh = "侧边栏挂哪几件、什么先后、每件最多几行。", ja = "サイドバーに並べる部品、その順番、それぞれの最大行数。" }
 
-# 部件名：出厂的 avatar、session、cwd、context、usage、loops、recent、jump，包的块写 `pkg:<包>/<块>`；认不出的终端不画、提示一次。
+# 部件名：出厂的 avatar、session、cwd、context、usage、loops、jump、recent，包的块写 `pkg:<包>/<块>`；认不出的终端不画、提示一次。
 [settings.side.fields.part]
 type = "text"
 max = 100
