@@ -28,4 +28,10 @@ pub struct MentionTexts {
     pub empty: String,
     /// 下边框的按键说明。
     pub hints: String,
+    /// 按键模式是 Vim、在打字时的（发版前 check 16）。
+    pub vim_hints: String,
+    /// 按键模式是 Vim、`Esc` 以后在列表里选时的。
+    pub picking: String,
+    /// 按键模式是 Vim、按了 `/` 在筛时的。
+    pub filtering: String,
 }

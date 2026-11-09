@@ -1,14 +1,16 @@
 //! `@` 文件列表的按键和鼠标（蓝图 `tui.md`「`@` 文件列表」第 5 条）：`↑`、`↓` 选，`Tab` 进目录（文件同 `Enter`），
-//! `Enter` 收成块，`Esc` 关；悬停选中，点一下收成块。
+//! `Enter` 收成块，`Esc` 关；悬停选中，点一下收成块。按键模式是 Vim 时 `Esc` 先进列表里选（发版前 check 16）。
 
 use std::time::Instant;
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use ratatui::crossterm::event::{
+    KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+};
 
 use super::App;
 use crate::core::Command;
 use crate::input::Action;
-use crate::mention::{Found, escape};
+use crate::mention::{Found, Mode, escape};
 
 impl App {
     /// 这一帧开着的 `@` 列表：历史列表、后台面板、抽屉开着时不开。
@@ -41,6 +43,11 @@ impl App {
 
     /// 列表开着时的按键：管得了的交回 `Some`，别的（打字、挪光标）交给输入框。
     pub(super) fn mention_key(&mut self, key: KeyEvent, found: &Found) -> Option<Action> {
+        if self.config.layout.vim
+            && let Some(action) = self.mention_vim(key, found)
+        {
+            return action;
+        }
         match key.code {
             KeyCode::Up | KeyCode::Down => {
                 self.typing
@@ -53,6 +60,36 @@ impl App {
             _ => return None,
         }
         Some(Action::None)
+    }
+
+    /// 按键模式是 Vim（发版前 check 16，2026-11-09 项目主人：「列表里能用 j/k 选」，经 core1 转）：打字时 `Esc` 进列表里选；
+    /// 选的时候 `j` `k` 上下、`h` `l` 同 `←` `→`、`/` 筛，别的字不进输入框，`Esc` 关；筛的时候打的字接在词后面，`Enter`
+    /// 筛好了回去选，`Esc` 不筛了、词换回按 `/` 以前的。交回 `None` 的照不是 Vim 的办（`↑` `↓`、`Tab`、`Enter` 都一样）。
+    fn mention_vim(&mut self, key: KeyEvent, found: &Found) -> Option<Option<Action>> {
+        let plain = key.modifiers.difference(KeyModifiers::SHIFT).is_empty();
+        let arrow = |code| KeyEvent::new(code, KeyModifiers::NONE);
+        match (self.typing.mention.mode.clone(), key.code) {
+            (Mode::Typing, KeyCode::Esc) => self.typing.mention.mode = Mode::Picking,
+            (Mode::Picking, KeyCode::Char(c)) if plain => match c {
+                'j' | 'k' => self.typing.mention.step(c == 'j', found.items.len()),
+                'h' => return Some(Some(self.typing.input.key(arrow(KeyCode::Left)))),
+                'l' => return Some(Some(self.typing.input.key(arrow(KeyCode::Right)))),
+                '/' => {
+                    let editor = &self.typing.input.editor;
+                    let before = editor.text()[found.start..editor.cursor()].to_string();
+                    self.typing.mention.mode = Mode::Filtering(before);
+                }
+                _ => {}
+            },
+            (Mode::Picking, KeyCode::Backspace | KeyCode::Delete) => {}
+            (Mode::Filtering(_), KeyCode::Enter) => self.typing.mention.mode = Mode::Picking,
+            (Mode::Filtering(before), KeyCode::Esc) => {
+                self.typing.input.retype_mention(found.start, &before);
+                self.typing.mention.mode = Mode::Picking;
+            }
+            _ => return None,
+        }
+        Some(Some(Action::None))
     }
 
     /// 列表里的鼠标（「斜杠命令列表」第 3 条）：悬停高亮指针下那一条、列表不动，滚轮滚，点一下收成块。

@@ -70,6 +70,18 @@ struct Reply {
     building: bool,
 }
 
+/// 按键模式是 Vim 时列表在哪一步（发版前 check 16，2026-11-09 项目主人）：打字、在列表里选、按了 `/` 在筛。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum Mode {
+    /// 照常打字：字进输入框。
+    #[default]
+    Typing,
+    /// `Esc` 以后在列表里选：`j` `k` 上下、`h` `l` 同 `←` `→`，别的字不进输入框。
+    Picking,
+    /// 选的时候按了 `/`：打的字接在词后面筛；记着按 `/` 以前的词（`@` 起到光标），`Esc` 换回去。
+    Filtering(String),
+}
+
 /// 列表的状态。
 #[derive(Debug)]
 pub struct Mention {
@@ -77,6 +89,8 @@ pub struct Mention {
     pub selected: usize,
     /// 鼠标钉住的露出来的那一段（`menu::pin`）；按键选、词变了放开。
     pub pinned: Option<usize>,
+    /// 按键模式是 Vim 时在哪一步；列表关了回到打字。
+    pub mode: Mode,
     look: MentionLook,
     /// 现在的词：变了，选中回到第一条。
     typed: Option<Word>,
@@ -98,6 +112,7 @@ impl Mention {
         Self {
             selected: 0,
             pinned: None,
+            mode: Mode::Typing,
             look,
             typed: None,
             dismissed: None,
@@ -115,6 +130,7 @@ impl Mention {
             self.dismissed = None;
             self.asked = None;
             self.reply = None;
+            self.mode = Mode::Typing;
             return None;
         };
         if self.typed.as_ref() != Some(&word) {
@@ -234,5 +250,6 @@ impl Mention {
     /// `Esc`：关掉，这个词没变就一直关着。
     pub fn dismiss(&mut self, found: &Found) {
         self.dismissed = Some((found.start, found.query.clone()));
+        self.mode = Mode::Typing;
     }
 }
