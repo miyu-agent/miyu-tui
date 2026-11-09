@@ -229,6 +229,16 @@ fn spent_and_cost_sections_split_by_kind() {
     assert!(got[cost].ends_with("$0.40"), "{got:#?}");
     assert!(got[cost + 3].starts_with("输出") && got[cost + 3].ends_with("$0.10     25%"));
     assert_eq!(got.len(), cost + 5, "{got:#?}");
+    // 发版前 check 第 19 条（2026-11-09 项目主人）：窗口宽时段头右边的缓存命中、总钱数和下面表里的数在同一列收尾，不贴着框的
+    // 右边缘。
+    let wide: Vec<String> = rows(Some(&data), &config, (&money, &super::Tail::default()), 120)
+        .iter()
+        .map(|l| l.to_string().trim_end().to_string())
+        .collect();
+    let w = |s: &String| unicode_width::UnicodeWidthStr::width(s.as_str());
+    assert_eq!(w(&wide[spent]), w(&wide[spent + 1]), "{wide:#?}");
+    assert_eq!(w(&wide[cost]), w(&wide[cost + 1]), "{wide:#?}");
+    assert!(w(&wide[spent]) < 60, "{wide:#?}");
     // 有一行是老账（没有 converted_parts）：按种类的不写，总数照写。
     let mut old = read_uses(&json!({"rows": [
         {"use": "main", "requests": 1, "usage": {"uncached": 10, "output": 1},

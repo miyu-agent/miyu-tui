@@ -19,11 +19,16 @@ pub struct Tail {
     pub stuck: Option<Stuck>,
 }
 
-/// 名目在左、数在右的几行：名目暗色，数右对齐到同一列。
-fn pairs(rows: &[(String, String)], room: usize) -> Vec<Line<'static>> {
+/// 名目那一列、数那一列各多宽（数那一列放不下的照剩下的）。
+fn columns(rows: &[(String, String)], room: usize) -> (usize, usize) {
     let name_width = rows.iter().map(|(n, _)| width(n)).max().unwrap_or(0) + 2;
     let value_width = rows.iter().map(|(_, v)| width(v)).max().unwrap_or(0);
-    let value_width = value_width.min(room.saturating_sub(name_width));
+    (name_width, value_width.min(room.saturating_sub(name_width)))
+}
+
+/// 名目在左、数在右的几行：名目暗色，数右对齐到同一列。
+fn pairs(rows: &[(String, String)], room: usize) -> Vec<Line<'static>> {
+    let (name_width, value_width) = columns(rows, room);
     rows.iter()
         .map(|(name, value)| {
             Line::from(vec![
@@ -57,12 +62,24 @@ pub(super) fn context_tail(tail: &Tail, texts: &Texts, room: usize) -> Vec<Line<
     out
 }
 
-/// 段头：左边正常色，右边暗色贴着右边。
-fn head(left: String, right: Option<String>, room: usize) -> Line<'static> {
+/// 段头：左边正常色，右边暗色，收尾对齐到下面那张表（`rows`）的右边，和表里的数在同一列；下面没有表的接在左边后面
+/// 空两格（发版前 check 第 19 条，2026-11-09 项目主人：原来贴着整个框的右边，窗口宽时和左边、下面的数离得太远）。
+fn head(
+    left: String,
+    right: Option<String>,
+    rows: &[(String, String)],
+    room: usize,
+) -> Line<'static> {
     let Some(right) = right else {
         return Line::raw(left);
     };
-    let gap = room.saturating_sub(width(&left) + width(&right)).max(2);
+    let span = if rows.is_empty() {
+        0
+    } else {
+        let (name_width, value_width) = columns(rows, room);
+        name_width + value_width
+    };
+    let gap = span.saturating_sub(width(&left) + width(&right)).max(2);
     Line::from(vec![
         Span::raw(left),
         Span::raw(" ".repeat(gap)),
@@ -94,7 +111,6 @@ pub(super) fn spent(list: &[UsageRow], texts: &Texts, room: usize) -> Vec<Line<'
         .hit
         .replace("{percent}", &meter::hit_rate(split.cache_read, input));
     let title = texts.spent.replace("{tokens}", &meter::short(all));
-    let mut out = vec![head(title, Some(hit), room)];
     let counts = [
         split.cache_read,
         split.cache_write,
@@ -113,6 +129,7 @@ pub(super) fn spent(list: &[UsageRow], texts: &Texts, room: usize) -> Vec<Line<'
             )
         })
         .collect();
+    let mut out = vec![head(title, Some(hit), &rows, room)];
     out.extend(pairs(&rows, room));
     out
 }
@@ -133,14 +150,19 @@ pub(super) fn cost(
     let mut bill = Bill::default();
     used.iter().for_each(|r| bill.merge(&r.bill));
     let Some(total) = money(&bill) else {
-        return vec![head(texts.cost.clone(), Some(texts.no_price.clone()), room)];
+        return vec![head(
+            texts.cost.clone(),
+            Some(texts.no_price.clone()),
+            &[],
+            room,
+        )];
     };
-    let mut out = vec![head(texts.cost.clone(), Some(total), room)];
+    let alone = |total: String| vec![head(texts.cost.clone(), Some(total), &[], room)];
     let Some(converted) = bill.converted.as_ref() else {
-        return out;
+        return alone(total);
     };
     let Some(kinds) = KindMoney::sum(used.iter().map(|r| r.kinds.as_ref())) else {
-        return out;
+        return alone(total);
     };
     let sum: f64 = kinds.all().iter().flatten().sum();
     let one = |amount: f64| {
@@ -171,6 +193,7 @@ pub(super) fn cost(
             ))
         })
         .collect();
+    let mut out = vec![head(texts.cost.clone(), Some(total), &rows, room)];
     out.extend(pairs(&rows, room));
     out
 }
