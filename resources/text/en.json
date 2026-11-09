@@ -304,7 +304,10 @@
     "indexing": " · finding files…",
     "partial": " · partial list, type / to browse folders",
     "empty": "No matches",
-    "hints": "↑/↓ select · Tab open folder · Enter insert · Esc close"
+    "hints": "↑/↓ select · Tab open folder · Enter insert · Esc close",
+    "vim_hints": "Ctrl+J/K select · Tab open folder · Enter insert · Esc pick in list",
+    "picking": "j/k select · h/l move cursor · / filter · Tab open folder · Enter insert · Esc close",
+    "filtering": "Enter confirm · Esc cancel filter"
   },
   "usage_cell": {"failed": "Context compaction failed", "over": "Context exceeds the window", "compact": "Compact", "compacting": "Compacting context"},
   "history": {

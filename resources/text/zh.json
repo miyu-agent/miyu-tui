@@ -304,7 +304,10 @@
     "indexing": " · 正在索引文件…",
     "partial": " · 仅显示部分结果，输入 / 按目录查找",
     "empty": "无匹配项",
-    "hints": "↑/↓ 选择 · Tab 进入目录 · Enter 插入 · Esc 关闭"
+    "hints": "↑/↓ 选择 · Tab 进入目录 · Enter 插入 · Esc 关闭",
+    "vim_hints": "Ctrl+J/K 选择 · Tab 进入目录 · Enter 插入 · Esc 在列表里选",
+    "picking": "j/k 选择 · h/l 移动光标 · / 筛选 · Tab 进入目录 · Enter 插入 · Esc 关闭",
+    "filtering": "Enter 确认 · Esc 取消筛选"
   },
   "usage_cell": {"failed": "上下文压缩失败", "over": "上下文超出窗口", "compact": "压缩", "compacting": "正在压缩上下文"},
   "history": {

@@ -37,7 +37,14 @@ pub(super) fn draw(
             app.typing.mention.pinned,
             rows,
             areas.menu_text.width,
-            &app.config.text.mention,
+            (
+                &app.config.text.mention,
+                mention::hint(
+                    &app.config.text.mention,
+                    app.config.layout.vim,
+                    &app.typing.mention.mode,
+                ),
+            ),
         );
         menu::draw(frame, areas.menu, areas.menu_text, chrome, lines);
     }

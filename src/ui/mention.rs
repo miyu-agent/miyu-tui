@@ -6,7 +6,7 @@ use ratatui::text::{Line, Span};
 
 use super::panel::{self, Chrome};
 use crate::config::MentionTexts;
-use crate::mention::{Candidate, Found, Status};
+use crate::mention::{Candidate, Found, Mode, Status};
 use crate::theme;
 
 /// 列表的框和露出来的那一段，最多 `rows` 条。
@@ -16,7 +16,7 @@ pub fn lines(
     pinned: Option<usize>,
     rows: usize,
     width: u16,
-    words: &MentionTexts,
+    (words, hint): (&MentionTexts, &str),
 ) -> (Chrome, Vec<Line<'static>>) {
     let title = words.title.replace("{query}", &found.query);
     let count = words
@@ -32,7 +32,7 @@ pub fn lines(
     if let Some(note) = note {
         meta.push(Span::styled(note.clone(), theme::dim()));
     }
-    let chrome = Chrome::new(&title, meta).hint(&words.hints);
+    let chrome = Chrome::new(&title, meta).hint(hint);
     if found.items.is_empty() {
         // 还没回：空着，不说对不上（第 2 条）。
         let text = if found.ready {
@@ -87,6 +87,16 @@ fn spans(item: &Candidate, picked: bool) -> Vec<Span<'static>> {
     out
 }
 
+/// 下边框的按键说明：按键模式是 Vim 时照在哪一步写（发版前 check 16）。
+pub fn hint<'a>(words: &'a MentionTexts, vim: bool, mode: &Mode) -> &'a str {
+    match (vim, mode) {
+        (false, _) => &words.hints,
+        (true, Mode::Typing) => &words.vim_hints,
+        (true, Mode::Picking) => &words.picking,
+        (true, Mode::Filtering(_)) => &words.filtering,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -120,7 +130,7 @@ mod tests {
             status: Status::Partial,
             ready: true,
         };
-        let (chrome, rows) = lines(&found, 0, None, 8, 60, &words);
+        let (chrome, rows) = lines(&found, 0, None, 8, 60, (&words, &words.hints));
         let title: String = chrome.title.iter().map(|s| s.content.as_ref()).collect();
         assert_eq!(title, "@ main · 2 个 · 仅显示部分结果，输入 / 按目录查找");
         // 没选中的那条（选中的字色由底色定）：对上的字强调色，目录的部分最淡。
@@ -139,7 +149,7 @@ mod tests {
             items: Vec::new(),
             ..found
         };
-        let (_, rows) = lines(&empty, 0, None, 8, 60, &words);
+        let (_, rows) = lines(&empty, 0, None, 8, 60, (&words, &words.hints));
         assert!(rows[0].to_string().contains("无匹配项"));
     }
 }
