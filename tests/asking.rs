@@ -1,8 +1,8 @@
-//! 伪终端里的端到端测试：确认的抽屉接真的核心（蓝图 `tui.md`「确认和提问的抽屉」，核心 D-1）。她往工作区外写文件，
-//! 核心来问；抽屉里答了经 `session.answer` 交回去，核心照办。
+//! 伪终端里的端到端测试：确认的抽屉接真的核心（蓝图 `tui.md`「确认和提问的抽屉」，核心 D-1）。她跑高危命令（工作目录里
+//! `git clean -f`），核心来问；抽屉里答了经 `session.answer` 交回去，核心照办。核心 LV-1 起只剩只读、完全放开两级，完全
+//! 放开下往工作区外写不再问，高危命令照样问（LV-3，原来照工作区一级往工作区外写来引出确认）。
 //!
-//! 只在 Unix 上跑：工作区外的目录用 `/var/tmp`（临时目录核心本来就让写），命令用 `uname`；Windows 上要另找一处
-//! 不在临时目录、又不碰人的家目录的地方，那时再加。
+//! 只在 Unix 上跑：要 `git`、`/bin/sh`；Windows 上那时再加。
 #![cfg(unix)]
 
 mod support;
@@ -14,12 +14,24 @@ use support::Home;
 
 const DOWN: &[u8] = b"\x1b[B";
 
-/// 工作区外的一个目录：临时目录核心本来就让写，用 `/var/tmp`（真实路径，macOS 上它是链接），测完删掉。
-fn outside(name: &str) -> std::path::PathBuf {
-    let dir =
-        std::path::Path::new("/var/tmp").join(format!("miyu-tui-{name}-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).expect("建得了");
-    std::fs::canonicalize(&dir).expect("在")
+/// 工作目录做成 git 仓库，放一个没跟踪的文件 `name`：她跑 `git clean -f` 是高危命令（核心 5-17 的 `git_clean`），完全放开
+/// 下也问人；允许了就清掉它，拒了还在。
+fn junk(home: &Home, name: &str) -> std::path::PathBuf {
+    let ok = std::process::Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(&home.work)
+        .status()
+        .expect("跑得了 git");
+    assert!(ok.success(), "git init");
+    let path = home.work.join(name);
+    std::fs::write(&path, "x").expect("写得了");
+    path
+}
+
+/// 她调一次 `shell` 跑 `git clean -f`，短标题是 `title`。
+fn clean(title: &str) -> Play {
+    let args = serde_json::json!({"command": "git clean -f", "description": title}).to_string();
+    Play::Calls(vec![("shell".into(), args)])
 }
 
 /// 等到条件成立。
@@ -36,79 +48,65 @@ fn wait(tui: &mut support::Tui, what: &str, done: impl Fn() -> bool) {
 }
 
 #[test]
-fn a_write_outside_the_workspace_asks_and_allowing_once_lets_it_through() {
-    let outside = outside("asking");
-    let target = outside.join("note.txt");
-    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
-    let script = Script::new([
-        Play::Calls(vec![("write".into(), args)]),
-        Play::Says("写好了。"),
-    ]);
+fn a_hazardous_command_asks_and_allowing_once_lets_it_through() {
+    let script = Script::new([clean("清掉没跟踪的文件"), Play::Says("清好了。")]);
     let home = Home::with_tools(script, "");
+    let target = junk(&home, "junk.txt");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
-    tui.say("写个文件");
+    tui.say("清一下");
     tui.wait_for("允许本次");
-    assert!(!target.exists(), "还没答就没写");
-    // 有放行规则：三项都在。
-    tui.wait_for("此目录不再询问");
+    assert!(target.exists(), "还没答就没跑");
+    // 高危命令没有放行规则：只有允许这一次、不允许（LV-3）。
+    assert!(!tui.shows("此目录不再询问"), "{}", tui.lines().join("\n"));
     assert!(
         !tui.lines().iter().any(|l| l.contains("在问")),
         "她自己问的不写谁在问"
     );
     tui.key(b"\r");
-    wait(&mut tui, "文件写出来", || target.exists());
-    tui.wait_for("写好了。");
+    wait(&mut tui, "文件清掉", || !target.exists());
+    tui.wait_for("清好了。");
     assert!(
         !tui.lines().iter().any(|l| l.contains("允许本次")),
         "答了收起"
     );
-    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
 }
 
 #[test]
 fn denying_with_a_reason_tells_her_and_writes_a_red_line() {
-    let outside = outside("deny");
-    let target = outside.join("note.txt");
-    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
-    let script = Script::new([
-        Play::Calls(vec![("write".into(), args)]),
-        Play::Says("好，不写了。"),
-    ]);
+    let script = Script::new([clean("清掉没跟踪的文件"), Play::Says("好，不清了。")]);
     let home = Home::with_tools(script, "");
+    let target = junk(&home, "junk.txt");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
-    tui.say("写个文件");
+    tui.say("清一下");
     tui.wait_for("允许本次");
     // `n` 写「不允许」的理由，回车交（2026-10-22 项目主人：照提问的 `n` 补充）。
     tui.key(b"n");
-    tui.type_text("别写这里");
+    tui.type_text("别清这里");
     tui.key(b"\r");
-    tui.wait_for("不允许 · 别写这里");
-    tui.wait_for("好，不写了。");
-    assert!(!target.exists(), "拒了没写");
-    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
+    tui.wait_for("不允许 · 别清这里");
+    tui.wait_for("好，不清了。");
+    assert!(target.exists(), "拒了没跑");
 }
 
 #[test]
 fn a_command_approval_shows_its_short_title_and_the_command() {
     // 2026-10-07 项目主人：确认时看不到具体的命令；问题行写成了「要用 shell」，应该是这条命令的短标题。
-    let args = r#"{"command": "uname -a", "description": "看看系统信息"}"#;
-    let script = Script::new([
-        Play::Calls(vec![("shell".into(), args.into())]),
-        Play::Says("看完了。"),
-    ]);
+    // 完全放开下要问的命令只有高危的（LV-3）：用工作目录里的 `git clean -f`。
+    let script = Script::new([clean("清掉没跟踪的文件"), Play::Says("清好了。")]);
     let home = Home::with_tools(script, "");
+    junk(&home, "junk.txt");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
-    tui.say("看看系统");
+    tui.say("清一下");
     tui.wait_for("允许本次");
     let screen = tui.lines().join("\n");
     assert!(
-        screen.contains("看看系统信息"),
+        screen.contains("清掉没跟踪的文件"),
         "短标题当问题行：\n{screen}"
     );
-    assert!(screen.contains("$ uname -a"), "命令原文：\n{screen}");
+    assert!(screen.contains("$ git clean -f"), "命令原文：\n{screen}");
     assert!(!screen.contains("使用 shell"), "{screen}");
     // 沙盒那一套去掉了（LV-3）：不再写「沙盒外运行」。
     assert!(!screen.contains("沙盒外运行"), "{screen}");
@@ -117,7 +115,7 @@ fn a_command_approval_shows_its_short_title_and_the_command() {
         "跑命令的没有放行规则：{screen}"
     );
     tui.key(b"\r");
-    tui.wait_for("看完了。");
+    tui.wait_for("清好了。");
 }
 
 #[test]
@@ -187,34 +185,30 @@ fn ask_user_opens_the_question_drawer_and_the_answers_reach_her() {
 fn the_same_call_id_in_a_new_session_still_asks() {
     // 调用编号只在一个会话里唯一：前一个会话了结过的 `call_…`，`/new` 以后新会话又问同一个编号，照样开抽屉
     // （2026-10-07 项目主人报：接上旧会话、`/new` 以后让她在沙盒外跑一条 echo，没弹确认，看着卡住了）。
-    let outside = outside("same-call");
-    let first = outside.join("one.txt");
-    let second = outside.join("two.txt");
-    let write = |path: &std::path::Path| {
-        let args = serde_json::json!({"file_path": path, "content": "hi"}).to_string();
-        Play::Calls(vec![("write".into(), args)])
-    };
     let script = Script::new([
-        write(&first),
-        Play::Says("写好了。"),
-        write(&second),
-        Play::Says("又写好了。"),
+        clean("清掉没跟踪的文件"),
+        Play::Says("清好了。"),
+        clean("清掉没跟踪的文件"),
+        Play::Says("又清好了。"),
     ]);
     let home = Home::with_tools(script, "");
+    let first = junk(&home, "one.txt");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
-    tui.say("写个文件");
+    tui.say("清一下");
     tui.wait_for("允许本次");
     tui.key(b"\r");
-    tui.wait_for("写好了。");
+    tui.wait_for("清好了。");
+    assert!(!first.exists(), "第一个清掉了");
+    let second = home.work.join("two.txt");
+    std::fs::write(&second, "x").expect("写得了");
     tui.say("/new");
     tui.pump(Duration::from_millis(300));
-    tui.say("写个文件");
+    tui.say("清一下");
     tui.wait_for("允许本次");
     tui.key(b"\r");
-    wait(&mut tui, "第二个文件写出来", || second.exists());
-    tui.wait_for("又写好了。");
-    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
+    wait(&mut tui, "第二个文件清掉", || !second.exists());
+    tui.wait_for("又清好了。");
 }
 
 /// 切过去的会话里以前答过的题（review，2026-10-11）：补发时照主会话的办，答案照样接在「提问」那一步下面。原来补发期间
@@ -259,9 +253,6 @@ fn switching_to_a_session_with_an_answered_question_draws_the_answer() {
 #[test]
 fn page_up_with_a_drawer_open_scrolls_the_body_and_the_drawer_steps_aside() {
     // 「确认和提问的抽屉」第 4a 条（2026-10-26 项目主人：有确认框时 PgUp、PgDn 翻不了页；往上翻是要看正文，抽屉不用钉在底下）。
-    let outside = outside("asking-page");
-    let target = outside.join("note.txt");
-    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
     let long: &'static str = Box::leak(
         (1..=60)
             .map(|n| format!("第{n}行"))
@@ -271,15 +262,16 @@ fn page_up_with_a_drawer_open_scrolls_the_body_and_the_drawer_steps_aside() {
     );
     let script = Script::new([
         Play::Says(long),
-        Play::Calls(vec![("write".into(), args)]),
-        Play::Says("写好了。"),
+        clean("清掉没跟踪的文件"),
+        Play::Says("清好了。"),
     ]);
     let home = Home::with_tools(script, "");
+    let target = junk(&home, "junk.txt");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
     tui.say("说长一点");
     tui.wait_at_bottom_for("第60行");
-    tui.say("写个文件");
+    tui.say("清一下");
     tui.wait_for("允许本次");
     // PgUp 翻正文：抽屉让开。
     tui.key(b"\x1b[5~");
@@ -302,22 +294,16 @@ fn page_up_with_a_drawer_open_scrolls_the_body_and_the_drawer_steps_aside() {
     tui.key(b"\x1b[1;5F");
     tui.wait_for("允许本次");
     tui.key(b"\r");
-    wait(&mut tui, "文件写出来", || target.exists());
-    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
+    wait(&mut tui, "文件清掉", || !target.exists());
 }
 
 /// 侧边栏「最近会话」（「后台命令、子代理和侧边栏」第 7 条，反馈第 21 条）：在问人的那个会话写黄色的 `?`（核心 SL-1 的
-/// `waiting`）。会话二里她往工作区外写、等人答；点侧边栏切回会话一，会话二那一行是 `?`。
+/// `waiting`）。会话二里她跑高危命令、等人答；点侧边栏切回会话一，会话二那一行是 `?`。
 #[test]
 fn a_session_waiting_for_an_answer_shows_a_question_mark_in_the_sidebar() {
-    let outside = outside("recent-waiting");
-    let target = outside.join("note.txt");
-    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
-    let script = Script::new([
-        Play::Says("answer-one"),
-        Play::Calls(vec![("write".into(), args)]),
-    ]);
+    let script = Script::new([Play::Says("answer-one"), clean("清掉没跟踪的文件")]);
     let home = Home::with_tools(script, "");
+    let target = junk(&home, "junk.txt");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
     tui.wait_for("开放权限");
     tui.say("topic-one");
@@ -350,25 +336,19 @@ fn a_session_waiting_for_an_answer_shows_a_question_mark_in_the_sidebar() {
         );
         tui.pump(Duration::from_millis(100));
     }
-    assert!(!target.exists(), "没答，没写");
-    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
+    assert!(target.exists(), "没答，没跑");
 }
 
 /// 抽屉跟着正文滚（「确认和提问的抽屉」第 4a 条，2026-10-27 项目主人：滚一格抽屉就消失再出现，Claude Code 能无级滚动）：
 /// 在正文上滚轮往上一格，抽屉往下滑三行、还看得见；往下一格滑回来；已经在最底下再往下滚，抽屉不动。
 #[test]
 fn the_drawer_slides_with_the_wheel_instead_of_vanishing() {
-    let outside = outside("slide");
-    let target = outside.join("note.txt");
-    let args = serde_json::json!({"file_path": target, "content": "hi"}).to_string();
-    let script = Script::new([
-        Play::Calls(vec![("write".into(), args)]),
-        Play::Says("写好了。"),
-    ]);
+    let script = Script::new([clean("清掉没跟踪的文件"), Play::Says("清好了。")]);
     let home = Home::with_tools(script, "");
+    junk(&home, "junk.txt");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
-    tui.say("写个文件");
+    tui.say("清一下");
     tui.wait_for("允许本次");
     let row = |lines: &[String], word: &str| lines.iter().position(|l| l.contains(word));
     let before = tui.lines();
@@ -400,5 +380,4 @@ fn the_drawer_slides_with_the_wheel_instead_of_vanishing() {
             tui.lines().join("\n")
         );
     }
-    std::fs::remove_dir_all(&outside).expect("删得掉测试建的目录");
 }

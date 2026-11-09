@@ -11,7 +11,9 @@ use support::Home;
 
 #[test]
 fn ctrl_j_and_k_scroll_a_long_command_in_the_shell_drawer() {
-    let command: Vec<String> = (1..=40).map(|n| format!("echo line-{n:02}")).collect();
+    // 末尾一行强推：高危命令完全放开下也问人（核心 LV-1；原来照沙盒外运行问），不答，只滚。
+    let mut command: Vec<String> = (1..=40).map(|n| format!("echo line-{n:02}")).collect();
+    command.push("git push --force".into());
     let args =
         serde_json::json!({"command": command.join("\n"), "description": "数四十行"}).to_string();
     let home = Home::with_tools(

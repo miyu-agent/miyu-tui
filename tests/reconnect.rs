@@ -66,9 +66,7 @@ fn what_the_core_wrote_while_reconnecting_is_caught_up() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
     tui.say("后台睡一会");
-    // 测试的机器上没有沙盒：核心问要不要在沙盒外跑，允许本次。
-    tui.wait_for("允许本次");
-    tui.key(b"\r");
+    // 完全放开下普通命令不问人（核心 LV-1，原来测试的机器上没有沙盒，要先在抽屉里允许）。
     tui.wait_for("在后台跑了。");
     tui.wait_for("1 个后台命令");
     home.stop_core();
