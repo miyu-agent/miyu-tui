@@ -1,5 +1,7 @@
 //! 「软件后台」打开一个软件的后台页（蓝图「配置页」第 43c 条，核心 `package-pages.md`「终端」第 2 条）：在后台跑
-//! `<核心程序> web --package <编号> --format json`，拿回 `{url}`，交给系统的打开方式开。核心程序照 `MIYU_CORE_BIN`，再照
+//! `<核心程序> pkg page <编号> --print`，拿回它印的网址，交给系统的打开方式开（发版前 check 14：不靠网页，自己起服务的包直接
+//! 是它自己的页）；不认 `pkg page` 的旧核心（用法错，退出码 2）再跑 `web --package <编号> --format json` 拿 `{url}`。核心程序照
+//! `MIYU_CORE_BIN`，再照
 //! 核心转交 `miyu tui` 时设的 `MIYU_PROGRAM`；都没有的不跑（不去 `PATH` 里找：装着旧版的机器上那是旧版，旧版不认的子命令
 //! 会当成一句话发出去）。跑完照 `wake` 叫醒主循环（同 `service.rs`）。
 
@@ -28,16 +30,20 @@ pub fn program() -> Option<PathBuf> {
     })
 }
 
-/// 读 `--format json` 印的那一行：有 `url` 的是它，别的照标准错误的第一行说。
+/// 旧核心不认 `pkg page`：用法错的退出码。
+const USAGE: i32 = 2;
+
+/// 读印出来的网址：`pkg page --print` 印的是一行网址，`web --format json` 印的是带 `url` 的一行；都没有的照标准错误的第一行说。
 pub fn read(stdout: &str, stderr: &str, status: Option<i32>) -> Result<String, String> {
-    let got: Option<serde_json::Value> = stdout
-        .lines()
-        .rev()
-        .find_map(|line| serde_json::from_str(line.trim()).ok());
-    if let Some(url) = got.as_ref().and_then(|g| g["url"].as_str())
-        && !url.is_empty()
-    {
-        return Ok(url.to_string());
+    let url = stdout.lines().rev().map(str::trim).find_map(|line| {
+        if line.starts_with("http://") || line.starts_with("https://") {
+            return Some(line.to_string());
+        }
+        let got: serde_json::Value = serde_json::from_str(line).ok()?;
+        got["url"].as_str().map(str::to_string)
+    });
+    if let Some(url) = url.filter(|u| !u.is_empty()) {
+        return Ok(url);
     }
     let first = stderr.lines().map(str::trim).find(|l| !l.is_empty());
     Err(match (first, status) {
@@ -81,11 +87,17 @@ impl Backstage {
         };
         let (tx, wake) = (self.tx.clone(), self.wake.clone());
         std::thread::spawn(move || {
-            let url = match std::process::Command::new(&program)
-                .args(["web", "--package", &id, "--format", "json"])
-                .stdin(std::process::Stdio::null())
-                .output()
-            {
+            let run = |args: &[&str]| {
+                std::process::Command::new(&program)
+                    .args(args)
+                    .stdin(std::process::Stdio::null())
+                    .output()
+            };
+            let mut out = run(&["pkg", "page", &id, "--print"]);
+            if out.as_ref().is_ok_and(|o| o.status.code() == Some(USAGE)) {
+                out = run(&["web", "--package", &id, "--format", "json"]);
+            }
+            let url = match out {
                 Ok(out) => read(
                     &String::from_utf8_lossy(&out.stdout),
                     &String::from_utf8_lossy(&out.stderr),
@@ -124,5 +136,10 @@ mod tests {
         assert_eq!(bad, Err("miniweb: no such package".into()));
         assert_eq!(read("", "", Some(3)), Err("exit 3".into()));
         assert_eq!(read("{\"url\":\"\"}", "", Some(0)), Err("exit 0".into()));
+        // `pkg page --print` 印的是一行网址（发版前 check 14）。
+        let page = read("http://127.0.0.1:18302/#miyu=abc\n", "", Some(0));
+        assert_eq!(page, Ok("http://127.0.0.1:18302/#miyu=abc".into()));
+        let missing = read("", "miyu: 软件包不存在\n", Some(1));
+        assert_eq!(missing, Err("miyu: 软件包不存在".into()));
     }
 }
