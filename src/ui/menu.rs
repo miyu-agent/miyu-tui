@@ -12,6 +12,9 @@ use crate::commands::Spec;
 use crate::config::MenuTexts;
 use crate::theme;
 
+/// 名字那一列最多占框宽的百分之几（发版前 check 第 5 条）。
+const NAME_SHARE: usize = 40;
+
 /// 列表的框（上边框写标题、条数）和露出来的那一段，最多 `rows` 条。名字对齐成一列，样子见 [`looks`]。
 pub fn lines(
     matches: &[Spec],
@@ -25,11 +28,15 @@ pub fn lines(
     let chrome = Chrome::new(&words.title, vec![Span::styled(count, theme::dim())]);
     let mut out = Vec::new();
     let top = crate::menu::top(selected, pinned, matches.len(), rows);
-    let column = matches.iter().map(|s| label(s).width()).max().unwrap_or(0) + 3;
+    // 名字那一列照最长的那个对齐，但最多占框宽的 `NAME_SHARE`：带长参数提示的命令（模板、MCP 提示词）一条就能把整列撑开，
+    // 说明只剩右边一小截、全被截成「…」（发版前 check 第 5 条，2026-11-09 项目主人）。比这一列长的那几行，说明接在名字后面
+    // 空两格。
+    let longest = matches.iter().map(|s| label(s).width()).max().unwrap_or(0);
+    let column = longest.min(usize::from(width) * NAME_SHARE / 100) + 3;
     for (i, spec) in matches.iter().enumerate().skip(top).take(rows) {
         let picked = i == selected;
         let name = format!("/{}", spec.name);
-        let pad = " ".repeat(column.saturating_sub(label(spec).width()));
+        let pad = " ".repeat(column.saturating_sub(label(spec).width()).max(2));
         let (name_style, summary_style) = looks(picked);
         let mut content = vec![Span::styled(name, name_style)];
         // 核心认的命令写了参数提示的（模板的 `argument-hint`）：名字后面暗色跟着（2026-10-15 项目主人照 Claude Code 定）。
@@ -169,6 +176,39 @@ mod tests {
             index_at(text_area, matches.len(), 3, rows, 12),
             Some(4),
             "露出来的第一条是第 3 条"
+        );
+    }
+
+    #[test]
+    fn one_long_argument_hint_does_not_push_every_summary_to_the_edge() {
+        // 发版前 check 第 5 条（2026-11-09 项目主人）：带长参数提示的一条把名字那一列撑开，别的说明全被截成「…」。
+        let _theme = theme::hold();
+        let config = Config::builtin().unwrap();
+        let mut matches: Vec<_> = config.commands.filter("").into_iter().cloned().collect();
+        let mut long = matches[0].clone();
+        long.name = "review-pull-request".into();
+        long.aliases.clear();
+        long.argument = Some("[pr-number] [branch] [focus-area] [extra-notes]".into());
+        matches.push(long);
+        let (_, shown) = lines(
+            &matches,
+            usize::MAX,
+            None,
+            matches.len(),
+            100,
+            &config.text.menu,
+        );
+        let undo = matches.iter().position(|s| s.name == "undo").unwrap();
+        let text = shown[undo].to_string();
+        let summary = &matches[undo].summary;
+        let at = text.find(summary.as_str()).expect("说明在");
+        let col = unicode_width::UnicodeWidthStr::width(&text[..at]);
+        assert!(col <= 100 * 40 / 100 + 3 + 2, "说明从第 {col} 列起：{text}");
+        // 长的那一条：说明接在名字后面空两格
+        let last = shown.last().unwrap().to_string();
+        assert!(
+            last.contains("[extra-notes]  "),
+            "长名字后面空两格接说明：{last}"
         );
     }
 }
