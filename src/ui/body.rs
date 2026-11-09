@@ -361,13 +361,15 @@ fn first_row(
     let rest = lowest.max(view.floor_end.saturating_sub(height)).min(cap);
     let first = match view.top {
         Some(top) => top.min(rest),
-        // 她正在写的一段正文长过视口：第一行顶到最上面就停住，一段只停一次（`tui.md`「正文」第 1 条）。
+        // 她正在写的一段正文长过视口：第一行顶到第二行就停住，一段只停一次（`tui.md`「正文」第 1 条）。最上面让一行：
+        // 往上翻着时顶上钉的那一行（`pinned.rs`）盖在第一行上，原来停在第一行，正文的第一行被它盖住（发版前 check 27）。
         None => match view.reading {
-            Some((id, start)) if rest > start && view.paused != Some(id) => {
+            Some((id, start)) if rest > start.saturating_sub(1) && view.paused != Some(id) => {
+                let stop = start.saturating_sub(1);
                 view.paused = Some(id);
-                view.top = Some(start);
+                view.top = Some(stop);
                 view.auto = true;
-                start
+                stop
             }
             _ => rest,
         },
