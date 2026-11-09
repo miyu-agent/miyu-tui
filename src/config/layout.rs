@@ -173,7 +173,8 @@ pub struct Layout {
     pub undo_left_mark: String,
     /// 一轮做完的收尾行前面的符号，连同它后面的空格。
     pub done_icon: String,
-    /// 收尾行里图标后面多空的，按级别写；没写的级别不多空（现在只有工作区的 `▣` 多空一格，`tui.md`「正文」第 4 条）。
+    /// 收尾行里图标后面多空的，按级别写；没写的级别不多空（原来只有工作区的 `▣` 多空一格，LV-3 去掉工作区以后空着，
+    /// `tui.md`「正文」第 4 条）。
     pub done_gap: HashMap<Level, String>,
 }
 

@@ -41,9 +41,9 @@ pub fn pulse_line(
     let now = Instant::now();
     let word = pulse.word(start, beat, now, &config.pulse).to_string();
     let layout = &config.layout;
-    // 流光一直照工作区那一档的颜色，不跟着权限级别变（2026-10-17 项目主人：开放权限时整行变红不对）；照级别的颜色算、
+    // 流光一直照原来工作区那一档的颜色，不跟着权限级别变（2026-10-17 项目主人：开放权限时整行变红不对）；照配色方案算、
     // 不写死强调色，终端配色时和模式字对得上（2026-10-14 项目主人定）。
-    let base = theme::level_color(crate::core::Level::Workspace);
+    let base = theme::shimmer_base();
     // 换了词，亮光从头扫（`tui.md`「运行状态行和排队的消息」第 1 条）。
     let t = pulse
         .shown()

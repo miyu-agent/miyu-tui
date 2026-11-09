@@ -143,7 +143,6 @@
     "pages": ["1 page", "{count} pages"]
   },
   "levels": {
-    "workspace": "Workspace",
     "full": "Full access",
     "read_only": "Read-only"
   },
@@ -609,7 +608,6 @@
   "drawer": {
     "asking": "{who} is asking",
     "preview": "Preview",
-    "unsandboxed": "Runs outside the sandbox",
     "guard": "The guard of {package} asks: use {tool}?",
     "hazard": "Dangerous command",
     "agent": "Subagent {name}",
@@ -626,7 +624,6 @@
       "Don't ask again for this folder",
       "Don't allow"
     ],
-    "decision_prefix": "Don't ask again for commands starting with `{prefix}` in this folder",
     "reason_hint": "Add a reason (optional)",
     "reason_key": "n write a reason",
     "command_above": "↑ {n} more above",

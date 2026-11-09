@@ -14,10 +14,11 @@ fn switching_the_level_writes_only_what_changes() {
     );
     let (_, params) = request(Command::Level(Level::ReadOnly), "s1").unwrap();
     assert_eq!(params, json!({"session": "s1", "read_only": true}));
-    let (_, params) = request(Command::Level(Level::Workspace), "s1").unwrap();
+    // 不再发 `workspace`（LV-3）：旧的 `workspace` 读成完全放开。
+    assert_eq!(Level::parse("workspace"), Some(Level::Full));
     assert_eq!(
-        params,
-        json!({"session": "s1", "level": "workspace", "read_only": false})
+        serde_json::from_value::<Level>(json!("workspace")).unwrap(),
+        Level::Full
     );
 }
 

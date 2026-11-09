@@ -49,9 +49,7 @@
     5000
   ],
   "title_max": 200,
-  "done_gap": {
-    "workspace": " "
-  },
+  "done_gap": {},
   "menu_rows": 5,
   "history_rows": 8,
   "jump_flash_ms": 1000,
@@ -61,7 +59,6 @@
   "history_preview_rows": 12,
   "history_keep": 1000,
   "level_cycle": [
-    "workspace",
     "full",
     "read_only"
   ],

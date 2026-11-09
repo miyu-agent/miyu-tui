@@ -5,7 +5,7 @@ use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
 use super::View;
-use crate::drawer::{Ask, Decision, Drawer, Edit, Item, Texts, inline, said};
+use crate::drawer::{Decision, Drawer, Edit, Item, Texts, inline, said};
 use crate::input::pieces;
 use crate::theme;
 
@@ -138,16 +138,7 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
                 .iter()
                 .position(|x| *x == decision)
                 .unwrap_or(0);
-            // 规则带命令前缀的写清是哪种命令（2026-10-27 项目主人照推荐定：「按命令前缀记住」）。
-            let prefix = match &d.ask {
-                Ask::Approval(a) if decision == Decision::Session => a.prefix(),
-                _ => None,
-            };
-            let label = prefix.map_or_else(
-                || texts.decisions[at].clone(),
-                |p| texts.decision_prefix.replace("{prefix}", p),
-            );
-            (label, None)
+            (texts.decisions[at].clone(), None)
         }
     };
     // 放不下的标题折行、不截（2026-11-02 项目主人）；在写的那一项标题后面接着写字，照旧截。

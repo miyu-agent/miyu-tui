@@ -170,11 +170,6 @@ impl Drawer {
         drawer
     }
 
-    /// 这一次确认的命令不在沙盒里跑（`detail.sandbox` 是 `false`）：抽屉写一行出来。
-    pub fn unsandboxed(&self) -> bool {
-        matches!(&self.ask, Ask::Approval(a) if a.detail.as_ref().and_then(|d| d.sandbox) == Some(false))
-    }
-
     /// 这一次确认的命令被核心认成高危的（`detail.hazard`，核心 5-17）：抽屉写一行红字。
     pub fn hazardous(&self) -> bool {
         matches!(&self.ask, Ask::Approval(a) if a.detail.as_ref().is_some_and(|d| d.hazard.is_some()))

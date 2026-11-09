@@ -143,7 +143,6 @@
     "pages": ["ページ 1 件", "ページ {count} 件"]
   },
   "levels": {
-    "workspace": "ワークスペース",
     "full": "フルアクセス",
     "read_only": "読み取り専用"
   },
@@ -609,7 +608,6 @@
   "drawer": {
     "asking": "{who}が質問しています",
     "preview": "プレビュー",
-    "unsandboxed": "サンドボックスの外で実行します",
     "guard": "{package} のガードが確認しています：{tool} を使う",
     "hazard": "危険なコマンド",
     "agent": "サブエージェント {name}",
@@ -626,7 +624,6 @@
       "このフォルダでは今後確認しない",
       "許可しない"
     ],
-    "decision_prefix": "このフォルダでは `{prefix}` で始まるコマンドを今後確認しない",
     "reason_hint": "理由を入力（任意）",
     "reason_key": "n 理由を書く",
     "command_above": "↑ 上にあと {n} 行",

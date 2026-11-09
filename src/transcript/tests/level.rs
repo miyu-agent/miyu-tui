@@ -6,7 +6,7 @@ use crate::config::Config;
 use crate::transcript::Transcript;
 
 #[test]
-fn shift_tab_cycles_workspace_full_read_only() {
+fn shift_tab_toggles_full_and_read_only() {
     let mut t = Transcript::default();
     let order = Config::builtin().unwrap().layout.level_cycle;
     let mut seen = Vec::new();
@@ -19,7 +19,8 @@ fn shift_tab_cycles_workspace_full_read_only() {
     use crate::core::Level;
     assert_eq!(
         seen,
-        vec![Level::Full, Level::ReadOnly, Level::Workspace, Level::Full]
+        // LV-3（2026-11-09 项目主人）：只剩完全放开和只读，来回切。
+        vec![Level::ReadOnly, Level::Full, Level::ReadOnly, Level::Full]
     );
 }
 
@@ -33,5 +34,5 @@ fn what_you_said_keeps_the_level_it_was_sent_with() {
     t.user("再来".into(), Vec::new());
     let levels: Vec<_> = t.entries.iter().map(|e| e.level).collect();
     use crate::core::Level;
-    assert_eq!(levels, vec![Some(Level::Workspace), Some(Level::Full)]);
+    assert_eq!(levels, vec![Some(Level::Full), Some(Level::ReadOnly)]);
 }

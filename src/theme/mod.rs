@@ -149,7 +149,7 @@ pub fn warn() -> Style {
     fg(|p| p.warn)
 }
 
-/// 权限级别的颜色，加粗：框外左下角的级别和输入框的提示符都用它。只读暖金，开放权限红，工作区蓝（照旧版）。
+/// 权限级别的颜色，加粗：框外左下角的级别和输入框的提示符都用它。只读暖金，开放权限红（照旧版）。
 pub fn level(level: Level) -> Style {
     Style::new()
         .fg(level_color(level))
@@ -161,8 +161,13 @@ pub fn level_color(level: Level) -> Color {
     match level {
         Level::ReadOnly => pick(|p| p.read_only),
         Level::Full => pick(|p| p.full),
-        Level::Workspace => pick(|p| p.workspace),
     }
+}
+
+/// 运行状态行流光的底色：原来工作区那一级的蓝（配色方案的 `workspace`），不跟着权限级别变（2026-10-17 项目主人；工作区
+/// 那一级 LV-3 去掉了，颜色留给流光）。
+pub fn shimmer_base() -> Color {
+    pick(|p| p.workspace)
 }
 
 /// 斜杠命令列表里选中的那一条：品红加粗。

@@ -156,12 +156,7 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     if d.hazardous() {
         v.push(Line::styled(texts.hazard.clone(), theme::error()), None);
     }
-    // 这一次不在沙盒里跑（核心 D-4 的 `detail.sandbox` 是 `false`）：黄字写一行，紧跟在问题下面，命令那一块之上。
-    if d.unsandboxed() {
-        v.push(Line::styled(texts.unsandboxed.clone(), theme::warn()), None);
-    }
-    // 确认的问题行和这两行提示放不下时也留着（提问的照旧留问题的后半截；2026-10-22 项目主人截图：长命令把它们都顶掉了，
-    // 只剩「沙盒外运行」，看着像权限没切过去）。
+    // 确认的问题行和「高危命令」放不下时也留着（提问的照旧留问题的后半截；2026-10-22 项目主人截图：长命令把它们都顶掉了）。
     if !d.is_question() {
         v.pinned = v.lines.len();
     }
