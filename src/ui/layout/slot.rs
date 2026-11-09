@@ -50,6 +50,8 @@ pub struct Stacked {
     pub written: Vec<Written>,
     /// 从第几行露起：交进来的限在 0 到「一共多高减一窗」之间。
     pub top: u16,
+    /// 排好的一共多高（侧边栏照它画滚动条）。
+    pub total: usize,
 }
 
 /// 照 `config` 的先后把 `parts` 从 `area` 顶上往下排，件和件之间空 `gap` 行，从第 `top` 行露起（排期第 14 条：侧边栏
@@ -123,7 +125,12 @@ pub fn stack<C>(
     let end = if total > 0 { total + gap } else { 0 };
     let next = area.y + u16::try_from(end.saturating_sub(top)).unwrap_or(u16::MAX);
     let top = u16::try_from(top).unwrap_or(u16::MAX);
-    Stacked { next, written, top }
+    Stacked {
+        next,
+        written,
+        top,
+        total,
+    }
 }
 
 /// 只排字的挂载位（输入框上面那一块：高度要先算出来再定位，「挂载位」第 4 条 SL-2）：照配置排先后、藏、截行数，件和件

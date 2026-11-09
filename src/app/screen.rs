@@ -45,6 +45,8 @@ pub struct Screen {
     pub current_said: Option<u64>,
     /// 侧边栏从第几行露起（排期第 14 条：内容比侧边栏高时滚轮滚它，画的时候照一共多高限住）。
     pub side_top: u16,
+    /// 侧边栏「跳转消息」要列的比读进来的你说的话多（老会话只读了最新一页）：接着要更早的一页（发版前 check 第 33 条）。
+    pub side_short: bool,
     /// 当前主题的名字（出厂那一份的）。
     pub theme: String,
     /// 主题的几个配置项（`tui.theme*`，「主题」第 6 条）。
@@ -103,6 +105,7 @@ impl Screen {
             pinned: None,
             current_said: None,
             side_top: 0,
+            side_short: false,
             theme,
             theme_choice: crate::theme::choice::Choice::default(),
             terminal_dark: None,

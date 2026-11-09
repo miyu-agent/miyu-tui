@@ -229,6 +229,8 @@ impl Part<Side<'_, '_>> for Recent {
 #[derive(Default)]
 pub struct Jumps {
     ids: Vec<u64>,
+    /// 读进来的比要列的少（老会话还有更早的页没读，发版前 check 第 33 条）。
+    pub short: bool,
 }
 
 impl Part<Side<'_, '_>> for Jumps {
@@ -250,6 +252,7 @@ impl Part<Side<'_, '_>> for Jumps {
             .collect();
         // 取的是最近的几条，排成旧的在上、新的在下（同正文）
         spoken.reverse();
+        self.short = spoken.len() < count;
         self.ids = spoken.iter().map(|e| e.id).collect();
         if spoken.is_empty() {
             return Laid::Lines(Vec::new());
