@@ -262,3 +262,20 @@ fn a_stuck_session_says_why_under_the_context_section() {
     let before = laid[laid.len() - 2].to_string();
     assert_eq!(before, "已压缩 2 次 · 缓存断裂 1 次");
 }
+
+/// 设了会话的上下文上限（核心 CTX-1，设计 68）：段头右边压缩线后面接「会话上限 128k」。
+#[test]
+fn a_session_cap_is_named_in_the_head() {
+    let mut reply = sample();
+    reply["context"] = json!(128000);
+    let data = ContextData {
+        parts: Some(Ok(read_parts(&reply))),
+        uses: None,
+    };
+    let got = text(&data, 100);
+    assert!(
+        got[0].ends_with("已用 45.2k / 128k · 压缩线 102.4k · 会话上限 128k"),
+        "{}",
+        got[0]
+    );
+}

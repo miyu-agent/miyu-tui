@@ -130,6 +130,16 @@ pub fn pieces(facts: &Facts, frame: usize, hovered: Option<Hit>) -> Vec<Piece> {
         Some(Hit::Usage),
         vec![Span::styled(head, style)],
     )];
+    // 设了会话的上下文上限（核心 CTX-1，设计 68）：环照的窗口是被它压小的，写出来让人知道是哪一格在起作用；比花费后丢。
+    if let Some(cap) = t.limits.context.filter(|_| preview.is_none()) {
+        let cap = texts.cap.replace("{n}", &meter::short(cap));
+        out.push(Piece::new(
+            3,
+            false,
+            Some(Hit::Usage),
+            vec![Span::styled(cap, style)],
+        ));
+    }
     // 花费：算不出钱的不写；放不下先收它（比权限级别的字先丢，`footer.rs` 的 `EARLY`）。
     if let Some(spent) = facts.spent.clone().filter(|_| preview.is_none()) {
         out.push(Piece::new(

@@ -256,11 +256,12 @@
     {
       "name": "context",
       "summary": {
-        "zh": "看看上下文一块块各占多少，和这个会话按用途的累计用量",
-        "en": "See what fills the context, and this session's usage by purpose",
-        "ja": "コンテキストの内訳と、このセッションの用途別の累計使用量を見る"
+        "zh": "看看上下文一块块各占多少；后面写数值设这个会话的上下文上限",
+        "en": "See what fills the context; add a number to cap this session's context",
+        "ja": "コンテキストの内訳を見る。数値を続けるとこのセッションの上限を設定"
       },
-      "run": "context"
+      "run": "context",
+      "args": true
     },
     {
       "name": "usage",

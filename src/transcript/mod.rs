@@ -356,6 +356,7 @@ impl Transcript {
             Push::PersonaSet(id) => self.persona_set(id, texts),
             Push::PresetSet(id) => self.preset_set(id, texts),
             Push::EffortSet(level) => self.own_effort_set(level),
+            Push::ContextSet(cap) => self.limits.context = cap,
             Push::Said {
                 seq,
                 text,

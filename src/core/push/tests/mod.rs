@@ -462,7 +462,8 @@ fn a_failover_model_change_is_read_with_its_limits() {
             model: Some("glm-5.3-flash".into()),
             limits: Some(crate::core::Limits {
                 window: Some(200_000),
-                compaction_line: Some(167_000)
+                compaction_line: Some(167_000),
+                context: None,
             }),
             failover: true,
             reference: Some("@duo".into()),

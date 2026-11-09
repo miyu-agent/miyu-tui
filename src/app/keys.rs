@@ -373,6 +373,8 @@ impl App {
             Run::Usage => self.open_usage(),
             Run::Status => self.open_status(),
             Run::ToolList => self.open_tool_list(),
+            // 带数值的（`/context 128k`、`/context off`）交核心设这个会话的上下文上限（核心 CTX-2，设计 68）；不带的开明细。
+            Run::Context if words.is_some_and(|w| !w.trim().is_empty()) => self.slash(&line),
             Run::Context => self.open_context(),
             Run::New => self.new_session(),
             Run::Delete => self.delete_current(),

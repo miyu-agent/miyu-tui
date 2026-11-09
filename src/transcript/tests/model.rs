@@ -43,6 +43,7 @@ fn a_failover_changes_the_model_and_says_why_in_a_dim_line() {
                 limits: Some(Limits {
                     window: Some(200_000),
                     compaction_line: Some(167_000),
+                    context: None,
                 }),
                 failover: true,
                 reference: Some("@duo".into()),
@@ -106,6 +107,7 @@ fn a_pool_stays_the_pool_in_the_footer_while_its_members_take_turns() {
                 limits: Some(Limits {
                     window: Some(64_000),
                     compaction_line: None,
+                    context: None,
                 }),
                 failover: false,
                 reference: Some("@daily".into()),

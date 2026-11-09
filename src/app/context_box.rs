@@ -20,6 +20,8 @@ const PARTS_TAG: u64 = TAG_BASE - 18;
 const USES_TAG: u64 = TAG_BASE - 19;
 /// 底栏要预览的请求编号。
 const PREVIEW_TAG: u64 = TAG_BASE - 20;
+/// 上下文上限换了以后重读限额的请求编号（核心 CTX-1）。
+const CAP_TAG: u64 = TAG_BASE - 43;
 
 impl App {
     /// 打开 `/context`：开着会话的问两样，没开的问预览。
@@ -58,11 +60,34 @@ impl App {
         });
     }
 
+    /// 正在看的会话换了上下文上限（`/context 128k`、im 网页的会话卡片，核心 CTX-1）：推来的只有上限，生效的窗口、压缩线
+    /// 照 `session.context` 重读一次（设计 68 第四节，订阅回应里的限额当场换了，推送不带）。
+    pub(super) fn context_cap_changed(&mut self, update: &Update) {
+        if let Update::Push(crate::core::Push::ContextSet(_)) = update
+            && let Some(session) = self.talk.transcript.session.clone()
+        {
+            self.link.core.send(Command::Ask {
+                tag: CAP_TAG,
+                method: "session.context",
+                params: json!({ "session": session }),
+            });
+        }
+    }
+
     /// 核心交回了一样：记下（框关了的不要）；回应归这里交回 `true`。
     pub(super) fn context_update(&mut self, update: &Update) -> bool {
         let Update::Answer { tag, result } = update else {
             return false;
         };
+        if *tag == CAP_TAG {
+            if let Ok(got) = result {
+                let limits = &mut self.talk.transcript.limits;
+                limits.window = got["window"].as_u64().filter(|w| *w > 0).or(limits.window);
+                limits.compaction_line = got["line"].as_u64().or(limits.compaction_line);
+                limits.context = got["context"].as_u64();
+            }
+            return true;
+        }
         if *tag == PREVIEW_TAG {
             // 拒了的（核心旧）不写；会话已经开了的不要。
             self.talk.preview = result

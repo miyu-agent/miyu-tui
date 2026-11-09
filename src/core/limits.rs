@@ -10,6 +10,8 @@ pub struct Limits {
     pub window: Option<u64>,
     /// 到这里自动压缩，token 数；窗口太小算不出的没有。
     pub compaction_line: Option<u64>,
+    /// 这个会话设的上下文上限（核心 CTX-1，设计 68）：`window` 已经是取了小的；没设的没有。
+    pub context: Option<u64>,
 }
 
 impl Limits {
@@ -23,8 +25,14 @@ impl Limits {
         Self {
             window: limits["window"].as_u64(),
             compaction_line: limits["compaction_line"].as_u64(),
+            context: limits["context"].as_u64(),
         }
     }
+}
+
+/// `session.policy_changed` 里换了的上下文上限（核心 CTX-1）：没换的是 `None`，去掉的是 `Some(None)`。
+pub fn cap_changed(body: &Value) -> Option<Option<u64>> {
+    body.get("context").map(|c| c["tokens"].as_u64())
 }
 
 #[cfg(test)]
@@ -41,7 +49,8 @@ mod tests {
             Limits::of(&full),
             Some(Limits {
                 window: Some(1_000_000),
-                compaction_line: Some(967_000)
+                compaction_line: Some(967_000),
+                context: None,
             })
         );
         let none = json!({"id": "c2", "jsonrpc": "2.0", "result": {"limits": {}}});
@@ -54,5 +63,21 @@ mod tests {
         assert_eq!(Limits::of(&small).unwrap().compaction_line, None);
         let other = json!({"id": "c3", "jsonrpc": "2.0", "result": {}});
         assert_eq!(Limits::of(&other), None, "别的回应不算");
+    }
+
+    /// 设了会话的上下文上限（核心 CTX-1，设计 68）：限额带 `context`；推来的 `session.policy_changed` 换上限、去掉上限
+    /// 照 `context` 那一格认，没这一格的不算换了。
+    #[test]
+    fn the_session_cap_is_read_from_the_limits_and_the_policy_change() {
+        let capped = json!({"window": 128_000, "compaction_line": 101_000, "context": 128_000});
+        assert_eq!(Limits::read(&capped).context, Some(128_000));
+        let set = json!({"context": {"tokens": 128_000}});
+        assert_eq!(super::cap_changed(&set), Some(Some(128_000)));
+        assert_eq!(
+            super::cap_changed(&json!({"context": null})),
+            Some(None),
+            "去掉"
+        );
+        assert_eq!(super::cap_changed(&json!({"effort": null})), None, "没换");
     }
 }

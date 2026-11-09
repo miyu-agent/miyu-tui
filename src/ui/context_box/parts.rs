@@ -13,6 +13,8 @@ pub struct Shape {
     /// 上下文窗口、压缩线（没交过限额的没有）。
     pub window: Option<u64>,
     pub line: Option<u64>,
+    /// 这个会话设的上下文上限（核心 CTX-1，设计 68）：`window` 已经取了小的；没设的没有。
+    pub context: Option<u64>,
     /// 这时用了多少（口径同底栏）；算不了的没有。
     pub used: Option<u64>,
     /// 全是本地估的（`basis: estimated`）。
@@ -81,6 +83,7 @@ pub fn read_parts(got: &Value) -> Shape {
     Shape {
         window: number(&got["window"]).filter(|w| *w > 0),
         line: number(&got["line"]),
+        context: number(&got["context"]),
         used: number(&got["used"]),
         estimated: got["basis"] == "estimated",
         parts: read(&got["parts"]),
@@ -126,6 +129,11 @@ fn summary(shape: &Shape, used: u64, texts: &Texts) -> String {
             "{sep}{}",
             texts.line.replace("{line}", &meter::short(line))
         ));
+    }
+    // 设了会话上限的：窗口是被它压小的，接着写（设计 68：人知道是哪一格在起作用）。
+    if let Some(cap) = shape.context {
+        let cap = texts.cap.replace("{n}", &meter::short(cap));
+        text.push_str(&format!("{sep}{cap}"));
     }
     if shape.estimated {
         text.push_str(&format!("{sep}{}", texts.estimated));

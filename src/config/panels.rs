@@ -58,4 +58,6 @@ pub struct UsageCellTexts {
     pub compact: String,
     /// 正在压缩。
     pub compacting: String,
+    /// 这个会话设了上下文上限（核心 CTX-1，设计 68）：`{n}` 是写短了的上限。
+    pub cap: String,
 }
