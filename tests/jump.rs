@@ -108,7 +108,8 @@ fn jump_reads_the_earlier_pages_of_an_old_session_without_scrolling_up() {
     assert!(at <= 2, "第 1 句顶到最上面：\n{}", lines.join("\n"));
 }
 
-/// 排期第 15 条（2026-11-02 项目主人）：侧边栏「跳转消息」列这个会话里你说的话，新的在上；点一句跳过去，同 `/jump` 选它。
+/// 排期第 15 条（2026-11-02 项目主人）：侧边栏「跳转消息」列这个会话里你说的话，新的在下（发版前 check 第 18 条，2026-11-09
+/// 项目主人，原来新的在上）；点一句跳过去，同 `/jump` 选它。
 #[test]
 fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
     let home = Home::new(Script::new([
@@ -128,7 +129,7 @@ fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
     }
     tui.wait_for("跳转消息");
     tui.pump(Duration::from_millis(300));
-    // 侧边栏那几列里的（窗口 140 列宽，侧边栏在右边）：新的在上。
+    // 侧边栏那几列里的（窗口 140 列宽，侧边栏在右边）：新的在下。
     let lines = tui.lines();
     let side = |word: &str, from: usize| {
         lines
@@ -146,8 +147,8 @@ fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
         side("第一问 alpha", from),
     );
     assert!(
-        title < gamma && gamma < beta && beta < alpha,
-        "新的在上：\n{}",
+        title < alpha && alpha < beta && beta < gamma,
+        "新的在下：\n{}",
         lines.join("\n")
     );
     let main_has = |lines: &[String]| {

@@ -223,8 +223,9 @@ impl Part<Side<'_, '_>> for Recent {
     }
 }
 
-/// `jump`：跳转消息（排期第 15 条）：这个会话里你说的话，新的在上，列 `sidebar_jumps` 条，一条一行截掉放不下的；点一行
-/// 同 `/jump` 选它，顶到视口第一行（「跳到说过的话」第 3 条）。
+/// `jump`：跳转消息（排期第 15 条）：这个会话里你说的话，列最近的 `sidebar_jumps` 条，新的在下（发版前 check 第 18 条，2026-11-09
+/// 项目主人：正文里新的在底下、越往上越旧，这里跟着一样；原来新的在上），一条一行截掉放不下的；点一行同 `/jump` 选它，
+/// 顶到视口第一行（「跳到说过的话」第 3 条）。
 #[derive(Default)]
 pub struct Jumps {
     ids: Vec<u64>,
@@ -238,7 +239,7 @@ impl Part<Side<'_, '_>> for Jumps {
     fn lay(&mut self, side: &Side, width: u16) -> Laid {
         let seen = side.seen;
         let count = seen.config.layout.sidebar_jumps;
-        let spoken: Vec<&crate::transcript::Entry> = seen
+        let mut spoken: Vec<&crate::transcript::Entry> = seen
             .talk
             .transcript
             .entries
@@ -247,6 +248,8 @@ impl Part<Side<'_, '_>> for Jumps {
             .filter(|e| e.kind == crate::transcript::Kind::User && !e.hidden)
             .take(count)
             .collect();
+        // 取的是最近的几条，排成旧的在上、新的在下（同正文）
+        spoken.reverse();
         self.ids = spoken.iter().map(|e| e.id).collect();
         if spoken.is_empty() {
             return Laid::Lines(Vec::new());
