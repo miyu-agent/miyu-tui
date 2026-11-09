@@ -201,8 +201,19 @@ fn bar(frame: &mut Frame, area: Rect, view: &crate::body_view::BodyView) {
     if !(view.bar_hover || view.bar_held()) {
         return;
     }
-    let x = view.bar_column();
-    for y in 0..area.height {
+    bar_at(frame, (view.bar_column(), area.y, area.height), Some(bar));
+}
+
+/// 在第 `x` 列、从第 `y` 行起 `height` 行画滚动条 `bar`（侧边栏也用，发版前 check 第 33 条）；没有的不画。
+pub(super) fn bar_at(
+    frame: &mut Frame,
+    (x, top, height): (u16, u16, u16),
+    bar: Option<crate::scrollbar::Bar>,
+) {
+    let Some(bar) = bar else {
+        return;
+    };
+    for y in 0..height {
         // 滑块照八分之一格画（拖动按像素以后跟得上，2026-10-23）：头尾那一格只盖一部分的，从当中开始的画下半截，在当中
         // 结束的把下半截的记号反着画成上半截。
         let (cover, starts) = bar.cover(y);
@@ -216,7 +227,7 @@ fn bar(frame: &mut Frame, area: Rect, view: &crate::body_view::BodyView) {
                 theme::dim().add_modifier(Modifier::REVERSED),
             ),
         };
-        frame.buffer_mut().set_string(x, area.y + y, mark, style);
+        frame.buffer_mut().set_string(x, top + y, mark, style);
     }
 }
 

@@ -227,6 +227,7 @@ pub fn draw(
     screen: &mut Screen,
     pet: &mut MascotState,
 ) {
+    screen.side_short = false;
     if area.width == 0 {
         return;
     }
@@ -282,6 +283,17 @@ pub fn draw(
     };
     // 滚到哪照排好的限过（排期第 14 条：像正文那样滚，滚轮在 `app/mouse.rs`）。
     screen.side_top = stacked.top;
+    // 跳转消息列不满（老会话只读了最新一页）：接着要更早的一页（发版前 check 第 33 条，`app/pages.rs`）；藏起来、没画的不要。
+    screen.side_short = jumps.short;
+    // 放不下时指针停在侧边栏上，最右边那一列画滚动条（同正文的，「正文」第 1a 条）：看得出还有、滚到了哪。
+    if screen.pointer.is_some_and(|at| area.contains(at)) {
+        let x = area.right().saturating_sub(1);
+        super::body::bar_at(
+            frame,
+            (x, body.y, body.height),
+            crate::scrollbar::Bar::new(stacked.total, body.height, usize::from(stacked.top)),
+        );
+    }
     // 写了字的行记下来，给侧边栏的选字用（第 7 条）。
     let mut text_rows: Vec<TextRow> = stacked
         .written
