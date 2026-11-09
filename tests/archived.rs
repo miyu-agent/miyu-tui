@@ -10,9 +10,9 @@ use support::Home;
 fn an_archive_says_so_in_the_input_box_and_refuses_to_continue() {
     let home = Home::new(Script::new([Play::Says("你好呀。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     // 这个会话当成导进来的存档（核心认会话目录里的 `imported.json`）：重启核心，界面重连、重读会话列表。
     let sessions = home.data().sessions_dir();
     let dir = std::fs::read_dir(&sessions)

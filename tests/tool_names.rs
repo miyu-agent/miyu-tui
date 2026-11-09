@@ -25,7 +25,7 @@ fn a_running_step_takes_its_name_from_the_cores_tool_table() {
     let script = Script::new([Play::Calls(vec![("roll".into(), "{}".into())])]);
     let home = Home::with_tool(script, "", dice(Act::Holds));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("掷一下");
     tui.wait_for("掷骰子");
     assert!(
@@ -50,7 +50,7 @@ fn a_finished_step_keeps_the_name_recorded_in_its_result_after_the_tool_is_gone(
     // 起来接着最近的会话：第二次起来就是重开这个会话（照日志补发）。
     let home = Home::with_tool(script, "[ui]\nstartup = \"recent\"\n", dice(Act::Echo));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("掷一下");
     tui.wait_for("掷出了 4。");
     opened_steps(&mut tui);

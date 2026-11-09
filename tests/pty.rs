@@ -16,10 +16,10 @@ const ESC: &[u8] = b"\x1b";
 fn a_scripted_reply_is_drawn_with_its_done_line() {
     let home = Home::new(Script::new([Play::Says("你好，我在。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("你好，我在。");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     assert!(tui.shows("┃ 在吗"), "{}", tui.lines().join("\n"));
 }
 
@@ -31,11 +31,11 @@ fn recap_says_there_is_nothing_yet_then_draws_a_block() {
         Play::Says("在打招呼，没有别的事。"),
     ]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/recap");
     tui.wait_for("没有可回顾的内容");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     tui.say("/recap");
     tui.wait_for("※ 回顾：在打招呼，没有别的事。");
 }
@@ -49,7 +49,7 @@ fn an_undone_turn_takes_its_recap_along_and_restore_brings_it_back() {
         Play::Says("讲到第二轮。"),
     ]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("一");
     tui.wait_for("第一轮的回答。");
     tui.pump(Duration::from_millis(300));
@@ -73,7 +73,7 @@ fn up_and_down_walk_the_history_past_recorded_commands() {
     // 2026-10-01 项目主人报：往上翻得动、往下翻不回来。翻到记着的命令时命令列表弹出来，把 ↑ ↓ 拿去选命令了。
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/help");
     tui.pump(Duration::from_millis(400));
     tui.key(ESC);
@@ -101,9 +101,9 @@ fn a_manually_chosen_language_writes_the_folded_line_in_it() {
         text: "好。",
     }]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     tui.wait_for("Thought for");
     tui.say("/language");
     tui.wait_for("自动（跟随系统：中文）");
@@ -118,14 +118,14 @@ fn the_language_in_the_settings_wins_over_the_system_one() {
     // 2026-10-01 项目主人定 A：界面语言写进系统配置的 `ui.language`，手动选了就是这个人所有的头都用这种。
     let home = Home::with_settings(Script::new([]), "[ui]\nlanguage = \"en\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("Workspace");
+    tui.wait_for("Full access");
 }
 
 #[test]
 fn choosing_a_language_writes_it_into_the_settings() {
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/language");
     tui.wait_for("自动（跟随系统：中文）");
     // 第 0 行自动，下面照语言表：中文、English、日本語。
@@ -133,7 +133,7 @@ fn choosing_a_language_writes_it_into_the_settings() {
         tui.key(DOWN);
     }
     tui.key(b"\r");
-    tui.wait_for("ワークスペース");
+    tui.wait_for("フルアクセス");
     let end = std::time::Instant::now() + support::WAIT;
     while !home.settings().contains("language = \"ja\"") {
         assert!(
@@ -150,7 +150,7 @@ fn choosing_a_language_writes_it_into_the_settings() {
         tui.key(b"\x1b[A");
     }
     tui.key(b"\r");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let end = std::time::Instant::now() + support::WAIT;
     while !home.settings().contains("language = \"auto\"") {
         assert!(std::time::Instant::now() < end, "{:?}", home.settings());
@@ -166,7 +166,7 @@ fn the_at_list_asks_the_core_and_the_data_root_stays_closed() {
     std::fs::create_dir_all(home.work.join("src")).unwrap();
     std::fs::write(home.work.join("src/main.rs"), b"fn main() {}").unwrap();
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.type_text("@main");
     tui.wait_for("src/main.rs");
     tui.key(ESC);
@@ -183,7 +183,7 @@ fn ctrl_j_and_k_move_in_an_open_list() {
     // 2026-10-01 项目主人：能搜的列表里要用 vim 的 Ctrl+J、Ctrl+K 上下。
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/language");
     tui.wait_for("自动（跟随系统：中文）");
     // 第 0 行自动，下面中文、English、日本語：下、下、上、下、下，停在日本語。
@@ -191,7 +191,7 @@ fn ctrl_j_and_k_move_in_an_open_list() {
         tui.key(key);
     }
     tui.key(b"\r");
-    tui.wait_for("ワークスペース");
+    tui.wait_for("フルアクセス");
 }
 
 #[test]
@@ -200,9 +200,9 @@ fn commands_that_change_nothing_only_flash_a_notice() {
     // 还没做的命令同一天一起改。通知 `notice_ms`（2 秒）后消失，正文里的行不会，所以等它消失。
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     tui.say("/undo");
     tui.wait_for("已撤销");
     tui.pump(Duration::from_millis(500));
@@ -237,7 +237,7 @@ fn ctrl_g_edits_the_prompt_in_the_editor() {
     }
     let editor = script.display().to_string();
     let mut tui = home.tui_with("zh_CN.UTF-8", &[("VISUAL", &editor), ("EDITOR", &editor)]);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.type_text("原来的话");
     tui.pump(Duration::from_millis(300));
     tui.key(b"\x07");
@@ -255,7 +255,7 @@ fn ctrl_enter_interrupts_and_sends_what_is_queued_now() {
     // 2026-10-02 项目主人要：Ctrl+Enter 立马发排着的（连输入框里的），不用提示，不用按两下。
     let home = Home::new(Script::new([Play::Holds, Play::Says("收到插的那句。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("第一句");
     tui.pump(Duration::from_millis(800));
     tui.type_text("插一句");
@@ -280,9 +280,9 @@ fn a_jump_to_bottom_hint_floats_over_the_body_and_brings_the_view_back() {
     );
     let home = Home::new(Script::new([Play::Says(long)]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("说长一点");
-    tui.wait_at_bottom_for("▣  ");
+    tui.wait_at_bottom_for_done();
     let hint = |tui: &support::Tui| {
         tui.lines().iter().enumerate().find_map(|(y, l)| {
             l.find("跳转到底部（Ctrl+End）↓")
@@ -342,9 +342,9 @@ fn ctrl_end_goes_back_to_the_bottom() {
     );
     let home = Home::new(Script::new([Play::Says(long)]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("说长一点");
-    tui.wait_at_bottom_for("▣  ");
+    tui.wait_at_bottom_for_done();
     tui.key(b"\x1b[5~");
     tui.pump(Duration::from_millis(300));
     assert!(!tui.shows("第 80 行"));
@@ -363,7 +363,7 @@ fn typing_does_not_toggle_the_cursor_off_and_on_every_frame() {
     // kitty 的预编辑挂在光标上，跟着藏/显。显示着的这一帧交给 ratatui 挪过去、显示，不再每帧藏一下。
     let home = Home::new(Script::new([]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let _ = tui.record_from_here();
     tui.type_text("abc");
     tui.pump(Duration::from_millis(300));
@@ -388,7 +388,7 @@ fn mouse_selection_copies_expanded_text_to_osc52() {
     use unicode_width::UnicodeWidthStr;
     let home = Home::new(Script::new([Play::Says("收到。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let full = (1..=12)
         .map(|n| format!("原文第 {n} 行"))
         .collect::<Vec<_>>()
@@ -432,7 +432,7 @@ fn mouse_selection_copies_expanded_text_to_osc52() {
     );
     tui.send(b"\r");
     tui.wait_for("收到。");
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     let (x, y) = locate(&tui);
     tui.record();
     // 正文只选标签中间一截，仍得到整块原文，不触发点击展开。

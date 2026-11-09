@@ -11,7 +11,7 @@ fn the_sidebar_lists_recent_sessions_and_a_click_switches() {
     let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
     let home = Home::with_settings(script, "");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.say("/new");
@@ -97,7 +97,7 @@ fn clicking_a_recent_session_twice_never_flashes_an_empty_session() {
     let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
     let home = Home::with_settings(script, "");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.say("/new");
@@ -137,7 +137,7 @@ fn switching_sessions_leaves_the_typed_text_with_its_session() {
     let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
     let home = Home::with_settings(script, "");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.say("/new");
@@ -188,7 +188,7 @@ fn the_cleared_text_comes_back_only_in_its_own_session() {
     let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
     let home = Home::with_settings(script, "");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.say("/new");
@@ -247,7 +247,7 @@ fn the_sidebar_counts_are_plain_numbers_and_zero_hides_the_list() {
     let script = Script::new([Play::Says("answer-one"), Play::Says("answer-two")]);
     let home = Home::with_settings(script, "[tui]\nsidebar_sessions = 1\nsidebar_jumps = 0\n");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("topic-one");
     tui.wait_for("answer-one");
     tui.say("/new");

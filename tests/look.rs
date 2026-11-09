@@ -33,7 +33,7 @@ fn a_chosen_theme_package_redraws_the_frames() {
     // 2026-10-21 项目主人：默认主题、纯 ASCII 样板都是软件包；配置里选了哪个就照哪个画。
     let home = Home::with_settings(Script::new([]), "[tui]\nlook = \"miyu-tui-theme-ascii\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     wait_ascii(&mut tui);
     // 选择窗：第一行「默认主题」，下面是装了的主题包，默认主题包不另列。
     tui.say("/config");
@@ -61,7 +61,7 @@ fn a_chosen_theme_package_redraws_the_frames() {
 fn a_missing_theme_package_falls_back_to_the_default_and_says_so() {
     let home = Home::with_settings(Script::new([]), "[tui]\nlook = \"nope\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.wait_for("主题包无法读取，已使用默认主题");
     assert!(tui.shows("╭"), "照默认主题画：\n{}", tui.lines().join("\n"));
 }
@@ -72,13 +72,13 @@ fn the_second_start_draws_the_chosen_theme_from_its_first_frame() {
     let home = Home::with_settings(Script::new([]), "[tui]\nlook = \"miyu-tui-theme-ascii\"\n");
     {
         let mut first = home.tui("zh_CN.UTF-8");
-        first.wait_for("工作区");
+        first.wait_for("开放权限");
         wait_ascii(&mut first);
         first.pump(Duration::from_millis(300));
     }
     let mut tui = home.tui("zh_CN.UTF-8");
     let start = tui.record_from_here();
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.pump(Duration::from_millis(500));
     let recorded = tui.recorded();
     for frame in support::frames(start, &recorded) {

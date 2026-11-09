@@ -14,7 +14,7 @@ fn a_refused_new_session_puts_the_words_back_and_stays_connected() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     // 开会话照一个不存在的预设：核心一定拒。
     let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_PRESET", "no-such-preset")]);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("你好");
     // 先等核心的原话出来（拒了），再看字回没回到输入框：刚打完字、回车还没办时输入框里本来就有这句。
     tui.wait_for("预设不存在");

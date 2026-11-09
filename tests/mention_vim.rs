@@ -41,7 +41,7 @@ fn esc(tui: &mut Tui) {
 fn esc_picks_in_the_list_with_j_and_k_and_the_typed_word_stays() {
     let home = vim_home();
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.type_text("@a");
     tui.wait_for("a3.rs");
     tui.wait_for("Esc 在列表里选");
@@ -84,7 +84,7 @@ fn esc_picks_in_the_list_with_j_and_k_and_the_typed_word_stays() {
 fn a_slash_filters_enter_keeps_it_and_esc_takes_it_back() {
     let home = vim_home();
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.type_text("@a");
     tui.wait_for("a3.rs");
     esc(&mut tui);

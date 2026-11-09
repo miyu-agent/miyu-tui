@@ -41,13 +41,13 @@ fn up_until(tui: &mut support::Tui, text: &str) {
 fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
     let home = Home::new(Script::new([Play::Says("好。"), Play::Says("嗯。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("重启以前说的一句");
     tui.wait_for("好。");
     drop(tui);
     // 重启：新的界面、新的会话（ui.startup 照默认开新的）。
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     up_until(&mut tui, "重启以前说的一句");
     // 记在终端这个软件包的状态目录里（核心 9-1 上，`package.list` 的 `state`）。
     let saved =
@@ -62,7 +62,7 @@ fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
 fn ctrl_r_shows_times_a_preview_and_a_search_row_and_typing_filters() {
     let home = Home::new(Script::new([Play::Says("好。"), Play::Says("嗯。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("帮我跑一下门禁");
     tui.wait_for("好。");
     tui.say("改一下侧边栏的顺序");

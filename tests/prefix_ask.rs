@@ -34,7 +34,7 @@ fn a_changed_prefix_is_asked_and_send_anyway_or_cancel() {
         },
     );
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("第一句");
     tui.wait_for("一。");
     edit(&home, &mut tui, "Use absolute paths, always.\n");

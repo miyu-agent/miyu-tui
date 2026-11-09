@@ -35,7 +35,7 @@ fn until(tui: &mut Tui, what: &str, check: impl Fn(&Tui) -> bool) {
 /// 开了一个会话（预设照测具默认的全部功能），说过一句。
 fn talked(home: &Home) -> Tui {
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui

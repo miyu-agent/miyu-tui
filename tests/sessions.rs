@@ -22,7 +22,7 @@ fn sessions_settings(n: usize, settings: &str) -> (Home, Tui) {
         .collect();
     let home = Home::with_settings(Script::new(plays), settings);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     for i in 1..=n {
         if i > 1 {
             tui.say("/new");
@@ -68,14 +68,14 @@ fn starting_in_the_most_recent_session_draws_what_was_said_before() {
         "[ui]\nstartup = \"recent\"\n",
     );
     let mut first = home.tui("zh_CN.UTF-8");
-    first.wait_for("工作区");
+    first.wait_for("开放权限");
     first.say("以前说的话");
-    first.wait_for("▣  ");
+    first.wait_for_done();
     drop(first);
     let mut again = home.tui("zh_CN.UTF-8");
     again.wait_for("以前的回答。");
     assert!(again.shows("┃ 以前说的话"), "{}", again.lines().join("\n"));
-    again.wait_for("▣  ");
+    again.wait_for_done();
     again.wait_for("Thought for");
 }
 
@@ -219,11 +219,11 @@ fn launching_without_saying_anything_leaves_no_empty_session() {
     // 2026-10-01 项目主人数到 47 个空会话：一启动就开会话，没说话就退出的留下了。说第一句话时才开（「连核心」第 4 条）。
     let home = Home::new(Script::new([Play::Says("在。")]));
     let mut idle = home.tui("zh_CN.UTF-8");
-    idle.wait_for("工作区");
+    idle.wait_for("开放权限");
     idle.pump(Duration::from_millis(500));
     drop(idle);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("在。");
     tui.pump(Duration::from_millis(300));
@@ -285,14 +285,14 @@ fn an_open_list_follows_changes_from_elsewhere_and_shows_a_preview_for_untitled_
     // 核心 9-5：订一次会话列表，`sessions.changed` 推过来，框开着跟着变；没标题的写第一句话的开头。
     let home = Home::new(Script::new([Play::Says("好。"), Play::Says("嗯。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("这一个终端的话");
     tui.wait_for("好。");
     tui.say("/sessions");
     wait_rows(&mut tui, 1);
     // 另一个终端开一个新会话说话：这一个的框不用重开就多一行，接着写上它的第一句。
     let mut other = home.tui("zh_CN.UTF-8");
-    other.wait_for("工作区");
+    other.wait_for("开放权限");
     other.say("另一个终端说的第一句");
     other.wait_for("嗯。");
     wait_rows(&mut tui, 2);
@@ -365,7 +365,7 @@ fn deleting_the_current_session_moves_to_the_latest_one_and_then_to_an_empty_one
         );
         tui.pump(Duration::from_millis(50));
     }
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
 }
 
 /// `/delete`（发版前 check 12，2026-11-09 项目主人：「直接删除当前会话并去到新建会话的页面」）：不再问一次，删了回新会话的
@@ -377,7 +377,7 @@ fn delete_removes_the_current_session_and_lands_on_a_new_one() {
     tui.say("/delete");
     tui.wait_for("已删除「");
     let deleted = notice_border(&tui, "已删除「");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     assert!(
         !tui.shows("第 2 号的回答。"),
         "回到新会话的首页：\n{}",
@@ -394,7 +394,7 @@ fn delete_removes_the_current_session_and_lands_on_a_new_one() {
     tui.pump(Duration::from_millis(300));
     drop(tui);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/sessions");
     wait_rows(&mut tui, 1);
     assert!(

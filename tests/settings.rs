@@ -135,7 +135,7 @@ fn deleting_a_pool_asks_who_uses_it_and_saves_at_once() {
 fn slash_config_in_a_conversation_goes_back_to_the_conversation() {
     let home = Home::with_settings(Script::new([Play::Says("好。")]), RELAY);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/config");
@@ -244,7 +244,7 @@ fn slash_connect_goes_straight_to_providers_and_back_to_the_chat() {
     // 2026-10-07 项目主人：/connect 直接进供应商和模型。
     let home = Home::with_settings(Script::new([Play::Says("好。")]), RELAY);
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("/connect");
     tui.wait_for("组织");
     assert!(
@@ -254,7 +254,7 @@ fn slash_connect_goes_straight_to_providers_and_back_to_the_chat() {
         "不经过主菜单"
     );
     tui.key(b"\x1b");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     assert!(
         !tui.lines().iter().any(|l| l.contains("组织")),
         "直接回对话"

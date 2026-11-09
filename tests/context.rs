@@ -25,14 +25,14 @@ fn until_gone(tui: &mut Tui, text: &str) {
 fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     // 还没开会话：底栏照新会话的预览画环（核心 CX-1 下），`/context` 是预览、没有累计。
     let end = Instant::now() + support::WAIT;
-    // 「工作区」那一行右边是预览的环（排期第 22 条：用量那一格，新会话只画环）。
+    // 级别（「开放权限」）那一行右边是预览的环（排期第 22 条：用量那一格，新会话只画环）。
     let previewed = |tui: &Tui| {
         tui.lines()
             .iter()
-            .any(|l| l.contains("工作区") && l.trim_end().ends_with(['○', '◔', '◑', '◕', '●']))
+            .any(|l| l.contains("开放权限") && l.trim_end().ends_with(['○', '◔', '◑', '◕', '●']))
     };
     while !previewed(&tui) {
         assert!(
@@ -54,7 +54,7 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     tui.say("在吗");
     tui.wait_for("好。");
     // 这一轮收尾了再看：没收尾时运行状态行还占着，框矮一截，最下面的「按用途」露不全（11-06 CI 偶发红「少了『主对话』」）。
-    tui.wait_for("▣  ");
+    tui.wait_for_done();
     tui.say("/context");
     tui.wait_for("累计消耗");
     // 发版前 check 32 起按用途只有一行的不写合计。
@@ -70,7 +70,7 @@ fn a_session_opened_with_no_tools_says_so_and_has_no_tools() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     // 核心 P-17 起「无功能」是一份出厂的真预设 `none`（原来是编号空的「无工具」）。
     let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_PRESET", "none")]);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for("好。");
     // 测具的终端窄、没有侧边栏：看 `/status` 的预设那一行。

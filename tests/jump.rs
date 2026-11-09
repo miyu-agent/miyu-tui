@@ -23,7 +23,7 @@ fn jump_lists_what_was_said_and_puts_the_picked_one_at_the_top() {
         Play::Says(long("丙")),
     ]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     for (said, last) in [
         ("第一问 alpha", "甲 第 10 段。"),
         ("第二问 beta", "乙 第 10 段。"),
@@ -83,7 +83,7 @@ fn jump_reads_the_earlier_pages_of_an_old_session_without_scrolling_up() {
         .collect();
     let home = Home::with_settings(Script::new(plays), "[ui]\nstartup = \"recent\"\n");
     let mut first = home.tui("zh_CN.UTF-8");
-    first.wait_for("工作区");
+    first.wait_for("开放权限");
     for i in 1..=TURNS {
         first.say(&format!("第 {i} 句"));
         first.wait_for(&format!("第 {i} 号的回答。"));
@@ -118,7 +118,7 @@ fn the_sidebar_lists_what_was_said_and_a_click_jumps_there() {
         Play::Says(long("丙")),
     ]));
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     for (said, last) in [
         ("第一问 alpha", "甲 第 10 段。"),
         ("第二问 beta", "乙 第 10 段。"),

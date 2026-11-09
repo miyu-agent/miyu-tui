@@ -19,7 +19,7 @@ fn a_session_deleted_while_the_core_was_away_says_so_and_the_next_sentence_start
         Play::Says("新会话的回答。"),
     ]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("第一句");
     tui.wait_for("第一句的回答。");
     home.stop_core();
@@ -64,7 +64,7 @@ fn what_the_core_wrote_while_reconnecting_is_caught_up() {
         "",
     );
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("后台睡一会");
     // 测试的机器上没有沙盒：核心问要不要在沙盒外跑，允许本次。
     tui.wait_for("允许本次");
@@ -87,7 +87,7 @@ fn a_switch_cut_off_by_the_core_going_away_lands_after_reconnecting() {
         Play::Says("第 2 号的回答。"),
     ]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("第 1 号的话");
     tui.wait_for("第 1 号的回答。");
     tui.say("/new");

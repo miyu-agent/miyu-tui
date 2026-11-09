@@ -16,7 +16,7 @@ fn resuming_from_another_directory_keeps_her_workspace_and_says_nothing() {
         "[ui]\nstartup = \"recent\"\n",
     );
     let mut first = home.tui_wide("zh_CN.UTF-8", 140);
-    first.wait_for("工作区");
+    first.wait_for("开放权限");
     first.say("开个会话");
     first.wait_for("在这。");
     drop(first);
@@ -55,7 +55,7 @@ fn scratch(name: &str) -> std::path::PathBuf {
 fn the_workspace_command_moves_an_open_session_and_says_why_it_cannot() {
     let home = Home::new(Script::new([Play::Says("在这。")]));
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("开个会话");
     tui.wait_for("在这。");
     let other = scratch("ws-other");
@@ -79,7 +79,7 @@ fn the_workspace_command_moves_an_open_session_and_says_why_it_cannot() {
 fn before_the_first_word_the_workspace_is_where_the_new_session_opens() {
     let home = Home::new(Script::new([Play::Says("在这。")]));
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let other = scratch("ws-new");
     let name = other.file_name().unwrap().to_string_lossy().into_owned();
     tui.say(&format!("/workspace {}", other.display()));
@@ -108,7 +108,7 @@ fn the_at_list_follows_the_workspace_that_was_switched_to() {
     let other = scratch("ws-at");
     std::fs::write(other.join("new_only.rs"), b"").unwrap();
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say(&format!("/workspace {}", other.display()));
     tui.wait_for("新会话的工作区");
     tui.type_text("@new_only");

@@ -20,7 +20,7 @@ fn todowrite_shows_up_as_the_todo_list() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("排一下要做的");
     tui.wait_for("列好了。");
     tui.wait_for("待办 1/3");
@@ -62,7 +62,7 @@ fn coming_back_to_the_session_brings_the_todos_from_the_subscribe_reply() {
     ]);
     let home = Home::with_tools(script, "[ui]\nstartup = \"recent\"\n");
     let mut first = home.tui("zh_CN.UTF-8");
-    first.wait_for("工作区");
+    first.wait_for("开放权限");
     first.say("排一下");
     first.wait_for("列好了。");
     drop(first);
@@ -93,7 +93,7 @@ fn a_finished_list_goes_away_at_once() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("开工");
     tui.wait_for("开始了。");
     tui.wait_for("待办 0/2");
@@ -142,7 +142,7 @@ fn folded_it_shows_what_is_in_progress_and_the_next_one() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("排一下要做的");
     tui.wait_for("列好了。");
     tui.wait_for("待办 4/8");
@@ -180,7 +180,7 @@ fn todo_clear_folds_the_list_at_once() {
     ]);
     let home = Home::with_tools(script, "");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("排一下");
     tui.wait_for("列好了。");
     tui.wait_for("待办 0/2");
@@ -208,7 +208,7 @@ fn with_a_sidebar_and_its_mascot_the_items_still_show_above_the_input() {
     ]);
     let home = Home::with_tools(script, "[tui]\nmascot_home = true\nmascot_sidebar = true\n");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("排一下要做的");
     tui.wait_for("列好了。");
     tui.wait_for("待办 1/3");

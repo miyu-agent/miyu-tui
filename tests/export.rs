@@ -26,7 +26,7 @@ fn wait_file(tui: &mut support::Tui, path: &std::path::Path) {
 fn export_estimates_each_use_and_saves_a_markdown_and_a_bundle() {
     let home = Home::new(Script::new([Play::Says("记下了。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("帮我记一下导出测试");
     tui.wait_for("记下了。");
     tui.say("/export");

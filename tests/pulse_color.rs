@@ -1,5 +1,6 @@
-//! 伪终端里的端到端测试：运行状态行的流光一直照工作区那一档的颜色（蓝图 `tui.md`「运行状态行和排队的消息」第 1 条；
-//! 2026-10-17 项目主人：开放权限时整行跟着变红不对，所有主题都要查）。
+//! 伪终端里的端到端测试：运行状态行的流光一直照配色方案原来工作区那一档的颜色（蓝图 `tui.md`「运行状态行和排队的消息」
+//! 第 1 条；2026-10-17 项目主人：开放权限时整行跟着变红不对，所有主题都要查）。LV-3 去掉了工作区一级，底栏不再有那个颜色可
+//! 比，照配色方案写的比。
 
 mod support;
 
@@ -9,15 +10,16 @@ use miyu_session::testkit::{Play, Script};
 use support::{Home, Tui};
 use vt100::Color;
 
-/// 配色、明暗：出厂的几种配色各取深、浅。跟随壁纸和跟随头像是同一套算法，照一个主色生成（`tests/theme.rs` 验过同一个主色
-/// 铺一样的底），这里用跟随头像代表，主色是绿的：工作区跟着主色是绿，开放权限还是红，分得开。
-const THEMES: [(&str, &str); 6] = [
-    ("tokyonight", "dark"),
-    ("tokyonight", "light"),
-    ("terminal", "dark"),
-    ("terminal", "light"),
-    ("persona", "dark"),
-    ("persona", "light"),
+/// 配色、明暗和那一套的工作区色（`resources/themes/*.json` 的 `workspace`）：出厂的几种配色各取深、浅。跟随壁纸和跟随头像是
+/// 同一套算法，照一个主色生成（`tests/theme.rs` 验过同一个主色铺一样的底），这里用跟随头像代表，主色是绿的：工作区色跟着
+/// 主色是绿，开放权限还是红，分得开。终端配色没问到终端颜色时照调色板 4 号（`blue`）原样画。
+const THEMES: [(&str, &str, Color); 6] = [
+    ("tokyonight", "dark", Color::Rgb(0x7a, 0xa2, 0xf7)),
+    ("tokyonight", "light", Color::Rgb(0x2e, 0x7d, 0xe9)),
+    ("terminal", "dark", Color::Idx(4)),
+    ("terminal", "light", Color::Idx(4)),
+    ("persona", "dark", Color::Rgb(0x2f, 0xab, 0x34)),
+    ("persona", "light", Color::Rgb(0x2f, 0xab, 0x34)),
 ];
 
 /// 底栏左下角写着 `word` 的那一格的字色。
@@ -70,7 +72,7 @@ fn wait<T>(tui: &mut Tui, what: &str, mut got: impl FnMut(&Tui) -> Option<T>) ->
 
 #[test]
 fn the_pulse_keeps_the_workspace_colour_in_every_theme() {
-    for (colors, mode) in THEMES {
+    for (colors, mode, workspace) in THEMES {
         let theme = format!("{colors} {mode}");
         let home = Home::with_settings(
             Script::new([Play::Holds]),
@@ -82,8 +84,6 @@ fn the_pulse_keeps_the_workspace_colour_in_every_theme() {
             None,
         );
         let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_PERSONA", "green")]);
-        let workspace = wait(&mut tui, "「工作区」", |t| footer_color(t, "工作区"));
-        tui.key(b"\t");
         let full = wait(&mut tui, "「开放权限」", |t| {
             footer_color(t, "开放权限")
         });

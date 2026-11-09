@@ -19,7 +19,7 @@ fn ground(settings: &str) -> Color {
         None,
     );
     let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_PERSONA", "green")]);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.pump(std::time::Duration::from_millis(800));
     tui.background(0, 0)
 }
@@ -39,13 +39,14 @@ fn following_the_avatar_paints_the_colors_of_the_viewed_persona() {
 #[test]
 fn the_running_line_sweeps_in_the_color_of_the_mode_word() {
     // 2026-10-14 项目主人报：终端配色时运行状态行的字是写死的蓝，和底栏「工作区」那个模式字对不上；照模式字的颜色走。
+    // LV-3 去掉了工作区一级，底栏不再写它：照配色方案原来工作区那一档（终端配色是调色板 4 号 `blue`），不是开放权限的。
     let home = Home::with_settings(Script::new([Play::Holds]), "[tui]\ntheme = \"terminal\"\n");
     let mut tui = home.tui("zh_CN.UTF-8");
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for_line("…");
     let lines = tui.lines();
-    let mode = position(&lines, "工作区").expect("底栏的模式字");
+    let mode = position(&lines, "开放权限").expect("底栏的模式字");
     // 运行状态行：最后是读秒（`0s`），在输入框上面。
     let row = lines
         .iter()
@@ -62,10 +63,11 @@ fn the_running_line_sweeps_in_the_color_of_the_mode_word() {
     let footer = tui.foreground(mode.0, mode.1);
     assert_eq!(
         word,
-        footer,
-        "流光和模式字同一个颜色：\n{}",
+        Color::Idx(4),
+        "流光照配色方案的工作区色：\n{}",
         lines.join("\n")
     );
+    assert_ne!(word, footer, "不照开放权限的红：\n{}", lines.join("\n"));
 }
 
 #[test]
@@ -77,7 +79,7 @@ fn the_running_line_sweeps_a_real_gradient_when_the_terminal_tells_its_colors() 
     let mut colors = [(0x80, 0x80, 0x80); 16];
     colors[4] = (0x40, 0x80, 0xff);
     tui.answer_colors(colors);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for_line("…");
     let lines = tui.lines();
@@ -147,7 +149,7 @@ fn following_the_wallpaper_takes_matugens_source_like_an_avatar_color() {
     let (root, local) = cache_dirs(&home);
     let env = [("HOME", root.as_str()), ("LOCALAPPDATA", local.as_str())];
     let mut tui = home.tui_with("zh_CN.UTF-8", &env);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
     while tui.background(0, 0) != persona {
         assert!(
@@ -191,7 +193,7 @@ fn a_changed_wallpaper_is_followed_without_polling() {
     let (root, local) = cache_dirs(&home);
     let env = [("HOME", root.as_str()), ("LOCALAPPDATA", local.as_str())];
     let mut tui = home.tui_with("zh_CN.UTF-8", &env);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let wait_until = |tui: &mut support::Tui, ok: &dyn Fn(Color) -> bool, what: &str| {
         let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
         while !ok(tui.background(0, 0)) {
@@ -231,7 +233,7 @@ fn without_file_notifications_only_regaining_focus_looks_again() {
         ("MIYU_TUI_WALLPAPER_WATCH", "0"),
     ];
     let mut tui = home.tui_with("zh_CN.UTF-8", &env);
-    tui.wait_for("工作区");
+    tui.wait_for("开放权限");
     let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
     while tui.background(0, 0) == NIGHT || !matches!(tui.background(0, 0), Color::Rgb(..)) {
         assert!(std::time::Instant::now() < end, "先照绿的铺");
