@@ -24,6 +24,9 @@ pub struct Persona {
     pub seed: Option<String>,
     /// 头像的候选主色 `#rrggbb`，好的在前（核心 P-6 补的 `seeds`，最多 4 个）：没有头像、解不开的是 `None`，全透明的是空的。
     pub seeds: Option<Vec<String>>,
+    /// 预设占多少 token（核心 DM-4 的 `tokens`，估的、不算人格；发版前 check 4）：人格、写错的、算不出来的是 `None`。
+    #[serde(default)]
+    pub tokens: Option<u64>,
 }
 
 impl Persona {
@@ -88,6 +91,7 @@ fn read_list(got: &Value, list: &str, id: &str) -> Vec<Persona> {
                     .filter_map(|s| s.as_str().map(str::to_string))
                     .collect()
             }),
+            tokens: p["tokens"].as_u64(),
         })
         .collect()
 }

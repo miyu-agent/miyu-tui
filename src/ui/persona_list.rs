@@ -45,6 +45,8 @@ pub struct Texts {
     pub cant_edit: String,
     /// 首页框下面那一行、侧边栏：`{name}` 是选的预设。
     pub preset_chosen: String,
+    /// 预设右边暗色写它占多少 token（核心 DM-4 估的，发版前 check 4）：`{n}` 是写短了的数。
+    pub tokens: String,
 }
 
 /// 框（标题照是人格还是预设、提示）、排好的行、每一行是第几个。`current` 是现在用的那一个（无人格是空的编号）：开着会话的
@@ -85,9 +87,17 @@ pub fn lines(
                     None,
                 ),
                 None => {
-                    // 中途换的：现在用的那一个行首写 `●`（下面），右边不写；还没开会话的：默认的右边写「默认」。
-                    let mark = (current.is_none() && default == Some(p.id.as_str()))
-                        .then(|| Span::styled(texts.default_mark.clone(), theme::dim()));
+                    // 中途换的：现在用的那一个行首写 `●`（下面），右边不写；还没开会话的：默认的右边写「默认」。预设右边再写它占
+                    // 多少 token（发版前 check 4，2026-11-09 项目主人：「preset 列表中显示出 preset 消耗的 token」），核心没给的不写。
+                    let default_mark = (current.is_none() && default == Some(p.id.as_str()))
+                        .then(|| texts.default_mark.clone());
+                    let tokens = p
+                        .tokens
+                        .filter(|_| kind == Kind::Preset)
+                        .map(|n| texts.tokens.replace("{n}", &crate::meter::short(n)));
+                    let right: Vec<String> = default_mark.into_iter().chain(tokens).collect();
+                    let mark =
+                        (!right.is_empty()).then(|| Span::styled(right.join("  "), theme::dim()));
                     let mut content = vec![Span::raw(p.label().to_string())];
                     // 预设后面暗色写它的描述（核心交回的 `summary`，照连接的语言挑好；2026-10-23 项目主人定，没有的不写；
                     // 编号空着的「无工具」也照它）；人格框「无人格」那一行（编号空着）写它意味着什么。

@@ -51,6 +51,7 @@ impl PersonaPick {
                 avatar: None,
                 seed: None,
                 seeds: None,
+                tokens: None,
             },
             kind,
             list: None,

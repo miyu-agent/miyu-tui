@@ -140,6 +140,7 @@ impl App {
                     avatar: None,
                     seed: None,
                     seeds: None,
+                    tokens: None,
                 },
             );
         }
@@ -469,6 +470,7 @@ mod tests {
             avatar: None,
             seed: None,
             seeds: None,
+            tokens: None,
         }
     }
 

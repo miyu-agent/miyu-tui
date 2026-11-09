@@ -26,6 +26,7 @@ fn a_chosen_preset_is_written_to_the_system_config_without_a_layer() {
         avatar: None,
         seed: None,
         seeds: None,
+        tokens: None,
     };
     pick.core(&Update::Presets(vec![preset]), &turn);
     pick.core(

@@ -720,7 +720,7 @@
     "preset_title": "请选择预设",
     "preset_need": "请先选择预设",
     "cant_edit": "这一项不能编辑",
-    "preset_chosen": "预设 {name}",
+    "preset_chosen": "预设 {name}", "tokens": "约 {n}",
     "no_tools": "无工具",
     "none": "无人格",
     "none_note": "不使用人格",

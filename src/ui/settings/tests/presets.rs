@@ -22,6 +22,7 @@ fn a_new_preset_or_persona_window_is_titled_by_its_name_before_the_list_is_read_
         avatar: None,
         seed: None,
         seeds: None,
+        tokens: None,
     };
     p.more.presets = Some(vec![other.clone()]);
     p.more.personas = Some(vec![other]);
