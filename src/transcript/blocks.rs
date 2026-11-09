@@ -52,7 +52,7 @@ impl Transcript {
             Some(Slot::Step(i, j)) => match self.step_mut((i, j)).map(|s| &mut s.kind) {
                 Some(StepKind::Thought { text }) => text.push_str(piece),
                 Some(StepKind::Tool { args, .. }) => args.push_str(piece),
-                None => {}
+                Some(StepKind::Report { .. }) | None => {}
             },
             None => {}
         }
@@ -98,7 +98,7 @@ impl Transcript {
                 *parsed = serde_json::from_str(args).unwrap_or(Value::Null);
                 *state = ToolState::Running;
             }
-            StepKind::Tool { .. } => {}
+            StepKind::Tool { .. } | StepKind::Report { .. } => {}
         }
     }
 

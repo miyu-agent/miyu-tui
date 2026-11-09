@@ -53,7 +53,7 @@ pub use climb::Progress;
 pub use entry::{Entry, JobMark, JobNote, Kind, Shell};
 pub use stuck::Stuck;
 
-pub use steps::{Segment, Step, StepKind, Tally, ToolState};
+pub use steps::{ReportClass, Segment, Step, StepKind, Tally, ToolState};
 pub use words::undo_counts;
 
 /// 连核心的状态。

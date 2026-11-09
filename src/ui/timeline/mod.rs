@@ -51,7 +51,12 @@ fn build(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
     // 只有一步、做完了、不是人点开整段的（不收起的配置让它展开着）：照进行中的样子，一行步骤加预览，不画收起那一行
     // （「时间线」第 15 条，2026-10-11 项目主人报：关了折叠、没开「展开思考」，思考却铺开了全文）。
     let lone = segment.steps.len() == 1 && segment.open != Some(true);
-    if !segment.expanded(fold) || (segment.settled() && !lone) {
+    // 只有回报的一段（她说着话时来的，发版前 check 21）：照原来单独的那几行画，不收成一行。
+    let reports_only = segment
+        .steps
+        .iter()
+        .all(|s| matches!(s.kind, crate::transcript::StepKind::Report { .. }));
+    if !reports_only && (!segment.expanded(fold) || (segment.settled() && !lone)) {
         let base = lit(theme::dim(), ctx.hover == Some(target));
         let mut row = ctx.row(ctx.blank_slot(), summary::line(segment, ctx, base));
         row.target = Some(target);
@@ -208,6 +213,10 @@ fn step_rows(target: Target, step: &Step, spinning: bool, ctx: &Ctx) -> Vec<Row>
 /// 这一步点得开：「准备 xx」的点不开；`timeline.json` 的 `bodies` 写 `none` 的（忘掉、删文档）点不开，标题那一句就够了；`detail` 是空的
 /// （翻记忆、查知识库没找到，核心给空列表）也点不开，标题已经写了「没找到」。
 fn openable(step: &Step, ctx: &Ctx) -> bool {
+    // 回报：有全文的才点得开（同正文里单独的那一行）。
+    if let crate::transcript::StepKind::Report { note, .. } = &step.kind {
+        return !note.detail.trim().is_empty();
+    }
     let crate::transcript::StepKind::Tool { name, state, .. } = &step.kind else {
         return true;
     };

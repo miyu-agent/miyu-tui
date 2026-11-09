@@ -6,7 +6,7 @@ use std::time::Instant;
 use crate::config::JobTexts;
 use crate::jobs::{Board, JobKind, JobState};
 use crate::meter;
-use crate::transcript::{JobMark, Transcript};
+use crate::transcript::{JobMark, ReportClass, Transcript};
 
 /// 一条后台任务结束了：正文末尾一行，记号有颜色、字暗；点开看全文（「后台命令、子代理和侧边栏」第 5 条）。
 pub fn announce(
@@ -60,5 +60,9 @@ pub fn announce(
         JobKind::Agent => job.report.clone(),
         JobKind::Shell => job.title.trim().to_string(),
     };
-    transcript.job_from(mark, text, detail, Some(job.job.clone()));
+    let class = match job.kind {
+        JobKind::Agent => ReportClass::Task,
+        JobKind::Shell => ReportClass::Command,
+    };
+    transcript.job_from(mark, text, detail, (Some(job.job.clone()), class));
 }

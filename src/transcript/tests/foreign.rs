@@ -59,7 +59,7 @@ fn the_output_of_an_ended_command_fills_its_notice() {
         JobMark::Done,
         "后台命令完成 · ls".into(),
         String::new(),
-        Some("j3".into()),
+        (Some("j3".into()), crate::transcript::ReportClass::Command),
     );
     t.job(JobMark::Done, "别的".into(), String::new());
     t.fill_job("j3", "a.txt".into());

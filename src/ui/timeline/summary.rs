@@ -39,7 +39,8 @@ pub fn line(segment: &Segment, ctx: &Ctx, base: Style) -> Vec<Span<'static>> {
         + tally.remembered
         + tally.searched
         + tally.fetched;
-    if doers == 0 {
+    let reports: usize = tally.reports.iter().sum();
+    if doers == 0 && reports == 0 {
         let secs = format!("{}s", tally.thinking.as_secs().max(1));
         return vec![Span::styled(
             words.thought_for.replace("{elapsed}", &secs),
@@ -48,6 +49,7 @@ pub fn line(segment: &Segment, ctx: &Ctx, base: Style) -> Vec<Span<'static>> {
     }
     // 一格一格：字，和这一格要不要接加减的行数。只为发一张图的那一段打头写那件工具的显示名，不再数别的类。
     let (mut parts, titled) = match sending(segment, ctx) {
+        _ if doers == 0 => (Vec::new(), false),
         Some(name) => (vec![(name, false)], true),
         None => cells(&tally, words),
     };
@@ -56,6 +58,12 @@ pub fn line(segment: &Segment, ctx: &Ctx, base: Style) -> Vec<Span<'static>> {
     }
     if tally.errors > 0 {
         parts.push((count(tally.errors, &words.errors), false));
+    }
+    // 一轮里来的回报，照类各数各的：「1 个后台命令完成」（发版前 check 21，2026-11-09 项目主人挑的样板 A）。
+    for (n, forms) in tally.reports.iter().zip(&words.reports) {
+        if *n > 0 {
+            parts.push((count(*n, forms), false));
+        }
     }
     parts.push((took, false));
     let mut out = spans(parts, style, changed(segment, ctx));
@@ -234,7 +242,7 @@ fn changed(segment: &Segment, ctx: &Ctx) -> (usize, usize) {
                     .then(|| diff::from_args(parsed))
                     .flatten()
             }
-            StepKind::Thought { .. } => None,
+            StepKind::Thought { .. } | StepKind::Report { .. } => None,
         })
         .fold((0, 0), |(a, r), d| (a + d.added, r + d.removed))
 }

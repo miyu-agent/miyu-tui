@@ -173,7 +173,7 @@ impl Transcript {
             .find(|step| step.call_id.as_deref() == Some(call_id))
             .and_then(|step| match &step.kind {
                 StepKind::Tool { parsed, .. } => Some(parsed),
-                StepKind::Thought { .. } => None,
+                StepKind::Thought { .. } | StepKind::Report { .. } => None,
             })
     }
 
