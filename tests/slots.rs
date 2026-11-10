@@ -74,10 +74,8 @@ fn the_status_line_follows_the_configured_order_and_hides_what_is_hidden() {
     loop {
         if let Some(footer) = footer_line(&tui.lines()) {
             assert!(!footer.contains("开放权限"), "权限级别藏起来了：{footer}");
-            assert!(
-                !footer.contains('Σ') && !footer.contains("(C"),
-                "不再写 Σ、命中率：{footer}"
-            );
+            // 累计后面紧跟命中率（2026-11-10 项目主人要回来的：「xxxM(C99%)」）；Σ 照旧不写。
+            assert!(!footer.contains('Σ'), "不再写 Σ：{footer}");
             break;
         }
         assert!(
