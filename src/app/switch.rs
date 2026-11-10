@@ -215,7 +215,7 @@ impl App {
         } else {
             &texts.unpinned
         };
-        self.hint(note.clone(), true);
+        self.hint(note.clone(), false);
     }
 
     /// `Ctrl+D`：删勾了的全部、没勾的删选中的那一个；整批按第一次提示再按一次，第二次才删（第 2 条）。正在用的也能删
@@ -284,7 +284,8 @@ impl App {
         } else {
             texts.deleted_many.replace("{count}", &note)
         };
-        self.hint(done, true);
+        // 照普通通知的颜色，不用绿色（发版前 check 12、32，2026-11-09、11-10 项目主人：通知的框不该是绿色）。
+        self.hint(done, false);
     }
 
     /// 切到 `session`（第 4、5 条）：停放着的（切走时还忙着的）直接换上来；别的先开一份停放着的空正文收补发来的，
