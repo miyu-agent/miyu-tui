@@ -165,15 +165,15 @@ fn a_long_reply_stops_at_its_first_row_until_her_next_step() {
         10,
         "放得下：照旧跟着"
     );
-    // 开头顶到第二行就停：最上面让给往上翻着时钉的那一行（发版前 check 27）。
+    // 开头顶到第三行就停：最上面两行让给往上翻着时钉的那一行和它下面空的一行（发版前 check 27；2026-11-11 多空一行）。
     assert_eq!(
         first_row(&rows(25), area, &mut view, true),
-        14,
-        "开头顶到第二行：停住"
+        13,
+        "开头顶到第三行：停住"
     );
     assert_eq!(
         first_row(&rows(40), area, &mut view, true),
-        14,
+        13,
         "后面的字在下面长"
     );
     // 她开始下一步：回到最底下接着跟。
@@ -181,7 +181,7 @@ fn a_long_reply_stops_at_its_first_row_until_her_next_step() {
     assert_eq!(first_row(&rows(42), area, &mut view, true), 32);
     // 下一段正文长了，又停在它的开头。
     view.reading = Some((9, 44));
-    assert_eq!(first_row(&rows(60), area, &mut view, true), 43);
+    assert_eq!(first_row(&rows(60), area, &mut view, true), 42);
 }
 
 #[test]
@@ -191,7 +191,7 @@ fn scrolled_back_to_the_bottom_the_same_reply_does_not_stop_again() {
     view.area = area;
     view.reading = Some((7, 15));
     view.first = first_row(&rows(30), area, &mut view, true);
-    assert_eq!(view.first, 14);
+    assert_eq!(view.first, 13);
     // 人往下翻到底：跟着最新的，这一段不再停。
     while view.top.is_some() {
         view.page(true);
@@ -483,4 +483,52 @@ fn the_last_entry_folding_still_leaves_its_gap() {
         7,
         "顶上去的不掉下来"
     );
+}
+
+/// 2026-11-11 项目主人（发版前 check 33）：她还在跑的那一段里点开一步（展开出几十行）、在里面滚到过底、再点它收起，
+/// 收起的那一行顶在最上面、下面空出一整屏。底边记的是展开着时的末尾：自己点开、收起的那几行不该算成空档，底边跟着
+/// 这一步长了、短了多少一起走；原来就有的空档（一轮结束收起留的）照旧留着。
+#[test]
+fn opening_then_closing_a_step_in_the_live_entry_leaves_no_gap() {
+    use crate::ui::rows::Target;
+    let area = Rect::new(0, 0, 10, 10);
+    let step = Target::Entry(9);
+    // 第 1 条是在跑的那一段：3 行字、那一步（收着 1 行、展开 40 行）、后面 2 行。
+    let rows = |open: usize| {
+        let blank = Row::new(Vec::new(), 0, 0);
+        let mut live = vec![blank.clone(); 3];
+        live.extend((0..open).map(|_| {
+            let mut row = blank.clone();
+            row.target = Some(step);
+            row
+        }));
+        live.extend(vec![blank.clone(); 2]);
+        crate::ui::row_cache::Rows::of_owned(vec![
+            (vec![blank.clone(); 20], Some(0)),
+            (live, Some(1)),
+        ])
+    };
+    let frame = |view: &mut BodyView, rows: crate::ui::row_cache::Rows| {
+        let first = first_row(&rows, area, view, true);
+        view.rows = rows;
+        first
+    };
+    let mut view = BodyView::default();
+    assert_eq!(
+        frame(&mut view, rows(1)),
+        16,
+        "跟着最新的：26 行露最后 10 行"
+    );
+    // 点开那一步（它在第 23 行、屏上第 7 行）：比视口高，顶到最上面。
+    view.anchor = Some((step, 7));
+    assert_eq!(frame(&mut view, rows(40)), 23);
+    // 在里面滚到底、再滚回它开头。
+    view.top = Some(999);
+    assert_eq!(frame(&mut view, rows(40)), 55);
+    view.top = Some(23);
+    assert_eq!(frame(&mut view, rows(40)), 23);
+    // 点它收起：回到跟着最新的那一处，下面不空。
+    view.anchor = Some((step, 0));
+    assert_eq!(frame(&mut view, rows(1)), 16, "不留一整屏的空");
+    assert!(view.top.is_none(), "接着跟着最新的");
 }
