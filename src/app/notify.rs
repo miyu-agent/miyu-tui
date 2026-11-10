@@ -4,7 +4,7 @@
 
 use super::App;
 use crate::core::{EndReason, GoalState, Push, Update};
-use crate::notify::{Event, State};
+use crate::notify::{Event, State, Who};
 
 impl App {
     /// 核心的一条消息过一遍通知，在正文收它之前：没有在跑的一轮的结束不弹（核心重启以后补推的），手动压缩、清空那一轮
@@ -91,16 +91,37 @@ impl App {
 }
 
 impl App {
-    /// 接下来的通知是这个会话的（「系统通知」第 3 条，2026-10-17 项目主人定）：标题是会话标题，图标是这个会话的人格头像
-    /// （存下来了的；终端显示不了图也照样用）。
+    /// 接下来的通知是这个会话的（「系统通知」第 3 条）：标题写会话的人格的名字、图标用它的头像（2026-11-10 项目主人；存下来了的，
+    /// 终端显示不了图也照样用），会话标题接在正文前面；无人格的标题写程序名。
     fn introduce(&mut self) {
         let title = self.talk.transcript.title.clone();
-        let avatar = self
-            .seen()
-            .wanted(super::avatars::Place::Sidebar)
-            .and_then(|(_, version)| self.media.avatars.file(version));
-        self.notifier.about(title, avatar);
+        let who = self.who(self.talk.transcript.persona.as_deref());
+        self.notifier.about(title, who);
         self.notify_mascot();
+    }
+
+    /// 人格 `persona` 在通知上的样子：名字（照列表，没有的写编号）、存下来的头像文件。无人格（空着、编号空）的是 `None`。
+    pub(super) fn who(&self, persona: Option<&str>) -> Option<Who> {
+        let id = persona.filter(|id| !id.is_empty())?;
+        let row = self.talk.persona.list.iter().flatten().find(|p| p.id == id);
+        let avatar = row
+            .and_then(|p| p.avatar.as_deref())
+            .and_then(|version| self.media.avatars.file(version));
+        Some(Who {
+            name: self.talk.persona.name(id).to_string(),
+            avatar,
+        })
+    }
+
+    /// 会话列表里这个会话的人格（没见过、无人格的是 `None`）。
+    pub(super) fn session_persona(&self, session: &str) -> Option<String> {
+        self.talk
+            .sessions_seen
+            .iter()
+            .flatten()
+            .find(|s| s.session == session)?
+            .persona
+            .clone()
     }
 
     /// 没有头像时通知的图标照现在的吉祥物画（「系统通知」第 3 条，2026-10-19）：颜色固定照网页晨光那一套。

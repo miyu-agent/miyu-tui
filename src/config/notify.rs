@@ -60,4 +60,6 @@ pub struct NotifyTexts {
     pub schedules_reset: String,
     /// 系统通知上点开的那个按钮（`notify-send` 的默认动作）。
     pub open: String,
+    /// 标题写人格名以后，正文前面接会话标题的写法（`{title}`、`{body}`，「系统通知」第 3 条，2026-11-10）。
+    pub titled: String,
 }

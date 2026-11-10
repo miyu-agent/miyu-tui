@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use super::{Event, Notifier, Plan, Route, plan};
+use super::{Event, Notifier, Plan, Route, Who, plan};
 use crate::config::Config;
 
 fn env(pairs: &[(&str, &str)]) -> impl Fn(&str) -> Option<String> + use<> {
@@ -116,14 +116,22 @@ fn a_schedule_notice_asks_kitty_to_report_the_click_and_names_its_session() {
         env(&[("TERM", "xterm-kitty")]),
         None,
     );
-    n.tell_notice(Some("早报".into()), "定时任务跑完了", Some("s-1".into()));
+    n.tell_notice(
+        (Some("早报".into()), None),
+        "定时任务跑完了",
+        Some("s-1".into()),
+    );
     let out = n.outbox().concat();
     assert!(out.contains("i=miyu-s-s-1:"), "{out:?}");
     assert!(out.contains("a=focus,report:"), "{out:?}");
     let b = |t: &str| base64::engine::general_purpose::STANDARD.encode(t);
-    assert!(out.contains(&b("早报")) && out.contains(&b("定时任务跑完了")));
+    // 无人格的会话：标题写程序名，会话标题接在正文前面（2026-11-10）
+    assert!(
+        out.contains(&b("Miyu")) && out.contains(&b("早报：定时任务跑完了")),
+        "{out:?}"
+    );
     // 唤醒表坏了的不切会话：标题写 Miyu，不要回话。
-    n.tell_notice(None, "定时任务表坏了", None);
+    n.tell_notice((None, None), "定时任务表坏了", None);
     let out = n.outbox().concat();
     assert!(
         out.contains("a=focus:") && !out.contains("report"),
@@ -181,8 +189,9 @@ fn an_owed_notification_pops_only_when_settled_and_not_after_being_forgiven() {
 }
 
 #[test]
-fn the_title_is_the_sessions_and_kitty_gets_an_icon() {
-    // 2026-10-17 项目主人定：标题是会话标题，正文只写为什么，图标照人格头像，没有的用 Miyu 的。
+fn the_title_is_the_personas_name_and_the_icon_its_avatar() {
+    // 2026-11-10 项目主人：通知照会话的人格来——标题写人格的名字，不写程序名；有头像的带头像，没头像的不带图标；无人格的
+    // 会话标题照旧写程序名。会话标题接在正文前面（原来 10-17 定的标题是会话标题）。
     use base64::Engine;
     use base64::engine::general_purpose::STANDARD;
     let config = Config::builtin().unwrap();
@@ -193,8 +202,11 @@ fn the_title_is_the_sessions_and_kitty_gets_an_icon() {
         env(&[("TERM", "xterm-kitty")]),
         Some(cache.join("tui").join("sounds")),
     );
+    let has = |out: &str, part: &str, text: &str| {
+        out.contains(&format!("p={part};{}", STANDARD.encode(text)))
+    };
+    // 无人格：标题写程序名；没交吉祥物的不带图标，交下来了照它画（2026-10-19）。
     n.about(Some("修登录页".into()), None);
-    // 没有吉祥物（还没交下来）的不带图标；交下来了照它画（2026-10-19）。
     n.tell(Event::Replied);
     assert!(
         !n.outbox().join("").contains(":p=icon;"),
@@ -203,31 +215,73 @@ fn the_title_is_the_sessions_and_kitty_gets_an_icon() {
     n.mascot(config.mascot.clone());
     n.tell(Event::Replied);
     let out = n.outbox().join("");
-    assert!(
-        out.contains(&format!("p=title;{}", STANDARD.encode("修登录页"))),
-        "{out:?}"
-    );
-    assert!(
-        out.contains(&format!("p=body;{}", STANDARD.encode("回答完了"))),
-        "{out:?}"
-    );
+    assert!(has(&out, "title", "Miyu"), "{out:?}");
+    assert!(has(&out, "body", "修登录页：回答完了"), "{out:?}");
     assert!(
         out.contains(":p=icon;"),
-        "没有头像用吉祥物画成的图标：{out:?}"
+        "无人格用吉祥物画成的图标：{out:?}"
     );
-    // 没起名的会话：标题写 Miyu。
-    n.about(None, None);
+    // 有人格、没头像：标题写人格的名字，不带图标（吉祥物也不画）。
+    let plain = Who {
+        name: "小美".into(),
+        avatar: None,
+    };
+    n.about(None, Some(plain));
     n.tell(Event::Asking);
     let out = n.outbox().join("");
     assert!(
-        out.contains(&format!("p=title;{}", STANDARD.encode("Miyu"))),
+        has(&out, "title", "小美") && has(&out, "body", "等你回答"),
         "{out:?}"
     );
+    assert!(!out.contains(":p=icon;"), "有人格没头像的不带图标：{out:?}");
+    // 有头像：图标是头像缩成的那张。
+    std::fs::create_dir_all(&cache).unwrap();
+    let face = cache.join("face.png");
+    image::RgbImage::new(64, 64).save(&face).unwrap();
+    let pictured = Who {
+        name: "小美".into(),
+        avatar: Some(face),
+    };
+    n.about(Some("修登录页".into()), Some(pictured.clone()));
+    n.tell(Event::Failed);
+    let out = n.outbox().join("");
     assert!(
-        out.contains(&format!("p=body;{}", STANDARD.encode("等你回答"))),
+        has(&out, "title", "小美") && out.contains(":p=icon;"),
+        "{out:?}"
+    );
+    // 别的会话来的照传进来的会话写，不照正在看的。
+    n.tell_finished(
+        (Some("B".into()), Some(&pictured)),
+        "回答完了",
+        "s-2".into(),
+    );
+    let out = n.outbox().join("");
+    assert!(
+        has(&out, "title", "小美") && has(&out, "body", "B：回答完了"),
         "{out:?}"
     );
     drop(std::fs::remove_dir_all(&cache));
+}
+
+/// 怎么定标题、正文、图标（纯函数）：名字全是空白的当没有名字，会话标题全是空白的不接。
+#[test]
+fn shaping_uses_the_name_only_when_it_has_one() {
+    use super::{Face, mascot_icon::Icon, shape};
+    let texts = Config::builtin().unwrap().text.notify;
+    let blank = Who {
+        name: " ".into(),
+        avatar: None,
+    };
+    let (head, body, face) = shape(
+        &texts,
+        (Some("  "), Some(&blank)),
+        "回答完了",
+        Icon::Standing,
+    );
+    assert_eq!((head.as_str(), body.as_str()), ("Miyu", "回答完了"));
+    assert!(matches!(face, Face::Bare), "有人格没头像的不带图标");
+    let (_, _, face) = shape(&texts, (None, None), "回答完了", Icon::Working);
+    assert!(matches!(face, Face::Mascot(Icon::Working)));
 }
 
 #[test]
@@ -268,7 +322,7 @@ fn another_session_pops_up_even_when_focused_but_stays_quiet() {
     n.focus(true);
     n.tell(Event::Replied);
     assert!(n.outbox().concat().contains(":o=unfocused:"));
-    n.tell_finished(Some("A".into()), "回答完了", "s-1".into());
+    n.tell_finished((Some("A".into()), None), "回答完了", "s-1".into());
     let out = n.outbox().concat();
     assert!(
         out.contains(":o=always:") && out.contains("report"),
@@ -289,7 +343,14 @@ fn a_session_title_cannot_turn_osc9_into_a_conemu_subcommand() {
         env(&[("TERM_PROGRAM", "ghostty")]),
         None,
     );
-    n.about(Some("4;3;99".into()), None);
+    // 标题现在是人格的名字（2026-11-10），名字照样可能写成数字打头
+    n.about(
+        None,
+        Some(Who {
+            name: "4;3;99".into(),
+            avatar: None,
+        }),
+    );
     n.tell_elsewhere(Event::Asking);
     let out = n.outbox().concat();
     assert!(
@@ -309,7 +370,11 @@ fn a_kitty_notice_id_only_carries_the_characters_kitty_accepts() {
         env(&[("TERM", "xterm-kitty")]),
         None,
     );
-    n.tell_finished(Some("A".into()), "回答完了", "s\x1b\\\x1b]2;x\x07".into());
+    n.tell_finished(
+        (Some("A".into()), None),
+        "回答完了",
+        "s\x1b\\\x1b]2;x\x07".into(),
+    );
     let out = n.outbox().concat();
     let ids: Vec<&str> = out
         .split("\x1b]99;")

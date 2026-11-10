@@ -54,7 +54,7 @@
     "schedule_ran": "Scheduled task done",
     "schedule_failed": "Scheduled task didn't finish",
     "schedules_reset": "The schedule table was broken; all scheduled tasks are gone",
-    "open": "Open"
+    "open": "Open", "titled": "{title}: {body}"
   },
   "refused": "The core refused: {reason}",
   "interrupted": "Interrupted",

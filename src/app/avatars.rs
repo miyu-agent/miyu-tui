@@ -86,12 +86,21 @@ impl App {
     pub(super) fn ask_avatars(&mut self) {
         let shows = self.media.figures.borrow().shows();
         let seen = self.seen();
-        let wanted: Vec<(String, String)> = [Place::Home, Place::Sidebar]
+        let mut wanted: Vec<(String, String)> = [Place::Home, Place::Sidebar]
             .into_iter()
             .filter(|_| shows)
             .filter_map(|place| seen.wanted(place))
             .map(|(p, v)| (p.to_string(), v.to_string()))
             .collect();
+        // 通知的图标用人格的头像（「系统通知」第 3 条，2026-11-10 项目主人）：开着通知的，有头像的人格都存一份，终端显示不了图的
+        // 也要（通知是系统画的），排在画的后面。
+        if self.config.notify.enabled {
+            let rows = seen.pick_list(super::new_session::Kind::Persona).0;
+            wanted.extend(
+                rows.iter()
+                    .filter_map(|p| Some((p.id.clone(), p.avatar.clone()?))),
+            );
+        }
         let refs: Vec<(&str, &str)> = wanted
             .iter()
             .map(|(p, v)| (p.as_str(), v.as_str()))

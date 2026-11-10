@@ -54,7 +54,7 @@
     "schedule_ran": "定期タスクが終わりました",
     "schedule_failed": "定期タスクが終わりませんでした",
     "schedules_reset": "定期タスクの表が壊れたため、登録した定期タスクはすべて消えました",
-    "open": "開く"
+    "open": "開く", "titled": "{title}：{body}"
   },
   "refused": "コアに拒否されました：{reason}",
   "interrupted": "中断しました",

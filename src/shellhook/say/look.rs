@@ -86,6 +86,21 @@ impl Look {
             .map(|p| p.name.clone().unwrap_or_else(|| p.id.clone()))
     }
 
+    /// 终端会话的人格在通知上的样子（「系统通知」第 3 条，2026-11-10 项目主人）：名字、全屏界面存下来的头像文件（这里不另外去要，
+    /// 没存过的不带图标）。无人格的、列表还没到的是 `None`（标题写程序名）。
+    pub fn notify_who(&self) -> Option<crate::notify::Who> {
+        let id = self.persona.as_deref().filter(|id| !id.is_empty())?;
+        let row = self.personas.iter().find(|p| p.id == id)?;
+        let avatar = row
+            .avatar
+            .as_deref()
+            .and_then(|version| crate::avatars::Avatars::cached().file(version));
+        Some(crate::notify::Who {
+            name: row.name.clone().unwrap_or_else(|| row.id.clone()),
+            avatar,
+        })
+    }
+
     /// 现在挑的是哪种配色（`tui.theme` 的值）。
     pub fn colors(&self) -> &str {
         &self.choice.colors
