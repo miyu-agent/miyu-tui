@@ -38,7 +38,7 @@
   "double_click_ms": 400,
   "notice_ms": 2000,
   "frame_ms": 33,
-  "key_burst_ms": 2,
+  "key_burst_ms": 0,
   "markdown_cache": 8,
   "slow_frame_ms": 8,
   "relayout_budget_ms": 8,
