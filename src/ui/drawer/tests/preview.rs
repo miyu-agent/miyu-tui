@@ -161,3 +161,85 @@ fn the_divider_stays_in_one_column_and_long_labels_fold() {
         );
     }
 }
+
+/// 2026-11-11 项目主人：「文字会导致中间的竖线错位」——预览、选项里的制表符、控制字符原样画进格子，终端照制表位多走几列，
+/// 这一行顶到下一行去，竖线就歪了。预览里的制表符照制表位展开，别的控制字符去掉；选项、说明、问题里的都去掉。
+#[test]
+fn tabs_and_control_characters_never_reach_the_screen() {
+    let asked: Asked = serde_json::from_value(serde_json::json!({
+        "call_id": "c",
+        "questions": [{"question": "哪\u{1b}[31m种？", "options": [
+            {"label": "缩\t进", "description": "带\u{7}铃", "preview": "fn main() {\n\tprintln!(\"hi\");\r\n}"},
+            {"label": "别的", "preview": "x"}
+        ]}]
+    }))
+    .unwrap();
+    let d = Drawer::question(None, asked);
+    for width in [100, 50] {
+        let got = lines(&d, width);
+        let bad = |c: char| c.is_control();
+        assert!(!got.iter().any(|l| l.contains(bad)), "{got:#?}");
+        assert!(
+            got.iter().any(|l| l.contains("    println!(\"hi\");")),
+            "制表符照 4 列展开：{got:#?}"
+        );
+    }
+    let bars: Vec<usize> = lines(&d, 100)
+        .iter()
+        .filter_map(|l| l.find('│').map(|at| l[..at].width()))
+        .collect();
+    assert!(bars.windows(2).all(|p| p[0] == p[1]), "竖线一列：{bars:?}");
+}
+
+/// 同一天：「预览内容比较多的时候」抽屉比窗口高，原来照高度一裁，预览下半截没了、也不说还有（那一行只照 16 行算）。放不下
+/// 时预览少露几行（最少 3 行），「下面还有 N 行」照实写，`Ctrl+J` 照旧能滚到底。
+#[test]
+fn a_tall_preview_shrinks_to_the_drawer_and_says_how_much_is_below() {
+    let many: String = (1..=30).map(|i| format!("第 {i} 行\n")).collect();
+    let asked: Asked = serde_json::from_value(serde_json::json!({
+        "call_id": "c",
+        "questions": [{"question": "哪种？", "options": [
+            {"label": "很多", "preview": many},
+            {"label": "别的", "preview": "x"}
+        ]}]
+    }))
+    .unwrap();
+    let mut d = Drawer::question(None, asked);
+    let shown = |d: &mut Drawer| -> Vec<String> {
+        let mut term = ratatui::Terminal::new(ratatui::backend::TestBackend::new(100, 12)).unwrap();
+        let mut caret = crate::caret::Caret::default();
+        term.draw(|f| {
+            super::super::draw(f, (f.area(), 0), d, &texts(), &look(), false, &mut caret);
+        })
+        .unwrap();
+        let buf = term.backend().buffer();
+        (0..12)
+            .map(|y| {
+                // 宽字后面那一格是占位的空白，跳过。
+                let mut line = String::new();
+                let mut skip = 0;
+                for x in 0..100 {
+                    if skip > 0 {
+                        skip -= 1;
+                        continue;
+                    }
+                    let symbol = buf[(x, y)].symbol();
+                    skip = symbol.width().saturating_sub(1);
+                    line.push_str(symbol);
+                }
+                line.trim_end().to_string()
+            })
+            .collect()
+    };
+    let got = shown(&mut d);
+    // 12 行：问题、空行、8 行并排（「预览」加 7 行图）、空行、按键提示。
+    assert!(got[2].contains("预览 · 下面还有 23 行"), "{got:#?}");
+    assert!(got[9].contains("第 7 行"), "{got:#?}");
+    assert!(got[11].contains("Enter"), "按键提示还在：{got:#?}");
+    for _ in 0..40 {
+        d.key(KeyEvent::new(KeyCode::Char('j'), KeyModifiers::CONTROL));
+        shown(&mut d);
+    }
+    let got = shown(&mut d);
+    assert!(got[9].contains("第 30 行"), "滚得到底：{got:#?}");
+}
