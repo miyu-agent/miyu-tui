@@ -21,6 +21,15 @@ impl Rows {
         Rows::of_chunks(chunks, &row)
     }
 
+    /// 照 `(行, 第几条)` 一块块拼起来：行里要带点开的目标时用。
+    pub fn of_owned(chunks: Vec<(Vec<Row>, Option<usize>)>) -> Rows {
+        let mut out = Rows::default();
+        for (rows, owner) in chunks {
+            out.push_owned(Rc::from(rows), owner);
+        }
+        out
+    }
+
     /// 照给的行拼成一块。
     pub fn of_rows(rows: Vec<Row>) -> Rows {
         let mut out = Rows::default();
