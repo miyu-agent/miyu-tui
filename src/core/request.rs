@@ -189,6 +189,7 @@ mod tests {
             cwd: None,
             shell: false,
             skills: Vec::new(),
+            pasted: None,
         };
         let expected = json!({"session": "s", "text": "你好"});
         assert_eq!(request(said, "s"), Some(("session.send", expected)));
@@ -199,6 +200,7 @@ mod tests {
             cwd: Some("/srv".into()),
             shell: false,
             skills: Vec::new(),
+            pasted: None,
         };
         let expected = json!({"session": "s", "text": "你好", "cwd": "/srv"});
         assert_eq!(request(here, "s"), Some(("session.send", expected)));
@@ -209,6 +211,7 @@ mod tests {
             cwd: None,
             shell: true,
             skills: Vec::new(),
+            pasted: None,
         };
         let expected = json!({"session": "s", "text": "ls", "shell": true});
         assert_eq!(request(ran, "s"), Some(("session.send", expected)));
@@ -219,6 +222,7 @@ mod tests {
             cwd: None,
             shell: false,
             skills: vec!["pdf".into()],
+            pasted: None,
         };
         let expected = json!({"session": "s", "text": "$pdf 读一下", "skills": ["pdf"]});
         assert_eq!(request(named, "s"), Some(("session.send", expected)));

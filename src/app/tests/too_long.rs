@@ -1,4 +1,5 @@
-//! 太长的话不发（蓝图「输入框」第 11 条，施工 YC-11，压测报告 F5）：一两 MB 的粘贴回车，不发请求，字连块留在框里，弹一句多大。
+//! 太长的话（蓝图「输入框」第 11 条，施工 YC-11，压测报告 F5）：一两 MB 的粘贴回车，整段转成文字附件发出去、框清空；转不了的
+//! （`!` 命令、超过附件上限）不发，字连块留在框里，弹一句多大。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -34,13 +35,50 @@ fn kept(
 }
 
 #[test]
-fn pasting_two_megabytes_and_pressing_enter_keeps_it_and_says_how_big() {
+fn pasting_two_megabytes_and_pressing_enter_sends_it_as_a_text_attachment() {
     let (mut app, mut sent) = crate::app::test_support::app();
     app.talk.transcript.session = Some("s1".into());
     let big = log();
     app.paste(&big);
+    assert!(app.typing.input.editor.text().len() < 100, "收成了一块");
+    while sent.try_recv().is_ok() {}
+    press(&mut app, KeyCode::Enter);
+    let mut got = None;
+    while let Ok(command) = sent.try_recv() {
+        if let Command::Send { text, pasted, .. } = command {
+            got = Some((text, pasted));
+        }
+    }
+    let (text, pasted) = got.expect("发了");
+    let pasted = pasted.expect("带着文字附件");
+    assert_eq!(text, "", "话里不带字");
+    assert_eq!(pasted.text, big, "附件是原文");
+    assert!(
+        pasted.name.starts_with("pasted-") && pasted.name.ends_with(".txt"),
+        "{}",
+        pasted.name
+    );
+    assert_eq!(app.typing.input.editor.text(), "", "框清空");
+    let said = app.talk.transcript.entries.last().expect("正文里有这一句");
+    assert_eq!(said.text, format!("[{}]", pasted.name), "正文里照附件写");
+    assert!(
+        said.pasted
+            .iter()
+            .all(|c| c.attachment() && c.full.len() < 100),
+        "块里不放原文"
+    );
+    let notice = app.typing.notice.as_ref().expect("弹了一句");
+    assert!(notice.text.contains(&pasted.name), "{}", notice.text);
+}
+
+#[test]
+fn over_the_attachment_limit_it_stays_in_the_box() {
+    let (mut app, mut sent) = crate::app::test_support::app();
+    app.talk.transcript.session = Some("s1".into());
+    app.config.attachments.max_mib = 1;
+    let big = log();
+    app.paste(&big);
     let box_text = app.typing.input.editor.text().to_string();
-    assert!(box_text.len() < 100, "收成了一块：{box_text}");
     press(&mut app, KeyCode::Enter);
     kept(&app, &mut sent, &box_text, &big);
     // 删短了照常发。
@@ -51,9 +89,15 @@ fn pasting_two_megabytes_and_pressing_enter_keeps_it_and_says_how_big() {
     press(&mut app, KeyCode::Enter);
     let mut went = false;
     while let Ok(command) = sent.try_recv() {
-        went |= matches!(command, Command::Send { text, .. } if text == "短的");
+        went |= matches!(command, Command::Send { text, pasted: None, .. } if text == "短的");
     }
     assert!(went, "短的发出去了");
+}
+
+#[test]
+fn the_name_is_like_the_web_heads() {
+    let at: jiff::Zoned = "2026-11-10T09:05:03[Asia/Tokyo]".parse().unwrap();
+    assert_eq!(crate::core::pasted_name(&at), "pasted-20261110-090503.txt");
 }
 
 #[test]

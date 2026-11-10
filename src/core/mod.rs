@@ -54,6 +54,7 @@ mod undo;
 mod update;
 pub use update::Update;
 mod upload;
+pub use upload::{Pasted, pasted_name};
 mod widgets;
 mod workspace;
 
@@ -108,6 +109,8 @@ pub enum Command {
         shell: bool,
         /// 这句话里用 `$` 点了的技能（核心 SK-1，发版前 check 26）：照先后；空的不带。
         skills: Vec<String>,
+        /// 太长、转成文字附件的那段话（「输入框」第 11 条，施工 YC-11）：排在附件最后。
+        pasted: Option<Pasted>,
     },
     /// 打断在进行的这一轮。`send` 为真时排着队的消息接着发（两下 Esc），为假时退回来（Ctrl+C）。
     Interrupt {

@@ -11,6 +11,8 @@ use serde::Deserialize;
 pub struct AttachLook {
     /// 文件块上的名字最多几列，多的中间截掉（一个汉字两列）。
     pub file_name_cols: usize,
+    /// 一个附件最大多少 MiB（核心最多收 20，同网页附件包的 `max_mib`）：一句话太长转成的文字附件超过它的不转（「输入框」第 11 条）。
+    pub max_mib: usize,
     /// 每一种，照登记的先后。
     pub kinds: Vec<AttachKindLook>,
 }

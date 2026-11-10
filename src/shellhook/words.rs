@@ -32,6 +32,8 @@ pub struct Words {
     pub no_session: String,
     /// 这句话放不进协议的一行（1 MiB），没发（`{size}` 是多大，施工 YC-11）。
     pub too_long: String,
+    /// 太长的话转成文字附件发出去了（`{name}` 附件的名字，施工 YC-11）。
+    pub too_long_attached: String,
     /// 终端、核心都不认的斜杠命令（`{name}` 不带 `/`，排期第 34 条）。
     pub unknown_command: String,
     /// 这个 shell 里的脚本是升级以前印的：重开终端。
