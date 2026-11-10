@@ -82,10 +82,7 @@ fn a_background_session_that_finishes_is_marked_and_told() {
         "只有后台在跑、做完的那个"
     );
     let out = app.notifier.outbox().concat();
-    assert!(
-        out.contains(&b("会话 bg：回答完了")),
-        "{out}"
-    );
+    assert!(out.contains(&b("会话 bg：回答完了")), "{out}");
     assert!(out.contains("i=miyu-s-bg:"), "点了切过去");
     assert!(!out.contains(&b("会话 me")), "当前这个照原来那一套");
     app.switch_session("bg".into());
