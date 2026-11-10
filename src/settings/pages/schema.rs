@@ -55,6 +55,8 @@ pub struct Item {
     pub title: Option<String>,
     /// 记录列表每一条的字段，照清单的先后（`hidden` 的不在）；别的是空的。
     pub fields: Vec<Item>,
+    /// 文字项的选项由包在运行时给（核心 SG-2 的 `choices_from`）：哪个包的哪个方法；没写的是 `None`。
+    pub choices_from: Option<(String, String)>,
 }
 
 impl Item {
@@ -377,6 +379,10 @@ fn read_item(i: &Value) -> Item {
             .filter(|f| f["hidden"] != true)
             .map(read_item)
             .collect(),
+        choices_from: i["choices_from"]["package"]
+            .as_str()
+            .zip(i["choices_from"]["method"].as_str())
+            .map(|(package, method)| (package.to_string(), method.to_string())),
     }
 }
 

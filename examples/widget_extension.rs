@@ -6,6 +6,8 @@
 //! - `content:<路径>`：每一块推什么，一个 JSON 对象：块的编号 → `{"title"?, "content"}`；核心说有人看（`widget.watch`）时
 //!   照它推 `widget.set`（每次现读，测试可以中途改）；
 //! - `record:<路径>`：收到的 `widget.watch`、`method.call` 一行一条记下；
+//! - `choices:<路径>`：再登记一个方法 `voices`，调到时照这个文件里的 JSON 原样答（核心 SG-2 的 `choices_from`，
+//!   `tests/package_choices.rs`；每次现读）；
 //! - `sticker:<blob>`：登记一件工具 `sticker`，调到时答「Sent.」，`sent` 里是这个 blob 的一张表情包（核心 X-19，
 //!   `tests/sent.rs`）。
 //!
@@ -21,11 +23,14 @@ fn main() {
     let mut content = None;
     let mut record = None;
     let mut sticker = None;
+    let mut choices = None;
     for arg in std::env::args().skip(1) {
         if let Some(path) = arg.strip_prefix("content:") {
             content = Some(path.to_string());
         } else if let Some(path) = arg.strip_prefix("record:") {
             record = Some(path.to_string());
+        } else if let Some(path) = arg.strip_prefix("choices:") {
+            choices = Some(path.to_string());
         } else if let Some(blob) = arg.strip_prefix("sticker:") {
             sticker = Some(blob.to_string());
         }
@@ -41,9 +46,13 @@ fn main() {
             break;
         }
     }
+    let mut methods = vec![json!({"name": "refresh"})];
+    if choices.is_some() {
+        methods.push(json!({"name": "voices"}));
+    }
     send(
         &json!({"jsonrpc": "2.0", "id": "m", "method": "package.methods",
-        "params": {"methods": [{"name": "refresh"}]}}),
+        "params": {"methods": methods}}),
     );
     if sticker.is_some() {
         send(
@@ -79,6 +88,15 @@ fn main() {
                 }
                 n += 1;
                 set(n, widget, session.as_deref(), &wanted);
+            }
+            Some("method.call") if params["method"] == "voices" => {
+                keep(record.as_deref(), &line);
+                let answer = choices
+                    .as_deref()
+                    .and_then(|p| std::fs::read_to_string(p).ok())
+                    .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+                    .unwrap_or(Value::Null);
+                send(&json!({"jsonrpc": "2.0", "id": message["id"], "result": answer}));
             }
             Some("method.call") => {
                 keep(record.as_deref(), &line);

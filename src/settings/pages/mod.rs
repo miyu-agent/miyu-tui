@@ -22,6 +22,7 @@ mod popup_keys;
 pub mod preset_edit;
 pub mod presets;
 pub mod records;
+mod runtime_choices;
 pub mod schema;
 pub mod secret;
 pub mod sections;

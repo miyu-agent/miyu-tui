@@ -77,6 +77,7 @@ pub fn add_row(schema: &mut Schema, words: &Words, known: bool) {
         slide: None,
         title: None,
         fields: Vec::new(),
+        choices_from: None,
     });
 }
 
