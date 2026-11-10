@@ -40,12 +40,15 @@ use turn::Turn;
 /// 按了 Ctrl+C 打断的退出码：同 `miyu ask`（蓝图 `cli/ask.md`）。
 const INTERRUPTED: u8 = 3;
 
-/// 放不进协议的一行（1 MiB）：不发，提示印在下面，这一行原样交还给 shell 的命令行（蓝图 `tui.md`「输入框」第 11 条，施工
-/// YC-11）。
-fn too_long(ask: &Ask, text: &str, words: &Words) -> io::Result<ExitCode> {
+/// 放不进协议的一行、又转不成附件：不发，提示印在下面，这一行原样交还给 shell 的命令行（蓝图 `tui.md`「输入框」第 11 条，
+/// 施工 YC-11）。
+fn held(mut session: Session, ask: &Ask, text: &str, words: &Words) -> io::Result<ExitCode> {
     let size = crate::core::line_limit::size(text);
-    let said = crate::shellhook::words::fill(&words.too_long, &[("size", &size)]);
-    writeln!(io::stderr(), "{said}")?;
+    session.note(note(&crate::shellhook::words::fill(
+        &words.too_long,
+        &[("size", &size)],
+    )))?;
+    session.finish()?;
     if let Some(path) = &ask.leftover {
         std::fs::write(path, ask.text.trim_end_matches(['\n', '\r']))?;
     }
@@ -91,9 +94,7 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         Some(shell) => crate::shellhook::paste::take(shell, &text),
         None => (text, Vec::new()),
     };
-    if !crate::core::line_limit::fits(&text) {
-        return too_long(&ask, &text, words);
-    }
+    let too_long = !crate::core::line_limit::fits(&text);
     let (mut session, look) = Session::start()?;
     session.hooked = ask.shell.is_some();
     // 这一句照 shell 所在的目录说（设计 22 第七节「她在哪个目录干活」）。
@@ -115,6 +116,20 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     // 这个终端自己的终端会话；不说话的（交给核心的斜杠命令、`/redo`）只问不开（核心 T-22）。
     turn.terminal.key = terminal::key(ask.shell);
     turn.terminal.only_ask = turn.slash || turn.compact.is_some() || bare_redo;
+    // 放不进协议的一行（1 MiB）：转成文字附件发；重来的、斜杠命令、超过附件上限的转不了，不发（「输入框」第 11 条，施工 YC-11）。
+    if too_long {
+        let most = session.config.attachments.max_mib * 1024 * 1024;
+        if turn.slash || turn.redo || bare_redo || turn.compact.is_some() || turn_text.len() > most
+        {
+            return held(session, &ask, &turn_text, words);
+        }
+        let name = crate::core::pasted_name(&jiff::Zoned::now());
+        session.note(note(&crate::shellhook::words::fill(
+            &words.too_long_attached,
+            &[("name", &name)],
+        )))?;
+        turn.as_attachment(name);
+    }
     if turn.slash {
         turn.terminal.unknown =
             crate::shellhook::slash::unknown(&session.config.commands, &turn_text);

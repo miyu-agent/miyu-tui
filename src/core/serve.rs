@@ -378,7 +378,7 @@ async fn send(
     let answer_files = match &command {
         Command::Answer { files, .. } if !files.is_empty() => {
             let paths: Vec<_> = files.iter().map(|(_, f)| f.clone()).collect();
-            match upload::attach(rpc, &paths).await {
+            match upload::attach(rpc, &paths, None).await {
                 Ok(got) => Some(
                     files
                         .iter()
@@ -403,14 +403,10 @@ async fn send(
         }
         _ => None,
     };
-    let files = match &command {
-        Command::Send { files, .. } if !files.is_empty() => Some(files.clone()),
-        Command::Redo { files, .. } => files.clone(),
-        _ => None,
-    };
+    let files = upload::wanted(&command);
     let mut attachments = None;
-    if let Some(files) = files {
-        match upload::attach(rpc, &files).await {
+    if let Some((files, pasted)) = files {
+        match upload::attach(rpc, &files, pasted.as_ref()).await {
             Ok(got) => attachments = Some(got),
             Err(Update::Disconnected) => return Sent::Lost,
             // 传不上：这一句没发出去（「输入框」第 12 条）。

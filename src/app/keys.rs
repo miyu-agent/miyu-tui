@@ -270,14 +270,14 @@ impl App {
             }
             return;
         }
-        // 放不进协议的一行（1 MiB）：不发，字连块留在框里（「输入框」第 11 条，`too_long.rs`）。
-        if self.too_long(&draft.expand()) {
+        // 放不进协议的一行（1 MiB）：转成文字附件发；编辑上一句的转不了，不发，字连块留在框里（「输入框」第 11 条，`too_long.rs`）。
+        let Ok(pasted) = self.oversized(&draft, edit.is_none()) else {
             self.typing.input.editor.set_draft(draft);
             if let Some(original) = edit {
                 self.typing.input.resume_edit(original);
             }
             return;
-        }
+        };
         if let Some(original) = edit {
             self.submit_edit(original, draft);
             return;
@@ -289,8 +289,13 @@ impl App {
         self.demote_for_send(&mut draft);
         // 输入框里的粘贴块发出去换回原文；输入历史和正文里照输入框的样子（`tui.md`「输入框」第 11 条）。附件（图）的
         // 块照留 `[图片 1]`，文件跟着发（第 12 条）。
-        let full = draft.expand();
-        let chips = super::paste::chips(&draft);
+        let (full, chips) = match &pasted {
+            Some(_) => (String::new(), Vec::new()),
+            None => (draft.expand(), super::paste::chips(&draft)),
+        };
+        let (text, chips) = pasted
+            .as_ref()
+            .map_or((text, chips), |p| self.pasted_said(p));
         let files = draft.attachments();
         self.talk.unsent = Some(super::Unsent {
             draft: Some(draft.clone()),
@@ -311,6 +316,7 @@ impl App {
             cwd: None,
             shell: false,
             skills,
+            pasted,
         });
     }
 

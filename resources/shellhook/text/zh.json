@@ -14,6 +14,7 @@
   "ps_policy": "PowerShell 的执行策略是 {policy}，不加载启动文件，装了也不生效：在 PowerShell 里执行 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned 再开新窗口",
   "no_session": "这个终端还没和她说过话：先说一句再用这个命令",
   "too_long": "这句太长了（{size}），一次最多发 1 MB，没发出去：存成文件，在话里写上它的路径",
+  "too_long_attached": "这段话超过 1 MB，转成附件 {name} 发出去了",
   "unknown_command": "命令不存在：/{name}",
   "renewed": "上次说话是 {ago}前，为了防止缓存失效导致额外花费，已开启新会话",
   "stale_hook": "这个终端里的集成还是旧的，重开终端用新的",

@@ -151,6 +151,7 @@
   "exit_hint": "按 Ctrl+D 退出",
   "input_cleared": "已清空 · ↑ 恢复",
   "too_long": "这句太长了（{size}），一次最多发 1 MB：存成文件，用 @ 选上再发",
+  "too_long_attached": "这段话超过 1 MB，转成附件 {name} 发出去了",
   "editing": " 编辑上一条 · Esc 取消 ",
   "open": {
     "refused": "不支持打开此地址：{url}",

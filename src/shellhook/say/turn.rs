@@ -52,6 +52,8 @@ pub struct Turn {
     pending: Option<String>,
     /// 跟这句话一起发的附件（`Ctrl+V` 贴的图、文件）。
     pub files: Vec<std::path::PathBuf>,
+    /// 这句话太长、转成的文字附件（`turn/send.rs`，施工 YC-11）。
+    pasted: Option<crate::core::Pasted>,
     /// 这句话替换上一轮重来（`/edit` 改过的）。
     pub redo: bool,
     /// `/redo`：上一轮原样重来，不带字。
@@ -155,6 +157,7 @@ impl Turn {
             ended_jobs: Vec::new(),
             pending: (!text.is_empty()).then(|| text.clone()),
             files: Vec::new(),
+            pasted: None,
             redo: false,
             bare_redo: false,
             slash: false,
@@ -183,48 +186,6 @@ impl Turn {
             method: "session.terminal",
             params: self.terminal.params(self.cwd.as_deref()),
         });
-    }
-
-    /// 那句话发出去：接上了终端会话的说进它，没问到的（核心旧）照新会话开。
-    fn send(&mut self, core: &Core) {
-        if let Some(text) = self.pending.take() {
-            self.sent = true;
-            if self.bare_redo {
-                core.send(Command::Redo {
-                    text: None,
-                    files: None,
-                });
-                return;
-            }
-            if let Some(words) = self.compact.take() {
-                // 压缩那几行不带回合号：读回来的那一页清掉，之后来的都是这一轮的，照全部印（`scope`）。
-                self.transcript.entries.clear();
-                self.transcript.manual_compaction = true;
-                self.manual = true;
-                core.send(Command::Compact(words));
-                return;
-            }
-            if self.slash {
-                super::dreaming::start(self, &text, core);
-                core.send(Command::Slash(text));
-                return;
-            }
-            // `/edit` 改过的：替换上一轮重来（附件没贴新的照原来的）。
-            if self.redo {
-                core.send(Command::Redo {
-                    text: Some(text),
-                    files: (!self.files.is_empty()).then(|| self.files.clone()),
-                });
-                return;
-            }
-            core.send(Command::Send {
-                text,
-                files: self.files.clone(),
-                cwd: self.cwd.clone(),
-                shell: false,
-                skills: Vec::new(),
-            });
-        }
     }
 
     /// 核心那边来的：终端会话、头的配置、给人看的字归这里，别的交给正文。
@@ -493,6 +454,7 @@ impl Turn {
 
 mod interject;
 mod keys;
+mod send;
 
 #[cfg(test)]
 mod tests;
