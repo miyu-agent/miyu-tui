@@ -63,11 +63,11 @@ fn ring_tokens_and_money_with_nothing_before_anything_is_used() {
     // 累计连子代理由调用的一方给（`Talk::usage_total`），这里给多少写多少。
     assert_eq!(
         lay(&t, used(128_400), Some("¥0.42"), &config),
-        ["◔ 128.4k", "¥0.42"]
+        ["◔ 128.4k(C0%)", "¥0.42"]
     );
     assert_eq!(
         lay(&t, used(128_400), None, &config),
-        ["◔ 128.4k"],
+        ["◔ 128.4k(C0%)"],
         "算不出钱的不写"
     );
 }
@@ -99,7 +99,7 @@ fn a_failed_compaction_past_the_line_turns_red_with_a_compact_button_until_it_co
     t.context = 203_000;
     assert_eq!(
         lay(&t, used(1), None, &config)[0],
-        "◕ 1",
+        "◕ 1(C0%)",
         "失败以前只是到了线，不算卡住"
     );
     let failed = CallError {
@@ -134,7 +134,7 @@ fn a_failed_compaction_past_the_line_turns_red_with_a_compact_button_until_it_co
     };
     push(&mut t, Push::Compaction(done), &config);
     t.context = 31_000;
-    assert_eq!(lay(&t, used(1), None, &config), ["○ 1"]);
+    assert_eq!(lay(&t, used(1), None, &config), ["○ 1(C0%)"]);
 }
 
 #[test]
@@ -153,7 +153,11 @@ fn a_paused_compaction_below_the_line_is_not_stuck_and_over_the_window_is() {
         entry: None,
     };
     push(&mut t, Push::Compaction(paused), &config);
-    assert_eq!(lay(&t, used(1), None, &config), ["◑ 1"], "没到线不算卡住");
+    assert_eq!(
+        lay(&t, used(1), None, &config),
+        ["◑ 1(C0%)"],
+        "没到线不算卡住"
+    );
     // 换到了窗口小的模型：用量大于窗口。暂停着、也到了线的照压缩失败写。
     t.context = 203_000;
     assert_eq!(lay(&t, used(1), None, &config)[0], "● 上下文压缩失败");
@@ -196,6 +200,32 @@ fn a_session_cap_is_named_before_the_ring() {
     };
     assert_eq!(
         lay(&t, used(5_000), Some("¥0.42"), &config),
-        ["会话上限 128k", "◔ 5k", "¥0.42"]
+        ["会话上限 128k", "◔ 5k(C0%)", "¥0.42"]
     );
+}
+
+/// 累计后面紧跟这个会话的缓存命中率（2026-11-10 项目主人：「xxxM(C99%)」）：命中 ÷ 输入，输出不算；只有辅助请求、没记下
+/// 输入的不写。
+#[test]
+fn the_total_is_followed_by_the_cache_hit_rate() {
+    let config = Config::builtin().unwrap();
+    let mut t = Transcript::default();
+    t.context = 30_000;
+    t.limits = Limits {
+        window: Some(128_000),
+        compaction_line: Some(101_000),
+        context: None,
+    };
+    let total = Usage {
+        uncached: 1_000,
+        cache_read: 99_000,
+        output: 5_000,
+        ..Usage::default()
+    };
+    assert_eq!(lay(&t, total, None, &config), ["◔ 105k(C99%)"]);
+    let aux = Usage {
+        aux: 2_000,
+        ..Usage::default()
+    };
+    assert_eq!(lay(&t, aux, None, &config), ["◔ 2k"]);
 }
