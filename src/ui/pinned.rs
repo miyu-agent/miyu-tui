@@ -14,7 +14,11 @@ use crate::config::slots::{TOP_PARTS, arrange};
 use crate::theme;
 use crate::transcript::Kind;
 
-/// 画在正文区 `area` 的第一行上；`first` 是这一帧露出来的第一行。
+/// 钉着的那一行连它下面空的一行一共盖住正文最上面几行（2026-11-11 项目主人：「这里应该空一行，也就是从第三行开始」，
+/// 原来正文紧贴在那句话下面）。
+pub(super) const ROWS: usize = 2;
+
+/// 画在正文区 `area` 的第一行上，下面再空一行；`first` 是这一帧露出来的第一行。
 pub(super) fn draw(
     frame: &mut Frame,
     area: Rect,
@@ -27,7 +31,7 @@ pub(super) fn draw(
     screen.current_said = current(rows, first, seen, screen.view.top.is_none());
     let shown = arrange(&TOP_PARTS, &seen.config.layout.top).0;
     if screen.view.top.is_none()
-        || area.height < 3
+        || area.height < 4
         || !shown.iter().any(|(n, _)| *n == TOP_PARTS[0])
     {
         return;
@@ -68,6 +72,9 @@ pub(super) fn draw(
     frame
         .buffer_mut()
         .set_line(area.x, area.y, &line, area.width);
+    // 下面空一行（照正文的底色），正文从第三行露起。
+    let gap = Rect::new(area.x, area.y + 1, area.width, 1);
+    frame.render_widget(ratatui::widgets::Clear, gap);
     screen.areas.pinned = row;
     screen.pinned = Some(entry.id);
 }
