@@ -146,7 +146,7 @@ fn tabs(d: &Drawer, texts: &Texts) -> Line<'static> {
 fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     let bold = Style::new().add_modifier(Modifier::BOLD);
     let title = match d.question_at(d.tab) {
-        Some(q) => q.question.trim().to_string(),
+        Some(q) => crate::tabs::printable(q.question.trim()).into_owned(),
         None => d.title(texts),
     };
     for (piece, _) in pieces(&title, width) {
@@ -261,6 +261,9 @@ pub fn fit(v: View, height: usize, scroll: &mut usize) -> View {
     }
 }
 
+/// 抽屉放不下时提问的预览最少露几行。
+const PREVIEW_MIN: usize = 3;
+
 /// 画在输入框的字的地方（`area`）；交回每一行是第几项，鼠标照它认。
 pub fn draw(
     frame: &mut Frame,
@@ -286,6 +289,15 @@ pub fn draw(
     if over > 0 && d.command.is_some() {
         d.command_window = COMMAND_ROWS.saturating_sub(over).max(2);
         v = view(d, texts, look, area.width, vim);
+    } else if over > 0 && d.command_rows > 0 {
+        // 提问的预览太高：少露几行（最少 [`PREVIEW_MIN`] 行，能滚），「下面还有 N 行」照露出来的算（2026-11-11 项目主人：
+        // 原来照高度一裁，预览下半截没了也不说）。
+        let tight = PreviewLook {
+            rows: look.rows.saturating_sub(over).max(PREVIEW_MIN),
+            ..look.clone()
+        };
+        (d.command_rows, d.command_window) = preview::scroll(d, texts, &tight, area.width);
+        v = view(d, texts, &tight, area.width, vim);
     }
     // 往下滑着的（`cut` 是底下裁掉几行）：照整个的高排，只画上面露出来的那几行。
     let mut v = fit(v, usize::from(area.height + cut), &mut d.scroll);

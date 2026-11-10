@@ -82,7 +82,8 @@
     "side_min": 86,
     "gap": 3,
     "pad": 0,
-    "rows": 16
+    "rows": 16,
+    "tab": 4
   },
   "dots": {
     "mark": ".",

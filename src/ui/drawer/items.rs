@@ -124,9 +124,11 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
     let (label, description) = match item {
         Item::Choice(i) => {
             let option = d.question_at(tab).map(|q| &q.options[i]);
+            // 模型写的字：控制字符（制表符、ESC 这类）不进格子，不然终端多走几列、把并排的竖线顶歪（2026-11-11 项目主人）。
+            let clean = |text: &String| crate::tabs::printable(text).into_owned();
             (
-                option.map_or(String::new(), |o| o.label.clone()),
-                option.and_then(|o| o.description.clone()),
+                option.map_or(String::new(), |o| clean(&o.label)),
+                option.and_then(|o| o.description.as_ref().map(clean)),
             )
         }
         Item::Other if editing => (String::new(), None),

@@ -25,6 +25,8 @@ pub struct Look {
     pub pad: u16,
     /// 预览最多露几行（不算「预览」那一行）：折好以后更长的能滚（`Ctrl+J` `Ctrl+K`）。
     pub rows: usize,
+    /// 预览里的制表符照几列的制表位展开。
+    pub tab: usize,
 }
 
 /// 选项那一块：这一页有文字画时带上选中那一项的预览。
@@ -82,10 +84,12 @@ fn inner(look: &Look, width: u16) -> u16 {
 }
 
 /// 照 `room` 列折好的一行行：放不下的行折到下一行（Claude Code 也折，2026-10-23 项目主人），行尾的空白去掉（不多占一列）。
-fn wrapped(picture: &str, room: u16) -> Vec<String> {
+fn wrapped(picture: &str, room: u16, tab: usize) -> Vec<String> {
+    // 制表符照制表位展开、别的控制字符去掉再折（2026-11-11 项目主人：「文字会导致中间的竖线错位」——原样画进格子，终端
+    // 照制表位多走几列，这一行顶到下一行）。
     picture
         .lines()
-        .flat_map(|line| items::folded(line, room))
+        .flat_map(|line| items::folded(&crate::tabs::expand(line, tab), room))
         .collect()
 }
 
@@ -93,7 +97,7 @@ fn wrapped(picture: &str, room: u16) -> Vec<String> {
 fn tallest(pictures: &[&str], room: u16, look: &Look) -> usize {
     pictures
         .iter()
-        .map(|p| wrapped(p, room).len())
+        .map(|p| wrapped(p, room, look.tab).len())
         .max()
         .unwrap_or(0)
         .min(look.rows)
@@ -110,7 +114,10 @@ pub fn scroll(d: &Drawer, texts: &Texts, look: &Look, width: u16) -> (usize, usi
     } else {
         width.saturating_sub(options_width(d, texts, width) + look.gap)
     };
-    (wrapped(current(d), inner(look, right)).len(), look.rows)
+    (
+        wrapped(current(d), inner(look, right), look.tab).len(),
+        look.rows,
+    )
 }
 
 /// 选项那一列要多宽：照最宽的那一行（最多一半，至少能放下一个选项的记号和几个字）。
@@ -177,7 +184,7 @@ fn panel(
     rows: usize,
 ) -> Vec<Line<'static>> {
     let room = inner(look, width);
-    let all = wrapped(picture, room);
+    let all = wrapped(picture, room, look.tab);
     let window = rows.saturating_sub(1);
     let top = d.command_top.min(all.len().saturating_sub(window));
     let below = all.len().saturating_sub(top + window);
