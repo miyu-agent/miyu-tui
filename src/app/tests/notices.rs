@@ -1,4 +1,4 @@
-//! 给人的通知（`app/notices.rs`，「系统通知」第 8 条）：定时跑完了标题写那个会话、正文写跑完了没有，点开切过去。
+//! 给人的通知（`app/notices.rs`，「系统通知」第 8 条）：定时跑完了标题写那个会话的人格（无人格写程序名）、正文写哪个会话跑完了没有，点开切过去。
 
 use base64::Engine;
 
@@ -31,10 +31,10 @@ fn a_schedule_run_is_told_under_its_session_and_a_reset_under_miyu() {
     });
     let out = app.notifier.outbox().concat();
     assert!(
-        out.contains(&b("看一眼服务器负载，超过 80% 告诉我")),
-        "没起名的照预览"
+        out.contains(&b("看一眼服务器负载，超过 80% 告诉我：定时任务跑完了")),
+        "会话的名字（没起名的照预览）接在正文前面"
     );
-    assert!(out.contains(&b("定时任务跑完了")) && out.contains("i=miyu-s-s-1:"));
+    assert!(out.contains(&b("Miyu")) && out.contains("i=miyu-s-s-1:"));
     app.notice(&Notice::ScheduleRan {
         session: "s-2".into(),
         ok: false,
@@ -83,7 +83,7 @@ fn a_background_session_that_finishes_is_marked_and_told() {
     );
     let out = app.notifier.outbox().concat();
     assert!(
-        out.contains(&b("会话 bg")) && out.contains(&b("回答完了")),
+        out.contains(&b("会话 bg：回答完了")),
         "{out}"
     );
     assert!(out.contains("i=miyu-s-bg:"), "点了切过去");
