@@ -74,6 +74,11 @@ impl Ahead {
         crate::shellhook::paste::grab(&mut self.input, owner, config).unwrap_or_default();
     }
 
+    /// 框里的话（块换回原文）放得进协议的一行（1 MiB，施工 YC-11）。
+    pub fn fits(&self) -> bool {
+        crate::core::line_limit::fits(&self.input.draft().expand())
+    }
+
     /// 回车插话：交出框里的（块还是块，[`Draft::expand`] 换回原文、[`Draft::attachments`] 是图），框清空。
     pub fn take(&mut self) -> Draft {
         self.input.editor.take_draft()

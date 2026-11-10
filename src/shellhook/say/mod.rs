@@ -40,6 +40,18 @@ use turn::Turn;
 /// 按了 Ctrl+C 打断的退出码：同 `miyu ask`（蓝图 `cli/ask.md`）。
 const INTERRUPTED: u8 = 3;
 
+/// 放不进协议的一行（1 MiB）：不发，提示印在下面，这一行原样交还给 shell 的命令行（蓝图 `tui.md`「输入框」第 11 条，施工
+/// YC-11）。
+fn too_long(ask: &Ask, text: &str, words: &Words) -> io::Result<ExitCode> {
+    let size = crate::core::line_limit::size(text);
+    let said = crate::shellhook::words::fill(&words.too_long, &[("size", &size)]);
+    writeln!(io::stderr(), "{said}")?;
+    if let Some(path) = &ask.leftover {
+        std::fs::write(path, ask.text.trim_end_matches(['\n', '\r']))?;
+    }
+    Ok(ExitCode::FAILURE)
+}
+
 /// 照这几样办。
 pub struct Ask {
     /// 说的那句话。
@@ -79,6 +91,9 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         Some(shell) => crate::shellhook::paste::take(shell, &text),
         None => (text, Vec::new()),
     };
+    if !crate::core::line_limit::fits(&text) {
+        return too_long(&ask, &text, words);
+    }
     let (mut session, look) = Session::start()?;
     session.hooked = ask.shell.is_some();
     // 这一句照 shell 所在的目录说（设计 22 第七节「她在哪个目录干活」）。

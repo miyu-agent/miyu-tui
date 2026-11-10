@@ -19,8 +19,8 @@ impl App {
             self.typing.input.editor.set_draft(draft);
             return;
         }
-        // 连不上核心、正在切会话：发不出去，字留在框里（「连核心」第 8 条）。
-        if !self.reachable() {
+        // 连不上核心、正在切会话、放不进协议的一行：发不出去，字留在框里（「连核心」第 8 条、「输入框」第 11 条）。
+        if !self.reachable() || self.too_long(&draft.expand()) {
             self.typing.input.editor.set_draft(draft);
             return;
         }

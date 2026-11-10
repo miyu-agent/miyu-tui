@@ -82,6 +82,7 @@ mod talk;
 mod theme;
 mod theme_box;
 mod theme_pick;
+mod too_long;
 mod tool_list;
 mod typing;
 mod unseen;

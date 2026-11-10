@@ -270,6 +270,14 @@ impl App {
             }
             return;
         }
+        // 放不进协议的一行（1 MiB）：不发，字连块留在框里（「输入框」第 11 条，`too_long.rs`）。
+        if self.too_long(&draft.expand()) {
+            self.typing.input.editor.set_draft(draft);
+            if let Some(original) = edit {
+                self.typing.input.resume_edit(original);
+            }
+            return;
+        }
         if let Some(original) = edit {
             self.submit_edit(original, draft);
             return;

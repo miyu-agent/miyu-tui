@@ -30,6 +30,8 @@ pub struct Words {
     pub ps_policy: String,
     /// 这个终端还没和她说过话：斜杠命令没有会话可办。
     pub no_session: String,
+    /// 这句话放不进协议的一行（1 MiB），没发（`{size}` 是多大，施工 YC-11）。
+    pub too_long: String,
     /// 终端、核心都不认的斜杠命令（`{name}` 不带 `/`，排期第 34 条）。
     pub unknown_command: String,
     /// 这个 shell 里的脚本是升级以前印的：重开终端。

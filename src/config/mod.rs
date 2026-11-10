@@ -194,6 +194,8 @@ pub struct Texts {
     pub exit_hint: String,
     /// `Ctrl+C` 清空了输入框的提示：清掉的按 `↑` 找回。
     pub input_cleared: String,
+    /// 这句话放不进协议的一行（1 MiB），没发、留在输入框（`{size}` 是多大，「输入框」第 11 条，施工 YC-11）。
+    pub too_long: String,
     /// 编辑上一句时输入框上边框写的（「输入框」第 13 条）。
     pub editing: String,
     /// 开不了链接、文件时的提示。

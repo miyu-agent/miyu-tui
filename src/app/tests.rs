@@ -105,4 +105,5 @@ mod skill_word;
 mod status;
 mod switching;
 mod theme_auto;
+mod too_long;
 mod unseen;

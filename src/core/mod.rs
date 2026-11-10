@@ -18,6 +18,7 @@ mod cost;
 mod efforts;
 mod kinds;
 mod limits;
+pub mod line_limit;
 mod link;
 mod links;
 mod memory;

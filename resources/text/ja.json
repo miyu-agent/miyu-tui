@@ -150,6 +150,7 @@
   "archived_placeholder": "これはアーカイブです",
   "exit_hint": "Ctrl+D で終了",
   "input_cleared": "クリアしました · ↑ で復元",
+  "too_long": "メッセージが長すぎます（{size}）。1 回に送れるのは 1 MB までです。ファイルに保存して @ で選んでから送ってください",
   "editing": " 直前のメッセージを編集中 · Esc でキャンセル ",
   "open": {
     "refused": "この種類のアドレスは開けません：{url}",
