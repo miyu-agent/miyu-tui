@@ -6,6 +6,10 @@ use std::collections::HashMap;
 
 use crate::markdown::MdLine;
 
+/// 原文超过这么多字节的回答不记（压测报告 O17，施工 YC-11，蓝图「量尺」）：排好的行已经是一份，再记一份就是两份；真模型
+/// 一条最多 1～1.5 MB，照记。代价是这么大的一篇悬停、卡片到了这类重排时整篇重新解析（4 MB 约零点几秒）。
+pub const KEEP_UP_TO: usize = 4 * 1024 * 1024;
+
 /// 最近用过的几篇回答排好的行。
 #[derive(Debug)]
 pub struct MdCache {
@@ -37,14 +41,18 @@ impl MdCache {
     }
 
     /// 第 `index` 条回答照 `hash`、`width` 排好的行：记着的字、宽度对得上就用记着的，不然用 `render` 现排，记下来；
-    /// 超过篇数的丢掉最久没用的那篇。
+    /// 超过篇数的丢掉最久没用的那篇。原文（`bytes`）超过 [`KEEP_UP_TO`] 的现排、不记，记过的丢掉。
     pub fn lines(
         &mut self,
         index: usize,
-        hash: u64,
+        (hash, bytes): (u64, usize),
         width: u16,
         render: impl FnOnce() -> Vec<MdLine>,
     ) -> Vec<MdLine> {
+        if bytes > KEEP_UP_TO {
+            self.kept.remove(&index);
+            return render();
+        }
         self.clock += 1;
         let used = self.clock;
         if let Some(kept) = self
@@ -100,18 +108,36 @@ mod tests {
             Vec::new()
         };
         let mut cache = MdCache::new(2);
-        cache.lines(0, 1, 80, render);
-        cache.lines(1, 1, 80, render);
-        cache.lines(0, 1, 80, render);
+        cache.lines(0, (1, 10), 80, render);
+        cache.lines(1, (1, 10), 80, render);
+        cache.lines(0, (1, 10), 80, render);
         assert_eq!(renders.get(), 2, "第 0 篇用记着的");
-        cache.lines(2, 1, 80, render);
+        cache.lines(2, (1, 10), 80, render);
         assert_eq!(cache.len(), 2, "只留两篇");
-        cache.lines(0, 1, 80, render);
+        cache.lines(0, (1, 10), 80, render);
         assert_eq!(renders.get(), 3, "第 0 篇最近用过，留着");
-        cache.lines(1, 1, 80, render);
+        cache.lines(1, (1, 10), 80, render);
         assert_eq!(renders.get(), 4, "第 1 篇最久没用，丢了，重排");
-        cache.lines(1, 2, 80, render);
-        cache.lines(1, 2, 60, render);
+        cache.lines(1, (2, 10), 80, render);
+        cache.lines(1, (2, 10), 60, render);
         assert_eq!(renders.get(), 6, "字、宽度变了都重排");
+    }
+
+    /// 几 MB 以上的一篇不记：每次现排，原来记着的（流式时还小）丢掉。
+    #[test]
+    fn a_huge_reply_is_not_kept() {
+        let renders = Cell::new(0);
+        let render = || {
+            renders.set(renders.get() + 1);
+            Vec::new()
+        };
+        let mut cache = MdCache::new(4);
+        cache.lines(0, (1, 10), 80, render);
+        assert_eq!(cache.len(), 1);
+        let huge = super::KEEP_UP_TO + 1;
+        cache.lines(0, (2, huge), 80, render);
+        cache.lines(0, (2, huge), 80, render);
+        assert_eq!(renders.get(), 3, "每次现排");
+        assert_eq!(cache.len(), 0, "记着的那份丢了");
     }
 }
