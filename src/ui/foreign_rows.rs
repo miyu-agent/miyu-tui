@@ -44,7 +44,7 @@ pub fn rows(i: usize, entry: &Entry, from: &str, ctx: &Ctx) -> Vec<Row> {
                 })
                 .collect();
             let mut row = ctx.row(bar.clone(), spans);
-            row.links = super::user_rows::links(&text, line.start, end, &pieces);
+            row.set_links(super::user_rows::links(&text, line.start, end, &pieces));
             row.joined = prev_end == Some(line.start);
             prev_end = Some(line.end);
             out.push(row);
@@ -167,7 +167,7 @@ mod tests {
                 .any(|s| s.content.contains("看这张") && s.style == theme::dim()),
             "别的字照旧暗"
         );
-        assert_eq!(body.links.len(), 1, "块能点");
-        assert_eq!(body.links[0].2, "/tmp/晚霞.png");
+        assert_eq!(body.links().len(), 1, "块能点");
+        assert_eq!(body.links()[0].2, "/tmp/晚霞.png");
     }
 }

@@ -84,8 +84,11 @@ pub fn rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
             out.push(ctx.row(bar.clone(), Vec::new()));
         }
         let mut row = ctx.row(bar.clone(), spans(&text, line.start, line.end, &styled));
-        row.links = links(&text, line.start, line.end, &pieces);
-        row.copy_blocks = copy_blocks(i, &text, line.start, line.end, &pieces);
+        row.set_links(links(&text, line.start, line.end, &pieces));
+        let blocks = copy_blocks(i, &text, line.start, line.end, &pieces);
+        if !blocks.is_empty() {
+            row.extra_mut().copy_blocks = blocks;
+        }
         row.joined = prev_end == Some(line.start);
         prev_end = Some(line.end);
         out.push(row);

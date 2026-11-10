@@ -51,9 +51,9 @@ pub fn rows(lead: Vec<Span<'static>>, figure: &Figure, ctx: &Ctx) -> Vec<Row> {
                 .map(|i| {
                     let mut row = ctx.led_row(ctx.blank_slot(), lead.clone(), Vec::new());
                     row.copy = false;
-                    row.figure = Some(FigureCell { key, row: i, x: 0 });
+                    row.extra_mut().figure = Some(FigureCell { key, row: i, x: 0 });
                     if let Some(link) = &link {
-                        row.links = vec![(0, cols, link.clone())];
+                        row.set_links(vec![(0, cols, link.clone())]);
                     }
                     row
                 })
@@ -107,7 +107,7 @@ pub fn draw(buf: &mut Buffer, area: Rect, rows: &Rows, first: usize, figures: &m
     let visible = rows.window(first, usize::from(area.height));
     for (i, row) in visible {
         let at_row = u16::try_from(i - first).unwrap_or(u16::MAX);
-        for FigureCell { key, row: at, x } in row.figure.into_iter().chain(row.icon) {
+        for FigureCell { key, row: at, x } in row.figure().into_iter().chain(row.icon()) {
             let top = i64::from(at_row) - i64::from(at);
             let id = (key, top, row.content_x + x);
             match spans.iter_mut().find(|(k, _)| *k == id) {
@@ -180,7 +180,7 @@ mod tests {
     }
 
     fn plain(rows: &[crate::ui::rows::Row]) -> Vec<String> {
-        rows.iter().map(|r| r.plain.clone()).collect()
+        rows.iter().map(|r| r.plain()).collect()
     }
 
     #[test]
@@ -236,15 +236,15 @@ mod tests {
             let finished = done.recv_timeout(Duration::from_secs(20)).unwrap();
             kitty.borrow_mut().done(finished);
             drawn = rows(Vec::new(), &math, &ctx(&kitty));
-            if drawn.iter().all(|r| r.figure.is_some()) {
+            if drawn.iter().all(|r| r.figure().is_some()) {
                 break;
             }
         }
         assert!(drawn.len() >= 2, "分式至少两行高");
-        assert!(drawn.iter().all(|r| r.figure.is_some() && !r.copy));
+        assert!(drawn.iter().all(|r| r.figure().is_some() && !r.copy));
         let at: Vec<u16> = drawn
             .iter()
-            .filter_map(|r| r.figure)
+            .filter_map(|r| r.figure())
             .map(|f| f.row)
             .collect();
         assert_eq!(
@@ -333,7 +333,7 @@ mod tests {
     ) -> usize {
         for _ in 0..5 {
             let got = rows(Vec::new(), figure, ctx);
-            if got.iter().all(|r| r.figure.is_some()) {
+            if got.iter().all(|r| r.figure().is_some()) {
                 return got.len();
             }
             let finished = done.recv_timeout(Duration::from_secs(20)).unwrap();

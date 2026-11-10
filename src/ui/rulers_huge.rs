@@ -34,7 +34,7 @@ fn ruler_huge_reply() {
         let rows = fresh_rows(&entries, &f.ctx());
         let took = t.elapsed();
         let laid = rss_mb();
-        let plain: usize = rows.iter().map(|r| r.plain.len()).sum();
+        let plain: usize = rows.iter().map(|r| r.plain().len()).sum();
         let spans: usize = rows.iter().map(|r| r.line.spans.len()).sum();
         let span_bytes: usize = rows
             .iter()
@@ -47,7 +47,7 @@ fn ruler_huge_reply() {
             .filter(|s| matches!(s.content, std::borrow::Cow::Owned(_)))
             .count();
         println!(
-            "{mb} MB 回答：原文 +{:.0} MB；排成 {} 行 +{:.0} MB，{:.1}s；plain {:.0} MB，span {spans} 个（自有 {owned}）字 {:.0} MB，Row {} 字节/个",
+            "{mb} MB 回答：原文 +{:.0} MB；排成 {} 行 +{:.0} MB，{:.1}s；复制的字（现拼，不另存）{:.0} MB，span {spans} 个（自有 {owned}）字 {:.0} MB，Row {} 字节/个",
             with_text - start,
             rows.len(),
             laid - with_text,

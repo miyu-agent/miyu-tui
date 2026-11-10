@@ -32,36 +32,109 @@ pub enum Target {
     Details(usize, usize),
 }
 
-/// 排好的一行。
+/// 排好的一行。一条几十 MB 的回答能排出上百万行（压测报告 O17，施工 YC-11）：常有的几格直接放，少见的（链接、图、收起的块）
+/// 装进一个盒子，复制用的字不另存一份，照内容那几个 span 拼（蓝图「量尺」）。
 #[derive(Debug, Clone)]
 pub struct Row {
-    /// 画出来的样子，从正文区的左边算起。
+    /// 画出来的样子，从正文区的左边算起：缩进、两格槽、引子、内容。
     pub line: Line<'static>,
     /// 点它点中的东西。
     pub target: Option<Target>,
-    /// 整行铺底色：点开的步骤。
-    pub shade: bool,
-    /// 内容的字，复制用。
-    pub plain: String,
-    /// 收起的块在这一行占的列和原文，复制时替换；原文跨折行共享。
-    pub copy_blocks: Vec<CopyBlock>,
+    /// 点在字右边的空白（没有字的行整行）时开关的东西；`None` 的照 `target`。展开的时间线一段：没铺底色的空白收起整段，
+    /// 点开的一步铺了底色的照旧是那一步（蓝图「时间线」第 17a 条，2026-10-19 项目主人）。
+    pub blank: Option<Target>,
+    /// 少见的几格：没有的是 `None`，不占地方。
+    extra: Option<Box<RowExtra>>,
     /// 内容从正文区左边第几列起。
     pub content_x: u16,
+    /// `line` 里内容前面有几个 span（缩进、槽、引子）：复制的字从它后面拼。
+    lead: u16,
+    /// 整行铺底色：点开的步骤。
+    pub shade: bool,
     /// 这一行是上一行折下来的：复制时接回上一行，不加换行。
     pub joined: bool,
-    /// 链接：从内容开头算的起列、止列（不含）、地址。
-    pub links: Vec<(u16, u16, String)>,
     /// 复制时带不带这一行：代码块的框线不带。
     pub copy: bool,
+    /// 这一行是「正在画图」：图做好了要重排（按条记着的行认它，「正文」第 8 条）。
+    pub figure_pending: bool,
+}
+
+/// 一行里少见的几格。
+#[derive(Debug, Clone, Default)]
+pub struct RowExtra {
+    /// 收起的块在这一行占的列和原文，复制时替换；原文跨折行共享。
+    pub copy_blocks: Vec<CopyBlock>,
+    /// 链接：从内容开头算的起列、止列（不含）、地址。
+    pub links: Vec<(u16, u16, String)>,
     /// 这一行是一张图的第几行（蓝图「图片、公式和 mermaid 图」第 2 条）。
     pub figure: Option<FigureCell>,
     /// 同一行的第二张图（链接卡片标题前面的网站图标）。
     pub icon: Option<FigureCell>,
-    /// 这一行是「正在画图」：图做好了要重排（按条记着的行认它，「正文」第 8 条）。
-    pub figure_pending: bool,
-    /// 点在字右边的空白（没有字的行整行）时开关的东西；`None` 的照 `target`。展开的时间线一段：没铺底色的空白收起整段，
-    /// 点开的一步铺了底色的照旧是那一步（蓝图「时间线」第 17a 条，2026-10-19 项目主人）。
-    pub blank: Option<Target>,
+}
+
+impl Row {
+    /// 一行：`spans` 里前 `lead` 个不是内容（缩进、槽、引子），内容从第 `content_x` 列起。
+    pub fn new(spans: Vec<Span<'static>>, lead: usize, content_x: u16) -> Row {
+        Row {
+            line: Line::from(spans),
+            target: None,
+            blank: None,
+            extra: None,
+            content_x,
+            lead: u16::try_from(lead).unwrap_or(u16::MAX),
+            shade: false,
+            joined: false,
+            copy: true,
+            figure_pending: false,
+        }
+    }
+
+    /// 内容那几个 span。
+    pub fn content(&self) -> &[Span<'static>] {
+        self.line.spans.get(usize::from(self.lead)..).unwrap_or(&[])
+    }
+
+    /// 内容的字，复制用。
+    pub fn plain(&self) -> String {
+        self.content().iter().map(|s| s.content.as_ref()).collect()
+    }
+
+    /// 一个字都没有（空白也算没有）。
+    pub fn blank_text(&self) -> bool {
+        self.content().iter().all(|s| s.content.trim().is_empty())
+    }
+
+    /// 少见的那几格，要写的时候才放一个盒子。
+    pub fn extra_mut(&mut self) -> &mut RowExtra {
+        self.extra.get_or_insert_with(Box::default)
+    }
+
+    /// 收起的块。
+    pub fn copy_blocks(&self) -> &[CopyBlock] {
+        self.extra.as_ref().map_or(&[], |e| &e.copy_blocks)
+    }
+
+    /// 链接。
+    pub fn links(&self) -> &[(u16, u16, String)] {
+        self.extra.as_ref().map_or(&[], |e| &e.links)
+    }
+
+    /// 写上链接；没有的不放盒子。
+    pub fn set_links(&mut self, links: Vec<(u16, u16, String)>) {
+        if !links.is_empty() || self.extra.is_some() {
+            self.extra_mut().links = links;
+        }
+    }
+
+    /// 图的一行。
+    pub fn figure(&self) -> Option<FigureCell> {
+        self.extra.as_ref().and_then(|e| e.figure)
+    }
+
+    /// 同一行的第二张图。
+    pub fn icon(&self) -> Option<FigureCell> {
+        self.extra.as_ref().and_then(|e| e.icon)
+    }
 }
 
 /// 收起的块的一截：显示列映射到整块原文；同一条目的同一块只复制一次。
@@ -140,25 +213,23 @@ impl Ctx<'_> {
         lead: Vec<Span<'static>>,
         content: Vec<Span<'static>>,
     ) -> Row {
-        let plain = content.iter().map(|s| s.content.as_ref()).collect();
         let lead_width: usize = lead.iter().map(Span::width).sum();
-        let mut spans = vec![Span::raw(self.indent.clone()), slot];
+        let mut spans = Vec::with_capacity(2 + lead.len() + content.len());
+        spans.push(self.indent_span());
+        spans.push(slot);
         spans.extend(lead);
+        let skip = spans.len();
         spans.extend(content);
-        Row {
-            line: Line::from(spans),
-            target: None,
-            shade: false,
-            plain,
-            copy_blocks: Vec::new(),
-            content_x: self.content_x() + u16::try_from(lead_width).unwrap_or(0),
-            joined: false,
-            links: Vec::new(),
-            copy: true,
-            figure: None,
-            icon: None,
-            figure_pending: false,
-            blank: None,
+        let content_x = self.content_x() + u16::try_from(lead_width).unwrap_or(0);
+        Row::new(spans, skip, content_x)
+    }
+
+    /// 行首的缩进：全是空格的借一段常量，不每行另分配一份（上百万行时省下的是上百万次分配，施工 YC-11）。
+    fn indent_span(&self) -> Span<'static> {
+        const SPACES: &str = "                                                                ";
+        match SPACES.get(..self.indent.len()) {
+            Some(spaces) if self.indent.bytes().all(|b| b == b' ') => Span::raw(spaces),
+            _ => Span::raw(self.indent.clone()),
         }
     }
 
@@ -325,7 +396,7 @@ fn details_row(index: usize, line: MdLine, ctx: &Ctx) -> Row {
 pub(super) fn md_row(line: MdLine, ctx: &Ctx) -> Row {
     let mut row = ctx.led_row(ctx.blank_slot(), line.lead, line.folded.spans);
     row.joined = line.folded.joined;
-    row.links = line.folded.links;
+    row.set_links(line.folded.links);
     row.copy = line.copy;
     row
 }

@@ -181,19 +181,20 @@ impl BodyView {
             let mut piece = String::new();
             let mut protected = 0;
             let mut at = from;
-            for block in &row.copy_blocks {
+            let plain = row.plain();
+            for block in row.copy_blocks() {
                 let (s, e) = block.cols;
                 if from >= e || to <= s {
                     continue;
                 }
-                piece.push_str(&slice(&row.plain, at, s.max(at)));
+                piece.push_str(&slice(&plain, at, s.max(at)));
                 if copied.insert(block.id) {
                     piece.push_str(&block.text);
                     protected = piece.len();
                 }
                 at = e.min(to);
             }
-            piece.push_str(&slice(&row.plain, at, to));
+            piece.push_str(&slice(&plain, at, to));
             match lines.last_mut() {
                 Some((last, end)) if row.joined => {
                     if protected > 0 {
@@ -406,8 +407,9 @@ impl BodyView {
     /// 点在第 `r` 行第 `col` 列开关什么：字右边的空白（没有字的行整行）照 `blank`，别的照 `target`（「时间线」第 17a 条）。
     fn target_at(&self, r: usize, col: u16) -> Option<Target> {
         let row = self.rows.get(r)?;
-        let text = u16::try_from(UnicodeWidthStr::width(row.plain.trim_end())).unwrap_or(u16::MAX);
-        let blank = row.plain.trim().is_empty() || col >= row.content_x.saturating_add(text);
+        let plain = row.plain();
+        let text = u16::try_from(UnicodeWidthStr::width(plain.trim_end())).unwrap_or(u16::MAX);
+        let blank = plain.trim().is_empty() || col >= row.content_x.saturating_add(text);
         match row.blank {
             Some(target) if blank => Some(target),
             _ => row.target,
@@ -418,7 +420,7 @@ impl BodyView {
     fn link_at(&self, (r, col): Point) -> Option<String> {
         let row = self.rows.get(r)?;
         let x = col.checked_sub(row.content_x)?;
-        row.links
+        row.links()
             .iter()
             .find(|(from, to, _)| (*from..*to).contains(&x))
             .map(|(_, _, url)| url.clone())

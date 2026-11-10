@@ -53,7 +53,7 @@ fn memory_search_lists_memories_by_date_and_strikes_the_forgotten_ones() {
             .any(|l| l.contains("2026-10-17 · 最喜欢的水果是芒果")),
         "{shown:?}"
     );
-    let forgotten = got.iter().find(|r| r.plain.contains("苹果")).unwrap();
+    let forgotten = got.iter().find(|r| r.plain().contains("苹果")).unwrap();
     assert!(
         forgotten
             .line

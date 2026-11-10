@@ -144,7 +144,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
         let only_text = internal(url);
         for (i, row) in rows.window(first, height) {
             let y = area.y + u16::try_from(i - first).unwrap_or(0);
-            for (from, to, _) in row.links.iter().filter(|(_, _, u)| u == url) {
+            for (from, to, _) in row.links().iter().filter(|(_, _, u)| u == url) {
                 let x = area.x + row.content_x + from;
                 let cells = Rect::new(x, y, to - from, 1).intersection(area);
                 let underline = Style::new().add_modifier(Modifier::UNDERLINED);
@@ -178,7 +178,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     }
     for (i, row) in rows.window(first, height) {
         // 图的行不铺反色：kitty 的图靠格子的前景色认是哪张图，反了就画不出来。
-        if row.figure.is_some() {
+        if row.figure().is_some() {
             continue;
         }
         if let Some((from, to)) = screen.view.selected_cols(i) {

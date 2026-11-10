@@ -137,7 +137,7 @@ fn only_the_picture_itself_opens_it_not_the_blank_to_its_right() {
     assert_eq!(got.len(), 3, "图三行");
     for row in &got {
         assert_eq!(
-            row.links,
+            row.links(),
             [(0, 10, "miyu-shown:7".to_string())],
             "只有图那 10 列能点"
         );

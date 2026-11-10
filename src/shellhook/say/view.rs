@@ -176,7 +176,7 @@ impl View<'_> {
                     continue;
                 }
             }
-            if row.plain.trim() == open.trim() {
+            if row.plain().trim() == open.trim() {
                 if let Some(path) = shown_path(transcript, row.target) {
                     let indent = " ".repeat(usize::from(row.content_x));
                     lines.push(Line::styled(format!("{indent}{path}"), crate::theme::dim()));

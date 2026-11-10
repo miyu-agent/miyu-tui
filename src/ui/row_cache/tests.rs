@@ -79,8 +79,8 @@ fn cached_rows_match_a_fresh_build() {
         let targets: Vec<Option<Target>> = cached.iter().map(|r| r.target).collect();
         assert_eq!(targets, fresh.iter().map(|r| r.target).collect::<Vec<_>>());
         assert_eq!(
-            cached.get(fresh.len() - 1).unwrap().plain,
-            fresh.last().unwrap().plain
+            cached.get(fresh.len() - 1).unwrap().plain(),
+            fresh.last().unwrap().plain()
         );
     }
 }
@@ -235,17 +235,20 @@ fn a_pasted_block_in_what_you_said_is_replaced_by_its_full_text() {
         rows.iter().any(|r| r.target == Some(Target::Entry(0))),
         "能点"
     );
-    assert!(!rows.iter().any(|r| r.plain.contains("报错第一行")), "收着");
+    assert!(
+        !rows.iter().any(|r| r.plain().contains("报错第一行")),
+        "收着"
+    );
     t.entries[0].open = true;
     let open = fresh_rows(&t.entries, &ctx);
-    let text: Vec<&str> = open.iter().map(|r| r.plain.as_str()).collect();
+    let text: Vec<String> = open.iter().map(|r| r.plain()).collect();
     // 原地替换：块换成全文，接在「看看：」后面；不铺底色。
     assert!(
         !text.iter().any(|l| l.contains("[已粘贴")),
         "块换掉了：{text:?}"
     );
-    assert!(text.contains(&"看看：报错第一行"), "{text:?}");
-    assert!(text.contains(&"报错第二行"), "{text:?}");
+    assert!(text.iter().any(|l| l == "看看：报错第一行"), "{text:?}");
+    assert!(text.iter().any(|l| l == "报错第二行"), "{text:?}");
     assert!(!open.iter().any(|r| r.shade), "不铺底色");
     assert!(
         open.iter().all(|r| r.target == Some(Target::Entry(0))),
@@ -296,10 +299,10 @@ fn attachments_stay_blocks_and_open_their_file_like_a_link() {
         "点开了图还是块"
     );
     assert!(
-        rows.iter().any(|r| r.plain.contains("第二行")),
+        rows.iter().any(|r| r.plain().contains("第二行")),
         "粘贴块照样展开"
     );
-    let links: Vec<&(u16, u16, String)> = rows.iter().flat_map(|r| r.links.iter()).collect();
+    let links: Vec<&(u16, u16, String)> = rows.iter().flat_map(|r| r.links().iter()).collect();
     // 「看」占两列，块从第 2 列起、占 8 列。
     assert!(
         links.contains(&&(2, 10, "/tmp/看图/a.png".to_string())),
@@ -319,7 +322,9 @@ fn attachments_stay_blocks_and_open_their_file_like_a_link() {
         "{links:?}"
     );
     assert!(
-        !rows.iter().any(|r| r.plain.contains("/tmp/看图/notes.txt")),
+        !rows
+            .iter()
+            .any(|r| r.plain().contains("/tmp/看图/notes.txt")),
         "文件块不展开成路径"
     );
     assert!(
@@ -379,9 +384,9 @@ fn same_looking_blocks_in_what_you_said_open_to_their_own_text() {
     let ctx = f.ctx();
     let rows = fresh_rows(&t.entries, &ctx);
     assert!(
-        rows.iter().any(|r| r.plain == "甲和乙"),
+        rows.iter().any(|r| r.plain() == "甲和乙"),
         "{:?}",
-        rows.iter().map(|r| r.plain.clone()).collect::<Vec<_>>()
+        rows.iter().map(|r| r.plain()).collect::<Vec<_>>()
     );
 }
 
@@ -398,13 +403,13 @@ fn a_details_title_opens_and_closes_its_reply() {
     let plain = |t: &Transcript, ctx: &crate::ui::rows::Ctx| -> Vec<String> {
         build(&t.entries, ctx, &cache, Plan::all())
             .iter()
-            .map(|r| r.plain.clone())
+            .map(|r| r.plain())
             .collect()
     };
     let target = Target::Details(0, 0);
     let shut = build(&t.entries, &f.ctx(), &cache, Plan::all());
     let title = shut.iter().find(|r| r.target == Some(target)).unwrap();
-    assert_eq!(title.plain, "点我展开", "标题那一行能点，记号不复制");
+    assert_eq!(title.plain(), "点我展开", "标题那一行能点，记号不复制");
     assert!(!plain(&t, &f.ctx()).iter().any(|l| l.contains("里面的字")));
     // 点一下：记在这一条上，缓存着的也重排。
     t.entries[0].details.push(0);
