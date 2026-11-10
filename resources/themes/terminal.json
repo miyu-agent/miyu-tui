@@ -2,7 +2,7 @@
   "dim": "darkgray",
   "accent": "blue",
   "workspace": "blue",
-  "full": "lightred",
+  "full": "blue",
   "read_only": "yellow",
   "picked": "magenta",
   "thought": "dim:lightgreen",

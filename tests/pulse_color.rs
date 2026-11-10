@@ -12,7 +12,8 @@ use vt100::Color;
 
 /// 配色、明暗和那一套的工作区色（`resources/themes/*.json` 的 `workspace`）：出厂的几种配色各取深、浅。跟随壁纸和跟随头像是
 /// 同一套算法，照一个主色生成（`tests/theme.rs` 验过同一个主色铺一样的底），这里用跟随头像代表，主色是绿的：工作区色跟着
-/// 主色是绿，开放权限还是红，分得开。终端配色没问到终端颜色时照调色板 4 号（`blue`）原样画。
+/// 主色是绿。终端配色没问到终端颜色时照调色板 4 号（`blue`）原样画。2026-11-10 起开放权限也是这一档的颜色（项目主人：
+/// 从红改成原来工作区的颜色），底栏的「开放权限」和流光都照它，离原来开放权限的红远。
 const THEMES: [(&str, &str, Color); 6] = [
     ("tokyonight", "dark", Color::Rgb(0x7a, 0xa2, 0xf7)),
     ("tokyonight", "light", Color::Rgb(0x2e, 0x7d, 0xe9)),
@@ -21,6 +22,9 @@ const THEMES: [(&str, &str, Color); 6] = [
     ("persona", "dark", Color::Rgb(0x2f, 0xab, 0x34)),
     ("persona", "light", Color::Rgb(0x2f, 0xab, 0x34)),
 ];
+
+/// 原来开放权限的红（tokyonight 深色的 `full`）：工作区那一档的颜色离它远。
+const RED: Color = Color::Rgb(0xf7, 0x76, 0x8e);
 
 /// 底栏左下角写着 `word` 的那一格的字色。
 fn footer_color(tui: &Tui, word: &str) -> Option<Color> {
@@ -87,13 +91,16 @@ fn the_pulse_keeps_the_workspace_colour_in_every_theme() {
         let full = wait(&mut tui, "「开放权限」", |t| {
             footer_color(t, "开放权限")
         });
-        assert_ne!(workspace, full, "{theme}：两档颜色本来就不一样");
+        assert!(
+            nearer(full, workspace, RED),
+            "{theme}：开放权限 {full:?} 要照工作区 {workspace:?}，不是红的"
+        );
         tui.say("你好");
         tui.wait_for_line("…");
         let pulse = wait(&mut tui, "运行状态行", pulse_color);
         assert!(
-            nearer(pulse, workspace, full),
-            "{theme}：流光 {pulse:?} 要照工作区 {workspace:?}，不照开放权限 {full:?}\n{}",
+            nearer(pulse, workspace, RED),
+            "{theme}：流光 {pulse:?} 要照工作区 {workspace:?}\n{}",
             tui.lines().join("\n")
         );
     }

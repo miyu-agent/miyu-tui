@@ -54,7 +54,8 @@ pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
         dim: like(variant, b.dim),
         accent: like(primary, b.accent),
         workspace: like(primary, b.workspace),
-        full: near(b.full),
+        // 开放权限和原来工作区那一档同一个颜色（2026-11-10 项目主人），照主色取
+        full: like(primary, b.full),
         read_only: near(b.read_only),
         picked: like(third, b.picked),
         // 思考取次色（2026-10-23 项目主人看了样板选的：原来中性色，比命令输出的暗字亮一档，看着像两种灰；次色带一点主题的

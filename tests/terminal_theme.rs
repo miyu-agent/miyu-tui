@@ -101,17 +101,17 @@ fn the_automatic_mode_turns_light_when_the_terminal_does_and_focus_comes_back() 
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.answer_ground(DARK.0, DARK.1);
     tui.wait_for("开放权限");
-    // 没在回答：看左下角「开放权限」（tokyonight 的 `full`）。
+    // 没在回答：看左下角「开放权限」（tokyonight 的 `full`，2026-11-10 起和原来工作区那一档同色）。
     until_level(
         &mut tui,
-        |c| c == Color::Rgb(0xf7, 0x76, 0x8e),
+        |c| c == Color::Rgb(0x7a, 0xa2, 0xf7),
         "深色那一份",
     );
     tui.answer_ground(LIGHT.0, LIGHT.1);
     regain_focus(&mut tui);
     until_level(
         &mut tui,
-        |c| c == Color::Rgb(0xf5, 0x2a, 0x65),
+        |c| c == Color::Rgb(0x2e, 0x7d, 0xe9),
         "换成浅色那一份",
     );
 }
