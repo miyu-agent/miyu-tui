@@ -38,6 +38,9 @@ impl Facts {
                 seen.config.text.shell.placeholder.clone()
             } else if seen.talk.archived() {
                 seen.config.text.archived_placeholder.clone()
+            } else if seen.talk.transcript.read_only {
+                // 日志中间坏了、只能看的会话（核心 YC-6，`app/unread.rs`）：写怎么新开会话
+                seen.config.text.unread.read_only_placeholder.clone()
             } else {
                 placeholder(seen.config, home, seen.typing.tips.at()).to_string()
             },

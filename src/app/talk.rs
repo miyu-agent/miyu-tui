@@ -59,6 +59,8 @@ pub struct Talk {
     pub level_picked: bool,
     /// 人打的 `/dream` 正在整理（`dream.rs`，蓝图「整理记忆」）。
     pub dream: Option<crate::dream::Dream>,
+    /// 会话一时读不了，等着再试的（`unread.rs`）。
+    pub(super) reread: Option<super::unread::Reread>,
 }
 
 impl Talk {

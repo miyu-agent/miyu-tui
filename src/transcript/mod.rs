@@ -115,6 +115,8 @@ pub struct Transcript {
     pub session: Option<String>,
     /// 会话不存在了（review B3）：下一句话先换一份空的正文，再开新会话（`gone.rs`）。
     pub gone: bool,
+    /// 会话日志中间坏了一行（核心 YC-6）：只能看，输入框写怎么新开会话（`gone.rs`）。
+    pub read_only: bool,
     /// 会话名称：核心起了名字（`session.meta_changed`）才有。
     pub title: Option<String>,
     /// 标题是人起的（`/rename` 这类，不是内核自动起的）：输入框上边框右边写它（「输入框」第 14 条）。
@@ -246,6 +248,8 @@ impl Transcript {
             | Update::Older { .. }
             | Update::Workspace { .. }
             | Update::SessionGone(_)
+            | Update::SessionReadOnly { .. }
+            | Update::SessionUnavailable { .. }
             | Update::Catalog(..)
             | Update::SlashRefused { .. }
             | Update::Widgets(_)
@@ -437,6 +441,7 @@ impl Transcript {
             Push::Retry {
                 attempt,
                 limit,
+                class,
                 message,
             } => self.retry = Some(failure::retry_line(attempt, limit, &class, &message, texts)),
             Push::TurnEnded(reason) => self.end(reason, texts),

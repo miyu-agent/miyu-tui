@@ -85,6 +85,7 @@ mod theme_pick;
 mod too_long;
 mod tool_list;
 mod typing;
+mod unread;
 mod unseen;
 mod updates;
 pub mod usage;
@@ -378,6 +379,8 @@ impl App {
             &mut self.screen.rng,
         );
         self.drawer_tick();
+        // 会话一时读不了：到点再试（`unread.rs`）。
+        self.reread_due(Instant::now());
         // 人打的 `/dream`：浮下一条、醒够了收（`dream.rs`）。
         self.dream_tick();
         // 正文少了一大截（收起大块、换会话、清空）：过一会儿把堆里空着的还给系统（`trim.rs`）。

@@ -34,6 +34,7 @@ mod panels;
 pub mod slots;
 mod themed;
 mod timeline;
+mod unread;
 mod widgets;
 mod words;
 
@@ -52,6 +53,7 @@ pub use notify::{NotifyLook, NotifyTexts};
 pub use open::OpenTexts;
 pub use panels::{HistoryTexts, MenuTexts, UsageCellTexts};
 pub use timeline::{Body, Summary, Timeline, ToolKind};
+pub use unread::UnreadTexts;
 pub use widgets::{WidgetLayout, WidgetMarks};
 pub use words::{
     JobTexts, ModelTexts, PrefixTexts, RecapTexts, RenameTexts, ShellTexts, UndoFileTexts,
@@ -238,6 +240,8 @@ pub struct Texts {
     pub compaction: CompactionTexts,
     /// 人打的 `/dream` 整理时那一块（蓝图「整理记忆」）。
     pub dream: DreamTexts,
+    /// 会话读不了：日志中间坏了只能看、一时读不了过一会儿再试（`app/unread.rs`）。
+    pub unread: UnreadTexts,
     /// 出错的分类写成人话：内核自己查出来的、没有原话的用（蓝图「正文」第 4 条）；认不得的照原样。
     pub error_classes: HashMap<String, String>,
     /// 图还在做时那一行占位。

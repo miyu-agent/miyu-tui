@@ -51,6 +51,7 @@ mod take;
 mod todos;
 mod types;
 mod undo;
+mod unread;
 mod update;
 pub use update::Update;
 mod upload;
@@ -139,6 +140,13 @@ pub enum Command {
         session: String,
         /// 原来那个照样订阅着。
         keep: bool,
+    },
+    /// 会话一时读不了以后再试（[`Update::SessionUnavailable`]）：`page` 是从读最新一页起，不然只再订阅（`unread.rs`）。
+    Reread {
+        /// 哪个会话。
+        session: String,
+        /// 从读最新一页起。
+        page: bool,
     },
     /// 列出会话（`session.list`），交回 [`Update::Sessions`]。
     ListSessions,

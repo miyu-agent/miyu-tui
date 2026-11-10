@@ -86,10 +86,25 @@ pub(super) async fn take(
             // 画不出、太长、核心没编进 mermaid（`unknown_method`）：写源码。
             Some(Awaiting::Mermaid(source)) => notify(Update::Mermaid { source, svg: None }),
             Some(Awaiting::Files(word)) => notify(Update::Files { word, result: None }),
-            // 要最新一页被拒了：核心旧的补整份，别的照补发不成办（`page.rs`）。
+            // 要最新一页被拒了：会话一时读不了的过一会儿再试（`unread.rs`），核心旧的补整份，别的照补发不成办（`page.rs`）。
             Some(Awaiting::Page(session)) => {
-                super::page::take_refused(rpc, link, session, (reason, message), awaiting, notify)
-                    .await
+                match super::unread::refused(&session, reason.as_deref(), &error["data"], true) {
+                    Some(update) => {
+                        link.replays.remove(&session);
+                        notify(update)
+                    }
+                    None => {
+                        super::page::take_refused(
+                            rpc,
+                            link,
+                            session,
+                            (reason, message),
+                            awaiting,
+                            notify,
+                        )
+                        .await
+                    }
+                }
             }
             // 更早的一页读不成：界面去掉顶上那一行、弹原因。
             Some(Awaiting::Older(session)) => {
@@ -97,10 +112,17 @@ pub(super) async fn take(
             }
             // 切过去、重连以后订阅不上：主会话不存在了的照「会话不存在」办（review B3），别的（日志坏了）不再当它在补发，
             // 照一般的拒绝说。
+            // 日志中间坏了的只能看、一时读不了的再试（`unread.rs`）。
             Some(Awaiting::Replay(session) | Awaiting::Rejoin(session)) => {
                 link.replays.remove(&session);
+                let unread =
+                    super::unread::refused(&session, reason.as_deref(), &error["data"], false);
                 let gone = link.gone(&session, reason.as_deref());
-                notify(gone.unwrap_or(Update::Refused { reason, message }))
+                notify(
+                    unread
+                        .or(gone)
+                        .unwrap_or(Update::Refused { reason, message }),
+                )
             }
             // 核心清单里的斜杠命令被拒：另报，界面只弹原话（「斜杠命令列表」第 4 条）。
             Some(Awaiting::Slash) => notify(Update::SlashRefused { message }),

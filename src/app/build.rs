@@ -70,6 +70,7 @@ impl App {
                 default_level: crate::core::Level::Full,
                 level_picked: false,
                 dream: None,
+                reread: None,
                 transcript: Transcript::default(),
                 board: Board::default(),
                 parked: Default::default(),

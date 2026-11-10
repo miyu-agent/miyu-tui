@@ -176,6 +176,14 @@ pub(super) async fn serve(
                         }
                         continue;
                     }
+                    // 会话一时读不了，过一会儿再试（`unread.rs`）。
+                    Command::Reread { session, page } => match super::unread::reread(rpc, link, &session, page).await {
+                        Ok((id, kind)) => {
+                            awaiting.insert(id, kind);
+                            continue;
+                        }
+                        Err(_) => return Served::Lost,
+                    },
                     // 还没开会话：记着，开会话时带上，当场算换成了（「配置与模型」第 1 条）。
                     Command::Configure(reference) if link.target().is_none() => {
                         link.pending_model = Some(reference.clone());
@@ -226,16 +234,11 @@ pub(super) async fn serve(
                         continue;
                     }
                     // 还没开会话时验一个目录：连问两次，交回结果（`workspace.rs`）。
-                    Command::CheckDir { path, cwd } => {
-                        let result = match super::workspace::check(rpc, &path, &cwd).await {
-                            Ok(result) => result,
-                            Err(_) => return Served::Lost,
-                        };
-                        if !notify(Update::DirChecked(result)) {
-                            return Served::Quit;
-                        }
-                        continue;
-                    }
+                    Command::CheckDir { path, cwd } => match super::workspace::check(rpc, &path, &cwd).await {
+                        Ok(result) if notify(Update::DirChecked(result.clone())) => continue,
+                        Ok(_) => return Served::Quit,
+                        Err(_) => return Served::Lost,
+                    },
                     Command::Level(level) if link.target().is_none() => {
                         link.pending = Some(level);
                         continue;

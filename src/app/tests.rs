@@ -106,4 +106,5 @@ mod status;
 mod switching;
 mod theme_auto;
 mod too_long;
+mod unread;
 mod unseen;
