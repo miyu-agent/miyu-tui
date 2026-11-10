@@ -320,15 +320,18 @@ pub use super::md_cache::MdCache;
 fn reply_rows(index: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     let text = entry.text.trim_matches('\n');
     let hash = cache_key(text, &entry.details, ctx.config.language.code());
-    let lines = ctx.md.borrow_mut().lines(index, hash, ctx.width, || {
-        let kit = markdown::Kit {
-            languages: &ctx.config.languages,
-            math: &ctx.config.math,
-            labels: &ctx.config.text.markdown,
-            tab: ctx.config.layout.output.tab,
-        };
-        markdown::render(text, ctx.width, &kit, &entry.details)
-    });
+    let lines = ctx
+        .md
+        .borrow_mut()
+        .lines(index, (hash, text.len()), ctx.width, || {
+            let kit = markdown::Kit {
+                languages: &ctx.config.languages,
+                math: &ctx.config.math,
+                labels: &ctx.config.text.markdown,
+                tab: ctx.config.layout.output.tab,
+            };
+            markdown::render(text, ctx.width, &kit, &entry.details)
+        });
     // 写完了的回答里独占一行的链接：核心交回了卡片的换成卡片（蓝图「链接卡片」第 1 条）。
     let cards = ctx.writing != Some(entry.id);
     let mut out: Vec<Row> = Vec::new();
