@@ -331,7 +331,7 @@
     "picking": "j/k select · h/l move cursor · / filter · Enter insert · Esc close",
     "filtering": "Enter confirm · Esc cancel filter"
   },
-  "usage_cell": {"failed": "Context compaction failed", "over": "Context exceeds the window", "compact": "Compact", "compacting": "Compacting context", "cap": "session cap {n}", "hit": "(C{percent}%)"},
+  "usage_cell": {"failed": "Context compaction failed", "over": "Context exceeds the window", "compact": "Compact", "compacting": "Compacting context", "hit": "(C{percent}%)"},
   "history": {
     "title": "History",
     "count": "  {count}",
@@ -383,6 +383,7 @@
     "context": "{used} / {window} ({percent}%)",
     "compactions": "{n} times",
     "compaction_line": "auto at {line}",
+    "cap": "session cap {n}",
     "total": "{tokens} tokens in all",
     "split": "in {input} · out {output}",
     "aux": "side requests {tokens}",

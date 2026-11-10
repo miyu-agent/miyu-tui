@@ -63,6 +63,7 @@ fn facts(turn: &Turn, presets: &[crate::core::Persona], config: &Config) -> Fact
         speed: t.speed.average(),
         context: t.context,
         line: t.limits.compaction_line,
+        cap: None,
         compactions: t.cache.compactions,
         breaks: t.cache.breaks,
         usage: t.total,

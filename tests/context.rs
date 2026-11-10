@@ -43,6 +43,10 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
         tui.pump(Duration::from_millis(50));
     }
     tui.say("/context");
+    // 小块默认收着（2026-11-11 项目主人挑的样板），回车展开。
+    tui.wait_for("系统提示");
+    assert!(!tui.shows("核心说明"), "{}", tui.lines().join("\n"));
+    tui.key(b"\r");
     tui.wait_for("核心说明");
     assert!(
         tui.shows("估算") && !tui.shows("累计消耗"),
@@ -58,7 +62,7 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     tui.say("/context");
     tui.wait_for("累计消耗");
     // 发版前 check 32 起按用途只有一行的不写合计。
-    for text in ["已用", "系统提示", "对话", "按用途", "主对话", "次数"] {
+    for text in ["系统提示", "对话", "缓存命中", "用途", "主对话", "次数"] {
         tui.wait_for(text);
     }
     tui.key(b"\x1b");

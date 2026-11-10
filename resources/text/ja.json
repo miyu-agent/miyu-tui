@@ -331,7 +331,7 @@
     "picking": "j/k 選択 · h/l カーソル移動 · / 絞り込み · Enter 挿入 · Esc 閉じる",
     "filtering": "Enter 確定 · Esc 絞り込みをやめる"
   },
-  "usage_cell": {"failed": "コンテキストの圧縮に失敗", "over": "コンテキストがウィンドウを超過", "compact": "圧縮", "compacting": "コンテキストを圧縮中", "cap": "セッション上限 {n}", "hit": "(C{percent}%)"},
+  "usage_cell": {"failed": "コンテキストの圧縮に失敗", "over": "コンテキストがウィンドウを超過", "compact": "圧縮", "compacting": "コンテキストを圧縮中", "hit": "(C{percent}%)"},
   "history": {
     "title": "履歴",
     "count": "  {count}",
@@ -383,6 +383,7 @@
     "context": "{used} / {window}（{percent}%）",
     "compactions": "{n} 回",
     "compaction_line": "{line} で自動圧縮",
+    "cap": "セッション上限 {n}",
     "total": "合計 {tokens} token",
     "split": "入力 {input} · 出力 {output}",
     "aux": "補助リクエスト {tokens}",

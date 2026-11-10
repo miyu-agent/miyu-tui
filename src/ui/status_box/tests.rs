@@ -19,6 +19,7 @@ fn opened() -> Facts {
         speed: Some(76.4),
         context: 41_200,
         line: Some(967_000),
+        cap: None,
         compactions: 2,
         breaks: 1,
         usage: Usage {
@@ -155,4 +156,24 @@ fn a_session_that_changed_models_lists_each_model_under_usage() {
         !plain(&facts, &config, 100).contains("各模型"),
         "只用过一个的不写"
     );
+}
+
+/// 设了会话的上下文上限（核心 CTX-1）：上下文那一行后面接「会话上限 128k」（2026-11-11 项目主人：底栏不写了，这里有）。
+#[test]
+fn a_session_cap_is_named_on_the_context_row() {
+    let config = Config::builtin().unwrap();
+    let capped = Facts {
+        cap: Some(128_000),
+        ..opened()
+    };
+    let text =
+        |f: &Facts| -> Vec<String> { plain(f, &config, 100).lines().map(str::to_string).collect() };
+    assert!(
+        text(&capped)
+            .iter()
+            .any(|l| l.contains("上下文") && l.contains("会话上限 128k")),
+        "{:#?}",
+        text(&capped)
+    );
+    assert!(!text(&opened()).iter().any(|l| l.contains("会话上限")));
 }

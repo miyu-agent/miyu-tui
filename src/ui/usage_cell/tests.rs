@@ -187,9 +187,9 @@ fn compacting_shows_a_spinner_instead() {
     assert!(laid[0].starts_with(&config.timeline.spinner[0]));
 }
 
-/// 设了会话的上下文上限（核心 CTX-1，设计 68）：环和累计的左边写「会话上限 128k」，人知道窗口是被它压小的；没设的不写。
+/// 设了会话的上下文上限（核心 CTX-1，设计 68）：底栏不写它（2026-11-11 项目主人：`/status`、上下文明细里有）。
 #[test]
-fn a_session_cap_is_named_before_the_ring() {
+fn a_session_cap_is_not_named_in_the_footer() {
     let config = Config::builtin().unwrap();
     let mut t = Transcript::default();
     t.context = 30_000;
@@ -200,7 +200,7 @@ fn a_session_cap_is_named_before_the_ring() {
     };
     assert_eq!(
         lay(&t, used(5_000), Some("¥0.42"), &config),
-        ["会话上限 128k", "◔ 5k(C0%)", "¥0.42"]
+        ["◔ 5k(C0%)", "¥0.42"]
     );
 }
 
