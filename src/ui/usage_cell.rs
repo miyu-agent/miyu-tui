@@ -124,6 +124,11 @@ pub fn pieces(facts: &Facts, frame: usize, hovered: Option<Hit>) -> Vec<Piece> {
     if tokens > 0 {
         head = format!("{head} {}", meter::short(tokens));
     }
+    // 累计后面紧跟这个会话的缓存命中率（同收尾行的写法，2026-11-10 项目主人）；一次输入都没记下的不写。
+    if total.input() > 0 {
+        let rate = meter::hit_rate(total.cache_read, total.input());
+        head.push_str(&texts.hit.replace("{percent}", &rate));
+    }
     let mut out = Vec::new();
     // 设了会话的上下文上限（核心 CTX-1，设计 68）：环照的窗口是被它压小的，写出来让人知道是哪一格在起作用；比花费后丢。
     // 写在环和累计的左边（2026-11-10 项目主人：「会话上限放到总消耗左侧」，原来在它们后面）。

@@ -331,7 +331,7 @@
     "picking": "j/k 選択 · h/l カーソル移動 · / 絞り込み · Enter 挿入 · Esc 閉じる",
     "filtering": "Enter 確定 · Esc 絞り込みをやめる"
   },
-  "usage_cell": {"failed": "コンテキストの圧縮に失敗", "over": "コンテキストがウィンドウを超過", "compact": "圧縮", "compacting": "コンテキストを圧縮中", "cap": "セッション上限 {n}"},
+  "usage_cell": {"failed": "コンテキストの圧縮に失敗", "over": "コンテキストがウィンドウを超過", "compact": "圧縮", "compacting": "コンテキストを圧縮中", "cap": "セッション上限 {n}", "hit": "(C{percent}%)"},
   "history": {
     "title": "履歴",
     "count": "  {count}",
