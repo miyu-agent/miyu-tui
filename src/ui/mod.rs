@@ -450,14 +450,16 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let (seen, screen, mascot) = app.parts();
         sidebar::draw(frame, sidebar, &seen, screen, mascot);
     });
-    // 提示最后画，浮在正文上面；底边紧贴输入框，在回答时紧贴运行状态行（`tui.md`「提示」）；开着框时贴着框的上边。
+    // 提示最后画，浮在正文上面；底边紧贴输入框，在回答时紧贴运行状态行（`tui.md`「提示」）；开着框时贴着框的上边，在框的
+    // 上边框上面一行：`menu` 连着框，`menu.y` 就是上边框那一行，提示要清掉它占的整行，压上去上边框就整条没了（发版前
+    // check 32，2026-11-10 项目主人报 /sessions 里删了会话弹的提示把列表的上边框弄没了）。
     let toast_bottom = if running {
         areas.pulse.y.saturating_sub(1)
     } else {
         areas.body.bottom()
     };
     let toast_bottom = if areas.menu.height > 0 {
-        toast_bottom.min(areas.menu.y)
+        toast_bottom.min(areas.menu.y.saturating_sub(1))
     } else {
         toast_bottom
     };
