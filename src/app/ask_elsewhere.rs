@@ -73,8 +73,9 @@ impl App {
         if self.viewed_elsewhere(owner) || self.link.notices_claimed {
             return;
         }
-        // 通知的标题写问的那个会话的（「系统通知」第 3 条）；下一次通知照正在看的重新写。
-        self.notifier.about(Some(title), None);
+        // 通知照问的那个会话的标题、人格写（「系统通知」第 3 条）；下一次通知照正在看的重新写。
+        let who = self.who(self.session_persona(owner).as_deref());
+        self.notifier.about(Some(title), who);
         self.notify_mascot();
         // 在前台也弹、不响（2026-11-02 项目主人）：问的那个会话不在屏幕上。
         self.notifier.tell_elsewhere(if question {

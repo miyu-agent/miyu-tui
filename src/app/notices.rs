@@ -25,12 +25,15 @@ impl App {
                     texts.schedule_failed.clone()
                 };
                 let title = self.notice_title(session);
+                let who = self.who(self.session_persona(session).as_deref());
+                self.notify_mascot();
                 self.notifier
-                    .tell_notice(title, &body, Some(session.clone()));
+                    .tell_notice((title, who.as_ref()), &body, Some(session.clone()));
             }
             Notice::SchedulesReset if !self.link.notices_claimed => {
                 let body = texts.schedules_reset.clone();
-                self.notifier.tell_notice(None, &body, None);
+                self.notify_mascot();
+                self.notifier.tell_notice((None, None), &body, None);
             }
             Notice::SchedulesReset => {}
             Notice::Claimed(claimed) => self.link.notices_claimed = *claimed,

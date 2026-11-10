@@ -54,7 +54,7 @@
     "schedule_ran": "定时任务跑完了",
     "schedule_failed": "定时任务没跑完",
     "schedules_reset": "定时任务表坏了，原来的定时都没了",
-    "open": "打开"
+    "open": "打开", "titled": "{title}：{body}"
   },
   "refused": "核心拒绝：{reason}",
   "interrupted": "已中断",

@@ -248,6 +248,8 @@ impl Session {
             if let Some((call, question)) = &current
                 && drawer_seen.as_ref() != Some(call)
             {
+                self.notifier
+                    .about(turn.transcript.title.clone(), turn.look.notify_who());
                 self.notifier.tell(if *question {
                     notify::Event::Asking
                 } else {
@@ -281,6 +283,8 @@ impl Session {
         if !self.hooked {
             ratatui::crossterm::execute!(io::stdout(), ratatui::crossterm::cursor::Show)?;
         }
+        self.notifier
+            .about(turn.transcript.title.clone(), turn.look.notify_who());
         match turn.ended {
             Some(EndReason::Completed) => self.notifier.tell(notify::Event::Replied),
             Some(EndReason::Error) => self.notifier.tell(notify::Event::Failed),
