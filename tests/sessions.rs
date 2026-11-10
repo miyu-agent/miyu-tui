@@ -404,6 +404,53 @@ fn delete_removes_the_current_session_and_lands_on_a_new_one() {
     );
 }
 
+/// 发版前 check 32（2026-11-10 项目主人报，带截图）：`/sessions` 里勾了几个按 Ctrl+D 删，弹出来的「已删除 N 个会话」把列表的
+/// 上边框整条弄没了，框还是绿的。提示要浮在列表框上面一行，上边框整条照画；删好的通知框和「再按一次」那条一个颜色，不用绿。
+#[test]
+fn a_notice_over_the_session_list_keeps_its_top_border_and_is_not_green() {
+    let (_home, mut tui) = sessions(3);
+    tui.say("/sessions");
+    wait_rows(&mut tui, 3);
+    tui.key(DOWN);
+    tui.key(b" ");
+    tui.key(DOWN);
+    tui.key(b" ");
+    tui.wait_for("已选 2");
+    tui.key(CTRL_D);
+    tui.wait_for("再按一次 Ctrl+D 删除 2 个会话");
+    let ask = notice_border(&tui, "再按一次 Ctrl+D 删除 2 个会话");
+    tui.key(CTRL_D);
+    tui.wait_for("已删除 2 个会话");
+    wait_rows(&mut tui, 1);
+    assert_eq!(
+        notice_border(&tui, "已删除 2 个会话"),
+        ask,
+        "删好的通知框和普通通知一个颜色"
+    );
+    // 列表框的上边框：列表第一行往上找，碰到的第一个不是框里那几格（`│` 打头）的行，要从左边的角一直连到右边的角，写着
+    // 「会话」那个标题。原来这一行整行被提示清掉，只剩左右两条竖线。
+    let lines = tui.lines();
+    let first = lines
+        .iter()
+        .position(|l| l.contains(" #"))
+        .expect("列表里有一行");
+    let top = (0..first)
+        .rev()
+        .find(|&r| !lines[r].trim_start().starts_with('│'))
+        .expect("列表上面有边框");
+    let edge = lines[top].trim();
+    assert!(
+        edge.starts_with('╭') && edge.ends_with('╮') && edge.contains("会话"),
+        "列表的上边框整条都在、提示不压在上面：\n{}",
+        lines.join("\n")
+    );
+    let notice = lines
+        .iter()
+        .position(|l| l.contains("已删除 2 个会话"))
+        .expect("提示还在");
+    assert!(notice < top, "提示在列表框上面：\n{}", lines.join("\n"));
+}
+
 /// 写着 `text` 的通知框左边框的颜色：从字往左找到的第一个不空的格。
 fn notice_border(tui: &Tui, text: &str) -> vt100::Color {
     let lines = tui.lines();
