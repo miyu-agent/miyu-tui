@@ -2,13 +2,22 @@
 //! 对上，不必挨着（`opus4` 对得上 `claude-opus-4`）；有空格的拆成几段，每段都要对上，可以落在不同的字段里（`cl op`）。
 //! 越挨着、越落在词头、越靠前的分越高，照 fzf 的意思。照先后对不上的一段，还可以切成几截、每截至少两个字、各自原样出现，先后
 //! 不限（2026-10-19 项目主人：`clinedeepseek` 搜得到 `clinepass/deepseek-v4.1-flash`，`deepseekcline` 搜不到），分数比照先后
-//! 对上的低。
+//! 对上的低。标点不算要找的字（2026-11-10 项目主人：搜 `opus5.5` 找不到 `claude-opus-5-5`；同 im I-191、网页 W-1142）：打的字只留
+//! 字母、数字（照 Unicode，汉字算），只有标点的一段不算；字段里的标点照旧算词头，两个对上的字中间只隔着标点的不扣分，也不当
+//! 挨着加分（`f-l-a-s-h` 不该比 `flash` 排前）。
 
-/// 打的字照空格拆成的几段；全是空白的是空的（什么都对得上）。
+/// 打的字照空格拆成的几段，每段只留字母、数字（标点不当要找的字：`opus5.5` 照 `opus55` 找）；只有标点的一段不算，全是空白、
+/// 标点的是空的（什么都对得上）。
 fn terms(query: &str) -> Vec<Vec<char>> {
     query
         .split_whitespace()
-        .map(|t| t.chars().flat_map(char::to_lowercase).collect())
+        .map(|t| {
+            t.chars()
+                .filter(|c| c.is_alphanumeric())
+                .flat_map(char::to_lowercase)
+                .collect::<Vec<char>>()
+        })
+        .filter(|t| !t.is_empty())
         .collect()
 }
 
@@ -50,9 +59,16 @@ fn term_match(term: &[char], text: &[char], lower: &[char]) -> Option<(i64, Vec<
             if boundary(found.checked_sub(1).map(|i| text[i]), text[found]) {
                 score += 8;
             }
+            // 挨着的加分；中间只隔着标点的不扣分（`55` 对 `5-5`），隔着字母、数字的照隔了几个扣分
             match last {
                 Some(l) if found == l + 1 => score += 12,
-                Some(l) => score -= i64::try_from(found - l - 1).unwrap_or(i64::MAX).min(8),
+                Some(l) => {
+                    let gap = text[l + 1..found]
+                        .iter()
+                        .filter(|c| c.is_alphanumeric())
+                        .count();
+                    score -= i64::try_from(gap).unwrap_or(i64::MAX).min(8);
+                }
                 None => {}
             }
             last = Some(found);
