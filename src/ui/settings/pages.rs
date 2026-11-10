@@ -204,8 +204,22 @@ fn page_hints<'a>(page: &Settings, section: &Section, texts: &'a Texts) -> &'a V
             .and_then(|&i| schema.items.get(i))
             .is_some_and(|i| i.slide.is_some() && i.writable())
     });
+    // 停在包里改过的一组里：多一个 `D` 恢复这一组（第 43d 条）。
+    let changed = page
+        .more
+        .schema
+        .as_ref()
+        .zip(page.data.as_ref())
+        .is_some_and(|(schema, data)| {
+            page.page_items(id)
+                .get(*at)
+                .and_then(|&i| schema.section_of_item(i))
+                .is_some_and(|g| schema.changed(g, data))
+        });
     if slider {
         &texts.more.slider_hints
+    } else if changed {
+        &texts.more.sections.hints
     } else {
         &texts.more.hints[0]
     }
@@ -260,7 +274,7 @@ pub(super) fn page_lines(
             false,
         )];
     };
-    let rows = page.more.rows(id);
+    let rows = page.more.rows(id, page.data.as_ref());
     let name_w = rows
         .iter()
         .filter_map(|r| match r {
@@ -280,10 +294,16 @@ pub(super) fn page_lines(
                 }
                 let title = schema.groups[g].name.clone();
                 // 组名强调色加粗：原来暗着，和这里改不了的那几项一个颜色，分不出是标题（「配置页」第 42 条）。
-                out.push((
-                    Line::styled(title, theme::accent().add_modifier(Modifier::BOLD)),
-                    false,
-                ));
+                let mut spans = vec![Span::styled(
+                    title,
+                    theme::accent().add_modifier(Modifier::BOLD),
+                )];
+                // 包里分的组：后面暗色写「默认」或「已改」（第 43d 条，同 im 网页的会话卡片）。
+                if schema.section(g).is_some() {
+                    let mark = &texts.more.sections.marks[usize::from(schema.changed(g, data))];
+                    spans.push(Span::styled(format!("  {mark}"), theme::dim()));
+                }
+                out.push((Line::from(spans), false));
             }
             Row::Item(i) => {
                 let item = &schema.items[i];
