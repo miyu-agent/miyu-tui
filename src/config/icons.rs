@@ -44,6 +44,9 @@ pub struct Icons {
     /// 输入框上面那一截循环打头的记号，连同它后面的空格（「循环」第 2 条，2026-11-02 项目主人要时钟）；没写的套件写 `~ `。
     #[serde(rename = "loop", default = "loop_mark")]
     pub loop_mark: String,
+    /// 输入框外面右边的麦克风（一格宽，「语音」第 2 条，2026-11-10 项目主人要麦克风图标）；没写的套件画 `o`。
+    #[serde(default = "mic_mark")]
+    pub mic: String,
 }
 
 impl Icons {
@@ -101,6 +104,10 @@ fn warn_mark() -> String {
 
 fn loop_mark() -> String {
     "~ ".to_string()
+}
+
+fn mic_mark() -> String {
+    "o".to_string()
 }
 
 #[cfg(test)]
