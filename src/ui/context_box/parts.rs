@@ -1,5 +1,5 @@
-//! 上一段，组成：段头右边写用了多少，一块一行一根小条（子块缩进、暗色），右边 token 数和占已用的百分比（发版前 check 32
-//! 改成小条）。数照 `used` 摊（蓝图「上下文 `/context`」第 3 条）。
+//! 上一段，现在的上下文：段头右边写用了多少，一根进度条、离压缩线多远，各大块一行一根小条（多的在上），右边 token 数和
+//! 占已用的百分比；小块默认收着。数照 `used` 摊（蓝图「上下文 `/context`」第 3 条）。
 
 use ratatui::text::Line;
 use serde_json::Value;
@@ -90,53 +90,89 @@ pub fn read_parts(got: &Value) -> Shape {
     }
 }
 
-/// 一块一行要的：缩进几层、名字、多少。
-fn flat(parts: &[Part], depth: usize, out: &mut Vec<bars::Row>) {
-    for p in parts {
-        out.push((depth, p.label.clone(), p.tokens));
-        flat(&p.children, depth + 1, out);
+/// 一块一行要的：缩进几层、名字、多少。大块照多少从大到小排（一样多的照核心给的先后）；`open` 才接着写它下面的小块。
+fn flat(parts: &[Part], open: bool) -> Vec<bars::Row> {
+    fn under(parts: &[Part], depth: usize, out: &mut Vec<bars::Row>) {
+        for p in parts {
+            out.push((depth, p.label.clone(), p.tokens));
+            under(&p.children, depth + 1, out);
+        }
     }
+    let mut sorted: Vec<&Part> = parts.iter().collect();
+    sorted.sort_by_key(|p| std::cmp::Reverse(p.tokens));
+    let mut out = Vec::new();
+    for p in sorted {
+        out.push((0, p.label.clone(), p.tokens));
+        if open {
+            under(&p.children, 1, &mut out);
+        }
+    }
+    out
 }
 
-/// 排好的一行行：段头「上下文」右边暗字写用了多少（发版前 check 32：不再画那根大条），下面一块一行一根小条（`bars.rs`），
-/// 大块之间不再空行。
-pub(super) fn rows(shape: &Shape, texts: &Texts, room: usize) -> Vec<Line<'static>> {
+/// 排好的一行行（2026-11-11 项目主人挑的样板）：段头「上下文」右边写用了多少、占窗口几成；下面一根进度条（压缩线那一格
+/// 标黄，同侧边栏），再一行暗字离压缩线多远；卡住的红字说为什么（`why`）；空一行，各大块一行一根小条（`bars.rs`），小块
+/// 展开了（`open`）才写、不画条。
+pub(super) fn rows(
+    shape: &Shape,
+    (texts, marks): (&Texts, &crate::config::Bar),
+    (room, open): (usize, bool),
+    why: Option<Line<'static>>,
+) -> Vec<Line<'static>> {
     let used = shape.used();
-    let mut list = Vec::new();
-    flat(&shape.apportioned(), 0, &mut list);
-    let laid = bars::rows(&list, used, room);
+    let laid = bars::rows(&flat(&shape.apportioned(), open), used, room);
     let mut out = vec![bars::head(
         &texts.context,
         &summary(shape, used, texts),
         laid.width,
     )];
+    if let Some(window) = shape.window {
+        let meter = crate::ui::sidebar::bar(used, window, shape.line, laid.width.min(room), marks);
+        out.push(Line::from(
+            meter.spans.into_iter().skip(1).collect::<Vec<_>>(),
+        ));
+    }
+    if let Some(text) = margin(shape, used, texts) {
+        out.push(Line::styled(text, crate::theme::dim()));
+    }
+    out.extend(why);
+    out.push(Line::default());
     out.extend(laid.lines);
     out
 }
 
-/// 段头右边：用了多少 / 窗口（没有窗口的只写用了多少），接压缩线；全是本地估的接「估算」。
+/// 段头右边：用了多少 / 窗口、占窗口几成（没有窗口的只写用了多少）；全是本地估的接「估算」。
 fn summary(shape: &Shape, used: u64, texts: &Texts) -> String {
-    let sep = crate::sheet::sep();
     let mut text = match shape.window {
-        Some(window) => texts
-            .used
-            .replace("{used}", &meter::short(used))
-            .replace("{window}", &meter::short(window)),
+        Some(window) => format!(
+            "{}  {}%",
+            texts
+                .used
+                .replace("{used}", &meter::short(used))
+                .replace("{window}", &meter::short(window)),
+            meter::percent_tenths(used, window)
+        ),
         None => texts.used_only.replace("{used}", &meter::short(used)),
     };
-    if let Some(line) = shape.line {
-        text.push_str(&format!(
-            "{sep}{}",
-            texts.line.replace("{line}", &meter::short(line))
-        ));
-    }
-    // 设了会话上限的：窗口是被它压小的，接着写（设计 68：人知道是哪一格在起作用）。
-    if let Some(cap) = shape.context {
-        let cap = texts.cap.replace("{n}", &meter::short(cap));
-        text.push_str(&format!("{sep}{cap}"));
-    }
     if shape.estimated {
-        text.push_str(&format!("{sep}{}", texts.estimated));
+        text.push_str(&format!("{}{}", crate::sheet::sep(), texts.estimated));
     }
     text
+}
+
+/// 进度条下面那一行：离压缩线还差多少（过了的写过了多少）；设了会话上限的接着写（设计 68：人知道窗口是被哪一格压小的）。
+/// 两样都没有的不写。
+fn margin(shape: &Shape, used: u64, texts: &Texts) -> Option<String> {
+    let line = shape.line.map(|line| {
+        if used <= line {
+            texts.to_line.replace("{n}", &meter::short(line - used))
+        } else {
+            texts.past_line.replace("{n}", &meter::short(used - line))
+        }
+    });
+    let cap = shape
+        .context
+        .map(|cap| texts.cap.replace("{n}", &meter::short(cap)));
+    let said: Vec<String> = line.into_iter().chain(cap).collect();
+    (!said.is_empty()).then(|| said.join(&crate::sheet::sep()))
 }

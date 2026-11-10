@@ -27,6 +27,24 @@ fn sample() -> serde_json::Value {
         {"part":"messages.tool_results","label":"工具结果","tokens":6500}]}]})
 }
 
+/// 只读回了各块的。
+fn only_parts(reply: &serde_json::Value, open: bool) -> ContextData {
+    ContextData {
+        parts: Some(Ok(read_parts(reply))),
+        uses: None,
+        open,
+    }
+}
+
+/// 只读回了累计的。
+fn only_uses(uses: Vec<crate::core::UsageRow>) -> ContextData {
+    ContextData {
+        parts: None,
+        uses: Some(Ok(uses)),
+        open: false,
+    }
+}
+
 fn text(data: &ContextData, width: u16) -> Vec<String> {
     let config = Config::builtin().unwrap();
     let money = |_: &Bill| Some("$0.42".to_string());
@@ -67,36 +85,59 @@ fn width(s: &str) -> usize {
 
 /// 发版前 check 32（2026-11-09 项目主人从三个样板里挑的「每行一根小条」）：段头右边写用了多少，一块一行一根小条，大块之间
 /// 不空行；段头右边那一格和下面的百分比在同一列收尾（第 19 条）。
+/// 上面那一段（2026-11-11 项目主人挑的样板）：段头写用了多少、占窗口几成，一根进度条，离压缩线多远，空一行，各大块
+/// 多的在上、一行一根小条；小块收着。
 #[test]
-fn the_composition_is_one_bar_a_part_under_a_head_that_says_how_much_is_used() {
-    let data = ContextData {
-        parts: Some(Ok(read_parts(&sample()))),
-        uses: None,
-    };
+fn the_context_section_is_a_meter_then_the_big_parts_biggest_first() {
+    let data = only_parts(&sample(), false);
     let got = text(&data, 80);
-    assert!(got[0].starts_with("上下文 "), "第 7 条：段头");
+    assert!(got[0].starts_with("上下文 "), "段头");
+    assert!(got[0].ends_with("45.2k / 128k  35.3%"), "{}", got[0]);
+    assert_eq!(width(&got[1]), width(&got[0]), "进度条和段头一样宽");
+    let bar = &Config::builtin().unwrap().layout.bar;
     assert!(
-        got[0].ends_with("已用 45.2k / 128k · 压缩线 102.4k"),
+        got[1].starts_with(&bar.full) && got[1].ends_with(&bar.empty),
         "{}",
-        got[0]
+        got[1]
     );
-    assert_eq!(got[1], "系统提示          ██▎               6.3k  13.9%");
-    assert_eq!(got[2], "  技能目录        ▍                  929   2.1%");
+    assert_eq!(got[2], "距压缩线 57.2k");
+    assert_eq!(got[3], "", "空一行");
+    let names: Vec<&str> = got[4..8]
+        .iter()
+        .map(|l| l.split(' ').next().unwrap_or_default())
+        .collect();
+    assert_eq!(
+        names,
+        ["对话", "工具说明", "系统提示", "检查点摘要"],
+        "多的在上"
+    );
+    assert_eq!(got[6], "系统提示    ██▎               6.3k  13.9%");
+    assert_eq!(width(&got[0]), width(&got[6]), "{got:#?}");
     assert!(
-        got.iter()
-            .any(|l| l == "    常驻记忆      ▎                  826   1.8%"),
-        "{got:#?}"
+        !got.iter().any(|l| l.starts_with("  ")),
+        "小块收着：{got:#?}"
     );
-    assert_eq!(width(&got[0]), width(&got[1]), "{got:#?}");
-    // 大块之间不再空行；不写空余，标题只写「上下文明细」。
-    assert!(!got.iter().any(String::is_empty), "{got:#?}");
-    assert!(!got.iter().any(|l| l.starts_with("空余")), "{got:#?}");
-    // 各块最后是工具结果，接着一行「已压缩 N 次 · 缓存断裂 N 次」（没开会话的这里是 0）。
-    let done = got.len() - 1;
-    assert!(got[done - 1].starts_with("  工具结果"), "{got:#?}");
-    assert_eq!(got[done], "已压缩 0 次 · 缓存断裂 0 次", "没卡住不写原因");
+    // 没有累计的：空一行，压缩、断裂的次数单独一行。
+    assert_eq!(&got[8..], ["", "已压缩 0 次 · 缓存断裂 0 次"]);
     let config = Config::builtin().unwrap();
     assert_eq!(title(&config.text.context_box, Some(&data)), "上下文明细");
+}
+
+/// 回车展开：小块缩进、暗色，接在它的大块下面，不画条，数照旧对齐。
+#[test]
+fn opened_parts_list_their_children_without_bars() {
+    let got = text(&only_parts(&sample(), true), 80);
+    let at = got.iter().position(|l| l.starts_with("系统提示")).unwrap();
+    assert_eq!(
+        got[at + 1],
+        "  技能目录                           929   2.1%"
+    );
+    assert!(
+        got.iter()
+            .any(|l| l == "    常驻记忆                         826   1.8%"),
+        "{got:#?}"
+    );
+    assert_eq!(width(&got[at]), width(&got[at + 1]));
 }
 
 #[test]
@@ -119,14 +160,10 @@ fn estimated_and_windowless_replies_say_so() {
     reply["basis"] = json!("estimated");
     reply.as_object_mut().unwrap().remove("window");
     reply.as_object_mut().unwrap().remove("line");
-    let data = ContextData {
-        parts: Some(Ok(read_parts(&reply))),
-        uses: None,
-    };
-    let got = text(&data, 80);
-    assert!(got[0].ends_with("  已用 45.2k · 估算"), "{}", got[0]);
-    assert!(got[1].ends_with("6.3k  13.9%"), "占已用：{}", got[1]);
-    assert!(!got[0].contains("压缩线"), "没压缩线的不写");
+    let got = text(&only_parts(&reply, false), 80);
+    assert!(got[0].ends_with("  45.2k · 估算"), "{}", got[0]);
+    assert_eq!(got[1], "", "没窗口的不画进度条、不写压缩线：{got:#?}");
+    assert!(got[4].ends_with("6.3k  13.9%"), "占已用：{}", got[4]);
 }
 
 /// 按用途：次数、token（四种加起来）、花费三列，照 token 多少排，不止一行的最后合计；窄得放不下时去掉花费（发版前 check 32）。
@@ -140,32 +177,26 @@ fn usage_by_purpose_is_a_three_column_table_sorted_by_tokens() {
          "amounts": [{"currency": "USD", "amount": 0.4}]},
         {"use": "title", "requests": 0, "usage": {}}
     ]}));
-    let data = ContextData {
-        parts: None,
-        uses: Some(Ok(uses.clone())),
-    };
+    let data = only_uses(uses.clone());
     let wide = text(&data, 90);
     let at = wide
         .iter()
-        .position(|l| l.starts_with("按用途"))
+        .position(|l| l.starts_with("用途"))
         .unwrap_or_else(|| panic!("{wide:#?}"));
     assert_eq!(
         &wide[at..],
         [
-            "按用途    次数   token   花费",
+            "用途      次数   token   花费",
             "主对话      12    317k  $0.42",
             "压缩         1   33.5k  $0.42",
             "合计        13  350.5k  $0.42",
         ]
     );
     let narrow = text(&data, 30);
-    let at = narrow.iter().position(|l| l.starts_with("按用途")).unwrap();
-    assert_eq!(narrow[at], "按用途    次数   token", "放不下去掉花费");
+    let at = narrow.iter().position(|l| l.starts_with("用途")).unwrap();
+    assert_eq!(narrow[at], "用途      次数   token", "放不下去掉花费");
     // 只有一行的不写合计。
-    let data = ContextData {
-        parts: None,
-        uses: Some(Ok(uses[1..].to_vec())),
-    };
+    let data = only_uses(uses[1..].to_vec());
     let one = text(&data, 90);
     assert!(!one.iter().any(|l| l.starts_with("合计")), "{one:#?}");
 }
@@ -184,20 +215,22 @@ fn a_new_session_preview_has_no_totals() {
                 {"part":"tools.builtin","label":"内置工具","tokens":3024}]}]}),
         ))),
         uses: None,
+        open: true,
     };
     let got = text(&data, 80);
-    assert!(got[0].ends_with("已用 3.4k · 估算"), "{}", got[0]);
+    assert!(got[0].ends_with("3.4k · 估算"), "{}", got[0]);
     assert!(got.iter().any(|l| l.starts_with("  核心说明")), "{got:#?}");
     assert!(
         !got.iter()
-            .any(|l| l.contains("按用途") || l.contains("累计消耗"))
+            .any(|l| l.starts_with("用途") || l.contains("累计消耗"))
     );
     assert_eq!(text(&ContextData::default(), 80), ["正在读…"]);
 }
 
-/// 第 7 条、发版前 check 32：累计消耗的段头写命中率，四种 token 一种一根条、多的在上；单独的「花费」那一段不再写。
+/// 下面那一段：段头右边这个会话一共用了多少 token、花了多少钱，收尾和表一列；下面一行暗字写命中率、压缩和断裂的次数；
+/// 四种 token 的条不再画。
 #[test]
-fn spent_kinds_are_bars_biggest_first_and_there_is_no_cost_section() {
+fn the_spent_section_heads_with_the_total_and_the_money() {
     let uses = read_uses(&json!({"rows": [
         {"use": "main", "requests": 2,
          "usage": {"uncached": 1000, "cache_read": 8000, "cache_write": 1000, "output": 0},
@@ -206,42 +239,23 @@ fn spent_kinds_are_bars_biggest_first_and_there_is_no_cost_section() {
          "usage": {"uncached": 0, "cache_read": 0, "cache_write": 0, "output": 10000},
          "amounts": [{"currency": "USD", "amount": 0.1}]}
     ]}));
-    let data = ContextData {
-        parts: None,
-        uses: Some(Ok(uses)),
-    };
-    let got = text(&data, 60);
-    let spent = got
-        .iter()
-        .position(|l| l.starts_with("累计消耗 20k"))
-        .unwrap_or_else(|| panic!("{got:#?}"));
-    assert!(got[spent].ends_with("缓存命中 80%"), "{got:#?}");
-    assert_eq!(
-        width(&got[spent]),
-        width(&got[spent + 1]),
-        "命中率和百分比一列"
-    );
-    let names: Vec<&str> = got[spent + 1..spent + 5]
-        .iter()
-        .map(|l| l.split(' ').next().unwrap_or_default())
-        .collect();
-    assert_eq!(names, ["输出", "缓存读", "缓存写", "输入"], "多的在上");
-    assert_eq!(
-        got[spent + 1],
-        format!("输出    {}         10k    50%", "█".repeat(8))
-    );
-    assert!(!got.iter().any(|l| l.starts_with("花费")), "{got:#?}");
+    let all = text(&only_uses(uses), 60);
+    let at = all.iter().position(|l| l.starts_with("累计消耗 ")).unwrap();
+    let got = &all[at..];
+    assert!(got[0].ends_with("20k  $0.42"), "{got:#?}");
+    assert_eq!(got[1], "缓存命中 80% · 已压缩 0 次 · 缓存断裂 0 次");
+    assert_eq!(got[2], "");
+    assert!(got[3].starts_with("用途"), "{got:#?}");
+    assert_eq!(width(&got[0]), width(&got[3]), "总数和表里的数一列");
+    assert!(!got.iter().any(|l| l.starts_with("缓存读")), "{got:#?}");
     assert!(got.last().unwrap().starts_with("合计"), "{got:#?}");
 }
 
-/// 第 7 条：卡住的，上下文那一段底下再一行红字说为什么。
+/// 第 7 条：卡住的，进度条那几行下面再一行红字说为什么。
 #[test]
 fn a_stuck_session_says_why_under_the_context_section() {
     use crate::transcript::Stuck;
-    let data = ContextData {
-        parts: Some(Ok(read_parts(&sample()))),
-        uses: None,
-    };
+    let data = only_parts(&sample(), false);
     let config = Config::builtin().unwrap();
     let money = |_: &Bill| None;
     let tail = super::Tail {
@@ -253,29 +267,25 @@ fn a_stuck_session_says_why_under_the_context_section() {
         }),
     };
     let laid = rows(Some(&data), &config, (&money, &tail), 80);
-    let last = laid.last().unwrap();
-    assert_eq!(last.to_string(), "超出这个模型的窗口，压缩后才能继续。");
+    let why = &laid[3];
+    assert_eq!(why.to_string(), "超出这个模型的窗口，压缩后才能继续。");
     assert_eq!(
-        last.style.fg.or(last.spans[0].style.fg),
+        why.style.fg.or(why.spans[0].style.fg),
         crate::theme::error().fg
     );
-    let before = laid[laid.len() - 2].to_string();
-    assert_eq!(before, "已压缩 2 次 · 缓存断裂 1 次");
+    assert_eq!(laid[2].to_string(), "距压缩线 57.2k", "红字在它下面");
+    let last = laid.last().unwrap().to_string();
+    assert_eq!(last, "已压缩 2 次 · 缓存断裂 1 次");
 }
 
-/// 设了会话的上下文上限（核心 CTX-1，设计 68）：段头右边压缩线后面接「会话上限 128k」。
+/// 设了会话的上下文上限（核心 CTX-1，设计 68）：进度条下面那一行压缩线后面接「会话上限 128k」；过了压缩线的写过了多少。
 #[test]
-fn a_session_cap_is_named_in_the_head() {
+fn the_line_under_the_meter_names_the_cap_and_says_when_past_the_line() {
     let mut reply = sample();
     reply["context"] = json!(128000);
-    let data = ContextData {
-        parts: Some(Ok(read_parts(&reply))),
-        uses: None,
-    };
-    let got = text(&data, 100);
-    assert!(
-        got[0].ends_with("已用 45.2k / 128k · 压缩线 102.4k · 会话上限 128k"),
-        "{}",
-        got[0]
-    );
+    let got = text(&only_parts(&reply, false), 100);
+    assert_eq!(got[2], "距压缩线 57.2k · 会话上限 128k");
+    reply["used"] = json!(110000);
+    let got = text(&only_parts(&reply, false), 100);
+    assert_eq!(got[2], "已超过压缩线 7.6k · 会话上限 128k");
 }
