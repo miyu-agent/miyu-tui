@@ -285,6 +285,10 @@ impl Settings {
         if super::secret::is_secret(&item) {
             return self.open_secret(&item);
         }
+        // 选项由包在运行时给的文字项（核心 SG-2）：先问包，回来了开选择窗，问不到的退回编辑窗。
+        if control == "text" && item.choices_from.is_some() {
+            return self.ask_choices(&item);
+        }
         match control {
             "select" => {
                 let list = choices(&item, self.more.named_item(&item), &texts.more);

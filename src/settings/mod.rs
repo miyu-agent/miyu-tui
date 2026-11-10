@@ -138,6 +138,8 @@ enum Waiting {
     Knowledge,
     /// 「软件包」三页的（第 43c 条）。
     Store(pages::store::Ask),
+    /// 问包要一项的选项（`package.call`，核心 SG-2 的 `choices_from`）：哪一项的键。
+    Choices(String),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -338,6 +340,7 @@ impl Settings {
             Waiting::PersonaRemove(id) => self.persona_remove_read(&id, result, texts),
             Waiting::Catalog(all) => self.catalog_answer(all, result.ok()),
             Waiting::Store(ask) => self.store_answer(ask, result, texts),
+            Waiting::Choices(key) => self.choices_answer(&key, result),
         }
     }
 
