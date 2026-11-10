@@ -159,6 +159,11 @@ impl Settings {
                 Section::Presets(at) => self.open_preset(*at),
                 Section::Mcp(at) => self.login(*at, texts),
             },
+            KeyCode::Char('D') => {
+                if let Section::Page(id, at) = &section {
+                    self.ask_unset_section(id, *at, texts);
+                }
+            }
             KeyCode::Char('d') => match &section {
                 Section::Page(id, at) => self.ask_unset(id, *at, texts),
                 // 预设页 `d`：删选中的那个的个人那一层，先问（第 39 条）。
@@ -225,7 +230,7 @@ impl Settings {
     /// 一页里的项，照画的先后（第几项）。
     pub fn page_items(&self, page: &str) -> Vec<usize> {
         self.more
-            .rows(page)
+            .rows(page, self.data.as_ref())
             .into_iter()
             .filter_map(|r| match r {
                 Row::Item(i) => Some(i),

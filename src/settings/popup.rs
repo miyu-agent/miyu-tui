@@ -265,6 +265,8 @@ pub enum Delete {
     Pool(String),
     /// 系统配置里的一项（恢复默认）：键。
     Setting(String),
+    /// 包里一组的几项一起恢复默认（`D`，「配置页」第 43d 条）：键。
+    Settings(Vec<String>),
     /// 一个预设的个人那一层（核心 P-3 中）：编号。
     Preset(String),
     /// 一个人格的个人那一层（核心 P-3 下）：编号。
