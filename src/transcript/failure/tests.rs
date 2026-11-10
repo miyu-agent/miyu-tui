@@ -1,6 +1,6 @@
 //! 出错那一句带上还要等多久（核心 3-5 四补的 `retry_after_ms`）。
 
-use super::{RetryAfter, reason, wait};
+use super::{RetryAfter, reason, retry_line, wait};
 use crate::config::Config;
 use crate::core::CallError;
 
@@ -72,5 +72,29 @@ fn running_out_of_quota_has_its_own_words() {
         ),
         "额度已用完：insufficient_quota",
         "有状态码、原话的照旧接原话"
+    );
+}
+
+/// 模型连上了却一直不出字（核心 YC-3 的 `stalled`）：收尾行、重试那一行都写「模型没有响应」，照规矩接原话（空闲超时多久）；
+/// 没有原话的只写人话。别的分类的重试照旧只写原话。
+#[test]
+fn a_stalled_model_is_named_and_keeps_the_idle_timeout_words() {
+    let texts = Config::builtin().unwrap().text;
+    let said = "空闲超时：180 秒没有收到新的内容";
+    assert_eq!(
+        reason(&error("stalled", said, None, None), &texts),
+        format!("模型没有响应：{said}")
+    );
+    assert_eq!(
+        reason(&error("stalled", "", None, None), &texts),
+        "模型没有响应"
+    );
+    assert_eq!(
+        retry_line(1, 5, "stalled", said, &texts),
+        format!("重试 1/5：模型没有响应：{said}")
+    );
+    assert_eq!(
+        retry_line(2, 5, "retryable", "connection reset", &texts),
+        "重试 2/5：connection reset"
     );
 }
