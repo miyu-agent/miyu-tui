@@ -1,7 +1,8 @@
 //! 伪终端里的端到端测试：系统通知照会话的人格来（蓝图 `tui.md`「系统通知」第 3 条，2026-11-10 项目主人）——标题写人格的名字，
 //! 不写程序名；无人格的会话照旧写程序名。用假的 `notify-send` 记下参数，不真弹到桌面上。
 
-#![cfg(unix)]
+// macOS 上通知走 osascript，带不了假的 `notify-send`，这一份整个不编。
+#![cfg(all(unix, not(target_os = "macos")))]
 
 mod support;
 
@@ -52,7 +53,6 @@ fn notified(persona: &str) -> String {
 }
 
 #[test]
-#[cfg(not(target_os = "macos"))]
 fn the_notification_title_is_the_personas_name() {
     let args = notified("mei");
     let title = args.lines().skip_while(|l| *l != "--").nth(1);
@@ -64,7 +64,6 @@ fn the_notification_title_is_the_personas_name() {
 }
 
 #[test]
-#[cfg(not(target_os = "macos"))]
 fn a_session_without_a_persona_keeps_the_program_name() {
     let args = notified("-");
     let title = args.lines().skip_while(|l| *l != "--").nth(1);
