@@ -67,7 +67,13 @@ fn the_running_line_sweeps_in_the_color_of_the_mode_word() {
         "流光照配色方案的工作区色：\n{}",
         lines.join("\n")
     );
-    assert_ne!(word, footer, "不照开放权限的红：\n{}", lines.join("\n"));
+    // 2026-11-10 项目主人：开放权限换成原来工作区那一档的颜色，底栏的模式字和流光同色
+    assert_eq!(
+        word,
+        footer,
+        "开放权限也是工作区那一档的颜色：\n{}",
+        lines.join("\n")
+    );
 }
 
 #[test]
