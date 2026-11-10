@@ -126,7 +126,7 @@ pub(super) fn draw_box(
     };
     draw_input(frame, areas, input, config, look);
     if let Some(mic) = facts.mic {
-        screen.areas.mic = draw_mic(frame, areas, mic, &config.timeline.spinner);
+        screen.areas.mic = draw_mic(frame, areas, mic, config);
     }
     // 焦点不在这里也停到插入点，只是不显示（蓝图「每一帧」）。
     if let Some(pos) = input.cursor_position() {
@@ -230,20 +230,25 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
     }
 }
 
-/// 麦克风画在框里第一行文字右边、`pad_right` 那几列的头一格（设计 20 第七节「输入框右侧现在空着的那一格」）：不在听暗、在听
-/// 红、停了等字转圈。右边没留空的（窄到没有 `pad_right`）不画。交回画在哪（点它开始、停）。
+/// 麦克风画在框外面右边、和第一行文字同一行（2026-11-10 项目主人：原来是框里最右的一个点，「换成一个麦克风图标在输入框
+/// 外部右侧更合理」）：不在听暗、在听红、停了等字转圈。交回画在哪（点它开始、停）；哪都放不下的不画。
 fn draw_mic(
     frame: &mut Frame,
     areas: Areas,
     (mic, spin): (crate::voice::Mic, usize),
-    spinner: &[String],
+    config: &Config,
 ) -> Rect {
     use crate::voice::Mic;
-    let x = areas.text.right();
-    if x + 1 >= areas.frame.right() {
+    let limit = if areas.sidebar.width > 0 {
+        areas.sidebar.x.saturating_sub(1)
+    } else {
+        frame.area().right()
+    };
+    let Some(x) = mic_column(areas, limit) else {
         return Rect::default();
-    }
-    let glyph = crate::sheet::mark(|m| &m.mic);
+    };
+    let spinner = &config.timeline.spinner;
+    let glyph = config.icons.mic.clone();
     let (text, style) = match mic {
         Mic::Idle => (glyph, theme::dim()),
         Mic::Listening => (glyph, theme::error()),
@@ -255,6 +260,20 @@ fn draw_mic(
     let at = Rect::new(x, areas.text.y, 1, 1);
     frame.render_widget(Paragraph::new(Line::styled(text, style)), at);
     at
+}
+
+/// 麦克风画在第几列：框右边线外面隔一列；外面只剩一列的（紧凑版面）贴着边线；外面一列都没有的退回框里文字右边
+/// 留的那几列的头一格，再没有就不画。`limit` 是右边能画到哪一列以前（窗口的右边、侧边栏竖线的左边）。
+fn mic_column(areas: Areas, limit: u16) -> Option<u16> {
+    let edge = areas.frame.right();
+    if edge + 1 < limit {
+        Some(edge + 1)
+    } else if edge < limit {
+        Some(edge)
+    } else {
+        let inside = areas.text.right();
+        (inside + 1 < edge).then_some(inside)
+    }
 }
 
 /// 跑命令的模式里提示符换成的（「人自己跑命令 `!`」第 1 条）。
@@ -312,7 +331,56 @@ pub(crate) fn styled_line<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::styled_line;
+    use super::{Areas, mic_column, styled_line};
+    use ratatui::layout::Rect;
+
+    #[test]
+    fn the_microphone_sits_outside_the_box_on_the_right() {
+        // 2026-11-10 项目主人：麦克风放到输入框外面右侧。框占 2..78 列，文字到 74 列。
+        let areas = Areas {
+            frame: Rect::new(2, 10, 76, 3),
+            text: Rect::new(5, 11, 70, 1),
+            ..Areas::default()
+        };
+        assert_eq!(mic_column(areas, 80), Some(79), "外面有两列：隔一列");
+        assert_eq!(mic_column(areas, 79), Some(78), "外面只有一列：贴着边线");
+        assert_eq!(mic_column(areas, 78), Some(75), "外面没有：退回框里");
+        let tight = Areas {
+            text: Rect::new(5, 11, 72, 1),
+            ..areas
+        };
+        assert_eq!(mic_column(tight, 78), None, "框里也没留空的不画");
+    }
+
+    #[test]
+    fn the_microphone_is_drawn_with_the_icon_sets_glyph_and_reports_where() {
+        let config = crate::config::Config::builtin().unwrap();
+        let areas = Areas {
+            frame: Rect::new(2, 10, 76, 3),
+            text: Rect::new(5, 11, 70, 1),
+            ..Areas::default()
+        };
+        let backend = ratatui::backend::TestBackend::new(80, 14);
+        let mut terminal = ratatui::Terminal::new(backend).unwrap();
+        let mut at = Rect::default();
+        terminal
+            .draw(|f| at = super::draw_mic(f, areas, (crate::voice::Mic::Listening, 0), &config))
+            .unwrap();
+        assert_eq!(at, Rect::new(79, 11, 1, 1), "点这一格开始、停");
+        let cell = &terminal.backend().buffer()[(79, 11)];
+        assert_eq!(cell.symbol(), config.icons.mic, "图标那一套的麦克风");
+        assert_eq!(cell.style().fg, theme::error().fg, "在听是红的");
+        // 右边有侧边栏的不越过它的竖线。
+        let beside = Areas {
+            sidebar: Rect::new(79, 0, 1, 14),
+            ..areas
+        };
+        terminal
+            .draw(|f| at = super::draw_mic(f, beside, (crate::voice::Mic::Idle, 0), &config))
+            .unwrap();
+        assert_eq!(at.x, 75, "外面没地方：退回框里");
+    }
+
     use crate::input::VisualLine;
     use crate::theme;
 

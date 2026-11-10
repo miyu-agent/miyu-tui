@@ -311,9 +311,9 @@
     {
       "name": "voice-input",
       "summary": {
-        "zh": "说话代替打字，再打一次停",
-        "en": "Dictate instead of typing; run again to stop",
-        "ja": "話して入力する（もう一度で停止）"
+        "zh": "语音输入文字，再次运行可手动停止",
+        "en": "Dictate text by voice; run again to stop manually",
+        "ja": "音声で文字を入力する。もう一度実行すると手動で停止"
       },
       "run": "voice_input",
       "needs": "stt"
