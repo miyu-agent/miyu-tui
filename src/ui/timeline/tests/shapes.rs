@@ -65,10 +65,10 @@ fn links_show_a_clickable_title_then_site_and_date_then_the_snippet() {
         "不画结果的原文：{shown:?}"
     );
     let title = &got[at("芒果的种类")];
-    let x = title.plain.find("芒果").unwrap();
+    let x = title.plain().find("芒果").unwrap();
     assert_eq!(x, 0, "标题从内容开头起");
     assert_eq!(
-        title.links,
+        title.links(),
         [(0, 10, "https://a.example/mango".to_string())],
         "标题整截能点"
     );
@@ -81,7 +81,7 @@ fn links_show_a_clickable_title_then_site_and_date_then_the_snippet() {
         "标题是链接色"
     );
     let site = &got[at("a.example · 2026-10-01")];
-    assert!(site.links.is_empty(), "站点那行不能点");
+    assert!(site.links().is_empty(), "站点那行不能点");
     assert!(
         site.line
             .spans
@@ -89,7 +89,7 @@ fn links_show_a_clickable_title_then_site_and_date_then_the_snippet() {
             .any(|s| s.content.contains("a.example") && s.style == theme::dim()),
         "站点、日期是暗字"
     );
-    assert_eq!(got[at("荔枝")].links.len(), 1, "没有站点、摘要的只有标题");
+    assert_eq!(got[at("荔枝")].links().len(), 1, "没有站点、摘要的只有标题");
 }
 
 #[test]
@@ -137,11 +137,11 @@ fn images_go_under_the_step_with_their_caption_in_dim_text_below() {
     let shown = text(&got);
     let figure = got
         .iter()
-        .position(|r| r.figure_pending || r.figure.is_some())
+        .position(|r| r.figure_pending || r.figure().is_some())
         .unwrap_or_else(|| panic!("画了图：{shown:?}"));
     let caption = got
         .iter()
-        .position(|r| r.plain.contains("一只芒果"))
+        .position(|r| r.plain().contains("一只芒果"))
         .unwrap_or_else(|| panic!("{shown:?}"));
     assert!(caption > figure, "说明在图下面：{shown:?}");
     assert!(

@@ -158,9 +158,9 @@ fn a_compacted_line_has_a_green_dot_that_is_not_copied() {
         .unwrap();
     assert_eq!(words.style, theme::dim(), "字暗");
     assert!(
-        !rows[0].plain.contains('●'),
+        !rows[0].plain().contains('●'),
         "复制时不带记号：{}",
-        rows[0].plain
+        rows[0].plain()
     );
 }
 
@@ -212,9 +212,9 @@ fn a_recap_leads_with_a_dim_reference_mark_and_folds_under_its_words() {
         "折下来的行和字对齐"
     );
     assert!(
-        !rows[0].plain.contains('※'),
+        !rows[0].plain().contains('※'),
         "复制时不带记号：{}",
-        rows[0].plain
+        rows[0].plain()
     );
 }
 

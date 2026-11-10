@@ -17,21 +17,7 @@ impl Rows {
 
     /// 照 `(几行, 第几条)` 一块块拼起来；行都是空白的。
     pub fn of_blank(chunks: &[(usize, Option<usize>)]) -> Rows {
-        let row = Row {
-            line: ratatui::text::Line::default(),
-            target: None,
-            shade: false,
-            plain: String::new(),
-            copy_blocks: Vec::new(),
-            content_x: 0,
-            joined: false,
-            links: Vec::new(),
-            copy: true,
-            figure: None,
-            icon: None,
-            figure_pending: false,
-            blank: None,
-        };
+        let row = Row::new(Vec::new(), 0, 0);
         Rows::of_chunks(chunks, &row)
     }
 

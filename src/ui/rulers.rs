@@ -211,12 +211,12 @@ fn ruler_row_bytes() {
             std::borrow::Cow::Borrowed(_) => 0,
         })
         .sum();
-    let plain: usize = rows.iter().map(|r| r.plain.capacity()).sum();
+    let plain: usize = rows.iter().map(|r| r.plain().len()).sum();
     let links: usize = rows
         .iter()
         .map(|r| {
-            r.links.capacity() * std::mem::size_of::<(u16, u16, String)>()
-                + r.links.iter().map(|l| l.2.capacity()).sum::<usize>()
+            std::mem::size_of_val(r.links())
+                + r.links().iter().map(|l| l.2.capacity()).sum::<usize>()
         })
         .sum();
     let row_struct = n * std::mem::size_of::<crate::ui::rows::Row>();
@@ -308,7 +308,7 @@ fn ruler_memory() {
     let row: usize = rows
         .iter()
         .map(|r| {
-            std::mem::size_of::<crate::ui::rows::Row>() + spans(&r.line.spans) + r.plain.capacity()
+            std::mem::size_of::<crate::ui::rows::Row>() + spans(&r.line.spans) + r.plain().len()
         })
         .sum();
     let text: usize = t.entries.iter().map(|e| e.text.capacity()).sum::<usize>()

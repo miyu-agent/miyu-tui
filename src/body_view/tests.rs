@@ -1,24 +1,9 @@
 use super::{BodyView, slice};
 use crate::ui::rows::Row;
 use ratatui::layout::Rect;
-use ratatui::text::Line;
 
 fn row(plain: &str) -> Row {
-    Row {
-        line: Line::default(),
-        target: None,
-        shade: false,
-        plain: plain.into(),
-        copy_blocks: Vec::new(),
-        content_x: 4,
-        joined: false,
-        links: Vec::new(),
-        copy: true,
-        figure: None,
-        icon: None,
-        figure_pending: false,
-        blank: None,
-    }
+    Row::new(vec![ratatui::text::Span::raw(plain.to_string())], 0, 4)
 }
 
 fn view_of(rows: Vec<Row>) -> BodyView {
@@ -88,10 +73,11 @@ fn clicking_the_blank_of_an_open_timeline_folds_the_whole_segment() {
     use ratatui::crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
     let segment = Target::Segment(3);
     let step = Target::Step(3, 0);
-    let tagged = |plain: &str, target: Option<Target>, blank: Target| Row {
-        target,
-        blank: Some(blank),
-        ..row(plain)
+    let tagged = |plain: &str, target: Option<Target>, blank: Target| {
+        let mut r = row(plain);
+        r.target = target;
+        r.blank = Some(blank);
+        r
     };
     let mut v = view_of(vec![
         tagged("Used 2 tools · 2s", Some(segment), segment),

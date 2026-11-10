@@ -56,11 +56,10 @@ pub fn rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     let figures = ctx.figures.borrow();
     for row in &mut rows {
         let picture = row
-            .figure
-            .as_ref()
+            .figure()
             .and_then(|cell| Some((cell.x, cell.x + figures.cols(cell.key)?)));
         let (from, to) = picture.unwrap_or((0, ctx.width));
-        row.links = vec![(from, to, link.clone())];
+        row.set_links(vec![(from, to, link.clone())]);
     }
     drop(figures);
     rows

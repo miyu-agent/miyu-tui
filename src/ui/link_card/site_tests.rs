@@ -88,9 +88,13 @@ fn video_footer_is_below_the_cover_and_links_to_the_video() {
     );
     let footer = shown.last().unwrap();
     assert_eq!(footer.line.to_string(), "▶ 6:48");
-    assert!(footer.figure.is_none());
-    assert!(shown[..shown.len() - 1].iter().any(|r| r.figure.is_some()));
-    assert_eq!(footer.links, [(0, 6, "https://video.test".into())]);
+    assert!(footer.figure().is_none());
+    assert!(
+        shown[..shown.len() - 1]
+            .iter()
+            .any(|r| r.figure().is_some())
+    );
+    assert_eq!(footer.links(), [(0, 6, "https://video.test".into())]);
     assert!(footer.copy);
 }
 
@@ -164,7 +168,7 @@ fn site_and_author_skip_empty_parts_and_narrow_cards_stay_inside_the_width() {
         assert!(
             shown
                 .iter()
-                .flat_map(|r| &r.links)
+                .flat_map(|r| r.links())
                 .all(|(from, to, _)| from < to && *to <= width)
         );
     }
@@ -176,7 +180,7 @@ fn sample(f: &Fixture, c: &Card) -> String {
     let mut text = Vec::new();
     for row in shown {
         let line = row.line.to_string();
-        if let Some(cell) = row.figure {
+        if let Some(cell) = row.figure() {
             let cols = usize::from(f.ctx().figures.borrow().cols(cell.key).unwrap());
             text.push("░".repeat(cols) + &line.chars().skip(cols).collect::<String>());
         } else {
@@ -222,7 +226,7 @@ fn a_failed_cover_keeps_the_text_without_a_play_footer() {
     assert!(
         shown
             .iter()
-            .all(|r| r.figure.is_none() && !r.line.to_string().contains('▶'))
+            .all(|r| r.figure().is_none() && !r.line.to_string().contains('▶'))
     );
     assert!(
         shown

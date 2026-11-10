@@ -29,7 +29,8 @@ fn only_the_screen_height_changing_rebuilds_entries_with_figures() {
     let cache = RefCell::new(RowCache::default());
     let rows = build(&t.entries, &ctx, &cache, Plan::all());
     assert!(
-        rows.iter().any(|r| r.figure.is_some() || r.figure_pending),
+        rows.iter()
+            .any(|r| r.figure().is_some() || r.figure_pending),
         "第一条带图"
     );
     ctx.screen_rows += 20;
@@ -82,7 +83,7 @@ fn turning_images_back_on_draws_the_figures_again() {
     let drawn = |rows: super::super::Rows| {
         (0..rows.len())
             .filter_map(|i| rows.get(i))
-            .any(|r| r.figure.is_some() || r.figure_pending)
+            .any(|r| r.figure().is_some() || r.figure_pending)
     };
     assert!(
         drawn(build(&t.entries, &ctx, &cache, Plan::all())),

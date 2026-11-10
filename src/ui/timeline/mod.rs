@@ -77,7 +77,7 @@ fn build(entry: usize, segment: &Segment, ctx: &Ctx) -> Vec<Row> {
                 out.push(connector(ctx, false));
                 let (title, links) = step::title(only, style, ctx.width, ctx);
                 let mut head = ctx.row(ctx.blank_slot(), title);
-                head.links = links;
+                head.set_links(links);
                 out.push(head);
             }
             out.extend(opened(only, style, ctx));
@@ -181,7 +181,7 @@ fn step_rows(target: Target, step: &Step, spinning: bool, ctx: &Ctx) -> Vec<Row>
     let (title, links) = step::title(step, style, ctx.width, ctx);
     let mut head = ctx.row(slot, title);
     head.target = Some(target);
-    head.links = links;
+    head.set_links(links);
     let mut out = vec![head];
     if step.opened(&ctx.config.timeline) {
         out.extend(opened(step, style, ctx));
@@ -277,7 +277,7 @@ fn block(pieces: Vec<Piece>, ctx: &Ctx) -> Vec<Row> {
             lead.extend(piece.lead);
             let mut row = ctx.led_row(ctx.blank_slot(), lead, piece.content);
             row.joined = piece.joined;
-            row.links = piece.links;
+            row.set_links(piece.links);
             row
         })
         .collect()
@@ -323,7 +323,7 @@ fn line(piece: Piece, ctx: &Ctx) -> Row {
         piece.content,
     );
     row.joined = piece.joined;
-    row.links = piece.links;
+    row.set_links(piece.links);
     row
 }
 

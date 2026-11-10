@@ -40,7 +40,7 @@ fn an_open_segment_marks_its_blank_to_fold_the_whole_segment() {
         } else {
             Some(Target::Segment(5))
         };
-        assert_eq!(row.blank, want, "{:?}", row.plain);
+        assert_eq!(row.blank, want, "{:?}", row.plain());
     }
     assert!(got.iter().any(|r| r.shade), "点开的那一步铺了底色");
     // 收着的一段只有收起那一行，不另标。

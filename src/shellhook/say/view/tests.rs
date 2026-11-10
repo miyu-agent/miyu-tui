@@ -27,7 +27,7 @@ fn plain(scope: Scope, transcript: &Transcript) -> String {
     view.rows_held(transcript, scope)
         .0
         .iter()
-        .map(|r| r.plain.clone())
+        .map(|r| r.plain())
         .collect::<Vec<_>>()
         .join("\n")
 }

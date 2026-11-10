@@ -118,17 +118,17 @@ pub fn rows(
             }
             let mut row = ctx.led_row(slot.clone(), lead.to_vec(), content);
             row.copy = i < lines.len() || (i == body_height && footer.is_some());
-            row.links = links;
+            row.set_links(links);
             row.figure_pending = pending;
             if let Some((key, _, _)) = cover.filter(|(_, _, rows)| (i as u16) < *rows) {
-                row.figure = Some(FigureCell {
+                row.extra_mut().figure = Some(FigureCell {
                     key,
                     row: u16::try_from(i).unwrap_or(0),
                     x: 0,
                 });
             }
             if let Some((key, _, _)) = icon.filter(|_| i == 0) {
-                row.icon = Some(FigureCell {
+                row.extra_mut().icon = Some(FigureCell {
                     key,
                     row: 0,
                     x: left,
@@ -152,7 +152,7 @@ fn duration(seconds: u64) -> String {
 
 /// 这一行是空的（卡片前后补空行时认它，不补出两行空的）。
 pub fn blank(row: &Row) -> bool {
-    row.plain.trim().is_empty() && row.figure.is_none()
+    row.blank_text() && row.figure().is_none()
 }
 
 /// 做好了的交回键、几列、几行；在做的记一下（做好了要重排），终端不认的、做坏的是 `None`。

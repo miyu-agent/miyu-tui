@@ -187,7 +187,9 @@ pub fn build(entries: &[Entry], ctx: &Ctx, cache: &RefCell<RowCache>, plan: Plan
         cache.rebuilt += 1;
         cache.fresh.insert(entry.id);
         let rows: Rc<[Row]> = rows::entry_rows(i, entry, ctx).into();
-        let has_figures = rows.iter().any(|r| r.figure.is_some() || r.figure_pending);
+        let has_figures = rows
+            .iter()
+            .any(|r| r.figure().is_some() || r.figure_pending);
         if let Some(key) = fingerprint(i, entry, ctx, has_figures.then_some(figures)) {
             cache
                 .entries

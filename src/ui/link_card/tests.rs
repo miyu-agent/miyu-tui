@@ -50,7 +50,7 @@ fn a_link_alone_on_its_line_becomes_a_card_and_an_inline_one_stays() {
         .find(|r| r.line.to_string().contains("A 的文章"))
         .unwrap();
     assert!(
-        card.links
+        card.links()
             .iter()
             .any(|(_, _, url)| url == "https://a.dev/x"),
         "点卡片是点这个链接"
@@ -87,9 +87,14 @@ fn a_card_has_a_blank_line_around_it_skips_empty_lines_and_links_only_its_text()
         "上下各空一行、没有简介的只两行"
     );
     let title = &rows[2];
-    assert_eq!(title.links.len(), 1);
-    let (from, to, _) = &title.links[0];
-    assert_eq!((*from, *to), (0, 4), "只有字那一截能点：{:?}", title.links);
+    assert_eq!(title.links().len(), 1);
+    let (from, to, _) = &title.links()[0];
+    assert_eq!(
+        (*from, *to),
+        (0, 4),
+        "只有字那一截能点：{:?}",
+        title.links()
+    );
 }
 
 #[test]
