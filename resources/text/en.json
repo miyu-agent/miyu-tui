@@ -150,6 +150,7 @@
   "archived_placeholder": "This is an archive",
   "exit_hint": "Press Ctrl+D to exit",
   "input_cleared": "Cleared · ↑ to bring it back",
+  "too_long": "This message is too long ({size}); the limit is 1 MB per message. Save it to a file and attach it with @",
   "editing": " Editing your last message · Esc to cancel ",
   "open": {
     "refused": "Won't open this kind of address: {url}",

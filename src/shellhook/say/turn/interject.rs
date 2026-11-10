@@ -38,9 +38,14 @@ impl Turn {
         self.interject.owns(id)
     }
 
-    /// 回车：提前敲的字插进这一轮；`now`（Ctrl+回车）当场打断，排着的马上发。她没在答的不插，字留着交还给 shell。
+    /// 回车：提前敲的字插进这一轮；`now`（Ctrl+回车）当场打断，排着的马上发。她没在答的、放不进协议一行的（1 MiB，施工
+    /// YC-11）不插，字留着交还给 shell。
     pub(super) fn interject(&mut self, core: &Core, now: bool) {
-        if self.typed.is_empty() || self.transcript.running.is_none() || !self.live() {
+        if self.typed.is_empty()
+            || self.transcript.running.is_none()
+            || !self.live()
+            || !self.typed.fits()
+        {
             return;
         }
         // 块换回原文、图跟着发（同全屏，`ahead.rs`）；正文里照框里的样子写（块还是块）。
