@@ -205,23 +205,14 @@ fn the_title_is_the_personas_name_and_the_icon_its_avatar() {
     let has = |out: &str, part: &str, text: &str| {
         out.contains(&format!("p={part};{}", STANDARD.encode(text)))
     };
-    // 无人格：标题写程序名；没交吉祥物的不带图标，交下来了照它画（2026-10-19）。
+    // 无人格：标题写程序名，不带图标（2026-11-10 项目主人：「无人格没有头像」）。
     n.about(Some("修登录页".into()), None);
-    n.tell(Event::Replied);
-    assert!(
-        !n.outbox().join("").contains(":p=icon;"),
-        "没交吉祥物的不带图标"
-    );
-    n.mascot(config.mascot.clone());
     n.tell(Event::Replied);
     let out = n.outbox().join("");
     assert!(has(&out, "title", "Miyu"), "{out:?}");
     assert!(has(&out, "body", "修登录页：回答完了"), "{out:?}");
-    assert!(
-        out.contains(":p=icon;"),
-        "无人格用吉祥物画成的图标：{out:?}"
-    );
-    // 有人格、没头像：标题写人格的名字，不带图标（吉祥物也不画）。
+    assert!(!out.contains(":p=icon;"), "无人格不带图标：{out:?}");
+    // 有人格、没头像：标题写人格的名字，不带图标。
     let plain = Who {
         name: "小美".into(),
         avatar: None,
@@ -266,32 +257,17 @@ fn the_title_is_the_personas_name_and_the_icon_its_avatar() {
 /// 怎么定标题、正文、图标（纯函数）：名字全是空白的当没有名字，会话标题全是空白的不接。
 #[test]
 fn shaping_uses_the_name_only_when_it_has_one() {
-    use super::{Face, mascot_icon::Icon, shape};
+    use super::{Face, shape};
     let texts = Config::builtin().unwrap().text.notify;
     let blank = Who {
         name: " ".into(),
         avatar: None,
     };
-    let (head, body, face) = shape(
-        &texts,
-        (Some("  "), Some(&blank)),
-        "回答完了",
-        Icon::Standing,
-    );
+    let (head, body, face) = shape(&texts, (Some("  "), Some(&blank)), "回答完了");
     assert_eq!((head.as_str(), body.as_str()), ("Miyu", "回答完了"));
     assert!(matches!(face, Face::Bare), "有人格没头像的不带图标");
-    let (_, _, face) = shape(&texts, (None, None), "回答完了", Icon::Working);
-    assert!(matches!(face, Face::Mascot(Icon::Working)));
-}
-
-#[test]
-fn waiting_notifications_hold_the_laptop_and_finished_ones_stand() {
-    // 2026-10-19 项目主人：过程中的通知用玩电脑的，完成的用站着的。
-    use super::mascot_icon::Icon;
-    assert_eq!(super::pose(Event::Approving), Icon::Working);
-    assert_eq!(super::pose(Event::Asking), Icon::Working);
-    assert_eq!(super::pose(Event::Replied), Icon::Standing);
-    assert_eq!(super::pose(Event::Failed), Icon::Standing);
+    let (_, _, face) = shape(&texts, (None, None), "回答完了");
+    assert!(matches!(face, Face::Bare), "无人格的不带图标");
 }
 
 /// 别的会话来的（后台的会话做完了、别的会话在问）在前台也弹、不响（2026-11-02 项目主人：在会话 B 里干活，A 的循环跑完了

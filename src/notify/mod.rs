@@ -7,6 +7,8 @@
 mod click;
 pub mod herdr;
 mod icon;
+// 吉祥物画成的图标：2026-11-10 项目主人定「无人格没有头像」以后没有通知用它，先留着只在测试里编，等拍板删。
+#[cfg(test)]
 mod mascot_icon;
 mod osc;
 mod sound;
@@ -60,14 +62,6 @@ pub enum Event {
     Asking,
 }
 
-/// 没有头像时画哪一张：过程中的（等你确认、等你回答）抱着电脑，完成的（回答完了、出错了）站着（2026-10-19 项目主人）。
-fn pose(event: Event) -> mascot_icon::Icon {
-    match event {
-        Event::Approving | Event::Asking => mascot_icon::Icon::Working,
-        Event::Replied | Event::Failed => mascot_icon::Icon::Standing,
-    }
-}
-
 /// 这一条通知是哪位人格的（「系统通知」第 3 条，2026-11-10 项目主人：通知照会话的人格来）：标题写它的名字，有头像的带头像，
 /// 没头像的不带图标。无人格的会话没有这一份：标题写程序名，图标照旧用吉祥物画成的。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,12 +72,11 @@ pub struct Who {
     pub avatar: Option<PathBuf>,
 }
 
-/// 通知的图标：人格的头像、不带（有人格、没头像）、吉祥物画成的（无人格的会话、给人的通知）。
+/// 通知的图标：人格的头像、不带（人格没头像、无人格的会话、没有会话的通知）。
 #[derive(Debug, Clone, Copy)]
 enum Face<'a> {
     Avatar(&'a std::path::Path),
     Bare,
-    Mascot(mascot_icon::Icon),
 }
 
 /// 这一次怎么做。
@@ -145,8 +138,6 @@ pub struct Notifier {
     /// 这一条通知是哪个会话的：会话标题（接在正文前面）、人格（标题写它的名字，没有的写 `texts.title`；第 3 条）。
     title: Option<String>,
     who: Option<Who>,
-    /// 没有头像时画成图标的吉祥物（第 3 条，2026-10-19）。
-    mascot: Option<icon::Mascot>,
     /// 点了的通知要切过去的会话（第 8 条，`click.rs`）。
     clicked: Clicked,
 }
@@ -175,7 +166,6 @@ impl Notifier {
             icons,
             title: None,
             who: None,
-            mascot: None,
             clicked: Clicked::default(),
             look,
             texts,
@@ -208,22 +198,17 @@ impl Notifier {
         }
     }
 
-    /// 接下来的通知是哪个会话的：会话标题、会话的人格（无人格的是 `None`：标题写程序名，图标用吉祥物画成的）。
+    /// 接下来的通知是哪个会话的：会话标题、会话的人格（无人格的是 `None`：标题写程序名，不带图标）。
     pub fn about(&mut self, title: Option<String>, who: Option<Who>) {
         self.title = title.filter(|t| !t.trim().is_empty());
         self.who = who;
-    }
-
-    /// 没有头像时画成图标的吉祥物：现在的样子（颜色固定照网页晨光那一套，`mascot_icon.rs`）。
-    pub fn mascot(&mut self, look: crate::mascot::Look) {
-        self.mascot = Some(look);
     }
 
     /// 出了一件要通知的事：标题是人格的名字（无人格的写程序名），正文是会话标题接为什么，图标照人格（第 3 条）。
     pub fn tell(&mut self, event: Event) {
         let body = self.reason(event);
         let (title, who) = (self.title.clone(), self.who.clone());
-        self.tell_as((title, who.as_ref()), &body, pose(event), (None, false));
+        self.tell_as((title, who.as_ref()), &body, (None, false));
     }
 
     /// 这件事为什么（正文的后半）。
@@ -240,19 +225,18 @@ impl Notifier {
     pub fn tell_elsewhere(&mut self, event: Event) {
         let body = self.reason(event);
         let (title, who) = (self.title.clone(), self.who.clone());
-        self.tell_as((title, who.as_ref()), &body, pose(event), (None, true));
+        self.tell_as((title, who.as_ref()), &body, (None, true));
     }
 
-    /// 给人的通知（核心 J-3 中，第 8 条）：`about` 是那个会话的标题、人格（没有会话的两样都空），照 [`Notifier::tell`] 的写法；
-    /// 无人格的图标是站着的吉祥物。带了 `session` 的点了切过去。
+    /// 给人的通知（核心 J-3 中，第 8 条）：`about` 是那个会话的标题、人格（没有会话的两样都空），照 [`Notifier::tell`] 的写法。
+    /// 带了 `session` 的点了切过去。
     pub fn tell_notice(
         &mut self,
         about: (Option<String>, Option<&Who>),
         body: &str,
         session: Option<String>,
     ) {
-        let pose = mascot_icon::Icon::Standing;
-        self.tell_as(about, body, pose, (session, false));
+        self.tell_as(about, body, (session, false));
     }
 
     /// 后台的会话做完了（[`plan_elsewhere`]）：同 [`Notifier::tell_notice`]，在前台也弹。
@@ -262,26 +246,23 @@ impl Notifier {
         body: &str,
         session: String,
     ) {
-        let pose = mascot_icon::Icon::Standing;
-        self.tell_as(about, body, pose, (Some(session), true));
+        self.tell_as(about, body, (Some(session), true));
     }
 
     /// 照会话标题、人格写好标题、正文、图标再弹：标题是人格的名字（无人格的写程序名）；会话有标题的接在正文前面
-    /// （`texts.titled`）；图标有头像的用头像、有人格没头像的不带，无人格的用吉祥物画成的（2026-11-10 项目主人）。
+    /// （`texts.titled`）；图标有头像的用头像，人格没头像的、无人格的都不带（2026-11-10 项目主人：「无人格没有头像」）。
     fn tell_as(
         &mut self,
         (title, who): (Option<String>, Option<&Who>),
         reason: &str,
-        pose: mascot_icon::Icon,
         how: (Option<String>, bool),
     ) {
-        let (head, body, face) = shape(&self.texts, (title.as_deref(), who), reason, pose);
-        let face = match face {
-            Face::Avatar(avatar) => Faced::Avatar(avatar.to_path_buf()),
-            Face::Bare => Faced::Bare,
-            Face::Mascot(pose) => Faced::Mascot(pose),
+        let (head, body, face) = shape(&self.texts, (title.as_deref(), who), reason);
+        let avatar = match face {
+            Face::Avatar(avatar) => Some(avatar.to_path_buf()),
+            Face::Bare => None,
         };
-        self.send((&head, &body), face, how);
+        self.send((&head, &body), avatar, how);
     }
 
     /// 照 [`plan`] 弹、响，别的会话来的（`elsewhere`）照 [`plan_elsewhere`]。`session` 是点了切过去的会话：kitty 要它
@@ -289,7 +270,7 @@ impl Notifier {
     fn send(
         &mut self,
         (title, body): (&str, &str),
-        face: Faced,
+        avatar: Option<PathBuf>,
         (session, elsewhere): (Option<String>, bool),
     ) {
         // 标题是会话标题、正文有时带模型写的字：图格字、标签字符这种外来的不进通知（发布前第五批审查 T5-3）。
@@ -299,14 +280,7 @@ impl Notifier {
         let plan = judge(&self.look, self.route, self.focused, self.herdr.is_some());
         let icon = || {
             let dir = self.icons.as_deref()?;
-            match &face {
-                Faced::Avatar(avatar) => icon::pick(Some(avatar), None, dir),
-                Faced::Bare => None,
-                Faced::Mascot(pose) => {
-                    let mascot = self.mascot.as_ref().map(|look| (look, *pose));
-                    icon::pick(None, mascot, dir)
-                }
-            }
+            icon::pick(avatar.as_deref()?, dir)
         };
         match plan.route {
             Some(Route::Kitty) => {
@@ -382,20 +356,12 @@ impl Notifier {
     }
 }
 
-/// [`Notifier::send`] 拿到的图标：头像的文件、不带、吉祥物画成的。
-enum Faced {
-    Avatar(PathBuf),
-    Bare,
-    Mascot(mascot_icon::Icon),
-}
-
 /// 一条通知的标题、正文、图标怎么定（纯函数，好测；「系统通知」第 3 条，2026-11-10 项目主人）：标题是人格的名字，无人格的写
-/// 程序名（`texts.title`）；会话标题不空的接在正文前面；图标有人格有头像的是头像，有人格没头像的不带，无人格的是吉祥物画成的。
+/// 程序名（`texts.title`）；会话标题不空的接在正文前面；图标人格有头像的是头像，别的（人格没头像、无人格）都不带。
 fn shape<'a>(
     texts: &NotifyTexts,
     (title, who): (Option<&str>, Option<&'a Who>),
     reason: &str,
-    pose: mascot_icon::Icon,
 ) -> (String, String, Face<'a>) {
     let head = who
         .map(|w| w.name.trim())
@@ -413,8 +379,7 @@ fn shape<'a>(
             avatar: Some(avatar),
             ..
         }) => Face::Avatar(avatar),
-        Some(_) => Face::Bare,
-        None => Face::Mascot(pose),
+        _ => Face::Bare,
     };
     (head, body, face)
 }

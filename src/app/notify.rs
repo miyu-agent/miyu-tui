@@ -97,7 +97,6 @@ impl App {
         let title = self.talk.transcript.title.clone();
         let who = self.who(self.talk.transcript.persona.as_deref());
         self.notifier.about(title, who);
-        self.notify_mascot();
     }
 
     /// 人格 `persona` 在通知上的样子：名字（照列表，没有的写编号）、存下来的头像文件。无人格（空着、编号空）的是 `None`。
@@ -122,11 +121,6 @@ impl App {
             .find(|s| s.session == session)?
             .persona
             .clone()
-    }
-
-    /// 没有头像时通知的图标照现在的吉祥物画（「系统通知」第 3 条，2026-10-19）：颜色固定照网页晨光那一套。
-    pub(super) fn notify_mascot(&mut self) {
-        self.notifier.mascot(self.config.mascot.clone());
     }
 }
 

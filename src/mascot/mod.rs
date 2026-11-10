@@ -13,7 +13,10 @@ use std::time::{Duration, Instant};
 
 pub use attention::Attention;
 pub use idle::Idle;
-pub use model::{Face, Gaze as GazeLook, Idle as IdleLook, Look, Part};
+// `Face` 只有画通知图标的那套在用，那套现在只在测试里编（`notify/mod.rs`）。
+#[cfg(test)]
+pub use model::Face;
+pub use model::{Gaze as GazeLook, Idle as IdleLook, Look, Part};
 pub use mouth::Mouth;
 pub use perch::Perch;
 pub use render::render;

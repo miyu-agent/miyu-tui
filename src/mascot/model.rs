@@ -203,7 +203,9 @@ pub struct Look {
     pub colors: Colors,
     /// 画成像素图（通知的图标，`notify/mascot_icon.rs`）时用的脸：格子少，眼睛、锯齿线、肚子上的圈要另调（照网页
     /// `packages/mascot` 那一份）；没写的照 `face`。
+    /// 2026-11-10 起没有通知画它了（`notify/mod.rs`），吉祥物包里写了的照旧能读。
     #[serde(default)]
+    #[cfg_attr(not(test), allow(dead_code))]
     pub pixel_face: Option<Face>,
 }
 

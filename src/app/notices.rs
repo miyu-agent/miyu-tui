@@ -26,13 +26,11 @@ impl App {
                 };
                 let title = self.notice_title(session);
                 let who = self.who(self.session_persona(session).as_deref());
-                self.notify_mascot();
                 self.notifier
                     .tell_notice((title, who.as_ref()), &body, Some(session.clone()));
             }
             Notice::SchedulesReset if !self.link.notices_claimed => {
                 let body = texts.schedules_reset.clone();
-                self.notify_mascot();
                 self.notifier.tell_notice((None, None), &body, None);
             }
             Notice::SchedulesReset => {}
