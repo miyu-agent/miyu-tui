@@ -479,6 +479,12 @@ impl Settings {
                 self.save(true, texts);
                 return Outcome::Stay;
             }
+            Delete::Settings(keys) => {
+                keys.iter().for_each(|k| self.draft.unset(k, data));
+                self.refresh();
+                self.save(true, texts);
+                return Outcome::Stay;
+            }
         };
         self.draft.unset_all(&prefix, data);
         self.refresh();

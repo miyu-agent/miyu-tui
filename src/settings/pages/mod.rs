@@ -24,6 +24,7 @@ pub mod presets;
 pub mod records;
 pub mod schema;
 pub mod secret;
+pub mod sections;
 pub mod slider;
 pub mod store;
 pub mod target;
@@ -215,10 +216,15 @@ impl More {
         out
     }
 
-    /// 一页排成行：配色不是跟随头像、跟随壁纸的，「主色」那一项不列；配色是终端配色的，「铺底色」那一项不列。
-    pub fn rows(&self, page: &str) -> Vec<schema::Row> {
+    /// 一页排成行：配色不是跟随头像、跟随壁纸的，「主色」那一项不列；配色是终端配色的，「铺底色」那一项不列。包那一页
+    /// 照读来的值去掉这一刻藏着的组（[`sections::visible`]）。
+    pub fn rows(&self, page: &str, data: Option<&crate::settings::data::Data>) -> Vec<schema::Row> {
         if let Some(id) = packages::package_of(page) {
-            return self.package_rows(id);
+            let rows = self.package_rows(id);
+            return match self.schema.as_ref() {
+                Some(schema) => sections::visible(rows, schema, data),
+                None => rows,
+            };
         }
         let Some(schema) = self.schema.as_ref() else {
             return Vec::new();
@@ -404,6 +410,8 @@ pub struct Texts {
     pub mcp: mcp::McpTexts,
     /// 光标停在滑块上时的按键提示（第 33 条子规则）。
     pub slider_hints: Vec<[String; 2]>,
+    /// 软件包里分的组（第 43d 条）。
+    pub sections: sections::SectionTexts,
     /// 「软件包」三页（第 43c 条）。
     pub store: store::StoreTexts,
 }

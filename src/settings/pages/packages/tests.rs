@@ -132,7 +132,7 @@ fn a_package_with_two_groups_is_one_row_and_its_page_titles_the_second_group() {
     );
     let names: Vec<String> = page
         .more
-        .rows("packages/net")
+        .rows("packages/net", None)
         .into_iter()
         .map(|r| {
             let s = page.more.schema.as_ref().unwrap();

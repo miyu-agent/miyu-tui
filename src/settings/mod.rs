@@ -291,6 +291,13 @@ impl Settings {
         if let Some(name) = pool {
             self.nav.keep_pool(&self.view, &name);
         }
+        // 包那一页藏起一组以后，光标别越界（蓝图「配置页」第 43d 条）。
+        if let Some(pages::Section::Page(id, at)) = self.more.section.clone() {
+            let n = self.page_items(&id).len();
+            if n > 0 && at >= n {
+                self.more.section = Some(pages::Section::Page(id, n - 1));
+            }
+        }
     }
 
     /// 核心交回了一条（`Update::Answer`）；不是这一页发的不管。

@@ -84,6 +84,8 @@ pub struct Schema {
     pub groups: Vec<Group>,
     /// 项，照清单登记的先后。
     pub items: Vec<Item>,
+    /// 包里分的组（核心 SG-1，[`super::sections`]）。
+    pub sections: Vec<super::sections::Section>,
 }
 
 /// 一页里的一行。
@@ -190,7 +192,9 @@ impl Schema {
             pages,
             groups,
             items,
+            sections: Vec::new(),
         };
+        super::sections::split(&mut schema, got);
         schema.own_items_to_general();
         schema
     }

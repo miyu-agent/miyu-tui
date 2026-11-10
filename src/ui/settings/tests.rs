@@ -423,6 +423,7 @@ mod catalog;
 mod pools;
 mod presets;
 mod records;
+mod sections;
 mod slider;
 mod store_halves;
 mod store_remove;
