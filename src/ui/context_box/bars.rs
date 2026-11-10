@@ -1,7 +1,7 @@
 //! 一行一根小条（发版前 check 32，2026-11-09 项目主人从三个样板里挑的「每行一根小条」，像磁盘占用）：名字、按占比长短的条、
-//! 写短的数、百分比，四列各自对齐。上下文的各块、累计消耗的四种 token 都照它排。
+//! 写短的数、百分比，四列各自对齐。上下文的各块照它排。
 
-use ratatui::style::Style;
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
@@ -68,7 +68,12 @@ pub(super) fn rows(list: &[Row], whole: u64, room: usize) -> Laid {
             let share = format!("{}%", meter::percent_tenths(*tokens, whole));
             let mut spans = vec![Span::styled(name, style)];
             if bar_width > 0 {
-                spans.push(Span::styled(bar(*tokens, whole, bar_width), fill));
+                // 小块不画条（2026-11-10 项目主人：「暗色的明细我觉得不需要条」），空着占位，数照旧对齐。
+                let drawn = match depth {
+                    0 => bar(*tokens, whole, bar_width),
+                    _ => " ".repeat(bar_width),
+                };
+                spans.push(Span::styled(drawn, fill));
             }
             spans.push(Span::styled(pad_left(number, number_width), style));
             spans.push(Span::styled(pad_left(&share, share_width), theme::dim()));
@@ -81,12 +86,15 @@ pub(super) fn rows(list: &[Row], whole: u64, room: usize) -> Laid {
     }
 }
 
-/// 段头：左边正常色，右边暗字收尾在 `width` 那一列（和下面的数一列，发版前 check 第 19 条）；放不下的空两格接着写。
+/// 段头：左边加粗，右边正常色收尾在 `width` 那一列（和下面的数一列，发版前 check 第 19 条）；放不下的空两格接着写。
 pub(super) fn head(left: &str, right: &str, width: usize) -> Line<'static> {
     let gap = width.saturating_sub(left.width() + right.width()).max(2);
     Line::from(vec![
-        Span::raw(left.to_string()),
+        Span::styled(
+            left.to_string(),
+            Style::default().add_modifier(Modifier::BOLD),
+        ),
         Span::raw(" ".repeat(gap)),
-        Span::styled(right.to_string(), theme::dim()),
+        Span::raw(right.to_string()),
     ])
 }

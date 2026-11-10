@@ -117,13 +117,18 @@ impl App {
     pub(super) fn context_key(&mut self, scroll: usize, key: KeyEvent) {
         let page = self.screen.panel_rows.len().max(1);
         let width = self.screen.areas.menu_text.width;
-        let rows = crate::ui::context_box::count(&self.seen(), width);
-        let last = rows.saturating_sub(page);
         let scroll = match key.code {
             KeyCode::Up => scroll.saturating_sub(1),
             KeyCode::Down => scroll + 1,
             KeyCode::PageUp => scroll.saturating_sub(page),
             KeyCode::PageDown => scroll + page,
+            // 回车：上下文各块的小项展开、收起（默认收着，2026-11-11 项目主人挑的样板）。
+            KeyCode::Enter => {
+                if let Some(data) = self.boxes.context.as_mut() {
+                    data.open = !data.open;
+                }
+                scroll
+            }
             KeyCode::Char('c') => {
                 let text = crate::ui::context_box::plain(&self.seen(), width);
                 self.copy(&text);
@@ -136,6 +141,9 @@ impl App {
             }
             _ => return,
         };
+        // 展开、收起以后行数变了：照新的行数收住。
+        let rows = crate::ui::context_box::count(&self.seen(), width);
+        let last = rows.saturating_sub(page);
         self.boxes.panel = Some(Panel::Context {
             scroll: scroll.min(last),
         });

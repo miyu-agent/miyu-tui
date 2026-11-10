@@ -37,8 +37,9 @@ pub struct Texts {
     /// 「上下文」段头右边：`{used}`、`{window}`；没有窗口的照 `used_only`。
     pub used: String,
     pub used_only: String,
-    /// 压缩线，`{line}`。
-    pub line: String,
+    /// 进度条下面那一行：离压缩线还差多少、已经过了多少，`{n}`。
+    pub to_line: String,
+    pub past_line: String,
     /// 会话的上下文上限，`{n}`（核心 CTX-1）。
     pub cap: String,
     /// 全是本地估的。
@@ -53,12 +54,10 @@ pub struct Texts {
     pub uses: BTreeMap<String, String>,
     /// 下边框的按键提示。
     pub hint: String,
-    /// 段头（第 7 条）：上下文；累计消耗 `{tokens}`，右边缓存命中 `{percent}`。
+    /// 段头（第 7 条）：上下文、累计消耗；累计消耗下面那一行的缓存命中 `{percent}`。
     pub context: String,
     pub spent: String,
     pub hit: String,
-    /// 四种 token：缓存读、缓存写、输出、输入（没命中缓存的）。
-    pub kinds: [String; 4],
     /// 上下文那一段底下那一行的名目，`times` 是「{n} 次」。
     pub compactions: String,
     pub breaks: String,
@@ -87,6 +86,8 @@ pub struct ContextData {
     pub parts: Loaded<Shape>,
     /// `usage.query` 按 `use` 分的一行行。
     pub uses: Loaded<Vec<UsageRow>>,
+    /// 上下文各块的小项展开着（回车开、收）；默认收着，只写大块。
+    pub open: bool,
 }
 
 /// 框线上的标题：只写「上下文明细」，用了多少在第一行写（2026-10-23 项目主人：标题、第一行、空余三处都写用量不合理）。
@@ -97,8 +98,8 @@ fn title(texts: &Texts, _data: Option<&ContextData>) -> String {
 /// 一份账写成界面上的金额（照界面的币种和符号）；算不出的是 `None`。
 pub type Money<'a> = &'a dyn Fn(&crate::core::Bill) -> Option<String>;
 
-/// 框里的正文（滚动前的全部）：上下文、累计消耗两段，再是按用途（第 7 条，发版前 check 32 去掉了单独的花费那一段），中间
-/// 空一行；`tail` 是上下文那一段底下的几样。
+/// 框里的正文（滚动前的全部）：两段各答一件事（2026-11-11 项目主人从三个样板里挑的）——上面「上下文」是现在装了多少、离
+/// 压缩线多远、哪几块占的；下面「累计消耗」是这个会话一共用了多少、按用途分。中间空一行；`tail` 是压缩、断裂的次数和卡住的原因。
 pub fn rows(
     data: Option<&ContextData>,
     config: &Config,
@@ -125,18 +126,29 @@ pub fn rows(
             out.push(Line::styled(said.clone(), theme::error()));
         }
         Some(Ok(shape)) => {
-            out.extend(parts::rows(shape, texts, room));
-            out.extend(sections::context_tail(tail, texts));
+            let why = sections::stuck(tail, texts);
+            let marks = &config.layout.bar;
+            out.extend(parts::rows(shape, (texts, marks), (room, data.open), why));
         }
     }
-    if let Some(Ok(list)) = &data.uses {
-        let spent = sections::spent(list, texts, room);
-        if !spent.is_empty() {
+    let table = match &data.uses {
+        Some(Ok(list)) => uses::rows(list, texts, money, room),
+        _ => Vec::new(),
+    };
+    let counts = sections::counts(tail, texts);
+    match &data.uses {
+        Some(Ok(list)) if !table.is_empty() => {
             out.push(Line::default());
-            out.extend(spent);
+            out.extend(sections::spent(list, texts, money, (&counts, &table)));
             out.push(Line::default());
-            out.extend(uses::rows(list, texts, money, room));
+            out.extend(table);
         }
+        // 没有累计的（新会话的预览、还没读回来、读不了）：压缩、断裂的次数单独一行。
+        _ if matches!(data.parts, Some(Ok(_))) => {
+            out.push(Line::default());
+            out.push(Line::styled(counts, theme::dim()));
+        }
+        _ => {}
     }
     out
 }

@@ -1,18 +1,17 @@
-//! 三段里新加的那几行（蓝图「上下文 `/context`」第 7 条，反馈 1102 第 22 条，照网页 W-1053）：上下文那一段底下的压缩次数、
-//! 缓存断裂次数和卡住的原因；累计消耗的段头和四种 token。发版前 check 32（2026-11-09 项目主人挑的「每行一根小条」）起四种
-//! token 一种一根条，单独的「花费」那一段（按种类分的钱）不再写，钱只在按用途那张表里。
+//! 两段里零碎的几行（蓝图「上下文 `/context`」第 7 条）：压缩次数、缓存断裂次数、卡住的原因；累计消耗的段头（一共多少
+//! token、多少钱）和它下面那一行。2026-11-11 项目主人挑的样板起四种 token 的条不再画，只留一句缓存命中。
 //!
 //! 只排，不碰界面：数由 `context_box.rs` 收好（[`Tail`]）。
 
 use ratatui::text::Line;
 
 use super::{Texts, bars};
-use crate::core::{Split, UsageRow};
+use crate::core::{Bill, Split, UsageRow};
 use crate::meter;
 use crate::theme;
 use crate::transcript::Stuck;
 
-/// 上下文那一段底下要写的：压缩了几次、缓存断了几次、卡住了没有（照正在看的会话）。压缩线写在段头右边（第 3 条）。
+/// 压缩了几次、缓存断了几次、卡住了没有（照正在看的会话）。
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Tail {
     pub compactions: u64,
@@ -20,27 +19,27 @@ pub struct Tail {
     pub stuck: Option<Stuck>,
 }
 
-/// 上下文那一段底下：一行暗字「已压缩 N 次 · 缓存断裂 N 次」；卡住的再一行红字说为什么。
-pub(super) fn context_tail(tail: &Tail, texts: &Texts) -> Vec<Line<'static>> {
+/// 「已压缩 N 次 · 缓存断裂 N 次」。
+pub(super) fn counts(tail: &Tail, texts: &Texts) -> String {
     let times = |n: u64| texts.times.replace("{n}", &n.to_string());
-    let text = format!(
+    format!(
         "{} {}{}{} {}",
         texts.compactions,
         times(tail.compactions),
         crate::sheet::sep(),
         texts.breaks,
         times(tail.breaks)
-    );
-    let mut out = vec![Line::styled(text, theme::dim())];
+    )
+}
+
+/// 卡住的一行红字说为什么；没卡住的没有。
+pub(super) fn stuck(tail: &Tail, texts: &Texts) -> Option<Line<'static>> {
     let why = match tail.stuck {
-        Some(Stuck::Failed { .. }) => Some(&texts.stuck_failed),
-        Some(Stuck::Over { .. }) => Some(&texts.stuck_over),
-        None => None,
+        Some(Stuck::Failed { .. }) => &texts.stuck_failed,
+        Some(Stuck::Over { .. }) => &texts.stuck_over,
+        None => return None,
     };
-    if let Some(why) = why {
-        out.push(Line::styled(why.clone(), theme::error()));
-    }
-    out
+    Some(Line::styled(why.clone(), theme::error()))
 }
 
 /// 按用途那几行（一次都没有的不算）加起来的四种 token。
@@ -55,35 +54,37 @@ fn split_of(list: &[UsageRow]) -> Split {
     total
 }
 
-/// 累计消耗的段头（右边缓存命中，收尾和下面的数一列）和四种 token 一种一根条（照多少从大到小排：数、占累计的百分比）；
-/// 一次都没有的是空的。
-pub(super) fn spent(list: &[UsageRow], texts: &Texts, room: usize) -> Vec<Line<'static>> {
+/// 累计消耗的段头：右边这个会话连子代理一共用了多少 token、花了多少钱（算不出钱的不写），收尾和下面那张表一列；下面
+/// 一行暗字「缓存命中 N% · 已压缩 N 次 · 缓存断裂 N 次」。一次都没有的是空的。
+pub(super) fn spent(
+    list: &[UsageRow],
+    texts: &Texts,
+    money: &dyn Fn(&Bill) -> Option<String>,
+    (counts, table): (&str, &[Line<'static>]),
+) -> Vec<Line<'static>> {
     let split = split_of(list);
     let all = split.uncached + split.cache_read + split.cache_write + split.output;
     if all == 0 {
         return Vec::new();
     }
     let input = split.uncached + split.cache_read + split.cache_write;
+    let mut bill = Bill::default();
+    list.iter()
+        .filter(|r| r.requests > 0)
+        .for_each(|r| bill.merge(&r.bill));
+    let mut right = meter::short(all);
+    if let Some(cost) = money(&bill) {
+        right.push_str(&format!("  {cost}"));
+    }
+    let width = table.iter().map(Line::width).max().unwrap_or(0);
     let hit = texts
         .hit
         .replace("{percent}", &meter::hit_rate(split.cache_read, input));
-    let title = texts.spent.replace("{tokens}", &meter::short(all));
-    let counts = [
-        split.cache_read,
-        split.cache_write,
-        split.output,
-        split.uncached,
-    ];
-    let mut kinds: Vec<bars::Row> = texts
-        .kinds
-        .iter()
-        .zip(counts)
-        .map(|(name, n)| (0, name.clone(), n))
-        .collect();
-    // 多的在上（稳定排序：一样多的照缓存读、缓存写、输出、输入）。
-    kinds.sort_by_key(|(_, _, n)| std::cmp::Reverse(*n));
-    let laid = bars::rows(&kinds, all, room);
-    let mut out = vec![bars::head(&title, &hit, laid.width)];
-    out.extend(laid.lines);
-    out
+    vec![
+        bars::head(&texts.spent, &right, width),
+        Line::styled(
+            format!("{hit}{}{counts}", crate::sheet::sep()),
+            theme::dim(),
+        ),
+    ]
 }
