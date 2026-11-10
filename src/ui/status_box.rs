@@ -37,6 +37,8 @@ pub struct Texts {
     pub compactions: String,
     /// 压缩线，`{line}`。
     pub compaction_line: String,
+    /// 这个会话设的上下文上限，`{n}`（核心 CTX-1；底栏不写了，写在这里，2026-11-11 项目主人）。
+    pub cap: String,
     /// 共多少，`{tokens}`。
     pub total: String,
     /// 输入、输出，`{input}`、`{output}`。
@@ -93,6 +95,8 @@ pub struct Facts {
     /// 上下文用了多少；压缩线。
     pub context: u64,
     pub line: Option<u64>,
+    /// 这个会话设的上下文上限；没设的没有。
+    pub cap: Option<u64>,
     /// 压缩过几次、缓存断了几次。
     pub compactions: u64,
     pub breaks: u64,
@@ -145,6 +149,7 @@ pub fn facts(seen: &Seen) -> Facts {
         speed: t.speed.average(),
         context: t.context,
         line: t.limits.compaction_line,
+        cap: t.limits.context,
         compactions: t.cache.compactions,
         breaks: t.cache.breaks,
         usage: seen.talk.usage_total(),
@@ -212,7 +217,11 @@ pub fn items(f: &Facts, words: &Texts, bar: &Bar, room: usize) -> Vec<Item> {
         second.push((keys.model.clone(), value));
     }
     if opened && f.context > 0 {
-        second.push((keys.context.clone(), context(f, words, bar, room)));
+        let mut value = context(f, words, bar, room);
+        if let Some(cap) = f.cap {
+            value.push(tail(words.cap.replace("{n}", &meter::short(cap))));
+        }
+        second.push((keys.context.clone(), value));
     }
     if opened && (f.compactions > 0 || f.line.is_some()) {
         let n = f.compactions.to_string();

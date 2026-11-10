@@ -130,17 +130,7 @@ pub fn pieces(facts: &Facts, frame: usize, hovered: Option<Hit>) -> Vec<Piece> {
         head.push_str(&texts.hit.replace("{percent}", &rate));
     }
     let mut out = Vec::new();
-    // 设了会话的上下文上限（核心 CTX-1，设计 68）：环照的窗口是被它压小的，写出来让人知道是哪一格在起作用；比花费后丢。
-    // 写在环和累计的左边（2026-11-10 项目主人：「会话上限放到总消耗左侧」，原来在它们后面）。
-    if let Some(cap) = t.limits.context.filter(|_| preview.is_none()) {
-        let cap = texts.cap.replace("{n}", &meter::short(cap));
-        out.push(Piece::new(
-            3,
-            false,
-            Some(Hit::Usage),
-            vec![Span::styled(cap, style)],
-        ));
-    }
+    // 会话的上下文上限不在这里写（2026-11-11 项目主人：「footer 都去掉会话上限 xk 的显示」，`/status`、上下文明细里有）。
     out.push(Piece::new(
         4,
         false,
