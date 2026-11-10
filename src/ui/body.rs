@@ -288,6 +288,27 @@ fn shift_floor(before: &Rows, now: &Rows, floor_end: usize) -> usize {
     }
 }
 
+/// 人点开、收起的那一样东西（上一帧在第 `was` 行）和底边落在同一条里、又在底边上面：这一条因此长了、短了几行。底边跟着
+/// 走这么多，不把自己点开又收起的那几十行留成底下的空档（发版前 check 33，2026-11-11 项目主人：在跑的那一段里点开一步、
+/// 滚到过底、再收起，下面空出一整屏）；原来就有的空档（一轮结束收起留的）不动。不在同一条的由 [`shift_floor`] 管，这里是 0。
+fn grown_inside(before: &Rows, now: &Rows, was: usize, floor_end: usize) -> isize {
+    if floor_end == 0 || was >= floor_end {
+        return 0;
+    }
+    let last = (floor_end - 1).min(before.len().saturating_sub(1));
+    let (Some(entry), Some(clicked)) = (before.entry_at(last), before.entry_at(was)) else {
+        return 0;
+    };
+    if entry != clicked {
+        return 0;
+    }
+    let rows_of = |rows: &Rows| Some(rows.end_of(entry)? - rows.start_of(entry)?);
+    match (rows_of(before), rows_of(now)) {
+        (Some(was), Some(is)) => is as isize - was as isize,
+        _ => 0,
+    }
+}
+
 /// 第一行露出的是第几行：有锚点的照锚点，滚过的照滚到的，别的跟着最新的、只往下走。滚到底了就回到跟着最新的。
 /// 顺手记下这一帧的区域（`view.area`），下一帧照它看窗口宽度变没变。
 fn first_row(
@@ -298,9 +319,12 @@ fn first_row(
 ) -> usize {
     let height = usize::from(area.height);
     let bottom = rows.len().saturating_sub(height);
+    // 这一帧点开、收起了一样东西：它在上一帧的第几行（底边照它挪，见下面）。
+    let mut toggled = None;
     if let Some((target, y)) = view.anchor.take()
         && let Some(i) = rows.iter().position(|r| r.target == Some(target))
     {
+        toggled = view.rows.iter().position(|r| r.target == Some(target));
         let mut top = i.saturating_sub(usize::from(y.saturating_sub(area.y)));
         // 展开的内容长到视口外面了：往上推到露出来，最多推到被点的那一行顶到最上面（2026-10-02 项目主人报：
         // 最底下那一行点开以后什么都看不见）。
@@ -325,7 +349,10 @@ fn first_row(
     // 后面，正文全空（同一天项目主人报）。
     if !view.rows.is_empty() {
         if !relaid {
-            view.floor_end = shift_floor(&view.rows, rows, view.floor_end);
+            let grown =
+                toggled.map_or(0, |was| grown_inside(&view.rows, rows, was, view.floor_end));
+            view.floor_end =
+                shift_floor(&view.rows, rows, view.floor_end).saturating_add_signed(grown);
         }
         if let Some(at) = view.cleared_at.filter(|&at| at > 0) {
             let moved = view.rows.entry_at(at - 1).and_then(|e| rows.end_of(e));
@@ -361,11 +388,14 @@ fn first_row(
     let rest = lowest.max(view.floor_end.saturating_sub(height)).min(cap);
     let first = match view.top {
         Some(top) => top.min(rest),
-        // 她正在写的一段正文长过视口：第一行顶到第二行就停住，一段只停一次（`tui.md`「正文」第 1 条）。最上面让一行：
-        // 往上翻着时顶上钉的那一行（`pinned.rs`）盖在第一行上，原来停在第一行，正文的第一行被它盖住（发版前 check 27）。
+        // 她正在写的一段正文长过视口：第一行顶到第三行就停住，一段只停一次（`tui.md`「正文」第 1 条）。最上面让两行：
+        // 往上翻着时顶上钉的那一行和它下面空的一行（`pinned.rs`）盖在最上面，原来停在第一行，正文的第一行被盖住
+        // （发版前 check 27；2026-11-11 起钉着的下面多空一行）。
         None => match view.reading {
-            Some((id, start)) if rest > start.saturating_sub(1) && view.paused != Some(id) => {
-                let stop = start.saturating_sub(1);
+            Some((id, start))
+                if rest > start.saturating_sub(super::pinned::ROWS) && view.paused != Some(id) =>
+            {
+                let stop = start.saturating_sub(super::pinned::ROWS);
                 view.paused = Some(id);
                 view.top = Some(stop);
                 view.auto = true;
