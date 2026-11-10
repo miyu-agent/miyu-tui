@@ -16,6 +16,22 @@ pub enum Update {
     /// 主会话不存在了（在别处删了；`--resume` 的编号不对）：读页、补发、重连订阅时核心说的。不再对着它，下一句话开新会话
     /// （review B3，2026-10-11 项目主人定）。
     SessionGone(String),
+    /// 会话日志中间坏了一行（核心 YC-6 的 `session_read_only`）：坏行以前的照最新一页画过了，订阅不上、不能接着聊，只能看。
+    /// `line` 是坏在第几行（核心的 `data.line`，没有的是 `None`）。会话照常列着（`app/unread.rs`）。
+    SessionReadOnly {
+        /// 哪个会话。
+        session: String,
+        /// 坏在第几行。
+        line: Option<u64>,
+    },
+    /// 会话这一刻读不了（核心 YC-2 的 `session_unavailable`：载入、读日志时读写出错，日志没坏）：一时的错，过一会儿再试
+    /// （[`Command::Reread`]）。`page` 是最新一页也没读成（再试从读页起），不然是订阅没订上（只再订阅）。
+    SessionUnavailable {
+        /// 哪个会话。
+        session: String,
+        /// 最新一页也没读成。
+        page: bool,
+    },
     /// 连不上、握手或开会话被拒：原因。
     Failed(String),
     /// 核心起不来、认得出是哪一种（核心 LC-1）：界面照自己的语言换成一句话，当 [`Update::Failed`] 办（`app/updates.rs`）。

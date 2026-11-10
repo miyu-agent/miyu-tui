@@ -41,6 +41,14 @@ impl App {
             .chain(self.drawer_deadline())
             // 人打的 `/dream` 在整理（`dream.rs`）。
             .chain(self.dream_deadline())
+            // 会话一时读不了：到点再试（`unread.rs`）。
+            .chain(
+                self.talk
+                    .reread
+                    .as_ref()
+                    .filter(|r| !r.asked)
+                    .map(|r| r.due),
+            )
             // 核心的清单在建：到点再问（「`@` 文件列表」第 2 条）。
             .chain(self.typing.mention.deadline())
             // `/jump` 跳到的那一条亮着：到点醒来，画回原来的颜色（「跳到说过的话」第 3 条）。

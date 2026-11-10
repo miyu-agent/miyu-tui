@@ -20,6 +20,7 @@ impl Default for Transcript {
             link: Link::Connecting,
             session: None,
             gone: false,
+            read_only: false,
             title: None,
             named: false,
             level: Level::Full,

@@ -226,6 +226,15 @@ impl App {
             self.session_gone(&session);
             return;
         }
+        // 会话日志中间坏了只能看、一时读不了过一会儿再试（`unread.rs`，核心 YC-6、YC-2）。
+        if let Update::SessionReadOnly { session, line } = update {
+            self.session_read_only(&session, line);
+            return;
+        }
+        if let Update::SessionUnavailable { session, page } = update {
+            self.session_unavailable(session, page);
+            return;
+        }
         // 还没开会话时 `/workspace` 验完了（`workspace.rs`）。
         if let Update::DirChecked(result) = update {
             self.dir_checked(result);
@@ -297,7 +306,10 @@ impl App {
         } = &update
             && let Some(hint) = self.refusal_hint(reason, message)
         {
-            self.hint(hint, false);
+            // 会话一时读不了、等着再试的：同一回连带着被拒的（命令清单这些）不顶掉「几秒后自动重试」（`unread.rs`）
+            if !(reason == "session_unavailable" && self.talk.reread.is_some()) {
+                self.hint(hint, false);
+            }
             return;
         }
         // 命令的回执弹提示，去掉句末的句号，和别的提示一样；`/clear` 不弹，正文里已有「上下文已清空」那一行（蓝图

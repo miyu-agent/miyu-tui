@@ -292,6 +292,7 @@
     "paused_too_large": "· 第 {entry} 条内容过大，压缩后很快再次占满，自动压缩已暂停",
     "paused": "· 自动压缩已暂停"
   },
+  "unread": {"read_only": "会话日志第 {line} 行坏了，只能看到这一行以前的内容，不能接着聊。要继续请新开一个会话。", "read_only_somewhere": "会话日志坏了，只能看到坏的地方以前的内容，不能接着聊。要继续请新开一个会话。", "read_only_placeholder": "这个会话只能看，输入 /new 新开会话", "unavailable_retry": "会话暂时无法读取，{wait}后自动重试", "unavailable_gave_up": "会话暂时无法读取，请稍后重试"},
   "error_classes": {
     "output_limit": "回复超过了输出上限",
     "retryable": "临时错误",
@@ -306,8 +307,8 @@
     "bad_summary": "无法提取摘要",
     "quota": "额度用完",
     "compaction_paused": "自动压缩已暂停",
-    "other": "模型出错"
     "stalled": "模型没有响应",
+    "other": "模型出错"
   },
   "mention": {
     "title": "@ {query}",
