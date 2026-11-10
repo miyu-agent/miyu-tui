@@ -86,3 +86,27 @@ fn marks_point_at_the_matched_letters_in_each_field() {
     );
     assert!(marks("", "anything").is_empty());
 }
+
+#[test]
+fn punctuation_in_what_is_typed_is_skipped() {
+    // 2026-11-10 项目主人：搜 `opus5.5` 找不到 `claude-opus-5-5`（同 im I-191、网页 W-1142）。
+    let model = "claude-opus-5-5";
+    for typed in ["opus5.5", "OPUS 5-5", "opus55", "opus-5.5"] {
+        assert!(hit(typed, [model]), "{typed}");
+    }
+    assert!(hit("- .", ["anything"]), "只有标点的一段不算");
+    assert!(!hit("opus5.6", [model]), "字母、数字照旧要对上");
+    // 只隔着标点的不扣分：比隔着字母的分高，比字段里本来挨着的低（`f-l-a-s-h` 不排到 `flash` 前面）。
+    assert!(score("55", ["x5-5"]) > score("55", ["x5a5"]));
+    assert!(score("flash", ["deepseek-v4.1-flash"]) > score("flash", ["f-l-a-s-h"]));
+}
+
+#[test]
+fn marks_skip_punctuation_and_word_starts_still_count() {
+    use super::marks;
+    // `opus5.5` 标在 o、p、u、s 和两个 5 上，不标横线。
+    assert_eq!(marks("opus5.5", "claude-opus-5-5"), [7, 8, 9, 10, 12, 14]);
+    // 词头分照旧：横线后面的 5 算词头，`claude-opus-5-5` 排在字母挤在一起、没有词头的前面。
+    let ranked = rank("opus55", vec!["xopusx55y", "claude-opus-5-5"], |s| vec![*s]);
+    assert_eq!(ranked[0], "claude-opus-5-5", "落在词头的排前面");
+}
