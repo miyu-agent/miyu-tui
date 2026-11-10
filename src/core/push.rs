@@ -304,6 +304,8 @@ pub enum Push {
         attempt: u64,
         /// 最多几次。
         limit: u64,
+        /// 出错的分类（`stalled` 这类要写人话的认它，施工 YC-3）。
+        class: String,
         /// 出错的原话。
         message: String,
     },
@@ -445,6 +447,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
             out.push(Push::Retry {
                 attempt: retry["attempt"].as_u64().unwrap_or_default(),
                 limit: retry["limit"].as_u64().unwrap_or_default(),
+                class: text(&retry["class"]),
                 message: text(&retry["message"]),
             });
         }

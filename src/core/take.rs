@@ -20,7 +20,13 @@ pub(super) async fn take(
     awaiting: &mut HashMap<String, Awaiting>,
     notify: &impl Fn(Update) -> bool,
 ) -> bool {
-    let kind = message["id"].as_str().and_then(|id| awaiting.remove(id));
+    // 一行太长的（核心 YC-5 的 `line_too_long`）：`id` 认不出、是 null 的，照发出去时量过超长的那一条对上（`rpc.rs`），
+    // 等着它的不一直挂着。
+    let id = match message["error"]["data"]["reason"].as_str() {
+        Some("line_too_long") => rpc.too_long(message["id"].as_str()),
+        _ => message["id"].as_str().map(str::to_string),
+    };
+    let kind = id.and_then(|id| awaiting.remove(&id));
     if let Some(error) = message.get("error") {
         // 前缀要变：先问人（蓝图「前缀要变」）。
         if let Some(update) = super::prefix::changing(error, kind.as_ref(), link) {

@@ -57,6 +57,28 @@ const KERNEL_CLASSES: [&str; 7] = [
     "compaction_paused",
 ];
 
+/// 模型连上了却一直不出字、等满空闲超时（核心 YC-3）：人话「模型没有响应」接原话。
+const STALLED: &str = "stalled";
+
+/// 重试那一行（`retry`）：`stalled` 的原话前面接人话，别的照原话（核心 YC-3：重试状态行也认它）。
+pub(super) fn retry_line(
+    attempt: u64,
+    limit: u64,
+    class: &str,
+    said: &str,
+    texts: &Texts,
+) -> String {
+    let message = match class {
+        STALLED => with(&class_name(class, texts), said.trim(), texts),
+        _ => said.to_string(),
+    };
+    texts
+        .retry
+        .replace("{attempt}", &attempt.to_string())
+        .replace("{limit}", &limit.to_string())
+        .replace("{message}", &message)
+}
+
 /// 限速的分类：核心还没给状态码的，照它当 429（核心把 429 都分成它）。
 const RATE_LIMITED: (&str, u16) = ("rate_limited", 429);
 
@@ -64,6 +86,10 @@ const RATE_LIMITED: (&str, u16) = ("rate_limited", 429);
 pub(super) fn reason(error: &CallError, texts: &Texts) -> String {
     let said = error.message.trim();
     let class = error.class.as_str();
+    // 模型连上了却一直不出字（核心 YC-3）：不是内核查出来的那几类，人话后面照规矩接原话（空闲超时多久）
+    if class == STALLED {
+        return with(&class_name(class, texts), said, texts);
+    }
     let waiting = error.retry_after_ms.map(|ms| wait(ms, &texts.retry_after));
     // 内核自己查出来的：原话是给运行日志的英文诊断，只写人话（2026-10-01 项目主人：有中文了后面不要再接英文）。
     if KERNEL_CLASSES.contains(&class) {

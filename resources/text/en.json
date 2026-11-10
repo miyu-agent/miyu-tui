@@ -207,7 +207,11 @@
     "turn_running": "Still replying: interrupt first, or wait for it to finish",
     "unknown_turn": "Can't find the turn to undo",
     "restoring": "The last undo or restore is still in progress, one moment",
-    "shell_unavailable": "Shell commands aren't available in this session"
+    "shell_unavailable": "Shell commands aren't available in this session",
+    "session_unavailable": "The session can't be read right now. Please try again later",
+    "session_read_only": "This session is view-only and can't continue: type /new to start a new one",
+    "line_too_long": "Message over 1 MiB, not accepted. Send large content as an attachment",
+    "id_reused": "This request id was already used with different parameters. Use a new id"
   },
   "models": {
     "failover": "↻ Switched model: {from} → {to}",
@@ -303,6 +307,7 @@
     "quota": "Out of quota",
     "compaction_paused": "Auto-compaction is paused",
     "other": "Model error"
+    "stalled": "The model stopped responding",
   },
   "mention": {
     "title": "@ {query}",

@@ -19,6 +19,9 @@ pub struct Rpc {
     incoming: mpsc::UnboundedReceiver<Value>,
     /// 等回应时来的推送。
     held: VecDeque<Value>,
+    /// 发出去时就超过一行上限的请求编号：核心回 `line_too_long` 却认不出是哪一条（`id` 是 null，核心 YC-5）时照它对上
+    /// （[`Rpc::too_long`]）。
+    oversized: VecDeque<String>,
 }
 
 impl Rpc {
@@ -31,6 +34,7 @@ impl Rpc {
             writer,
             incoming,
             held: VecDeque::new(),
+            oversized: VecDeque::new(),
         }
     }
 
@@ -42,10 +46,19 @@ impl Rpc {
     pub async fn send(&mut self, method: &str, params: Value) -> io::Result<String> {
         let id = next_id();
         let request = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
-        self.writer
-            .write_all(format!("{request}\n").as_bytes())
-            .await?;
+        let line = format!("{request}\n");
+        // 一行最长 1 MiB，不算换行（`protocol.md`「一行一条」）
+        if line.len() > super::line_limit::LINE_LIMIT + 1 {
+            self.oversized.push_back(id.clone());
+        }
+        self.writer.write_all(line.as_bytes()).await?;
         Ok(id)
+    }
+
+    /// 核心回了 `line_too_long`：带着认得出的编号（`id`）的把它从超长的里划掉，认不出的（`null`）照发出去的先后对上最早
+    /// 那一条超长的。交回是哪一条请求；对不上的是 `None`。
+    pub fn too_long(&mut self, id: Option<&str>) -> Option<String> {
+        too_long(&mut self.oversized, id)
     }
 
     /// 发一条请求，等到它的回应，交回 `result`。
@@ -71,7 +84,12 @@ impl Rpc {
     pub async fn reply(&mut self, method: &str, params: Value) -> Result<Value, Failure> {
         let id = self.send(method, params).await.map_err(Failure::Io)?;
         while let Some(message) = self.incoming.recv().await {
-            if message["id"] == json!(id) {
+            // 一行太长、认不出是哪一条的（核心 YC-5）：发出去时它就是最早的那一条超长的，也是它的回应
+            let unnamed = message["id"].is_null()
+                && message["error"]["data"]["reason"] == "line_too_long"
+                && self.oversized.front() == Some(&id);
+            if message["id"] == json!(id) || unnamed {
+                self.too_long(Some(&id));
                 return Ok(message);
             }
             self.held.push_back(message);
@@ -85,6 +103,17 @@ impl Rpc {
             Some(message) => Some(message),
             None => self.incoming.recv().await,
         }
+    }
+}
+
+/// [`Rpc::too_long`]：`oversized` 是发出去时就超长的请求编号，照发出去的先后。
+fn too_long(oversized: &mut VecDeque<String>, id: Option<&str>) -> Option<String> {
+    match id {
+        Some(id) => {
+            oversized.retain(|o| o != id);
+            Some(id.to_string())
+        }
+        None => oversized.pop_front(),
     }
 }
 
@@ -161,7 +190,7 @@ pub fn owns(id: &str) -> bool {
 mod tests {
     use serde_json::{Value, json};
 
-    use super::{LINE_KEPT, LINE_MOST, handled, owns, prefix, read_all};
+    use super::{LINE_KEPT, LINE_MOST, handled, owns, prefix, read_all, too_long};
 
     #[test]
     fn a_long_line_does_not_keep_the_buffer_large_and_a_short_one_keeps_it_as_is() {
@@ -219,5 +248,20 @@ mod tests {
             !owns(&format!("{}9-1", prefix())),
             "开头一样、后面多了字的不算"
         );
+    }
+
+    /// 核心回 `line_too_long`（核心 YC-5）：认得出编号的就是它，从超长的里划掉；认不出（null）的照发出去的先后对上最早那一条，
+    /// 不超长的那几条等着的不受牵连；一条都没有的对不上。
+    #[test]
+    fn a_too_long_line_answered_without_an_id_is_the_earliest_oversized_request() {
+        let mut oversized =
+            std::collections::VecDeque::from(["a-1".to_string(), "a-4".to_string()]);
+        assert_eq!(
+            too_long(&mut oversized, Some("a-4")).as_deref(),
+            Some("a-4")
+        );
+        assert_eq!(oversized, ["a-1"]);
+        assert_eq!(too_long(&mut oversized, None).as_deref(), Some("a-1"));
+        assert_eq!(too_long(&mut oversized, None), None);
     }
 }

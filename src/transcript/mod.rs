@@ -438,15 +438,7 @@ impl Transcript {
                 attempt,
                 limit,
                 message,
-            } => {
-                self.retry = Some(
-                    texts
-                        .retry
-                        .replace("{attempt}", &attempt.to_string())
-                        .replace("{limit}", &limit.to_string())
-                        .replace("{message}", &message),
-                );
-            }
+            } => self.retry = Some(failure::retry_line(attempt, limit, &class, &message, texts)),
             Push::TurnEnded(reason) => self.end(reason, texts),
             Push::CommandRan => self.settle(),
         }
