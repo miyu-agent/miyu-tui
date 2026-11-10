@@ -35,7 +35,6 @@ impl App {
             return;
         }
         // 在前台也弹、不响（2026-11-02 项目主人：在会话 B 里干活，A 的循环跑完了没有任何提示）。
-        self.notify_mascot();
         self.notifier
             .tell_finished((title, who.as_ref()), &body, info.session.clone());
     }
