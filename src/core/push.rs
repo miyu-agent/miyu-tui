@@ -217,6 +217,9 @@ pub enum Push {
     },
     /// 有没有能压缩的变了（`compactable.changed`，核心 W-12 补）：瞬时的，订阅时的值在订阅回应里。
     Compactable(bool),
+    /// 这一次回答落定时核心截掉了的（`model.called` 的 `cut`，核心 FT-1：模型在回答后面编的「下一轮」）：第几块（同增量的
+    /// `index`）、从那一块原文的第几个字节起不要。界面把流式攒的那一块截到这里。
+    Cut(Vec<(u64, usize)>),
     /// 一次请求的用量（`model.called` 的 `usage`，供应商没报的没有这一条）。
     Usage(Usage),
     /// 有用量的一次请求花了多少（`model.called` 的 `cost`，核心 8-15）：算不出的是 `None`，跟在用量后面。
