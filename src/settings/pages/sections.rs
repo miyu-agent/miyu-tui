@@ -85,6 +85,7 @@ pub fn split(schema: &mut Schema, got: &Value) {
                     id: group.clone(),
                     name,
                     page: page.clone(),
+                    description: None,
                 },
             );
             added += 1;

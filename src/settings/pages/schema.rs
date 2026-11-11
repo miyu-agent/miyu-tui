@@ -75,6 +75,8 @@ pub struct Group {
     pub name: String,
     /// 在哪一页。
     pub page: String,
+    /// 这一组的说明（核心 HZ-1：`groups` 的一项写了 `description` 的，照连接的语言）：暗色写在组名下面；没写的没有。
+    pub description: Option<String>,
 }
 
 /// 读来的清单。
@@ -178,6 +180,11 @@ impl Schema {
                 id: text(&g["id"]),
                 name: text(&g["name"]),
                 page: text(&g["page"]),
+                description: g["description"]
+                    .as_str()
+                    .map(str::trim)
+                    .filter(|d| !d.is_empty())
+                    .map(str::to_string),
             })
             .collect();
         let items = got["items"]
@@ -246,6 +253,7 @@ impl Schema {
                 id: (*id).to_string(),
                 name: names.name(id).to_string(),
                 page: page.to_string(),
+                description: None,
             };
             self.groups.insert(at + 1 + added, group);
             added += 1;
