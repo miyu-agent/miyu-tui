@@ -244,7 +244,7 @@ fn the_model_form_sets_the_prices_apart_and_drops_their_default_tags() {
         assert!(!row.contains("默认"), "{name} 不写默认：\n{text}");
     }
     assert!(
-        lines[at("默认思考")].trim_end().ends_with("默认"),
+        lines[at("思考程度")].trim_end().ends_with("默认"),
         "别的照旧写来源：\n{text}"
     );
 }
