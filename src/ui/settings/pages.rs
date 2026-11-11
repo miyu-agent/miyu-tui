@@ -304,6 +304,14 @@ pub(super) fn page_lines(
                     spans.push(Span::styled(format!("  {mark}"), theme::dim()));
                 }
                 out.push((Line::from(spans), false));
+                // 这一组写了说明的（核心 HZ-1，`groups` 的 `description`）：暗色写在组名下面，放不下折行写全。
+                if let Some(said) = &schema.groups[g].description {
+                    let room = width.saturating_sub(4).max(1);
+                    for line in crate::input::wrap_words(said, room) {
+                        let text = said[line.start..line.end].trim_end().to_string();
+                        out.push((Line::styled(text, theme::dim()), false));
+                    }
+                }
             }
             Row::Item(i) => {
                 let item = &schema.items[i];

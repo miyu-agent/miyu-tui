@@ -57,6 +57,7 @@ pub fn add_row(schema: &mut Schema, words: &Words, known: bool) {
             id: KEY.to_string(),
             name: words.group.clone(),
             page: page.clone(),
+            description: None,
         },
     );
     schema.items.push(Item {
