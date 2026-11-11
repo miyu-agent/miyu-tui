@@ -236,6 +236,7 @@ impl Transcript {
             Update::Elsewhere { .. }
             | Update::Output { .. }
             | Update::Renamed(_)
+            | Update::Retitling
             | Update::Sessions(_)
             | Update::HeadConfig(_)
             | Update::Human(_)

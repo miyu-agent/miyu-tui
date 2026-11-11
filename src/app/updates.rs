@@ -348,12 +348,13 @@ impl App {
             return;
         }
         if let Update::Renamed(title) = &update {
-            let texts = &self.config.text.rename;
-            let note = title.as_ref().map_or_else(
-                || texts.removed.clone(),
-                |title| texts.done.replace("{title}", title),
-            );
+            let note = self.config.text.rename.done.replace("{title}", title);
             self.hint(note, false);
+            return;
+        }
+        // 重起标题的请求发出去了：说一句在起，起好了标题自己会换，不再弹（蓝图「改名」第 1 条的子条目）。
+        if matches!(update, Update::Retitling) {
+            self.hint(self.config.text.rename.retitling.clone(), false);
             return;
         }
         let undone = matches!(update, Update::Undone { restore: false, .. });

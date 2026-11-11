@@ -362,6 +362,7 @@ async fn send(
         Command::Recap => Some(Awaiting::Recap),
         Command::Configure(ref reference) => Some(Awaiting::Configure(reference.clone())),
         Command::Rename(ref title) => Some(Awaiting::Rename(title.clone())),
+        Command::Retitle => Some(Awaiting::Retitle),
         Command::Answer {
             session: ref asker,
             ref call,
