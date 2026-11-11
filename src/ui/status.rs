@@ -215,7 +215,7 @@ mod tests {
     fn the_queued_line_under_the_pointer_says_a_click_takes_it_back() {
         // 2026-10-22 项目主人：「不如直接点击那条消息撤回？」
         let mut term = ratatui::Terminal::new(ratatui::backend::TestBackend::new(40, 2)).unwrap();
-        let texts = ["/sandbox clear".to_string(), "再看看".to_string()];
+        let texts = ["/model fast".to_string(), "再看看".to_string()];
         let look = Queued {
             mark: "↳ ",
             hint: "点击撤回",
@@ -230,7 +230,7 @@ mod tests {
                 .collect::<String>()
                 .replace(' ', "")
         };
-        assert_eq!(row(0), "↳/sandboxclear", "没停着的不写");
+        assert_eq!(row(0), "↳/modelfast", "没停着的不写");
         assert!(
             row(1).starts_with("↳再看看") && row(1).ends_with("点击撤回"),
             "{}",
