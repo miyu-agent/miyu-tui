@@ -726,6 +726,7 @@
     },
     "file": "[{name}]",
     "folder": "[{name}/]",
+    "path_only": "path only",
     "names": {
       "image": "images",
       "pdf": "PDFs",

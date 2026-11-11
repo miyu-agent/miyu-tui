@@ -178,6 +178,21 @@ pub(super) fn reported(body: &Value) -> Push {
     })
 }
 
+/// 这个界面发的那一句（界面早画上了、只配序号的）里有只给了路径的附件：传的时候核心说太大才改的（核心 AT-1），界面这时才
+/// 知道是哪几块，交回这一句附的全部，照先后对上。别的（别处来的、补发的）在 [`said`] 里已经带着附件，不另交。
+pub(super) fn sent_as_path(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
+    let seq = event["seq"].as_u64()?;
+    let own = event["by"]["kind"] == "person" && event["cause"].as_str().is_some_and(mine);
+    if !own || super::typed_text(&event["body"]).is_some() {
+        return None;
+    }
+    let attached = super::read_attached(&event["body"]);
+    attached
+        .iter()
+        .any(|a| a.path_only)
+        .then_some(Push::PathOnly { seq, attached })
+}
+
 /// `message.user`：这个界面发的交回序号，长期目标开一轮的交回第几轮，别处来的交回谁发的、说了什么。`mine` 照 `cause` 认。
 pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
     let seq = event["seq"].as_u64()?;

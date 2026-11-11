@@ -166,6 +166,19 @@ pub(super) fn shaped(
                 file,
                 replacement: (!c.attachment()).then(|| (index, Rc::from(c.full.as_str()))),
             });
+            // 只给了路径的附件：块后面空一格、暗色写「仅路径」（核心 AT-1）；不是块的一部分，点不开文件。
+            if let Some(note) = &c.note {
+                out.push(' ');
+                let from = out.len();
+                out.push_str(note);
+                pieces.push(Piece {
+                    from,
+                    to: out.len(),
+                    style: theme::dim(),
+                    file: None,
+                    replacement: None,
+                });
+            }
         }
         at = end;
     }

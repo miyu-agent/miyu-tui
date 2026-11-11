@@ -79,6 +79,16 @@ fn job_effects_reports_and_foreign_messages_are_read() {
         crate::core::push::read(&said(person.clone(), "tui-1"), &mine),
         [Push::UserMessage(12)]
     );
+    // 这个界面发的那句里有只给了路径的附件（核心 AT-1）：序号后面再交这一句附的，界面照先后补「仅路径」。
+    let with_path = json!({"seq": 14, "kind": "message.user", "by": person.clone(), "cause": "tui-1",
+        "body": {"blocks": [{"type": "text", "text": "看看 [视频 1]"},
+            {"type": "path", "name": "旅行.mp4", "path": "/home/me/旅行.mp4", "size": 31_457_280}]}});
+    let got = crate::core::push::read(&with_path, &mine);
+    assert_eq!(got[0], Push::UserMessage(14));
+    match &got[1] {
+        Push::PathOnly { seq: 14, attached } => assert!(attached[0].path_only),
+        other => panic!("{other:?}"),
+    }
     let foreign = |by| match crate::core::push::read(&said(by, "web-7"), &mine).remove(0) {
         Push::Foreign(f) => (f.seq, f.from, f.text),
         other => panic!("{other:?}"),

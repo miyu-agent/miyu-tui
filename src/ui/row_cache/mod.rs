@@ -259,6 +259,9 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
     // 写完了才换链接卡片（蓝图「链接卡片」第 1 条）：写完那一刻字没变，也要重排。
     (ctx.writing == Some(entry.id)).hash(&mut h);
     (entry.pasted.len(), &entry.details, &entry.from).hash(&mut h);
+    // 块后面那一句（「仅路径」）是核心推来那一句以后才补上的：补上了要重排。
+    let noted = entry.pasted.iter().filter(|c| c.note.is_some()).count();
+    noted.hash(&mut h);
     // 撤销那一行：回应和改回的文件是两个事件，文件后到（review C5，2026-10-11：原来只看有没有，「改回 N 个文件」
     // 一直不出现）。
     if let Some(undo) = &entry.undo {

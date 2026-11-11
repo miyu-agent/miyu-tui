@@ -14,6 +14,7 @@ fn said(t: &mut Transcript, turn: u64, text: &str, kinds: &[(&str, &str)]) {
             full: (*label).into(),
             kind: Some((*kind).into()),
             file: None,
+            note: None,
         })
         .collect();
     t.user(text.into(), chips);
@@ -48,6 +49,7 @@ fn attachments_are_counted_per_kind_and_undone_ones_give_their_numbers_back() {
             full: "长文".into(),
             kind: None,
             file: None,
+            note: None,
         }],
     );
     assert_eq!(t.attachment_counts(), counts(&[("image", 2), ("pdf", 1)]));

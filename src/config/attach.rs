@@ -29,6 +29,8 @@ pub struct AttachTexts {
     pub folder: String,
     /// 每一种的名字（提示里用）：`image` 是「图片」。
     pub names: HashMap<String, String>,
+    /// 只给了路径、没附内容的附件，块后面暗色写的（核心 AT-1）。
+    pub path_only: String,
     /// 模型收不了、改成了文件块时提示的（「输入框」第 12 条「照模型收」）：`{kinds}` 那几种的名字。
     pub refused: String,
 }

@@ -382,7 +382,7 @@ async fn send(
     let answer_files = match &command {
         Command::Answer { files, .. } if !files.is_empty() => {
             let paths: Vec<_> = files.iter().map(|(_, f)| f.clone()).collect();
-            match upload::attach(rpc, &paths, None).await {
+            match upload::attach_blobs(rpc, &paths).await {
                 Ok(got) => Some(
                     files
                         .iter()

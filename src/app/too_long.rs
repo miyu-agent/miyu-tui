@@ -41,6 +41,7 @@ impl App {
             full: label.clone(),
             kind: Some(TEXT.to_string()),
             file: None,
+            note: None,
         };
         (label, vec![chip])
     }

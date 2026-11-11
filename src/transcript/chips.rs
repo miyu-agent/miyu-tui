@@ -17,6 +17,8 @@ pub struct Chip {
     pub kind: Option<String>,
     /// 附件、文件块是本机的哪个文件：点块用系统的程序打开它（「输入框」第 12 条）。粘贴块是 `None`。
     pub file: Option<PathBuf>,
+    /// 块后面暗色接着写的一句：只给了路径、没附内容的附件写「仅路径」（核心 AT-1，2026-11-11 项目主人）；别的是 `None`。
+    pub note: Option<String>,
 }
 
 impl Chip {

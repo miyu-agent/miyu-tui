@@ -36,6 +36,7 @@ pub(super) fn chips(draft: &Draft) -> Vec<Chip> {
             full: b.text.clone(),
             kind: b.attachment.as_ref().map(|a| a.kind.clone()),
             file: b.opens().map(std::path::Path::to_path_buf),
+            note: None,
         })
         .collect()
 }

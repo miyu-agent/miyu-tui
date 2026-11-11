@@ -726,6 +726,7 @@
     },
     "file": "[{name}]",
     "folder": "[{name}/]",
+    "path_only": "パスのみ",
     "names": {
       "image": "画像",
       "pdf": "PDF",

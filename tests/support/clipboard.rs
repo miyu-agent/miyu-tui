@@ -46,3 +46,28 @@ pub fn with_clipboard(home: &Home, path: &str) -> Tui {
         ],
     )
 }
+
+/// 数据根里记着 `said` 那一句的 `message.user`（会话日志一行一件，不管放在哪个目录）。
+pub fn logged_message(root: &std::path::Path, said: &str) -> Option<serde_json::Value> {
+    let mut dirs = vec![root.to_path_buf()];
+    while let Some(dir) = dirs.pop() {
+        for entry in std::fs::read_dir(dir).ok()?.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                dirs.push(path);
+            } else if path.extension().is_some_and(|e| e == "jsonl") {
+                let text = std::fs::read_to_string(&path).unwrap_or_default();
+                let found = text
+                    .lines()
+                    .filter_map(|l| serde_json::from_str::<serde_json::Value>(l).ok())
+                    .find(|e| {
+                        e.to_string().contains("message.user") && e.to_string().contains(said)
+                    });
+                if found.is_some() {
+                    return found;
+                }
+            }
+        }
+    }
+    None
+}
