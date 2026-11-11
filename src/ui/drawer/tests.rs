@@ -230,11 +230,11 @@ fn installing_a_package_shows_what_it_is_under_the_question() {
 
 #[test]
 fn a_long_path_is_clipped_before_its_mark_so_the_mark_stays() {
-    // 2026-10-22 走查：工作区路径长的，「受保护」这类标记被挤出行外；路径先截，标记照写。
-    let long = format!("/srv/{}/.envrc", "deep/".repeat(20));
+    // 2026-10-22 走查：路径长的，后面的标记被挤出行外；路径先截，标记照写。
+    let long = format!("/srv/{}/id_ed25519", "deep/".repeat(20));
     let approval = serde_json::from_value(serde_json::json!({
         "call_id": "c1", "access": "write",
-        "detail": {"tool": "write", "paths": [{"path": long, "write": true, "zone": "read_only"}]}
+        "detail": {"tool": "write", "paths": [{"path": long, "write": true, "zone": "private"}]}
     }))
     .unwrap();
     let d = Drawer::approval(None, approval);
@@ -243,7 +243,7 @@ fn a_long_path_is_clipped_before_its_mark_so_the_mark_stays() {
         .iter()
         .find(|l| l.contains("/srv/"))
         .unwrap_or_else(|| panic!("{shown:#?}"));
-    assert!(row.ends_with("… 受保护"), "{row}");
+    assert!(row.ends_with("… 私密目录"), "{row}");
     assert!(row.width() <= 40, "{row}");
 }
 
