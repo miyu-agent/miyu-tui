@@ -903,7 +903,7 @@
       "model": "模型",
       "inputs": "支持输入",
       "window": "上下文窗口",
-      "effort": "新会话默认思考",
+      "effort": "思考程度",
       "temperature": "温度",
       "price": "价格 · 每百万 token",
       "input": "输入",

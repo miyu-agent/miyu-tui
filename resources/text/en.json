@@ -903,7 +903,7 @@
       "model": "Model",
       "inputs": "Inputs",
       "window": "Context window",
-      "effort": "Default effort for new sessions",
+      "effort": "Thinking effort",
       "temperature": "Temperature",
       "price": "Price · per 1M tokens",
       "input": "Input",
