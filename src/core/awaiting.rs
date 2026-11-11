@@ -19,8 +19,10 @@ pub(super) enum Awaiting {
     Output(String, String, bool),
     /// 要回顾：交回的是上一句的，界面照回应画（写成了的照推送画）。
     Recap,
-    /// 改名：成了弹一句（`None` 是去掉标题）。
-    Rename(Option<String>),
+    /// 改名：成了弹一句。
+    Rename(String),
+    /// 让模型重起标题：请求发出去了弹一句，标题照推送换；没东西可起的另说。
+    Retitle,
     /// 带 `after` 订阅：回应到了算补完（「会话列表」第 5 条）。
     Replay(String),
     /// 重连以后带 `after` 重订主会话（review B7，2026-10-11）：回应照补完办，只是不算接上一个老会话（工作区不另写一句）。
@@ -91,4 +93,32 @@ pub(super) enum Awaiting {
     PackageCall,
     /// 回答确认、提问：问的会话、调用编号（拒了要告诉界面）。
     Answer(String, String),
+}
+
+/// 重起标题（`session.retitle`）被拒时界面认的原因码：核心的 `bad_params` 在这里只有一种意思——她一句带正文的回答都还没有，
+/// 没东西可起（请求是头自己拼的，`session` 不会漏写），换成头自己的 `nothing_to_retitle` 好说一句人话；别的照原样。
+pub(super) fn retitle_reason(reason: Option<String>) -> Option<String> {
+    match reason.as_deref() {
+        Some("bad_params") => Some("nothing_to_retitle".to_string()),
+        _ => reason,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::retitle_reason;
+
+    #[test]
+    fn a_refused_retitle_with_bad_params_means_nothing_to_title() {
+        assert_eq!(
+            retitle_reason(Some("bad_params".into())).as_deref(),
+            Some("nothing_to_retitle")
+        );
+        assert_eq!(
+            retitle_reason(Some("session_not_found".into())).as_deref(),
+            Some("session_not_found"),
+            "别的原因照原样"
+        );
+        assert_eq!(retitle_reason(None), None);
+    }
 }

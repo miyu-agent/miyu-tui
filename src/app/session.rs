@@ -191,11 +191,15 @@ impl App {
         });
     }
 
-    /// `/rename`：去掉前后空白交给核心；空的是去掉标题，太长的当场提示不发（蓝图「改名」第 1、2 条）。
+    /// `/rename`：去掉前后空白交给核心改名，太长的当场提示不发；空的让模型照最近的对话重起一个（核心 TT-1，2026-11-11
+    /// 项目主人：原来是去掉标题；蓝图「改名」第 1、2 条）。
     pub(super) fn rename(&mut self, words: Option<&str>) {
-        let title = words.map(str::trim).filter(|w| !w.is_empty());
+        let Some(title) = words.map(str::trim).filter(|w| !w.is_empty()) else {
+            self.link.core.send(Command::Retitle);
+            return;
+        };
         let max = self.config.layout.title_max;
-        if title.is_some_and(|t| t.chars().count() > max) {
+        if title.chars().count() > max {
             let note = self
                 .config
                 .text
@@ -205,8 +209,6 @@ impl App {
             self.hint(note, false);
             return;
         }
-        self.link
-            .core
-            .send(Command::Rename(title.map(str::to_string)));
+        self.link.core.send(Command::Rename(title.to_string()));
     }
 }

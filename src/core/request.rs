@@ -100,6 +100,7 @@ pub(super) fn request(
             "session.set_meta",
             json!({"session": session, "title": title}),
         ),
+        Command::Retitle => ("session.retitle", json!({"session": session})),
         Command::Stop {
             session: owner,
             job,
@@ -260,14 +261,15 @@ mod tests {
     }
 
     #[test]
-    fn a_rename_sets_the_title_and_a_bare_one_removes_it() {
+    fn a_rename_sets_the_title_and_a_bare_one_asks_the_model_for_one() {
         assert_eq!(
-            request(Command::Rename(Some("回文".into())), "s"),
+            request(Command::Rename("回文".into()), "s"),
             Some(("session.set_meta", json!({"session": "s", "title": "回文"})))
         );
+        // 只打 `/rename`：不再把标题写成空的，让模型重起（核心 TT-1，2026-11-11 项目主人）。
         assert_eq!(
-            request(Command::Rename(None), "s"),
-            Some(("session.set_meta", json!({"session": "s", "title": null})))
+            request(Command::Retitle, "s"),
+            Some(("session.retitle", json!({"session": "s"})))
         );
     }
 

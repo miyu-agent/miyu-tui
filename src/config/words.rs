@@ -18,8 +18,8 @@ pub struct RecapTexts {
 pub struct RenameTexts {
     /// 改成了，`{title}` 是新标题。
     pub done: String,
-    /// 去掉了标题。
-    pub removed: String,
+    /// 让模型重起标题的请求发出去了。
+    pub retitling: String,
     /// 太长不发，`{max}` 是上限。
     pub too_long: String,
 }

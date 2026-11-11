@@ -101,6 +101,7 @@ mod notices;
 mod pools;
 mod prefix;
 mod recent;
+mod rename;
 mod skill_word;
 mod status;
 mod switching;

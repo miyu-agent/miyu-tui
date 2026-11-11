@@ -193,6 +193,7 @@
     "session_sealed": "Session sealed",
     "archived": "This is an archive and can't be continued",
     "nothing_to_rename": "No session yet; say something first, then rename",
+    "nothing_to_retitle": "Nothing to title yet",
     "nothing_to_delete": "No session to delete",
     "nothing_to_recap": "Nothing to recap yet",
     "recap_failed": "The recap could not be written, try again",
@@ -225,7 +226,7 @@
   },
   "rename": {
     "done": "Renamed: {title}",
-    "removed": "Title removed",
+    "retitling": "Retitling…",
     "too_long": "Titles are at most {max} characters"
   },
   "feature_tree": {

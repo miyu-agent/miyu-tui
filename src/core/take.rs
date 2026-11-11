@@ -131,6 +131,11 @@ pub(super) async fn take(
             // 跟着看整理订不上、取不到正文（没装记忆、核心旧）：照旧等回执，不用说。
             Some(Awaiting::Dream | Awaiting::DreamTexts(_) | Awaiting::DreamStop) => true,
             Some(Awaiting::PackageCall) => notify(Update::PackageCallRefused { message }),
+            // 重起标题被拒：`bad_params` 是她一句带正文的回答都还没有，换成头自己的原因码说人话；别的照一般的拒绝。
+            Some(Awaiting::Retitle) => notify(Update::Refused {
+                reason: super::awaiting::retitle_reason(reason),
+                message,
+            }),
             // 读不了输出（任务没了、是子代理）：不用说，界面不再等它。
             Some(Awaiting::Output(session, job, after)) => notify(Update::Output {
                 session,
@@ -159,6 +164,7 @@ pub(super) async fn take(
                 || notify(Update::Recap(text.to_string()));
         }
         Some(Awaiting::Rename(title)) => return notify(Update::Renamed(title)),
+        Some(Awaiting::Retitle) => return notify(Update::Retitling),
         Some(Awaiting::Widgets) => return notify(super::widgets::listed(&message["result"])),
         Some(Awaiting::Dream | Awaiting::DreamStop) => return true,
         Some(Awaiting::DreamTexts(session)) => {

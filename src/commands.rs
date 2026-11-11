@@ -91,7 +91,7 @@ pub enum Run {
     Compact,
     /// 要一段回顾（`session.recap`，蓝图「回顾」）。
     Recap,
-    /// 改名、去掉标题（`session.set_meta`，蓝图「改名」）。
+    /// 改名（`session.set_meta`）、只打命令让模型重起标题（`session.retitle`；蓝图「改名」）。
     Rename,
     /// 长期目标：交给核心（`command.run`，蓝图「长期目标」）。
     Goal,
