@@ -10,6 +10,7 @@ mod chips;
 mod compaction;
 mod compaction_auto;
 mod copy;
+mod cut;
 mod done;
 mod failure;
 mod folds;

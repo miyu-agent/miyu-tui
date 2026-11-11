@@ -1,4 +1,4 @@
-//! 一次请求记了什么（`model.called`）：用量、金额、发出去了没有、速度、出错。
+//! 一次请求记了什么（`model.called`）：落定时截掉的、用量、金额、发出去了没有、速度、出错。
 
 use serde_json::Value;
 
@@ -21,6 +21,19 @@ pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
         out.extend(spent.map(Push::AuxUsage));
         out.extend(spent.map(|_| Push::Billed(Cost::read(&body["cost"]))));
         return;
+    }
+    // 落定时截掉的（核心 FT-1）：先于用量交，界面先把那几块截短。没写、写空的不交。
+    let cut: Vec<(u64, usize)> = body["cut"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|c| {
+            let at = usize::try_from(c["at"].as_u64()?).ok()?;
+            Some((c["block"].as_u64()?, at))
+        })
+        .collect();
+    if !cut.is_empty() {
+        out.push(Push::Cut(cut));
     }
     out.extend(spent.map(Push::Usage));
     out.extend(spent.map(|_| Push::Billed(Cost::read(&body["cost"]))));
@@ -64,5 +77,37 @@ pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
         }
         (Some("ok"), false) => out.push(Push::CallOk),
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::{Push, read};
+
+    #[test]
+    fn a_cut_comes_before_the_usage_and_none_gives_nothing() {
+        // 核心 FT-1：`cut` 是落定时截掉的，第几块、从第几个字节起。
+        let called = |cut: serde_json::Value| {
+            let usage = json!({"uncached": 10, "cache_read": 0, "cache_write": 0, "output": 5});
+            let mut out = Vec::new();
+            read(
+                &json!({"result": "ok", "usage": usage, "cut": cut}),
+                &mut out,
+            );
+            out
+        };
+        let got = called(json!([
+            {"block": 0, "at": 38, "bytes": 212, "role": "user"},
+            {"block": 2, "at": 0, "bytes": 40, "role": "user"}
+        ]));
+        assert_eq!(got[0], Push::Cut(vec![(0, 38), (2, 0)]), "先截再记用量");
+        assert!(matches!(got[1], Push::Usage(_)));
+        // 没写、写空的、写得不像的：不交。
+        for odd in [json!(null), json!([]), json!([{"block": "x"}])] {
+            let got = called(odd);
+            assert!(!got.iter().any(|p| matches!(p, Push::Cut(_))), "{got:?}");
+        }
     }
 }

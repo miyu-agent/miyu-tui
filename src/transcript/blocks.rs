@@ -65,6 +65,33 @@ impl Transcript {
         }
     }
 
+    /// 回答落定时核心截掉了的（`model.called` 的 `cut`，核心 FT-1，2026-11-11：模型在回答后面编出「下一轮用户消息」，核心写
+    /// `message.assistant` 以前截掉；增量照原样推过，屏上还留着那一段）：流式攒的那一块正文截到 `at` 个字节（不截在字中间），
+    /// 再去掉末尾的空白，和落了盘的那一条一样。整块截空的字是空的，不画、不占空行（`ui/rows.rs` 的 `shown`），`/copy`、朗读
+    /// 也不算它。思考、调工具的块核心不截，这里也不动；没变的不碰（不重排、不闪）。
+    pub(super) fn cut(&mut self, cuts: &[(u64, usize)]) {
+        for &(index, at) in cuts {
+            let Some(Slot::Reply(i)) = self.blocks.get(&index).copied() else {
+                continue;
+            };
+            let Some(entry) = self.entries.get_mut(i) else {
+                continue;
+            };
+            // 截的地方在流式攒的字末尾以后的（流里少收了）：没截掉什么，不碰。
+            if at >= entry.text.len() {
+                continue;
+            }
+            let mut end = at;
+            while !entry.text.is_char_boundary(end) {
+                end -= 1;
+            }
+            let kept = entry.text[..end].trim_end().len();
+            if kept < entry.text.len() {
+                entry.text.truncate(kept);
+            }
+        }
+    }
+
     /// 这次请求里前面还开着的块都算收全了：回复是一块接一块出来的，OpenAI 兼容接口的驱动要等整个回复收完
     /// 才一起报 `end`（蓝图 `tui.md`「时间线」第 10 条）。
     pub(super) fn close_open_blocks(&mut self) {

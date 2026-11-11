@@ -380,6 +380,7 @@ impl Transcript {
             }
             Push::Delta { index, text } => self.delta(index, &text),
             Push::BlockEnd(index) => self.block_end(index),
+            Push::Cut(cuts) => self.cut(&cuts),
             Push::Calls(ids) => {
                 for (id, at) in ids.into_iter().zip(std::mem::take(&mut self.unnamed)) {
                     if let Some(step) = self.step_mut(at) {
