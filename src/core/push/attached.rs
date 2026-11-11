@@ -1,4 +1,4 @@
-//! 一句话里附的图片、文件（`message.user` 的 `image`、`file` 块，核心 `kernel/blocks.md`）：人发的、别的会话发的（核心
+//! 一句话里附的图片、文件（`message.user` 的 `image`、`file` 块，只给路径的 `path` 块——核心 AT-1；核心 `kernel/blocks.md`）：人发的、别的会话发的（核心
 //! C-9：`send_message`、`subagent` 带的附件）一个样子，界面照人发附件那样画成块（蓝图「输入框」第 12 条、「别处来的话」）。
 
 use serde_json::Value;
@@ -12,6 +12,8 @@ pub struct Attached {
     pub name: Option<String>,
     /// 原来在本机的哪儿：点块照它打开；可以没有（剪贴板贴的）。
     pub path: Option<String>,
+    /// 只给了路径、没附内容的（`path` 块，核心 AT-1：超过上传上限的文件）：没有媒体类型，块后面写「仅路径」。
+    pub path_only: bool,
 }
 
 impl Attached {
@@ -44,6 +46,7 @@ impl Attached {
             media_type,
             name,
             path: Some(path.to_string()),
+            path_only: false,
         }
     }
 }
@@ -52,11 +55,12 @@ impl Attached {
 pub fn read(body: &Value) -> Vec<Attached> {
     let text = |v: &Value| v.as_str().filter(|s| !s.is_empty()).map(str::to_string);
     super::blocks(body)
-        .filter(|b| matches!(b["type"].as_str(), Some("image" | "file")))
+        .filter(|b| matches!(b["type"].as_str(), Some("image" | "file" | "path")))
         .map(|b| Attached {
             media_type: b["media_type"].as_str().unwrap_or_default().to_string(),
             name: text(&b["name"]),
             path: text(&b["path"]),
+            path_only: b["type"] == "path",
         })
         .collect()
 }
@@ -83,6 +87,20 @@ mod tests {
         assert_eq!(got[0].path.as_deref(), Some("/home/me/晚霞.png"));
         assert_eq!(got[1].path, None, "剪贴板贴的、没给位置的");
         assert_eq!(got[2].name.as_deref(), Some("data.zip"));
+        assert!(got.iter().all(|a| !a.path_only));
         assert!(read(&json!({"blocks": [{"type": "text", "text": "只有字"}]})).is_empty());
+    }
+
+    #[test]
+    fn a_path_block_is_an_attachment_with_only_its_path() {
+        // 核心 AT-1：超过上传上限的文件只给路径，日志里是 `path` 块，没有 `blob`、`media_type`。
+        let body = json!({"blocks": [
+            {"type": "text", "text": "看看 [视频 1]"},
+            {"type": "path", "name": "旅行.mp4", "path": "/home/me/旅行.mp4", "size": 31_457_280}]});
+        let got = read(&body);
+        assert_eq!(got.len(), 1);
+        assert!(got[0].path_only && got[0].media_type.is_empty());
+        assert_eq!(got[0].name.as_deref(), Some("旅行.mp4"));
+        assert_eq!(got[0].path.as_deref(), Some("/home/me/旅行.mp4"));
     }
 }

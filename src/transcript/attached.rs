@@ -33,14 +33,30 @@ impl Transcript {
         let Some(at) = at.filter(|_| !attached.is_empty()) else {
             return;
         };
+        // 已经画过块的（你在这个界面发的那句）不再画；只给了路径的那几块这时才知道（传的时候核心说太大才改的，核心 AT-1），
+        // 照先后对上、补一句「仅路径」。
         if self.entries[at].pasted.iter().any(Chip::attachment) {
+            let chips = self.entries[at]
+                .pasted
+                .iter_mut()
+                .filter(|c| c.attachment());
+            for (chip, one) in chips.zip(attached) {
+                if one.path_only && chip.note.is_none() {
+                    chip.note = Some(words.path_only.clone());
+                }
+            }
             return;
         }
         let mut counts = self.attachment_counts();
         let entry = &mut self.entries[at];
+        // 只给了路径的没有媒体类型：种类照字里第几个块上写的认（发的那一头照先后写的 `[视频 1]`），字里没有的当文件。
+        let placed = kinds_in(&entry.text, words);
         let mut written: HashMap<&str, Vec<String>> = HashMap::new();
-        for one in attached {
-            let kind = one.kind();
+        for (index, one) in attached.iter().enumerate() {
+            let kind = match one.path_only {
+                true => placed.get(index).copied().unwrap_or("file"),
+                false => one.kind(),
+            };
             let label = match words.labels.get(kind) {
                 Some(template) => {
                     let found = written
@@ -66,9 +82,26 @@ impl Transcript {
                 label,
                 kind: Some(kind.to_string()),
                 file: one.path.as_ref().map(PathBuf::from),
+                note: one.path_only.then(|| words.path_only.clone()),
             });
         }
     }
+}
+
+/// 字里写着的附件块各是哪一种，照在字里的先后（几种的模板都找一遍，照位置排）。
+fn kinds_in<'a>(text: &str, words: &'a AttachTexts) -> Vec<&'a str> {
+    let mut found: Vec<(usize, &str)> = Vec::new();
+    for (kind, template) in &words.labels {
+        let mut from = 0;
+        for label in labels_in(text, template) {
+            if let Some(at) = text[from..].find(&label) {
+                found.push((from + at, kind.as_str()));
+                from += at + label.len();
+            }
+        }
+    }
+    found.sort_unstable();
+    found.into_iter().map(|(_, kind)| kind).collect()
 }
 
 /// 字里照 `template`（`[图片 {n}]`）写的块，照先后。

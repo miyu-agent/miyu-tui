@@ -22,6 +22,7 @@ fn chip(label: &str, full: &str, kind: Option<&str>) -> Chip {
         full: full.into(),
         kind: kind.map(str::to_string),
         file: None,
+        note: None,
     }
 }
 
@@ -264,6 +265,7 @@ fn attachments_stay_blocks_and_open_their_file_like_a_link() {
     let mut t = Transcript::default();
     let attached = |label: &str, file: &str| Chip {
         file: Some(file.into()),
+        note: None,
         ..chip(label, label, Some("image"))
     };
     t.user(
@@ -280,6 +282,7 @@ fn attachments_stay_blocks_and_open_their_file_like_a_link() {
     // 文件块：写着文件名，原文是路径；点开这一条也不换成路径，点块打开文件。
     let file_chip = Chip {
         file: Some("/tmp/看图/notes.txt".into()),
+        note: None,
         ..chip("[notes.txt]", "/tmp/看图/notes.txt", None)
     };
     t.user("[notes.txt]".into(), vec![file_chip]);

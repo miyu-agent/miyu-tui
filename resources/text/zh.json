@@ -726,6 +726,7 @@
     },
     "file": "[{name}]",
     "folder": "[{name}/]",
+    "path_only": "仅路径",
     "names": {
       "image": "图片",
       "pdf": "PDF",

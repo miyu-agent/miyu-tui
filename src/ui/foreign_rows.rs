@@ -143,6 +143,7 @@ mod tests {
             media_type: "image/png".into(),
             name: Some("晚霞.png".into()),
             path: Some("/tmp/晚霞.png".into()),
+            path_only: false,
         };
         t.attach_to(3, &[png], &f.config.text.attach);
         let mut open = t.entries[0].clone();

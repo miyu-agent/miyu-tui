@@ -86,6 +86,8 @@ pub enum Push {
     TurnStarted(u64, Option<u64>),
     /// 你说的一句落了盘（`message.user`，这个界面发的），带着它的序号。
     UserMessage(u64),
+    /// 这个界面发的那一句里有只给了路径的附件（核心 AT-1）：跟在那一句的推送后面，界面照先后在块后面补「仅路径」。
+    PathOnly { seq: u64, attached: Vec<Attached> },
     /// 序号是这个的那句话是人用 `!` 打的命令（`message.user` 的 `shell: true`，核心 SH-1）：跟在那一句的推送后面。
     ShellAsked(u64),
     /// 人用 `!` 打的命令跑完了（`shell.ran`）。
@@ -332,6 +334,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         )),
         "message.user" => {
             out.extend(jobs::said(event, mine));
+            out.extend(jobs::sent_as_path(event, mine));
             out.extend(shell::asked(event));
         }
         "shell.ran" => out.extend(shell::ran(body)),

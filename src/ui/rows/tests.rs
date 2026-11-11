@@ -322,12 +322,14 @@ fn mouse_copy_expands_chips_once_across_wraps() {
             full: "第一段\n原文".into(),
             kind: None,
             file: None,
+            note: None,
         },
         Chip {
             label: "[已粘贴 14 行]".into(),
             full: "第二段".into(),
             kind: None,
             file: None,
+            note: None,
         },
     ];
     for width in [1, 2, 6, 60] {
@@ -375,6 +377,7 @@ fn mouse_copy_expands_file_paths_but_not_literal_labels() {
         full: "/tmp/中文文件.txt".into(),
         kind: None,
         file: Some("/tmp/中文文件.txt".into()),
+        note: None,
     }];
     let rows = super::entry_rows(0, &t.entries[0], &f.ctx());
     let mut view = BodyView::default();
@@ -398,12 +401,14 @@ fn mouse_copy_keeps_attachment_labels_and_separates_entries() {
                 full: full.into(),
                 kind: None,
                 file: None,
+                note: None,
             },
             Chip {
                 label: "[图片 1]".into(),
                 full: "[图片 1]".into(),
                 kind: Some("image".into()),
                 file: Some("/tmp/a.png".into()),
+                note: None,
             },
         ];
     }
@@ -427,6 +432,7 @@ fn mouse_copy_preserves_whitespace_inside_expanded_original() {
         full: full.into(),
         kind: None,
         file: None,
+        note: None,
     }];
     for width in [2, 60] {
         let mut ctx = f.ctx();
@@ -436,4 +442,39 @@ fn mouse_copy_preserves_whitespace_inside_expanded_original() {
         view.select = Some(((1, 0), (view.rows.len() - 2, 100)));
         assert_eq!(view.selected_text(), full);
     }
+}
+
+#[test]
+fn a_path_only_attachment_is_followed_by_a_dim_note() {
+    // 核心 AT-1：只给了路径的附件，块后面暗色写「仅路径」；块照旧指着那个文件，那一句不是块、点不开。
+    use crate::transcript::{Chip, Kind, Transcript};
+    use crate::ui::test_support::Fixture;
+    let f = Fixture::new();
+    let mut t = Transcript::default();
+    t.note(Kind::User, "看看 [视频 1] 这个".into());
+    t.entries[0].pasted = vec![Chip {
+        label: "[视频 1]".into(),
+        full: "[视频 1]".into(),
+        kind: Some("video".into()),
+        file: Some("/home/me/旅行.mp4".into()),
+        note: Some("仅路径".into()),
+    }];
+    let rows = super::entry_rows(0, &t.entries[0], &f.ctx());
+    let line = rows
+        .iter()
+        .find(|r| r.plain().contains("[视频 1]"))
+        .expect("有这一行");
+    assert!(
+        line.plain().contains("看看 [视频 1] 仅路径 这个"),
+        "{}",
+        line.plain()
+    );
+    let span = |text: &str| {
+        line.content()
+            .iter()
+            .find(|s| s.content == text)
+            .unwrap_or_else(|| panic!("没有「{text}」这一段：{:?}", line.content()))
+    };
+    assert_eq!(span("仅路径").style, crate::theme::dim());
+    assert_eq!(span("[视频 1]").style, crate::theme::chip());
 }

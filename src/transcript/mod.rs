@@ -319,6 +319,7 @@ impl Transcript {
             Push::TurnStarted(turn, trigger) => self.start(turn, trigger),
             // 你发的话照先后落盘：配给最早那句还没有序号的。
             Push::UserMessage(seq) => self.stamped(seq),
+            Push::PathOnly { seq, attached } => self.attach_to(seq, &attached, &texts.attach),
             Push::Withdrawn(seqs) => self.withdraw(&seqs),
             // 去掉标题推来的是空的：读成没有标题。
             Push::Title { title, named } => {
