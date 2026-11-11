@@ -50,14 +50,12 @@ pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
         body["duration_ms"].as_u64(),
         body["first_token_ms"].as_u64(),
     );
-    if let (Some(duration), Some(first)) = (duration, first)
+    // 首字到结束；没报首字的照整次（同核心 `miyu_view::Speed::of`，第 42 条）。是不是一口气到的由 `Speed::record` 判。
+    if let Some(duration) = duration
         && output > 0
-        && duration > first
     {
-        out.push(Push::Speed {
-            output,
-            ms: duration - first,
-        });
+        let ms = first.map_or(duration, |first| duration.saturating_sub(first));
+        out.push(Push::Speed { output, ms });
     }
     // 摘要请求出错说压缩失败，不算这一轮的出错（蓝图「正文」第 9 条）。
     let error = || CallError::read(&body["error"]);
