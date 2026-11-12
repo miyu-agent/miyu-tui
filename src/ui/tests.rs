@@ -21,6 +21,7 @@ fn while_answering_one_blank_above_the_status_and_one_below_it() {
         2,
         0,
         0,
+        false,
     );
     // 正文 · 空一行 · 运行状态行 · 两条排队的 · 空一行 · 输入框（`tui.md`「运行状态行和排队的消息」）。
     assert_eq!(a.pulse.y, a.body.bottom() + 1, "上面空一行");
@@ -36,6 +37,7 @@ fn while_answering_one_blank_above_the_status_and_one_below_it() {
         0,
         0,
         0,
+        false,
     );
     assert_eq!(b.frame.y, b.pulse.y + 2);
     // 没在回答：只空一行。
@@ -48,6 +50,7 @@ fn while_answering_one_blank_above_the_status_and_one_below_it() {
         0,
         0,
         0,
+        false,
     );
     assert_eq!(c.frame.y, c.body.bottom() + 1);
 }
@@ -66,6 +69,7 @@ fn the_narrow_todo_list_sits_above_the_box_with_a_blank_between() {
         0,
         0,
         6,
+        false,
     );
     assert_eq!((a.todo.height, a.todo.bottom() + 1), (6, a.frame.y));
     assert_eq!(a.todo.y, a.body.bottom() + 1);
@@ -80,6 +84,7 @@ fn the_narrow_todo_list_sits_above_the_box_with_a_blank_between() {
         0,
         0,
         6,
+        false,
     );
     assert_eq!(b.menu.bottom(), b.frame.y);
     assert_eq!(b.todo, a.todo, "待办不挪");
@@ -93,6 +98,7 @@ fn the_narrow_todo_list_sits_above_the_box_with_a_blank_between() {
         0,
         0,
         6,
+        false,
     );
     assert_eq!(c.pulse.y + 2, c.todo.y);
 }
@@ -104,7 +110,17 @@ fn a_narrow_window_drops_the_margins() {
     let layout = Config::builtin().unwrap().layout;
     let input = InputBox::new(8, Duration::from_millis(400));
     let rows = |w: u16| input.rows(w);
-    let a = areas(Rect::new(0, 0, 44, 30), &rows, &layout, 0, false, 0, 0, 0);
+    let a = areas(
+        Rect::new(0, 0, 44, 30),
+        &rows,
+        &layout,
+        0,
+        false,
+        0,
+        0,
+        0,
+        false,
+    );
     assert_eq!((a.frame.x, a.frame.width), (1, 42), "两边各留一列");
     assert_eq!(a.text.x, 4, "边线一列，提示符两列");
     assert_eq!(a.text.width, 42 - 3 - 2, "右边只留光标一列和边线");
@@ -113,21 +129,61 @@ fn a_narrow_window_drops_the_margins() {
         (1, 42),
         "框下面那一行照框的左右边"
     );
-    let r = areas(Rect::new(0, 0, 44, 30), &rows, &layout, 0, true, 0, 0, 0);
+    let r = areas(
+        Rect::new(0, 0, 44, 30),
+        &rows,
+        &layout,
+        0,
+        true,
+        0,
+        0,
+        0,
+        false,
+    );
     // 运行状态行、待办从正文的字那一列起（2026-11-03 项目主人：「要有左侧间距……和正文输出内容对齐」），底栏照旧。
     assert_eq!(
         (r.pulse.x, r.pulse.width),
         (3, 40),
         "运行状态行让开正文那两格槽"
     );
-    let t = areas(Rect::new(0, 0, 44, 30), &rows, &layout, 0, false, 0, 0, 3);
+    let t = areas(
+        Rect::new(0, 0, 44, 30),
+        &rows,
+        &layout,
+        0,
+        false,
+        0,
+        0,
+        3,
+        false,
+    );
     assert_eq!((t.todo.x, t.todo.width), (3, 40), "待办同运行状态行");
     let h = super::home::areas(Rect::new(0, 0, 44, 30), &rows, &layout, (0, 0), 0, 0, 0, 0);
     assert_eq!((h.frame.x, h.text.x, h.text.width), (1, 4, 37), "首页一样");
     // 99 列还是紧凑的；100 列起照旧留白，框下面那一行跟着框里的字对齐。
-    let c = areas(Rect::new(0, 0, 99, 30), &rows, &layout, 0, false, 0, 0, 0);
+    let c = areas(
+        Rect::new(0, 0, 99, 30),
+        &rows,
+        &layout,
+        0,
+        false,
+        0,
+        0,
+        0,
+        false,
+    );
     assert_eq!((c.frame.x, c.text.x, c.footer.x), (1, 4, 1), "99 列紧凑");
-    let b = areas(Rect::new(0, 0, 100, 30), &rows, &layout, 0, false, 0, 0, 0);
+    let b = areas(
+        Rect::new(0, 0, 100, 30),
+        &rows,
+        &layout,
+        0,
+        false,
+        0,
+        0,
+        0,
+        false,
+    );
     assert_eq!(b.text.x, b.frame.x + 1 + layout.pad_left);
     assert_eq!((b.footer.x, b.footer.width), (b.text.x, b.text.width));
     assert!(b.frame.x >= layout.side_gap);
@@ -154,7 +210,17 @@ fn nothing_above_the_box_covers_it_in_a_short_window() {
     let layout = Config::builtin().unwrap().layout;
     let input = InputBox::new(8, Duration::from_millis(400));
     let rows = |w: u16| input.rows(w);
-    let a = areas(Rect::new(0, 0, 30, 7), &rows, &layout, 6, false, 0, 0, 3);
+    let a = areas(
+        Rect::new(0, 0, 30, 7),
+        &rows,
+        &layout,
+        6,
+        false,
+        0,
+        0,
+        3,
+        false,
+    );
     assert_eq!(a.menu.bottom(), a.frame.y, "列表贴着输入框");
     assert_eq!(a.menu.height, a.frame.y, "只用输入框上面剩下的行");
     for (name, r) in [("列表", a.menu), ("待办", a.todo)] {
@@ -165,7 +231,17 @@ fn nothing_above_the_box_covers_it_in_a_short_window() {
         );
     }
     // 在回答、还排着两条：运行状态行那一块放不下的不盖输入框。
-    let b = areas(Rect::new(0, 0, 30, 6), &rows, &layout, 0, true, 2, 0, 0);
+    let b = areas(
+        Rect::new(0, 0, 30, 6),
+        &rows,
+        &layout,
+        0,
+        true,
+        2,
+        0,
+        0,
+        false,
+    );
     for (name, r) in [("运行状态行", b.pulse), ("排队的", b.queued)] {
         assert!(
             !r.intersects(b.frame),
@@ -193,7 +269,10 @@ fn the_lists_sit_in_a_frame_lined_up_with_the_input_box() {
     .unwrap();
     let area = Rect::new(0, 0, 160, 40);
     for (name, a) in [
-        ("正文", areas(area, &rows, &layout, 7, false, 0, 0, 0)),
+        (
+            "正文",
+            areas(area, &rows, &layout, 7, false, 0, 0, 0, false),
+        ),
         (
             "首页",
             super::home::areas(area, &rows, &layout, (0, 0), 7, 0, 0, 0),
@@ -234,7 +313,10 @@ fn the_agent_circles_line_up_with_the_level_icon() {
     .unwrap();
     let area = Rect::new(0, 0, 160, 40);
     for (name, a) in [
-        ("正文", areas(area, &rows, &layout, 0, false, 0, 4, 0)),
+        (
+            "正文",
+            areas(area, &rows, &layout, 0, false, 0, 4, 0, false),
+        ),
         (
             "首页",
             super::home::areas(area, &rows, &layout, (0, 0), 0, 4, 0, 0),
@@ -253,8 +335,8 @@ fn an_open_list_covers_the_body_instead_of_pushing_it_up() {
     let rows = |w: u16| input.rows(w);
     let area = Rect::new(0, 0, 100, 40);
     for running in [false, true] {
-        let shut = areas(area, &rows, &layout, 0, running, 2, 0, 3);
-        let open = areas(area, &rows, &layout, 7, running, 2, 0, 3);
+        let shut = areas(area, &rows, &layout, 0, running, 2, 0, 3, false);
+        let open = areas(area, &rows, &layout, 7, running, 2, 0, 3, false);
         assert_eq!(open.body, shut.body, "正文一行不动（在回答：{running}）");
         assert_eq!(
             (open.pulse, open.queued, open.todo),
@@ -267,4 +349,23 @@ fn an_open_list_covers_the_body_instead_of_pushing_it_up() {
             assert!(open.menu.intersects(open.body), "盖在正文底部上");
         }
     }
+}
+
+#[test]
+fn an_open_drawer_takes_the_footer_the_status_and_the_queued_rows() {
+    // 发版前 check 44（2026-11-12 项目主人，照 Claude Code）：抽屉开着时框下面那一行、运行状态行和排队的消息都让给抽屉。
+    let layout = Config::builtin().unwrap().layout;
+    let rows = |_: u16| 5;
+    let area = Rect::new(0, 0, 100, 40);
+    let (shut, open) = (
+        areas(area, &rows, &layout, 0, true, 2, 4, 0, false),
+        areas(area, &rows, &layout, 0, true, 2, 4, 0, true),
+    );
+    assert_eq!(open.footer.height, 0, "框下面那一行让出来");
+    assert_eq!((open.pulse.height, open.queued.height), (0, 0));
+    assert_eq!(open.frame.bottom(), open.agents.y, "框接着子代理状态行");
+    assert_eq!(open.agents, shut.agents, "子代理状态行不动");
+    assert_eq!(open.body.bottom() + 1, open.frame.y, "上面只空一行");
+    // 框下面那一行一行、运行状态行那一块五行换成一行空的：正文多五行。
+    assert_eq!(open.body.height, shut.body.height + 5);
 }
