@@ -95,6 +95,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     screen.view.reading = still_reading(&screen.view, latest);
     screen.view.latest = latest.map(|(id, start, _)| (id, start));
     let settled = seen.media.row_cache.borrow().stale == 0;
+    screen.view.live = seen.talk.transcript.running.is_some();
     let first = first_row(&rows, area, &mut screen.view, settled);
     let height = usize::from(area.height);
     let indent = u16::try_from(ctx.indent.width()).unwrap_or(0);
@@ -309,6 +310,28 @@ fn grown_inside(before: &Rows, now: &Rows, was: usize, floor_end: usize) -> isiz
     }
 }
 
+/// 这一轮还在跑，底边落在的那一条（上一帧是最后一条）后面插进了别的（答问题那一条这类）、它自己收起短了：短了几行
+/// （负数）。底边跟着上移，不把收起的几十行留成空档（发版前 check 45，2026-11-12 项目主人：中途答了问题，在跑的那一段
+/// 收起，屏幕上空出一大段）；一轮结束收起留的空档（10-17）不在跑，这里是 0。
+fn shrunk_for_insert(before: &Rows, now: &Rows, floor_end: usize, live: bool) -> isize {
+    if !live || floor_end == 0 {
+        return 0;
+    }
+    let last = (floor_end - 1).min(before.len().saturating_sub(1));
+    let Some(entry) = before.entry_at(last) else {
+        return 0;
+    };
+    let after = |rows: &Rows| rows.end_of(entry).and_then(|end| rows.entry_at(end));
+    if after(before).is_some() || after(now).is_none() {
+        return 0;
+    }
+    let rows_of = |rows: &Rows| Some(rows.end_of(entry)? - rows.start_of(entry)?);
+    match (rows_of(before), rows_of(now)) {
+        (Some(was), Some(is)) if is < was => is as isize - was as isize,
+        _ => 0,
+    }
+}
+
 /// 第一行露出的是第几行：有锚点的照锚点，滚过的照滚到的，别的跟着最新的、只往下走。滚到底了就回到跟着最新的。
 /// 顺手记下这一帧的区域（`view.area`），下一帧照它看窗口宽度变没变。
 fn first_row(
@@ -351,6 +374,11 @@ fn first_row(
         if !relaid {
             let grown =
                 toggled.map_or(0, |was| grown_inside(&view.rows, rows, was, view.floor_end));
+            let grown = if grown == 0 {
+                shrunk_for_insert(&view.rows, rows, view.floor_end, view.live)
+            } else {
+                grown
+            };
             view.floor_end =
                 shift_floor(&view.rows, rows, view.floor_end).saturating_add_signed(grown);
         }
