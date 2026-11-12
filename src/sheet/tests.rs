@@ -49,7 +49,7 @@ fn the_theme_overlays_its_marks_on_the_resource_files() {
 /// 不推荐它（「主题」第 4 条，2026-10-30 项目主人定）。清单写 `prefix = "tui"`，配置键照旧是 `tui.*`。
 #[test]
 fn the_terminal_manifest_recommends_nothing_and_keeps_tui_keys() {
-    let manifest = include_str!("../../miyu-tui/package.toml");
+    let manifest = include_str!("../../tui/package.toml");
     assert!(
         !manifest.lines().any(|l| l.trim() == "[recommends]"),
         "默认主题编进了程序，不推荐"
@@ -73,7 +73,7 @@ fn the_ascii_theme_leaves_no_symbol_outside_ascii() {
     // 2026-10-21 项目主人照推荐定：纯 ASCII 样板拿来验「所有样子都能换」。盖上它以后，表里每一个记号、`layout`、
     // `timeline` 两节盖的每一格、框线画出来的每一个字都是 ASCII。
     let pack: serde_json::Value = serde_json::from_str(include_str!(
-        "../../packages/miyu-tui-theme-ascii/theme.json"
+        "../../packages/tui-theme-ascii/theme.json"
     ))
     .unwrap();
     let whole = merged(&pack);

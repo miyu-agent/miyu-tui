@@ -6,7 +6,7 @@ use super::App;
 use crate::core::{Command, PackageEntry};
 use crate::input::{Saved, place};
 
-/// 终端这个包的编号（`miyu-tui/package.toml`）。
+/// 终端这个包的编号（`tui/package.toml`）。
 pub(super) const PACKAGE: &str = "miyu-tui";
 
 impl App {
