@@ -20,6 +20,7 @@ fn opened() -> Facts {
         context: 41_200,
         line: Some(967_000),
         cap: None,
+        pin: None,
         compactions: 2,
         breaks: 1,
         usage: Usage {
@@ -176,4 +177,24 @@ fn a_session_cap_is_named_on_the_context_row() {
         text(&capped)
     );
     assert!(!text(&opened()).iter().any(|l| l.contains("会话上限")));
+}
+
+/// 会话钉了压缩触发线（核心 CT-1）：压缩那一行后面接「会话压缩线 70%」；没钉的不写。
+#[test]
+fn a_pinned_compaction_line_is_named_on_the_compaction_row() {
+    let config = Config::builtin().unwrap();
+    let pinned = Facts {
+        pin: Some(70),
+        ..opened()
+    };
+    let text =
+        |f: &Facts| -> Vec<String> { plain(f, &config, 100).lines().map(str::to_string).collect() };
+    assert!(
+        text(&pinned)
+            .iter()
+            .any(|l| l.contains("自动压缩") && l.contains("会话压缩线 70%")),
+        "{:#?}",
+        text(&pinned)
+    );
+    assert!(!text(&opened()).iter().any(|l| l.contains("会话压缩线")));
 }

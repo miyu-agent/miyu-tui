@@ -64,6 +64,7 @@ fn facts(turn: &Turn, presets: &[crate::core::Persona], config: &Config) -> Fact
         context: t.context,
         line: t.limits.compaction_line,
         cap: None,
+        pin: t.compaction_pin,
         compactions: t.cache.compactions,
         breaks: t.cache.breaks,
         usage: t.total,

@@ -32,3 +32,20 @@ fn compactable_changed_says_whether_there_is_something_to_compact() {
     assert_eq!(super::read_mine(&event(true)), [Push::Compactable(true)]);
     assert_eq!(super::read_mine(&event(false)), [Push::Compactable(false)]);
 }
+
+/// 会话钉的压缩触发线（核心 CT-1）：`compaction_line` 是 `{"percent"}`，`null` 是不再钉着。
+#[test]
+fn a_pinned_compaction_line_is_read_and_null_unpins() {
+    let event = |line: serde_json::Value| {
+        json!({"seq": 11, "kind": "session.policy_changed", "by": {"kind": "person"},
+            "body": {"compaction_line": line}})
+    };
+    assert_eq!(
+        read_mine(&event(json!({"percent": 70}))),
+        [Push::CompactionLineSet(Some(70))]
+    );
+    assert_eq!(
+        read_mine(&event(json!(null))),
+        [Push::CompactionLineSet(None)]
+    );
+}

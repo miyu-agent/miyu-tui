@@ -44,6 +44,10 @@ impl App {
         if self.oobe_update(&update) {
             return;
         }
+        // 压缩触发线（核心 CT-1）：配置读回来的、`/compact-line` 换成了没有的（`compact_line.rs`）。
+        if self.compact_line_update(&update) {
+            return;
+        }
         // 终端自己的配置项（图标、时间线的开关）的回应归它；头的配置读到了也去读（`head_settings.rs`）。
         if self.head_settings_update(&update) {
             return;

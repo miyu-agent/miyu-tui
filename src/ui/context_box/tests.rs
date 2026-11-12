@@ -265,6 +265,7 @@ fn a_stuck_session_says_why_under_the_context_section() {
             used: 203_000,
             window: 128_000,
         }),
+        pin: None,
     };
     let laid = rows(Some(&data), &config, (&money, &tail), 80);
     let why = &laid[3];
@@ -288,4 +289,22 @@ fn the_line_under_the_meter_names_the_cap_and_says_when_past_the_line() {
     reply["used"] = json!(110000);
     let got = text(&only_parts(&reply, false), 100);
     assert_eq!(got[2], "已超过压缩线 7.6k · 会话上限 128k");
+}
+
+/// 会话钉了压缩触发线（核心 CT-1，`/compact-line 70`）：那一行最后接「会话压缩线 70%」；没钉的不写。
+#[test]
+fn a_pinned_compaction_line_is_named_under_the_meter() {
+    let config = Config::builtin().unwrap();
+    let money = |_: &Bill| None;
+    let tail = super::Tail {
+        pin: Some(70),
+        ..super::Tail::default()
+    };
+    let laid = rows(
+        Some(&only_parts(&sample(), false)),
+        &config,
+        (&money, &tail),
+        80,
+    );
+    assert_eq!(laid[2].to_string(), "距压缩线 57.2k · 会话压缩线 70%");
 }

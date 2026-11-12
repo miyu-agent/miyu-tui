@@ -1,4 +1,5 @@
-//! 换了策略（`session.policy_changed`）：权限级别、人格、预设、思考强度、上下文上限、模型（核心 8-10、P-13、SM-1、CTX-1）。
+//! 换了策略（`session.policy_changed`）：权限级别、人格、预设、思考强度、上下文上限、压缩触发线、模型（核心 8-10、P-13、SM-1、
+//! CTX-1、CT-1）。
 
 use serde_json::Value;
 
@@ -23,6 +24,10 @@ pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
         out.push(Push::EffortSet(
             effort["level"].as_str().map(str::to_string),
         ));
+    }
+    // 压缩触发线（核心 CT-1）：`{"percent"}`，`null` 是不再钉着、跟着配置。
+    if let Some(line) = body.get("compaction_line") {
+        out.push(Push::CompactionLineSet(line["percent"].as_u64()));
     }
     if let Some(cap) = crate::core::limits::cap_changed(body) {
         out.push(Push::ContextSet(cap));

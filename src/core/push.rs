@@ -263,6 +263,8 @@ pub enum Push {
     EffortSet(Option<String>),
     /// 会话的上下文上限换了（`session.policy_changed` 的 `context`，核心 CTX-1）：`None` 是去掉。
     ContextSet(Option<u64>),
+    /// 会话钉的压缩触发线换了（`session.policy_changed` 的 `compaction_line`，核心 CT-1）：窗口的百分之几，`None` 是去掉。
+    CompactionLineSet(Option<u64>),
     /// 会话换了人格（`session.policy_changed` 的 `persona`，核心 P-13）：编号，空的是换成无人格。
     PersonaSet(String),
     /// 会话换了预设（`session.policy_changed` 的 `preset`，核心 P-13）：编号。

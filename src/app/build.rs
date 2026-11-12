@@ -71,6 +71,8 @@ impl App {
                 level_picked: false,
                 dream: None,
                 reread: None,
+                compaction_line: None,
+                compaction_asked: None,
                 transcript: Transcript::default(),
                 board: Board::default(),
                 parked: Default::default(),
