@@ -166,3 +166,24 @@ fn a_step_still_being_prepared_cannot_be_opened() {
     assert!(step(0), "做完的照常能点");
     assert!(!step(1), "准备中的点不开");
 }
+
+#[test]
+fn the_rows_set_in_the_settings_page_change_the_cap() {
+    // 发版前 check（2026-11-12 项目主人）：「通用」页「时间线」一组改思考、命令预览的行数，进行中那一段封顶跟着变。
+    let mut f = Fixture::new();
+    f.config.timeline.apply(&serde_json::json!({"items": {
+        "tui.timeline_thought_rows": {"value": 5},
+        "tui.timeline_preview_rows": {"value": 4}
+    }}));
+    let tl = &f.config.timeline;
+    assert_eq!(
+        live_cap(tl),
+        6,
+        "思考 5 行、命令 4 行加已省略那一行，再加标题"
+    );
+    let t0 = Instant::now();
+    let steps: Vec<Step> = (0..12).map(|k| command(t0, k, ToolStatus::Ok)).collect();
+    let mut seg = segment(steps, None);
+    seg.finished = false;
+    assert_eq!(rows(0, &seg, &f.ctx()).len(), 6);
+}

@@ -111,20 +111,33 @@ pub enum Body {
 
 impl Timeline {
     /// 终端自己的配置项里管时间线的那几个键（终端软件包清单 `[settings.timeline_*]`，「时间线」第 18 条）。
-    pub const KEYS: [&'static str; 5] = [
+    pub const KEYS: [&'static str; 7] = [
         "tui.timeline_fold",
         "tui.timeline_expand_thought",
         "tui.timeline_expand_command",
         "tui.timeline_expand_edit",
         "tui.timeline_limit_live",
+        "tui.timeline_thought_rows",
+        "tui.timeline_preview_rows",
     ];
+
+    /// 思考、命令预览的行数能配到多少（终端软件包清单里写的 `min`、`max` 同这里）。
+    const ROWS: std::ops::RangeInclusive<u64> = 3..=60;
 
     /// 照 `config.get` 读来的这几项改：写了的盖过 `timeline.json`，没有的（旧核心没这几项）照原样。
     pub fn apply(&mut self, got: &Value) {
-        let read = |key: &str| got["items"][key]["value"].as_bool();
-        let [fold, thought, command, edit, limit] = Self::KEYS.map(read);
-        let pick = |slot: &mut bool, value: Option<bool>| {
-            if let Some(value) = value {
+        let value = |key: &str| &got["items"][key]["value"];
+        let [
+            fold,
+            thought,
+            command,
+            edit,
+            limit,
+            thought_rows,
+            preview_rows,
+        ] = Self::KEYS;
+        let pick = |slot: &mut bool, key: &str| {
+            if let Some(value) = value(key).as_bool() {
                 *slot = value;
             }
         };
@@ -133,16 +146,29 @@ impl Timeline {
         pick(&mut self.expand.command, command);
         pick(&mut self.expand.edit, edit);
         pick(&mut self.limit_live, limit);
+        // 思考滚着显示几行、命令预览几行（发版前 check，2026-11-12 项目主人）：进行中那一段最多露几行照它们算
+        // （`ui/timeline/mod.rs` 的 `live_cap`）。超出范围的拉回范围里。
+        let rows = |slot: &mut usize, key: &str| {
+            if let Some(n) = value(key).as_u64() {
+                let n = n.clamp(*Self::ROWS.start(), *Self::ROWS.end());
+                *slot = usize::try_from(n).unwrap_or(*slot);
+            }
+        };
+        rows(&mut self.thought_rows, thought_rows);
+        rows(&mut self.preview_rows, preview_rows);
     }
 
     /// 能配的那几样现在是什么：排版缓存的指纹带它，改了就重排。
-    pub fn shape(&self) -> (bool, bool, bool, bool, bool) {
+    pub fn shape(&self) -> ([bool; 5], [usize; 2]) {
         (
-            self.fold,
-            self.expand.thought,
-            self.expand.command,
-            self.expand.edit,
-            self.limit_live,
+            [
+                self.fold,
+                self.expand.thought,
+                self.expand.command,
+                self.expand.edit,
+                self.limit_live,
+            ],
+            [self.thought_rows, self.preview_rows],
         )
     }
 }
@@ -201,5 +227,53 @@ mod tests {
         }}));
         assert!(!timeline.fold && !timeline.limit_live);
         assert!(timeline.expand.thought && timeline.expand.command && timeline.expand.edit);
+    }
+
+    #[test]
+    fn the_thought_and_preview_rows_can_be_set_within_a_range() {
+        // 发版前 check（2026-11-12 项目主人）：思考滚着显示几行、命令预览几行能配，出厂 15、10。
+        let mut timeline = Config::builtin().unwrap().timeline;
+        assert_eq!((timeline.thought_rows, timeline.preview_rows), (15, 10));
+        timeline.apply(&json!({"items": {
+            "tui.timeline_thought_rows": {"value": 8},
+            "tui.timeline_preview_rows": {"value": 30}
+        }}));
+        assert_eq!((timeline.thought_rows, timeline.preview_rows), (8, 30));
+        timeline.apply(&json!({"items": {
+            "tui.timeline_thought_rows": {"value": 1},
+            "tui.timeline_preview_rows": {"value": 999}
+        }}));
+        assert_eq!(
+            (timeline.thought_rows, timeline.preview_rows),
+            (3, 60),
+            "超出范围的拉回来"
+        );
+    }
+
+    #[test]
+    fn every_timeline_key_is_declared_in_the_package_manifest() {
+        // 配置页照核心按清单给的项画（「时间线」一组按 `tui.timeline_` 前缀分，`settings/pages/schema.rs`）：清单里没写的画不出来。
+        let manifest = include_str!("../../tui/package.toml");
+        for key in super::Timeline::KEYS {
+            let name = key.trim_start_matches("tui.");
+            assert!(
+                manifest.contains(&format!("[settings.{name}]")),
+                "{key} 没写进 tui/package.toml"
+            );
+        }
+        let shipped = Config::builtin().unwrap().timeline;
+        for (name, rows) in [
+            ("timeline_thought_rows", shipped.thought_rows),
+            ("timeline_preview_rows", shipped.preview_rows),
+        ] {
+            let at = manifest.find(&format!("[settings.{name}]")).unwrap();
+            let section = &manifest[at..];
+            let section = &section[..section[1..].find("\n[").map_or(section.len(), |n| n + 1)];
+            assert!(
+                section.contains(&format!("default = {rows}")),
+                "{name} 的出厂值同 timeline.json"
+            );
+            assert!(section.contains("min = 3") && section.contains("max = 60"));
+        }
     }
 }
