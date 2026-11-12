@@ -352,7 +352,11 @@ impl App {
             return;
         }
         if let Update::Renamed(title) = &update {
-            let note = self.config.text.rename.done.replace("{title}", title);
+            let texts = &self.config.text.rename;
+            let note = title.as_deref().map_or_else(
+                || texts.removed.clone(),
+                |title| texts.done.replace("{title}", title),
+            );
             self.hint(note, false);
             return;
         }

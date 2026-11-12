@@ -32,9 +32,13 @@ fn a_bare_rename_asks_the_model_and_one_with_words_sets_the_title() {
     app.submit(Draft::plain("/rename   回文函数  "));
     let got = drained(&mut sent);
     assert!(
-        matches!(got.as_slice(), [Command::Rename(title)] if title == "回文函数"),
+        matches!(got.as_slice(), [Command::Rename(Some(title))] if title == "回文函数"),
         "{got:?}"
     );
+    // 只写一个 `-`：去掉标题（2026-11-12 项目主人）。
+    app.submit(Draft::plain("/rename -"));
+    let got = drained(&mut sent);
+    assert!(matches!(got.as_slice(), [Command::Rename(None)]), "{got:?}");
     // 太长的当场提示、不发。
     app.submit(Draft::plain(&format!("/rename {}", "长".repeat(201))));
     assert!(drained(&mut sent).is_empty());
@@ -57,6 +61,8 @@ fn the_reply_says_it_is_retitling_and_nothing_to_title_says_so() {
         app.talk.transcript.entries.is_empty(),
         "只弹提示，不写进正文"
     );
-    app.core(Update::Renamed("回文函数".into()));
+    app.core(Update::Renamed(Some("回文函数".into())));
     assert_eq!(notice(&app), Some("已改名：回文函数"));
+    app.core(Update::Renamed(None));
+    assert_eq!(notice(&app), Some("已清除标题"));
 }

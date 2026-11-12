@@ -106,7 +106,7 @@ pub enum Update {
     /// 会话列表（[`Command::ListSessions`] 的回应）：只有主会话，照核心交回的先后。
     Sessions(Vec<SessionInfo>),
     /// 改名成了：弹一句提示，标题照推送换（蓝图「改名」第 3 条）。
-    Renamed(String),
+    Renamed(Option<String>),
     /// 重起标题的请求核心收下了（`session.retitle`）：弹一句「正在重新起标题」，起好了标题照推送换。
     Retitling,
     /// 软件包（[`Command::ListPackages`] 的回应）：编号、放状态的目录、图标；读不了、核心不认的是空的。

@@ -20,6 +20,8 @@ pub struct RenameTexts {
     pub done: String,
     /// 让模型重起标题的请求发出去了。
     pub retitling: String,
+    /// 去掉了标题（`/rename -`）。
+    pub removed: String,
     /// 太长不发，`{max}` 是上限。
     pub too_long: String,
 }
