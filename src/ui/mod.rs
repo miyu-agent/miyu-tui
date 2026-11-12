@@ -61,7 +61,10 @@ pub mod themes;
 pub mod usage;
 pub mod widget;
 
-pub use history::{index_at as history_index_at, lines as history_lines};
+pub use history::{
+    Room as HistoryRoom, index_at as history_index_at, lines as history_lines,
+    list_rows as history_list_rows,
+};
 pub use menu::{index_at as menu_index_at, rows as menu_rows};
 pub mod context_box;
 mod mention;
@@ -282,16 +285,22 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let now = std::time::Instant::now();
     let width = probe.menu_text.width;
     // 历史列表排成的行：占几行、画什么都照它（`history.rs` 的 `lines`）。
-    let (history_chrome, history_rows) = if app.typing.history.open {
+    let history_laid = if app.typing.history.open {
         let (list, _) = app.list_items();
         let found = app.typing.history.matches(&list);
+        // 框的高度照全部历史和窗口定死，筛少了不缩（「输入历史列表」第 1 条「高度」，第 52 条）。
+        let room = history::Room {
+            width,
+            max: usize::from(inner),
+            screen: frame.area().height,
+            total: list.len(),
+        };
         history::lines(
             &app.typing.history,
             &found,
-            width,
+            room,
             &app.config,
             std::time::SystemTime::now(),
-            usize::from(inner),
         )
     } else {
         Default::default()
@@ -309,7 +318,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let items = if panel_open {
         panel_lines.len() + if pad { usize::from(panel::PAD) } else { 0 }
     } else if app.typing.history.open {
-        history_rows.len()
+        history_laid.rows.len()
     } else if let Some(found) = &mentions {
         found.items.len().clamp(1, menu_shown)
     } else if let Some(found) = &skills {
@@ -420,7 +429,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         skills,
         matches,
     };
-    let history = (history_chrome, history_rows);
+    let history = history_laid;
     overlay::draw(
         frame,
         app,

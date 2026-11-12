@@ -36,6 +36,9 @@ const FOOTER_TAG: u64 = TAG_BASE - 25;
 const ABOVE_TAG: u64 = TAG_BASE - 26;
 /// 读正文顶上挂哪几件的请求编号（排期第 16 条）。
 const TOP_TAG: u64 = TAG_BASE - 27;
+/// 读输入历史列表两项的请求编号（发版前 check 第 52 条）：单问，同按键模式（`TAG_BASE - 28` 到 `- 30` 是 `export.rs` 估算的三条，
+/// `- 34` 是它存文件的）。
+const HISTORY_TAG: u64 = TAG_BASE - 36;
 /// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
 const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
 
@@ -57,6 +60,7 @@ impl App {
                 self.ask_config(FOOTER_TAG, &[crate::config::slots::FOOTER_KEY]);
                 self.ask_config(ABOVE_TAG, &[crate::config::slots::ABOVE_KEY]);
                 self.ask_config(TOP_TAG, &[crate::config::slots::TOP_KEY]);
+                self.ask_config(HISTORY_TAG, &Layout::HISTORY_KEYS);
                 let mut keys = crate::theme::choice::Choice::KEYS.to_vec();
                 keys.push(crate::theme::choice::SEED_KEY);
                 self.ask_config(THEME_TAG, &keys);
@@ -84,6 +88,12 @@ impl App {
             Update::Answer { tag, result } if *tag == MASCOT_TAG => {
                 if let Ok(got) = result {
                     self.config.layout.apply_mascot(got);
+                }
+                true
+            }
+            Update::Answer { tag, result } if *tag == HISTORY_TAG => {
+                if let Ok(got) = result {
+                    self.config.layout.apply_history(got);
                 }
                 true
             }

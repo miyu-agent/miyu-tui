@@ -14,7 +14,7 @@ pub(super) fn draw(
     app: &App,
     areas: Areas,
     lists: &Lists,
-    (history_chrome, history_rows): (Chrome, Vec<history::Row>),
+    history_laid: history::Laid,
     (panel_chrome, panel_lines): (Chrome, Vec<Line<'static>>),
 ) {
     if let Some(matches) = &lists.matches {
@@ -63,13 +63,7 @@ pub(super) fn draw(
         menu::draw(frame, areas.menu, areas.menu_text, chrome, lines);
     }
     if app.typing.history.open {
-        history::draw(
-            frame,
-            areas.menu,
-            areas.menu_text,
-            history_chrome,
-            history_rows,
-        );
+        history::draw(frame, areas.menu, areas.menu_text, history_laid);
     }
     background::draw(
         frame,

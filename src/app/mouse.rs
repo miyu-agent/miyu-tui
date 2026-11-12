@@ -252,7 +252,15 @@ impl App {
         let Some(by) = list_step(mouse.kind, true) else {
             return Action::None;
         };
-        let shown = self.config.layout.history_rows.max(1);
+        // 列表那一段几条照画的同一份算（全部历史、窗口，「输入历史列表」第 1 条「高度」）。
+        let screen = self.screen.pixel.size.1;
+        let room = crate::ui::HistoryRoom {
+            width,
+            max,
+            screen,
+            total: list.len(),
+        };
+        let shown = crate::ui::history_list_rows(&self.config.layout, list.len(), width, screen);
         let history = &mut self.typing.history;
         crate::menu::pin(
             history.selected,
@@ -261,9 +269,13 @@ impl App {
             shown,
             by,
         );
-        let (_, rows) =
-            crate::ui::history_lines(&self.typing.history, &found, width, &self.config, now, max);
-        let at = crate::ui::history_index_at(self.screen.areas.menu_text, &rows, mouse.row);
+        let laid = crate::ui::history_lines(&self.typing.history, &found, room, &self.config, now);
+        let at = crate::ui::history_index_at(
+            self.screen.areas.menu_text,
+            &laid,
+            mouse.column,
+            mouse.row,
+        );
         if let Some(index) = at {
             self.typing.history.selected = index;
             if mouse.kind == MouseEventKind::Down(MouseButton::Left) {

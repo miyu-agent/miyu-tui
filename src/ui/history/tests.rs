@@ -6,7 +6,7 @@ use std::time::{Duration, SystemTime};
 use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 
-use super::{index_at, lines};
+use super::{Laid, Room, index_at, lines};
 use crate::config::Config;
 use crate::history::History;
 use crate::input::{Draft, Sent};
@@ -30,6 +30,24 @@ fn plain(rows: &[super::Row]) -> Vec<String> {
         .collect()
 }
 
+/// 排在 `width` 列、最多 `max` 行的地方，窗口 60 行，全部历史就是对得上的这几条。
+fn lay(
+    history: &History,
+    found: &[&Sent],
+    width: u16,
+    config: &Config,
+    now: SystemTime,
+    max: usize,
+) -> Laid {
+    let room = Room {
+        width,
+        max,
+        screen: 60,
+        total: found.len(),
+    };
+    lines(history, found, room, config, now)
+}
+
 /// 上边框写的字。
 fn title(chrome: &crate::ui::panel::Chrome) -> String {
     chrome.title.iter().map(|s| s.content.as_ref()).collect()
@@ -46,7 +64,7 @@ fn time_on_the_left_preview_and_search_below_and_clicks_find_their_entry() {
         sent("早的", 7200, now),
     ];
     let found: Vec<&Sent> = list.iter().collect();
-    let (chrome, rows) = lines(&History::default(), &found, 40, &config, now, usize::MAX);
+    let Laid { chrome, rows, .. } = lay(&History::default(), &found, 40, &config, now, usize::MAX);
     let text = plain(&rows);
     // 2026-09-30 项目主人：三样一个框，标题嵌在上边框，按键提示嵌在下边框。
     assert_eq!(title(&chrome), "历史  3 条");
@@ -71,29 +89,34 @@ fn time_on_the_left_preview_and_search_below_and_clicks_find_their_entry() {
         "{text:?}"
     );
     assert!(text[4].starts_with("│ 新的 ") && text[4].ends_with(" │"));
+    // 预览固定 6 行（第 52 条），短的下面空着。
+    let cap = config.layout.history_preview_rows;
+    assert_eq!(cap, 6, "出厂 6 行");
     assert!(
-        text[5].starts_with('╰') && text[5].ends_with('╯'),
+        text[5..4 + cap].iter().all(|l| inside(l).is_empty()),
+        "{text:?}"
+    );
+    assert!(
+        text[4 + cap].starts_with('╰') && text[4 + cap].ends_with('╯'),
         "{text:?}"
     );
     assert_eq!(rows[4].1.width(), 40, "预览框和列表一样宽");
-    assert!(rule(&text[6]), "{text:?}");
+    assert!(rule(&text[5 + cap]), "{text:?}");
     assert!(
-        text[7].ends_with(&config.text.history.placeholder),
+        text[6 + cap].ends_with(&config.text.history.placeholder),
         "{text:?}"
     );
-    assert_eq!(rows.len(), 8);
+    assert_eq!(rows.len(), 3 + cap + 4);
     // 框里放字的那一块从第 10 行起：列表点得中那一条，预览框算选中的，横线、搜索那一行点不中。
-    let text_area = Rect::new(0, 10, 40, 8);
-    assert_eq!(index_at(text_area, &rows, 12), Some(0));
-    assert_eq!(index_at(text_area, &rows, 10), Some(2));
-    assert_eq!(
-        index_at(text_area, &rows, 14),
-        Some(0),
-        "预览算选中的那一条"
-    );
-    assert_eq!(index_at(text_area, &rows, 16), None);
-    assert_eq!(index_at(text_area, &rows, 17), None);
-    assert_eq!(index_at(text_area, &rows, 9), None, "框的上边点不中");
+    let laid = lay(&History::default(), &found, 40, &config, now, usize::MAX);
+    let text_area = Rect::new(0, 10, 40, 13);
+    let at = |y| index_at(text_area, &laid, 5, y);
+    assert_eq!(at(12), Some(0));
+    assert_eq!(at(10), Some(2));
+    assert_eq!(at(14), Some(0), "预览算选中的那一条");
+    assert_eq!(at(21), None);
+    assert_eq!(at(22), None);
+    assert_eq!(at(9), None, "框的上边点不中");
 }
 
 #[test]
@@ -117,7 +140,7 @@ fn commands_lines_pastes_and_hits_are_marked() {
         pasted,
     ];
     let found: Vec<&Sent> = list.iter().collect();
-    let (_, rows) = lines(&History::default(), &found, 60, &config, now, usize::MAX);
+    let Laid { rows, .. } = lay(&History::default(), &found, 60, &config, now, usize::MAX);
     let span = |row: usize, text: &str| {
         rows[row]
             .1
@@ -140,7 +163,7 @@ fn commands_lines_pastes_and_hits_are_marked() {
     };
     let list = [sent("别的", 0, now), sent("看看 README 再说", 0, now)];
     let found: Vec<&Sent> = list.iter().collect();
-    let (chrome, rows) = lines(&history, &found, 60, &config, now, usize::MAX);
+    let Laid { chrome, rows, .. } = lay(&history, &found, 60, &config, now, usize::MAX);
     assert_eq!(title(&chrome), "历史  2 条", "框线上不写搜的字");
     assert!(
         plain(&rows).last().unwrap().contains("read"),
@@ -164,7 +187,7 @@ fn a_long_entry_is_clipped_in_the_list_and_shown_whole_below() {
     let long: String = "很长的一句话".repeat(10);
     let list = [sent(&long, 0, now)];
     let found: Vec<&Sent> = list.iter().collect();
-    let (_, rows) = lines(&History::default(), &found, 30, &config, now, usize::MAX);
+    let Laid { rows, .. } = lay(&History::default(), &found, 30, &config, now, usize::MAX);
     let text = plain(&rows);
     assert!(
         text[0].starts_with("❯ 刚才 很长") && text[0].ends_with('…'),
@@ -182,34 +205,41 @@ fn nothing_found_says_so_and_keeps_what_was_typed() {
         query: "xyz".into(),
         ..History::default()
     };
-    let (chrome, rows) = lines(&history, &[], 40, &config, SystemTime::now(), usize::MAX);
+    let Laid { chrome, rows, .. } = lay(&history, &[], 40, &config, SystemTime::now(), usize::MAX);
     assert_eq!(title(&chrome), "历史  0 条");
     let text = plain(&rows);
     assert_eq!(text[0], format!("  {}", config.text.history.empty));
-    assert_eq!(rows.len(), 3, "没有预览那一段：{text:?}");
-    assert!(text[2].contains("xyz"));
+    // 预览照样占着位：空的框（第 52 条）。
+    let cap = config.layout.history_preview_rows;
+    assert_eq!(rows.len(), 1 + cap + 4, "{text:?}");
+    assert!(
+        text[2..2 + cap].iter().all(|l| inside(l).is_empty()),
+        "{text:?}"
+    );
+    assert!(text.last().unwrap().contains("xyz"));
 }
 
 #[test]
 fn the_preview_keeps_its_height_and_caps_long_ones() {
     let config = Config::builtin().unwrap();
     let now = SystemTime::now();
-    // 选中一行的那条时，预览照露着的里最长的（三行那条）高：上下选时框不一伸一缩。
+    // 预览固定行数（第 52 条）：选中一行的、三行的，框一样高。
     let list = [sent("一行", 0, now), sent("甲\n乙\n丙", 60, now)];
     let found: Vec<&Sent> = list.iter().collect();
     let mut history = History::default();
-    let (_, short) = lines(&history, &found, 40, &config, now, usize::MAX);
+    let Laid { rows: short, .. } = lay(&history, &found, 40, &config, now, usize::MAX);
     history.older(2);
-    let (_, tall) = lines(&history, &found, 40, &config, now, usize::MAX);
+    let Laid { rows: tall, .. } = lay(&history, &found, 40, &config, now, usize::MAX);
     assert_eq!(short.len(), tall.len(), "{:?}", plain(&short));
     let text = plain(&tall);
     let body: Vec<&str> = text[3..6].iter().map(|l| inside(l)).collect();
+    assert_eq!(short.len(), 2 + config.layout.history_preview_rows + 4);
     assert_eq!(body, ["甲", "乙", "丙"], "{text:?}");
     // 太长的：最多 history_preview_rows 行，最后一行写还有几行。
     let long: String = (1..=20).map(|n| format!("第 {n} 行\n")).collect();
     let list = [sent(&long, 0, now)];
     let found: Vec<&Sent> = list.iter().collect();
-    let (_, rows) = lines(&History::default(), &found, 40, &config, now, usize::MAX);
+    let Laid { rows, .. } = lay(&History::default(), &found, 40, &config, now, usize::MAX);
     let cap = config.layout.history_preview_rows;
     let text = plain(&rows);
     assert_eq!(rows.len(), 1 + 1 + cap + 1 + 1 + 1);
@@ -233,7 +263,7 @@ fn a_short_window_shrinks_the_preview_first_and_keeps_the_search_row() {
     ];
     let found: Vec<&Sent> = list.iter().collect();
     // 9 行：搜索那一行和横线 2 行，列表至少 3 条，剩下 4 行给预览（框的上下两条边 + 2 行）。
-    let (_, rows) = lines(&History::default(), &found, 40, &config, now, 9);
+    let Laid { rows, .. } = lay(&History::default(), &found, 40, &config, now, 9);
     let text = plain(&rows);
     assert_eq!(rows.len(), 9, "{text:?}");
     assert!(text[2].starts_with("❯ "), "列表留三条、选中的在：{text:?}");
@@ -243,7 +273,7 @@ fn a_short_window_shrinks_the_preview_first_and_keeps_the_search_row() {
     );
     assert!(text[8].ends_with(&config.text.history.placeholder));
     // 再矮到放不下预览：只剩列表和搜索那一行。
-    let (_, rows) = lines(&History::default(), &found, 40, &config, now, 6);
+    let Laid { rows, .. } = lay(&History::default(), &found, 40, &config, now, 6);
     let text = plain(&rows);
     assert_eq!(rows.len(), 6, "{text:?}");
     assert!(
@@ -262,7 +292,7 @@ fn with_vim_keys_the_hint_and_the_caret_follow_the_slash() {
     let list = [sent("一行", 0, now)];
     let found: Vec<&Sent> = list.iter().collect();
     let caret = crate::sheet::mark(|m| &m.caret);
-    let (chrome, rows) = lines(&History::default(), &found, 40, &config, now, usize::MAX);
+    let Laid { chrome, rows, .. } = lay(&History::default(), &found, 40, &config, now, usize::MAX);
     assert_eq!(
         chrome.hint.as_deref(),
         Some(config.text.history.hints_vim.as_str())
@@ -273,7 +303,7 @@ fn with_vim_keys_the_hint_and_the_caret_follow_the_slash() {
         typing: true,
         ..History::default()
     };
-    let (chrome, rows) = lines(&typing, &found, 40, &config, now, usize::MAX);
+    let Laid { chrome, rows, .. } = lay(&typing, &found, 40, &config, now, usize::MAX);
     assert_eq!(
         chrome.hint.as_deref(),
         Some(config.text.history.searching.as_str())

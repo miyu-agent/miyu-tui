@@ -15,26 +15,56 @@ use ratatui::text::{Line, Span};
 use super::panel::{self, Chrome};
 use crate::config::{Config, HistoryTexts};
 use crate::history::History;
-use crate::input::{Sent, pieces};
+use crate::input::Sent;
 use crate::theme;
 use unicode_width::UnicodeWidthStr;
 
-/// 排好的一行：是对得上的第几条（「没有对得上的」、横线、搜索那一行是 `None`；预览那几行算选中的那一条），和画出来的样子。
+mod preview;
+mod shape;
+mod side;
+
+pub use shape::list_rows;
+
+/// 排好的一行：是对得上的第几条（「没有对得上的」、空着的、横线、搜索那一行是 `None`；预览那几行算选中的那一条），和画出来的样子。
 pub type Row = panel::Row;
 
 /// 列表至少留几条（地方不够时先缩预览，「输入历史列表」第 1 条）。
 const KEEP: usize = 3;
 
-/// 列表的框和框里从上往下的每一行。`matches` 是对得上的几条，最新的在前；`width` 是能写几列；`now` 算多久以前；
-/// 框里最多 `max` 行（输入框上面剩下的，「窗口小的时候」第 1 条）。
+/// 框排在多大的地方：框里能写几列（`width`）、最多几行（`max`，输入框上面剩下的，「窗口小的时候」第 1 条）、窗口几行
+/// （`screen`）、全部历史几条（`total`，不是对得上的几条：筛少了框不缩，第 52 条）。
+#[derive(Debug, Clone, Copy)]
+pub struct Room {
+    pub width: u16,
+    pub max: usize,
+    pub screen: u16,
+    pub total: usize,
+}
+
+/// 预览在右边时（第 52 条）：竖线在框里第几列、列表那一段几行、点右边算哪一条。
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Side {
+    pub col: u16,
+    pub rows: usize,
+    pub picked: Option<usize>,
+}
+
+/// 排好的框：边框上的字、框里从上往下的每一行、预览在不在右边。
+#[derive(Debug, Clone, Default)]
+pub struct Laid {
+    pub chrome: Chrome,
+    pub rows: Vec<Row>,
+    pub side: Option<Side>,
+}
+
+/// 列表的框和框里从上往下的每一行。`matches` 是对得上的几条，最新的在前；`now` 算多久以前。
 pub fn lines(
     history: &History,
     matches: &[&Sent],
-    width: u16,
+    room: Room,
     config: &Config,
     now: SystemTime,
-    max: usize,
-) -> (Chrome, Vec<Row>) {
+) -> Laid {
     let words = words(history, config);
     let count = words.count.replace("{count}", &matches.len().to_string());
     // 按键模式是 Vim 的照会话列表写：平时「/ 搜索 · j/k 选择」，按了 `/` 写打字的那一句（发版前 check 第 31 条）。
@@ -47,7 +77,72 @@ pub fn lines(
         &words.searching,
     );
     let chrome = Chrome::new(&words.title, vec![Span::styled(count, theme::dim())]).hint(hint);
-    let rows = config.layout.history_rows.max(1);
+    let width = room.width;
+    let rows = list_rows(&config.layout, room.total, width, room.screen);
+    let side = shape::side(width);
+    let list_width = if side {
+        shape::left_width(width)
+    } else {
+        width
+    };
+    let list = items(history, matches, rows, list_width, now, words);
+    let caret = !vim || history.typing;
+    let search = (None, search(&history.query, caret, words, width));
+    let picked = matches.get(history.selected).copied();
+    let laid = |rows, side| Laid {
+        chrome: chrome.clone(),
+        rows,
+        side,
+    };
+    if room.max < KEEP {
+        return laid(panel::fit(list, Some(history.selected), room.max), None);
+    }
+    // 搜索那一行和它上面的横线一直在；剩下的先给列表留够，再给预览。
+    let space = room.max - 2;
+    let mut out = if side {
+        let shown = rows.min(space);
+        let left = column(list, history.selected, shown, list_width);
+        let cols = width.saturating_sub(list_width + 2).max(1);
+        side::join(left, picked, cols, words)
+    } else {
+        // 上下排：列表先缩到至少三条，再缩预览（连它上下两条圆角框的边），露不出一行字就不画、地方还给列表。
+        let boxed = shape::preview_rows(&config.layout) + 2;
+        let preview_room = space.saturating_sub(rows.min(KEEP)).min(boxed);
+        let (shown, tall) = if preview_room >= 3 {
+            (rows.min(space - preview_room), preview_room - 2)
+        } else {
+            (rows.min(space), 0)
+        };
+        let mut out = column(list, history.selected, shown, list_width);
+        if tall > 0 {
+            let tag = picked.map(|_| history.selected);
+            out.extend(
+                preview::boxed(picked, width, tall, words)
+                    .into_iter()
+                    .map(|line| (tag, line)),
+            );
+        }
+        out
+    };
+    let side = side.then(|| Side {
+        col: list_width,
+        rows: out.len(),
+        picked: picked.map(|_| history.selected),
+    });
+    out.push((None, preview::rule(width)));
+    out.push(search);
+    laid(out, side)
+}
+
+/// 列表那几条（露的是从 `menu::top` 起的 `rows` 条），最新的在后；一条都对不上时一行「没有对得上的」。
+fn items(
+    history: &History,
+    matches: &[&Sent],
+    rows: usize,
+    width: u16,
+    now: SystemTime,
+    words: &HistoryTexts,
+) -> Vec<Row> {
     let top = crate::menu::top(history.selected, history.pinned, matches.len(), rows);
     let end = (top + rows).min(matches.len());
     let mut list: Vec<Row> = Vec::new();
@@ -65,113 +160,16 @@ pub fn lines(
         spans.extend(content(matches[i], &history.query, picked, words));
         list.push((Some(i), panel::item(picked, spans, None, width)));
     }
-    let caret = !vim || history.typing;
-    let search = (None, search(&history.query, caret, words, width));
-    if max < KEEP {
-        return (chrome, panel::fit(list, Some(history.selected), max));
-    }
-    // 搜索那一行和它上面的横线一直在；剩下的先给列表留够，再给预览（连它上下两条圆角框的边）。
-    let room = max - 2;
-    let tall = preview_rows(matches, top..end, width, config);
-    let wanted = if tall > 0 { tall + 2 } else { 0 };
-    let keep = list.len().min(KEEP).max(room.saturating_sub(wanted));
-    // 预览露不出一行字（连上下的边）就不画，地方还给列表。
-    let shown = matches
-        .get(history.selected)
-        .filter(|_| room.saturating_sub(keep.min(list.len())) >= 3);
-    let keep = if shown.is_some() { keep } else { room };
-    let mut out = panel::fit(list, Some(history.selected), keep.min(room));
-    let left = room - out.len();
-    if let Some(sent) = shown {
-        out.extend(
-            preview(sent, width, tall.min(left - 2), words)
-                .into_iter()
-                .map(|line| (Some(history.selected), line)),
-        );
-    }
-    out.push((None, rule(width)));
-    out.push(search);
-    (chrome, out)
+    list
 }
 
-/// 预览那一段要几行：露着的几条里最长的那条折出来几行，不超过 `history_preview_rows`（按上下选时框不跟着一伸一缩）。
-fn preview_rows(
-    matches: &[&Sent],
-    shown: std::ops::Range<usize>,
-    width: u16,
-    config: &Config,
-) -> usize {
-    let cap = config.layout.history_preview_rows.max(1);
-    shown
-        .map(|i| wrapped(matches[i], inner(width)).len().min(cap))
-        .max()
-        .unwrap_or(0)
-}
-
-/// 预览框里能写几列：左右的边各占一格、再各空一格，字和列表的字对齐。
-fn inner(width: u16) -> u16 {
-    width.saturating_sub(4).max(1)
-}
-
-/// 一条的全文折成的几行：原来的换行照留，太长的折行。
-fn wrapped(sent: &Sent, cols: u16) -> Vec<String> {
-    pieces(sent.draft.text.trim_end(), cols)
-        .into_iter()
-        .map(|(piece, _)| piece)
-        .collect()
-}
-
-/// 预览：选中那一条的全文，`height` 行字（短的补空行）装在一个圆角框里（框线照主题的 `frame.boxes`，同外面的框；发版前
-/// check 第 31 条，2026-11-09 项目主人：原来上下两条横线隔开「有点丑」）；再长的最后一行写还有几行。
-fn preview(sent: &Sent, width: u16, height: usize, words: &HistoryTexts) -> Vec<Line<'static>> {
-    let all = wrapped(sent, inner(width));
-    let shown = if all.len() > height {
-        height.saturating_sub(1)
-    } else {
-        all.len()
-    };
-    let mut body: Vec<Vec<Span<'static>>> = all[..shown]
-        .iter()
-        .map(|piece| vec![Span::raw(piece.clone())])
-        .collect();
-    if all.len() > shown && height > 0 {
-        let note = words
-            .more
-            .replace("{count}", &(all.len() - shown).to_string());
-        body.push(vec![Span::styled(note, theme::faint())]);
-    }
-    body.resize(height, Vec::new());
-    let set = crate::sheet::read(|s| s.frame.boxes.set());
-    let across = set
-        .horizontal_top
-        .repeat(usize::from(width.saturating_sub(2)));
-    let edge =
-        |left: &str, right: &str| Line::styled(format!("{left}{across}{right}"), theme::dim());
-    let cols = usize::from(inner(width));
-    let mut out = vec![edge(set.top_left, set.top_right)];
-    out.extend(body.into_iter().map(|spans| {
-        let spans = panel::clip_spans(spans, cols);
-        let used: usize = spans.iter().map(Span::width).sum();
-        let mut line = vec![Span::styled(
-            format!("{} ", set.vertical_left),
-            theme::dim(),
-        )];
-        line.extend(spans);
-        line.push(Span::raw(" ".repeat(cols.saturating_sub(used))));
-        line.push(Span::styled(
-            format!(" {}", set.vertical_right),
-            theme::dim(),
-        ));
-        Line::from(line)
-    }));
-    out.push(edge(set.bottom_left, set.bottom_right));
+/// 列表那一段排成 `shown` 行：放不下的从离选中最远的起少露，少了的在上面垫空行（最新的照旧贴着底，框不缩，第 52 条）。
+fn column(list: Vec<Row>, selected: usize, shown: usize, width: u16) -> Vec<Row> {
+    let list = panel::fit(list, Some(selected), shown);
+    let blank = (None, Line::raw(" ".repeat(usize::from(width))));
+    let mut out = vec![blank; shown - list.len()];
+    out.extend(list);
     out
-}
-
-/// 隔开三段的暗色横线（照主题的框线）。
-fn rule(width: u16) -> Line<'static> {
-    let line = crate::sheet::read(|s| s.frame.boxes.set()).horizontal_top;
-    Line::styled(line.repeat(usize::from(width)), theme::dim())
 }
 
 /// 搜索那一行：打的字原色、后面一根强调色的光标；没打字时光标后面暗色写「筛选历史…」。按键模式是 Vim、没按 `/` 的
@@ -302,12 +300,14 @@ fn hits(text: &str, query: &str) -> Vec<(usize, usize)> {
     out
 }
 
-/// 画列表：`outer` 连框，`text` 是框里放字的那一块。隔开三段的横线接上左右的框线（`├─…─┤`）。
-pub fn draw(frame: &mut Frame, outer: Rect, text: Rect, chrome: Chrome, rows: Vec<Row>) {
+/// 画列表：`outer` 连框，`text` 是框里放字的那一块。横线接上左右的框线（`├─…─┤`）；预览在右边的，竖线接上上边框（`┬`）
+/// 和横线（`┴`）。
+pub fn draw(frame: &mut Frame, outer: Rect, text: Rect, laid: Laid) {
+    let Laid { chrome, rows, side } = laid;
     let rules: Vec<u16> = rows
         .iter()
         .enumerate()
-        .filter(|(_, (_, line))| *line == rule(text.width))
+        .filter(|(_, (_, line))| *line == preview::rule(text.width))
         .filter_map(|(k, _)| u16::try_from(k).ok())
         .collect();
     let lines: Vec<Line> = rows.into_iter().map(|(_, line)| line).collect();
@@ -322,17 +322,34 @@ pub fn draw(frame: &mut Frame, outer: Rect, text: Rect, chrome: Chrome, rows: Ve
         set.horizontal.repeat(usize::from(outer.width - 2)),
         set.vertical_left
     );
+    let bar = side.map(|s| text.x + s.col).filter(|x| *x < outer.right());
+    let buffer = frame.buffer_mut();
     for k in rules.into_iter().filter(|k| *k < text.height) {
-        frame
-            .buffer_mut()
-            .set_string(outer.x, text.y + k, &across, theme::dim());
+        buffer.set_string(outer.x, text.y + k, &across, theme::dim());
+        if let Some(x) = bar {
+            buffer.set_string(x, text.y + k, set.horizontal_up, theme::dim());
+        }
+    }
+    // 上边框那一格：标题写到这儿了的不盖（框线才接）。
+    if let Some(x) = bar
+        && buffer[(x, outer.y)].symbol() == set.horizontal
+    {
+        buffer.set_string(x, outer.y, set.horizontal_down, theme::dim());
     }
 }
 
-/// 屏幕上第 `y` 行是对得上的第几条；`text` 是框里放字的那一块，框的边、空着的地方是 `None`。
-pub fn index_at(text: Rect, rows: &[Row], y: u16) -> Option<usize> {
-    rows.get(usize::from(y.checked_sub(text.y)?))?.0
+/// 屏幕上第 `x` 列、第 `y` 行是对得上的第几条；`text` 是框里放字的那一块，框的边、空着的地方是 `None`。预览在右边的，
+/// 点右边那一半算选中的那一条。
+pub fn index_at(text: Rect, laid: &Laid, x: u16, y: u16) -> Option<usize> {
+    let k = usize::from(y.checked_sub(text.y)?);
+    let row = laid.rows.get(k)?;
+    match laid.side {
+        Some(side) if k < side.rows && x >= text.x + side.col => side.picked,
+        _ => row.0,
+    }
 }
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_height;
