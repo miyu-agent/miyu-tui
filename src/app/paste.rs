@@ -31,6 +31,7 @@ pub(super) fn chips(draft: &Draft) -> Vec<Chip> {
     draft
         .blocks
         .iter()
+        .filter(|b| !b.is_skill(&draft.text[b.start..b.end]))
         .map(|b| Chip {
             label: draft.text[b.start..b.end].to_string(),
             full: b.text.clone(),

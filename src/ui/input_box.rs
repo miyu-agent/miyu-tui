@@ -167,7 +167,7 @@ fn draw_input(frame: &mut Frame, areas: Areas, input: &mut InputBox, config: &Co
     frame.render_widget(border, areas.frame);
     let scroll = input.place(areas.text);
     let editor = &input.editor;
-    let blocks = editor.blocks();
+    let blocks = chips(editor.text(), editor.blocks(), &config.commands.skills);
     // 空着：提示从光标后面空一格写起，光标停在空格上，不压着提示的第一个字（「输入框」第 9 条）。
     let body = if editor.is_empty() {
         vec![Line::from(vec![
@@ -290,6 +290,23 @@ pub(super) fn placeholder(config: &Config, home: bool, tip: usize) -> &str {
     config.text.tips.get(tip).map_or("", String::as_str)
 }
 
+/// 框里铺小块底的几段：粘贴块、附件块，加上点名了的技能（`$名字`，照核心给的 `skills` 认；2026-11-12 项目主人：「技能占位缺少
+/// 背景色」，同粘贴块一个样子）；技能落在粘贴块里的不算。
+pub(crate) fn chips(
+    text: &str,
+    pasted: Vec<(usize, usize)>,
+    skills: &[crate::core::CoreSkill],
+) -> Vec<(usize, usize)> {
+    let named: Vec<(usize, usize)> = crate::skill_word::marks(text, skills)
+        .into_iter()
+        .map(|(s, e, _)| (s, e))
+        .filter(|&(s, e)| !pasted.iter().any(|&(bs, be)| s < be && bs < e))
+        .collect();
+    let mut all = pasted;
+    all.extend(named);
+    all
+}
+
 /// 一行字，选中的那一段反色；鼠标悬停着的附件块（`hover`）加下划线（「输入框」第 12 条）。
 pub(crate) fn styled_line<'a>(
     text: &'a str,
@@ -331,7 +348,7 @@ pub(crate) fn styled_line<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::{Areas, mic_column, styled_line};
+    use super::{Areas, chips, mic_column, styled_line};
     use ratatui::layout::Rect;
 
     #[test]
@@ -383,6 +400,34 @@ mod tests {
 
     use crate::input::VisualLine;
     use crate::theme;
+
+    /// 2026-11-12 项目主人：「技能占位缺少背景色」——点名了的 `$名字` 同粘贴块一样铺底；没对上的、落在粘贴块里的不铺。
+    #[test]
+    fn a_named_skill_gets_the_chip_ground_like_a_paste_block() {
+        let skills = ["pdf", "review"].map(|n| crate::core::CoreSkill {
+            name: n.into(),
+            summary: String::new(),
+        });
+        let text = "$pdf 和 $nope 看 [粘贴 $review]";
+        let paste = (text.find('[').unwrap(), text.len());
+        let got = chips(text, vec![paste], &skills);
+        assert_eq!(
+            got,
+            [paste, (0, 4)],
+            "粘贴块照旧，$pdf 铺底，$nope 不认，粘贴块里的 $review 不另算"
+        );
+        let line = VisualLine {
+            start: 0,
+            end: text.len(),
+        };
+        let drawn = styled_line(text, line, None, &got, None);
+        let pdf = drawn
+            .spans
+            .iter()
+            .find(|s| s.content == "$pdf")
+            .expect("$pdf 单独一段");
+        assert_eq!(pdf.style, crate::theme::chip());
+    }
 
     #[test]
     fn a_paste_block_is_a_chip_and_the_selection_wins() {
