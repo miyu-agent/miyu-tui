@@ -198,13 +198,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let drawer_rows = std::cell::Cell::new(None);
     let open_drawer = app.talk.drawers.current.as_ref().filter(|_| !aside);
     let half = (main.height / 2).saturating_sub(2).max(3);
-    let drawer_max = match open_drawer {
-        Some(d) if d.has_preview() => main
-            .height
-            .saturating_sub(app.config.layout.drawer_keep_rows + 4)
-            .max(half),
-        _ => half,
-    };
+    // 抽屉开着时框下面那一行、运行状态行和排队的消息让给它，让出几行就多几行（发版前 check 44，`layout.rs`）。
+    let gives = open_drawer.is_some() && !home;
+    let preview = open_drawer.is_some_and(|d| d.has_preview());
+    let keep = app.config.layout.drawer_keep_rows;
+    let drawer_max =
+        layout::drawer_max((main.height, half, keep), preview, (gives, running, count));
     // 新会话开头选人格、预设：画在输入框的位置（`start_pick.rs`），占它排出来的行数。不问人格预设的（`tui.skip_pick`）
     // 等默认的读到以前照旧画输入框，不画「正在加载…」那个框（2026-10-23 项目主人：打开时一瞬间看到选择框，像闪了一下）；
     // 默认的用不了、真要选时框照常开。
@@ -274,6 +273,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
                 count,
                 agent_rows,
                 todo_rows,
+                gives,
             )
         }
     };
@@ -439,8 +439,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         history,
         (panel_chrome, panel_lines),
     );
+    // 让给抽屉了（高是 0）的不画，也不留点得中的格子。
     let (button, status_spots, hits) = section("footer", || {
         let seen = app.seen();
+        if areas.footer.height == 0 {
+            return Default::default();
+        }
         footer::draw(frame, areas.footer, &seen, &app.screen, spin_frame(&seen))
     });
     app.screen.areas.button = button;
@@ -463,7 +467,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     // 提示最后画，浮在正文上面；底边紧贴输入框，在回答时紧贴运行状态行（`tui.md`「提示」）；开着框时贴着框的上边，在框的
     // 上边框上面一行：`menu` 连着框，`menu.y` 就是上边框那一行，提示要清掉它占的整行，压上去上边框就整条没了（发版前
     // check 32，2026-11-10 项目主人报 /sessions 里删了会话弹的提示把列表的上边框弄没了）。
-    let toast_bottom = if running {
+    let toast_bottom = if running && areas.pulse.height > 0 {
         areas.pulse.y.saturating_sub(1)
     } else {
         areas.body.bottom()

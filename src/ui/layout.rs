@@ -70,7 +70,8 @@ pub struct Areas {
 /// 算出各块的位置。输入框的高度跟着文字的行数走，所以要先定宽度再定高度：`rows` 照框里的字多宽交回占几行
 /// （抽屉开着时是抽屉的行数）。`menu_rows` 是列表要露出几行。
 /// `running` 在回答，`queued` 排着几条消息，`agent_rows` 是子代理状态行占几行（连上面的空行），
-/// `todo_rows` 是窄屏常驻的待办占几行（不连下面的空行）。
+/// `todo_rows` 是窄屏常驻的待办占几行（不连下面的空行）。`drawer` 是确认、提问的抽屉开着：框下面那一行、运行状态行和
+/// 排队的消息让给抽屉（照 Claude Code，发版前 check 44，2026-11-12 项目主人），框往下挪一行，那一块只留一行空的。
 #[allow(clippy::too_many_arguments)]
 pub fn areas(
     area: Rect,
@@ -81,7 +82,9 @@ pub fn areas(
     queued: u16,
     agent_rows: u16,
     todo_rows: u16,
+    drawer: bool,
 ) -> Areas {
+    let running = running && !drawer;
     let width = box_width(area.width, layout);
     let x = area.x + (area.width - width) / 2;
     let m = super::margins::margins(layout, area.width);
@@ -90,7 +93,8 @@ pub fn areas(
     let rows = rows(text_width);
     // 上下两条边和文字；一行都没有的（抽屉让开了）连边也不要。
     let height = if rows == 0 { 0 } else { rows + 2 };
-    let footer_y = area.bottom().saturating_sub(1 + agent_rows);
+    let footer_rows = u16::from(!drawer);
+    let footer_y = area.bottom().saturating_sub(footer_rows + agent_rows);
     let frame = Rect::new(x, footer_y.saturating_sub(height), width, height).intersection(area);
     let inner_x = frame.x + 1 + pad_left;
     let text = Rect::new(inner_x, frame.y + 1, text_width, rows).intersection(frame);
@@ -101,7 +105,7 @@ pub fn areas(
     } else {
         (inner_x, text_width)
     };
-    let footer = Rect::new(side_x, footer_y, side_width, 1).intersection(area);
+    let footer = Rect::new(side_x, footer_y, side_width, footer_rows).intersection(area);
     // 运行状态行、排队的消息、待办：紧凑版面里从正文的字那一列起，不贴着框的左边线（2026-11-03 项目主人：「文字进度和 todo
     // 列表还是要有左侧间距才行……和正文输出内容对齐，不然太丑了」）；底栏的记号照旧在左边那一列。
     let (block_x, block_width) = if m.compact {
@@ -124,7 +128,8 @@ pub fn areas(
     // 运行状态行那一块放不下的不画，不盖到下面去。
     let free = Rect::new(block_x, area.y, block_width, todo_y.saturating_sub(area.y));
     let pulse_y = if running { block_y + 1 } else { block_y };
-    let pulse = Rect::new(block_x, pulse_y, block_width, 1).intersection(free);
+    // 抽屉开着时那一行只是空着，不画运行状态行、不写提示。
+    let pulse = Rect::new(block_x, pulse_y, block_width, footer_rows).intersection(free);
     let queued_rows = if running { queued } else { 0 };
     let queued = Rect::new(block_x, pulse_y + 1, block_width, queued_rows).intersection(free);
     // 正文和输入框一样宽，上面空出 top_gap 行。
@@ -145,10 +150,36 @@ pub fn areas(
             area.width,
             frame.y.saturating_sub(area.y),
         )),
-        agents: agents_area(side_x, side_width, footer_y + 1, agent_rows, layout)
-            .intersection(area),
+        agents: agents_area(
+            side_x,
+            side_width,
+            footer_y + footer_rows,
+            agent_rows,
+            layout,
+        )
+        .intersection(area),
         todo: Rect::new(block_x, todo_y, block_width, todo_rows).intersection(area),
         ..Areas::default()
+    }
+}
+
+/// 抽屉连边框最多几行：`half` 是半屏那么高；选项带文字画的（`preview`）放得下整张为止，屏幕顶上留 `keep` 行。抽屉开着
+/// 让出框下面那一行、运行状态行那一块（`gives`，`running` 在回答、`queued` 排着几条）的，让出几行就多几行（发版前 check 44）。
+pub(crate) fn drawer_max(
+    (height, half, keep): (u16, u16, u16),
+    preview: bool,
+    (gives, running, queued): (bool, bool, u16),
+) -> u16 {
+    let freed = match (gives, running) {
+        (false, _) => 0,
+        (true, false) => 1,
+        (true, true) => queued.saturating_add(3),
+    };
+    let most = half.saturating_add(freed);
+    if preview {
+        height.saturating_sub(keep.saturating_add(3)).max(most)
+    } else {
+        most
     }
 }
 
