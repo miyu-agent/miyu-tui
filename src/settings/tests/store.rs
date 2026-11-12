@@ -294,6 +294,19 @@ fn escape_clears_the_filter_then_the_picks_then_goes_back() {
 }
 
 #[test]
+fn backspace_on_an_empty_filter_stays_in_the_search() {
+    // 发版前 check 50（2026-11-12 项目主人）：删光了再退格不退出搜索，只有 Esc 退出。
+    let mut page = opened();
+    press(&mut page, KeyCode::Char('/'));
+    press(&mut page, KeyCode::Char('c'));
+    press(&mut page, KeyCode::Backspace);
+    press(&mut page, KeyCode::Backspace);
+    assert!(page.more.store.typing, "删光了再退格还在打筛的字");
+    press(&mut page, KeyCode::Esc);
+    assert!(!page.more.store.typing);
+}
+
+#[test]
 fn a_package_without_settings_says_so_instead_of_an_empty_page() {
     let mut page = opened();
     page.more.store.tab = Tab::Installed;

@@ -92,7 +92,7 @@ impl Settings {
         true
     }
 
-    /// 打筛的字：`Enter` 收起打字、筛出来的留着；`Esc` 不筛了；字删光了再按退格也一样。
+    /// 打筛的字：`Enter` 收起打字、筛出来的留着；`Esc` 不筛了；字删光了再按退格什么都不做（发版前 check 50）。
     fn store_typing(&mut self, key: KeyEvent) {
         let store = &mut self.more.store;
         let at = store.cursor();
@@ -102,7 +102,8 @@ impl Settings {
                 store.typing = false;
                 store.query.clear();
             }
-            KeyCode::Backspace if store.query.is_empty() => store.typing = false,
+            // 留在搜索里，只有 `Esc` 退出（2026-11-12 项目主人：很容易误触）。
+            KeyCode::Backspace if store.query.is_empty() => {}
             KeyCode::Backspace => {
                 store.query.pop();
                 store.go(0);
