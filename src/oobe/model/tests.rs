@@ -6,8 +6,8 @@ use ratatui::crossterm::event::KeyCode;
 use serde_json::{Value, json};
 
 use super::{Phase, Slot};
-use crate::oobe::tests::{asks, find, fresh, key, texts, to_model, typed};
-use crate::oobe::{Oobe, Step, Texts};
+use crate::oobe::{Oobe, Step, Texts, tests::*};
+mod backspace;
 
 fn catalog() -> Value {
     json!({"providers": [

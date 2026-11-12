@@ -226,6 +226,14 @@ fn with_vim_keys_a_slash_searches_and_enter_keeps_the_filter() {
     tui.type_text("/");
     tui.wait_for("dev · 128k");
     assert!(!tui.shows("搜索：bet"), "再按 / 清空了重打");
+    // 发版前 check 50（2026-11-12 项目主人）：删光了再按退格不退出搜索，上边框还写「搜索：」，只有 Esc 退出。
+    tui.type_text("a");
+    tui.wait_for("搜索：a");
+    tui.key(b"\x7f");
+    tui.key(b"\x7f");
+    tui.pump(Duration::from_millis(300));
+    assert!(tui.shows("搜索："), "{}", tui.lines().join("\n"));
+    assert!(tui.shows("Ctrl+J/K 选择 · Enter 完成"), "还在搜索里");
     tui.type_text("al");
     tui.key(b"\r");
     tui.key(b"\x1b");
