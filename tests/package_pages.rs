@@ -142,6 +142,30 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
     });
 }
 
+/// 接入方式的标签（核心 PN-5，设计 48 第一节）：照真核心的 `package.list`，主题包写「外观」、终端自己写「带程序 · 界面」，
+/// 出厂内置的（`base-*`）没有标签。
+#[test]
+fn installed_rows_say_how_each_package_plugs_in() {
+    let home = Home::new(Script::new([Play::Says("好。")]));
+    let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
+    installed(&mut tui);
+    reach(&mut tui, "纯 ASCII");
+    until(&mut tui, "主题包写外观", |t| {
+        row(t, "纯 ASCII").contains("  外观")
+    });
+    reach(&mut tui, "终端界面");
+    // 终端的包是界面，又往 `miyu` 里加了子命令 `tui`：也算带程序。
+    until(&mut tui, "终端写带程序和界面", |t| {
+        row(t, "终端界面").contains("带程序 · 界面")
+    });
+    reach(&mut tui, "联网搜索");
+    let builtin = row(&tui, "联网搜索");
+    assert!(
+        !builtin.contains("外观") && !builtin.contains("带程序") && !builtin.contains(" · "),
+        "内置的没有标签：{builtin:?}"
+    );
+}
+
 /// 空格开关：出厂的内置包关了就是卸掉（核心定），写「关」；再按一下装回来（第 43c 条）。
 #[test]
 fn space_turns_a_shipped_package_off_and_on() {

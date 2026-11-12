@@ -32,6 +32,8 @@ pub struct Remote {
     pub downloads: Option<u64>,
     /// 近 7 天下载了几次（核心设计 54）。
     pub week: Option<u64>,
+    /// 接入方式的标签（[`super::access`]）。
+    pub access: Vec<&'static str>,
 }
 
 /// 装着的一个包（`package.list` 的一项）。
@@ -53,6 +55,8 @@ pub struct Local {
     pub removed: bool,
     /// 它盖住的那一份（核心 SD-1）；没盖住别的是 `None`。
     pub covers: Option<Covered>,
+    /// 接入方式的标签（[`super::access`]）。
+    pub access: Vec<&'static str>,
 }
 
 /// 被上面一层盖住的那一份（核心 SD-1，`package.list` 一项的 `covered`）：不单列，并进认的那一行（2026-11-05 项目主人）。
@@ -147,6 +151,7 @@ pub fn remotes(got: &Value) -> Vec<Remote> {
                 published: text(&p["published"]),
                 downloads: p["downloads"].as_u64(),
                 week: p["downloads_week"].as_u64(),
+                access: super::access::of(p),
                 id,
             })
         })
@@ -186,6 +191,7 @@ pub fn locals(got: &Value) -> Vec<Local> {
                 page: p["page"] == Value::Bool(true),
                 removed: p["removed"] == Value::Bool(true),
                 covers: covered.remove(&id),
+                access: super::access::of(p),
                 id,
             })
         })

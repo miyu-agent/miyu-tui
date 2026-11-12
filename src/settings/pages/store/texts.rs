@@ -38,6 +38,8 @@ pub struct StoreTexts {
     pub provides: HashMap<String, String>,
     /// 带的程序照种类写（`ui`、`process`、`worker`、`builtin`，同确认抽屉），不露核心的种类词。
     pub programs: HashMap<String, String>,
+    /// 列表一行后面接入方式的标签（[`super::access::KINDS`]：`connection`、`program`、`mcp`、`skills` 这类），同网页。
+    pub access: HashMap<String, String>,
     /// 问之前、做的时候写在预览块里的：`install`（`{n}`）、`with`、`recommends`、`remove`（`{name}`，带版本）、`drop`、
     /// `upgrade`（`{n}`）、`approve`（`{name}`）、`go`、`above`、`below`（`{n}`，放不下时上下还有几行）、`downloading`、
     /// `verifying`、`installing`；卸的弹窗（PK-5）：`config`、`config_kept`、`config_purge`（`{path}`），按钮 `keep`、`purge`、
