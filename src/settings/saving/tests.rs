@@ -41,7 +41,7 @@ fn a_setting_that_needs_a_restart_says_so_when_saved() {
     let page = written("restart");
     assert_eq!(
         page.status.as_ref().map(|(text, _)| text.as_str()),
-        Some("已保存，重启核心后生效")
+        Some("重启核心后生效")
     );
     let page = written("next_turn");
     assert_eq!(
