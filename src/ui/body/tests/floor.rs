@@ -121,3 +121,35 @@ fn opening_then_closing_a_step_in_the_live_entry_leaves_no_gap() {
     assert_eq!(frame(&mut view, rows(1)), 16, "不留一整屏的空");
     assert!(view.top.is_none(), "接着跟着最新的");
 }
+
+#[test]
+fn a_timeline_that_folds_mid_turn_for_an_answer_leaves_no_gap() {
+    // 2026-11-12 项目主人（发版前 check 45）：她在跑的那一段时间线很长，中途问了问题，答了以后那一段收起，屏幕上空出一大段。
+    // 一轮结束收起留的空档照旧留着（10-17）；这一轮还在跑、收起是因为后面插进了答问题那一条，底边跟着那一段短了多少一起走。
+    let area = Rect::new(0, 0, 10, 10);
+    let rows = |live: usize, answered: bool| {
+        let mut chunks = vec![(20, Some(0)), (live, Some(1))];
+        if answered {
+            chunks.push((1, Some(2)));
+        }
+        crate::ui::row_cache::Rows::of_blank(&chunks)
+    };
+    let frame = |view: &mut BodyView, rows: crate::ui::row_cache::Rows| {
+        let first = first_row(&rows, area, view, true);
+        view.rows = rows;
+        first
+    };
+    let mut view = BodyView::default();
+    view.live = true;
+    assert_eq!(frame(&mut view, rows(16, false)), 26, "跟着最新的");
+    // 答了：那一段收成一行，下面接答问题那一条。
+    assert_eq!(frame(&mut view, rows(1, true)), 12, "不留空档");
+    // 一轮结束（不在跑了）的收起照旧留空档。
+    let mut ended = BodyView::default();
+    assert_eq!(frame(&mut ended, rows(16, false)), 26);
+    assert_eq!(
+        frame(&mut ended, rows(1, true)),
+        21,
+        "一轮结束：顶上去的不掉下来"
+    );
+}
