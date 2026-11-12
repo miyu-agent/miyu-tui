@@ -29,6 +29,7 @@ mod shell;
 mod shown;
 mod switched;
 mod tally;
+mod waited;
 mod waiting;
 
 fn apply(t: &mut Transcript, pushes: Vec<Push>) {

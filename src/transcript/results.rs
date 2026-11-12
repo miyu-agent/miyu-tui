@@ -23,6 +23,8 @@ impl Transcript {
         self.progress.over(&call_id);
         let at = self.calls.get(&call_id).copied();
         let now = self.clock.now();
+        // 那一次调用有了结果：要是在等人确认、答题，等到这里为止（`waited.rs`）。
+        self.waited.end(&call_id, now);
         if let Some(step) = at.and_then(|at| self.step_mut(at)) {
             step.stop_at(now);
             step.display = display;

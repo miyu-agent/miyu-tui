@@ -35,6 +35,7 @@ mod switched;
 pub use switched::set_names;
 mod turn;
 mod undo;
+mod waited;
 mod words;
 pub mod workspace;
 
@@ -51,9 +52,8 @@ pub use cache::CacheWatch;
 pub use chips::Chip;
 pub use climb::Progress;
 pub use entry::{Entry, JobMark, JobNote, Kind, Shell};
-pub use stuck::Stuck;
-
 pub use steps::{ReportClass, Segment, Step, StepKind, Tally, ToolState};
+pub use stuck::Stuck;
 pub use words::undo_counts;
 
 /// 连核心的状态。
@@ -103,6 +103,8 @@ pub struct Transcript {
     progress: progress::Lines,
     /// 这一轮从什么时候开始跑；没在跑是 `None`。
     pub running: Option<Instant>,
+    /// 这一轮等人确认、答题等了多久（`waited.rs`）：用时减掉它。
+    waited: waited::Waited,
     /// 发出去了、还没开轮（[`Starting`]）。
     pub starting: Starting,
     /// 正文的钟：补发来的照事件的时刻（`clock.rs`）。
@@ -435,8 +437,8 @@ impl Transcript {
             // 回顾这类辅助请求：只算进累计用量（蓝图「回顾」第 5 条）。
             Push::AuxUsage(usage) => self.total.aux += usage.input() + usage.output,
             Push::Recapped(text) => self.recap(&text, texts),
-            // 确认、提问归抽屉（`app/asking.rs`）：正文里的结果由那边写。
-            Push::Asking(_) => {}
+            // 确认、提问归抽屉（`app/asking.rs`），正文里的结果由那边写；这里只记等人的那几段（`waited.rs`）。
+            Push::Asking(asking) => self.waited.asking(&asking, self.clock.now()),
             // 待办归待办表（`app/sessions.rs`）。
             Push::Todos { .. } => {}
             Push::Compactable(on) => self.cache.compactable = Some(on),
