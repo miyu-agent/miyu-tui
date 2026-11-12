@@ -55,7 +55,7 @@ fn texts(store: &Store, width: u16) -> Vec<String> {
 }
 
 #[test]
-fn a_source_row_is_mark_name_version_and_a_state_flush_right() {
+fn a_source_row_is_name_version_and_a_state_flush_right() {
     let store = store();
     let lines = texts(&store, 50);
     for line in &lines {
@@ -63,7 +63,10 @@ fn a_source_row_is_mark_name_version_and_a_state_flush_right() {
     }
     assert!(lines[0].trim_end().ends_with("已安装"), "{lines:?}");
     assert!(lines[1].trim_end().ends_with("可升级"), "{lines:?}");
-    assert!(lines[2].contains("✓ 塔罗"), "勾了的写记号：{lines:?}");
+    assert!(
+        lines[2].starts_with("塔罗"),
+        "勾选记号不占列表的格子（画在选中条旁边）：{lines:?}"
+    );
     assert!(lines[3].trim_end().ends_with("已拉黑"), "{lines:?}");
     assert!(!lines[0].contains("查"), "不写说明");
 }

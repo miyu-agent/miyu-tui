@@ -64,11 +64,11 @@ fn status(page: &Settings) -> Option<(String, Tone)> {
 #[test]
 fn picked_packages_are_previewed_asked_and_installed_one_by_one() {
     let mut page = opened();
-    press(&mut page, KeyCode::Tab);
+    press(&mut page, KeyCode::Char(' '));
     press(&mut page, KeyCode::Down);
-    press(&mut page, KeyCode::Tab);
+    press(&mut page, KeyCode::Char(' '));
     let picked: Vec<&str> = page.more.store.picked.iter().map(String::as_str).collect();
-    assert_eq!(picked, ["a", "c"], "Tab 勾选、挪到下一行");
+    assert_eq!(picked, ["a", "c"], "空格勾选、挪到下一行");
     sent(&mut page);
     press(&mut page, KeyCode::Enter);
     let previews = sent(&mut page);
@@ -275,7 +275,7 @@ fn an_unread_confirmation_scrolls_before_it_approves() {
 #[test]
 fn escape_clears_the_filter_then_the_picks_then_goes_back() {
     let mut page = opened();
-    press(&mut page, KeyCode::Tab);
+    press(&mut page, KeyCode::Char(' '));
     press(&mut page, KeyCode::Char('/'));
     press(&mut page, KeyCode::Char('c'));
     press(&mut page, KeyCode::Enter);
@@ -307,6 +307,7 @@ fn a_package_without_settings_says_so_instead_of_an_empty_page() {
 
 mod approve;
 mod remove;
+mod sync;
 
 /// 预览块画过一帧、`rows` 行一窗放得下（看完了）。
 fn read_through(rows: usize) -> crate::settings::pages::store::AskView {

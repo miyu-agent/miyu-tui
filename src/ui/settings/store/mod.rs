@@ -84,6 +84,9 @@ pub(super) fn draw(
     let mut top = page.more.store.top[tab];
     paint(frame, body, &lines, &mut top);
     page.more.store.top[tab] = top;
+    if lines.len() == page.more.store.rows().len() {
+        marks(frame, body, &page.more.store, top);
+    }
     let store = &page.more.store;
     let pv_y = body.bottom() + 1;
     let room = stage.bottom().saturating_sub(5).saturating_sub(pv_y);
@@ -185,7 +188,7 @@ fn tabs(frame: &mut Frame, row: Rect, page: &mut Settings, words: &StoreTexts) {
     }
 }
 
-/// 列表一行：勾选记号（只有「下载软件」）、名字（照最长的对齐）、暗色版本、暗色的接入方式标签、右边一格状态。
+/// 列表一行：名字（照最长的对齐）、暗色版本、暗色的接入方式标签、右边一格状态。
 pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted> {
     let say = |key: &str| StoreTexts::say(&words.states, key);
     let waiting = match (store.tab, &store.source) {
@@ -207,7 +210,6 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
         return vec![(Line::styled(empty.clone(), theme::dim()), false)];
     }
     let name_w = list.iter().map(|r| r.name().width()).max().unwrap_or(0) + 2;
-    let ok = crate::sheet::read(|s| s.marks.ok.clone());
     let at = store.cursor();
     let rows: Vec<(Vec<Span<'static>>, String, (String, Style))> = list
         .iter()
@@ -241,14 +243,6 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
                 }
             };
             let mut spans = Vec::new();
-            if store.tab == Tab::Source {
-                let mark = if store.picked.contains(item.id()) {
-                    ok.clone()
-                } else {
-                    " ".repeat(ok.width())
-                };
-                spans.push(Span::styled(format!("{mark} "), theme::accent()));
-            }
             let name_style = if off { theme::dim() } else { Style::new() };
             let pad = " ".repeat(name_w - item.name().width());
             spans.push(Span::styled(format!("{}{pad}", item.name()), name_style));
@@ -282,6 +276,24 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
             (Line::from(spans), i == at)
         })
         .collect()
+}
+
+/// 「下载软件」勾了的那几行：主题的 `ok` 记号写在选中条和名字之间那一格（发版前 check 57，2026-11-12 项目主人：原来另占两格，
+/// 名字比别的页、预览块往右缩了两格）。两套主题的 `ok` 都是一格宽。
+fn marks(frame: &mut Frame, body: Rect, store: &Store, top: usize) {
+    if store.tab != Tab::Source || store.picked.is_empty() {
+        return;
+    }
+    let ok = crate::sheet::read(|s| s.marks.ok.clone());
+    let shown = store.rows().into_iter().enumerate().skip(top);
+    for (n, item) in shown.take(usize::from(body.height)) {
+        if store.picked.contains(item.id()) {
+            let y = body.y + u16::try_from(n - top).unwrap_or(0);
+            frame
+                .buffer_mut()
+                .set_string(body.x + 1, y, &ok, theme::accent());
+        }
+    }
 }
 
 /// 一行的接入方式标签（核心设计 48，2026-11-12 项目主人：编号不带接入方式，交给界面上的标签），中间隔主题的 `sep`；字表少写的那种不画。

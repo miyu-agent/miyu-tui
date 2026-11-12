@@ -117,7 +117,7 @@ impl Settings {
         }
     }
 
-    /// 「下载软件」：`/` 打字筛，`Tab` 勾选、挪到下一行，`s` 换排序，`Enter` 装。
+    /// 「下载软件」：`/` 打字筛，空格勾选、挪到下一行（2026-11-12 项目主人：原来是 `Tab`），`s` 换排序，`r` 刷新软件源，`Enter` 装。
     fn store_source_key(&mut self, key: KeyEvent, texts: &Texts) {
         let store = &mut self.more.store;
         match key.code {
@@ -125,7 +125,7 @@ impl Settings {
                 store.typing = true;
                 store.query.clear();
             }
-            KeyCode::Tab => {
+            KeyCode::Char(' ') => {
                 let at = store.cursor();
                 if let Some(id) = store.current().map(|r| r.id().to_string())
                     && !store.picked.remove(&id)
@@ -140,12 +140,13 @@ impl Settings {
                     store.go(0);
                 }
             }
+            KeyCode::Char('r') => self.store_sync(texts),
             KeyCode::Enter => self.store_install(texts),
             _ => {}
         }
     }
 
-    /// 「已安装」：`Enter` 进设置、空格开关、`d` 卸、`u` 升这一个、`U` 全部升。
+    /// 「已安装」：`Enter` 进设置、空格开关、`d` 卸、`u` 升这一个、`U` 全部升、`r` 刷新软件源。
     fn store_installed_key(&mut self, key: KeyEvent, texts: &Texts) {
         match key.code {
             KeyCode::Enter => self.store_settings(texts),
@@ -153,6 +154,7 @@ impl Settings {
             KeyCode::Char('d') => self.store_remove(),
             KeyCode::Char('u') => self.store_upgrade(false, texts),
             KeyCode::Char('U') => self.store_upgrade(true, texts),
+            KeyCode::Char('r') => self.store_sync(texts),
             _ => {}
         }
     }
