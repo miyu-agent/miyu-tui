@@ -82,15 +82,16 @@ fn background(
     let mut map = Vec::new();
     for (i, item) in board.panel_items(all).into_iter().enumerate() {
         let picked = i == selected;
-        // 没选中的命令照正常色（2026-10-02 项目主人：原来压暗）；「还有 N 条结束了的」那种说明行照旧暗。
-        let style = match (picked, item) {
-            (true, _) => Style::new().add_modifier(Modifier::BOLD),
-            (false, PanelItem::Job(_)) => Style::new(),
-            (false, _) => theme::dim(),
-        };
         let job = match item {
             PanelItem::Job(id) => board.jobs.iter().find(|j| j.id == id),
             _ => None,
+        };
+        // 没选中的、在跑的命令照正常色（2026-10-02 项目主人：原来压暗）；结束了的（完成、失败、停了、超时）命令那一截暗
+        // （发版前 check 51，2026-11-12 项目主人），后面的状态照旧；「还有 N 条结束了的」那种说明行照旧暗。
+        let style = match (picked, job) {
+            (true, _) => Style::new().add_modifier(Modifier::BOLD),
+            (false, Some(job)) if job.running() => Style::new(),
+            (false, _) => theme::dim(),
         };
         let (title, state) = match (item, job) {
             (PanelItem::More(count), _) => (
@@ -270,14 +271,41 @@ mod tests {
         assert_eq!(lines[0].style, theme::picked_bar());
         assert_eq!(lines[0].width(), 70);
         assert_ne!(lines[1].style, theme::picked_bar(), "没选中的不铺");
-        // 2026-10-02 项目主人：没选中的命令用正常色，不压暗。
-        let command = lines[1]
+        // 发版前 check 51（2026-11-12 项目主人）：结束了的命令那一截暗，状态照旧。
+        let command = |line: &ratatui::text::Line, text: &str| {
+            line.spans
+                .iter()
+                .find(|s| s.content.contains(text))
+                .unwrap()
+                .style
+        };
+        assert_eq!(command(&lines[1], "cargo test"), theme::dim(), "结束了的暗");
+        assert_eq!(map, [Some(0), Some(1)], "点哪一行点中哪一条");
+    }
+
+    #[test]
+    fn a_running_command_that_is_not_selected_stays_in_the_normal_color() {
+        // 2026-10-02 项目主人：没选中的、在跑的命令用正常色，不压暗；结束了的暗（发版前 check 51）。
+        let config = Config::builtin().unwrap();
+        let t0 = Instant::now();
+        let board = board(&config, t0);
+        let panel = Some(Panel::Background {
+            selected: 1,
+            open: None,
+            all: false,
+        });
+        let (_, lines, _) = lines(panel, &board, &config, 70, t0, usize::MAX);
+        let running = lines[0]
             .spans
             .iter()
-            .find(|s| s.content.contains("cargo test"))
+            .find(|s| s.content.contains("npm run build"))
             .unwrap();
-        assert_eq!(command.style, ratatui::style::Style::new(), "命令照正常色");
-        assert_eq!(map, [Some(0), Some(1)], "点哪一行点中哪一条");
+        assert_eq!(
+            running.style,
+            ratatui::style::Style::new(),
+            "在跑的照正常色"
+        );
+        assert_eq!(lines[1].style, theme::picked_bar(), "选中的照旧铺底");
     }
 
     #[test]
