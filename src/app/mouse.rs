@@ -253,14 +253,16 @@ impl App {
             return Action::None;
         };
         // 列表那一段几条照画的同一份算（全部历史、窗口，「输入历史列表」第 1 条「高度」）。
-        let screen = self.screen.pixel.size.1;
+        let (columns, screen) = self.screen.pixel.size;
         let room = crate::ui::HistoryRoom {
             width,
             max,
             screen,
+            columns,
             total: list.len(),
         };
-        let shown = crate::ui::history_list_rows(&self.config.layout, list.len(), width, screen);
+        let side = crate::ui::history_side(columns, width);
+        let shown = crate::ui::history_list_rows(&self.config.layout, list.len(), side, screen);
         let history = &mut self.typing.history;
         crate::menu::pin(
             history.selected,

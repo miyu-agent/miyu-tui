@@ -23,7 +23,7 @@ mod preview;
 mod shape;
 mod side;
 
-pub use shape::list_rows;
+pub use shape::{list_rows, side};
 
 /// 排好的一行：是对得上的第几条（「没有对得上的」、空着的、横线、搜索那一行是 `None`；预览那几行算选中的那一条），和画出来的样子。
 pub type Row = panel::Row;
@@ -38,6 +38,8 @@ pub struct Room {
     pub width: u16,
     pub max: usize,
     pub screen: u16,
+    /// 整个终端几列（预览放不放右边照它，照 Claude Code）。
+    pub columns: u16,
     pub total: usize,
 }
 
@@ -78,8 +80,8 @@ pub fn lines(
     );
     let chrome = Chrome::new(&words.title, vec![Span::styled(count, theme::dim())]).hint(hint);
     let width = room.width;
-    let rows = list_rows(&config.layout, room.total, width, room.screen);
-    let side = shape::side(width);
+    let side = shape::side(room.columns, width);
+    let rows = list_rows(&config.layout, room.total, side, room.screen);
     let list_width = if side {
         shape::left_width(width)
     } else {

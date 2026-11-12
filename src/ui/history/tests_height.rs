@@ -27,11 +27,13 @@ fn many(now: SystemTime) -> Vec<Sent> {
         .collect()
 }
 
+/// 框里 `width` 列；终端照框宽算（只有侧边栏那几条另写 `columns`）。
 fn room(width: u16, screen: u16, total: usize) -> Room {
     Room {
         width,
         max: usize::MAX,
         screen,
+        columns: width,
         total,
     }
 }
@@ -87,21 +89,21 @@ fn the_list_follows_the_window_unless_the_setting_gives_a_number() {
     let layout = &config.layout;
     assert_eq!(layout.history_rows, 0, "出厂跟窗口高");
     // 上下排：窗口行数 / 2 − 预览 6 行 − 6，限在 8 到 20。
-    assert_eq!(list_rows(layout, 100, 80, 40), 8);
-    assert_eq!(list_rows(layout, 100, 80, 50), 13);
-    assert_eq!(list_rows(layout, 100, 80, 100), 20);
+    assert_eq!(list_rows(layout, 100, false, 40), 8);
+    assert_eq!(list_rows(layout, 100, false, 50), 13);
+    assert_eq!(list_rows(layout, 100, false, 100), 20);
     // 预览在右边：窗口行数 / 2 − 4。
-    assert_eq!(list_rows(layout, 100, 120, 40), 16);
-    assert_eq!(list_rows(layout, 100, 120, 100), 20);
+    assert_eq!(list_rows(layout, 100, true, 40), 16);
+    assert_eq!(list_rows(layout, 100, true, 100), 20);
     // 历史比这少的照历史的条数，没有历史的留一行写「没有对得上的」。
-    assert_eq!(list_rows(layout, 3, 80, 60), 3);
-    assert_eq!(list_rows(layout, 0, 80, 60), 1);
+    assert_eq!(list_rows(layout, 3, false, 60), 3);
+    assert_eq!(list_rows(layout, 0, false, 60), 1);
     // 两个配置项：写了数照数。
     config.layout.apply_history(&json!({"items": {
         "tui.history_rows": {"value": 5},
         "tui.history_preview_rows": {"value": 3},
     }}));
-    assert_eq!(list_rows(&config.layout, 100, 80, 60), 5);
+    assert_eq!(list_rows(&config.layout, 100, false, 60), 5);
     let now = SystemTime::now();
     let list = many(now);
     let all: Vec<&Sent> = list.iter().collect();
@@ -119,13 +121,13 @@ fn a_wide_box_puts_the_preview_on_the_right() {
     let now = SystemTime::now();
     let list = many(now);
     let all: Vec<&Sent> = list.iter().collect();
-    // 框里 120 列：左边列表 54 列（45%），竖线，空一格，右边写选中那一条的全文；列表和预览都是 60 / 2 − 4 = 20 行。
+    // 框里 120 列：左边列表 60 列（一半，照 Claude Code），竖线，空一格，右边写选中那一条的全文；列表和预览都是 60 / 2 − 4 = 20 行。
     let laid = lines(&History::default(), &all, room(120, 60, 30), &config, now);
     let text = plain(&laid);
     let side = laid.side.expect("宽框预览在右边");
-    assert_eq!((side.col, side.rows, side.picked), (54, 20, Some(0)));
+    assert_eq!((side.col, side.rows, side.picked), (60, 20, Some(0)));
     assert_eq!(laid.rows.len(), 20 + 2, "{text:?}");
-    // 竖线前面正好 54 列（按显示宽度量：时间是中文）。
+    // 竖线前面正好 60 列（按显示宽度量：时间是中文）。
     let split = |k: usize| {
         let spans = &laid.rows[k].1.spans;
         let at = spans
@@ -136,7 +138,7 @@ fn a_wide_box_puts_the_preview_on_the_right() {
         let right: String = spans[at + 1..].iter().map(|s| s.content.as_ref()).collect();
         (left, right)
     };
-    assert!((0..20).all(|k| split(k).0 == 54), "{text:?}");
+    assert!((0..20).all(|k| split(k).0 == 60), "{text:?}");
     let right = |k: usize| split(k).1;
     assert_eq!(right(0), "第 0 条");
     assert_eq!(right(1), "第二行");
@@ -148,12 +150,37 @@ fn a_wide_box_puts_the_preview_on_the_right() {
     assert!(picked.spans.last().unwrap().style.bg != theme::picked_bar().bg);
     // 点右边算选中的那一条，点左边算那一行。
     let text_area = Rect::new(2, 10, 120, 22);
-    assert_eq!(index_at(text_area, &laid, 2 + 60, 10), Some(0));
+    assert_eq!(index_at(text_area, &laid, 2 + 80, 10), Some(0));
     assert_eq!(index_at(text_area, &laid, 2 + 3, 10), Some(19));
-    assert_eq!(index_at(text_area, &laid, 2 + 60, 30), None, "横线");
-    // 不够 100 列的照上下排。
+    assert_eq!(index_at(text_area, &laid, 2 + 80, 30), None, "横线");
+    // 终端不够 100 列的照上下排。
     let narrow = lines(&History::default(), &all, room(99, 60, 30), &config, now);
     assert!(narrow.side.is_none());
+}
+
+/// 2026-11-12 项目主人：「参考 Claude Code」——照整个终端多宽定（`columns >= 100`），不照框里多宽：140 列开着侧边栏、框里只剩
+/// 86 列的也左右排；终端够宽、框被挤得太窄（不到 60 列）的照上下排。
+#[test]
+fn the_terminal_width_decides_the_side_preview_not_the_box() {
+    let config = Config::builtin().unwrap();
+    let now = SystemTime::now();
+    let list = many(now);
+    let all: Vec<&Sent> = list.iter().collect();
+    let with_sidebar = Room {
+        columns: 140,
+        ..room(86, 60, 30)
+    };
+    let laid = lines(&History::default(), &all, with_sidebar, &config, now);
+    assert_eq!(laid.side.map(|s| s.col), Some(43), "一半一半");
+    let squeezed = Room {
+        columns: 140,
+        ..room(59, 60, 30)
+    };
+    assert!(
+        lines(&History::default(), &all, squeezed, &config, now)
+            .side
+            .is_none()
+    );
 }
 
 #[test]
@@ -174,7 +201,7 @@ fn the_divider_joins_the_top_edge_and_the_rule() {
     })
     .unwrap();
     let buffer = term.backend().buffer();
-    let x = 2 + 52;
+    let x = 2 + 58;
     assert_eq!(buffer[(x, 0)].symbol(), "┬");
     assert_eq!(buffer[(x, 1)].symbol(), "│");
     assert_eq!(buffer[(x, height - 3)].symbol(), "┴");

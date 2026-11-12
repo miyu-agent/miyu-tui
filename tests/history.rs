@@ -60,7 +60,8 @@ fn what_was_sent_comes_back_with_up_after_a_restart_even_in_a_new_session() {
 #[test]
 fn ctrl_r_shows_times_a_preview_and_a_search_row_and_typing_filters() {
     let home = Home::new(Script::new([Play::Says("好。"), Play::Says("嗯。")]));
-    let mut tui = home.tui("zh_CN.UTF-8");
+    // 上下排的样子：终端不到 100 列（够 100 列的预览放右边，照 Claude Code，第 52 条）。
+    let mut tui = home.tui_wide("zh_CN.UTF-8", 90);
     tui.wait_for("开放权限");
     tui.say("帮我跑一下门禁");
     tui.wait_for("好。");
@@ -194,13 +195,19 @@ fn ctrl_r_keeps_its_height_and_puts_the_preview_on_the_right_when_wide() {
     tui.type_text("xyz");
     tui.wait_for("历史  0 条");
     assert_eq!(box_rows(&tui), wide, "{}", tui.lines().join("\n"));
-    // 140 列：侧边栏占掉一块，框里不到 100 列，上下排。
+    // 140 列：侧边栏占掉一块、框里不到 100 列，照终端宽照样左右排（2026-11-12 项目主人：「参考 Claude Code」）。
     tui.key(b"\x1b");
     tui.pump(Duration::from_millis(200));
     tui.resize(40, 140);
     tui.pump(Duration::from_millis(500));
     open_history(&mut tui, "历史  31 条");
     eprintln!("===== 140 列 =====\n{}", tui.lines().join("\n"));
+    let mid = box_rows(&tui);
+    assert!(
+        tui.lines()[mid.0].contains('┬'),
+        "140 列开着侧边栏也左右排：\n{}",
+        tui.lines().join("\n")
+    );
     // 窗口变窄：上下排，预览固定 6 行；框还是一打开就定死。
     tui.key(b"\x1b");
     tui.pump(Duration::from_millis(200));
