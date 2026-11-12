@@ -96,6 +96,7 @@ mod bill;
 mod context_cap;
 mod effort;
 mod goal;
+mod low_memory;
 mod models_changed;
 mod notices;
 mod pools;
