@@ -155,7 +155,7 @@ fn a_package_tool_is_drawn_with_its_package_icon() {
     let mut f = Fixture::new();
     f.human = crate::human::Human::from_reply(&serde_json::json!({
         "language": "zh", "said": {}, "tools": {"meme_pick": {"name": "挑选表情包"}},
-        "packages": {"meme_pick": "miyu-memes"}
+        "packages": {"meme_pick": "memes"}
     }));
     let t0 = Instant::now();
     let mut pick = command(t0, 1, ToolStatus::Ok);
@@ -173,12 +173,7 @@ fn a_package_tool_is_drawn_with_its_package_icon() {
         title(&f).contains(&format!("{} 挑选表情包", f.config.icons.tool)),
         "包没写图标：扳手"
     );
-    f.human.set_icons(
-        [(
-            "miyu-memes".to_string(),
-            "face-slightly-smiling".to_string(),
-        )]
-        .into(),
-    );
+    f.human
+        .set_icons([("memes".to_string(), "face-slightly-smiling".to_string())].into());
     assert!(title(&f).contains("\u{f118} 挑选表情包"), "{}", title(&f));
 }

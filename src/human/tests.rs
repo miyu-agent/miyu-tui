@@ -91,10 +91,10 @@ fn the_reply_tells_which_package_each_tool_belongs_to() {
         "language": "zh",
         "said": {},
         "tools": {"meme_send": {"name": "发送表情包"}, "read": {"name": "读取", "subject": "file_path"}},
-        "packages": {"meme_send": "miyu-memes", "odd": 3}
+        "packages": {"meme_send": "memes", "odd": 3}
     }));
     assert_eq!(human.tool_name("meme_send"), "发送表情包");
-    assert_eq!(human.package("meme_send"), Some("miyu-memes"));
+    assert_eq!(human.package("meme_send"), Some("memes"));
     assert_eq!(human.package("odd"), None, "读不懂的不要");
     assert_eq!(human.package("read"), None, "目录里没有的没有包");
     assert_eq!(human.package("nothing"), None);
@@ -104,16 +104,10 @@ fn the_reply_tells_which_package_each_tool_belongs_to() {
 fn a_tool_finds_its_package_icon() {
     let mut human = Human::from_reply(&json!({
         "language": "zh", "said": {}, "tools": {},
-        "packages": {"meme_send": "miyu-memes", "read": "basesystem"}
+        "packages": {"meme_send": "memes", "read": "basesystem"}
     }));
     assert_eq!(human.package_icon("meme_send"), None, "还没要到图标");
-    human.set_icons(
-        [(
-            "miyu-memes".to_string(),
-            "face-slightly-smiling".to_string(),
-        )]
-        .into(),
-    );
+    human.set_icons([("memes".to_string(), "face-slightly-smiling".to_string())].into());
     assert_eq!(
         human.package_icon("meme_send"),
         Some("face-slightly-smiling")

@@ -56,7 +56,7 @@ mod tests {
     #[test]
     fn only_mascot_packages_are_listed() {
         let got = json!({"packages": [
-            {"package": "miyu-tui", "kind": "ui", "name": "终端界面"},
+            {"package": "tui", "kind": "ui", "name": "终端界面"},
             {"package": "pudding", "kind": "mascot", "name": "布丁", "mascot": {"model": "mascot.json"}},
             {"package": "broken", "layer": "system", "code": "bad_toml", "problem": "写错了"}
         ]});
@@ -68,15 +68,15 @@ mod tests {
     #[test]
     fn theme_packages_are_listed_without_the_default_one() {
         let got = json!({"packages": [
-            {"package": "miyu-tui-theme-default", "kind": "theme", "name": "默认主题", "theme": {"file": "theme.json"}},
-            {"package": "miyu-tui-theme-ascii", "kind": "theme", "name": "纯 ASCII", "theme": {"file": "theme.json"}},
+            {"package": "tui-theme-default", "kind": "theme", "name": "默认主题", "theme": {"file": "theme.json"}},
+            {"package": "tui-theme-ascii", "kind": "theme", "name": "纯 ASCII", "theme": {"file": "theme.json"}},
             {"package": "pudding", "kind": "mascot", "name": "布丁"}
         ]});
         let list = super::looks(&got);
         assert_eq!(list.len(), 1, "默认主题包不列：第一行就是它");
         assert_eq!(
             (list[0].id.as_str(), list[0].label()),
-            ("miyu-tui-theme-ascii", "纯 ASCII")
+            ("tui-theme-ascii", "纯 ASCII")
         );
     }
 

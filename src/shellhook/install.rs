@@ -148,7 +148,7 @@ pub fn status(words: &Words) -> io::Result<()> {
 }
 
 /// 默认调哪个程序：核心转交 `miyu shellhook …` 时设的 `MIYU_PROGRAM`（主程序解开链接以后的真实位置，核心
-/// `miyu-cli` 的 `packages.rs`；设计 60 系统源分包以后终端在 `/usr/share/miyu/packages/miyu-tui/bin/`，旁边没有 `miyu`，排期
+/// `miyu-cli` 的 `packages.rs`；设计 60 系统源分包以后终端在 `/usr/share/miyu/packages/tui/bin/`，旁边没有 `miyu`，排期
 /// 第 47 条），没有的照这个程序旁边的 `miyu`（随 Miyu 装的界面放在它旁边，设计 32 第六节），再没有的调自己。PATH 上有
 /// 指着同一个文件的，记 PATH 上那个（[`on_path`]）：真实位置带版本号（Homebrew 的 `Cellar/miyu-core/<版本>/…`）、在
 /// `/usr/lib/miyu/` 里，升级就断。

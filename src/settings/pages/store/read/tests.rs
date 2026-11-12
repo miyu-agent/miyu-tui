@@ -5,8 +5,8 @@ use super::{Covered, info, locals, remotes, upgrades};
 #[test]
 fn a_source_package_keeps_what_the_three_pages_show() {
     let got = json!({"packages": [
-        {"package": "miyu-scripts-weather", "version": "1.2.0", "name": "天气", "summary": "查天气",
-         "installed": "1.1.0", "blocked": null, "depends": ["miyu-base-net"],
+        {"package": "weather", "version": "1.2.0", "name": "天气", "summary": "查天气",
+         "installed": "1.1.0", "blocked": null, "depends": ["base-net"],
          "provides": {"scripts": ["weather"]}, "source": "official",
          "published": "2026-10-30T00:00:00Z", "downloads": 1904, "downloads_week": 233},
         {"package": "odd", "version": "0.1.0", "installed": "", "blocked": "bad author"},
@@ -45,40 +45,40 @@ fn a_source_package_keeps_what_the_three_pages_show() {
 #[test]
 fn installed_packages_are_one_flat_table_by_name() {
     let got = json!({"packages": [
-        {"package": "miyu-base-shell", "name": "跑命令", "version": "0.8.0"},
-        {"package": "miyu-im", "name": "接入QQ", "version": "0.8.4", "enabled": false, "page": true},
-        {"package": "miyu-base-write", "name": "写文件", "removed": true},
-        {"package": "miyu-tui", "name": "终端", "version": "0.8.0"}
+        {"package": "base-shell", "name": "跑命令", "version": "0.8.0"},
+        {"package": "im", "name": "接入QQ", "version": "0.8.4", "enabled": false, "page": true},
+        {"package": "base-write", "name": "写文件", "removed": true},
+        {"package": "tui", "name": "终端", "version": "0.8.0"}
     ]});
     let list = locals(&got);
     let names: Vec<&str> = list.iter().map(|p| p.name.as_str()).collect();
     let mut sorted = names.clone();
     sorted.sort_unstable();
     assert_eq!(names, sorted, "照名字排");
-    let im = list.iter().find(|p| p.id == "miyu-im").unwrap();
+    let im = list.iter().find(|p| p.id == "im").unwrap();
     assert!(!im.on && im.page, "开关关着的是关；有后台页");
-    let write = list.iter().find(|p| p.id == "miyu-base-write").unwrap();
+    let write = list.iter().find(|p| p.id == "base-write").unwrap();
     assert!(!write.on, "卸掉的出厂包是关");
-    assert!(list.iter().find(|p| p.id == "miyu-tui").unwrap().on);
+    assert!(list.iter().find(|p| p.id == "tui").unwrap().on);
 }
 
 #[test]
 fn upgrades_and_info_are_read() {
     let ups = upgrades(
-        &json!({"upgrades": [{"package": "miyu-im", "from": "0.8.4", "to": "0.9.0"}],
+        &json!({"upgrades": [{"package": "im", "from": "0.8.4", "to": "0.9.0"}],
         "moved": [], "gone": ["x"]}),
     );
-    assert_eq!(ups.get("miyu-im").map(String::as_str), Some("0.9.0"));
+    assert_eq!(ups.get("im").map(String::as_str), Some("0.9.0"));
     assert_eq!(ups.len(), 1);
     let got = info(
-        &json!({"package": "miyu-im", "author": "miyu-agent", "from": "official",
-        "installed": "2026-10-29T08:00:00.000Z", "size": 19_000_000, "required_by": ["miyu-memes"],
+        &json!({"package": "im", "author": "miyu-agent", "from": "official",
+        "installed": "2026-10-29T08:00:00.000Z", "size": 19_000_000, "required_by": ["memes"],
         "capabilities": [{"id": "net.listen", "name": "开端口"}],
         "provides": {"program": "process", "skills": ["qq"], "page": true, "settings": 12}}),
     );
     assert_eq!(got.author.as_deref(), Some("miyu-agent"));
     assert_eq!(got.size, Some(19_000_000));
-    assert_eq!(got.required_by, ["miyu-memes"]);
+    assert_eq!(got.required_by, ["memes"]);
     assert_eq!(got.needs, ["开端口"]);
     let kinds: Vec<&str> = got.provides.iter().map(|(k, _)| k.as_str()).collect();
     assert_eq!(
@@ -126,7 +126,7 @@ fn a_covered_copy_joins_the_row_that_covers_it() {
 /// `command` 是第一个子命令、`commands` 是全部：两格都有的只留全部的（2026-11-06 实测见到「命令 memes、命令 memes」）。
 #[test]
 fn the_first_command_is_not_listed_again_beside_all_of_them() {
-    let got = info(&json!({"package": "miyu-memes",
+    let got = info(&json!({"package": "memes",
         "provides": {"command": "memes", "commands": ["memes"], "page": true}}));
     let kinds: Vec<&str> = got.provides.iter().map(|(k, _)| k.as_str()).collect();
     assert_eq!(kinds, ["commands", "page"]);

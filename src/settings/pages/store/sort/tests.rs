@@ -54,15 +54,16 @@ fn a_sort_nobody_has_is_skipped() {
 
 #[test]
 fn every_word_must_appear_in_the_name_id_or_summary() {
-    let mut weather = remote("miyu-scripts-weather", None, None, None);
+    let mut weather = remote("weather", None, None, None);
     weather.name = "天气".into();
     weather.summary = "查城市天气和预报".into();
-    let mut tarot = remote("miyu-scripts-tarot", None, None, None);
+    let mut tarot = remote("tarot", None, None, None);
+    tarot.name = "塔罗".into();
     tarot.summary = "抽牌".into();
     let list = [weather, tarot];
     let hit = |q: &str| shown(&list, None, q).len();
     assert_eq!(hit("天气 预报"), 1);
-    assert_eq!(hit("SCRIPTS"), 2, "不分大小写，编号也算");
+    assert_eq!(hit("TAROT"), 1, "不分大小写，编号也算");
     assert_eq!(hit("天气 抽牌"), 0, "每个词都得有");
     assert_eq!(hit("  "), 2);
 }

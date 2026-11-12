@@ -51,7 +51,7 @@ fn not_installed(preview: Result<Value, Refusal>) -> (SemanticStep, Asker) {
         sent(&mut asker),
         [(
             "package.install",
-            json!({"source": "miyu-embed", "preview": true})
+            json!({"source": "embed", "preview": true})
         )],
         "没装的看一眼软件源"
     );
@@ -128,7 +128,7 @@ fn an_unreachable_source_still_shows_the_step_without_a_size() {
     let (step, _) = not_installed(Err(refused("source_unreachable", Some("timed out"))));
     assert_eq!(step.offer, Some(Offer::Download(None)));
     assert_eq!(step.skip(Step::Semantic, false), Step::Semantic);
-    let (step, _) = not_installed(Ok(json!({"package": "miyu-embed", "download": 59_768_832})));
+    let (step, _) = not_installed(Ok(json!({"package": "embed", "download": 59_768_832})));
     assert_eq!(step.offer, Some(Offer::Download(Some(59_768_832))));
 }
 
@@ -139,7 +139,7 @@ fn yes_downloads_on_the_spot_with_progress_and_moves_on_when_installed() {
     assert_eq!(step.key(key(KeyCode::Enter), &mut asker), Move::Stay);
     assert_eq!(
         sent(&mut asker),
-        [("package.install", json!({"source": "miyu-embed"}))]
+        [("package.install", json!({"source": "embed"}))]
     );
     let pushed = |package: &str, stage, done, total| Progress {
         package: package.into(),
@@ -149,7 +149,7 @@ fn yes_downloads_on_the_spot_with_progress_and_moves_on_when_installed() {
     };
     let installing = |stage, done, total| Phase::Installing { stage, done, total };
     assert_eq!(step.phase, installing(Stage::Download, 0, 0));
-    step.progress(&pushed("miyu-embed", Stage::Download, 400, 1000));
+    step.progress(&pushed("embed", Stage::Download, 400, 1000));
     step.progress(&pushed("other", Stage::Download, 999, 1000));
     assert_eq!(
         step.phase,
@@ -157,12 +157,12 @@ fn yes_downloads_on_the_spot_with_progress_and_moves_on_when_installed() {
         "只认 embed 的进度"
     );
     // 核心 IN-3 起下完以后核对、装：那一次不带字节数，下完的数留着。
-    step.progress(&pushed("miyu-embed", Stage::Download, 1000, 1000));
-    step.progress(&pushed("miyu-embed", Stage::Verify, 0, 0));
+    step.progress(&pushed("embed", Stage::Download, 1000, 1000));
+    step.progress(&pushed("embed", Stage::Verify, 0, 0));
     assert_eq!(step.phase, installing(Stage::Verify, 1000, 1000));
     step.progress(&pushed("other", Stage::Install, 0, 0));
     assert_eq!(step.phase, installing(Stage::Verify, 1000, 1000));
-    step.progress(&pushed("miyu-embed", Stage::Install, 0, 0));
+    step.progress(&pushed("embed", Stage::Install, 0, 0));
     assert_eq!(step.phase, installing(Stage::Install, 1000, 1000));
     // 下着的时候按键都不认，Esc 也不认。
     assert_eq!(step.key(key(KeyCode::Esc), &mut asker), Move::Stay);
@@ -225,7 +225,7 @@ fn a_failed_download_says_why_and_offers_retry_or_skip() {
     step.key(key(KeyCode::Enter), &mut asker);
     assert_eq!(
         sent(&mut asker),
-        [("package.install", json!({"source": "miyu-embed"}))]
+        [("package.install", json!({"source": "embed"}))]
     );
     step.answer(
         &Waiting::SemanticInstall,

@@ -66,7 +66,7 @@ impl App {
         }
     }
 
-    /// 念一段回答（Markdown，`miyu-say` 自己转成念得出来的话）：带上这个会话的人格，照它挑音色。
+    /// 念一段回答（Markdown，`say` 自己转成念得出来的话）：带上这个会话的人格，照它挑音色。
     fn speak(&mut self, text: String) {
         let mut params = json!({ "text": text });
         if let Some(persona) = self.talk.transcript.persona.clone() {

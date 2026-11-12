@@ -15,7 +15,7 @@ use serde_json::{Map, Value};
 pub use parts::{Marks, Mod, Pick, Sheet, Text};
 
 /// 默认主题包的编号：配置里没设主题就是它。
-pub const DEFAULT_PACKAGE: &str = "miyu-tui-theme-default";
+pub const DEFAULT_PACKAGE: &str = "tui-theme-default";
 
 /// 默认主题，编进程序里（没装默认主题包、包读不成时照它画）。
 pub const DEFAULT: &str = include_str!("../../packages/tui-theme-default/theme.json");

@@ -107,8 +107,8 @@ mod tests {
     #[test]
     fn only_ready_names_count() {
         let names = json!({"names": [
-            {"name": "stt", "kind": "provides", "package": "miyu-voice-input", "ready": false},
-            {"name": "tts", "kind": "provides", "package": "miyu-say", "ready": true},
+            {"name": "stt", "kind": "provides", "package": "voice-input", "ready": false},
+            {"name": "tts", "kind": "provides", "package": "say", "ready": true},
         ]});
         let voice = Voice {
             ready: ready(&names),

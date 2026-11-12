@@ -72,10 +72,8 @@ fn the_terminal_manifest_recommends_nothing_and_keeps_tui_keys() {
 fn the_ascii_theme_leaves_no_symbol_outside_ascii() {
     // 2026-10-21 项目主人照推荐定：纯 ASCII 样板拿来验「所有样子都能换」。盖上它以后，表里每一个记号、`layout`、
     // `timeline` 两节盖的每一格、框线画出来的每一个字都是 ASCII。
-    let pack: serde_json::Value = serde_json::from_str(include_str!(
-        "../../packages/tui-theme-ascii/theme.json"
-    ))
-    .unwrap();
+    let pack: serde_json::Value =
+        serde_json::from_str(include_str!("../../packages/tui-theme-ascii/theme.json")).unwrap();
     let whole = merged(&pack);
     let sheet = parse(&whole).expect("纯 ASCII 主题读得懂");
     let mut strings = Vec::new();

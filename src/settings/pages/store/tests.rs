@@ -72,6 +72,6 @@ fn details_are_asked_once_per_package_and_not_for_the_backstage() {
 #[test]
 fn without_the_core_program_the_hint_names_pkg_page() {
     let texts = crate::config::Config::builtin().unwrap().text.settings;
-    let line = super::keys::run_page(&texts, "miyu-im");
-    assert_eq!(line, "在终端里运行 miyu pkg page miyu-im");
+    let line = super::keys::run_page(&texts, "im");
+    assert_eq!(line, "在终端里运行 miyu pkg page im");
 }

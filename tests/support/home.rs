@@ -39,7 +39,7 @@ fn welcomed(settings: &str) -> String {
 fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tui/package.toml");
     let packages = super::data_of(dir).packages();
-    let to = packages.join("miyu-tui");
+    let to = packages.join("tui");
     std::fs::create_dir_all(&to).expect("建得了包的目录");
     let text = std::fs::read_to_string(manifest).expect("读得了终端的清单");
     std::fs::write(to.join("package.toml"), edit(text)).expect("装得上终端的清单");
