@@ -1063,7 +1063,7 @@
       "test_failed": "{name} 连接失败：{why}",
       "save_first": "请先按 s 保存新供应商再测试",
       "saved": "已保存",
-      "saved_restart": "已保存，重启核心后生效",
+      "saved_restart": "重启核心后生效",
       "saving": "正在保存…",
       "conflict": "此项已在别处修改（当前为 {current}）：请重新打开后再保存",
       "offline": "核心未连接",

@@ -1063,7 +1063,7 @@
       "test_failed": "{name} に接続できません：{why}",
       "save_first": "Save the new provider with s before testing",
       "saved": "保存しました",
-      "saved_restart": "保存しました。コアの再起動後に反映されます",
+      "saved_restart": "コアを再起動すると反映されます",
       "saving": "保存中…",
       "conflict": "Changed elsewhere just now (now {current}); your changes are kept, reopen and save again",
       "offline": "コアに接続していません",
