@@ -18,7 +18,7 @@ pub enum Step {
 /// 按下 `key`：`vim` 是 按键模式是不是 Vim，`typing` 是按了 `/` 正在打搜索的字（只在按键模式是 Vim 时有），`query` 是现在搜的字。
 ///
 /// 关着：打字就是搜，退格删一个。开着：没在打字时 `/` 清空了进打字，`Esc` 先去掉留着的筛，别的字不进搜索；打字时
-/// `Enter` 收起（筛的留着），`Esc` 不搜了，删光了再退格也收起。
+/// `Enter` 收起（筛的留着），`Esc` 不搜了；删光了再退格什么都不做（发版前 check 50）。
 pub fn key(vim: bool, typing: &mut bool, query: &str, key: KeyEvent) -> Step {
     let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
     let pushed = |c: char| Step::Query(format!("{query}{c}"));
@@ -44,10 +44,8 @@ pub fn key(vim: bool, typing: &mut bool, query: &str, key: KeyEvent) -> Step {
                 *typing = false;
                 Step::Query(String::new())
             }
-            KeyCode::Backspace if query.is_empty() => {
-                *typing = false;
-                Step::Kept
-            }
+            // 删光了再退格什么都不做，留在搜索里：只有 `Esc` 退出（发版前 check 50，2026-11-12 项目主人：很容易误触）。
+            KeyCode::Backspace if query.is_empty() => Step::Kept,
             KeyCode::Backspace => popped(),
             KeyCode::Char(c) if !ctrl => pushed(c),
             _ => Step::Pass,
@@ -174,11 +172,17 @@ mod tests {
             Step::Query(String::new())
         );
         assert!(!typing);
+        // 发版前 check 50（2026-11-12 项目主人）：删光了再退格不退出搜索，只有 Esc 退出。
         typing = true;
         assert_eq!(
             key(true, &mut typing, "", press(KeyCode::Backspace)),
             Step::Kept
         );
-        assert!(!typing, "删光了再退格收起");
+        assert!(typing, "删光了再退格还在搜索里");
+        assert_eq!(
+            key(false, &mut typing, "", press(KeyCode::Backspace)),
+            Step::Query(String::new()),
+            "方向键模式删光了再退格：搜的字照旧是空的，不关框"
+        );
     }
 }
