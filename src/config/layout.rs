@@ -133,7 +133,7 @@ pub struct Layout {
     pub goal_mark: String,
     /// 斜杠命令列表最多露出几行。取单数，选中的那一行才停得在正中间。
     pub menu_rows: usize,
-    /// 输入历史列表最多露几条（`tui.md`「输入历史列表」）。
+    /// 输入历史列表那一段几条，0 是跟窗口高（`tui.history_rows`，`tui.md`「输入历史列表」第 1 条「高度」，发版前 check 第 52 条）。
     pub history_rows: usize,
     /// `/jump` 跳到的那一条竖线亮多久，毫秒（`tui.md`「跳到说过的话」第 3 条）。
     pub jump_flash_ms: u64,
@@ -145,7 +145,7 @@ pub struct Layout {
     pub session_title_width: usize,
     /// 会话列表里勾上的记号，连同它后面的空格（「会话列表」第 2 条）。
     pub tick_mark: String,
-    /// 输入历史列表里 Tab 展开的那一条最多几行（`tui.md`「输入历史列表」第 7 条）。
+    /// 输入历史列表上下排时预览固定几行（`tui.history_preview_rows`，「输入历史列表」第 1 条「高度」）。
     pub history_preview_rows: usize,
     /// 输入历史文件里留最近几条（「输入历史列表」第 8 条）。
     pub history_keep: usize,
@@ -205,6 +205,21 @@ impl Layout {
         // 「跳转消息」几条和它一起问（同一个请求编号，`head_settings.rs`）。
         if let Some(n) = count(&got["items"][Self::SIDEBAR_JUMPS_KEY]["value"]) {
             self.sidebar_jumps = n;
+        }
+    }
+
+    /// 输入历史列表的两项在终端软件包里的名字（`[settings.history_rows]`、`[settings.history_preview_rows]`，发版前 check
+    /// 第 52 条）。
+    pub const HISTORY_KEYS: [&'static str; 2] = ["tui.history_rows", "tui.history_preview_rows"];
+
+    /// 照 `config.get` 读来的输入历史列表两项改：写了的盖过 `layout.json`，读不成数的照原样。
+    pub fn apply_history(&mut self, got: &serde_json::Value) {
+        let [rows, preview] = Self::HISTORY_KEYS.map(|key| count(&got["items"][key]["value"]));
+        if let Some(n) = rows {
+            self.history_rows = n;
+        }
+        if let Some(n) = preview {
+            self.history_preview_rows = n;
         }
     }
 

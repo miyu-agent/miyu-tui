@@ -197,6 +197,26 @@ applies = "now"
 name = { en = "Messages to jump to in the sidebar", zh = "侧边栏跳转消息", ja = "サイドバーのジャンプ先メッセージ" }
 description = { en = "How many of your own messages in this session the sidebar lists, newest at the bottom; click one to jump to it. 0 hides the list.", zh = "侧边栏列这个会话里你说的几句话，新的在下，点一句跳过去。0 是不显示。", ja = "このセッションで自分が送ったメッセージをサイドバーに何件並べるか（新しいものが下）。クリックでそこへ移動。0 で表示しない。" }
 
+# 输入历史列表（`Ctrl+R`、`/jump`）的高度（终端蓝图 `docs/blueprint/tui.md`「输入历史列表」第 1 条「高度」，2026-11-12 项目主人，
+# 发版前 check 第 52 条）：出厂值同 `resources/layout.json`；框的高度打开时定死，改了当场照新的画。
+[settings.history_rows]
+type = "int"
+min = 0
+max = 50
+default = 0
+applies = "now"
+name = { en = "History list rows", zh = "历史列表条数", ja = "履歴リストの行数" }
+description = { en = "How many entries the Ctrl+R history list shows. 0 follows the window height.", zh = "Ctrl+R 历史列表显示几条。0 是跟随窗口高度。", ja = "Ctrl+R の履歴リストに表示する件数。0 でウィンドウの高さに合わせる。" }
+
+[settings.history_preview_rows]
+type = "int"
+min = 1
+max = 30
+default = 6
+applies = "now"
+name = { en = "History preview rows", zh = "历史预览行数", ja = "履歴プレビューの行数" }
+description = { en = "How many lines the preview under the Ctrl+R history list shows. Wide windows show the preview on the right instead.", zh = "Ctrl+R 历史列表下方的预览显示几行。宽窗口的预览在右侧。", ja = "Ctrl+R の履歴リストの下のプレビューに表示する行数。幅の広いウィンドウではプレビューは右側に出る。" }
+
 # 正文顶上挂哪几件（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条、「跳到说过的话」第 5 条）：出厂只有 prompt（往上翻时钉一行
 # 你说的那句话）。配置页不画。
 [settings.top]
