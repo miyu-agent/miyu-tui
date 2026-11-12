@@ -228,6 +228,7 @@
   "rename": {
     "done": "Renamed: {title}",
     "retitling": "Retitling…",
+    "removed": "Title removed",
     "too_long": "Titles are at most {max} characters"
   },
   "feature_tree": {

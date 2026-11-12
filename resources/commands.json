@@ -94,9 +94,9 @@
     {
       "name": "rename",
       "summary": {
-        "zh": "给会话改名；只打 /rename 让 AI 重新起一个",
-        "en": "Rename the session; /rename alone asks the AI for a new title",
-        "ja": "セッション名を変える。/rename だけなら AI が付け直す"
+        "zh": "给会话改名；只打 /rename 让 AI 重新起一个，/rename - 去掉标题",
+        "en": "Rename the session; /rename alone asks the AI for a new title, /rename - removes it",
+        "ja": "セッション名を変える。/rename だけなら AI が付け直し、/rename - で消す"
       },
       "run": "rename",
       "args": true
