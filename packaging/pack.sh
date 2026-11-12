@@ -1,6 +1,6 @@
 #!/bin/sh
 # 把终端打成软件源用的包文件（`.miyu`，核心施工 G-1，设计 37 第二节）：终端 `miyu-tui`（带程序，一种系统一个文件）和
-# 主题包 `miyu-tui-theme-ascii`（只有数据，哪种系统都能装）。默认主题编进了程序，不打（终端蓝图「主题」第 4 条）。打包交给核心的 `miyu pkg pack`，这里只摆文件夹。
+# 主题包 `tui-theme-ascii`（只有数据，哪种系统都能装）。默认主题编进了程序，不打（终端蓝图「主题」第 4 条）。打包交给核心的 `miyu pkg pack`，这里只摆文件夹。
 #
 #   packaging/pack.sh --miyu <核心程序> --out <目录> [--target <系统>] [--bin <编好的 miyu-tui>]
 #
@@ -48,21 +48,21 @@ fi
 # 两个包的版本跟程序走（核心 VR-1，2026-11-06：本体、ASCII 主题包和 Cargo.toml 同号，「年.月.这个月第几版」）。
 version_of() { sed -n '/^\[package\]/,/^\[/s/^version *= *"\(.*\)"/\1/p' "$1" | head -n 1; }
 want=$(version_of "$repo/Cargo.toml")
-for manifest in miyu-tui/package.toml packages/miyu-tui-theme-ascii/package.toml; do
+for manifest in tui/package.toml packages/tui-theme-ascii/package.toml; do
   got=$(version_of "$repo/$manifest")
   [ "$got" = "$want" ] || die "$manifest 的版本 $got 和程序的 $want 不一样"
 done
 
 # 清单里的 targets 要写了这一种，核心才打（写了 targets 的必须挑一种）。
-grep -q "\"$target\"" "$repo/miyu-tui/package.toml" || die "miyu-tui/package.toml 的 targets 没写 $target"
+grep -q "\"$target\"" "$repo/tui/package.toml" || die "tui/package.toml 的 targets 没写 $target"
 
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
-mkdir -p "$stage/miyu-tui/bin" "$out"
-cp "$repo/miyu-tui/package.toml" "$stage/miyu-tui/"
-cp "$bin" "$stage/miyu-tui/bin/$exe"
-chmod 755 "$stage/miyu-tui/bin/$exe"
-cp -R "$repo/packages/miyu-tui-theme-ascii" "$stage/"
+mkdir -p "$stage/tui/bin" "$out"
+cp "$repo/tui/package.toml" "$stage/tui/"
+cp "$bin" "$stage/tui/bin/$exe"
+chmod 755 "$stage/tui/bin/$exe"
+cp -R "$repo/packages/tui-theme-ascii" "$stage/"
 
-"$miyu" pkg pack "$stage/miyu-tui" --target "$target" -o "$out"
-"$miyu" pkg pack "$stage/miyu-tui-theme-ascii" -o "$out"
+"$miyu" pkg pack "$stage/tui" --target "$target" -o "$out"
+"$miyu" pkg pack "$stage/tui-theme-ascii" -o "$out"
