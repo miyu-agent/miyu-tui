@@ -86,15 +86,14 @@ impl More {
     }
 
     /// 按键模式是 Vim：没在搜时 `j` `k` 挪、`/` 清空了进搜索、`Esc` 先去掉筛的再关窗；搜的时候 `Enter` 收起（筛的留着），
-    /// `Esc` 不搜了，删光了再退格也收起。
+    /// `Esc` 不搜了；删光了再退格什么都不做（发版前 check 50）。
     fn vim_key(&mut self, key: KeyEvent) -> MoreKey {
         if self.filter.editing() {
             match nav::search(key) {
                 Some(Nav::Up) => self.cursor = self.step(false),
                 Some(Nav::Down) => self.cursor = self.step(true),
-                _ if key.code == KeyCode::Backspace && self.filter.text().is_empty() => {
-                    self.filter = Field::line();
-                }
+                // 删光了再退格什么都不做，留在搜索里（发版前 check 50，2026-11-12 项目主人）。
+                _ if key.code == KeyCode::Backspace && self.filter.text().is_empty() => {}
                 _ => {
                     if self.filter.edit(key) != Edit::Done {
                         self.cursor = self.first();
