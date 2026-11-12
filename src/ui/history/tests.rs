@@ -43,6 +43,7 @@ fn lay(
         width,
         max,
         screen: 60,
+        columns: width,
         total: found.len(),
     };
     lines(history, found, room, config, now)

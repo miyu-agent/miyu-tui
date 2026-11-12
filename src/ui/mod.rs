@@ -63,7 +63,7 @@ pub mod widget;
 
 pub use history::{
     Room as HistoryRoom, index_at as history_index_at, lines as history_lines,
-    list_rows as history_list_rows,
+    list_rows as history_list_rows, side as history_side,
 };
 pub use menu::{index_at as menu_index_at, rows as menu_rows};
 pub mod context_box;
@@ -293,6 +293,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             width,
             max: usize::from(inner),
             screen: frame.area().height,
+            columns: frame.area().width,
             total: list.len(),
         };
         history::lines(
