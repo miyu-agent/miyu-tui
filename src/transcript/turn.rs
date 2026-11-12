@@ -35,6 +35,7 @@ impl Transcript {
     /// 一轮开始了（`turn.started`）：开表、清这一轮的用量，把开这一轮的排队消息挪进正文。
     pub(super) fn start(&mut self, turn: u64, trigger: Option<u64>) {
         self.running = Some(self.clock.now());
+        self.waited.reset();
         self.starting = Starting::No;
         self.spoke = false;
         self.opened_by.clear();
@@ -147,15 +148,25 @@ impl Transcript {
         self.unqueue_to_end();
     }
 
-    /// 一轮到头了：停表、收起时间线、停掉还在转的步。交回用了多久、记着的出错。
+    /// 这一轮到 `now` 跑了多久，等人确认、答题的那几段不算（`waited.rs`，同核心的口径）；没在跑是 `None`。
+    pub fn ran(&self, now: std::time::Instant) -> Option<std::time::Duration> {
+        let start = self.running?;
+        Some(
+            now.saturating_duration_since(start)
+                .saturating_sub(self.waited.total(now)),
+        )
+    }
+
+    /// 在等人确认、答题：用时停着不走。
+    pub fn waiting_on_person(&self) -> bool {
+        self.running.is_some() && self.waited.waiting()
+    }
+
+    /// 一轮到头了：停表、收起时间线、停掉还在转的步。交回用了多久（等人的不算）、记着的出错。
     fn wind_up(&mut self) -> (std::time::Duration, Option<crate::core::CallError>) {
         let now = self.clock.now();
-        let took = self
-            .running
-            .take()
-            .map_or(std::time::Duration::ZERO, |start| {
-                now.saturating_duration_since(start)
-            });
+        let took = self.ran(now).unwrap_or_default();
+        self.running = None;
         self.retry = None;
         self.drop_compacting();
         self.blocks.clear();

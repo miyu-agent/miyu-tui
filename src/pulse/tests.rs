@@ -28,6 +28,17 @@ fn at(t0: Instant, ms: u64) -> Instant {
     t0 + Duration::from_millis(ms)
 }
 
+/// 没等过人：跑了多久就是从开头到现在。
+trait Word {
+    fn word(&mut self, turn: Instant, beat: usize, now: Instant, words: &Words) -> &str;
+}
+
+impl Word for Pulse {
+    fn word(&mut self, turn: Instant, beat: usize, now: Instant, words: &Words) -> &str {
+        self.word_after(turn, now.saturating_duration_since(turn), beat, now, words)
+    }
+}
+
 #[test]
 fn a_burst_of_events_changes_the_word_once_it_is_quiet_and_the_word_has_stayed() {
     let w = words();
@@ -78,4 +89,19 @@ fn the_tier_follows_the_turn_and_a_new_turn_starts_over() {
         "新的一轮回到第一档"
     );
     assert_eq!(w.widest(), 4, "两个汉字四列");
+}
+
+#[test]
+fn the_tier_counts_only_the_time_not_spent_waiting_on_a_person() {
+    // 发版前 check（2026-11-12 项目主人）：等人确认、答题时用时不走，分档也照不算等人的那一截。
+    let w = words();
+    let mut p = Pulse::new(7);
+    let t0 = Instant::now();
+    p.word_after(t0, Duration::ZERO, 0, t0, &w);
+    let ran = Duration::from_secs(20);
+    let word = p.word_after(t0, ran, 0, at(t0, 61_000), &w).to_string();
+    assert!(
+        ["甲", "乙", "丙"].contains(&word.as_str()),
+        "墙上过了 61 秒，等人等了 41 秒：还在第一档"
+    );
 }

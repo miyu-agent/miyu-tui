@@ -51,6 +51,7 @@ impl Default for Transcript {
             reverted: Vec::new(),
             next_id: 0,
             older: pages::Older::default(),
+            waited: super::waited::Waited::default(),
             workspace: None,
             returned: Vec::new(),
             opened_by: Vec::new(),
