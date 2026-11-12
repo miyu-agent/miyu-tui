@@ -104,8 +104,8 @@ impl App {
     /// 选定：词换成「`$名字 `」，接着打字。
     fn skill_take(&mut self, found: &Found) {
         if let Some((skill, _)) = found.items.get(self.typing.skill_word.selected) {
-            let text = format!("${} ", skill.name);
-            self.typing.input.retype_mention(found.start, &text);
+            let name = skill.name.clone();
+            self.typing.input.retype_skill(found.start, &name);
             self.typing.skill_word.mode = Mode::Typing;
         }
     }

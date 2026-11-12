@@ -72,6 +72,14 @@ impl Editor {
         self.put_block(label, text, None, None);
     }
 
+    /// 在光标处放一个点名了的技能（`$名字`）：同粘贴块当一个字（左右键一下跳过、退格和 Ctrl+W 一下删掉），发出去还是 `$名字`；
+    /// 后面跟一个空格接着打字（`tui.md`「`$` 点名技能」第 3 条，2026-11-12 项目主人：「回车后需要做成类占位符」）。
+    pub fn insert_skill(&mut self, name: &str) {
+        let label = format!("${name}");
+        self.put_block(label.clone(), label, None, None);
+        self.put(" ");
+    }
+
     /// 在光标处放一个文件块：输入框里写 `label`（文件名），发出去换成 `text`（路径），点了打开 `path`（蓝图「输入框」
     /// 第 12 条）。
     pub fn insert_file(&mut self, label: String, text: String, path: std::path::PathBuf) {

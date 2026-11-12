@@ -48,4 +48,11 @@ impl InputBox {
         self.editor.select(start, end);
         self.editor.insert(text);
     }
+
+    /// 选定了一个技能：从 `start` 到光标那个 `$` 词换成一整块 `$名字`（同粘贴块当一个字），后面一个空格。
+    pub fn retype_skill(&mut self, start: usize, name: &str) {
+        let end = self.editor.cursor();
+        self.editor.select(start, end);
+        self.editor.insert_skill(name);
+    }
 }

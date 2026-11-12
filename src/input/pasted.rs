@@ -59,6 +59,15 @@ pub struct Block {
 }
 
 impl Block {
+    /// 点名技能的那一块（`Editor::insert_skill`）：块上的字和原文一样、`$` 打头，不是附件也不是文件。发出去的话在正文里照字写
+    /// （`$名字` 强调色），不当粘贴块画。
+    pub fn is_skill(&self, label: &str) -> bool {
+        self.attachment.is_none()
+            && self.path.is_none()
+            && label.starts_with('$')
+            && self.text == label
+    }
+
     /// 点这一块打开哪个文件：附件的文件、文件块的路径；粘贴块是 `None`。
     pub fn opens(&self) -> Option<&std::path::Path> {
         let attached = self.attachment.as_ref().map(|a| a.file.as_path());
