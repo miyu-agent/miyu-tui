@@ -42,6 +42,8 @@ pub struct Texts {
     pub past_line: String,
     /// 会话的上下文上限，`{n}`（核心 CTX-1）。
     pub cap: String,
+    /// 会话钉的压缩触发线，`{n}` 是百分之几（核心 CT-1）。
+    pub pin: String,
     /// 全是本地估的。
     pub estimated: String,
     /// 按用途那张表的第一格（兼标题）。
@@ -128,7 +130,12 @@ pub fn rows(
         Some(Ok(shape)) => {
             let why = sections::stuck(tail, texts);
             let marks = &config.layout.bar;
-            out.extend(parts::rows(shape, (texts, marks), (room, data.open), why));
+            out.extend(parts::rows(
+                shape,
+                (texts, marks),
+                (room, data.open),
+                (why, tail.pin),
+            ));
         }
     }
     let table = match &data.uses {
@@ -163,6 +170,7 @@ fn seen_rows(seen: &Seen, width: u16) -> Vec<Line<'static>> {
         compactions: t.cache.compactions,
         breaks: t.cache.breaks,
         stuck: t.stuck(),
+        pin: t.compaction_pin,
     };
     rows(
         seen.boxes.context.as_ref(),

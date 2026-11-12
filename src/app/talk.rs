@@ -61,6 +61,10 @@ pub struct Talk {
     pub dream: Option<crate::dream::Dream>,
     /// 会话一时读不了，等着再试的（`unread.rs`）。
     pub(super) reread: Option<super::unread::Reread>,
+    /// 配置的压缩触发线（`compaction.line`，窗口的百分之几，核心 CT-1）：`/compact-line` 说「跟着设置」时写；还没读到是 `None`。
+    pub compaction_line: Option<u64>,
+    /// `/compact-line` 等着回应的那一次：换成多少，`None` 是回到跟着配置（`compact_line.rs`）。
+    pub(super) compaction_asked: Option<Option<u64>>,
 }
 
 impl Talk {

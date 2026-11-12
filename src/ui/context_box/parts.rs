@@ -112,12 +112,12 @@ fn flat(parts: &[Part], open: bool) -> Vec<bars::Row> {
 
 /// 排好的一行行（2026-11-11 项目主人挑的样板）：段头「上下文」右边写用了多少、占窗口几成；下面一根进度条（压缩线那一格
 /// 标黄，同侧边栏），再一行暗字离压缩线多远；卡住的红字说为什么（`why`）；空一行，各大块一行一根小条（`bars.rs`），小块
-/// 展开了（`open`）才写、不画条。
+/// 展开了（`open`）才写、不画条。`pin` 是这个会话钉的压缩触发线（百分之几，核心 CT-1）。
 pub(super) fn rows(
     shape: &Shape,
     (texts, marks): (&Texts, &crate::config::Bar),
     (room, open): (usize, bool),
-    why: Option<Line<'static>>,
+    (why, pin): (Option<Line<'static>>, Option<u64>),
 ) -> Vec<Line<'static>> {
     let used = shape.used();
     let laid = bars::rows(&flat(&shape.apportioned(), open), used, room);
@@ -132,7 +132,7 @@ pub(super) fn rows(
             meter.spans.into_iter().skip(1).collect::<Vec<_>>(),
         ));
     }
-    if let Some(text) = margin(shape, used, texts) {
+    if let Some(text) = margin(shape, used, texts, pin) {
         out.push(Line::styled(text, crate::theme::dim()));
     }
     out.extend(why);
@@ -160,9 +160,9 @@ fn summary(shape: &Shape, used: u64, texts: &Texts) -> String {
     text
 }
 
-/// 进度条下面那一行：离压缩线还差多少（过了的写过了多少）；设了会话上限的接着写（设计 68：人知道窗口是被哪一格压小的）。
-/// 两样都没有的不写。
-fn margin(shape: &Shape, used: u64, texts: &Texts) -> Option<String> {
+/// 进度条下面那一行：离压缩线还差多少（过了的写过了多少）；设了会话上限的接着写（设计 68：人知道窗口是被哪一格压小的）；
+/// 会话钉了压缩触发线的再接「会话压缩线 70%」（核心 CT-1）。几样都没有的不写。
+fn margin(shape: &Shape, used: u64, texts: &Texts, pin: Option<u64>) -> Option<String> {
     let line = shape.line.map(|line| {
         if used <= line {
             texts.to_line.replace("{n}", &meter::short(line - used))
@@ -173,6 +173,7 @@ fn margin(shape: &Shape, used: u64, texts: &Texts) -> Option<String> {
     let cap = shape
         .context
         .map(|cap| texts.cap.replace("{n}", &meter::short(cap)));
-    let said: Vec<String> = line.into_iter().chain(cap).collect();
+    let pin = pin.map(|n| texts.pin.replace("{n}", &n.to_string()));
+    let said: Vec<String> = line.into_iter().chain(cap).chain(pin).collect();
     (!said.is_empty()).then(|| said.join(&crate::sheet::sep()))
 }

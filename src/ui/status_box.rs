@@ -37,6 +37,8 @@ pub struct Texts {
     pub compactions: String,
     /// 压缩线，`{line}`。
     pub compaction_line: String,
+    /// 这个会话钉的压缩触发线，`{n}` 是百分之几（核心 CT-1）。
+    pub pin: String,
     /// 这个会话设的上下文上限，`{n}`（核心 CTX-1；底栏不写了，写在这里，2026-11-11 项目主人）。
     pub cap: String,
     /// 共多少，`{tokens}`。
@@ -95,6 +97,8 @@ pub struct Facts {
     /// 上下文用了多少；压缩线。
     pub context: u64,
     pub line: Option<u64>,
+    /// 这个会话钉的压缩触发线，百分之几；跟着配置的没有。
+    pub pin: Option<u64>,
     /// 这个会话设的上下文上限；没设的没有。
     pub cap: Option<u64>,
     /// 压缩过几次、缓存断了几次。
@@ -149,6 +153,7 @@ pub fn facts(seen: &Seen) -> Facts {
         speed: t.speed.average(),
         context: t.context,
         line: t.limits.compaction_line,
+        pin: t.compaction_pin,
         cap: t.limits.context,
         compactions: t.cache.compactions,
         breaks: t.cache.breaks,
@@ -230,6 +235,9 @@ pub fn items(f: &Facts, words: &Texts, bar: &Bar, room: usize) -> Vec<Item> {
             value.push(tail(
                 words.compaction_line.replace("{line}", &meter::short(line)),
             ));
+        }
+        if let Some(pin) = f.pin {
+            value.push(tail(words.pin.replace("{n}", &pin.to_string())));
         }
         second.push((keys.compaction.clone(), value));
     }

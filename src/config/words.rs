@@ -24,6 +24,22 @@ pub struct RenameTexts {
     pub too_long: String,
 }
 
+/// `/compact-line` 的字（核心 CT-1，蓝图「会话的压缩触发线」）：`{n}` 是百分之几；`_bare` 是读不到配置的值时用的。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CompactLineTexts {
+    pub set_to: String,
+    pub off: String,
+    pub off_bare: String,
+    pub pinned: String,
+    pub system: String,
+    pub system_bare: String,
+    /// 不在 20 到 95 里（核心 `bad_params`，`data.field` 是 `compaction_line`；不是数的当场说）。
+    pub range: String,
+    /// 还没开会话。
+    pub not_open: String,
+}
+
 /// 后台命令、子代理、待办的字（蓝图「后台命令、子代理和侧边栏」）。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

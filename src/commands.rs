@@ -129,6 +129,8 @@ pub enum Run {
     ToolList,
     /// 这个会话的上下文一块块各占多少、按用途的累计（`/context`，`context_box.rs`）。
     Context,
+    /// 这个会话的压缩触发线（`/compact-line 70`、`off`，核心 CT-1，`compact_line.rs`）。
+    CompactLine,
     /// 复制她上一轮的回答（蓝图「斜杠命令」`/copy`）。
     Copy,
     /// 换下一套主题。

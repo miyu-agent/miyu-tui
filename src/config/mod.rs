@@ -56,7 +56,8 @@ pub use timeline::{Body, Summary, Timeline, ToolKind};
 pub use unread::UnreadTexts;
 pub use widgets::{WidgetLayout, WidgetMarks};
 pub use words::{
-    JobTexts, ModelTexts, PrefixTexts, RecapTexts, RenameTexts, ShellTexts, UndoFileTexts,
+    CompactLineTexts, JobTexts, ModelTexts, PrefixTexts, RecapTexts, RenameTexts, ShellTexts,
+    UndoFileTexts,
 };
 
 /// 界面上给人看的字。`{count}` 这样的占位由代码填。
@@ -222,6 +223,8 @@ pub struct Texts {
     pub models: ModelTexts,
     /// 改名的提示。
     pub rename: RenameTexts,
+    /// `/compact-line` 的提示。
+    pub compact_line: CompactLineTexts,
     /// 长期目标的字（蓝图「长期目标」）。
     pub goal: GoalTexts,
     /// 循环的字（蓝图「循环」）。

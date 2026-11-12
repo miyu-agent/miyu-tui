@@ -264,6 +264,16 @@
       "args": true
     },
     {
+      "name": "compact-line",
+      "summary": {
+        "zh": "设这个会话的压缩线：/compact-line 70，off 跟着设置",
+        "en": "Set this session's compaction line: /compact-line 70, off follows settings",
+        "ja": "このセッションの圧縮ライン：/compact-line 70、off で設定に従う"
+      },
+      "run": "compact_line",
+      "args": true
+    },
+    {
       "name": "usage",
       "summary": {
         "zh": "这台机器上的用量和花费：按天、按模型",

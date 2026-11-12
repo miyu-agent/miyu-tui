@@ -17,6 +17,8 @@ pub struct Tail {
     pub compactions: u64,
     pub breaks: u64,
     pub stuck: Option<Stuck>,
+    /// 这个会话钉的压缩触发线，百分之几（核心 CT-1）；跟着配置的是 `None`。
+    pub pin: Option<u64>,
 }
 
 /// 「已压缩 N 次 · 缓存断裂 N 次」。

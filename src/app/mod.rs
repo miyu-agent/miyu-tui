@@ -9,6 +9,7 @@ mod boxes;
 mod build;
 mod cards;
 mod catalog;
+mod compact_line;
 mod compose;
 mod config_asks;
 mod deadline;

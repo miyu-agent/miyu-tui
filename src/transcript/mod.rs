@@ -143,6 +143,8 @@ pub struct Transcript {
     pub cache: CacheWatch,
     /// 会话的限额：核心在订阅的回应里给的窗口、压缩线（`core/limits.rs`）。
     pub limits: Limits,
+    /// 这个会话钉的压缩触发线：窗口的百分之几（核心 CT-1，`/compact-line`）；跟着配置的是 `None`。
+    pub compaction_pin: Option<u64>,
     /// 长期目标现在的样子（订阅回应里的、推来的 `goal.changed`，核心 X-8 补）：输入框上边框右边照它写（「长期目标」第 5 条）。
     pub goal: Option<crate::core::Goal>,
     /// 正在压缩的那一行是第几条（`compaction.rs`）。
@@ -363,6 +365,7 @@ impl Transcript {
             Push::PresetSet(id) => self.preset_set(id, texts),
             Push::EffortSet(level) => self.own_effort_set(level),
             Push::ContextSet(cap) => self.limits.context = cap,
+            Push::CompactionLineSet(pin) => self.compaction_pin = pin,
             Push::Said {
                 seq,
                 text,
