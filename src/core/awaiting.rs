@@ -19,8 +19,8 @@ pub(super) enum Awaiting {
     Output(String, String, bool),
     /// 要回顾：交回的是上一句的，界面照回应画（写成了的照推送画）。
     Recap,
-    /// 改名：成了弹一句。
-    Rename(String),
+    /// 改名：成了弹一句（`None` 是去掉了标题）。
+    Rename(Option<String>),
     /// 让模型重起标题：请求发出去了弹一句，标题照推送换；没东西可起的另说。
     Retitle,
     /// 带 `after` 订阅：回应到了算补完（「会话列表」第 5 条）。
