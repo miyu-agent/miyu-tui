@@ -71,6 +71,26 @@ applies = "now"
 name = { en = "Limit timeline area height", zh = "限制时间线区域高度", ja = "タイムライン領域の高さを制限" }
 description = { en = "Show only the latest lines of the running steps.", zh = "进行中的步骤只显示最新的几行。", ja = "実行中のステップは最新の数行だけ表示する。" }
 
+# 思考、命令预览各露几行（终端蓝图「时间线」第 20 条的子条目，2026-11-12 项目主人）：出厂同 `resources/timeline.json`；
+# 进行中那一段最多露几行照这两项算。
+[settings.timeline_thought_rows]
+type = "int"
+min = 3
+max = 60
+default = 15
+applies = "now"
+name = { en = "Thought preview rows", zh = "思考预览行数", ja = "思考のプレビュー行数" }
+description = { en = "How many of the latest lines a thought shows while it runs.", zh = "思考进行中滚着显示最新的几行。", ja = "思考中に表示する最新の行数。" }
+
+[settings.timeline_preview_rows]
+type = "int"
+min = 3
+max = 60
+default = 10
+applies = "now"
+name = { en = "Command preview rows", zh = "命令预览行数", ja = "コマンドのプレビュー行数" }
+description = { en = "How many lines of a command the timeline previews.", zh = "时间线里命令最多预览几行。", ja = "タイムラインでコマンドをプレビューする最大行数。" }
+
 # 形象的两个开关（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-11 项目主人：搬进配置页；
 # 2026-10-29 从「吉祥物」改名，人格的头像也归它管）。
 # 出厂值同 `resources/layout.json`，都关着（2026-10-26 项目主人：太吃资源；引导里摆姿势的那只照旧画）；人格设了头像的照样画头像，不受这两项管（「空会话的首页」第 10 条）。
