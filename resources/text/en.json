@@ -1063,6 +1063,7 @@
       "test_failed": "{name} failed: {why}",
       "save_first": "Save the new provider with s before testing",
       "saved": "Saved",
+      "saved_restart": "Saved; takes effect after the core restarts",
       "saving": "Saving…",
       "conflict": "Changed elsewhere just now (now {current}); your changes are kept, reopen and save again",
       "offline": "Not connected to the core",

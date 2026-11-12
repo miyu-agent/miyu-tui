@@ -101,6 +101,12 @@ impl Settings {
     }
 
     pub(super) fn saved(&mut self, result: Result<Value, Refusal>, texts: &Texts) {
+        // 存的里头有要重启核心才生效的（`config.set` 回应 `keys` 的 `applies` 是 `restart`，核心 CPU-1 的 `core.workers`）：回执说清楚。
+        let restart = result.as_ref().is_ok_and(|got| {
+            got["keys"]
+                .as_object()
+                .is_some_and(|keys| keys.values().any(|k| k["applies"] == "restart"))
+        });
         match result {
             // 还要改供应商编号：别的改动照旧编号存成了，接着改编号，改完再算存完。
             Ok(_) if self.draft.rename.is_some() => {
@@ -120,7 +126,8 @@ impl Settings {
                 self.data = Some(self.view.clone());
                 self.draft.clear();
                 self.named.clear();
-                self.say(texts.status("saved"), Tone::Good);
+                let said = if restart { "saved_restart" } else { "saved" };
+                self.say(texts.status(said), Tone::Good);
                 self.reload();
                 self.refresh();
                 // 新加的、换了地址、key 的：马上取模型列表，不用再按 r（2026-10-07 项目主人）。
@@ -186,3 +193,6 @@ impl Settings {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
