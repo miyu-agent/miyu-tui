@@ -320,3 +320,34 @@ fn installing_says_where_from_what_it_needs_and_the_notice() {
         "{lines:?}"
     );
 }
+
+#[test]
+fn rows_carry_access_labels_after_the_version_and_drop_them_first_when_narrow() {
+    let mut store = store();
+    if let Listing::Got(list) = &mut store.source {
+        list[1].access = vec!["connection", "program"];
+    }
+    let lines = texts(&store, 60);
+    assert!(
+        lines[1].contains("1.0.0  接入平台 · 带程序"),
+        "版本后面空两格接标签：{lines:?}"
+    );
+    assert!(lines[1].trim_end().ends_with("可升级"), "{lines:?}");
+    assert!(!lines[0].contains('·'), "认不出的没有标签：{lines:?}");
+    let narrow = texts(&store, 28);
+    assert!(
+        !narrow[1].contains("接入平台"),
+        "窄的先不画标签：{narrow:?}"
+    );
+    assert!(
+        narrow[1].trim_end().ends_with("可升级"),
+        "状态还在：{narrow:?}"
+    );
+
+    store.tab = Tab::Installed;
+    if let Some(local) = &mut store.local {
+        local[0].access = vec!["scripts"];
+    }
+    let lines = texts(&store, 60);
+    assert!(lines[0].contains("0.8.4  脚本"), "已安装一样画：{lines:?}");
+}

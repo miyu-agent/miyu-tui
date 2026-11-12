@@ -1,5 +1,5 @@
 //! 画「软件包」三页（蓝图「配置页」第 43c 条，照 shorin-pac 的版面）：面包屑、分页条（右边写排序）、筛的字、列表（名字、
-//! 版本、右边一格状态，不写说明）、预览块（浅一档的底），最下面照旧状态行、细线、按键提示。
+//! 版本、暗色的接入方式标签、右边一格状态，不写说明）、预览块（浅一档的底），最下面照旧状态行、细线、按键提示。
 
 mod asking;
 mod caps;
@@ -185,7 +185,7 @@ fn tabs(frame: &mut Frame, row: Rect, page: &mut Settings, words: &StoreTexts) {
     }
 }
 
-/// 列表一行：勾选记号（只有「下载软件」）、名字（照最长的对齐）、暗色版本、右边一格状态。
+/// 列表一行：勾选记号（只有「下载软件」）、名字（照最长的对齐）、暗色版本、暗色的接入方式标签、右边一格状态。
 pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted> {
     let say = |key: &str| StoreTexts::say(&words.states, key);
     let waiting = match (store.tab, &store.source) {
@@ -209,7 +209,7 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
     let name_w = list.iter().map(|r| r.name().width()).max().unwrap_or(0) + 2;
     let ok = crate::sheet::read(|s| s.marks.ok.clone());
     let at = store.cursor();
-    let rows: Vec<(Vec<Span<'static>>, (String, Style))> = list
+    let rows: Vec<(Vec<Span<'static>>, String, (String, Style))> = list
         .iter()
         .map(|item| {
             let (version, state, off) = match item {
@@ -253,14 +253,23 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
             let pad = " ".repeat(name_w - item.name().width());
             spans.push(Span::styled(format!("{}{pad}", item.name()), name_style));
             spans.push(Span::styled(version, theme::dim()));
-            (spans, state)
+            (spans, tags(item, words), state)
         })
         .collect();
-    let state_w = rows.iter().map(|(_, (t, _))| t.width()).max().unwrap_or(0);
+    let state_w = rows
+        .iter()
+        .map(|(_, _, (t, _))| t.width())
+        .max()
+        .unwrap_or(0);
     let room = usize::from(width).saturating_sub(2);
     rows.into_iter()
         .enumerate()
-        .map(|(i, (mut spans, (state, style)))| {
+        .map(|(i, (mut spans, tags, (state, style)))| {
+            // 接入方式的标签接在版本后面空两格；窄得和状态挤不下的先不画标签。
+            let used: usize = spans.iter().map(Span::width).sum();
+            if !tags.is_empty() && used + 2 + tags.width() + 2 + state_w <= room {
+                spans.push(Span::styled(format!("  {tags}"), theme::dim()));
+            }
             // 状态一格贴右边、照显示宽度右对齐；窄得放不下的接在版本后面空两格。
             let used: usize = spans.iter().map(Span::width).sum();
             let pad = if used + 2 + state_w <= room {
@@ -273,6 +282,16 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
             (Line::from(spans), i == at)
         })
         .collect()
+}
+
+/// 一行的接入方式标签（核心设计 48，2026-11-12 项目主人：编号不带接入方式，交给界面上的标签），中间隔主题的 `sep`；字表少写的那种不画。
+fn tags(item: &Item, words: &StoreTexts) -> String {
+    item.access()
+        .iter()
+        .map(|k| StoreTexts::say(&words.access, k))
+        .filter(|t| !t.is_empty())
+        .collect::<Vec<_>>()
+        .join(&crate::sheet::sep())
 }
 
 /// 问卸载时弹窗最下面那排按钮（PK-5）；不在问卸载的没有。

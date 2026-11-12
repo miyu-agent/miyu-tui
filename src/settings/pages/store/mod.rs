@@ -2,6 +2,7 @@
 //! 2026-10-31 看了样板定）。这里是三页的状态：读来的列表、光标、筛的字、排序、勾选、正在问的和正在做的；按键在
 //! `keys.rs`，先问再做的流程在 `flow.rs`，回应在 `answer.rs`，画在 `ui/settings/store/`。
 
+pub mod access;
 mod answer;
 pub mod approve;
 pub mod ask_view;
@@ -122,6 +123,14 @@ impl Item<'_> {
         match self {
             Item::Remote(p) => &p.name,
             Item::Local(p) => &p.name,
+        }
+    }
+
+    /// 接入方式的标签（[`access`]）。
+    pub fn access(&self) -> &[&'static str] {
+        match self {
+            Item::Remote(p) => &p.access,
+            Item::Local(p) => &p.access,
         }
     }
 }
