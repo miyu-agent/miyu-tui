@@ -58,6 +58,9 @@ pub struct BodyView {
     pub floor_end: usize,
     /// 下一帧视口长高（一轮结束，运行状态行那一块收起）时不往下落，见 [`BodyView::hold`]。
     pub hold: bool,
+    /// 这一轮还在跑（画之前由正文区填上）：中途收起的一段（后面插进了答问题这类信息）不留空档，见 `ui/body.rs` 的
+    /// `shrunk_for_insert`（发版前 check 45）。
+    pub live: bool,
     /// 还算在看的那段正文：编号、第一行是第几行。画之前由正文区填上；长过视口时停在它的开头（`tui.md`「正文」第 1 条）。
     pub reading: Option<(u64, usize)>,
     /// 上一帧最新的那段回答（在写的、写完了后面只有收尾那一行的）：编号、第一行是第几行。写完了的那段，上一帧开头还露着
