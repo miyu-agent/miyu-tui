@@ -39,7 +39,7 @@ fn tool(name: &str, sent: usize, t0: Instant, start: u64) -> Step {
     step
 }
 
-/// 中文界面、自动（收起那一行英文）。表情包的两件工具属于 `miyu-memes`，`read` 属于出厂的包，`fetch` 属于别的包，
+/// 中文界面、自动（收起那一行英文）。表情包的两件工具属于 `memes`，`read` 属于出厂的包，`fetch` 属于别的包，
 /// `bare` 不在目录里。
 fn fixture() -> Fixture {
     let mut f = Fixture::new();
@@ -51,7 +51,7 @@ fn fixture() -> Fixture {
             "fetch": {"name": "抓取"},
             "bare": {"name": "无包"}
         },
-        "packages": {"meme_search": "miyu-memes", "meme_send": "miyu-memes", "read": "basesystem", "fetch": "net"}
+        "packages": {"meme_search": "memes", "meme_send": "memes", "read": "basesystem", "fetch": "net"}
     }));
     f
 }

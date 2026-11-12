@@ -224,7 +224,7 @@ fn the_forwarding_program_wins_and_is_recorded_by_its_link_on_path() {
     let (lib, bin, tui) = (
         dir.0.join("lib"),
         dir.0.join("bin"),
-        dir.0.join("packages/miyu-tui/bin"),
+        dir.0.join("packages/tui/bin"),
     );
     for d in [&lib, &bin, &tui] {
         fs::create_dir_all(d).unwrap();

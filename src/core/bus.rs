@@ -27,7 +27,7 @@ mod tests {
     #[test]
     fn a_change_carries_the_whole_list_and_a_resync_is_noticed() {
         let push = json!({"method": "bus.changed", "params": {"names": [
-            {"name": "stt", "kind": "provides", "package": "miyu-voice-input", "ready": true}
+            {"name": "stt", "kind": "provides", "package": "voice-input", "ready": true}
         ]}});
         assert_eq!(super::changed(&push), Some(vec!["stt".to_string()]));
         assert_eq!(super::changed(&json!({"method": "config.changed"})), None);

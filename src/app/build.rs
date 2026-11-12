@@ -34,7 +34,7 @@ impl App {
         });
         input.set_attach_rule(paste::attach_rule(&config));
         // 输入历史连上以后照 `package.list` 放进终端这个包的状态目录（`app/packages.rs`）；这里先照核心算的包状态目录记一份
-        // （设计 55 第三节第 4 条，核心 FH-3 起是数据根的 `var/lib/miyu-tui/`），拿不到 `package.list` 的照它。单元测试不记：
+        // （设计 55 第三节第 4 条，核心 FH-3 起是数据根的 `var/lib/tui/`），拿不到 `package.list` 的照它。单元测试不记：
         // 数据根是人在用的。
         let old_history =
             miyu_client::places::DataRoot::locate(&miyu_client::places::Env::current())

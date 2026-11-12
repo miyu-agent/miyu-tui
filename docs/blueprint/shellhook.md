@@ -51,7 +51,7 @@
 
 1. 帮助（`-h`）只列给人用的三个。用法写错了退出码 2，别的出错 1，同核心命令行（设计 22 O1）。
 2. `--program`：脚本调哪个程序，没给的照这个程序旁边的 `miyu`（随 Miyu 装的界面放在它旁边，设计 32 第六节），没有的调自己。不按名字去 PATH 里找：并行期 PATH 上的 `miyu` 是旧版（设计 27）。临时部署用包装脚本的，装的时候写 `--program <包装脚本>`。认自己在哪会解开链接（Linux 读 `/proc/self/exe`）：PATH 上有同名、指着同一个文件的另一个路径的，记 PATH 上那个（Homebrew 把程序放在 `Cellar/miyu/<版本>/bin/`、在 `bin` 里放链接，记真路径的升级、清掉旧版以后装进去的那一行就不起作用了，2026-10-26 项目主人问到升级时查出来）；只认同一个文件，PATH 上别的 `miyu` 照旧不算；它自己就在 PATH 上的照旧。
-   - 先认 `MIYU_PROGRAM`（排期第 47 条，2026-11-05 core1：设计 60 系统源分包以后终端在 `/usr/share/miyu/packages/miyu-tui/bin/`，旁边没有 `miyu`；核心转交 `miyu shellhook …` 时一定设它，是主程序解开链接以后的真实位置），再照旁边的 `miyu`、再调自己。拿到的照旧换成 PATH 上指着同一个文件的那个（`/usr/bin/miyu`、`/opt/homebrew/bin/miyu`）再写进钩子：真实位置带版本号或在 `/usr/lib/miyu/` 里，升级就断；PATH 上找不到的才写真实位置。
+   - 先认 `MIYU_PROGRAM`（排期第 47 条，2026-11-05 core1：设计 60 系统源分包以后终端在 `/usr/share/miyu/packages/tui/bin/`（2026-11-12 核心 PN-5 起包文件夹叫 `tui`；原来 `miyu-tui`），旁边没有 `miyu`；核心转交 `miyu shellhook …` 时一定设它，是主程序解开链接以后的真实位置），再照旁边的 `miyu`、再调自己。拿到的照旧换成 PATH 上指着同一个文件的那个（`/usr/bin/miyu`、`/opt/homebrew/bin/miyu`）再写进钩子：真实位置带版本号或在 `/usr/lib/miyu/` 里，升级就断；PATH 上找不到的才写真实位置。
 
 ### 装在哪、装进去什么
 

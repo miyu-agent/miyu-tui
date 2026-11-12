@@ -33,7 +33,7 @@ fn a_pool_row_leaves_its_uses_to_the_list_below_its_members() {
         side("im/glance", "看一眼群里在聊什么")
     ]);
     // 扩展包登记的带 `package`（发版前 check 29）。
-    list["side"][3]["package"] = json!("miyu-im");
+    list["side"][3]["package"] = json!("im");
     let mut p = Settings::open(false, true);
     for (tag, method, _) in p.take_asks() {
         let got = match method {
@@ -71,7 +71,7 @@ fn a_pool_row_leaves_its_uses_to_the_list_below_its_members() {
         "起标题",
         "整理记忆",
         "回顾这一轮做了什么",
-        "看一眼群里在聊什么（miyu-im）",
+        "看一眼群里在聊什么（im）",
     ] {
         assert!(
             text.lines().any(|l| l.trim_end().ends_with(name)),

@@ -141,9 +141,9 @@ mod tests {
     #[test]
     fn download_progress_is_read_from_its_own_notification() {
         let push = json!({"method": "package.progress",
-            "params": {"package": "miyu-embed", "done": 1024, "total": 4096}});
+            "params": {"package": "embed", "done": 1024, "total": 4096}});
         let want = super::Progress {
-            package: "miyu-embed".into(),
+            package: "embed".into(),
             stage: super::Stage::Download,
             done: 1024,
             total: 4096,
@@ -157,7 +157,7 @@ mod tests {
     fn the_stage_is_read_and_an_unknown_one_is_dropped() {
         let stage = |stage: &str| {
             let push = json!({"method": "package.progress",
-                "params": {"package": "miyu-embed", "stage": stage, "index": 1, "count": 1}});
+                "params": {"package": "embed", "stage": stage, "index": 1, "count": 1}});
             match progress(&push) {
                 Some(Update::PackageProgress(got)) => Some(got.stage),
                 _ => None,
@@ -193,8 +193,8 @@ mod tests {
     #[test]
     fn the_list_gives_each_package_its_state_and_icon() {
         let got = json!({"packages": [
-            {"package": "miyu-tui", "state": "/s/miyu-tui"},
-            {"package": "miyu-memes", "icon": "face-slightly-smiling"},
+            {"package": "tui", "state": "/s/tui"},
+            {"package": "memes", "icon": "face-slightly-smiling"},
             {"package": "odd", "icon": ""},
             {"layer": "home"}
         ]});
@@ -202,14 +202,14 @@ mod tests {
             listed(&got),
             [
                 PackageEntry {
-                    id: "miyu-tui".into(),
-                    state: Some("/s/miyu-tui".into()),
+                    id: "tui".into(),
+                    state: Some("/s/tui".into()),
                     icon: None,
                     name: None,
                     group: None,
                 },
                 PackageEntry {
-                    id: "miyu-memes".into(),
+                    id: "memes".into(),
                     state: None,
                     icon: Some("face-slightly-smiling".into()),
                     name: None,
