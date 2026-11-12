@@ -91,8 +91,16 @@ impl Pulse {
         }
     }
 
-    /// 这一刻写哪个词。`turn` 是这一轮开始的时刻，`beat` 是这一轮到现在出过几件事（只增不减）。
-    pub fn word(&mut self, turn: Instant, beat: usize, now: Instant, words: &Words) -> &str {
+    /// 这一刻写哪个词。`turn` 是这一轮开始的时刻（只用来认是不是新的一轮），`ran` 是这一轮跑了多久（等人确认、答题的
+    /// 不算，照它分档），`beat` 是这一轮到现在出过几件事（只增不减）。
+    pub fn word_after(
+        &mut self,
+        turn: Instant,
+        ran: Duration,
+        beat: usize,
+        now: Instant,
+        words: &Words,
+    ) -> &str {
         if self.turn != Some(turn) {
             self.turn = Some(turn);
             self.word.clear();
@@ -113,7 +121,7 @@ impl Pulse {
             self.last_event = None;
             self.due = true;
         }
-        let pool = words.pool(now.saturating_duration_since(turn));
+        let pool = words.pool(ran);
         let held = self
             .shown
             .map_or(Duration::MAX, |s| now.saturating_duration_since(s));

@@ -8,10 +8,13 @@ impl App {
     /// 下一次要自己醒来的时刻：提示到点消失；在跑时每秒走一下用时。没有就是 `None`，一直等事件。
     pub fn deadline(&self) -> Option<Instant> {
         let notice = self.typing.notice.as_ref().map(|n| n.until);
-        let clock = self.talk.transcript.running.map(|start| {
-            let next = start.elapsed().as_secs() + 1;
-            start + Duration::from_secs(next)
-        });
+        // 用时跳到下一秒的时刻；等人确认、答题时用时停着，不用醒（`transcript/waited.rs`）。
+        let now = Instant::now();
+        let transcript = &self.talk.transcript;
+        let clock = transcript
+            .ran(now)
+            .filter(|_| !transcript.waiting_on_person())
+            .map(|ran| now + (Duration::from_secs(ran.as_secs() + 1) - ran));
         // 有步骤在转圈、运行状态行的流光在走，照转圈的节拍重画。
         // 会话列表开着、里面有在跑的：它标题前面的转圈也要转（`ui/session_list.rs`）。
         let listing_busy = self.boxes.panel == Some(super::Panel::Sessions)

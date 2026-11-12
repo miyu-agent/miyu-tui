@@ -16,11 +16,12 @@ use crate::theme;
 
 /// 画那一行：从词库挑的词连着一到三个点，一起被流光扫（流光明暗），补到最宽的词那么宽，再写这一轮的用时、重试。
 pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState) {
-    let Some(start) = seen.talk.transcript.running else {
+    let transcript = &seen.talk.transcript;
+    let (Some(start), Some(ran)) = (transcript.running, transcript.ran(Instant::now())) else {
         return;
     };
     let line = pulse_line(
-        start,
+        (start, ran),
         seen.talk.transcript.beat(),
         seen.talk.transcript.retry.as_deref(),
         &mut mascot.pulse,
@@ -29,17 +30,19 @@ pub fn draw(frame: &mut Frame, area: Rect, seen: &Seen, mascot: &mut MascotState
     frame.render_widget(Paragraph::new(line), area);
 }
 
-/// 运行状态行的那一行（shellhook 也照它画，图纸 `shellhook.md`）：这一轮从 `start` 起跑、出过 `beat` 件事，在重试的带着
-/// 给人看的那一句。
+/// 运行状态行的那一行（shellhook 也照它画，图纸 `shellhook.md`）：这一轮从 `start` 起跑、跑了 `ran`（等人确认、答题的
+/// 不算，发版前 check 2026-11-12 项目主人，`transcript/waited.rs`）、出过 `beat` 件事，在重试的带着给人看的那一句。
 pub fn pulse_line(
-    start: Instant,
+    (start, ran): (Instant, std::time::Duration),
     beat: usize,
     retry: Option<&str>,
     pulse: &mut crate::pulse::Pulse,
     config: &crate::config::Config,
 ) -> Line<'static> {
     let now = Instant::now();
-    let word = pulse.word(start, beat, now, &config.pulse).to_string();
+    let word = pulse
+        .word_after(start, ran, beat, now, &config.pulse)
+        .to_string();
     let layout = &config.layout;
     // 流光一直照原来工作区那一档的颜色，不跟着权限级别变（2026-10-17 项目主人：开放权限时整行变红不对）；照配色方案算、
     // 不写死强调色，终端配色时和模式字对得上（2026-10-14 项目主人定）。
@@ -65,10 +68,7 @@ pub fn pulse_line(
     let pad = config.pulse.widest().saturating_sub(word.width()) + 1;
     spans.push(Span::raw(" ".repeat(pad)));
     let rest = theme::shimmer_rest_on(base, &layout.shimmer);
-    spans.push(Span::styled(
-        crate::meter::clock(start.elapsed().as_secs()),
-        rest,
-    ));
+    spans.push(Span::styled(crate::meter::clock(ran.as_secs()), rest));
     if let Some(retry) = retry {
         spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
         spans.push(Span::styled(retry.to_string(), theme::warn()));
