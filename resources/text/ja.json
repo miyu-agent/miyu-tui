@@ -228,6 +228,7 @@
   "rename": {
     "done": "名前を変更しました：{title}",
     "retitling": "タイトルを付け直しています…",
+    "removed": "タイトルを消しました",
     "too_long": "タイトルは {max} 文字まで"
   },
   "feature_tree": {

@@ -228,6 +228,7 @@
   "rename": {
     "done": "已改名：{title}",
     "retitling": "正在重新起标题…",
+    "removed": "已清除标题",
     "too_long": "标题最多 {max} 个字"
   },
   "feature_tree": {

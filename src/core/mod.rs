@@ -283,8 +283,8 @@ pub enum Command {
     Goal(String),
     /// 要一段回顾（`session.recap`，`/recap`）。
     Recap,
-    /// 改名（`session.set_meta`，`/rename 新标题`）。
-    Rename(String),
+    /// 改名（`session.set_meta`，`/rename 新标题`）；`None` 是去掉标题（`/rename -`，回到照第一句话写）。
+    Rename(Option<String>),
     /// 让模型照最近的对话重起一个标题（`session.retitle`，核心 TT-1；只打 `/rename`）。
     Retitle,
     /// 回答一次确认或提问（`session.answer`，核心 D-1）：问的那个会话（主会话的是 `None`）、调用编号、`decision` 或
