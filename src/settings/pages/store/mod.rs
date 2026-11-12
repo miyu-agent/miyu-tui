@@ -11,6 +11,7 @@ mod keys;
 pub mod read;
 pub mod remove;
 pub mod sort;
+mod sync;
 pub mod texts;
 
 use serde_json::Value;
@@ -98,6 +99,8 @@ pub struct Store {
     pub keep: Option<(Tab, String)>,
     /// 要 App 在后台打开后台页的包：（编号，名字），App 拿走一次（`backstage.rs`）。
     pub web: Option<(String, String)>,
+    /// 按了 `r`、软件源还在刷（`sync.rs`）：刷完以前再按不发。
+    pub syncing: bool,
 }
 
 /// 列表里的一行指的包：哪一页、第几个。

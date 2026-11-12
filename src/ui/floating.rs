@@ -315,10 +315,24 @@ fn error_rows(error: &str, width: usize) -> Vec<String> {
 /// 一行按键提示：整行暗下去，键暗色、说明更暗，每格隔三列（「配置页」第 42 条，2026-10-09 项目主人：「底下这种按键提示
 /// 我觉得才应该是暗色」；原来键是黄的，比内容还亮）。
 pub fn hint_line(hints: &[[String; 2]]) -> Line<'_> {
+    gapped(hints, 3)
+}
+
+/// 同 [`hint_line`]，放不进 `width` 列时把几条之间的空收窄（三格、两格、一格），每条都留全，不在半截截断（发版前 check 57：
+/// 「软件包」页多了 `r 刷新`，80 列的窗口里最后一条被右边的「第几个/一共几个」压成半截）。一格还放不下的照一格画、照旧截掉。
+pub fn hint_line_within(hints: &[[String; 2]], width: usize) -> Line<'_> {
+    (2..=3)
+        .rev()
+        .map(|gap| gapped(hints, gap))
+        .find(|line| line.width() <= width)
+        .unwrap_or_else(|| gapped(hints, 1))
+}
+
+fn gapped(hints: &[[String; 2]], gap: usize) -> Line<'_> {
     let mut spans = Vec::new();
     for (i, [key, what]) in hints.iter().enumerate() {
         if i > 0 {
-            spans.push(Span::raw("   "));
+            spans.push(Span::raw(" ".repeat(gap)));
         }
         spans.push(Span::styled(key.as_str(), theme::dim()));
         spans.push(Span::styled(format!(" {what}"), theme::faint()));

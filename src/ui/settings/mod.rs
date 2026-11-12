@@ -266,9 +266,23 @@ pub(super) fn footer(
     } else {
         first
     };
-    buf.set_line(stage.x, hint_y, &hint_line(first), stage.width);
+    // 「第几个/一共几个」写在最后一行右边：那一行的提示给它让出地方（再空两格）。
+    let room = |y: u16| {
+        let taken = counter
+            .as_ref()
+            .filter(|_| y == second_y)
+            .map_or(0, |c| c.width() + 2);
+        usize::from(stage.width).saturating_sub(taken)
+    };
+    buf.set_line(
+        stage.x,
+        hint_y,
+        &hint_line_within(first, room(hint_y)),
+        stage.width,
+    );
     if let Some(second) = second.filter(|_| !search) {
-        buf.set_line(stage.x, second_y, &hint_line(second), stage.width);
+        let line = hint_line_within(second, room(second_y));
+        buf.set_line(stage.x, second_y, &line, stage.width);
     }
     if let Some(counter) = counter {
         let w = counter.width() as u16;
@@ -321,7 +335,7 @@ fn status(page: &Settings, texts: &Texts) -> (String, Style) {
     (text, theme::warn())
 }
 
-pub(super) use super::floating::{bar, fit, hint_line};
+pub(super) use super::floating::{bar, fit, hint_line_within};
 
 #[cfg(test)]
 mod tests;

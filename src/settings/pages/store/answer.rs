@@ -13,6 +13,8 @@ use crate::settings::{Settings, Texts, Tone};
 pub enum Ask {
     /// `package.search`。
     Search,
+    /// `package.sync {force: true}`（`r`，`sync.rs`）。
+    Sync,
     /// `package.upgrades`。
     Upgrades,
     /// `package.info`：是不是软件源里的、编号。
@@ -60,6 +62,7 @@ impl Settings {
         match (ask, result) {
             (Ask::Search, Ok(got)) => store.source_read(read::remotes(&got)),
             (Ask::Search, Err(refusal)) => store.source = Listing::Failed(refusal.message),
+            (Ask::Sync, result) => self.store_synced(result, texts),
             (Ask::Upgrades, got) => {
                 store.upgrades = got.map(|g| read::upgrades(&g)).unwrap_or_default();
             }

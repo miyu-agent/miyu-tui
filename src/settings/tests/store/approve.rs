@@ -10,9 +10,9 @@ use crate::settings::pages::store::Tab;
 #[test]
 fn installing_approves_what_each_preview_listed() {
     let mut page = opened();
-    press(&mut page, KeyCode::Tab);
+    press(&mut page, KeyCode::Char(' '));
     press(&mut page, KeyCode::Down);
-    press(&mut page, KeyCode::Tab);
+    press(&mut page, KeyCode::Char(' '));
     sent(&mut page);
     press(&mut page, KeyCode::Enter);
     let previews = sent(&mut page);
