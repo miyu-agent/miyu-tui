@@ -20,6 +20,8 @@ pub struct RenameTexts {
     pub done: String,
     /// 让模型重起标题的请求发出去了。
     pub retitling: String,
+    /// 重起标题没起成（核心 TT-3 的 `session.retitle_failed`）：核心那一句换不出字时用。
+    pub failed: String,
     /// 去掉了标题（`/rename -`）。
     pub removed: String,
     /// 太长不发，`{max}` 是上限。

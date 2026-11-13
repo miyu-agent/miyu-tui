@@ -49,3 +49,20 @@ fn a_pinned_compaction_line_is_read_and_null_unpins() {
         [Push::CompactionLineSet(None)]
     );
 }
+
+/// 核心 TT-3（2026-11-13）：人要的重起标题没起成，`session.retitle_failed` 带给人看的那一句和那一次的错。
+#[test]
+fn a_failed_retitle_carries_the_line_and_the_error() {
+    let event = json!({"seq": 12, "kind": "session.retitle_failed", "by": {"kind": "person"},
+        "body": {"error": {"class": "timeout", "message": " timed out "},
+            "human": {"key": "core/sessions/retitle-failed"}}});
+    let got = read_mine(&event);
+    let [Push::RetitleFailed { said, error }] = got.as_slice() else {
+        panic!("{got:?}");
+    };
+    assert_eq!(
+        said.as_ref().map(|s| s.key.as_str()),
+        Some("core/sessions/retitle-failed")
+    );
+    assert_eq!(error, "timed out");
+}

@@ -66,3 +66,29 @@ fn the_reply_says_it_is_retitling_and_nothing_to_title_says_so() {
     app.core(Update::Renamed(None));
     assert_eq!(notice(&app), Some("已清除标题"));
 }
+
+/// 核心 TT-3（2026-11-13）：不带字的 `/rename` 没起成（超时、出错、模型要了工具），推 `session.retitle_failed`：说核心那一句
+/// （`human` 照 `human.get` 换字），后面接那一次的错；换不出字的照终端自己的「更改标题失败」。
+#[test]
+fn a_failed_retitle_says_so_with_the_error() {
+    let (mut app, _sent) = crate::app::test_support::app();
+    app.talk.transcript.session = Some("s1".into());
+    let failed = |said| {
+        Update::Push(crate::core::Push::RetitleFailed {
+            said,
+            error: "timed out".into(),
+        })
+    };
+    app.core(failed(None));
+    assert_eq!(notice(&app), Some("更改标题失败"));
+    let tail = app.typing.notice.as_ref().map(|n| n.tail.clone());
+    assert!(tail.is_some_and(|t| t.ends_with("timed out")));
+    app.link.human = crate::human::Human::from_reply(&serde_json::json!({
+        "language": "zh",
+        "said": {"core/sessions/retitle-failed": "标题没改成"}
+    }));
+    let said =
+        serde_json::from_value(serde_json::json!({"key": "core/sessions/retitle-failed"})).ok();
+    app.core(failed(said));
+    assert_eq!(notice(&app), Some("标题没改成"), "照核心的字");
+}

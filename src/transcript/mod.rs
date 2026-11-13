@@ -124,8 +124,6 @@ pub struct Transcript {
     pub title: Option<String>,
     /// 标题是人起的（`/rename` 这类，不是内核自动起的）：输入框上边框右边写它（「输入框」第 14 条）。
     pub named: bool,
-    /// 人打了不带字的 `/rename`、核心收下了：接下来内核推来的标题算人要的（`title.rs`）。
-    pub retitle_asked: bool,
     /// 实际的权限级别。新会话从工作区、不只读开始（`protocol.md` `session.create` 第 2 条）。
     pub level: Level,
     /// 这个会话从开到现在，每次请求的用量加起来。
@@ -238,12 +236,12 @@ impl Transcript {
                 self.link = Link::Down(texts.missing_core.replace("{path}", &path));
             }
             Update::Reconnected => self.link = Link::Ready,
-            Update::Retitling => self.retitle_asked = true,
             // 另外订阅着的会话推来的：界面照会话分给那个会话的正文（`app/sessions.rs`）。
             // 改名成了只弹提示（界面那头办了），标题照推送换。
             Update::Elsewhere { .. }
             | Update::Output { .. }
             | Update::Renamed(_)
+            | Update::Retitling
             | Update::Sessions(_)
             | Update::HeadConfig(_)
             | Update::Human(_)
@@ -329,6 +327,8 @@ impl Transcript {
             Push::PathOnly { seq, attached } => self.attach_to(seq, &attached, &texts.attach),
             Push::Withdrawn(seqs) => self.withdraw(&seqs),
             Push::Title { title, named } => self.titled(title, named),
+            // 重起标题没起成：只弹提示（界面那头办），标题不变。
+            Push::RetitleFailed { .. } => {}
             Push::Workspace(cwd) => self.workspace_changed(cwd, texts),
             Push::Policy { level, read_only } => {
                 self.set_level(if read_only { Level::ReadOnly } else { level });

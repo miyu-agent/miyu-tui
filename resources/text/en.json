@@ -229,6 +229,7 @@
   "rename": {
     "done": "Renamed: {title}",
     "retitling": "Retitling…",
+    "failed": "Failed to change the title",
     "removed": "Title removed",
     "too_long": "Titles are at most {max} characters"
   },
