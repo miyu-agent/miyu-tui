@@ -169,6 +169,15 @@
       "run": "jump"
     },
     {
+      "name": "files",
+      "summary": {
+        "zh": "看这个会话改过的文件和差异",
+        "en": "See the files this session changed and their diffs",
+        "ja": "このセッションで変更したファイルと差分を見る"
+      },
+      "run": "files"
+    },
+    {
       "name": "persona",
       "summary": {
         "zh": "新会话用哪个人格：开会话以前能换",

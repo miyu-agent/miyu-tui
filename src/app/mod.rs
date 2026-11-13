@@ -21,12 +21,14 @@ mod dream;
 mod effort;
 mod export;
 pub use export::{ExportBox, Preview, Use};
+mod files_page;
 mod frame;
 mod goal;
 mod goal_box;
 mod jobs;
 mod jump;
 mod widget_page;
+pub use files_page::FilesPage;
 mod widgets;
 
 pub use avatars::{Avatar, Place};
@@ -220,6 +222,11 @@ impl App {
         // 扩展的整页开着：按键、鼠标都归它（`widget_page.rs`）。
         if self.boxes.widget_page.is_some() {
             self.widget_page_event(event);
+            return;
+        }
+        // 「文件修改」那一页开着：按键、鼠标都归它（`files_page.rs`，check 9）。
+        if self.boxes.files_page.is_some() {
+            self.files_event(event);
             return;
         }
         let menu_open = self.menu_matches().is_some()

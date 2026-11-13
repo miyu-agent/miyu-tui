@@ -20,6 +20,7 @@ mod attach;
 mod dream;
 mod feature_tree;
 mod figures;
+mod files;
 mod goal;
 mod icons;
 mod layout;
@@ -42,6 +43,7 @@ pub use attach::{AttachLook, AttachTexts};
 pub use dream::{DreamLook, DreamTexts};
 pub use feature_tree::FeatureTreeTexts;
 pub use figures::{FigureLook, Room};
+pub use files::FilesTexts;
 pub use goal::GoalTexts;
 pub use icons::Icons;
 pub use layout::{Bar, Dots, Layout, Shimmer, TodoMarks};
@@ -227,6 +229,8 @@ pub struct Texts {
     pub compact_line: CompactLineTexts,
     /// 长期目标的字（蓝图「长期目标」）。
     pub goal: GoalTexts,
+    /// 「文件修改」的字（侧边栏那一块、那一页，check 9）。
+    pub files: FilesTexts,
     /// 循环的字（蓝图「循环」）。
     pub loops: LoopTexts,
     /// 功能树的字（蓝图「配置页」第 38 条「功能树」）。

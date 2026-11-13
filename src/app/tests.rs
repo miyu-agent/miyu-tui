@@ -96,6 +96,7 @@ mod bill;
 mod context_cap;
 mod drawer_rows;
 mod effort;
+mod files_page;
 mod goal;
 mod models_changed;
 mod notices;

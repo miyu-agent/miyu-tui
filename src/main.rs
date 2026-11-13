@@ -8,6 +8,7 @@ mod backstage;
 mod body_view;
 mod caret;
 mod cells;
+mod changes;
 mod clipboard;
 mod commands;
 mod config;

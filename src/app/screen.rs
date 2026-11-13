@@ -38,6 +38,8 @@ pub struct Screen {
     pub side_select: SideSelect,
     /// 侧边栏「跳转消息」每一行是哪一条（条目编号），照 `areas.jumps` 从上往下；上一帧排出来的。
     pub jumps: Vec<u64>,
+    /// 侧边栏「文件修改」每一行是第几个改过的文件（`changes::of` 的下标），照 `areas.files` 从上往下（check 9）。
+    pub files: Vec<usize>,
     /// 正文顶上钉着的那一行是哪一句你说的话（条目编号）；没钉的是 `None`（排期第 16 条）。
     pub pinned: Option<u64>,
     /// 这一帧的「当前这一句」：往上翻着是视口最上面那一段对应的你说的话，跟着最新的是最后一句（条目编号）；侧边栏
@@ -83,6 +85,8 @@ pub struct Screen {
     pub status_hover: Option<(String, String)>,
     /// 上一帧扩展的整页画成什么样：键盘照它选、滚（`app/widget_page.rs`）。
     pub widget_page: crate::ui::widget::PageFrame,
+    /// 上一帧「文件修改」那一页画成什么样：点列表、滚差异照它（`app/files_page.rs`）。
+    pub files_page: crate::ui::files_page::FilesFrame,
     /// 拖滚动条时按像素报鼠标（`pixel_mouse.rs`）。
     pub pixel: crate::pixel_mouse::PixelMouse,
 }
@@ -102,6 +106,7 @@ impl Screen {
             grab: None,
             side_select: SideSelect::default(),
             jumps: Vec::new(),
+            files: Vec::new(),
             pinned: None,
             current_said: None,
             side_top: 0,
@@ -126,6 +131,7 @@ impl Screen {
             widget_spots: Vec::new(),
             status_hover: None,
             widget_page: Default::default(),
+            files_page: Default::default(),
             pixel: Default::default(),
         }
     }
