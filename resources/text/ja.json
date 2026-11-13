@@ -767,7 +767,7 @@
     "title": "配色",
     "hint": "↑/↓ 選択 · Enter 決定 · Esc キャンセル"
   },
-  "voice": {"codes": {"mic_busy": "マイクは使用中です", "no_microphone": "マイクが見つかりません", "bad_audio": "この音声は認識できません", "too_long": "長すぎて認識できません", "not_configured": "音声がまだ設定されていません", "no_speaker": "スピーカーが見つかりません", "empty_text": "読み上げる文字がありません", "no_provider": "音声パッケージが入っていません"}, "failed": "音声エラー：{why}", "unclear": "聞き取れませんでした。もう一度どうぞ", "nothing_to_read": "読み上げる返答がまだありません", "auto": ["自動読み上げをオンにしました", "自動読み上げをオフにしました"], "auto_tag": "自動読み上げ"},
+  "voice": {"codes": {"mic_busy": "マイクは使用中です", "no_microphone": "マイクが見つかりません", "bad_audio": "この音声は認識できません", "too_long": "長すぎて認識できません", "not_configured": "音声がまだ設定されていません", "no_speaker": "スピーカーが見つかりません", "empty_text": "読み上げる文字がありません", "no_provider": "音声パッケージが入っていません", "silent_audio": "録音が無音でした。マイクがミュートか未接続、またはシステムの既定の入力に音がありません"}, "failed": "音声エラー：{why}", "unclear": "聞き取れませんでした。もう一度どうぞ", "nothing_to_read": "読み上げる返答がまだありません", "auto": ["自動読み上げをオンにしました", "自動読み上げをオフにしました"], "auto_tag": "自動読み上げ"},
   "export": {"title": "書き出し", "step_title": "書き出し · {use}", "hints": ["↑/↓ 選択 · Enter 次へ · Esc 閉じる", "↑/↓ 選択 · Enter 決定 · Esc 戻る"], "uses": ["完全なアーカイブ", "別の agent で続ける用", "Web チャット用", "会話だけを Markdown で書き出す"], "bundle_note": "ZIP · ファイルのみ", "estimate": "{size} · 約 {tokens} tokens", "estimating": "見積もり中…", "too_big": "512 KiB 超 · ファイルのみ", "actions": ["クリップボードにコピー", "ファイルに保存"], "copied": "コピーしました · 約 {tokens} tokens", "saved": "{path} に書き出しました（{size}）", "no_session": "書き出せるセッションはまだありません"},
   "languages": {
     "title": "表示言語",

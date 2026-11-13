@@ -1390,7 +1390,7 @@ macOS（2026-10-01 项目主人让用他那台 Mac 测）：M4 Max、macOS 26.6 
    - 悬停在麦克风上指针变手（2026-11-13 主人 1113 初验第 3 条：「图标鼠标悬浮没有变成手」；原来能点、`pointing` 漏了它）。
 3. 点麦克风、打 `/voice-input`（查到 `stt` 才列；模糊搜 `/vi` 就出来）：开始听（`bus.call {name: "stt", method: "record"}`，人声停了包自己停）；在听时再点、再打一次：`stt.stop`，转圈等字。`record` 交回的字插进输入框光标处，不自动发；`clear` 是假的（没听清）不放空字，提示「没听清，再说一次」。终端收不到松开按键，不做按住说话；也没另配快捷键（Ctrl、Alt 的组合多半已有用处、或被输入法拿走）。
 4. 查到 `tts`：`/read-aloud` 念她上一轮的回答（同 `/copy` 取的那一段，Markdown 原文交给包自己转成念得出来的；带这个会话的人格，照它挑音色），在念的再打一次 `tts.stop`；`/auto-read` 开关自动朗读，只在这个终端里、不存，开着时底栏用量前面暗色写「自动朗读」，她每一轮照常答完（打断的、出错的不算）就念这一轮的回答。
-5. 出错照 `error.data.code` 一种一句：`mic_busy`「麦克风正被占用」（整机一把麦克风锁，别的头、命令行在录）、`no_microphone`、`bad_audio`、`too_long`、`not_configured`、`no_speaker`、`empty_text`；总线自己的 `no_provider` 照原因码说没装语音包；别的（`engine_failed` 这类）照核心的原话写「语音出错：…」。
+5. 出错照 `error.data.code` 一种一句：`mic_busy`「麦克风正被占用」（整机一把麦克风锁，别的头、命令行在录）、`no_microphone`、`bad_audio`、`too_long`、`silent_audio`「录到的全是静音：麦克风可能被静音、没插好，或者系统的默认输入没有声音」（语音包 VO-26，2026-11-13 主人 1113 收听不到麦克风，查出是系统默认输入静音）、`not_configured`、`no_speaker`、`empty_text`；总线自己的 `no_provider` 照原因码说没装语音包；别的（`engine_failed` 这类）照核心的原话写「语音出错：…」。
 6. 声音的进出都在核心那台机器上：经 ssh 连远端核心时麦克风、音箱都是远端那台的。
 
 ### 新会话：人格、工作区（2026-10-07 项目主人定）
