@@ -14,14 +14,23 @@ pub(super) fn round(event: &Value, seq: u64) -> Option<Push> {
     Some(Push::GoalRound { seq, round })
 }
 
-/// 核心造的命令编号 `goal-<第几轮>-<毫秒>` 里的第几轮（核心 X-8 补定的约定）；对不上这个写法的没有。
+/// 核心造的命令编号 `goal-<第几轮>-<UUID>` 里的第几轮（核心 X-8 补定的约定；FX-2 起后一段是每一轮新造的 UUIDv7，原来是毫秒，
+/// 系统时间往回拨时两轮会撞号）；对不上这个写法的没有。
 fn number(cause: &str) -> Option<u32> {
-    let (round, ms) = cause.strip_prefix("goal-")?.split_once('-')?;
-    let digits = |s: &str| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit());
-    if !digits(round) || !digits(ms) {
+    let (round, unique) = cause.strip_prefix("goal-")?.split_once('-')?;
+    if round.is_empty() || !round.bytes().all(|b| b.is_ascii_digit()) || !uuid(unique) {
         return None;
     }
     round.parse().ok()
+}
+
+/// 会话编号那种写法的 UUID：8-4-4-4-12 位十六进制。
+fn uuid(text: &str) -> bool {
+    let parts: Vec<&str> = text.split('-').collect();
+    parts.iter().map(|p| p.len()).eq([8, 4, 4, 4, 12])
+        && parts
+            .iter()
+            .all(|p| p.bytes().all(|b| b.is_ascii_hexdigit()))
 }
 
 /// 长期目标现在的样子（订阅回应里的 `goal`、推来的 `goal.changed`，核心 X-8 补）：只读界面要的几格。
