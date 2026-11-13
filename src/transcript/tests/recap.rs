@@ -81,3 +81,19 @@ fn a_removed_title_reads_as_untitled() {
     apply(&mut t, vec![title("自动起的", false)]);
     assert!(!t.named);
 }
+
+/// 2026-11-13 主人 1113 初验第 17 条：不带字的 `/rename` 让核心重起标题，起好的推送 `by` 是内核（`named` 假），原来照自动起的
+/// 不写在框线上；人要的那一个照人起的写，之后内核自己再起的照旧不算。
+#[test]
+fn a_title_asked_for_with_rename_counts_as_named() {
+    let mut t = Transcript::default();
+    let title = |title: &str| Push::Title {
+        title: title.into(),
+        named: false,
+    };
+    t.update(Update::Retitling, &Config::builtin().unwrap().text);
+    apply(&mut t, vec![title("重起的标题")]);
+    assert!(t.named, "人要的");
+    apply(&mut t, vec![title("内核又起的")]);
+    assert!(!t.named, "只算要的那一次");
+}
