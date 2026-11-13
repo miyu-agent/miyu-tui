@@ -6,9 +6,18 @@ use ratatui::text::Line;
 
 use super::Pictures;
 
-/// 画一张 `w`×`h` 的纯色 PNG 存在临时目录里（文件名不带扩展名：读回来存下的就是这样）。
-fn png(name: &str, w: u32, h: u32) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("miyu-picture-{}", std::process::id()));
+/// 测试用的临时目录，测试完（连断言失败）删掉：`/tmp` 是内存盘，原来每跑一遍留一个（2026-11-13 审计）。
+struct Gone(PathBuf);
+
+impl Drop for Gone {
+    fn drop(&mut self) {
+        drop(std::fs::remove_dir_all(&self.0));
+    }
+}
+
+/// 画一张 `w`×`h` 的纯色 PNG 存在这一张自己的临时目录里（文件名不带扩展名：读回来存下的就是这样）；目录交给 [`Gone`] 删。
+fn png(name: &str, w: u32, h: u32) -> (PathBuf, Gone) {
+    let dir = std::env::temp_dir().join(format!("miyu-picture-{name}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join(name);
     let mut bytes = Vec::new();
@@ -19,7 +28,7 @@ fn png(name: &str, w: u32, h: u32) -> PathBuf {
         )
         .unwrap();
     std::fs::write(&path, bytes).unwrap();
-    path
+    (path, Gone(dir))
 }
 
 fn kitty() -> Pictures {
@@ -35,7 +44,7 @@ fn text(line: &Line) -> String {
 
 #[test]
 fn only_kitty_draws() {
-    let path = png("plain", 64, 32);
+    let (path, _gone) = png("plain", 64, 32);
     let mut none = Pictures::detect(|_| None, Some((8, 16)));
     assert!(
         none.lines(("b1", &path), (2, 80, 20), "[图片] 猫")
@@ -53,7 +62,7 @@ fn only_kitty_draws() {
 #[test]
 fn a_picture_reserves_its_rows_shows_its_title_live_and_draws_when_settled() {
     // 64×32 像素，一格 8×16：8 列 2 行。
-    let path = png("cat", 64, 32);
+    let (path, _gone) = png("cat", 64, 32);
     let mut pictures = kitty();
     let lines = pictures
         .lines(("cat", &path), (2, 80, 20), "[图片] 猫")
@@ -79,12 +88,12 @@ fn a_picture_reserves_its_rows_shows_its_title_live_and_draws_when_settled() {
 #[test]
 fn tall_pictures_are_capped_and_big_ones_go_in_chunks() {
     // 很高的：最多 `max_rows` 行，列跟着缩。
-    let tall = png("tall", 40, 800);
+    let (tall, _gone) = png("tall", 40, 800);
     let mut pictures = kitty();
     let lines = pictures.lines(("tall", &tall), (2, 80, 5), "t").unwrap();
     assert_eq!(lines.len(), 5);
     // 大的：base64 超过 4096 字节分几块，前面的 `m=1`，最后一块 `m=0`。
-    let noisy = std::env::temp_dir().join(format!("miyu-picture-{}/noisy", std::process::id()));
+    let noisy = tall.with_file_name("noisy");
     let mut bytes = Vec::new();
     image::RgbImage::from_fn(320, 160, |x, y| {
         image::Rgb([(x * 7) as u8, (y * 13) as u8, ((x ^ y) * 3) as u8])

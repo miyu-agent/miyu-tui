@@ -1,15 +1,29 @@
 //! 照模型收（蓝图 `tui.md`「输入框」第 12 条「照模型收」）：这个模型收不了的那一种，拖进来、贴进来时收成文件块（发出去写
 //! 路径），记下改了哪几种好提示一句；附了以后才换的模型，发的那一刻照它再改一遍。
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use super::attach_rule;
 use super::paste::{folding, submit};
 use crate::input::InputBox;
 
-fn file(tag: &str, name: &str) -> PathBuf {
+/// 测试用的临时目录，测试完（连断言失败）删掉：`/tmp` 是内存盘，原来每跑一遍留一个（2026-11-13 审计）。
+struct Gone(PathBuf);
+
+impl Drop for Gone {
+    fn drop(&mut self) {
+        drop(std::fs::remove_dir_all(&self.0));
+    }
+}
+
+/// 这一个测试的临时目录（照名字和进程号分开）。
+fn scratch(tag: &str) -> Gone {
     let dir = std::env::temp_dir().join(format!("miyu-refused-{tag}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
+    Gone(dir)
+}
+
+fn file(dir: &Path, name: &str) -> PathBuf {
     let p = dir.join(name);
     std::fs::write(&p, b"x").unwrap();
     p
@@ -24,8 +38,9 @@ fn attaching(refused: &[&str]) -> InputBox {
 
 #[test]
 fn a_kind_the_model_cannot_take_becomes_a_path_when_dropped_or_pasted() {
-    let png = file("drop", "a.png");
-    let pdf = file("drop", "b.pdf");
+    let dir = scratch("drop");
+    let png = file(&dir.0, "a.png");
+    let pdf = file(&dir.0, "b.pdf");
     let mut i = attaching(&["image"]);
     i.paste_files(&format!("{}\n{}", png.display(), pdf.display()));
     assert_eq!(i.take_demoted(), ["image"], "改了哪几种，提示一句");
@@ -54,7 +69,8 @@ fn a_kind_the_model_cannot_take_becomes_a_path_when_dropped_or_pasted() {
 
 #[test]
 fn attachments_made_before_switching_models_are_demoted_when_sent() {
-    let png = file("send", "c.png");
+    let dir = scratch("send");
+    let png = file(&dir.0, "c.png");
     let mut i = attaching(&[]);
     i.attach(png.clone(), "image");
     let mut draft = submit(&mut i);
