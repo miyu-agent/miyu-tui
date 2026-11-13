@@ -2,6 +2,7 @@
 //! 交出去的回答。纯状态，不碰终端；按键在 `keys.rs`，画在 `ui/drawer/`。
 
 mod event;
+pub mod expiry;
 mod keys;
 mod package;
 /// 多少字节写成给人看的（引导下载语义模型也用，同软件包页）。

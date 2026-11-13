@@ -623,6 +623,7 @@
     "preview": "Preview",
     "guard": "The guard of {package} asks: use {tool}?",
     "hazard": "Dangerous command",
+    "auto_deny": "Auto-deny in {time}",
     "agent": "Subagent {name}",
     "elsewhere": "\"{title}\" is asking you · /resume to switch",
     "answered_tab": " ✓",

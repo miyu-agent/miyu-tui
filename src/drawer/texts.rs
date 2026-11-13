@@ -14,6 +14,8 @@ pub struct Texts {
     pub guard: String,
     /// 跑命令的确认被认成高危命令时写的那一行（核心 5-17，2026-10-20 项目主人：「可以加『高危命令』四个字」）。
     pub hazard: String,
+    /// 确认还剩多久自动拒绝（核心 CD-1 的 `expires_at`，todolist 第 49 条）：`{time}` 是 `4:32`、一小时以上 `1:04:32`。
+    pub auto_deny: String,
     /// 选项预览面板第一行。
     pub preview: String,
     /// 子会话问的，`{who}` 怎么写：`子代理 {name}`。

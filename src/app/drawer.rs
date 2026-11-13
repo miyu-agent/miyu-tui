@@ -73,8 +73,14 @@ impl App {
 
     /// 按过一下 `Esc` 的提示什么时候到点消失（主循环照它醒来重画）。
     pub(super) fn drawer_deadline(&self) -> Option<Instant> {
-        let at = self.talk.drawers.current.as_ref()?.armed?;
-        Some(at + self.esc_window())
+        let d = self.talk.drawers.current.as_ref()?;
+        let armed = d.armed.map(|at| at + self.esc_window());
+        // 确认的倒计时跳到下一个整秒时醒来重画（核心 CD-1）。
+        let tick = d
+            .expires_in(std::time::SystemTime::now())
+            .and_then(crate::drawer::expiry::next_tick)
+            .map(|wait| Instant::now() + wait);
+        armed.into_iter().chain(tick).min()
     }
 
     /// 到点了：按过一下 `Esc` 过了时限，提示换回按键提示。

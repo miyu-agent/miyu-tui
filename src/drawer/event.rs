@@ -57,6 +57,9 @@ pub struct Approval {
     /// 碰到哪些东西。
     #[serde(default)]
     pub detail: Option<Detail>,
+    /// 到这一刻还没人确认就自动拒绝（RFC 3339，核心 CD-1；配置 `permission.confirm.timeout` 是 0 的不带）。
+    #[serde(default)]
+    pub expires_at: Option<String>,
 }
 
 /// 确认的细节。
