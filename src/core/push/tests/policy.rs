@@ -66,3 +66,25 @@ fn a_failed_retitle_carries_the_line_and_the_error() {
     );
     assert_eq!(error, "timed out");
 }
+
+/// 认不出的级别（以前的 `workspace` 也是）照核心按最严的算（AUD-4，`kernel/events-bodies.md`「权限」）：画成只读，不是不画。
+#[test]
+fn an_unknown_level_is_drawn_read_only() {
+    let event = |level: &str| {
+        json!({"seq": 12, "kind": "session.policy_changed", "by": {"kind": "person"},
+            "body": {"permission": {"level": level, "read_only": false}}})
+    };
+    let level = |level: &str| match read_mine(&event(level)).as_slice() {
+        [
+            Push::Policy {
+                level,
+                read_only: false,
+            },
+        ] => Some(*level),
+        _ => None,
+    };
+    use crate::core::Level;
+    assert_eq!(level("full"), Some(Level::Full));
+    assert_eq!(level("workspace"), Some(Level::ReadOnly));
+    assert_eq!(level("sandbox"), Some(Level::ReadOnly));
+}

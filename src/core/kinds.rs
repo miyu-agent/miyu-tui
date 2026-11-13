@@ -4,28 +4,28 @@
 use serde::Deserialize;
 
 /// 实际的权限级别：完全放开，或者开着只读（`kernel/events-bodies.md` 的 `permission`）。工作区那一级去掉了（LV-3，
-/// 2026-11-09 项目主人定：只要只读和完全放开两种），旧的 `workspace` 读成完全放开。
+/// 2026-11-09 项目主人定：只要只读和完全放开两种）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Level {
-    /// 完全放开（界面上叫「开放权限」）；旧的 `workspace` 也读成它。
-    #[serde(alias = "workspace")]
+    /// 完全放开（界面上叫「开放权限」）。
     Full,
     /// 只读。
     ReadOnly,
 }
 
 impl Level {
-    /// 协议里常用的那一级的写法：`full`，旧的 `workspace` 也当 `full`（核心 LV-1 一样读）；认不出的是 `None`。
-    pub fn parse(text: &str) -> Option<Level> {
+    /// 协议里常用的那一级（`permission.level`）：只有 `full` 是完全放开，别的取值照核心按最严的算、读成只读（核心 AUD-4，
+    /// `kernel/events-bodies.md`「权限」）。
+    pub fn parse(text: &str) -> Level {
         match text {
-            "full" | "workspace" => Some(Level::Full),
-            _ => None,
+            "full" => Level::Full,
+            _ => Level::ReadOnly,
         }
     }
 
     /// 切到这一级要给 `session.set_permission_level` 写的几格：完全放开写 `level: full` 和关掉只读；只读只开只读（蓝图
-    /// `tui.md`「权限级别」第 2 条）。不再发 `workspace`（LV-3）。
+    /// `tui.md`「权限级别」第 2 条）。
     pub fn permission(self) -> serde_json::Value {
         match self {
             Level::Full => serde_json::json!({"level": "full", "read_only": false}),

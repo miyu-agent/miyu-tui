@@ -77,9 +77,9 @@ fn four(usage: &Value) -> Option<Usage> {
     })
 }
 
-/// `permission` 那一格。
+/// `permission` 那一格：认不出的级别照核心按只读算（AUD-4）。
 fn level(permission: &Value) -> Option<Level> {
-    let level = Level::parse(permission["level"].as_str()?)?;
+    let level = Level::parse(permission["level"].as_str()?);
     Some(if permission["read_only"] == true {
         Level::ReadOnly
     } else {
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn read_only_wins_and_an_old_core_without_the_three_gives_nothing() {
-        let reply = json!({"permission": {"level": "workspace", "read_only": true}});
+        let reply = json!({"permission": {"level": "full", "read_only": true}});
         assert_eq!(
             Snapshot::read(&reply).and_then(|s| s.level),
             Some(Level::ReadOnly)
