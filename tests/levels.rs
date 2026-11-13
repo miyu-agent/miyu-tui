@@ -80,11 +80,10 @@ fn tab_cycles_the_level_in_an_opened_session() {
 
 #[test]
 fn a_full_default_shows_on_the_home_screen_and_tab_goes_on_from_the_sessions_real_level() {
-    // 2026-10-14 项目主人报「会话里 Tab 切不了」（核心查到根因）：引导的沙盒那一步选了完全放开，系统配置
-    // `permission.level = "full"`，新会话开成开放权限；界面却首页、会话里都画工作区，按 Tab 照工作区算下一档发 full，核心
-    // 那边没变、不推，永远卡在工作区。
-    let settings = "[permission]\nlevel = \"full\"\n";
-    let home = Home::with_settings(Script::new([Play::Says("好。")]), settings);
+    // 2026-10-14 项目主人报「会话里 Tab 切不了」（核心查到根因）：首页、会话里画的级别和核心实际的对不上，按 Tab 照画的
+    // 算下一档发，核心那边没变、不推，永远卡住。核心 AUD-4 起没有 `permission.level`，开局恒为完全放开（只读另看
+    // `permission.start_read_only`）：首页、会话里都是开放权限，Tab 照实际的切。
+    let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("Tab 切换权限级别");
     wait_level(&mut tui, "开放权限");

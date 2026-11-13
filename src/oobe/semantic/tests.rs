@@ -12,7 +12,7 @@ use crate::oobe::{Move, Step};
 
 fn schema(local: Value) -> Value {
     json!({"items": [
-        {"key": "permission.level", "options": [{"value": "workspace"}]},
+        {"key": "permission.start_read_only", "options": [{"value": true}]},
         {"key": "models.embedding", "options": [local, {"value": "off"}]}
     ]})
 }
