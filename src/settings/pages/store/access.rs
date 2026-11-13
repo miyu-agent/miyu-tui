@@ -2,12 +2,14 @@
 //! 标签说）：照核心已有的几格认，不加清单字段。和网页一样的几种、一样的先后，最多三个。
 //!
 //! 软件源一行（`package.search`）看 `kind`、`provides`；装着的一项（`package.list`）看 `kind`、`connection`、`mcp`、
-//! `command`。一个都认不出的（出厂的内置包这类）没有标签。
+//! `command`，核心 PV-2 起也带 `provides`（技能、脚本认得出来；PV-3 多 `knowledge` 知识库）。出厂的内置包（`kind: builtin`）
+//! 打头写「内置」，后面接它带的（2026-11-12 项目主人：内置的两个头都写「内置」；同网页 W-1169）。
 
 use serde_json::Value;
 
 /// 认得的几种，照画的先后；也是字表 `settings.more.store.access` 的键。
-pub const KINDS: [&str; 9] = [
+pub const KINDS: [&str; 11] = [
+    "builtin",
     "connection",
     "program",
     "mcp",
@@ -17,6 +19,7 @@ pub const KINDS: [&str; 9] = [
     "mascot",
     "ui",
     "personas",
+    "knowledge",
 ];
 
 /// 最多画几个。
@@ -34,7 +37,7 @@ pub fn of(p: &Value) -> Vec<&'static str> {
                 kind == "process" || kind == "worker" || filled(&p["command"]) || carried("command")
             }
             "mcp" => filled(&p["mcp"]) || carried("mcp"),
-            "theme" | "mascot" | "ui" => kind == *k,
+            "builtin" | "theme" | "mascot" | "ui" => kind == *k,
             other => carried(other),
         })
         .take(MOST)
