@@ -129,6 +129,14 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
         let dir = std::env::temp_dir().join(format!("miyu-click-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
+        // 测试完（连断言失败）删掉：`/tmp` 是内存盘，原来每跑一遍留一个（2026-11-13 审计）。
+        struct Gone(std::path::PathBuf);
+        impl Drop for Gone {
+            fn drop(&mut self) {
+                drop(std::fs::remove_dir_all(&self.0));
+            }
+        }
+        let _gone = Gone(dir.clone());
         let fake = dir.join("fake-notify-send");
         std::fs::write(&fake, "#!/bin/sh\nexec /bin/sh \"$@\"\n").unwrap();
         std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).unwrap();
