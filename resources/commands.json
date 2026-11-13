@@ -43,9 +43,9 @@
     {
       "name": "stop",
       "summary": {
-        "zh": "全停：打断这一轮，停掉后台命令和子代理，排着的话留着不发",
-        "en": "Stop everything: interrupt this turn, stop background commands and subagents, keep queued messages unsent",
-        "ja": "すべて停止：このターンを中断し、バックグラウンドのコマンドとサブエージェントを止める。キューのメッセージは送らずに残す"
+        "zh": "停止此会话所有处理中的东西",
+        "en": "Stop everything running in the session",
+        "ja": "セッションで動いているものをすべて止める"
       },
       "run": "stop"
     },
@@ -208,9 +208,9 @@
     {
       "name": "effort",
       "summary": {
-        "zh": "换正在用的模型的思考强度",
+        "zh": "换正在用的模型的思考程度",
         "en": "Change the thinking effort of the model in use",
-        "ja": "使用中のモデルの思考の強さを変更する"
+        "ja": "使用中のモデルの思考の程度を変更する"
       },
       "run": "effort"
     },
