@@ -344,7 +344,6 @@ impl Transcript {
                 self.decided(&turns, false);
             }
             Push::UndoLine => self.undo_line(crate::core::Report::default()),
-            Push::UndoFiles(files) => self.undo_files(files),
             Push::UndoGone => self.undo_gone(),
             Push::Model { endpoint, model } => self.show_model(model, endpoint),
             Push::Heard(seen) => self.heard(seen),

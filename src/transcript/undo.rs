@@ -1,8 +1,8 @@
 //! 撤销说明那一行（蓝图 `tui.md`「正文」第 5、6 条）：看着撤的照撤销的回应画；补发时没有回应，照补发来的事件画
-//! （`core/replay.rs` 的 `Push::UndoLine`、`UndoFiles`、`UndoGone`）。
+//! （`core/replay.rs` 的 `Push::UndoLine`、`UndoGone`）。
 
 use super::{Kind, Transcript};
-use crate::core::{Report, UndoFile};
+use crate::core::Report;
 
 impl Transcript {
     /// 撤掉、恢复的那几轮的条目藏起来、显示回来（从 `mod.rs` 挪过来）。
@@ -31,13 +31,6 @@ impl Transcript {
         self.note(Kind::Undo, said);
         if let Some(last) = self.entries.last_mut() {
             last.undo = Some(report);
-        }
-    }
-
-    /// 补发来的改回的文件：接在最近那一行撤销说明上（没有差异，差异只在回应里）。
-    pub(super) fn undo_files(&mut self, files: Vec<UndoFile>) {
-        if let Some(entry) = self.entries.iter_mut().rev().find(|e| e.kind == Kind::Undo) {
-            entry.undo.get_or_insert_with(Report::default).files = files;
         }
     }
 

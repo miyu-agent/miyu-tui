@@ -136,7 +136,6 @@ fn a_replayed_undo_draws_its_line_and_a_restore_or_redo_takes_it_away() {
                 Push::Reverted(t) => Some(format!("reverted {t:?}")),
                 Push::Unreverted(t) => Some(format!("unreverted {t:?}")),
                 Push::UndoLine => Some("line".into()),
-                Push::UndoFiles(f) => Some(format!("files {}", f.len())),
                 Push::UndoGone => Some("gone".into()),
                 Push::Said { .. } => Some("said".into()),
                 _ => None,
@@ -151,11 +150,6 @@ fn a_replayed_undo_draws_its_line_and_a_restore_or_redo_takes_it_away() {
     assert_eq!(
         undo(r.read(&ev(10, "turn.reverted", "u1", json!({"turns": [7]})))),
         ["reverted [7]", "line"]
-    );
-    let files = json!({"files": [{"result": 3, "effect": 0, "path": "/w/a.rs", "action": "write", "outcome": "restored"}]});
-    assert_eq!(
-        undo(r.read(&ev(11, "files.restored", "u1", files))),
-        ["files 1"]
     );
     assert_eq!(
         undo(r.read(&ev(12, "turn.unreverted", "u2", json!({"turns": [7]})))),
