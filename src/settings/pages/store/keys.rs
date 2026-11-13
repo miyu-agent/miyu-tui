@@ -73,6 +73,12 @@ impl Settings {
         match key.code {
             KeyCode::Char(',' | '，' | 'h') | KeyCode::Left => store.turn(false),
             KeyCode::Char('.' | '。' | 'l') | KeyCode::Right => store.turn(true),
+            // 三页都能 `/` 筛（2026-11-13 主人 1113 初验第 11 条：原来只有「下载软件」认）：清空搜的字、进打字。
+            KeyCode::Char('/') => {
+                store.typing = true;
+                store.query.clear();
+                store.go(0);
+            }
             KeyCode::Char('j') | KeyCode::Down => store.go(at + 1),
             KeyCode::Char('k') | KeyCode::Up => store.go(at.saturating_sub(1)),
             KeyCode::Esc | KeyCode::Char('q') => {
@@ -118,14 +124,10 @@ impl Settings {
         }
     }
 
-    /// 「下载软件」：`/` 打字筛，空格勾选、挪到下一行（2026-11-12 项目主人：原来是 `Tab`），`s` 换排序，`r` 刷新软件源，`Enter` 装。
+    /// 「下载软件」：空格勾选、挪到下一行（2026-11-12 项目主人：原来是 `Tab`），`s` 换排序，`r` 刷新软件源，`Enter` 装。
     fn store_source_key(&mut self, key: KeyEvent, texts: &Texts) {
         let store = &mut self.more.store;
         match key.code {
-            KeyCode::Char('/') => {
-                store.typing = true;
-                store.query.clear();
-            }
             KeyCode::Char(' ') => {
                 let at = store.cursor();
                 if let Some(id) = store.current().map(|r| r.id().to_string())

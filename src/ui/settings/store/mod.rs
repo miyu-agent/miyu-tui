@@ -44,7 +44,7 @@ pub(super) fn draw(
     );
     let store = &page.more.store;
     let search_y = stage.y + 3;
-    if store.tab == Tab::Source && (store.typing || !store.query.is_empty()) {
+    if store.typing || !store.query.is_empty() {
         let style = if store.typing {
             Style::new()
         } else {
@@ -347,8 +347,10 @@ fn hints<'a>(store: &Store, words: &'a StoreTexts) -> &'a [[String; 2]] {
         Some(_) => return words.hint("running"),
         None => {}
     }
+    if store.typing {
+        return words.hint("typing");
+    }
     match store.tab {
-        Tab::Source if store.typing => words.hint("typing"),
         Tab::Source => words.hint("source"),
         Tab::Installed => words.hint("installed"),
         Tab::Backstage => words.hint("backstage"),
