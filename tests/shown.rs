@@ -98,14 +98,14 @@ fn a_page_opens_at_once_and_its_card_opens_it_again() {
     tui.wait_for("页面给你看了。");
     tui.wait_for("HTML · 30 B · 2 行");
     assert!(tui.shows("点击打开"), "{}", tui.lines().join("\n"));
-    // 当场开了一次：照默认程序的桌面文件启动，交的是带文件名的副本（第 6、7、8 条）。
+    // 当场开了一次：照默认程序的桌面文件启动，交的是她展示的那个文件本身（核心 SW-1：内容不进核心，照 path 开，不再拷副本）。
     let opened = logged(&log);
     let desktop = home.root().join("fake-share/applications/viewer.desktop");
     let head = format!("gio launch {} ", desktop.display());
     assert!(
         opened.starts_with(&head)
             && opened.trim_end().ends_with("/index.html")
-            && opened.contains("miyu-shown"),
+            && !opened.contains("miyu-shown"),
         "{opened}"
     );
     let copy = opened
@@ -113,7 +113,7 @@ fn a_page_opens_at_once_and_its_card_opens_it_again() {
         .trim_start_matches(head.as_str())
         .to_string();
     assert_eq!(
-        std::fs::read_to_string(&copy).expect("副本"),
+        std::fs::read_to_string(&copy).expect("展示的文件"),
         "<h1>你好</h1>\n<p>一段</p>\n"
     );
     // 点卡片再开一次。

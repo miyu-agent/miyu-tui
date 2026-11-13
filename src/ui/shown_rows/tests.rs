@@ -1,22 +1,43 @@
-//! 她给人看的文件（蓝图「展示」第 3–5 条）。
+//! 她给人看的文件（蓝图「展示」第 3–5 条；核心 SW-1 起照 `path` 读，改过、没了的写「文件已变」「文件已不在」）。
+
+use std::path::{Path, PathBuf};
 
 use super::{rows, size};
 use crate::core::Shown;
 use crate::transcript::{Entry, Kind};
 use crate::ui::test_support::Fixture;
 
+/// 不在硬盘上的一份（只看卡片的样子）。
 fn shown(id: u64, name: &str, media_type: &str, size: u64, title: Option<&str>) -> Entry {
+    at(
+        id,
+        &PathBuf::from(format!("/nonexistent-miyu/{name}")),
+        media_type,
+        size,
+        title,
+    )
+}
+
+/// 硬盘上 `path` 那一份。
+fn at(id: u64, path: &Path, media_type: &str, size: u64, title: Option<&str>) -> Entry {
     let mut entry = Entry::new(id, Kind::Shown, String::new());
     entry.shown = Some(Shown {
-        path: format!("/w/{name}"),
-        blob: format!("sha256:{id:02}"),
-        name: name.into(),
+        path: path.display().to_string(),
+        modified: None,
+        name: path.file_name().unwrap().to_string_lossy().into_owned(),
         media_type: media_type.into(),
         size,
         title: title.map(Into::into),
         language: None,
     });
     entry
+}
+
+/// 测试用的目录：照名字和进程号分开。
+fn scratch(tag: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("miyu-shown-{tag}-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
 }
 
 fn texts(entry: &Entry, f: &Fixture, replaced: bool) -> Vec<String> {
@@ -38,30 +59,28 @@ fn icon(f: &Fixture, key: &str) -> String {
 #[test]
 fn a_file_is_a_card_with_its_icon_kind_size_and_lines() {
     let f = Fixture::new();
-    // 读回来以前不写几行。
-    let page = shown(1, "index.html", "text/html", 4300, Some("首页"));
+    let dir = scratch("rows");
+    let page_path = dir.join("index.html");
+    std::fs::write(&page_path, vec![b'x'; 4300]).unwrap();
+    let page = at(1, &page_path, "text/html", 4300, Some("首页"));
     assert_eq!(
         texts(&page, &f, false),
         [
             format!("{}首页  index.html", icon(&f, "html")),
-            "HTML · 4.2 KB".into(),
+            "HTML · 4.2 KB · 1 行".into(),
             "点击打开".into()
         ]
     );
-    // 读回来以后数几行。
-    let dir = std::env::temp_dir().join(format!("miyu-shown-rows-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
-    let saved = dir.join("blob");
-    std::fs::write(&saved, "# 标题\n\n一段\n").unwrap();
-    let note = shown(2, "notes.md", "text/markdown", 20, None);
-    f.cards
-        .borrow_mut()
-        .saved("sha256:02".into(), Some(saved.clone()));
+    // 文本照 `path` 读出来数几行。
+    let body = "# 标题\n\n一段\n";
+    let note_path = dir.join("notes.md");
+    std::fs::write(&note_path, body).unwrap();
+    let note = at(2, &note_path, "text/markdown", body.len() as u64, None);
     assert_eq!(
         texts(&note, &f, false),
         [
             format!("{}notes.md", icon(&f, "markdown")),
-            "Markdown · 20 B · 3 行".into(),
+            format!("Markdown · {} · 3 行", size(body.len() as u64)),
             "点击打开".into()
         ]
     );
@@ -73,6 +92,20 @@ fn a_file_is_a_card_with_its_icon_kind_size_and_lines() {
     );
     let pdf = shown(3, "a.pdf", "application/pdf", 2 * 1024 * 1024, None);
     assert_eq!(texts(&pdf, &f, false)[1], "PDF · 2.0 MB", "PDF 不数行");
+    drop(std::fs::remove_dir_all(&dir));
+}
+
+/// 核心 SW-1：内容不进核心，展示以后文件改了、删了，卡片最后一行写「文件已变」「文件已不在」。
+#[test]
+fn a_changed_or_missing_file_says_so_on_its_card() {
+    let f = Fixture::new();
+    let dir = scratch("changed");
+    let path = dir.join("a.html");
+    std::fs::write(&path, "<p>hi</p>").unwrap();
+    let changed = at(1, &path, "text/html", 999, None);
+    assert_eq!(texts(&changed, &f, false).last().unwrap(), "文件已变");
+    let gone = shown(2, "b.html", "text/html", 9, None);
+    assert_eq!(texts(&gone, &f, false).last().unwrap(), "文件已不在");
     drop(std::fs::remove_dir_all(&dir));
 }
 
@@ -123,14 +156,10 @@ fn only_the_picture_itself_opens_it_not_the_blank_to_its_right() {
     let f = Fixture::new();
     let (figures, jobs) = crate::figures::queued(8);
     *f.ctx().figures.borrow_mut() = figures;
-    let dir = std::env::temp_dir().join(format!("miyu-shown-pick-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
-    let saved = dir.join("blob");
-    std::fs::write(&saved, b"png").unwrap();
-    let mut entry = shown(7, "cat.png", "image/png", 3, None);
-    let blob = format!("sha256:pick{}", std::process::id());
-    entry.shown.as_mut().unwrap().blob.clone_from(&blob);
-    f.cards.borrow_mut().saved(blob.clone(), Some(saved));
+    let dir = scratch("pick");
+    let path = dir.join("cat.png");
+    std::fs::write(&path, b"png").unwrap();
+    let entry = at(7, &path, "image/png", 3, None);
     assert!(rows(&entry, &f.ctx())[0].figure_pending, "先排队做图");
     crate::figures::finish(&mut f.ctx().figures.borrow_mut(), &jobs, 100, 3);
     let got = rows(&entry, &f.ctx());
@@ -143,6 +172,4 @@ fn only_the_picture_itself_opens_it_not_the_blank_to_its_right() {
         );
     }
     drop(std::fs::remove_dir_all(&dir));
-    let copied = crate::shown_files::place(&blob, "cat.png");
-    drop(std::fs::remove_dir_all(copied.parent().unwrap()));
 }

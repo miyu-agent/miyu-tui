@@ -168,7 +168,7 @@ impl View<'_> {
                     lines.extend(picture);
                     continue;
                 }
-                if let Some(path) = self.media.cards.borrow_mut().file(&shown.blob) {
+                if let crate::shown_files::Found::Here(path) = crate::shown_files::find(shown) {
                     let indent = " ".repeat(usize::from(row.content_x));
                     let path = format!("{indent}{}", path.display());
                     lines.push(row.line);
@@ -232,17 +232,20 @@ impl View<'_> {
 
     /// 展示的图排成的行：读到了本地、终端画得了的，记号那一行加垫着的空行（`picture.rs`）；别的是 `None`。最高照终端高的一半。
     fn picture(&self, shown: &crate::core::Shown, row: &Row) -> Option<Vec<Line<'static>>> {
-        let path = self
-            .media
-            .cards
-            .borrow_mut()
-            .file(&shown.blob)?
-            .to_path_buf();
+        // 照 `path` 读（核心 SW-1）；改过、没了的不画图。
+        let crate::shown_files::Found::Here(path) = crate::shown_files::find(shown) else {
+            return None;
+        };
+        let key = format!(
+            "{}@{}",
+            shown.path,
+            shown.modified.as_deref().unwrap_or_default()
+        );
         let title = shown.title.as_deref().unwrap_or(&shown.name);
         let label = format!("{} {title}", self.config.text.sent.image);
         let max_rows = (self.height / 2).max(3);
         self.media.pictures.borrow_mut().lines(
-            (&shown.blob, &path),
+            (&key, &path),
             (row.content_x, self.width, max_rows),
             &label,
         )

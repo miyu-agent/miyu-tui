@@ -26,10 +26,10 @@ pub struct ShownTexts {
     pub updated: String,
     /// 没有能打开它的程序（第 7 条）：`{path}` 是副本的完整路径。
     pub no_program: String,
-    /// 点了开不了：副本拷不出来（第 6 条）。
-    pub expired: String,
-    /// 点了开不了：核心那边读不出这份内容（第 6 条）。
-    pub missing: String,
+    /// 展示以后文件改过了（大小、修改时间对不上，核心 SW-1 的 `file_changed`）：卡片最后一行、点了弹的那一句。
+    pub changed: String,
+    /// 文件没了（核心 SW-1 的 `file_gone`）。
+    pub gone: String,
 }
 
 /// 正文里这一条排成的行。
@@ -70,10 +70,12 @@ fn heading(file: &Shown) -> &str {
     file.title.as_deref().unwrap_or(&file.name)
 }
 
-/// 读回来、拷成带文件名的副本以后的位置；还没回来的是 `None`（第 6 条，`shown_files.rs`）。
-fn local(file: &Shown, ctx: &Ctx) -> Option<std::path::PathBuf> {
-    let saved = ctx.cards.borrow_mut().file(&file.blob)?.to_path_buf();
-    crate::shown_files::copy(&file.blob, &file.name, &saved)
+/// 照 `path` 读得到的位置；改过、没了的是 `None`（第 6 条，核心 SW-1，`shown_files.rs`）。
+fn local(file: &Shown) -> Option<std::path::PathBuf> {
+    match crate::shown_files::find(file) {
+        crate::shown_files::Found::Here(path) => Some(path),
+        _ => None,
+    }
 }
 
 /// 图：同她发的图，没回来是「正在渲染图片」那一行，显示不了、读不成、画不成的写一行图片色的「\[图片\] 标题」（第 3 条）。
@@ -86,11 +88,8 @@ fn image(file: &Shown, ctx: &Ctx) -> Vec<Row> {
     if !ctx.figures.borrow().shows() {
         return label();
     }
-    let Some(path) = local(file, ctx) else {
-        if ctx.cards.borrow().unreadable(&file.blob) {
-            return label();
-        }
-        return vec![figure_rows::pending(Vec::new(), ctx)];
+    let Some(path) = local(file) else {
+        return label();
     };
     let figure = Figure {
         kind: FigureKind::Image,
@@ -121,7 +120,7 @@ fn card(file: &Shown, unopened: Option<&str>, replaced: bool, ctx: &Ctx) -> Vec<
         title.push(Span::styled(format!("  {}", file.name), theme::dim()));
     }
     let mut facts = vec![kind(file, words), size(file.size)];
-    if let Some(n) = lines(file, ctx) {
+    if let Some(n) = lines(file) {
         facts.push(words.lines.replace("{n}", &n.to_string()));
     }
     let facts = clip(&facts.join(&crate::sheet::sep()), ctx.width);
@@ -137,15 +136,17 @@ fn card(file: &Shown, unopened: Option<&str>, replaced: bool, ctx: &Ctx) -> Vec<
             }
         }
         None => {
-            // 后来又展示过的：最后一行写「已更新」，点它开的是最新那一版（第 5 条）。
-            let last = if replaced {
-                &words.updated
-            } else {
-                &words.open
+            // 后来又展示过的：最后一行写「已更新」，点它开的是最新那一版（第 5 条）；文件改过、没了的写「文件已变」「文件已不在」
+            // （核心 SW-1，黄字）。
+            let (last, style) = match crate::shown_files::find(file) {
+                crate::shown_files::Found::Changed if !replaced => (&words.changed, theme::warn()),
+                crate::shown_files::Found::Gone if !replaced => (&words.gone, theme::warn()),
+                _ if replaced => (&words.updated, theme::dim()),
+                _ => (&words.open, theme::dim()),
             };
             rows.push(ctx.row(
                 ctx.blank_slot(),
-                vec![Span::styled(clip(last, ctx.width), theme::dim())],
+                vec![Span::styled(clip(last, ctx.width), style)],
             ));
         }
     }
@@ -196,7 +197,7 @@ pub fn size(bytes: u64) -> String {
 }
 
 /// 文本类（HTML、Markdown、代码、文本）有几行：读回来以后数，没回来的、别的种类是 `None`。大过 5 MB 的不数。
-fn lines(file: &Shown, ctx: &Ctx) -> Option<usize> {
+fn lines(file: &Shown) -> Option<usize> {
     let texty = matches!(
         file.media_type.as_str(),
         "text/html" | "text/markdown" | "text/plain"
@@ -204,7 +205,7 @@ fn lines(file: &Shown, ctx: &Ctx) -> Option<usize> {
     if !texty || file.size > 5 * 1024 * 1024 {
         return None;
     }
-    let path = ctx.cards.borrow_mut().file(&file.blob)?.to_path_buf();
+    let path = local(file)?;
     let text = std::fs::read(path).ok()?;
     let n = text.iter().filter(|&&b| b == b'\n').count();
     Some(if text.last().is_some_and(|&b| b != b'\n') {

@@ -25,8 +25,6 @@ pub struct Media {
     pub mascot_pick: super::mascot_pick::MascotPick,
     /// 换主题：配置选的主题包（`theme_pick.rs`）。
     pub theme_pick: super::theme_pick::ThemePick,
-    /// 要开、还在等 `blob.get` 回来的展示：blob 到条目编号（蓝图「展示」第 6 条，`shown.rs`）。
-    pub opening: std::collections::HashMap<String, Vec<u64>>,
     /// 正文少了一大截以后把堆里空着的还给系统（`trim.rs`）。
     pub trim: crate::trim::Trim,
 }
@@ -43,7 +41,6 @@ impl Media {
             avatars: crate::avatars::Avatars::cached(),
             mascot_pick: Default::default(),
             theme_pick: Default::default(),
-            opening: Default::default(),
             trim: Default::default(),
         }
     }
