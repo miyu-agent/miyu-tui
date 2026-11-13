@@ -623,6 +623,7 @@
     "preview": "预览",
     "guard": "{package} 的守卫在问：要用 {tool}",
     "hazard": "高危命令",
+    "auto_deny": "{time} 后自动拒绝",
     "agent": "子代理 {name}",
     "elsewhere": "「{title}」在问你 · /resume 切过去",
     "answered_tab": " ✓",

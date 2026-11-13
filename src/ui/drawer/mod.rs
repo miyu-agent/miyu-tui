@@ -152,6 +152,13 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     for (piece, _) in pieces(&title, width) {
         v.push(Line::styled(piece, bold), None);
     }
+    // 确认的倒计时（核心 CD-1，todolist 第 49 条）：问题下面暗色一行「4:32 后自动拒绝」，一秒走一格。
+    if let Some(left) = d.expires_in(std::time::SystemTime::now()) {
+        let text = texts
+            .auto_deny
+            .replace("{time}", &crate::drawer::expiry::clock(left));
+        v.push(Line::styled(text, theme::dim()), None);
+    }
     // 认成高危命令的（核心 5-17 的 `detail.hazard`）：命令上面红字写一行「高危命令」（2026-10-20 项目主人定）。
     if d.hazardous() {
         v.push(Line::styled(texts.hazard.clone(), theme::error()), None);

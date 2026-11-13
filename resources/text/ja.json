@@ -623,6 +623,7 @@
     "preview": "プレビュー",
     "guard": "{package} のガードが確認しています：{tool} を使う",
     "hazard": "危険なコマンド",
+    "auto_deny": "{time} 後に自動で拒否",
     "agent": "サブエージェント {name}",
     "elsewhere": "「{title}」が質問しています · /resume で切り替え",
     "answered_tab": " ✓",
