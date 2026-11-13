@@ -154,13 +154,26 @@ impl Store {
                     .collect(),
                 _ => Vec::new(),
             },
-            Tab::Installed => self.locals().map(Item::Local).collect(),
-            Tab::Backstage => self.locals().filter(|p| p.page).map(Item::Local).collect(),
+            Tab::Installed => self.found().map(Item::Local).collect(),
+            Tab::Backstage => self.found().filter(|p| p.page).map(Item::Local).collect(),
         }
     }
 
     fn locals(&self) -> impl Iterator<Item = &Local> {
         self.local.iter().flatten()
+    }
+
+    /// 装着的里头对得上筛的字的：几个词每个都出现在名字、编号、说明里（同「下载软件」，`sort::shown`）。
+    fn found(&self) -> impl Iterator<Item = &Local> {
+        let words: Vec<String> = self
+            .query
+            .split_whitespace()
+            .map(str::to_lowercase)
+            .collect();
+        self.locals().filter(move |p| {
+            let hay = format!("{}\n{}\n{}", p.name, p.id, p.summary).to_lowercase();
+            words.iter().all(|w| hay.contains(w.as_str()))
+        })
     }
 
     /// 这一页的光标，挪进列表里。
@@ -186,6 +199,8 @@ impl Store {
         if let Some(tab) = Tab::ALL.get(to) {
             self.tab = *tab;
             self.typing = false;
+            // 筛的字跟着页走：换了页不带过去（三页都能筛以后，第 11 条）。
+            self.query.clear();
         }
     }
 

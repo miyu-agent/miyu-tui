@@ -320,6 +320,7 @@ fn a_package_without_settings_says_so_instead_of_an_empty_page() {
 
 mod approve;
 mod remove;
+mod search;
 mod sync;
 
 /// 预览块画过一帧、`rows` 行一窗放得下（看完了）。
