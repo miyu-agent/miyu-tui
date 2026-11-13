@@ -16,6 +16,8 @@ pub struct Snapshot {
     pub jobs: Option<Vec<JobStart>>,
     /// 有没有能压缩的（核心 W-12：同 `session.compact` 回不回 `nothing_to_compact`）；以前的核心没有。
     pub compactable: Option<bool>,
+    /// 会话钉的压缩触发线（窗口的百分之几，核心 CT-1补：订阅回应顶层的 `compaction_line`）；没钉的是 `None`。
+    pub pin: Option<u64>,
 }
 
 /// 这个会话（不带子会话）累计的。
@@ -39,6 +41,7 @@ impl Snapshot {
             level: level(&reply["permission"]),
             jobs: JobStart::list(&reply["jobs"]),
             compactable: reply["compactable"].as_bool(),
+            pin: reply["compaction_line"].as_u64(),
         };
         (snapshot != Snapshot::default()).then_some(snapshot)
     }
@@ -147,5 +150,15 @@ mod tests {
         let got = Snapshot::read(&early).expect("有 jobs");
         assert_eq!(got.usage, None);
         assert_eq!(got.jobs, Some(Vec::new()));
+    }
+
+    /// 核心 CT-1补：订阅回应顶层的 `compaction_line` 是会话钉的百分比（`limits.compaction_line` 是生效的 token 数，不是它）。
+    #[test]
+    fn the_pinned_compaction_line_comes_from_the_top_level() {
+        let reply =
+            json!({"compaction_line": 50, "limits": {"compaction_line": 850_000}, "jobs": []});
+        assert_eq!(Snapshot::read(&reply).and_then(|s| s.pin), Some(50));
+        let unpinned = json!({"limits": {"compaction_line": 850_000}, "jobs": []});
+        assert_eq!(Snapshot::read(&unpinned).and_then(|s| s.pin), None);
     }
 }
