@@ -73,9 +73,11 @@ fn upgrades_and_info_are_read() {
     let got = info(
         &json!({"package": "im", "author": "miyu-agent", "from": "official",
         "installed": "2026-10-29T08:00:00.000Z", "size": 19_000_000, "required_by": ["memes"],
-        "capabilities": [{"id": "net.listen", "name": "开端口"}],
-        "provides": {"program": "process", "skills": ["qq"], "page": true, "settings": 12}}),
+        "capabilities": [{"id": "net.listen", "name": "开端口"}], "license": "MIT",
+        "contains": {"program": "process", "skills": ["qq"], "page": true, "settings": 12}}),
     );
+    // 装着的那一份「包含」叫 contains（核心 CM-1）、带许可证（PV-3）。
+    assert_eq!(got.license.as_deref(), Some("MIT"));
     assert_eq!(got.author.as_deref(), Some("miyu-agent"));
     assert_eq!(got.size, Some(19_000_000));
     assert_eq!(got.required_by, ["memes"]);
@@ -86,8 +88,16 @@ fn upgrades_and_info_are_read() {
         ["page", "program", "settings", "skills"],
         "照种类排，开着的、数的只写种类"
     );
-    let source =
-        info(&json!({"package": "x", "from": "source", "installed_size": 2048, "download": 1024}));
+    let source = info(
+        &json!({"package": "x", "from": "source", "installed_size": 2048, "download": 1024,
+            "provides": {"knowledge": ["recipes"]}}),
+    );
+    assert_eq!(source.license, None, "没写许可证的没有");
+    assert_eq!(
+        source.provides,
+        [("knowledge".to_string(), vec!["recipes".to_string()])],
+        "软件源那一份照旧 provides，带知识库（PV-3）"
+    );
     assert_eq!(
         (source.size, source.download),
         (Some(2048), Some(1024)),

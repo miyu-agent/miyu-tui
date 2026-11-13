@@ -93,6 +93,8 @@ pub struct Info {
     pub provides: Vec<(String, Vec<String>)>,
     /// 扩展声明的能力的名字。
     pub needs: Vec<String>,
+    /// 许可证（SPDX 短串，核心 PV-3：清单 `[package] license`）；没写的是 `None`。
+    pub license: Option<String>,
 }
 
 fn text(v: &Value) -> Option<String> {
@@ -242,8 +244,14 @@ pub fn info(got: &Value) -> Info {
         download: got["download"].as_u64(),
         depends: ids(&got["depends"]),
         required_by: ids(&got["required_by"]),
-        provides: provides(&got["provides"]),
+        // 装着的那一份「包含」叫 `contains`（核心 CM-1，形状同装之前看一眼的）；软件源那一份照旧 `provides`（索引的形状）。
+        provides: provides(if got["contains"].is_object() {
+            &got["contains"]
+        } else {
+            &got["provides"]
+        }),
         needs,
+        license: text(&got["license"]),
     }
 }
 
