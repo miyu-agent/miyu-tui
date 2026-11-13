@@ -139,6 +139,8 @@ impl App {
                 snapshot.level,
                 snapshot.compactable,
             );
+            // 会话钉的压缩线照订阅回应换上（核心 CT-1补）：很早以前钉的、钉的那条事件不在最新一页里的也对得上。
+            transcript.compaction_pin = snapshot.pin;
         }
     }
 
