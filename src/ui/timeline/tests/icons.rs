@@ -45,12 +45,7 @@ fn the_plain_set_draws_plain_icons() {
         .collect();
     assert_eq!(
         titles,
-        [
-            "✳ 已思考 · 1.0s · 4",
-            "$ shell · 列目录",
-            "✗ shell · 列目录",
-            "⚙ read"
-        ],
+        ["✳ 已思考 · 1.0s · 4", "$ 列目录", "✗ 列目录", "⚙ read"],
         "思考 ✳、执行命令 $、出错 ✗、别的工具 ⚙：{lines:?}"
     );
 }

@@ -12,6 +12,7 @@ use crate::ui::rows::Row;
 use crate::ui::test_support::Fixture;
 
 mod blank;
+mod command_title;
 mod detail;
 mod empty;
 mod images;
@@ -205,10 +206,10 @@ fn an_open_segment_lists_its_steps_with_icons_and_connectors() {
             format!("  {} 已思考 · 1.0s · 4", icons.think),
             "  │ 先看看目录".into(),
             "  │".into(),
-            format!("  {shell} shell · 列目录"),
+            format!("  {shell} 列目录"),
             "  │ ls".into(),
             "  │".into(),
-            format!("  {} shell · 列目录", icons.error),
+            format!("  {} 列目录", icons.error),
             "  │ ls".into(),
         ]
     );
@@ -454,10 +455,7 @@ fn folding_and_opening_follow_the_config_until_someone_clicks() {
     f.config.timeline.fold = false;
     let seg = segment(vec![thought(t0, 0), command(t0, 1, ToolStatus::Ok)], None);
     let lines = text(&rows(0, &seg, &f.ctx()));
-    assert!(
-        lines.iter().any(|l| l.contains("shell · 列目录")),
-        "{lines:?}"
-    );
+    assert!(lines.iter().any(|l| l.contains("列目录")), "{lines:?}");
     // 命令默认铺开全文：命令、空行、输出（照点开的样子）。
     f.config.timeline.expand.command = true;
     let lines = text(&rows(0, &seg, &f.ctx()));
