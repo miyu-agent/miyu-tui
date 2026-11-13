@@ -45,3 +45,14 @@ fn clicking_the_goal_text_opens_its_box_and_esc_closes_it() {
     app.talk.transcript.goal = None;
     assert!(!app.goal_clicked(Position::new(79, 20)), "没有目标：不开");
 }
+
+/// 2026-11-13 主人 1113 初验第 3 条：输入框外面右边的麦克风点得动，悬停却没变成手。
+#[test]
+fn hovering_the_microphone_shows_a_hand() {
+    let (mut app, _sent) = app();
+    app.screen.areas.mic = Rect::new(79, 20, 1, 1);
+    app.screen.pointer = Some(Position::new(79, 20));
+    assert!(app.pointing(), "悬停在麦克风上：手");
+    app.screen.pointer = Some(Position::new(78, 20));
+    assert!(!app.pointing());
+}

@@ -420,6 +420,8 @@ impl App {
             || self.boxes.settings.as_ref().is_some_and(crate::settings::Settings::over_link)
             || self.typing.input.hovered_attachment().is_some()
             || over(self.screen.areas.button)
+            // 输入框外面右边的麦克风（点了开始、停止语音输入；2026-11-13 主人 1113 初验第 3 条：悬停没变成手）。
+            || over(self.screen.areas.mic)
             || over(self.screen.areas.usage_cell)
             || over(self.screen.areas.compact)
             || over(self.screen.areas.session_id)
