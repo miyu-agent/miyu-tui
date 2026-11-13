@@ -106,7 +106,10 @@ pub fn title(
                         .and_then(|f| f.subject.as_deref())
                         .and_then(|k| step.arg(k)),
                 };
-                let mut label = shown;
+                // 执行命令有短标题的只写短标题（发版前 check 60）。
+                let titled = kind == Some(ToolKind::Command)
+                    && subject.is_some_and(|s| !s.trim().is_empty());
+                let mut label = if titled { String::new() } else { shown };
                 // 派子代理：名字后面先写任务编号（`派子代理 · j10 · 描述`）。
                 let job = said
                     .as_ref()
@@ -122,7 +125,7 @@ pub fn title(
                     label.push_str(&super::message::title(step, ctx));
                 }
                 if let Some(subject) = subject {
-                    label.push_str(&crate::sheet::sep());
+                    label.push_str(&crate::sheet::sep().repeat(usize::from(!titled)));
                     // 发给别的会话的（C-5，`to` 是会话编号）：写「会话 短编号」，不写整个编号。
                     if crate::session_list::looks_like_session(subject) {
                         let id = crate::session_list::short(subject);
