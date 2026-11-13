@@ -158,7 +158,7 @@ mod tests {
     fn the_nerd_set_draws_a_terminal_for_shell() {
         // 发版前 check 47（2026-11-12 项目主人）：Nerd Font 那一套的执行命令是终端的图标（nf-fa-terminal），不是 `$`。
         let sets = builtin().unwrap();
-        assert_eq!(sets[0].tool("shell"), "\u{f120}");
+        assert_eq!(sets[0].tool("shell"), "\u{f489}");
     }
 
     #[test]
