@@ -160,7 +160,12 @@ impl App {
 
     /// 图标那一套（「图标」第 4 条）。
     fn take_icons(&mut self, got: &Value) {
-        if let Some(name) = got["items"]["tui.icons"]["value"].as_str() {
+        let item = &got["items"]["tui.icons"];
+        // 没写过、在 Linux 控制台里：普通字符（控制台的字体没有 Nerd Font 的字形，todolist 63）
+        if !crate::sheet::written(item) && crate::sheet::on_console() {
+            return self.use_icons("plain");
+        }
+        if let Some(name) = item["value"].as_str() {
             let name = name.to_string();
             self.use_icons(&name);
         }

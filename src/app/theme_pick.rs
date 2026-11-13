@@ -24,6 +24,8 @@ pub struct ThemePick {
     loading: Option<String>,
     /// 现在画着的包；默认主题是 `None`。
     shown: Option<String>,
+    /// 这一次运行里说过「控制台显示不了中文」（todolist 63）。
+    console_noted: bool,
 }
 
 impl App {
@@ -35,12 +37,11 @@ impl App {
                 false
             }
             Update::Answer { tag, result } if *tag == SETTING_TAG => {
+                let console = crate::sheet::on_console();
                 let id = result.as_ref().ok().and_then(|got| {
-                    got["items"][crate::settings::pages::LOOK]["value"]
-                        .as_str()
-                        .filter(|id| *id != crate::sheet::DEFAULT_PACKAGE)
-                        .map(str::to_string)
+                    crate::sheet::chosen(&got["items"][crate::settings::pages::LOOK], console)
                 });
+                self.console_note(console);
                 self.look_chosen(id);
                 true
             }
@@ -86,6 +87,13 @@ impl App {
                 pick.loading = None;
                 self.put_look(&crate::sheet::default_value(), None);
             }
+            // 编进程序的（纯 ASCII）：不用找包
+            Some(id) if crate::sheet::builtin(&id).is_some() => {
+                pick.loading = None;
+                if let Some(whole) = crate::sheet::builtin(&id) {
+                    self.put_look(&whole, Some(id));
+                }
+            }
             Some(id) => {
                 pick.loading = Some(id);
                 self.theme_ask(LIST_TAG, "package.list", json!({}));
@@ -112,6 +120,17 @@ impl App {
         self.media.theme_pick.shown = id;
         let items = Value::Object(self.link.look.items.clone());
         self.apply_layout_settings(&json!({ "items": items }));
+    }
+
+    /// 在 Linux 控制台里、界面是中文或日文的：这一次运行里提示一次控制台显示不了这些字，可以在设置里换英文界面（todolist 63）。
+    fn console_note(&mut self, console: bool) {
+        let cjk = matches!(self.config.language.code(), "zh" | "ja");
+        if !console || !cjk || self.media.theme_pick.console_noted {
+            return;
+        }
+        self.media.theme_pick.console_noted = true;
+        let text = self.config.text.console_cjk.clone();
+        self.hint(text, false);
     }
 
     /// 读不成：照默认主题画，弹一句。

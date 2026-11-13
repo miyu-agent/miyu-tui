@@ -365,6 +365,8 @@ pub struct Texts {
     pub builtin_mascot: String,
     /// 主题没设、选择窗第一行：默认主题（「主题」第 5 条）。
     pub default_look: String,
+    /// 编进程序的纯 ASCII 主题的名字：选择窗第二行（todolist 63）。
+    pub ascii_look: String,
     /// 选着的吉祥物包卸掉了：`{id}` 是它的编号。
     pub mascot_missing: String,
     /// 「主色」跟随头像时恢复默认问的那一句：清掉人格的主题色。

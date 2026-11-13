@@ -171,6 +171,7 @@
   "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "テキスト", "file": "ファイル"}, "lines": "{n} 行", "open": "クリックで開く", "updated": "更新済み", "no_program": "開けるプログラムがありません：{path}", "changed": "ファイルが変わりました", "gone": "ファイルがありません"},
   "mascot_failed": "マスコットパッケージを読み込めないため、内蔵のマスコットを使用しています",
   "look_failed": "テーマパッケージを読み込めないため、デフォルトテーマを使用しています",
+  "console_cjk": "Linux コンソールでは日本語を表示できません。設定で表示言語を英語に変えられます",
   "markdown": {
     "image": "[画像: ",
     "details": "詳細情報",
@@ -1477,6 +1478,7 @@
       "follow_new": "新しいセッションと同じ",
       "builtin_mascot": "内蔵",
       "default_look": "デフォルトテーマ",
+      "ascii_look": "ASCII のみ",
       "mascot_missing": "{id}（未インストール）",
       "seed_unset": "ペルソナのメインカラーを消して、アバターの最初の候補に戻す",
       "own_groups": {"look": "テーマ", "theme": "配色", "timeline": "タイムライン", "mascot": "キャラクター", "icons": "アイコン", "keys": "操作"},

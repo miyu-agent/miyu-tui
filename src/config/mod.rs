@@ -257,6 +257,8 @@ pub struct Texts {
     pub mascot_failed: String,
     /// 主题包读不成，照默认主题画（蓝图「主题」第 3 条）。
     pub look_failed: String,
+    /// 在 Linux 控制台里、界面是中文或日文时提示一次：控制台显示不了这些字（todolist 63）。
+    pub console_cjk: String,
     /// 换了图标，`{name}` 是那一套的名字。
     pub icons_changed: String,
     /// 撤销那一行打头的：`已撤销`（不写几轮：撤销只能一轮一轮撤）。

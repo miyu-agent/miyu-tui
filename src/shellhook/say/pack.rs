@@ -52,11 +52,16 @@ impl Pack {
         match *tag {
             SETTING_TAG => {
                 let id = result.as_ref().ok().and_then(|got| {
-                    got["items"][crate::settings::pages::LOOK]["value"]
-                        .as_str()
-                        .filter(|id| *id != crate::sheet::DEFAULT_PACKAGE)
-                        .map(str::to_string)
+                    let item = &got["items"][crate::settings::pages::LOOK];
+                    crate::sheet::chosen(item, crate::sheet::on_console())
                 });
+                // 编进程序的（纯 ASCII，todolist 63）：不用找包
+                if let Some(whole) = id.as_deref().and_then(crate::sheet::builtin) {
+                    return match crate::sheet::set(&whole).and_then(|()| config.retheme(&whole)) {
+                        Ok(()) => Applied::Retimeline,
+                        Err(_) => Applied::Yes,
+                    };
+                }
                 match id {
                     // 默认主题：编进程序的，起来时就是它。
                     None => Applied::Yes,

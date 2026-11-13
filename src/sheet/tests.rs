@@ -73,7 +73,7 @@ fn the_ascii_theme_leaves_no_symbol_outside_ascii() {
     // 2026-10-21 项目主人照推荐定：纯 ASCII 样板拿来验「所有样子都能换」。盖上它以后，表里每一个记号、`layout`、
     // `timeline` 两节盖的每一格、框线画出来的每一个字都是 ASCII。
     let pack: serde_json::Value =
-        serde_json::from_str(include_str!("../../packages/tui-theme-ascii/theme.json")).unwrap();
+        serde_json::from_str(include_str!("../../resources/looks/ascii.json")).unwrap();
     let whole = merged(&pack);
     let sheet = parse(&whole).expect("纯 ASCII 主题读得懂");
     let mut strings = Vec::new();
@@ -124,4 +124,22 @@ fn collect(value: &serde_json::Value, path: &str, out: &mut Vec<(String, String)
 /// 照 `a.b.c` 找。
 fn lookup<'a>(value: &'a serde_json::Value, path: &str) -> Option<&'a serde_json::Value> {
     path.split('.').try_fold(value, |v, k| v.get(k))
+}
+
+/// todolist 63：纯 ASCII 编进了程序（`ascii`），没写主题的在 Linux 控制台里照它，写过的照写的；`TERM=linux` 才算控制台。
+#[test]
+fn the_builtin_ascii_look_and_the_console_default() {
+    use serde_json::json;
+    assert!(super::builtin(super::ASCII).is_some());
+    assert!(super::builtin("night").is_none());
+    let unset = json!({"value": null, "origin": {"layer": "default"}});
+    assert_eq!(super::chosen(&unset, false), None);
+    assert_eq!(super::chosen(&unset, true).as_deref(), Some("ascii"));
+    let default = json!({"value": "tui-theme-default", "origin": {"layer": "system"}});
+    assert_eq!(super::chosen(&default, true), None, "写了默认主题的照写的");
+    let night = json!({"value": "night"});
+    assert_eq!(super::chosen(&night, true).as_deref(), Some("night"));
+    assert!(super::written(&default) && !super::written(&unset) && !super::written(&json!({})));
+    assert!(super::console_term(Some("linux")));
+    assert!(!super::console_term(Some("xterm-256color")) && !super::console_term(None));
 }

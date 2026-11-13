@@ -146,12 +146,22 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
 /// 出厂内置的（`base-*`）没有标签。
 #[test]
 fn installed_rows_say_how_each_package_plugs_in() {
-    let home = Home::new(Script::new([Play::Says("好。")]));
+    // 一个主题包（纯 ASCII 2026-11-13 起编进了程序、不再是包，todolist 63）：只带终端的主题，写「外观」。核心起来以前放好。
+    let home = Home::prepared(Script::new([Play::Says("好。")]), "", |root| {
+        let look = support::data_of(root).packages().join("look-sample");
+        std::fs::create_dir_all(&look).expect("建得了主题包的目录");
+        std::fs::write(
+            look.join("package.toml"),
+            "[package]\nversion = \"1.0.0\"\nname = { zh = \"样板外观\", en = \"Sample look\" }\n\n[theme.tui]\nfile = \"theme.json\"\n",
+        )
+        .expect("写得了清单");
+        std::fs::write(look.join("theme.json"), "{}").expect("写得了主题");
+    });
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     installed(&mut tui);
-    reach(&mut tui, "纯 ASCII");
+    reach(&mut tui, "样板外观");
     until(&mut tui, "主题包写外观", |t| {
-        row(t, "纯 ASCII").contains("  外观")
+        row(t, "样板外观").contains("  外观")
     });
     reach(&mut tui, "终端界面");
     // 终端的包是界面，又往 `miyu` 里加了子命令 `tui`：也算带程序。

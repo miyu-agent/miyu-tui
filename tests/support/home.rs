@@ -43,17 +43,7 @@ fn install_the_terminal(dir: &Path, edit: impl FnOnce(String) -> String) {
     std::fs::create_dir_all(&to).expect("建得了包的目录");
     let text = std::fs::read_to_string(manifest).expect("读得了终端的清单");
     std::fs::write(to.join("package.toml"), edit(text)).expect("装得上终端的清单");
-    // 纯 ASCII 样板主题包（蓝图「主题」第 6 条）。默认主题编进了程序，不发（第 4 条），不装。
-    for theme in ["tui-theme-ascii"] {
-        let from = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("packages")
-            .join(theme);
-        let to = packages.join(theme);
-        std::fs::create_dir_all(&to).expect("建得了主题包的目录");
-        for file in ["package.toml", "theme.json"] {
-            std::fs::copy(from.join(file), to.join(file)).expect("装得上主题包");
-        }
-    }
+    // 主题不用装：默认主题、纯 ASCII 都编进了程序（蓝图「主题」第 4、6 条，todolist 63）。
 }
 
 impl Home {

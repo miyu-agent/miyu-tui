@@ -1,13 +1,13 @@
 # 发版（照官方打包模板 miyu-agent/packages 的 pack.yml，写法同 miyu-embed、miyu-render）：推 `v*` 标签（v 加上清单里的
-# 版本；本体、主题包和 Cargo.toml 写同一个号，同核心、网页、托盘一起发版时的「年.月.这个月第几版」，如 v2026.11.0，核心 VR-1；
-# `tests/versions.rs` 守着三处一样）时，终端本体一种系统打一个 `.miyu`、ASCII 主题打一个，都传进这个标签的 Release；软件源每天
-# 收一次，收进索引以后 `miyu pkg install tui` 就装得上。一个 Release 里几个包，核心 G-16 起认。
+# 版本；本体和 Cargo.toml 写同一个号，同核心、网页、托盘一起发版时的「年.月.这个月第几版」，如 v2026.11.0，核心 VR-1；
+# `tests/versions.rs` 守着两处一样）时，终端本体一种系统打一个 `.miyu`，传进这个标签的 Release；软件源每天收一次，收进索引
+# 以后 `miyu pkg install tui` 就装得上。
 #
-# 默认主题不发（2026-10-30 项目主人定不推荐、不发：它编进了程序，`packages/tui-theme-default` 只当来源和样板，
-# `packaging/pack.sh` 同样不打）。
+# 主题都不另发：默认主题（2026-10-30 项目主人定）和纯 ASCII（todolist 63，2026-11-13 项目主人定）都编进了程序，
+# `packages/tui-theme-default` 只当来源和样板，`packaging/pack.sh` 同样不打。
 #
-# 每个包带本仓库的 `LICENSE`（AGPL-3.0-or-later）；终端本体另带第三方许可证清单 `THIRD-PARTY-LICENSES.txt`（`cargo xtask notices`
-# 生成、提交进仓库，CI 查它是最新的），主题包只有本仓库写的数据，不带。
+# 包里带本仓库的 `LICENSE`（AGPL-3.0-or-later）和第三方许可证清单 `THIRD-PARTY-LICENSES.txt`（`cargo xtask notices` 生成、
+# 提交进仓库，CI 查它是最新的）。
 name: release
 
 on:
@@ -47,13 +47,3 @@ jobs:
         chmod 755 "tui/bin/miyu-tui$exe"
         cp LICENSE THIRD-PARTY-LICENSES.txt tui/
 
-  theme-ascii:
-    uses: miyu-agent/packages/.github/workflows/pack.yml@main
-    permissions:
-      contents: write
-    with:
-      package: tui-theme-ascii
-      folder: packages/tui-theme-ascii
-      build: |
-        set -euo pipefail
-        cp LICENSE packages/tui-theme-ascii/
