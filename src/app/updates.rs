@@ -406,13 +406,13 @@ impl App {
             Update::Push(Push::Shown(file))
                 if file.opens_at_once() && !self.talk.transcript.replaying() =>
             {
-                Some(file.blob.clone())
+                Some(file.path.clone())
             }
             _ => None,
         };
         self.talk.transcript.update(update, &self.config.text);
-        if let Some(blob) = opens {
-            self.shown_arrived(&blob);
+        if let Some(path) = opens {
+            self.shown_arrived(&path);
         }
         if stop {
             self.stop_started_turn();

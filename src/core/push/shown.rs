@@ -9,8 +9,8 @@ use super::Push;
 pub struct Shown {
     /// 真实位置的绝对路径：同一个路径再展示一次，前面那张缩成一行（「展示」第 5 条）。
     pub path: String,
-    /// 内容的哈希：照 `blob.get` 读回来。
-    pub blob: String,
+    /// 展示那一刻的修改时间（RFC 3339，核心 SW-1）：内容不进核心，本机照 `path` 读，读之前和大小一起核对文件变没变。
+    pub modified: Option<String>,
     /// 文件名。
     pub name: String,
     /// 核心认的种类：`image/png`、`text/html`、`application/pdf` 这些。
@@ -35,7 +35,7 @@ impl Shown {
     }
 }
 
-/// 读结果的 `effects` 里的 `file.shown`，照先后交 [`Push::Shown`]；缺 `path`、`blob` 的不要。
+/// 读结果的 `effects` 里的 `file.shown`，照先后交 [`Push::Shown`]；缺 `path` 的不要（核心 SW-1 起没有 `blob`）。
 pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
     let text = |v: &Value| {
         v.as_str()
@@ -47,14 +47,14 @@ pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
         if effect["kind"] != "file.shown" {
             continue;
         }
-        let (Some(path), Some(blob)) = (text(&effect["path"]), text(&effect["blob"])) else {
+        let Some(path) = text(&effect["path"]) else {
             continue;
         };
         let name = text(&effect["name"])
             .unwrap_or_else(|| path.rsplit(['/', '\\']).next().unwrap_or(&path).to_string());
         out.push(Push::Shown(Shown {
             path,
-            blob,
+            modified: text(&effect["modified"]),
             name,
             media_type: text(&effect["media_type"])
                 .unwrap_or_else(|| "application/octet-stream".into()),
