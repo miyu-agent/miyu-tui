@@ -243,3 +243,29 @@ fn a_tall_preview_shrinks_to_the_drawer_and_says_how_much_is_below() {
     let got = shown(&mut d);
     assert!(got[9].contains("第 30 行"), "滚得到底：{got:#?}");
 }
+
+/// 2026-11-13 主人 1113 初验第 4 条：抽屉照内容变宽，切题时宽度跟着变「太违和」，宽度定死。几道题里只要有一页带宽预览，
+/// 每一页（连「确认」页）都要同一个宽。
+#[test]
+fn the_drawer_keeps_one_width_across_its_questions() {
+    let asked: Asked = serde_json::from_value(serde_json::json!({
+        "call_id": "c",
+        "questions": [
+            {"question": "第一道", "options": [{"label": "宽", "preview": "x".repeat(120)}, {"label": "窄"}]},
+            {"question": "第二道", "options": [{"label": "一个很长很长很长的选项写在这里", "description": "说明"}, {"label": "短"}]}
+        ]
+    }))
+    .unwrap();
+    let mut d = Drawer::question(None, asked);
+    let widths: Vec<Option<u16>> = (0..d.pages())
+        .map(|page| {
+            d.tab = page;
+            super::super::preview_wanted(&d, &texts(), &look(), 200)
+        })
+        .collect();
+    assert!(widths[0].is_some());
+    assert!(
+        widths.iter().all(|w| *w == widths[0]),
+        "切题、进确认页都不变：{widths:?}"
+    );
+}
