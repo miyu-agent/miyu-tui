@@ -123,20 +123,28 @@ pub fn scroll(d: &Drawer, texts: &Texts, look: &Look, width: u16) -> (usize, usi
 /// 选项那一列要多宽：照最宽的那一行（最多一半，至少能放下一个选项的记号和几个字）。
 fn options_width(d: &Drawer, texts: &Texts, width: u16) -> u16 {
     let half = width / 2;
-    let list = items::choices(d, texts, half);
-    let widest = list.lines.iter().map(Line::width).max().unwrap_or(0);
+    // 照这一组题里每一页的选项最宽的那一行定（2026-11-13 主人 1113 初验第 4 条：切题时宽度跟着变「太违和」，宽度定死）。
+    let widest = (0..d.pages())
+        .map(|page| {
+            let mut one = d.clone();
+            one.tab = page;
+            let list = items::choices(&one, texts, half);
+            list.lines.iter().map(Line::width).max().unwrap_or(0)
+        })
+        .max()
+        .unwrap_or(0);
     u16::try_from(widest)
         .unwrap_or(half)
         .clamp(half.min(16), half)
 }
 
-/// 这一页有预览时整个抽屉的字想要多宽：选项最宽的一行、空隙、预览最宽的一行（这一页所有选项的预览里最宽的，换选项时
-/// 抽屉不跳）连两边的空。没有预览的是 `None`（照输入框的宽）。`most` 是最多能给多宽。
+/// 有预览时整个抽屉的字想要多宽：选项最宽的一行、空隙、预览最宽的一行连两边的空。照这一组题的每一页算（换选项、切题、
+/// 进「确认」页都不跳；2026-11-13 主人 1113 初验第 4 条：宽度定死）。一页都没有预览的是 `None`（照输入框的宽）。`most`
+/// 是最多能给多宽。
 pub fn wanted(d: &Drawer, texts: &Texts, look: &Look, most: u16) -> Option<u16> {
-    let question = d.question_at(d.tab)?;
-    let widest = question
-        .options
-        .iter()
+    let widest = (0..d.pages())
+        .filter_map(|page| d.question_at(page))
+        .flat_map(|q| q.options.iter())
         .filter_map(|o| o.preview.as_deref())
         .flat_map(str::lines)
         .map(UnicodeWidthStr::width)
