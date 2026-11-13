@@ -70,7 +70,7 @@ pub fn config_all() -> Value {
         "pools.daily.models": {"layers": [system(json!(["dev/flash", "relay/cline/deepseek-v4"]))]},
         "pools.daily.strategy": {"layers": [system(json!("rotate"))]},
         "pools.empty.models": {"layers": [system(json!([]))]},
-        "permission.level": {"layers": [project(json!("read"))]}
+        "permission.start_read_only": {"layers": [project(json!(true))]}
     }})
 }
 

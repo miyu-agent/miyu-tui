@@ -41,7 +41,7 @@ fn what_the_system_config_has_is_remembered_for_expect_and_deletes() {
         Some(&json!({"secret": "relay-key"}))
     );
     assert!(
-        !data.system.contains_key("permission.level"),
+        !data.system.contains_key("permission.start_read_only"),
         "项目配置的不算"
     );
     assert_eq!(

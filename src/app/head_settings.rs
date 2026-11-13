@@ -39,8 +39,9 @@ const TOP_TAG: u64 = TAG_BASE - 27;
 /// 读输入历史列表两项的请求编号（发版前 check 第 52 条）：单问，同按键模式（`TAG_BASE - 28` 到 `- 30` 是 `export.rs` 估算的三条，
 /// `- 34` 是它存文件的）。
 const HISTORY_TAG: u64 = TAG_BASE - 36;
-/// 新会话开局的级别：常用的那一级、开局只读（核心的配置项）。
-const LEVEL_KEYS: [&str; 2] = ["permission.level", "permission.start_read_only"];
+/// 新会话开局的级别：只看开局只读（核心的配置项）；常用的那一级恒为完全放开（核心 AUD-4 删了 `permission.level`，再读
+/// 回 `unknown_config_key`，整个 `config.get` 失败）。
+const LEVEL_KEYS: [&str; 1] = ["permission.start_read_only"];
 
 impl App {
     /// 头的配置读到了（连上、配置变了）就去读；回应归这里（交回 `true`）。
@@ -210,20 +211,14 @@ impl App {
         self.apply_theme();
     }
 
-    /// 读到新会话开局的级别：开局只读的是只读，不然照常用的那一级；认不出的不动。还没开会话、这一回的首页上没按过 Tab
-    /// 的，当场照它画。
+    /// 读到新会话开局的级别：开局只读的是只读，不然是完全放开。还没开会话、这一回的首页上没按过 Tab 的，当场照它画。
     fn default_level(&mut self, got: &Value) {
-        let value = |key: &str| &got["items"][key]["value"];
-        let level = if value("permission.start_read_only") == true {
-            Some(crate::core::Level::ReadOnly)
+        let read_only = got["items"]["permission.start_read_only"]["value"] == true;
+        self.talk.default_level = if read_only {
+            crate::core::Level::ReadOnly
         } else {
-            value("permission.level")
-                .as_str()
-                .and_then(crate::core::Level::parse)
+            crate::core::Level::Full
         };
-        if let Some(level) = level {
-            self.talk.default_level = level;
-            self.show_default_level();
-        }
+        self.show_default_level();
     }
 }
