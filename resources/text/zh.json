@@ -171,6 +171,7 @@
   "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "文本", "file": "文件"}, "lines": "{n} 行", "open": "点击打开", "updated": "已更新", "no_program": "没有能打开它的程序：{path}", "changed": "文件已变", "gone": "文件已不在"},
   "mascot_failed": "吉祥物包无法读取，已使用内置吉祥物",
   "look_failed": "主题包无法读取，已使用默认主题",
+  "console_cjk": "Linux 控制台显示不了中文：可在设置里把界面语言换成英文",
   "markdown": {
     "image": "[图片: ",
     "details": "详细信息",
@@ -1477,6 +1478,7 @@
       "follow_new": "跟随新会话设置",
       "builtin_mascot": "内置",
       "default_look": "默认主题",
+      "ascii_look": "纯 ASCII",
       "mascot_missing": "{id}（未安装）",
       "seed_unset": "清除人格的主色，恢复为头像取出的第一个",
       "own_groups": {"look": "主题", "theme": "配色方案", "timeline": "时间线", "mascot": "形象", "icons": "图标", "keys": "交互"},

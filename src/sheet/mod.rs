@@ -20,6 +20,49 @@ pub const DEFAULT_PACKAGE: &str = "tui-theme-default";
 /// 默认主题，编进程序里（没装默认主题包、包读不成时照它画）。
 pub const DEFAULT: &str = include_str!("../../packages/tui-theme-default/theme.json");
 
+/// 内置的纯 ASCII 主题在 `tui.look` 里的写法（todolist 63，2026-11-13 项目主人：做成内置，不再单独发 `tui-theme-ascii` 包）。
+/// 不走 `package.list`；有包也叫这个名字的，照内置的。
+pub const ASCII: &str = "ascii";
+
+/// 纯 ASCII 主题：只写了和默认主题不一样的那几格，编进程序里。
+const ASCII_PACK: &str = include_str!("../../resources/looks/ascii.json");
+
+/// 编进程序的主题（现在只有 [`ASCII`]）盖在默认主题上的整份；不是内置编号的是 `None`。
+pub fn builtin(id: &str) -> Option<Value> {
+    (id == ASCII).then(|| {
+        let pack =
+            serde_json::from_str(ASCII_PACK).unwrap_or_else(|e| panic!("纯 ASCII 主题读不懂：{e}"));
+        merged(&pack)
+    })
+}
+
+/// `config.get` 回应里 `tui.look` 那一项定照哪个主题画：写了默认主题包、没写的是 `None`（默认主题），别的交回编号。没写的在
+/// Linux 控制台里（`console`）照内置的纯 ASCII（todolist 63：控制台的字体画不了圆角框、盲文转圈这些）；写过的照写的。
+pub fn chosen(item: &Value, console: bool) -> Option<String> {
+    match item["value"].as_str() {
+        Some(id) if id == DEFAULT_PACKAGE => None,
+        Some(id) => Some(id.to_string()),
+        None => console.then(|| ASCII.to_string()),
+    }
+}
+
+/// `config.get` 回应里的一项是不是写过（来源不是出厂默认值）：没写的来源是 `default`，旧核心没给来源的也当没写。
+pub fn written(item: &Value) -> bool {
+    item["origin"]["layer"]
+        .as_str()
+        .is_some_and(|layer| layer != "default")
+}
+
+/// 这个 `TERM` 是不是 Linux 内核的控制台（tty）。
+pub fn console_term(term: Option<&str>) -> bool {
+    term == Some("linux")
+}
+
+/// 现在是不是在 Linux 控制台里跑：照 `TERM`；测试里一律不是（不受开发环境影响）。
+pub fn on_console() -> bool {
+    !cfg!(test) && console_term(std::env::var("TERM").ok().as_deref())
+}
+
 static CURRENT: LazyLock<RwLock<Arc<Sheet>>> = LazyLock::new(|| {
     let sheet = parse(&default_value()).unwrap_or_else(|e| panic!("默认主题读不懂：{e}"));
     RwLock::new(Arc::new(sheet))

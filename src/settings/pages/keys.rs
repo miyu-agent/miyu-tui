@@ -63,7 +63,7 @@ impl Settings {
                 self.more.origins = super::packages::origins(&got);
                 self.more.mcp_bundled = super::mcp::bundled(&got);
                 self.more.mascots = Some(super::mascots::read(&got));
-                self.more.looks = Some(super::mascots::looks(&got));
+                self.more.looks = Some(super::mascots::looks(&got, &texts.ascii_look));
             }
             (Waiting::PresetDetail(id), result) => {
                 let detail = result.map(|got| self.preset_detail(&got));

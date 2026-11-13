@@ -10,15 +10,27 @@ pub fn read(got: &Value) -> Vec<Persona> {
     of_kind(got, "mascot", None)
 }
 
-/// 主题包一行行（「主题」第 5 条）：默认主题包不列，第一行「默认主题」就是它。外观包可以只带网页的主题，没带终端主题的
-/// 不列（[`tui_file`]，2026-11-02 核心定的形状）。
-pub fn looks(got: &Value) -> Vec<Persona> {
+/// 主题一行行（「主题」第 5 条）：默认主题包不列，第一行「默认主题」就是它；接着是编进程序的纯 ASCII（`ascii` 是它照界面
+/// 语言的名字，todolist 63），一直在；再接装了的主题包。外观包可以只带网页的主题，没带终端主题的不列（[`tui_file`]，
+/// 2026-11-02 核心定的形状）；和内置编号重名的包不另列。
+pub fn looks(got: &Value, ascii: &str) -> Vec<Persona> {
     let mut list = of_kind(got, "theme", Some(crate::sheet::DEFAULT_PACKAGE));
     list.retain(|p| {
-        crate::core::live_packages(got)
-            .any(|item| item["package"] == p.id.as_str() && tui_file(item).is_some())
+        p.id != crate::sheet::ASCII
+            && crate::core::live_packages(got)
+                .any(|item| item["package"] == p.id.as_str() && tui_file(item).is_some())
     });
-    list
+    let builtin = Persona {
+        id: crate::sheet::ASCII.to_string(),
+        name: Some(ascii.to_string()),
+        summary: None,
+        problem: None,
+        avatar: None,
+        seed: None,
+        seeds: None,
+        tokens: None,
+    };
+    std::iter::once(builtin).chain(list).collect()
 }
 
 /// `package.list` 一项外观包里终端主题的文件：`theme.tui.file`；核心改形状以前的 `theme.file` 也认（过渡）。只带网页主题
@@ -65,18 +77,20 @@ mod tests {
         assert_eq!((list[0].id.as_str(), list[0].label()), ("pudding", "布丁"));
     }
 
+    /// 纯 ASCII 编进了程序（todolist 63）：没装任何主题包也列着，排在装了的前面；默认主题包不列（第一行「默认主题」就是它）。
     #[test]
-    fn theme_packages_are_listed_without_the_default_one() {
+    fn the_builtin_ascii_look_is_always_listed_before_installed_packages() {
         let got = json!({"packages": [
             {"package": "tui-theme-default", "kind": "theme", "name": "默认主题", "theme": {"file": "theme.json"}},
-            {"package": "tui-theme-ascii", "kind": "theme", "name": "纯 ASCII", "theme": {"file": "theme.json"}},
+            {"package": "night", "kind": "theme", "name": "夜", "theme": {"tui": {"file": "theme.json"}}},
             {"package": "pudding", "kind": "mascot", "name": "布丁"}
         ]});
-        let list = super::looks(&got);
-        assert_eq!(list.len(), 1, "默认主题包不列：第一行就是它");
+        let list = super::looks(&got, "纯 ASCII");
+        let rows: Vec<(&str, &str)> = list.iter().map(|p| (p.id.as_str(), p.label())).collect();
+        assert_eq!(rows, [("ascii", "纯 ASCII"), ("night", "夜")]);
         assert_eq!(
-            (list[0].id.as_str(), list[0].label()),
-            ("tui-theme-ascii", "纯 ASCII")
+            super::looks(&json!({"packages": []}), "Plain ASCII").len(),
+            1
         );
     }
 
@@ -88,7 +102,11 @@ mod tests {
              "covered": {"by": "home", "version": "1.0.0", "over": "1.1.0", "newer": false}},
             {"package": "night", "kind": "theme", "layer": "home", "theme": {"file": "t.json"}}
         ]});
-        assert_eq!(super::looks(&got).len(), 1);
+        assert_eq!(
+            super::looks(&got, "纯 ASCII").len(),
+            2,
+            "内置的一行加 night 一行"
+        );
     }
 
     /// 外观包（2026-11-02 核心定：`[theme.tui] file`、`[theme.web] dir`，带一样就行）：只带网页主题的不列；新形状
@@ -100,8 +118,11 @@ mod tests {
             {"package": "web-only", "kind": "theme", "name": "只有网页的", "theme": {"web": {"dir": "web"}}},
             {"package": "old", "kind": "theme", "name": "旧形状", "theme": {"file": "theme.json"}}
         ]});
-        let ids: Vec<String> = super::looks(&got).into_iter().map(|p| p.id).collect();
-        assert_eq!(ids, ["both", "old"]);
+        let ids: Vec<String> = super::looks(&got, "纯 ASCII")
+            .into_iter()
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(ids, ["ascii", "both", "old"]);
         assert_eq!(super::tui_file(&got["packages"][0]), Some("t.json"));
         assert_eq!(super::tui_file(&got["packages"][1]), None);
         assert_eq!(super::tui_file(&got["packages"][2]), Some("theme.json"));
