@@ -1,9 +1,8 @@
 //! 撤销、恢复的回应里给人看的几样（`docs/blueprint/protocol/undo.md`「回应」）。这几样由核心算，头照着写。
-//! 补发时没有回应，只有 `files.restored`：照它读出改回的每个文件，没有差异（蓝图 `tui.md`「正文」第 5 条）。
 
 use serde_json::Value;
 
-/// 改回的一个文件（回应的 `files`、`files.restored` 的 `files` 里的一项）。
+/// 改回的一个文件（回应的 `files` 里的一项）。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UndoFile {
     /// 真实的位置。

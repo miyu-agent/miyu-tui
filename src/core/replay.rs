@@ -69,19 +69,14 @@ impl Replay {
         out
     }
 
-    /// 撤销说明那一行（蓝图 `tui.md`「正文」第 5 条）：看着撤的照回应画，补发时没有回应，照事件画：撤销画一行、
-    /// 改回的文件接在它上面，恢复去掉它；重做的撤销后面跟着同一个编号重发的话，也去掉它（重做不留撤销说明）。
+    /// 撤销说明那一行（蓝图 `tui.md`「正文」第 5 条）：看着撤的照回应画，补发时没有回应，照事件画：撤销画一行，
+    /// 恢复去掉它（核心 U-1 起撤销不再改回文件，没有 `files.restored` 了）；重做的撤销后面跟着同一个编号重发的话，也去掉它（重做不留撤销说明）。
     fn undo_events(&mut self, event: &Value) -> Vec<Push> {
         let cause = event["cause"].as_str().map(str::to_string);
         match event["kind"].as_str().unwrap_or_default() {
             "turn.reverted" => {
                 self.undo_cause = cause;
                 vec![Push::UndoLine]
-            }
-            "files.restored" if cause.is_some() && cause == self.undo_cause => {
-                vec![Push::UndoFiles(super::UndoFile::read_all(
-                    &event["body"]["files"],
-                ))]
             }
             "turn.unreverted" => {
                 self.undo_cause = None;
