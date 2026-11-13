@@ -48,7 +48,7 @@ pub fn lines(
             content.push(Span::styled(aliases, theme::faint()));
         }
         content.push(Span::raw(pad));
-        content.push(Span::styled(spec.summary.clone(), summary_style));
+        content.push(Span::styled(spec.said().to_string(), summary_style));
         out.push(panel::item(picked, content, None, width));
     }
     (chrome, out)
