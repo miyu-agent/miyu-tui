@@ -397,6 +397,8 @@ impl App {
                         self.recent_clicked(at.y - areas.recent.y);
                     } else if areas.jumps.contains(at) {
                         self.jump_clicked(at.y - areas.jumps.y);
+                    } else if areas.files.contains(at) {
+                        self.files_clicked(at.y - areas.files.y);
                     }
                 } else {
                     let text = self.screen.side_select.text();
@@ -428,6 +430,7 @@ impl App {
             || over(self.screen.areas.todo)
             || over(self.screen.areas.recent)
             || over(self.screen.areas.jumps)
+            || over(self.screen.areas.files)
             || over(self.screen.areas.pinned)
             // 长期目标那一截字（点了开浮窗，`goal_box.rs`）。
             || over(self.screen.areas.goal_text)

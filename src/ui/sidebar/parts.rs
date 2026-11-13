@@ -179,7 +179,7 @@ pub struct Recent {
 
 impl Part<Side<'_, '_>> for Recent {
     fn name(&self) -> &'static str {
-        NAMES[7]
+        NAMES[8]
     }
 
     fn lay(&mut self, side: &Side, width: u16) -> Laid {
@@ -317,7 +317,17 @@ impl Part<Side<'_, '_>> for Jumps {
 }
 
 /// 这一处的几件，照出厂的先后。
-pub fn all() -> (Avatar, Session, Cwd, Context, Usage, Loops, Recent, Jumps) {
+pub fn all() -> (
+    Avatar,
+    Session,
+    Cwd,
+    Context,
+    Usage,
+    Loops,
+    Recent,
+    Jumps,
+    super::files::Files,
+) {
     (
         Avatar,
         Session::default(),
@@ -327,5 +337,6 @@ pub fn all() -> (Avatar, Session, Cwd, Context, Usage, Loops, Recent, Jumps) {
         Loops,
         Recent::default(),
         Jumps::default(),
+        super::files::Files::default(),
     )
 }

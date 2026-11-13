@@ -51,6 +51,8 @@ pub struct Areas {
     pub recent: Rect,
     /// 侧边栏「跳转消息」一行一句的那几行（不含标题）；没有时高是 0（排期第 15 条）。哪一行是哪一条在 `Screen::jumps`。
     pub jumps: Rect,
+    /// 侧边栏「文件修改」一行一个文件的那几行（不含标题，连「还有 N 个」）；哪一行是第几个文件在 `Screen::files`（check 9）。
+    pub files: Rect,
     /// 正文顶上钉着的那一行（排期第 16 条，`pinned.rs`）；没钉的是空的。
     pub pinned: Rect,
     /// 首页框下面那一行再下面（空一行）的工作目录；不在首页是空的（「空会话的首页」第 2 条）。

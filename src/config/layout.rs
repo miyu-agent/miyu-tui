@@ -39,6 +39,8 @@ pub struct Layout {
     pub sidebar_sessions: usize,
     /// 侧边栏「跳转消息」列几条，0 是不画（`tui.sidebar_jumps`，排期第 15 条）。
     pub sidebar_jumps: usize,
+    /// 侧边栏「文件修改」最多列几个文件，多的写「还有 N 个」（check 9，2026-11-13）。
+    pub sidebar_files: usize,
     /// 侧边栏挂哪几件、什么先后、最多几行（`tui.side`，「挂载位」第 2 条）；没配的照出厂。
     #[serde(default)]
     pub side: Vec<super::slots::Slot>,

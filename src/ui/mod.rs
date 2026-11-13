@@ -1,7 +1,5 @@
-//! 画一帧：上面是正文，下面是圆角的输入框，框下面一行是用量。
-//!
-//! 版式照网页的聊天输入框：框居中、跟着窗口变宽，正文和框一样宽；框里只有文字，
-//! 框下面一行左边是模式和模型，右边是临时的状态和用量。
+//! 画一帧：上面是正文，下面是圆角的输入框，框下面一行是用量。版式照网页的聊天输入框：框居中、跟着窗口变宽，正文和框
+//! 一样宽；框里只有文字，框下面一行左边是模式和模型，右边是临时的状态和用量。
 
 mod above;
 mod agents;
@@ -22,9 +20,11 @@ pub mod effort_list;
 pub mod export_box;
 pub mod feature_tree;
 mod figure_rows;
+pub mod files_page;
 mod floating;
 mod footer;
 mod foreign_rows;
+mod full_page;
 pub(crate) mod goal_box;
 pub(crate) mod goal_tag;
 pub mod help;
@@ -126,10 +126,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         settings::draw(frame, page, &app.config, &mut app.screen.caret);
         return;
     }
-    // 扩展的整页开着：整屏归它（「界面块」第 2 条）。
-    if let Some(view) = app.boxes.widget_page.clone() {
-        let (seen, screen, _) = app.parts();
-        widget::page(frame, &view, &seen, screen);
+    // 扩展的整页、「文件修改」那一页开着：整屏归它（「界面块」第 2 条，`full_page.rs`）。
+    if full_page::draw(frame, app) {
         return;
     }
     // 还在问 `ui.welcomed`：整屏空着，免得进引导前闪一下首页（「第一次打开的引导」第 1 条）。

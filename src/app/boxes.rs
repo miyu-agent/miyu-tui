@@ -26,6 +26,8 @@ pub struct Boxes {
     pub theme_box: Option<super::theme_box::ThemeBox>,
     /// 开着的扩展整页（蓝图「界面块」第 2 条）：开着时整屏归它，`Esc` 回去。
     pub widget_page: Option<crate::widgets::PageView>,
+    /// 开着的「文件修改」那一页（`files_page.rs`，check 9）：开着时整屏归它，`Esc` 回去。
+    pub files_page: Option<super::FilesPage>,
     /// 人格框、预设框里按 `e` 开的详情窗关了回哪个框、停哪一行（`pick_edit.rs`）。
     pub pick_back: Option<(super::new_session::Kind, usize)>,
     /// 框里按 `a` 新建成了的：下一回读到的列表里光标停在它上面（`pick_edit.rs`）。

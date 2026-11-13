@@ -19,9 +19,9 @@ pub struct Slot {
 }
 
 /// 侧边栏出厂的部件名，照出厂的先后（「挂载位」第 4 条，画在 `ui/sidebar/parts.rs`）：配置里没写到的照它接在后面。跳转消息在
-/// 最近会话上面（发版前 check 第 22 条，2026-11-09 项目主人）。
-pub const SIDE_PARTS: [&str; 8] = [
-    "avatar", "session", "cwd", "context", "usage", "loops", "jump", "recent",
+/// 最近会话上面（发版前 check 第 22 条，2026-11-09 项目主人）；文件修改接在跳转消息后面（发版前 check 9，2026-11-13）。
+pub const SIDE_PARTS: [&str; 9] = [
+    "avatar", "session", "cwd", "context", "usage", "loops", "jump", "files", "recent",
 ];
 
 /// 侧边栏那一项在终端软件包里的名字（`[settings.side]`）。

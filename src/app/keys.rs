@@ -373,6 +373,7 @@ impl App {
             Run::Workspace => self.workspace_command(words.unwrap_or_default()),
             Run::Sessions => self.open_sessions(),
             Run::Jump => self.open_jump(),
+            Run::Files => self.open_files(0),
             Run::Model => self.open_models(),
             Run::Persona => self.pick_command(super::new_session::Kind::Persona),
             Run::Preset => self.pick_command(super::new_session::Kind::Preset),

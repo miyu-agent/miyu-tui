@@ -17,6 +17,7 @@ use crate::core::Usage;
 use crate::side_select::TextRow;
 use crate::transcript::Transcript;
 
+pub mod files;
 mod parts;
 use crate::{meter, theme};
 
@@ -245,6 +246,8 @@ pub fn draw(
     screen.recent.clear();
     screen.areas.jumps = Rect::default();
     screen.jumps.clear();
+    screen.areas.files = Rect::default();
+    screen.files.clear();
     let body = Rect::new(area.x + 1, area.y + 1, inner, area.height.saturating_sub(1));
     let (
         mut avatar,
@@ -255,6 +258,7 @@ pub fn draw(
         mut loops,
         mut recent,
         mut jumps,
+        mut files,
     ) = parts::all();
     let top = screen.side_top;
     let stacked = {
@@ -263,7 +267,7 @@ pub fn draw(
             screen: &mut *screen,
             pet,
         };
-        let mut all: [&mut dyn Part<parts::Side>; 8] = [
+        let mut all: [&mut dyn Part<parts::Side>; 9] = [
             &mut avatar,
             &mut session,
             &mut cwd,
@@ -271,6 +275,7 @@ pub fn draw(
             &mut usage,
             &mut loops,
             &mut jumps,
+            &mut files,
             &mut recent,
         ];
         stack(
