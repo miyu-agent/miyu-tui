@@ -154,14 +154,14 @@ fn installing_says_where_from_which_capabilities_are_held_and_the_notice() {
     let got = planned(json!({"tool": "package", "install": "/home/alice/tarot", "preview": {
         "package": "tarot", "version": "1.0.0", "source": "community", "feed": "official",
         "capabilities": [{"id": "net", "name": "联网", "held": true}, {"id": "fs", "name": "读文件"}],
-        "notice": ["这个包没经过官方审核。"]}}))
+        "notice": ["这是个社区包，没有经过官方审核，可能存在风险。"]}}))
     .unwrap();
     assert_eq!(
         got.rows,
         [
             "来源：社区",
             "需要：联网（已批准）、读文件",
-            "注意：这个包没经过官方审核。"
+            "注意：这是个社区包，没有经过官方审核，可能存在风险。"
         ]
     );
     // 卸的时候只有设置项留下（核心 PK-5补）。

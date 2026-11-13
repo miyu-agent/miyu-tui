@@ -280,7 +280,7 @@ fn installing_says_where_from_what_it_needs_and_the_notice() {
     let preview = json!({"package": "tarot", "version": "1.0.0", "source": "community", "feed": "official",
         "capabilities": [{"id": "net", "name": "联网", "summary": "连外网", "held": true},
                          {"id": "fs.read", "name": "读文件", "summary": "读你的文件"}],
-        "notice": ["这个包没经过官方审核。", "它带的程序会以你的身份在这台机器上跑，不在沙盒里。"]});
+        "notice": ["这是个社区包，没有经过官方审核，可能存在风险。"]});
     let lines: Vec<String> =
         asking::lines(&store, &install, std::slice::from_ref(&preview), &words())
             .iter()
@@ -296,7 +296,7 @@ fn installing_says_where_from_what_it_needs_and_the_notice() {
     assert!(!lines[at].contains(':'), "第二行起不再写键：{lines:?}");
     assert_eq!(
         lines.last().map(String::as_str),
-        Some("注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。")
+        Some("注意：这是个社区包，没有经过官方审核，可能存在风险。")
     );
     let flow = crate::settings::pages::store::Flow::Confirm {
         doing: install,
