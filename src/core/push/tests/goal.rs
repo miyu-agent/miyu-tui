@@ -13,9 +13,9 @@ fn round(cause: &str) -> serde_json::Value {
 
 #[test]
 fn a_round_the_goal_opened_is_read_with_its_number() {
-    // 核心照 `goal-<第几轮>-<毫秒>` 造命令编号（`actor/goal.rs`）。
+    // 核心照 `goal-<第几轮>-<UUIDv7>` 造命令编号（`actor/goal.rs`；FX-2 以前后一段是毫秒）。
     assert_eq!(
-        read_mine(&round("goal-3-1760252400000")),
+        read_mine(&round("goal-3-019a7c2e-5b1f-7d3a-9c41-2e6f8a1b3c4d")),
         [Push::GoalRound {
             seq: 30,
             round: Some(3)
@@ -25,7 +25,13 @@ fn a_round_the_goal_opened_is_read_with_its_number() {
 
 #[test]
 fn a_round_whose_cause_reads_otherwise_has_no_number() {
-    for cause in ["goal-call_7", "goal-x-1", "goal-3", "web-3-1"] {
+    for cause in [
+        "goal-call_7",
+        "goal-x-1",
+        "goal-3",
+        "web-3-1",
+        "goal-3-1760252400000",
+    ] {
         assert_eq!(
             read_mine(&round(cause)),
             [Push::GoalRound {
