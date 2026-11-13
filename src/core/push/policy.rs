@@ -6,10 +6,9 @@ use serde_json::Value;
 use super::Push;
 use crate::core::kinds::Level;
 
-/// 读成几样：认不出的级别（新版本才有的）不画，照旧显示上一次的。
+/// 读成几样：没带权限的不改级别；认不出的级别照核心按只读画（AUD-4）。
 pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
-    let level = body["permission"]["level"].as_str().unwrap_or_default();
-    if let Some(level) = Level::parse(level) {
+    if let Some(level) = body["permission"]["level"].as_str().map(Level::parse) {
         let read_only = body["permission"]["read_only"] == true;
         out.push(Push::Policy { level, read_only });
     }

@@ -5,7 +5,7 @@ use super::{Command, Level, Update};
 
 #[test]
 fn switching_the_level_writes_only_what_changes() {
-    // 「权限级别」第 2 条：工作区、开放权限写常用的那一级、关掉只读；只读只开只读。
+    // 「权限级别」第 2 条：开放权限写常用的那一级、关掉只读；只读只开只读。
     let (method, params) = request(Command::Level(Level::Full), "s1").unwrap();
     assert_eq!(method, "session.set_permission_level");
     assert_eq!(
@@ -14,12 +14,10 @@ fn switching_the_level_writes_only_what_changes() {
     );
     let (_, params) = request(Command::Level(Level::ReadOnly), "s1").unwrap();
     assert_eq!(params, json!({"session": "s1", "read_only": true}));
-    // 不再发 `workspace`（LV-3）：旧的 `workspace` 读成完全放开。
-    assert_eq!(Level::parse("workspace"), Some(Level::Full));
-    assert_eq!(
-        serde_json::from_value::<Level>(json!("workspace")).unwrap(),
-        Level::Full
-    );
+    // 只有 `full` 是完全放开；以前的 `workspace` 和别的认不出的都照核心按只读算（AUD-4）。
+    assert_eq!(Level::parse("full"), Level::Full);
+    assert_eq!(Level::parse("workspace"), Level::ReadOnly);
+    assert!(serde_json::from_value::<Level>(json!("workspace")).is_err());
 }
 
 #[test]
