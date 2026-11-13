@@ -767,7 +767,7 @@
     "title": "配色",
     "hint": "↑/↓ 选择 · Enter 确定 · Esc 取消"
   },
-  "voice": {"codes": {"mic_busy": "麦克风正被占用", "no_microphone": "找不到麦克风", "bad_audio": "这段声音认不了", "too_long": "太长了，认不了", "not_configured": "语音还没配好", "no_speaker": "找不到音箱", "empty_text": "没有能念的字", "no_provider": "没有装语音软件包"}, "failed": "语音出错：{why}", "unclear": "没听清，再说一次", "nothing_to_read": "还没有回答可以朗读", "auto": ["自动朗读已打开", "自动朗读已关闭"], "auto_tag": "自动朗读"},
+  "voice": {"codes": {"mic_busy": "麦克风正被占用", "no_microphone": "找不到麦克风", "bad_audio": "这段声音认不了", "too_long": "太长了，认不了", "not_configured": "语音还没配好", "no_speaker": "找不到音箱", "empty_text": "没有能念的字", "no_provider": "没有装语音软件包", "silent_audio": "录到的全是静音：麦克风可能被静音、没插好，或者系统的默认输入没有声音"}, "failed": "语音出错：{why}", "unclear": "没听清，再说一次", "nothing_to_read": "还没有回答可以朗读", "auto": ["自动朗读已打开", "自动朗读已关闭"], "auto_tag": "自动朗读"},
   "export": {"title": "导出", "step_title": "导出 · {use}", "hints": ["↑/↓ 选择 · Enter 下一步 · Esc 关闭", "↑/↓ 选择 · Enter 确定 · Esc 返回"], "uses": ["完整存档", "用于给别的 agent 继续", "用于网页端聊天对话", "仅导出对话为 Markdown 文件"], "bundle_note": "ZIP · 只能存文件", "estimate": "{size} · 约 {tokens} tokens", "estimating": "估算中…", "too_big": "超过 512 KiB · 只能存文件", "actions": ["复制到剪贴板", "存成文件"], "copied": "已复制 · 约 {tokens} tokens", "saved": "已导出到 {path}（{size}）", "no_session": "还没有会话可以导出"},
   "languages": {
     "title": "界面语言",

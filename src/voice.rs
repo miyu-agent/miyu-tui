@@ -138,6 +138,8 @@ mod tests {
             data: json!({"code": code}),
         };
         assert_eq!(said(&refusal("mic_busy"), &texts), "麦克风正被占用");
+        // 语音包 VO-26：整段数字静音（2026-11-13 主人 1113 收听不到麦克风，查出是系统默认输入静音）
+        assert!(said(&refusal("silent_audio"), &texts).starts_with("录到的全是静音"));
         assert_eq!(
             said(&refusal("whatever"), &texts),
             texts.failed.replace("{why}", "engine said no")
