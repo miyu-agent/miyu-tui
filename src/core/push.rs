@@ -82,6 +82,8 @@ pub enum Push {
     },
     /// 会话起了名字（`session.meta_changed` 的 `title`）；`named`：是人起的（`by` 是人），不是内核自动起的。
     Title { title: String, named: bool },
+    /// 人要的重起标题没起成（`session.retitle_failed`，核心 TT-3）：给人看的那一句（`human`）、那一次的错。
+    RetitleFailed { said: Option<Said>, error: String },
     /// 一轮开始了，带着回合编号（那一条 `turn.started` 的序号）和开这一轮的那条消息的序号（`trigger`）。
     TurnStarted(u64, Option<u64>),
     /// 你说的一句落了盘（`message.user`，这个界面发的），带着它的序号。
@@ -360,6 +362,14 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
                 out.push(Push::Workspace(cwd.to_string()));
             }
         }
+        "session.retitle_failed" => out.push(Push::RetitleFailed {
+            said: serde_json::from_value(body["human"].clone()).ok(),
+            error: body["error"]["message"]
+                .as_str()
+                .unwrap_or_default()
+                .trim()
+                .to_string(),
+        }),
         "session.meta_changed" => {
             if let Some(title) = body["title"].as_str() {
                 // 人起的：`by` 是人（本机的人、外部身份），不是内核自动起的（核心 3-8 五补：「头分得出是谁起的：看 `by`」）。

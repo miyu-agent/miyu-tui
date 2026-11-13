@@ -23,7 +23,6 @@ impl Default for Transcript {
             read_only: false,
             title: None,
             named: false,
-            retitle_asked: false,
             level: Level::Full,
             total: Usage::default(),
             bill: Bill::default(),

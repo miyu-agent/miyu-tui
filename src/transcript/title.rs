@@ -3,11 +3,11 @@
 use super::Transcript;
 
 impl Transcript {
-    /// 推来新标题：去掉标题推来的是空的，读成没有标题。人起的（`by` 是人）照人起的；人打了不带字的 `/rename`、核心收下了
-    /// 以后内核推来的那一个也算人要的（2026-11-13 主人 1113 初验第 17 条：`/rename` 以后框线上没有新标题）。
+    /// 推来新标题：去掉标题推来的是空的，读成没有标题。人起的（`by` 是人）照人起的；不带字的 `/rename` 重起的，核心 TT-2
+    /// 起推来时 `by` 就是要它的人、会话列表里 `named` 为真（2026-11-13 主人 1113 初验第 17 条：`/rename` 以后框线上没有新标题；
+    /// 原来终端自己记一下「刚要过」顶着，重开会话就丢，核心改了以后去掉）。
     pub(super) fn titled(&mut self, title: String, named: bool) {
-        let asked = std::mem::take(&mut self.retitle_asked);
-        self.named = (named || asked) && !title.is_empty();
+        self.named = named && !title.is_empty();
         self.title = (!title.is_empty()).then_some(title);
     }
 }

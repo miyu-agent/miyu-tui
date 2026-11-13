@@ -365,6 +365,13 @@ impl App {
             self.hint(self.config.text.rename.retitling.clone(), false);
             return;
         }
+        // 不带字的 `/rename` 没起成（核心 TT-3）：说核心那一句，后面接那一次的错；标题不变。
+        if let Update::Push(crate::core::Push::RetitleFailed { said, error }) = &update {
+            let text = said.as_ref().and_then(|s| self.link.human.say(s));
+            let text = text.unwrap_or_else(|| self.config.text.rename.failed.clone());
+            let tail = (!error.is_empty()).then(|| format!("{}{error}", crate::sheet::sep()));
+            self.hint_keeping(text, tail.unwrap_or_default(), false);
+        }
         let undone = matches!(update, Update::Undone { restore: false, .. });
         if matches!(update, Update::Undone { restore: true, .. }) {
             self.typing.input.take_back();

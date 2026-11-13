@@ -229,6 +229,7 @@
   "rename": {
     "done": "已改名：{title}",
     "retitling": "正在重新起标题…",
+    "failed": "更改标题失败",
     "removed": "已清除标题",
     "too_long": "标题最多 {max} 个字"
   },

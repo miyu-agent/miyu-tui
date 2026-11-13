@@ -82,18 +82,18 @@ fn a_removed_title_reads_as_untitled() {
     assert!(!t.named);
 }
 
-/// 2026-11-13 主人 1113 初验第 17 条：不带字的 `/rename` 让核心重起标题，起好的推送 `by` 是内核（`named` 假），原来照自动起的
-/// 不写在框线上；人要的那一个照人起的写，之后内核自己再起的照旧不算。
+/// 2026-11-13 主人 1113 初验第 17 条：不带字的 `/rename` 重起的标题，核心 TT-2 起推来时 `by` 是要它的人（`named` 真），照人起的
+/// 写；内核自己起的（`named` 假）不写。终端原来自己记「刚要过」顶着，核心改了以后去掉。
 #[test]
-fn a_title_asked_for_with_rename_counts_as_named() {
+fn only_a_title_the_core_marks_as_named_goes_on_the_frame() {
     let mut t = Transcript::default();
-    let title = |title: &str| Push::Title {
+    let title = |title: &str, named: bool| Push::Title {
         title: title.into(),
-        named: false,
+        named,
     };
     t.update(Update::Retitling, &Config::builtin().unwrap().text);
-    apply(&mut t, vec![title("重起的标题")]);
-    assert!(t.named, "人要的");
-    apply(&mut t, vec![title("内核又起的")]);
-    assert!(!t.named, "只算要的那一次");
+    apply(&mut t, vec![title("内核自己起的", false)]);
+    assert!(!t.named, "要过重起不算数，照核心标的");
+    apply(&mut t, vec![title("重起的标题", true)]);
+    assert!(t.named);
 }
