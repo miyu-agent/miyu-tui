@@ -14,17 +14,10 @@ pub struct Composing {
 }
 
 impl App {
-    /// 按了 `Ctrl+G`：写临时文件，交给主循环开编辑器。编辑器照 `$VISUAL`、`$EDITOR`，都没有的用 `vi`；Windows 上
-    /// 没有（`editor.rs`）。
+    /// 按了 `Ctrl+G`：写临时文件，交给主循环开编辑器。编辑器照 `$VISUAL`、`$EDITOR`，都没有的用 `vi`，Windows 上用记事本
+    /// （`editor.rs`）。
     pub(super) fn compose(&mut self) {
-        let Some(editor) = self
-            .typing
-            .editor
-            .clone()
-            .or_else(|| cfg!(unix).then(|| "vi".to_string()))
-        else {
-            return;
-        };
+        let editor = crate::editor::or_default(self.typing.editor.clone());
         let before = self.typing.input.draft();
         let file = match crate::scratch::write("prompt", &before.text) {
             Ok(file) => file,
