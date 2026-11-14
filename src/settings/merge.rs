@@ -64,6 +64,10 @@ pub fn merge(data: &Data, draft: &Draft) -> Data {
         if let Some(strategy) = draft.value(&format!("{table}.strategy"), data) {
             pool.strategy = strategy.as_str().map(str::to_string);
         }
+        let subagent = draft.value(&format!("{table}.subagent"), data);
+        if let Some(on) = subagent.and_then(Value::as_bool) {
+            pool.subagent = on;
+        }
     }
     if draft.changed("models.chat") {
         view.chat = text(draft.value("models.chat", data));

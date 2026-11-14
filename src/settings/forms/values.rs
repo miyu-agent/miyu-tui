@@ -26,3 +26,14 @@ pub fn window_value(text: &str) -> Option<u64> {
     let n: f64 = digits.trim().parse().ok()?;
     (n > 0.0).then(|| (n * f64::from(times)).round() as u64)
 }
+
+/// 池的「子代理能选」那一格：照现在生效的停；新建的（`on` 是假）停在关（核心 Q-1：人建的池默认关）。
+pub fn subagent(on: bool) -> super::Row {
+    super::Row::new(
+        super::Field::Subagent,
+        super::Val::Choice {
+            options: ["on", "off"].map(str::to_string).to_vec(),
+            at: Some(usize::from(!on)),
+        },
+    )
+}

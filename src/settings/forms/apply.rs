@@ -274,6 +274,12 @@ fn pool(
     {
         draft.set(&format!("{table}.strategy"), json!(s), data);
     }
+    // 子代理能选：新建的照选的写进去（关的也写，核心 Q-1 人建的默认就是关），改的动过才写
+    if (new || form.moved(Field::Subagent))
+        && let Some(s) = form.choice(Field::Subagent)
+    {
+        draft.set(&format!("{table}.subagent"), json!(s == "on"), data);
+    }
     Ok(name)
 }
 

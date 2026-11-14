@@ -921,6 +921,7 @@
       "multiplier": "Multiplier",
       "pool": "Name",
       "strategy": "Strategy",
+      "subagent": "Subagents can pick it",
       "members": "Members"
     },
     "hints": {
