@@ -47,6 +47,11 @@ pub struct Look {
     /// 默认主题）。连上以后照常读包，改了、卸了再换。
     #[serde(default)]
     theme: Option<Value>,
+    /// 记下的那份主题包的编号：起来时照记下的 `tui.look` 认这一回该用哪个，是这个包的才照 `theme` 画。编进程序的（纯 ASCII）、
+    /// 默认主题都不记（2026-11-14 主人验收 check 13：在 tty 里自动换成纯 ASCII 记下了整份，回到桌面起来还照它画，
+    /// 连上以后配置说默认主题、和「画着的」对上了就不再换）。
+    #[serde(default)]
+    theme_id: Option<String>,
     /// 上一次起来进的是已有的会话（`ui.startup` 是 `recent`、有会话可进）：下次连上以前不照记下的列表开人格、预设框
     /// （`start_entered.rs`，2026-10-26 项目主人报：进最近那个会话还弹预设框）。
     #[serde(default)]
@@ -116,13 +121,15 @@ impl App {
         if let Some(language) = &look.language {
             self.language_from_config(language);
         }
-        // 主题先换上：`layout`、`timeline` 照它重读，下面终端自己的配置项再盖上去。
-        if let Some(theme) = &look.theme
-            && crate::sheet::set(theme).is_ok()
-            && self.config.retheme(theme).is_err()
-        {
-            drop(crate::sheet::set(&crate::sheet::default_value()));
-        }
+        // 主题先换上：照记下的 `tui.look` 认这一回用哪个（Linux 控制台里没写过的是内置的纯 ASCII，别处是默认主题），
+        // `layout`、`timeline` 照它重读，下面终端自己的配置项再盖上去（`theme_pick.rs` 的 `restore_theme`）。
+        let item = look
+            .items
+            .get(crate::settings::pages::LOOK)
+            .cloned()
+            .unwrap_or_default();
+        let id = crate::sheet::chosen(&item, crate::sheet::on_console());
+        self.restore_theme(id, look.theme_id.as_deref().zip(look.theme.as_ref()));
         let items = Value::Object(look.items.clone());
         self.apply_head_settings(&json!({ "items": items }));
         // 走过引导的：首页不等问 `ui.welcomed`，当场画（问到了没走过的照常进引导）。
@@ -196,10 +203,18 @@ impl App {
         }
     }
 
-    /// 换了主题：记下整份（默认主题是 `None`）。
-    pub(super) fn note_theme(&mut self, theme: Option<&Value>) {
-        if self.link.look.theme.as_ref() != theme {
-            self.link.look.theme = theme.cloned();
+    /// 换了主题：主题包记下编号和整份；默认主题（`id` 是 `None`）、编进程序的不记。
+    pub(super) fn note_theme(&mut self, id: Option<&str>, theme: &Value) {
+        let (id, theme) = match id {
+            Some(id) if !crate::sheet::is_builtin(id) => {
+                (Some(id.to_string()), Some(theme.clone()))
+            }
+            _ => (None, None),
+        };
+        let look = &mut self.link.look;
+        if look.theme_id != id || look.theme != theme {
+            look.theme_id = id;
+            look.theme = theme;
             self.save_look();
         }
     }

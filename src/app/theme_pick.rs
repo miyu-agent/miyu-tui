@@ -116,7 +116,7 @@ impl App {
         if applied.is_err() {
             return self.look_failed();
         }
-        self.note_theme(id.is_some().then_some(whole));
+        self.note_theme(id.as_deref(), whole);
         self.media.theme_pick.shown = id;
         let items = Value::Object(self.link.look.items.clone());
         self.apply_layout_settings(&json!({ "items": items }));
@@ -133,6 +133,28 @@ impl App {
         self.hint(text, false);
     }
 
+    /// 起来时、连上以前照记下的换主题（`look.rs` 的 `restore_look`）：`id` 是记下的配置项这一回该用的那个，`cached` 是记下的
+    /// 主题包（编号和整份）。编进程序的照程序里的，主题包得是记下的那一个；换上了的记成画着的，连上以后配置说的和它不一样再换
+    /// （check 13：原来记下的整份不管是谁都照画，画着的却还当默认主题，配置说默认主题时就不换回来）。
+    pub(super) fn restore_theme(&mut self, id: Option<String>, cached: Option<(&str, &Value)>) {
+        let Some(id) = id else {
+            return;
+        };
+        let whole = crate::sheet::builtin(&id).or_else(|| {
+            cached
+                .filter(|(cached, _)| *cached == id)
+                .map(|(_, whole)| whole.clone())
+        });
+        let Some(whole) = whole else {
+            return;
+        };
+        if crate::sheet::set(&whole).is_ok() && self.config.retheme(&whole).is_ok() {
+            self.media.theme_pick.shown = Some(id);
+        } else {
+            drop(crate::sheet::set(&crate::sheet::default_value()));
+        }
+    }
+
     /// 读不成：照默认主题画，弹一句。
     fn look_failed(&mut self) {
         self.media.theme_pick.loading = None;
@@ -143,7 +165,7 @@ impl App {
             let items = Value::Object(self.link.look.items.clone());
             self.apply_layout_settings(&json!({ "items": items }));
         }
-        self.note_theme(None);
+        self.note_theme(None, &default);
         let text = self.config.text.look_failed.clone();
         self.hint(text, false);
     }
