@@ -164,7 +164,7 @@ fn loop_from_the_core_is_listed_and_taken_by_the_core() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
     tui.type_text("/lo");
-    tui.wait_for("/loop [<间隔>] <要说的话> | off");
+    tui.wait_for("/loop [[<间隔>] <要说的话> | off]");
     tui.key(b"\x7f\x7f\x7f");
     let start = tui.record_from_here();
     tui.say("/loop 10m 看一眼 CI");
@@ -189,10 +189,11 @@ fn loop_with_bad_arguments_is_only_told_and_not_put_back() {
     tui.say("在吗");
     tui.wait_for("在。");
     tui.type_text("/lo");
-    tui.wait_for("/loop [<间隔>] <要说的话> | off");
+    tui.wait_for("/loop [[<间隔>] <要说的话> | off]");
     tui.key(b"\x7f\x7f\x7f");
     tui.say("/loop 10m");
-    tui.wait_for("参数错误");
+    // 核心的原话（照它写好的用法，一行一种写法）
+    tui.wait_for("参数不对");
     tui.pump(Duration::from_millis(300));
     assert!(!tui.input().contains("/loop"), "不放回：{}", tui.input());
 }

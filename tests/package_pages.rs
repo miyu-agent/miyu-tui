@@ -84,7 +84,7 @@ fn the_web_search_keys_live_on_the_web_search_page() {
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     installed(&mut tui);
     enter(&mut tui, "联网搜索");
-    tui.wait_for("搜索服务供应商");
+    tui.wait_for("联网服务");
     tui.wait_for("API Key 和地址");
     tui.key(b"\x1b");
     tui.wait_for("全部升级");
