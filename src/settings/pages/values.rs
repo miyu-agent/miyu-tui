@@ -40,7 +40,7 @@ pub fn is_named(key: &str) -> bool {
 /// 列表用顿号连（私密目录两项只写个数）。
 pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Texts) -> String {
     // 记录列表写各条的标题（第 47b 条）。
-    if let Some(titles) = super::records::summary(item, value, &texts.records) {
+    if let Some(titles) = super::records::summary(item, value, &texts.records, &texts.list_sep) {
         return titles;
     }
     if let (Some(list), Some(id)) = (named, value.as_str())
@@ -61,7 +61,7 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
                     .map_or_else(|| id.to_string(), |p| p.label().to_string())
             })
             .collect::<Vec<_>>()
-            .join("、");
+            .join(&texts.list_sep);
     }
     // 选着的吉祥物包、主题包卸掉了：编号后面写没装（「吉祥物包」第 3 条、「主题」第 5 条）。
     if (item.key == MASCOT || item.key == LOOK)
@@ -121,7 +121,7 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
             .iter()
             .map(|v| v.as_str().map_or_else(|| v.to_string(), str::to_string))
             .collect::<Vec<_>>()
-            .join("、"),
+            .join(&texts.list_sep),
         (_, other) => other.to_string(),
     }
 }

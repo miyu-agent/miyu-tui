@@ -119,6 +119,10 @@ fn draw_list(
             Paragraph::new(super::sidebar::files::row(&files[i], area.width)),
             row,
         );
+        // 行首两格是空白，箭头（没有颜色可靠的，check 13 ②）在字后面再写一遍
+        if i == selected && crate::theme::arrows() {
+            super::floating::bar(frame, row);
+        }
     }
     out.list = Rect::new(
         area.x,

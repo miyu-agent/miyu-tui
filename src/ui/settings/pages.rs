@@ -91,7 +91,7 @@ fn entry_words(page: &Settings, entry: &Entry, texts: &Texts) -> (String, String
                 .unwrap_or(id)
                 .to_string();
             let note = schema
-                .map(|s| s.group_names(id).join("、"))
+                .map(|s| s.group_names(id).join(&texts.more.list_sep))
                 .unwrap_or_default();
             (name, note)
         }
