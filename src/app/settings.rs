@@ -143,17 +143,13 @@ impl App {
         let Some(text) = page.take_prompt() else {
             return;
         };
-        let editor = self
-            .typing
-            .editor
-            .clone()
-            .or_else(|| cfg!(unix).then(|| "vi".to_string()));
-        match editor.map(|e| (e, crate::scratch::write("persona", &text))) {
-            Some((editor, Ok(file))) => {
+        let editor = crate::editor::or_default(self.typing.editor.clone());
+        match crate::scratch::write("persona", &text) {
+            Ok(file) => {
                 self.boxes.settings_prompt = Some(file.clone());
                 self.typing.edit = Some((editor, file));
             }
-            _ => page.prompt_edited(None),
+            Err(_) => page.prompt_edited(None),
         }
     }
 
