@@ -386,3 +386,16 @@ fn windows_tells_the_powershell_from_its_own_module_folder() {
         Some(Shell::Pwsh)
     );
 }
+
+/// 英文用法写全认得的几种 shell，和中文报错一样五种（2026-11-15 三平台摸底：原来只写 fish、bash、zsh）。
+#[test]
+fn the_usage_names_every_shell_it_takes() {
+    for name in ["fish", "bash", "zsh", "pwsh", "powershell"] {
+        assert!(Shell::named(name).is_some(), "{name}");
+        assert!(
+            super::USAGE.contains(&format!("|{name}"))
+                || super::USAGE.contains(&format!("<{name}|")),
+            "用法里没写 {name}"
+        );
+    }
+}
