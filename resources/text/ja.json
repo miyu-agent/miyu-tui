@@ -922,7 +922,9 @@
       "pool": "名前",
       "strategy": "呼び出し方",
       "subagent": "サブエージェントが選べる",
-      "members": "メンバー"
+      "members": "メンバー",
+      "chosen": "選択済み {n}",
+      "others": "未選択"
     },
     "hints": {
       "id": "lowercase first; letters, digits, - and _",

@@ -922,7 +922,9 @@
       "pool": "Name",
       "strategy": "Strategy",
       "subagent": "Subagents can pick it",
-      "members": "Members"
+      "members": "Members",
+      "chosen": "Selected {n}",
+      "others": "Not selected"
     },
     "hints": {
       "id": "lowercase first; letters, digits, - and _",

@@ -365,3 +365,55 @@ fn a_pool_sets_whether_subagents_can_pick_it() {
         Some(&json!(false))
     );
 }
+
+/// 2026-11-14 主人报：要取消一个成员得在整张模型列表里找它。已选的照池里的先后在前，「已选」「未选」两行暗字隔开；没有已选的不写。
+#[test]
+fn chosen_members_come_first_then_the_rest() {
+    let data = sample();
+    let form = pool(&data, Some("daily"));
+    let order: Vec<String> = form
+        .rows
+        .iter()
+        .filter_map(|r| match (&r.field, &r.val) {
+            (Field::Chosen, _) => Some("[chosen]".to_string()),
+            (Field::Others, _) => Some("[others]".to_string()),
+            (_, Val::Member { reference, .. }) => Some(reference.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        order[..4],
+        [
+            "[chosen]",
+            "dev/flash",
+            "relay/cline/deepseek-v4",
+            "[others]"
+        ]
+    );
+    assert!(
+        !order[4..]
+            .iter()
+            .any(|r| r == "dev/flash" || r.starts_with('[')),
+        "{order:?}"
+    );
+    let empty = pool(&data, Some("empty"));
+    assert!(
+        !empty
+            .rows
+            .iter()
+            .any(|r| matches!(r.field, Field::Chosen | Field::Others)),
+        "空池不写两行暗字"
+    );
+}
+
+/// 筛的时候哪一段一行都对不上，连它的暗字一起不写。
+#[test]
+fn a_group_label_hides_with_its_members_while_searching() {
+    let data = sample();
+    let mut form = pool(&data, Some("daily"));
+    form.search.0 = "glm".into();
+    let shown =
+        |field: Field| (0..form.rows.len()).any(|i| form.rows[i].field == field && form.shows(i));
+    assert!(!shown(Field::Chosen), "已选里没有 glm");
+    assert!(shown(Field::Others), "未选里有 glm-5v");
+}

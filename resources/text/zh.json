@@ -922,7 +922,9 @@
       "pool": "名称",
       "strategy": "调用方式",
       "subagent": "子代理能选",
-      "members": "成员"
+      "members": "成员",
+      "chosen": "已选 {n}",
+      "others": "未选"
     },
     "hints": {
       "id": "小写字母开头，字母、数字、-、_",
