@@ -73,7 +73,9 @@ pub fn spawn_waiting(
     plain: Vec<String>,
     (clicked, session): (Clicked, String),
 ) {
-    super::system::guard(&program);
+    if !super::system::guard(&program) {
+        return;
+    }
     std::thread::spawn(move || {
         let child = Command::new(&program)
             .args(&args)

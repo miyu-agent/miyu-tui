@@ -28,6 +28,17 @@
       [
         "afplay"
       ]
+    ],
+    "windows": [
+      [
+        "powershell",
+        "-NoProfile",
+        "-NonInteractive",
+        "-WindowStyle",
+        "Hidden",
+        "-Command",
+        "(New-Object Media.SoundPlayer '{file}').PlaySync()"
+      ]
     ]
   }
 }

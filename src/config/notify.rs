@@ -26,6 +26,9 @@ pub struct Players {
     pub linux: Vec<Vec<String>>,
     /// macOS 上的。
     pub macos: Vec<Vec<String>>,
+    /// Windows 上的（2026-11-15 三平台摸底：原来照 Linux 那份，一个都没有，不响）。参数里写 `{file}` 的那一格换成音的文件。
+    #[serde(default)]
+    pub windows: Vec<Vec<String>>,
 }
 
 impl Players {
@@ -33,6 +36,8 @@ impl Players {
     pub fn here(&self) -> &[Vec<String>] {
         if cfg!(target_os = "macos") {
             &self.macos
+        } else if cfg!(windows) {
+            &self.windows
         } else {
             &self.linux
         }

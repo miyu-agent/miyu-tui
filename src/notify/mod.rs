@@ -301,7 +301,8 @@ impl Notifier {
                 let picture = icon();
                 let (program, plain) =
                     system::command(&self.look.app, title, body, picture.as_deref());
-                match session.filter(|_| !cfg!(target_os = "macos")) {
+                // 点了打开会话只有 `notify-send` 的 `--action` 等得到（macOS 的 osascript、Windows 的 Toast 都等不到点）
+                match session.filter(|_| cfg!(all(unix, not(target_os = "macos")))) {
                     Some(session) => {
                         let mut args = click::action_args(&self.texts.open).to_vec();
                         args.extend(plain.iter().cloned());
