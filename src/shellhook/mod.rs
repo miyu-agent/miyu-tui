@@ -29,15 +29,15 @@ pub const USAGE: &str = "Usage: miyu shellhook <command> [options]
 Talk to Miyu from your shell: type a sentence at the prompt and press Enter.
 
 Commands:
-  install [--shell <fish|bash|zsh>] [--program <path>]
+  install [--shell <fish|bash|zsh|pwsh|powershell>] [--program <path>]
                  hook into the shell (detected from the parent process unless --shell is given)
-  uninstall [--shell <fish|bash|zsh>]
+  uninstall [--shell <fish|bash|zsh|pwsh|powershell>]
                  remove the hook
   status         show which shells have the hook
   doctor         check the hook, the core, the terminal's colors and the clipboard
 
 Options:
-  --shell <name>     fish, bash or zsh
+  --shell <name>     fish, bash, zsh, pwsh (PowerShell 7) or powershell (Windows PowerShell 5.1)
   --program <path>   the program the hook calls (default: the `miyu` next to this program)
   -h, --help         print this help";
 
