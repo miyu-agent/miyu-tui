@@ -32,6 +32,8 @@ pub struct Lines<H> {
     /// 窗里从第几行露起：画之前填上一帧的，画完是这一帧的（叫的人记着，下一帧再交回来）。选中的碰到上下边才挪（`menu::edge`，
     /// 2026-10-27 项目主人：往下滚到底以后往回一下就整页往上翻，要碰到上边才翻）。
     pub top: usize,
+    /// 前几行钉在窗顶不滚（池的窗到搜索框为止，2026-11-14 主人）；`top` 只管后面那一段。0 是整个一起滚。
+    pub fixed: usize,
 }
 
 impl<H> Default for Lines<H> {
@@ -47,6 +49,7 @@ impl<H> Default for Lines<H> {
             caret: None,
             focus: None,
             top: 0,
+            fixed: 0,
         }
     }
 }
@@ -200,14 +203,27 @@ fn paint<H: Copy>(
         .focus
         .or_else(|| lines.body.iter().position(|b| b.focused))
         .unwrap_or(0);
-    let top = crate::menu::edge(focus, None, lines.top, lines.body.len(), room);
-    let top = if lines.caret.is_some_and(|(row, _)| row == 0) {
+    // 钉在顶上的几行（`fixed`）：后面那一段至少露三行，窗太矮时钉住的先让出来、跟着滚
+    let fixed = lines
+        .fixed
+        .min(lines.body.len())
+        .min(room.saturating_sub(3));
+    let scroll = room - fixed;
+    let rest = lines.body.len() - fixed;
+    let top = if focus >= fixed {
+        crate::menu::edge(focus - fixed, None, lines.top, rest, scroll)
+    } else {
+        lines.top.min(rest.saturating_sub(scroll))
+    };
+    let top = if fixed == 0 && lines.caret.is_some_and(|(row, _)| row == 0) {
         0
     } else {
         top
     };
     lines.top = top;
-    for (offset, body) in lines.body.iter().skip(top).take(room).enumerate() {
+    let shown = (0..fixed).chain(fixed + top..(fixed + top + scroll).min(lines.body.len()));
+    for (offset, at) in shown.enumerate() {
+        let body = &lines.body[at];
         let y = inner.y + 2 + offset as u16;
         let row = Rect::new(inner.x, y, inner.width, 1);
         if body.focused {
@@ -223,8 +239,8 @@ fn paint<H: Copy>(
         if let Some(hit) = body.hit {
             hits.push((row, hit));
         }
-        if let Some((at, x)) = lines.caret
-            && at == top + offset
+        if let Some((caret_at, x)) = lines.caret
+            && caret_at == at
         {
             caret.put(
                 Position::new((row.x + x).min(row.right().saturating_sub(1)), y),
