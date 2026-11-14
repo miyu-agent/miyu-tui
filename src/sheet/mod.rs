@@ -27,9 +27,14 @@ pub const ASCII: &str = "ascii";
 /// 纯 ASCII 主题：只写了和默认主题不一样的那几格，编进程序里。
 const ASCII_PACK: &str = include_str!("../../resources/looks/ascii.json");
 
+/// 这个编号是不是编进程序的主题（现在只有 [`ASCII`]）。
+pub fn is_builtin(id: &str) -> bool {
+    id == ASCII
+}
+
 /// 编进程序的主题（现在只有 [`ASCII`]）盖在默认主题上的整份；不是内置编号的是 `None`。
 pub fn builtin(id: &str) -> Option<Value> {
-    (id == ASCII).then(|| {
+    is_builtin(id).then(|| {
         let pack =
             serde_json::from_str(ASCII_PACK).unwrap_or_else(|e| panic!("纯 ASCII 主题读不懂：{e}"));
         merged(&pack)

@@ -110,3 +110,24 @@ fn the_linux_console_draws_plain_ascii_unless_a_theme_was_chosen() {
         tui.lines().join("\n")
     );
 }
+
+/// check 13（2026-11-14 主人验收）：在 Linux 控制台里起过一次（自动换成纯 ASCII），回到桌面的终端再起，照配置的默认主题画。
+/// 原来自动换的整份记进了先画后连的缓存，桌面上起来第一帧照它画，连上以后配置说默认主题、和「画着的」对上了就不再换。
+#[test]
+fn the_desktop_after_the_linux_console_draws_the_default_theme() {
+    let home = Home::new(Script::new([]));
+    {
+        let mut console = home.tui_with("zh_CN.UTF-8", &[("TERM", "linux"), ("COLORTERM", "")]);
+        console.wait_for("开放权限");
+        wait_ascii(&mut console);
+        console.pump(Duration::from_millis(300));
+    }
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("开放权限");
+    tui.pump(Duration::from_millis(800));
+    assert!(
+        tui.shows("╭") && tui.shows("❯"),
+        "桌面上照默认主题画：\n{}",
+        tui.lines().join("\n")
+    );
+}
