@@ -53,6 +53,8 @@ pub enum Field {
     Multiplier,
     Pool,
     Strategy,
+    /// 池的「子代理能选」（`pools.<名字>.subagent`，2026-11-14 主人报新建池时设不了）。
+    Subagent,
     Members,
     Member,
 }
@@ -81,6 +83,7 @@ impl Field {
             Field::Multiplier => "multiplier",
             Field::Pool => "pool",
             Field::Strategy => "strategy",
+            Field::Subagent => "subagent",
             Field::Members => "members",
             Field::Member => "member",
         }
@@ -465,6 +468,7 @@ pub fn pool(view: &Data, name: Option<&str>) -> Form {
                 at,
             },
         ),
+        values::subagent(pool.is_some_and(|p| p.subagent)),
         Row::new(Field::Members, Val::Section),
     ];
     for gone in members.iter().filter(|r| view.model(r).is_none()) {

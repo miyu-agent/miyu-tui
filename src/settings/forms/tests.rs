@@ -328,3 +328,40 @@ fn slash_filters_the_pool_members_and_esc_clears_before_closing() {
     assert_eq!(shown(&form), all, "都回来了");
     assert!(matches!(press(&mut form, KeyCode::Esc), FormAction::Close));
 }
+
+/// 选第 `at` 个（`Val::Choice`）。
+fn choose(form: &mut super::Form, field: Field, at: usize) {
+    let row = form.rows.iter_mut().find(|r| r.field == field).unwrap();
+    if let Val::Choice { at: chosen, .. } = &mut row.val {
+        *chosen = Some(at);
+    }
+}
+
+#[test]
+fn a_pool_sets_whether_subagents_can_pick_it() {
+    // 2026-11-14 主人报：新建模型池的时候没法设置子代理可选。人建的默认关（核心 Q-1），新建时照选的写进去。
+    let mut data = sample();
+    let mut draft = Draft::default();
+    let mut form = pool(&data, None);
+    assert_eq!(form.choice(Field::Subagent), Some("off"), "新建的默认关");
+    set_text(&mut form, Field::Pool, "helpers");
+    choose(&mut form, Field::Subagent, 0);
+    apply(&form, &data, &data, &mut draft).unwrap();
+    assert_eq!(
+        draft.value("pools.helpers.subagent", &data),
+        Some(&json!(true))
+    );
+    // 改的：照现在生效的停，动过才写。
+    data.pools[0].subagent = true;
+    let mut draft = Draft::default();
+    let mut form = pool(&data, Some("daily"));
+    assert_eq!(form.choice(Field::Subagent), Some("on"));
+    apply(&form, &data, &data, &mut draft).unwrap();
+    assert!(!draft.changed("pools.daily.subagent"), "没动不写");
+    choose(&mut form, Field::Subagent, 1);
+    apply(&form, &data, &data, &mut draft).unwrap();
+    assert_eq!(
+        draft.value("pools.daily.subagent", &data),
+        Some(&json!(false))
+    );
+}

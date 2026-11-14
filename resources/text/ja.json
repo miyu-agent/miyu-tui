@@ -921,6 +921,7 @@
       "multiplier": "倍率",
       "pool": "名前",
       "strategy": "呼び出し方",
+      "subagent": "サブエージェントが選べる",
       "members": "メンバー"
     },
     "hints": {

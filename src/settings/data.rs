@@ -71,6 +71,8 @@ pub struct Pool {
     pub members: Vec<String>,
     /// 固定的池（`lite`、`normal`、`flagship`，核心 Q-1）：一直在，不能删。
     pub fixed: bool,
+    /// 子代理能选（`pools.<名字>.subagent`，核心 Q-1：固定的三个默认开，人建的默认关）：`model.list` 给的生效的值。
+    pub subagent: bool,
     /// 走这一档的旁路请求的名字（`model.list` 的 `side`，核心 Q-2：起标题走轻量、整理记忆走日常），照连接的语言；扩展包登记的
     /// 带上包的编号（`side` 的 `package`，发版前 check 29；出厂的、旧核心没给的是 `None`）。
     pub uses: Vec<(String, Option<String>)>,
@@ -260,6 +262,7 @@ fn pool(p: &Value) -> Pool {
         strategy: p["strategy"].as_str().map(str::to_string),
         members: strings(&p["models"]),
         fixed: p["fixed"] == true,
+        subagent: p["subagent"] == true,
         uses: Vec::new(),
     }
 }
