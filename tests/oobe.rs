@@ -147,9 +147,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.type_text("说话简短。");
     tui.key(b"\x1b");
     tui.wait_for("说话简短。");
-    // 推演人生那一格不开，挪到「下一步」
-    tui.key(b"\x1b[B");
-    tui.key(b"\x1b[B");
+    tui.key(b"\x1b[B\x1b[B"); // 推演人生那一格不开，挪到「下一步」
     tui.key(b"\r");
     // 建好、写成默认人格，到了主题（第 22a 条）：停在出厂的「自动」（2026-11-02 项目主人）；明暗那一格回车开列表（2026-10-14 项目主人：
     // 和配置页选值的同一个），挪到哪当场换成哪的底；选好深色，挪到「下一步」写下。
