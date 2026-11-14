@@ -482,5 +482,6 @@ pub(super) fn ran(result: &Value) -> Update {
     Update::CommandRan {
         command: text("command"),
         said: text("said"),
+        session: result["session"].as_str().map(str::to_string),
     }
 }

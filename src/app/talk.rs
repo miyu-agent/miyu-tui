@@ -83,13 +83,21 @@ impl Talk {
 
     /// 正在看的会话是导进来的只读存档（照会话列表里那一项的 `archived`，排期第 38 条）。
     pub fn archived(&self) -> bool {
-        let Some(session) = self.transcript.session.as_deref() else {
-            return false;
-        };
+        self.viewing_info().is_some_and(|s| s.archived)
+    }
+
+    /// 正在看的会话是结束了的人生会话（会话列表那一项的 `life_ended`，「推演人生」第 3 条）：封存了，只能看。
+    pub fn life_ended(&self) -> bool {
+        self.viewing_info().is_some_and(|s| s.life_ended)
+    }
+
+    /// 会话列表里正在看的那一项。
+    fn viewing_info(&self) -> Option<&crate::core::SessionInfo> {
+        let session = self.transcript.session.as_deref()?;
         self.sessions_seen
             .iter()
             .flatten()
-            .any(|s| s.archived && s.session == session)
+            .find(|s| s.session == session)
     }
 
     /// 正在看的子会话的子代理叫什么（输入框右上角写，「切进子会话」第 2 条）；看着主会话是 `None`。

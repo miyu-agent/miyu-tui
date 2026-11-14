@@ -14,8 +14,8 @@ use crate::core::Refusal;
 use crate::settings::popup::{Delete, Popup};
 use crate::settings::{Settings, Texts, Tone, Waiting};
 
-/// 交给编辑器的两份提示词的名字：人设、角色扮演提示。
-pub const PROMPTS: [&str; 2] = ["persona", "reminders"];
+/// 交给编辑器的几份提示词的名字：人设、角色扮演提示、推演方法（「推演人生」第 2 条，推演人生开着才露出来）。
+pub const PROMPTS: [&str; 3] = ["persona", "reminders", "life"];
 
 /// 改人格的字（`text/zh.json` 的 `settings.more.persona_edit`）。
 #[derive(Debug, Clone, Deserialize)]
@@ -37,6 +37,8 @@ pub struct EditTexts {
     pub conflict: String,
     /// 读原文的时候。
     pub reading: String,
+    /// 推演人生那一行、推演方法（「推演人生」第 2 条）。
+    pub life: super::life::LifeTexts,
 }
 
 /// 人格的窗里能改的一行，照画的先后。
@@ -54,10 +56,15 @@ pub enum Field {
     Prompt(usize),
     /// 示范对话：开一对一对的列表。
     Examples,
+    /// 推演人生的开关（「推演人生」第 2 条）。
+    Life,
+    /// 人生会话的上下文上限（`life.context`，核心 LF-10）：开编辑窗填一个数，空着回到出厂的。
+    LifeContext,
 }
 
-/// 人格的窗里的七行：名字、简单描述、子代理可选、头像、具体人格提示词、示范对话、人设提醒短语。
-pub const FIELDS: [Field; 7] = [
+/// 人格的窗里的十行：名字、简单描述、子代理可选、头像、具体人格提示词、示范对话、人设提醒短语、推演人生，推演方法、人生
+/// 会话的上下文上限（推演人生开着才有，[`fields`]）。
+pub const FIELDS: [Field; 10] = [
     Field::Name,
     Field::Summary,
     Field::Subagent,
@@ -65,7 +72,15 @@ pub const FIELDS: [Field; 7] = [
     Field::Prompt(0),
     Field::Examples,
     Field::Prompt(1),
+    Field::Life,
+    Field::Prompt(2),
+    Field::LifeContext,
 ];
+
+/// 窗里这一刻有的几行：推演人生开着（在跑）的才露出推演方法（2026-11-14 项目主人定：开关打开以后才露出来）。
+pub fn fields(life_on: bool) -> &'static [Field] {
+    if life_on { &FIELDS } else { &FIELDS[..8] }
+}
 
 /// 交给编辑器的一份提示词：哪个人格、哪一份、读来时的原文和版本、回来以后回到的人格的窗。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -98,7 +113,8 @@ impl Settings {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => return,
             KeyCode::Char('j') | KeyCode::Down => {
-                view.cursor = (view.cursor + 1).min(FIELDS.len() - 1);
+                let rows = fields(self.life_on(&view.id)).len();
+                view.cursor = (view.cursor + 1).min(rows - 1);
             }
             KeyCode::Char('k') | KeyCode::Up => view.cursor = view.cursor.saturating_sub(1),
             KeyCode::Char('d') => return self.ask_delete_persona(&view.id, texts),
@@ -114,8 +130,16 @@ impl Settings {
         let Some(detail) = view.detail.clone() else {
             return;
         };
-        let popup = match FIELDS[view.cursor.min(FIELDS.len() - 1)] {
+        let rows = fields(self.life_on(&view.id));
+        let popup = match rows[view.cursor.min(rows.len() - 1)] {
             Field::Avatar => return self.edit_avatar(view, texts),
+            Field::Life => return self.toggle_life(view, texts),
+            Field::LifeContext => {
+                let current = detail.life_context.0.map_or(Value::Null, Value::from);
+                let title = &words.persona_edit.life.context;
+                let edit = LineEdit::open("life.context", title, true, &current);
+                Popup::Line(edit.to(Target::Persona(Box::new(view))))
+            }
             Field::Name => {
                 let current = detail.name.map_or(Value::Null, Value::String);
                 let edit = LineEdit::open("persona.name", &words.detail[0], false, &current);
@@ -160,10 +184,11 @@ impl Settings {
         let text = value.as_str().unwrap_or_default().trim().to_string();
         match target {
             Target::Persona(view) => {
-                let value = if text.is_empty() {
-                    Value::Null
-                } else {
-                    json!(text)
+                // 数原样交（人生会话的上下文上限）；字去掉两头空白，空着的去掉这一项
+                let value = match value {
+                    Value::Number(_) => value,
+                    _ if text.is_empty() => Value::Null,
+                    _ => json!(text),
                 };
                 self.set_persona(&view.id, json!({"changes": [change(key, value)]}), false);
                 self.popup = Some(Popup::Persona(*view));
@@ -189,10 +214,13 @@ impl Settings {
             Some(Popup::Persona(view)) if view.id == persona => view.clone(),
             _ => return,
         };
+        // 推演方法没写过的，编辑器里放出厂的那一份（`default`）：一个字没改就不存，出厂的那一份就是占位（「推演人生」第 2 条）
+        let text = got["text"].as_str().filter(|t| !t.is_empty());
+        let text = text.or_else(|| got["default"].as_str().filter(|_| prompt == "life"));
         self.prompt = Some(PromptEdit {
             persona,
             prompt,
-            original: got["text"].as_str().unwrap_or_default().to_string(),
+            original: text.unwrap_or_default().to_string(),
             version: got["version"].as_str().map(str::to_string),
             view,
         });
@@ -231,7 +259,12 @@ impl Settings {
         } else {
             text
         };
-        let body = json!({"text": text, "expect": version});
+        // 推演方法清空了的去掉这一份，回到出厂的（「推演人生」第 2 条）
+        let body = if edit.prompt == "life" && text.is_empty() {
+            json!({"unset": true, "expect": version})
+        } else {
+            json!({"text": text, "expect": version})
+        };
         let params = json!({"prompts": {edit.prompt: body}});
         self.set_persona(&edit.persona, params, false);
     }

@@ -56,6 +56,8 @@ pub enum Waiting {
     AvatarPut,
     /// 写默认人格（`config.set persona.default`）：写的是哪个人格。
     PersonaPick(String),
+    /// 开人生会话（`life.start`，「推演人生」第 6 条）：回来了不管。
+    LifeStart,
     /// 预设列表（`preset.list`）。
     Presets,
     /// 默认预设是哪个（`config.get preset.default`）。

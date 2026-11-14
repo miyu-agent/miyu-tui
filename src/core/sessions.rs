@@ -40,6 +40,10 @@ pub struct SessionInfo {
     pub viewed: bool,
     /// 导进来的只读存档（核心 SE-1 下的 `archived`）：会话列表排在最后单独一段，打开了输入框空着时写「这是存档」（排期第 38 条）。
     pub archived: bool,
+    /// 人格的人生会话（核心 LF-5 中的 `life`）：标题前面写记号（「推演人生」第 3 条）。
+    pub life: bool,
+    /// 这段人生结束了（核心 LF-4 上的 `life_ended`）：封存了，只能看。
+    pub life_ended: bool,
 }
 
 /// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话、整理会话不要，照核心交回的先后（新的
@@ -83,6 +87,8 @@ fn entry(s: &Value) -> Option<SessionInfo> {
         waiting: s["waiting"] == true,
         viewed: s["viewed"] == true,
         archived: s["archived"] == true,
+        life: s["life"] == true,
+        life_ended: s["life_ended"] == true,
     })
 }
 

@@ -298,14 +298,23 @@ fn marker(
     ))
 }
 
-/// 标题那一列有多宽：置顶的记号加标题（没起名的写「未命名会话」）。
+/// 标题那一列有多宽：置顶的记号、人生会话的记号加标题（没起名的写「未命名会话」）。
 fn head_width(info: &SessionInfo, config: &Config) -> usize {
     let pin = if info.pinned {
         config.icons.pin.width()
     } else {
         0
     };
-    pin + title(info, config).width()
+    pin + life(info, config).width() + title(info, config).width()
+}
+
+/// 人生会话标题前面的记号（「推演人生」第 3 条）；别的会话是空的。
+fn life(info: &SessionInfo, config: &Config) -> String {
+    if info.life {
+        config.icons.life_mark()
+    } else {
+        String::new()
+    }
 }
 
 /// 标题（没起名的写「未命名会话」，和起了名的一个颜色：2026-10-01 项目主人）。
@@ -324,6 +333,11 @@ fn head(info: &SessionInfo, config: &Config, column: usize) -> Vec<Span<'static>
     if info.pinned {
         spans.push(Span::styled(config.icons.pin.clone(), theme::accent()));
         room = room.saturating_sub(config.icons.pin.width());
+    }
+    let life = life(info, config);
+    if !life.is_empty() {
+        room = room.saturating_sub(life.width());
+        spans.push(Span::styled(life, theme::accent()));
     }
     let text = super::rows::clip(title(info, config), u16::try_from(room).unwrap_or(u16::MAX));
     let pad = room.saturating_sub(text.width());

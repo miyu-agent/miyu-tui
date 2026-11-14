@@ -5,8 +5,9 @@ use ratatui::text::Span;
 use unicode_width::UnicodeWidthStr;
 
 use super::content::{Content, fill, wrap};
+use crate::oobe::PersonaTexts;
 use crate::oobe::Texts;
-use crate::oobe::persona::{PersonaStep, Slot};
+use crate::oobe::persona::{LifePick, PersonaStep, Slot};
 use crate::oobe::sheet::Sheet;
 use crate::settings::pages::dialogs::DialogTexts;
 use crate::theme;
@@ -24,7 +25,7 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
     let label_w = words
         .fields
         .iter()
-        .chain([&words.avatar, &words.summary])
+        .chain([&words.avatar, &words.summary, &words.life[0]])
         .map(|f| f.width())
         .max()
         .unwrap_or(0);
@@ -96,6 +97,8 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
         on(Slot::Reminders),
     );
     c.blank();
+    life(&mut c, step, words, (label_w, on(Slot::Life)));
+    c.blank();
     let next = if step.blank() {
         &words.skip
     } else {
@@ -111,6 +114,24 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
         c.note(error, theme::error());
     }
     c
+}
+
+/// 推演人生那一格（「推演人生」第 6 条）：开着写「开」，关着暗色写怎么开；按过一次 `Enter`（问着）下面缩进写三行影响和
+/// 怎么确认。
+fn life(c: &mut Content, step: &PersonaStep, words: &PersonaTexts, (label_w, on): (usize, bool)) {
+    let life = &words.life;
+    let value = if step.life == LifePick::On {
+        &life[1]
+    } else {
+        ""
+    };
+    c.chip(&life[0], label_w, value, &life[3], on);
+    if step.life == LifePick::Asking {
+        for line in &life[4..7] {
+            c.note_at(label_w + 4, line, theme::dim());
+        }
+        c.note_at(label_w + 4, &life[7], theme::warn());
+    }
 }
 
 /// 长文在格子里只写第一行，多行的末尾 `…`。

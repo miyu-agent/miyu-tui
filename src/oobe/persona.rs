@@ -30,18 +30,21 @@ pub enum Slot {
     Examples,
     /// 人设提醒短语（同一天从「角色扮演提示」改名）。
     Reminders,
+    /// 推演人生的开关（「推演人生」第 6 条）。
+    Life,
     /// 「下一步」。
     Next,
 }
 
 /// 照画的先后。
-pub const SLOTS: [Slot; 7] = [
+pub const SLOTS: [Slot; 8] = [
     Slot::Name,
     Slot::Summary,
     Slot::Avatar,
     Slot::Prompt,
     Slot::Examples,
     Slot::Reminders,
+    Slot::Life,
     Slot::Next,
 ];
 
@@ -107,6 +110,8 @@ pub struct PersonaStep {
     pub writing: Option<(Slot, Sheet)>,
     /// 光标在哪一格。
     pub focus: Slot,
+    /// 推演人生的开关（`life.rs`）。
+    pub life: LifePick,
     /// 读回来以前、存的时候。
     pub busy: bool,
     /// 红字。
@@ -141,6 +146,7 @@ impl Default for PersonaStep {
             editing: None,
             writing: None,
             focus: Slot::Name,
+            life: LifePick::Off,
             busy: false,
             error: None,
             existing_name: None,
@@ -186,7 +192,7 @@ impl PersonaStep {
             Slot::Avatar => Some(&mut self.avatar),
             Slot::Prompt => Some(&mut self.prompt),
             Slot::Reminders => Some(&mut self.reminders),
-            Slot::Examples | Slot::Next => None,
+            Slot::Examples | Slot::Life | Slot::Next => None,
         }
     }
 
@@ -271,6 +277,9 @@ impl PersonaStep {
             }
             return Move::Stay;
         }
+        if self.life_key(key) {
+            return Move::Stay;
+        }
         let moved = nav::plain(key);
         match key.code {
             KeyCode::Esc => return Move::Back,
@@ -297,6 +306,7 @@ impl PersonaStep {
                 Slot::Name => self.name.begin(),
                 Slot::Summary => self.summary.begin(),
                 Slot::Avatar => self.avatar.begin(),
+                Slot::Life => {}
             },
             _ => {}
         }
@@ -394,6 +404,9 @@ impl PersonaStep {
 }
 
 mod colors;
+mod life;
 mod save;
+
+pub use life::LifePick;
 
 pub use colors::Colors;

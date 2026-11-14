@@ -9,6 +9,7 @@ use unicode_width::UnicodeWidthStr;
 use super::popup::{Body, Lines};
 use crate::features;
 use crate::settings::pages::choose::{LineEdit, PersonaView, PresetView};
+use crate::settings::pages::life::LifeTexts;
 use crate::settings::pages::preset_edit::{Field, fields};
 use crate::settings::pages::secret::masked;
 use crate::settings::pages::target::Target;
@@ -125,7 +126,9 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
     } else {
         none()
     };
-    // 照 `FIELDS` 的先后：名字、简单描述、子代理可选、头像、具体人格提示词、示范对话、人设提醒短语。
+    // 照 `FIELDS` 的先后：名字、简单描述、子代理可选、头像、具体人格提示词、示范对话、人设提醒短语；推演人生、推演方法
+    // 另画（[`life_rows`]）。
+    let life = &avatar.life;
     let rows = [
         (&words.detail[0], detail.name.clone().unwrap_or_else(none)),
         (
@@ -143,18 +146,97 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
     ];
     let id_label = &words.create.sides[0];
     let label_w = rows.iter().map(|(n, _)| n.width()).max().unwrap_or(0);
-    let label_w = label_w.max(id_label.width());
+    let label_w = label_w
+        .max(id_label.width())
+        .max(life.name.width())
+        .max(life.method.width())
+        .max(life.context.width());
     id_row(lines, id_label, label_w, &view.id);
+    let n = rows.len();
     for (i, (name, value)) in rows.into_iter().enumerate() {
-        let pad = " ".repeat(label_w.saturating_sub(name.width()));
-        lines.body.push(Body {
-            line: Line::from(vec![
-                Span::styled(format!("  {name}{pad}  "), theme::dim()),
-                Span::raw(value),
-            ]),
-            focused: i == view.cursor,
-            hit: None,
-        });
+        field_row(
+            lines,
+            (name, label_w),
+            vec![Span::raw(value)],
+            i == view.cursor,
+        );
+    }
+    let method = written(detail.life);
+    life_rows(
+        lines,
+        (view, page),
+        (life, label_w),
+        (n, method, detail.life_context),
+    );
+}
+
+/// 一行能改的：暗色的名字对齐到 `label_w`，后面是值。
+fn field_row(
+    lines: &mut Lines,
+    (name, label_w): (&str, usize),
+    value: Vec<Span<'static>>,
+    focused: bool,
+) {
+    let pad = " ".repeat(label_w.saturating_sub(name.width()));
+    let mut spans = vec![Span::styled(format!("  {name}{pad}  "), theme::dim())];
+    spans.extend(value);
+    lines.body.push(Body {
+        line: Line::from(spans),
+        focused,
+        hit: None,
+    });
+}
+
+/// 人格的窗最后几行（「推演人生」第 2 条）：推演人生的开关（值照 `life.status`，在跑的暗色接下次醒来），她写过「现在
+/// 在干嘛」的下面暗色一行；开着（在跑）的才露出推演方法、人生会话的上下文上限（2026-11-14 项目主人定）。`n` 是推演人生在
+/// `FIELDS` 里排第几，`method` 是推演方法那一格写的，`context` 是写了的上限和出厂的那个数（没写的暗色写出厂的）。
+fn life_rows(
+    lines: &mut Lines,
+    (view, page): (&PersonaView, &Settings),
+    (texts, label_w): (&LifeTexts, usize),
+    (n, method, context): (usize, String, (Option<u64>, Option<u64>)),
+) {
+    let state = page.life_of(&view.id);
+    let (value, tail) = state.map_or_else(Default::default, |s| {
+        s.shown(texts, jiff::Timestamp::now(), &jiff::tz::TimeZone::system())
+    });
+    let mut spans = vec![Span::raw(value)];
+    if !tail.is_empty() {
+        spans.push(Span::styled(
+            format!("{}{tail}", crate::sheet::sep()),
+            theme::dim(),
+        ));
+    }
+    field_row(lines, (&texts.name, label_w), spans, view.cursor == n);
+    if let Some(doing) = state.and_then(|s| s.doing.as_deref()) {
+        let lead = " ".repeat(label_w + 4);
+        lines.plain(Line::from(vec![
+            Span::raw(lead),
+            Span::styled(doing.to_string(), theme::faint()),
+        ]));
+    }
+    if page.life_on(&view.id) {
+        let method_row = vec![Span::raw(method)];
+        field_row(
+            lines,
+            (&texts.method, label_w),
+            method_row,
+            view.cursor == n + 1,
+        );
+        let value = match context {
+            (Some(n), _) => Span::raw(n.to_string()),
+            (None, Some(n)) => Span::styled(
+                texts.context_default.replace("{n}", &n.to_string()),
+                theme::faint(),
+            ),
+            (None, None) => Span::raw(""),
+        };
+        field_row(
+            lines,
+            (&texts.context, label_w),
+            vec![value],
+            view.cursor == n + 2,
+        );
     }
 }
 

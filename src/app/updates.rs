@@ -333,13 +333,15 @@ impl App {
             return;
         }
         // `/dream` 的回执：看着整理的醒一下再收成回执（`dream.rs`）。
-        if let Update::CommandRan { command, said } = &update
+        if let Update::CommandRan { command, said, .. } = &update
             && command == "dream"
             && self.dream_woke(said)
         {
             return;
         }
-        if let Update::CommandRan { command, said } = &update {
+        // `/life` 带回人生会话的编号：跳过去（「推演人生」第 1 条），回执照常写
+        self.follow_ran(&update);
+        if let Update::CommandRan { command, said, .. } = &update {
             let said = said.trim_end().trim_end_matches(['。', '.']);
             // `/goal` 看进度的：原文长了截原文，在哪一步、第几轮留着（「长期目标」第 1 条）。
             let (text, tail) = match command.as_str() {
