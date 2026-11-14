@@ -341,6 +341,8 @@ pub struct Texts {
     pub secret: [String; 2],
     /// 终端还没有编辑器的项按了 Enter。
     pub no_editor: String,
+    /// 几样并列的连起来用的：中文、日文「、」，英文「, 」（check 13：英文界面原来也用「、」，Linux 控制台显示不了）。
+    pub list_sep: String,
     /// 数读不出来。
     pub bad_number: String,
     /// 恢复默认问的那一句：标题 `{name}`、一行话 `{from}`、两个按钮。

@@ -215,6 +215,11 @@ fn paint<H: Copy>(
             bar(frame, row);
         }
         frame.buffer_mut().set_line(row.x, y, &body.line, row.width);
+        // 没有颜色可靠的（[`theme::arrows`]）只靠行首的箭头看出选中：每一行行首空两格，箭头在字后面再写一遍，不让那两格空白
+        // 盖掉（check 13 ②，2026-11-14 主人验收：tty 里上下挪看不出动）。有颜色的照旧靠底色。
+        if body.focused && theme::arrows() {
+            bar(frame, row);
+        }
         if let Some(hit) = body.hit {
             hits.push((row, hit));
         }
@@ -340,8 +345,16 @@ fn gapped(hints: &[[String; 2]], gap: usize) -> Line<'_> {
     Line::from(spans)
 }
 
-/// 选中的那一行左边的竖条：强调色，不铺底的主题换选中色（`theme::picked_mark`）。
+/// 选中的那一行左边的竖条：强调色，不铺底的主题换选中色（`theme::picked_mark`）。没有颜色可靠的（[`theme::arrows`]）
+/// 换成箭头（主题的 `marks.pointer`，同列表选中的那一个），只写第一行：行首两格。
 pub fn bar(frame: &mut Frame, row: Rect) {
+    if theme::arrows() {
+        let pointer = crate::sheet::mark(|m| &m.pointer);
+        frame
+            .buffer_mut()
+            .set_string(row.x, row.y, pointer, theme::picked());
+        return;
+    }
     for y in row.y..row.bottom() {
         frame.buffer_mut().set_string(
             row.x,

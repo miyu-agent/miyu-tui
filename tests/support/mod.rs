@@ -301,14 +301,16 @@ impl Tui {
         self.lines().iter().any(|l| l.contains(text))
     }
 
-    /// 配置页主菜单上挪到名字是 `name` 的那一项、回车进去：照选中那一行（左边的 `┃`，纯 ASCII 主题是 `|`）认，不数第几项
+    /// 配置页主菜单上挪到名字是 `name` 的那一项、回车进去：照选中那一行（左边的 `┃`；没有颜色可靠的、纯 ASCII 主题是行首的箭头 `❯`、`>`）认，不数第几项
     /// （2026-10-14 主菜单加了「外观」，数行的全错一位）。清单没读到以前菜单短几项，挪过头的往回找。
     pub fn open_menu(&mut self, name: &str) {
         self.wait_for(name);
         let picked = |tui: &Self| {
             tui.lines().iter().any(|l| {
                 l.split_once(['┃', '|'])
-                    .and_then(|(_, rest)| rest.split_whitespace().next())
+                    .map(|(_, rest)| rest)
+                    .or_else(|| l.trim_start().strip_prefix(['❯', '>']))
+                    .and_then(|rest| rest.split_whitespace().next())
                     == Some(name)
             })
         };

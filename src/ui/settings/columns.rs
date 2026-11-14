@@ -380,7 +380,10 @@ fn detail(frame: &mut Frame, area: Rect, page: &Settings, texts: &Texts) {
             .iter()
             .map(|i| texts.option(i).to_string())
             .collect();
-        lines.push((texts.detail[4].clone(), Line::raw(inputs.join("、"))));
+        lines.push((
+            texts.detail[4].clone(),
+            Line::raw(inputs.join(&texts.more.list_sep)),
+        ));
     }
     lines.push((
         texts.detail[5].clone(),

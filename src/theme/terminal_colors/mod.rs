@@ -85,6 +85,7 @@ pub fn probe_ground() -> Option<Ground> {
 
 /// 装上问到的（启动时一次）。
 pub fn install(sixteen: Option<Colors>, ground: Option<Ground>, depth: Depth) {
+    super::set_arrows(depth == Depth::Mono || crate::sheet::on_console());
     *write() = Seen {
         sixteen,
         ground,

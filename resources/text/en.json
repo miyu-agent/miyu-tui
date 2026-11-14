@@ -1233,6 +1233,7 @@
         "not set"
       ],
       "no_editor": "The terminal can't edit this yet",
+      "list_sep": ", ",
       "bad_number": "Enter a number",
       "unset": [
         "Reset to default: {name}?",

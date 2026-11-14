@@ -195,8 +195,11 @@ pub fn item_with(
     right: Option<Span<'static>>,
     width: u16,
 ) -> Line<'static> {
+    // 没有颜色可靠的（check 13 ②，`theme::arrows`）：选中的一律写箭头，现在用的那一项的记号也让给它（不然光标停在现在用的
+    // 那一项上时只看得到记号、看不出光标在哪）。
+    let arrow = picked && theme::arrows();
     let mark = match lead {
-        Some((lead, force)) if force || !picked => lead,
+        Some((lead, force)) if !arrow && (force || !picked) => lead,
         _ if picked => Span::raw(crate::sheet::mark(|m| &m.pointer)),
         _ => Span::raw("  "),
     };

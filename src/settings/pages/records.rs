@@ -73,8 +73,8 @@ pub fn label(item: &Item, record: &Value, n: usize, texts: &RecordTexts) -> Stri
     titled.unwrap_or_else(|| texts.nth.replace("{n}", &n.to_string()))
 }
 
-/// 页里那一行：各条的标题用「、」连，一条都没有的是「—」（同第 47 条）。不是记录列表的是 `None`。
-pub fn summary(item: &Item, value: &Value, texts: &RecordTexts) -> Option<String> {
+/// 页里那一行：各条的标题用 `sep`（界面语言的顿号、逗号）连，一条都没有的是「—」（同第 47 条）。不是记录列表的是 `None`。
+pub fn summary(item: &Item, value: &Value, texts: &RecordTexts, sep: &str) -> Option<String> {
     if item.element != "record" {
         return None;
     }
@@ -87,7 +87,7 @@ pub fn summary(item: &Item, value: &Value, texts: &RecordTexts) -> Option<String
         .enumerate()
         .map(|(i, r)| label(item, r, i + 1, texts))
         .collect();
-    Some(titles.join("、"))
+    Some(titles.join(sep))
 }
 
 /// `<项>[第几条].<字段>` 拆成三段（密钥字段在草稿里照它记，`draft.rs`）。

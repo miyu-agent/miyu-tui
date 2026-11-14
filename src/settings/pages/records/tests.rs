@@ -69,10 +69,13 @@ fn titles_come_from_the_title_field_or_the_position() {
     assert_eq!(label(&item, &json!({"name": ""}), 2, words), "第 2 项");
     let two = json!([{"name": "主号"}, {}]);
     assert_eq!(
-        summary(&item, &two, words).as_deref(),
+        summary(&item, &two, words, "、").as_deref(),
         Some("主号、第 2 项")
     );
-    assert_eq!(summary(&item, &json!([]), words).as_deref(), Some("—"));
+    assert_eq!(
+        summary(&item, &json!([]), words, "、").as_deref(),
+        Some("—")
+    );
     assert_eq!(
         record_path("draw.accounts[3].key"),
         Some(("draw.accounts".into(), 3, "key".into()))

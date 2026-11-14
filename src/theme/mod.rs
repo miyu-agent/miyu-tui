@@ -17,7 +17,7 @@ pub mod terminal_colors;
 pub mod wallpaper;
 mod wallpaper_cache;
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};
 
 use ratatui::style::{Color, Modifier, Style};
@@ -219,6 +219,20 @@ fn bar_style(barless: bool) -> Style {
 /// 主题的选中不铺底（`pick` 是 `mark`，蓝图「主题」第 1 条）：选中的那一行、那一格只换选中色。
 fn barless() -> bool {
     crate::sheet::read(|s| s.pick == crate::sheet::Pick::Mark)
+}
+
+/// 起来时照色深、`TERM` 定的：不上色（`NO_COLOR` 这类）、在 Linux 控制台里（[`arrows`]）。
+static ARROWS: AtomicBool = AtomicBool::new(false);
+
+/// 选中的那一行行首写箭头（主题的 `marks.pointer`），不只靠颜色认（check 13 ②，2026-11-14 项目主人：「加一个箭头不就好了
+/// 吗」）：不上色的、Linux 控制台里（只有十六色，选中色、底色和平常的分不出）、不铺底的主题（纯 ASCII）。
+pub fn arrows() -> bool {
+    ARROWS.load(Ordering::Relaxed) || barless()
+}
+
+/// 起来时设一次（`terminal_colors::install`）：不上色、在 Linux 控制台里的，选中行写箭头（[`arrows`]）。
+pub fn set_arrows(on: bool) {
+    ARROWS.store(on, Ordering::Relaxed);
 }
 
 /// 粘贴块这种小块：品红的字铺一层暗紫底（蓝图「输入框」第 11 条）。
