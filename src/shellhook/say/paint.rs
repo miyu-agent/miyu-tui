@@ -169,6 +169,9 @@ impl<W: Write> Painter<W> {
                 crate::ui::wide::tidy(frame.buffer_mut());
                 theme::paint(frame.buffer_mut());
                 theme::degrade(frame.buffer_mut(), self.depth);
+                if crate::sheet::read(|s| s.ascii) {
+                    crate::ascii::frame(frame.buffer_mut());
+                }
             })
             .map_err(io::Error::other)?;
         Ok(ansi_lines(completed.buffer))

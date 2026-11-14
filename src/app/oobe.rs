@@ -151,19 +151,6 @@ impl App {
         true
     }
 
-    /// 换成 `name` 那一套图标（`nerd`、`plain`）；没有这一套的不换。
-    pub(super) fn use_icons(&mut self, name: &str) {
-        if let Some(set) = self
-            .config
-            .icon_sets
-            .iter()
-            .find(|s| s.name == name)
-            .cloned()
-        {
-            self.config.icons = set;
-        }
-    }
-
     /// 还在等 `ui.welcomed` 的，到点醒来画首页。
     pub(super) fn welcome_deadline(&self, now: Instant) -> Option<Instant> {
         self.seen()

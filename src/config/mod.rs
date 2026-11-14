@@ -45,7 +45,7 @@ pub use feature_tree::FeatureTreeTexts;
 pub use figures::{FigureLook, Room};
 pub use files::FilesTexts;
 pub use goal::GoalTexts;
-pub use icons::Icons;
+pub use icons::{ASCII as ASCII_ICONS, Icons};
 pub use layout::{Bar, Dots, Layout, Shimmer, TodoMarks};
 pub use loops::LoopTexts;
 pub use mention::{MentionLook, MentionTexts, SkillWordTexts};
@@ -408,7 +408,7 @@ impl Config {
     fn read(language: &Language, auto: bool) -> Result<Self, String> {
         let table = LanguageTable::builtin()?;
         let (text_name, text_json) = localize::text(language)?;
-        let mut text: Texts = parse(&text_name, text_json)?;
+        let mut text: Texts = parse(&text_name, &localize::shown(text_json))?;
         // 测试不看跑测试的终端是哪种（设计 5.3）。
         let var = |name: &str| (!cfg!(test)).then(|| std::env::var(name).ok()).flatten();
         crate::tips::fit(&mut text.tips, &mut text.home_placeholder, cfg!(unix), var);
@@ -430,7 +430,7 @@ impl Config {
             text,
             commands: localized(
                 "commands.json",
-                include_str!("../../resources/commands.json"),
+                &localize::shown(include_str!("../../resources/commands.json")),
                 language,
                 &table,
             )?,
@@ -450,7 +450,7 @@ impl Config {
             )?,
             pulse: localized(
                 "pulse.json",
-                include_str!("../../resources/pulse.json"),
+                &localize::shown(include_str!("../../resources/pulse.json")),
                 language,
                 &table,
             )?,

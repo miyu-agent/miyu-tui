@@ -3,6 +3,7 @@
 //! 设计见仓库的 `docs/designs/13-终端界面.md`；连核心的走法照 `miyu ask`（`docs/blueprint/cli/ask.md`）。
 
 mod app;
+mod ascii;
 mod avatars;
 mod backstage;
 mod body_view;
@@ -464,6 +465,10 @@ fn frame(
         ui::wide::tidy(frame.buffer_mut());
         theme::paint(frame.buffer_mut());
         theme::degrade(frame.buffer_mut(), depth);
+        // 纯 ASCII 主题：剩下的符号换成 ASCII（check 13 ①）
+        if sheet::read(|s| s.ascii) {
+            ascii::frame(frame.buffer_mut());
+        }
         prep = at.map_or(Duration::ZERO, |t| t.elapsed());
     });
     // 藏着的光标也挪到插入点：不留在这一帧最后写的格子（kitty 开了 `cursor_trail` 会拖尾）；显示着的
