@@ -4,7 +4,7 @@
 use std::path::Path;
 
 /// 不归主题管的几处，各带理由。
-const EXEMPT: [(&str, &str); 10] = [
+const EXEMPT: [(&str, &str); 11] = [
     (
         "src/ui/hint_keys.rs",
         "改写界面上的字里写好的箭头（↑/↓ 换成 j/k），箭头是那份字里的",
@@ -18,6 +18,7 @@ const EXEMPT: [(&str, &str); 10] = [
     ("src/app/goal.rs", "拆核心推来的字（里面的 · 是核心写的）"),
     ("src/ui/oobe/screens.rs", "拆界面上的字的模板（· 在模板里）"),
     ("src/ui/done_row.rs", "照收尾那一行的模板里的 · 拆"),
+    ("src/ascii.rs", "纯 ASCII 主题把这些记号换成 ASCII 的对照表"),
 ];
 
 /// 算记号的字：箭头、数学、框线、方块、几何、杂项符号、装饰、盲文，和中点、圆点、省略号、※。

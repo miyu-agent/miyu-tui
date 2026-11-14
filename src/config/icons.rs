@@ -64,11 +64,15 @@ impl Icons {
     }
 }
 
-/// 出厂的几套：名字和 JSON，照登记的先后。
-const BUILTIN: [(&str, &str); 2] = [
+/// 出厂的几套：名字和 JSON，照登记的先后。`ascii` 不给人选，纯 ASCII 主题下自动用（[`pick`]）。
+const BUILTIN: [(&str, &str); 3] = [
     ("nerd", include_str!("../../resources/icons/nerd.json")),
     ("plain", include_str!("../../resources/icons/plain.json")),
+    (ASCII, include_str!("../../resources/icons/ascii.json")),
 ];
+
+/// 纯 ASCII 那一套的名字。
+pub const ASCII: &str = "ascii";
 
 /// 读出厂的全部几套，照登记的先后。
 ///
@@ -89,8 +93,14 @@ pub fn builtin() -> Result<Vec<Icons>, String> {
         .collect()
 }
 
-/// 照名字挑一套；没有这一套的用出厂的第一套。
+/// 照名字挑一套；没有这一套的用出厂的第一套。纯 ASCII 主题下一律用 ASCII 那一套（check 13 ①：写了 `nerd` 的在 Linux 控制台
+/// 里一个都画不出来）。
 pub fn pick(sets: &[Icons], name: &str) -> Option<Icons> {
+    let name = if crate::sheet::read(|s| s.ascii) {
+        ASCII
+    } else {
+        name
+    };
     sets.iter()
         .find(|icons| icons.name == name)
         .or(sets.first())
@@ -141,7 +151,10 @@ mod tests {
     fn two_sets_ship_and_the_plain_one_needs_no_nerd_font() {
         let sets = builtin().unwrap();
         let names: Vec<&str> = sets.iter().map(|s| s.name.as_str()).collect();
-        assert_eq!(names, ["nerd", "plain"]);
+        // 第三套 `ascii` 不给人选，纯 ASCII 主题下自动用（check 13 ①）：每个字都是 ASCII
+        assert_eq!(names, ["nerd", "plain", "ascii"]);
+        let ascii = every_icon(&sets[2]).concat() + &sets[2].stash;
+        assert!(ascii.is_ascii(), "{ascii}");
         let plain = &sets[1];
         let glyphs: String = every_icon(plain).concat() + &plain.stash;
         assert!(

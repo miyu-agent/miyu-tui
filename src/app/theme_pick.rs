@@ -120,6 +120,7 @@ impl App {
         self.media.theme_pick.shown = id;
         let items = Value::Object(self.link.look.items.clone());
         self.apply_layout_settings(&json!({ "items": items }));
+        self.follow_ascii();
     }
 
     /// 在 Linux 控制台里、界面是中文或日文的：这一次运行里提示一次控制台显示不了这些字，可以在设置里换英文界面（todolist 63）。
@@ -150,6 +151,7 @@ impl App {
         };
         if crate::sheet::set(&whole).is_ok() && self.config.retheme(&whole).is_ok() {
             self.media.theme_pick.shown = Some(id);
+            self.follow_ascii();
         } else {
             drop(crate::sheet::set(&crate::sheet::default_value()));
         }
@@ -166,6 +168,7 @@ impl App {
             self.apply_layout_settings(&json!({ "items": items }));
         }
         self.note_theme(None, &default);
+        self.follow_ascii();
         let text = self.config.text.look_failed.clone();
         self.hint(text, false);
     }

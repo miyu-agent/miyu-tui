@@ -1,0 +1,20 @@
+{
+  "tools": {
+    "shell": "$",
+    "load_tools": "v",
+    "cron_create": "@",
+    "cron_delete": "@",
+    "cron_list": "@",
+    "schedule_wakeup": "@"
+  },
+  "tool": "*",
+  "think": "*",
+  "error": "x",
+  "pin": "* ",
+  "warn": "! ",
+  "fork": "Y ",
+  "video": ">",
+  "stash": "= ",
+  "loop": "@ ",
+  "mic": "o"
+}

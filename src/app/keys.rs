@@ -62,14 +62,18 @@ impl App {
 
     /// 换下一套图标，只管这一次启动（`tui.md`「图标」第 4 条）。排好的时间线照图标那一套的名字重排。
     pub(super) fn next_icons(&mut self) {
-        let sets = &self.config.icon_sets;
+        // ASCII 那一套不给人选：纯 ASCII 主题下自动用（`ascii_look.rs`）
+        let sets: Vec<_> = (self.config.icon_sets.iter())
+            .filter(|s| s.name != crate::config::ASCII_ICONS)
+            .collect();
         let at = sets
             .iter()
             .position(|s| s.name == self.config.icons.name)
             .unwrap_or(0);
-        if let Some(next) = sets.get((at + 1) % sets.len().max(1)).cloned() {
-            let text = self.config.text.icons_changed.replace("{name}", &next.name);
-            self.config.icons = next;
+        if let Some(next) = sets.get((at + 1) % sets.len().max(1)) {
+            let name = next.name.clone();
+            let text = self.config.text.icons_changed.replace("{name}", &name);
+            self.use_icons(&name);
             self.hint(text, true);
         }
     }

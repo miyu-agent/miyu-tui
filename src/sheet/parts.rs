@@ -15,6 +15,10 @@ pub struct Sheet {
     pub text: Text,
     /// 选中的样子。
     pub pick: Pick,
+    /// 只画 ASCII（内置的纯 ASCII 主题写 `true`，check 13 ①）：界面字表、命令说明换成 ASCII、图标用 ASCII 那一套，画完一帧
+    /// 剩下的符号换成 ASCII（`ascii.rs`）。
+    #[serde(default)]
+    pub ascii: bool,
 }
 
 /// 选中的样子。

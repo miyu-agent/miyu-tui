@@ -48,7 +48,9 @@
     "ring": ["( )", "(.)", "(:)", "(*)", "(#)"]
   },
   "pick": "mark",
+  "ascii": true,
   "layout": {
+    "currencies": {"CNY": "CNY ", "EUR": "EUR ", "GBP": "GBP "},
     "user_bar": "| ",
     "recap_mark": "* ",
     "done_icon": "* ",

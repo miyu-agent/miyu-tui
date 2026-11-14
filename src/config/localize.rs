@@ -42,6 +42,15 @@ pub(super) fn summary(language: &Language) -> Result<super::timeline::Summary, S
 }
 
 /// 写了几种语言的（只拿表里的语言代码做键的一格）挑 `language` 那一种，再照 `T` 读（命令的说明、运行状态行的词）。
+/// 界面上的字的原文（JSON）：纯 ASCII 主题下先换成 ASCII（`ascii.rs`，check 13 ①），别的原样。换主题时重读（`app/language.rs`）。
+pub(super) fn shown(json: &str) -> std::borrow::Cow<'_, str> {
+    if crate::sheet::read(|s| s.ascii) {
+        crate::ascii::plain(json)
+    } else {
+        std::borrow::Cow::Borrowed(json)
+    }
+}
+
 pub(super) fn localized<T: for<'de> Deserialize<'de>>(
     name: &str,
     json: &str,
