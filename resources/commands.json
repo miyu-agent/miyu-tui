@@ -340,8 +340,8 @@
     {
       "name": "read-aloud",
       "summary": {
-        "zh": "朗读她上一轮的回答，再打一次停",
-        "en": "Read her last reply aloud; run again to stop",
+        "zh": "朗读 AI 上一轮的回答，再打一次停",
+        "en": "Read the AI's last reply aloud; run again to stop",
         "ja": "直前の返答を読み上げる（もう一度で停止）"
       },
       "run": "read_aloud",
