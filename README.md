@@ -1,23 +1,25 @@
 ## Miyu 终端界面
 
-全屏的终端界面：程序 `miyu-tui`，连上 Miyu 的核心跟 AI 说话。核心在 [miyu-agent/miyu](https://github.com/miyu-agent/miyu)，这里照 `Cargo.toml` 的 git 依赖钉住核心的一个提交，只经门面 `miyu-client` 用核心的东西（核心仓库的设计 `32-仓库拆分.md`）。现在长什么样，见蓝图 `docs/blueprint/tui.md`。
+全屏的终端界面：程序 `miyu-tui`，连上 Miyu 的核心跟 AI 说话。核心在 [miyu-agent/miyu](https://github.com/miyu-agent/miyu)，这里照 `Cargo.toml` 的 git 依赖钉住核心的一个提交，只经门面 `miyu-client` 用核心的东西（核心仓库的设计 `32-仓库拆分.md`）。
+
+怎么用（启动参数、按键、斜杠命令、设置）见 [终端](https://github.com/miyu-agent/miyu/blob/main/docs/guide/heads/tui.md)。
 
 ### 怎么跑
 
-先在核心仓库的检出里编一次核心（`cargo build -p miyu`），下面的 `<核心检出>` 换成它的路径。
+先在核心仓库的检出里编一次核心（`cargo build -p miyu`），下面的 `<核心检出>` 换成它的路径。模型的配置用核心的 `cargo xtask dev-home` 造（见 [开发者：参与开发](https://github.com/miyu-agent/miyu/blob/main/docs/dev/contributing.md)），它写的供应商地址、key 照环境变量 `MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY` 取。
 
-第一次用这个 `MIYU_HOME` 时，在这个仓库的根目录装上终端自己的软件包 `tui/`（核心 S-5 起不再自带它：`tui.*` 配置项、放输入历史的状态目录都照它认；编号照文件夹名，配置键照清单的 `prefix = "tui"`，发版时核心照 `heads.toml` 放进 `packages/miyu-tui/`）：
+第一次用这个 `MIYU_HOME` 时，在这个仓库的根目录装上终端自己的软件包 `tui/`（核心不自带它：`tui.*` 配置项、放输入历史的状态目录都照它认；编号照文件夹名，配置键照清单的 `prefix = "tui"`，发版时核心照 `heads.toml` 放进 `packages/tui/`）：
 
 ```sh
-DEEPSEEK_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources <核心检出>/target/debug/miyu pkg install ./tui --yes
+MIYU_DEV_BASE_URL=<地址，写到 /v1> MIYU_DEV_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources <核心检出>/target/debug/miyu pkg install ./tui --yes
 ```
 
-`miyu pkg install` 会把核心拉起来、留着跑，下面的 `cargo run` 连的就是它：key 这一步也要给上。改了 `tui/` 里的清单的，再装一次。
+`miyu pkg install` 会把核心拉起来、留着跑，下面的 `cargo run` 连的就是它：地址和 key 这一步也要给上。改了 `tui/` 里的清单的，再装一次。
 
 然后跑：
 
 ```sh
-DEEPSEEK_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources MIYU_CORE_BIN=<核心检出>/target/debug/miyu cargo run
+MIYU_DEV_BASE_URL=<地址，写到 /v1> MIYU_DEV_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources MIYU_CORE_BIN=<核心检出>/target/debug/miyu cargo run
 ```
 
 - 变量写在命令前面，不要 `export`：旧版 Miyu 也认 `MIYU_HOME`。
@@ -26,11 +28,11 @@ DEEPSEEK_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核�
 
 ### 按键、鼠标、版式
 
-都写在蓝图 `docs/blueprint/tui.md` 里（「对外的样子」「怎么走」「样子」），这里不再抄一份。
+见 [终端](https://github.com/miyu-agent/miyu/blob/main/docs/guide/heads/tui.md)，这里不再抄一份。
 
 ### herdr 中恢复会话
 
-`miyu-tui --resume <完整会话 ID>` 恢复指定会话，优先于 `tui.startup=recent`。在 herdr 中创建或切换主会话后自动上报恢复命令；服务重启后每个窗格恢复各自的会话。`/new` 清掉旧绑定。只退出 herdr 客户端时原进程继续运行。
+`miyu-tui --resume <完整的会话编号>` 恢复指定会话，优先于 `ui.startup = "recent"`。在 herdr 中创建或切换主会话后自动上报恢复命令；服务重启后每个窗格恢复各自的会话。`/new` 清掉旧绑定。只退出 herdr 客户端时原进程继续运行。
 
 恢复程序 `miyu-tui` 必须在恢复 shell 的 PATH 中，MIYU_HOME、MIYU_RESOURCES、MIYU_CORE_BIN 也须可用；临时写在原启动命令前的环境变量不会被 herdr 保存。试用时可以写一个固定这些环境的启动脚本，放到 PATH 中；独立命名 herdr 会话先试，不停止默认服务。
 
