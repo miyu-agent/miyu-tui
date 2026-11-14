@@ -57,7 +57,7 @@ fn a_command_that_opens_a_page_says_so() {
     );
     let ran = super::take::ran(&json!({"command": "stop", "said": "已停止。"}));
     assert!(
-        matches!(&ran, Update::CommandRan { command, said } if command == "stop" && said == "已停止。"),
+        matches!(&ran, Update::CommandRan { command, said, .. } if command == "stop" && said == "已停止。"),
         "{ran:?}"
     );
 }

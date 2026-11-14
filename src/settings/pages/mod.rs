@@ -9,6 +9,7 @@ pub mod combo;
 pub mod create;
 pub mod dialogs;
 mod keys;
+pub mod life;
 pub mod list;
 pub mod mascots;
 pub mod mcp;
@@ -126,6 +127,8 @@ pub struct More {
     pub mcp_bundled: Vec<mcp::Server>,
     /// 进了哪一页。
     pub section: Option<Section>,
+    /// 人格的窗里那一个人格的人生会话在哪一步（`life.status`，「推演人生」第 2 条）：人格编号和状态。
+    pub life: Option<(String, life::LifeState)>,
     /// 「软件包」三页（第 43c 条）。
     pub store: store::Store,
     /// 滑块调了还没存的（第 33 条子规则）。

@@ -37,7 +37,7 @@ pub fn update(turn: &mut Turn, update: &Update, core: &Core) -> bool {
             }
             true
         }
-        Update::CommandRan { command, said } if command == "dream" && dream.woke.is_none() => {
+        Update::CommandRan { command, said, .. } if command == "dream" && dream.woke.is_none() => {
             dream.woke = Some((Instant::now(), said.clone()));
             core.send(Command::Dream(false));
             true

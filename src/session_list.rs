@@ -191,6 +191,8 @@ mod tests {
             waiting: false,
             viewed: false,
             archived: false,
+            life: false,
+            life_ended: false,
         }
     }
 

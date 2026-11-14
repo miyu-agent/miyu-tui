@@ -47,9 +47,18 @@ pub struct Icons {
     /// 输入框外面右边的麦克风（一格宽，「语音」第 2 条，2026-11-10 项目主人要麦克风图标）；没写的套件画 `o`。
     #[serde(default = "mic_mark")]
     pub mic: String,
+    /// 会话列表里人生会话标题前面的记号，连同它后面的空格（「推演人生」第 3 条）；没写的套件写 `~ `。主题写了 `marks.life`
+    /// 的照主题（纯 ASCII），见 [`Icons::life_mark`]。
+    #[serde(default = "loop_mark")]
+    pub life: String,
 }
 
 impl Icons {
+    /// 人生会话标题前面的记号：主题写了 `marks.life` 的照主题（纯 ASCII 是 `~ `），不然照这一套的 `life`。
+    pub fn life_mark(&self) -> String {
+        crate::sheet::read(|s| s.marks.life.clone()).unwrap_or_else(|| self.life.clone())
+    }
+
     /// 这件工具的图标。
     pub fn tool(&self, name: &str) -> &str {
         self.tool_in(name, None)

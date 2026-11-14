@@ -126,6 +126,10 @@ enum Waiting {
     PromptRead(String, String),
     /// 读示范对话（`persona.read` 的 `pairs`）：人格。
     ExamplesRead(String),
+    /// 人生会话的状态（`life.status`、`life.pause`、`life.resume`，「推演人生」第 2 条）：人格。
+    Life(String),
+    /// 开人生会话（`life.start`）：人格。
+    LifeStarted(String),
     /// 存示范对话：人格。
     ExamplesSaved(String),
     /// 列表页 `d`：先读一次详情看能不能删、删了是什么（`remove`）。
@@ -335,6 +339,8 @@ impl Settings {
             Waiting::AvatarPut(id, version) => self.avatar_put((id, version), result),
             Waiting::PromptRead(id, prompt) => self.prompt_read((id, prompt), result),
             Waiting::ExamplesRead(id) => self.examples_read(id, result),
+            Waiting::Life(id) => self.life_answer(id, result),
+            Waiting::LifeStarted(id) => self.life_started(&id, result),
             Waiting::ExamplesSaved(id) => self.examples_saved(id, result, texts),
             Waiting::PresetRemove(id) => self.preset_remove_read(&id, result, texts),
             Waiting::PersonaRemove(id) => self.persona_remove_read(&id, result, texts),

@@ -26,6 +26,10 @@ pub struct Detail {
     pub avatar: Option<String>,
     /// 子代理可选（核心 P-10 补，2026-10-17 项目主人定）：开了的才出现在派子代理的可选人格里；没写的是关。
     pub subagent: bool,
+    /// 写了推演方法（核心 LF-8 上，「推演人生」第 2 条）；没写的用出厂的那一份。
+    pub life: bool,
+    /// 人生会话的上下文上限（核心 LF-10 的 `life_context`）、出厂的那个数（`life_context_default`）；没写、旧核心的是 `None`。
+    pub life_context: (Option<u64>, Option<u64>),
 }
 
 /// 读 `persona.get` 的回应。`prompts` 里的两样是写没写（核心 P-3 补）；以前给的是来处（写了的是字），一样认成写了。
@@ -42,6 +46,11 @@ pub fn detail(got: &Value) -> Detail {
         remove: text(&got["remove"]),
         avatar: text(&got["avatar"]),
         subagent: got["subagent"] == true,
+        life: written(&got["prompts"]["life"]),
+        life_context: (
+            got["life_context"].as_u64(),
+            got["life_context_default"].as_u64(),
+        ),
     }
 }
 

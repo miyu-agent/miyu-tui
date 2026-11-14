@@ -67,7 +67,8 @@ fn a_new_persona_is_created_in_one_go_and_becomes_the_default() {
         !oobe.persona.listing && oobe.step == Step::Persona,
         "Esc 只关列表"
     );
-    // 人设提醒短语空着；到「下一步」回车（vim 的 j 也认：这一格不打字）。
+    // 人设提醒短语空着、推演人生不开；到「下一步」回车（vim 的 j 也认：这一格不打字）。
+    oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -128,7 +129,7 @@ fn a_name_is_needed_and_the_sheet_writes_lines_and_hands_over_to_the_editor() {
     assert!(oobe.persona.writing.is_some(), "回来还在浮窗里");
     oobe.key(key(KeyCode::Esc), t0, &texts);
     assert_eq!(oobe.persona.prompt.text(), "三\n四");
-    for _ in 0..3 {
+    for _ in 0..4 {
         oobe.key(key(KeyCode::Down), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -183,7 +184,7 @@ fn an_existing_default_is_filled_in_and_only_changes_are_saved_with_versions() {
     assert_eq!(oobe.persona.prompt.text(), "你是小助手。");
     assert!(oobe.persona.existing_name.is_some());
     // 没改：直接写默认人格。
-    for _ in 0..6 {
+    for _ in 0..7 {
         oobe.key(key(KeyCode::Down), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -213,7 +214,7 @@ fn an_existing_default_is_filled_in_and_only_changes_are_saved_with_versions() {
     oobe.key(key(KeyCode::Enter), t0, &texts);
     typed(&mut oobe, "很开朗。", t0, &texts);
     oobe.key(key(KeyCode::Esc), t0, &texts);
-    for _ in 0..3 {
+    for _ in 0..4 {
         oobe.key(key(KeyCode::Down), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -271,7 +272,7 @@ fn an_avatar_path_is_uploaded_then_set_on_the_new_persona() {
     oobe.paste(&format!("'{avatar}'"));
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert_eq!(oobe.persona.avatar.text(), avatar);
-    for _ in 0..4 {
+    for _ in 0..5 {
         oobe.key(key(KeyCode::Char('j')), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -305,7 +306,7 @@ fn an_avatar_that_cannot_be_uploaded_says_why_and_goes_back_to_it() {
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.paste("/tmp/没有这个文件.png");
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    for _ in 0..4 {
+    for _ in 0..5 {
         oobe.key(key(KeyCode::Char('j')), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
@@ -369,7 +370,7 @@ fn clearing_the_short_description_of_an_existing_default_removes_it() {
         oobe.key(key(KeyCode::Backspace), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
-    for _ in 0..5 {
+    for _ in 0..6 {
         oobe.key(key(KeyCode::Char('j')), t0, &texts);
     }
     oobe.key(key(KeyCode::Enter), t0, &texts);
