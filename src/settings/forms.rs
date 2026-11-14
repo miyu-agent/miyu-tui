@@ -13,10 +13,12 @@ use super::keys;
 use crate::input::Editor;
 
 mod names;
+mod pool;
 mod search;
 mod values;
 
 pub use names::{name_ok, path_name, unique};
+pub use pool::pool;
 pub use values::{plain, window_text, window_value};
 
 /// 改的是哪一样。
@@ -56,6 +58,10 @@ pub enum Field {
     /// 池的「子代理能选」（`pools.<名字>.subagent`，2026-11-14 主人报新建池时设不了）。
     Subagent,
     Members,
+    /// 成员里「已选 N」那一行暗字（2026-11-14 主人：已选的排在前面）。
+    Chosen,
+    /// 成员里「未选」那一行暗字。
+    Others,
     Member,
 }
 
@@ -85,6 +91,8 @@ impl Field {
             Field::Strategy => "strategy",
             Field::Subagent => "subagent",
             Field::Members => "members",
+            Field::Chosen => "chosen",
+            Field::Others => "others",
             Field::Member => "member",
         }
     }
@@ -443,53 +451,6 @@ pub fn model(view: &Data, data: &Data, draft: &Draft, provider: &str, model: Opt
         Target::Model(provider.to_string(), model.map(str::to_string)),
         rows,
         Vec::new(),
-    )
-}
-
-/// 编辑一个池（`None` 是新建）：所有模型一行一个，已经不存在的成员排在最前。
-pub fn pool(view: &Data, name: Option<&str>) -> Form {
-    let pool = name.and_then(|n| view.pool(n));
-    let members = pool.map(|p| p.members.clone()).unwrap_or_default();
-    // 照先后：主力加备用（核心 Q-4上）。
-    let strategies = ["rotate", "pin", "ordered"].map(str::to_string).to_vec();
-    let at = pool
-        .and_then(|p| p.strategy.as_deref())
-        .and_then(|s| strategies.iter().position(|x| x == s))
-        .or(Some(0));
-    let mut rows = vec![
-        match name {
-            Some(n) => Row::new(Field::Pool, Val::Fixed(n.to_string())),
-            None => Row::text(Field::Pool, ""),
-        },
-        Row::new(
-            Field::Strategy,
-            Val::Choice {
-                options: strategies,
-                at,
-            },
-        ),
-        values::subagent(pool.is_some_and(|p| p.subagent)),
-        Row::new(Field::Members, Val::Section),
-    ];
-    for gone in members.iter().filter(|r| view.model(r).is_none()) {
-        rows.push(member(gone, false, true));
-    }
-    for p in &view.providers {
-        for m in &p.models {
-            rows.push(member(&m.reference, m.sees(), false));
-        }
-    }
-    Form::new(Target::Pool(name.map(str::to_string)), rows, members)
-}
-
-fn member(reference: &str, sees: bool, gone: bool) -> Row {
-    Row::new(
-        Field::Member,
-        Val::Member {
-            reference: reference.to_string(),
-            sees,
-            gone,
-        },
     )
 }
 

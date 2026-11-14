@@ -31,6 +31,11 @@ impl Form {
             Val::Member { reference, .. } => {
                 crate::fuzzy::hit(&self.search.0, [reference.as_str()])
             }
+            // 「已选」「未选」那两行暗字：它下面那一段有一行露着才露（2026-11-14，成员分两段）
+            Val::Section if matches!(self.rows[i].field, Field::Chosen | Field::Others) => (i + 1
+                ..self.rows.len())
+                .take_while(|&j| matches!(self.rows[j].val, Val::Member { .. }))
+                .any(|j| self.shows(j)),
             _ => true,
         }
     }

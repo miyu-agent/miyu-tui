@@ -151,6 +151,15 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
         if form.key_only.is_some() && !form.shows(i) {
             continue;
         }
+        if matches!(row.field, Field::Chosen | Field::Others) {
+            // 成员里「已选 N」「未选」两行暗字（2026-11-14 主人：已选的排在前面）；那一段筛得一行不剩的不写
+            if form.shows(i) {
+                let n = form.members.len().to_string();
+                let text = texts.field(row.field.name()).replace("{n}", &n);
+                lines.plain(Line::styled(format!("  {text}"), theme::dim()));
+            }
+            continue;
+        }
         if matches!(row.val, Val::Section) {
             // 一节和上面的格子之间空一行（2026-10-19 项目主人：「价格」和「温度」挤在一起）。
             if i > 0 {
@@ -162,6 +171,8 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
             ));
             if row.field == Field::Members {
                 search_line(lines, form, texts);
+                // 到搜索框为止钉在窗顶，只有成员列表滚（2026-11-14 主人：一滚名称、调用方式、搜索框都跟着走了）
+                lines.fixed = lines.body.len();
             }
             continue;
         }
