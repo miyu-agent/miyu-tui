@@ -30,6 +30,8 @@ pub struct UsageData {
     pub today: jiff::civil::Date,
     /// 用到的要署名的汇率源（核心 UC-1）：框底下注明。
     pub rates: Vec<String>,
+    /// 看着的会话的套餐额度（核心 QU-1，`quota.rs`）：没有额度、还没回来的是空的，总览不画。
+    pub quota: Vec<super::quota::QuotaWindow>,
 }
 
 impl App {
@@ -45,7 +47,9 @@ impl App {
             purposes: None,
             today: now.date(),
             rates: Vec::new(),
+            quota: Vec::new(),
         });
+        self.ask_quota();
         let kinds = [
             UsageKind::Total,
             UsageKind::Days,

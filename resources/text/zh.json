@@ -462,7 +462,10 @@
       "title": "起标题",
       "recap": "回顾",
       "vision": "看图"
-    }
+    },
+    "quota_minutes": "{n} 分钟后重置",
+    "quota_hours": "{n} 小时后重置",
+    "quota_at": "{time} 重置"
   },
   "help": {
     "title": "帮助",

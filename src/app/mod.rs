@@ -69,6 +69,7 @@ mod skill_word;
 pub(crate) use paste::attach_rule;
 mod pick_edit;
 pub mod prefix_ask;
+pub(crate) mod quota;
 mod redo;
 mod screen;
 mod seen;
