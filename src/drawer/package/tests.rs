@@ -171,3 +171,21 @@ fn installing_says_where_from_which_capabilities_are_held_and_the_notice() {
     .rows;
     assert_eq!(rows, ["配置：2 项设置留在配置里"]);
 }
+
+#[test]
+fn a_driver_that_has_the_provider_run_tools_gets_a_line_under_what_it_carries() {
+    // 核心 HT-4（2026-11-14）：扩展写的模型驱动报上了供应商自己跑的工具，装的时候看得见；照命令行确认屏，「包含：」下面
+    // 一个驱动一行；没声明的驱动不列。
+    let got = planned(
+        json!({"tool": "package", "install": "/home/alice/ag", "preview": {
+        "package": "ag", "program": "process", "drivers": ["ag", "plain"],
+        "hosted": {"ag": ["search_web", "read_url_content"]}}}),
+    );
+    assert_eq!(
+        got.map(|p| p.rows),
+        Some(vec![
+            "包含：扩展程序".into(),
+            "      模型驱动 ag 会让供应商自己跑：search_web、read_url_content".into(),
+        ])
+    );
+}

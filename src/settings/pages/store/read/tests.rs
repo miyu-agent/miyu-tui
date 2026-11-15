@@ -170,3 +170,23 @@ fn where_a_package_came_from_follows_source_when_installed() {
     let old = info(&json!({"package": "x", "from": "shipped"}));
     assert_eq!(old.from.as_deref(), Some("shipped"));
 }
+
+#[test]
+fn hosted_tools_are_their_own_lines_not_part_of_what_a_package_carries() {
+    // 核心 HT-4：`contains.hosted` 是驱动名到工具名，「包含」里不写它，详情另一个驱动一行。
+    let got = super::info(&serde_json::json!({
+        "package": "ag",
+        "contains": {"drivers": ["ag"], "hosted": {"ag": ["search_web", "read_url_content"]}}
+    }));
+    assert_eq!(
+        got.provides,
+        [("drivers".to_string(), vec!["ag".to_string()])]
+    );
+    assert_eq!(
+        got.hosted,
+        [(
+            "ag".to_string(),
+            vec!["search_web".to_string(), "read_url_content".to_string()]
+        )]
+    );
+}

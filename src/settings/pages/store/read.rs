@@ -91,6 +91,8 @@ pub struct Info {
     pub required_by: Vec<String>,
     /// 带了哪几样：种类、名字。
     pub provides: Vec<(String, Vec<String>)>,
+    /// 模型驱动会让供应商自己跑的工具（核心 HT-4 的 `hosted`）：驱动名、工具名。
+    pub hosted: Vec<(String, Vec<String>)>,
     /// 扩展声明的能力的名字。
     pub needs: Vec<String>,
     /// 许可证（SPDX 短串，核心 PV-3：清单 `[package] license`）；没写的是 `None`。
@@ -116,8 +118,10 @@ fn provides(v: &Value) -> Vec<(String, Vec<String>)> {
     };
     let mut out: Vec<(String, Vec<String>)> = map
         .iter()
-        // `command` 是第一个子命令、`commands` 是全部：有了全部的不再写第一个，不然「命令 memes」写两遍。
+        // `command` 是第一个子命令、`commands` 是全部：有了全部的不再写第一个，不然「命令 memes」写两遍。驱动让供应商自己跑
+        // 的工具另写一行（[`hosted`]）。
         .filter(|(kind, _)| !(*kind == "command" && map.contains_key("commands")))
+        .filter(|(kind, _)| *kind != "hosted")
         .filter_map(|(kind, names)| {
             let names = match names {
                 Value::Array(_) => ids(names),
@@ -131,6 +135,17 @@ fn provides(v: &Value) -> Vec<(String, Vec<String>)> {
         .collect();
     out.sort();
     out
+}
+
+/// 「包含」里的 `hosted`（核心 HT-4）：`{"<驱动名>": ["<工具名>", …]}`，照驱动名排；没有的是空的。
+pub fn hosted(v: &Value) -> Vec<(String, Vec<String>)> {
+    v["hosted"]
+        .as_object()
+        .into_iter()
+        .flatten()
+        .map(|(driver, tools)| (driver.clone(), ids(tools)))
+        .filter(|(_, tools)| !tools.is_empty())
+        .collect()
 }
 
 /// 读 `package.search` 的回应。
@@ -233,6 +248,11 @@ pub fn info(got: &Value) -> Info {
                 .or_else(|| text(c))
         })
         .collect();
+    let contains = if got["contains"].is_object() {
+        &got["contains"]
+    } else {
+        &got["provides"]
+    };
     Info {
         author: text(&got["author"]),
         upstream: text(&got["upstream"]),
@@ -245,11 +265,8 @@ pub fn info(got: &Value) -> Info {
         depends: ids(&got["depends"]),
         required_by: ids(&got["required_by"]),
         // 装着的那一份「包含」叫 `contains`（核心 CM-1，形状同装之前看一眼的）；软件源那一份照旧 `provides`（索引的形状）。
-        provides: provides(if got["contains"].is_object() {
-            &got["contains"]
-        } else {
-            &got["provides"]
-        }),
+        provides: provides(contains),
+        hosted: hosted(contains),
         needs,
         license: text(&got["license"]),
     }

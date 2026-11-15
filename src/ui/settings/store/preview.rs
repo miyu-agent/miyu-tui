@@ -146,7 +146,7 @@ fn local(
         }
         None => (String::new(), plain),
     };
-    vec![
+    let mut rows = vec![
         (k("name"), p.name.clone(), plain),
         (k("version"), version, style),
         (k("summary"), p.summary.clone(), plain),
@@ -172,8 +172,24 @@ fn local(
             plain,
         ),
         (k("provides"), provides(&info.provides, texts), plain),
-        (k("needs"), info.needs.join(&v("sep")), theme::warn()),
-    ]
+    ];
+    // 模型驱动会让供应商自己跑的工具（核心 HT-4）：「包含」下面一个驱动一行，同命令行的确认屏
+    rows.extend(hosted_rows(&info.hosted, &v("hosted"), &v("sep")));
+    rows.push((k("needs"), info.needs.join(&v("sep")), theme::warn()));
+    rows
+}
+
+/// 「包含」下面一个驱动一行（名目那一格空着）：「模型驱动 ag 会让供应商自己跑：search_web、read_url_content」。
+fn hosted_rows(hosted: &[(String, Vec<String>)], line: &str, sep: &str) -> Vec<Pair> {
+    hosted
+        .iter()
+        .map(|(driver, tools)| {
+            let text = line
+                .replace("{driver}", driver)
+                .replace("{tools}", &tools.join(sep));
+            (String::new(), text, Style::new())
+        })
+        .collect()
 }
 
 /// 几个编号照名字写（装着的、软件源里的找得到名字的），用顿号接。
