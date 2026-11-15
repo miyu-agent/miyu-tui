@@ -462,7 +462,10 @@
       "title": "タイトル",
       "recap": "振り返り",
       "vision": "画像"
-    }
+    },
+    "quota_minutes": "{n} 分後にリセット",
+    "quota_hours": "{n} 時間後にリセット",
+    "quota_at": "{time} にリセット"
   },
   "help": {
     "title": "ヘルプ",

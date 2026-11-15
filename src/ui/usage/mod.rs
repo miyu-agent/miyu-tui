@@ -4,6 +4,7 @@
 
 mod charts;
 mod overview;
+mod quota;
 mod tables;
 
 use std::collections::HashMap;
@@ -75,6 +76,12 @@ pub struct Texts {
     pub main_purpose: String,
     /// 别的用途的名字；没有的照原样写。
     pub purposes: HashMap<String, String>,
+    /// 套餐额度（核心 QU-1，`quota.rs`）：一小时以内重置写几分钟后，`{n}`。
+    pub quota_minutes: String,
+    /// 24 小时以内重置写几小时后，`{n}`。
+    pub quota_hours: String,
+    /// 再远写日期时刻，`{time}`。
+    pub quota_at: String,
 }
 
 /// 框里几样图的尺寸（`layout.json` 的 `usage`）。

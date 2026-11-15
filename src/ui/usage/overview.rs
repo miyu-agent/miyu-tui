@@ -24,7 +24,18 @@ pub(super) fn page(
     width: u16,
 ) -> Vec<Line<'static>> {
     let days = usage::days(rows, src.currency);
-    let mut out = stats(src, data, &days, width);
+    // 看着的会话有套餐额度的（核心 QU-1）：顶上一行一个窗口，空一行再接四个数。
+    let now = (jiff::Timestamp::now(), &jiff::tz::TimeZone::system());
+    let (block, edge) = crate::sheet::read(|s| (s.marks.block.clone(), s.marks.edge.clone()));
+    let glyphs = super::quota::Glyphs {
+        block: &block,
+        edge: &edge,
+    };
+    let mut out = super::quota::lines(&src.config.text.usage, &data.quota, now, width, &glyphs);
+    if !out.is_empty() {
+        out.push(Line::default());
+    }
+    out.extend(stats(src, data, &days, width));
     out.push(Line::default());
     out.extend(heat(src, data, &days, by_money, width));
     out

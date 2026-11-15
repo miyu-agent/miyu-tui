@@ -74,8 +74,12 @@ impl App {
         if self.avatar_update(&update) {
             return;
         }
-        // 一轮结束问的换算好的金额归它（`bill_refresh.rs`）；语音录完、念完归它（`voice.rs`）。
-        if self.bill_answer(&update) || self.status_update(&update) || self.voice_answer(&update) {
+        // 一轮结束问的换算好的金额归它（`bill_refresh.rs`）；语音录完、念完归它（`voice.rs`）；额度归它（`quota.rs`）。
+        if self.bill_answer(&update)
+            || self.status_update(&update)
+            || self.voice_answer(&update)
+            || self.quota_answer(&update)
+        {
             return;
         }
         // 总线上可用的名字变了（核心 BUS-2）：语音的麦克风、命令照它（`voice.rs`）。

@@ -103,6 +103,7 @@ mod models_changed;
 mod notices;
 mod pools;
 mod prefix;
+mod quota;
 mod recent;
 mod rename;
 mod skill_word;
