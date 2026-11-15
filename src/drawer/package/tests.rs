@@ -173,6 +173,21 @@ fn installing_says_where_from_which_capabilities_are_held_and_the_notice() {
 }
 
 #[test]
+fn installing_from_a_source_shows_the_hosted_tools_too() {
+    // 核心 RB-1：从软件源装的预览也带 `hosted`（照索引），软件源那一份没有 `drivers`；照样一个驱动一行。
+    let rows = planned(json!({"tool": "package", "install": "ag", "preview": {
+        "package": "ag", "version": "0.1.0", "source": "community", "feed": "official",
+        "hosted": {"ag": ["search_web", "read_url_content"]}}}))
+    .unwrap()
+    .rows;
+    assert!(
+        rows.iter()
+            .any(|r| r.ends_with("模型驱动 ag 会让供应商自己跑：search_web、read_url_content")),
+        "{rows:?}"
+    );
+}
+
+#[test]
 fn a_driver_that_has_the_provider_run_tools_gets_a_line_under_what_it_carries() {
     // 核心 HT-4（2026-11-14）：扩展写的模型驱动报上了供应商自己跑的工具，装的时候看得见；照命令行确认屏，「包含：」下面
     // 一个驱动一行；没声明的驱动不列。

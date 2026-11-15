@@ -266,7 +266,10 @@ pub fn info(got: &Value) -> Info {
         required_by: ids(&got["required_by"]),
         // 装着的那一份「包含」叫 `contains`（核心 CM-1，形状同装之前看一眼的）；软件源那一份照旧 `provides`（索引的形状）。
         provides: provides(contains),
-        hosted: hosted(contains),
+        // 装着的在 `contains` 里；没装的照软件源，`hosted` 在最外层（核心 RB-1，索引原样）。
+        hosted: Some(hosted(contains))
+            .filter(|h| !h.is_empty())
+            .unwrap_or_else(|| hosted(got)),
         needs,
         license: text(&got["license"]),
     }

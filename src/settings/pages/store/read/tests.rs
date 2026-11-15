@@ -190,3 +190,22 @@ fn hosted_tools_are_their_own_lines_not_part_of_what_a_package_carries() {
         )]
     );
 }
+
+#[test]
+fn a_package_not_installed_yet_shows_the_hosted_tools_from_the_source() {
+    // 核心 RB-1：没装的照软件源，`hosted` 在最外层（索引原样，同装之前看一眼的），软件源那一份没有 `drivers`；
+    // 详情照样一个驱动一行。旧索引没有这一格的什么都不写。
+    let got = super::info(&serde_json::json!({
+        "from": "source", "package": "ag", "provides": {"tools": ["x"]},
+        "hosted": {"ag": ["search_web", "read_url_content"]}
+    }));
+    assert_eq!(
+        got.hosted,
+        [(
+            "ag".to_string(),
+            vec!["search_web".to_string(), "read_url_content".to_string()]
+        )]
+    );
+    let old = super::info(&serde_json::json!({"from": "source", "package": "ag", "provides": {}}));
+    assert!(old.hosted.is_empty());
+}
