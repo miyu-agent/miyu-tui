@@ -142,10 +142,10 @@ mod tests {
         let (program, args) = command("Miyu", "Miyu", "出错", None);
         if cfg!(target_os = "macos") {
             assert_eq!(program, "osascript");
+            assert_eq!(args[1], "display notification \"出错\" with title \"Miyu\"");
         } else if cfg!(windows) {
             assert_eq!(program, "powershell");
             assert!(args.last().unwrap().contains("CreateTextNode('出错')"));
-            assert_eq!(args[1], "display notification \"出错\" with title \"Miyu\"");
         } else {
             assert_eq!(program, "notify-send");
             assert_eq!(args, ["-a", "Miyu", "--", "Miyu", "出错"]);
