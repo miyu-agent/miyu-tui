@@ -37,7 +37,7 @@
   "copy_failed": "Couldn't copy: {reason}",
   "nothing_to_copy": "No reply to copy yet",
   "connecting": "Connecting to the core…",
-  "no_core_bin": "The core isn't running: set MIYU_CORE_BIN to the remake's miyu when starting",
+  "no_core_bin": "The core isn't running: when starting, set MIYU_CORE_BIN to the miyu program",
   "core_failed": "Can't connect to the core: {reason}",
   "reconnecting": "Lost the core, reconnecting…",
   "turn_cut": "Core disconnected",
@@ -1670,7 +1670,7 @@
     "theme": {
       "title": "Color scheme",
       "sub": "Choose mode and colors. Applies immediately. You can change this in settings later",
-      "rows": ["Mode", "Colors", "Figure", "Accent", "Background"],
+      "rows": ["Light or dark", "Colors", "Figure", "Main color", "Paint the background"],
       "modes": ["Auto", "Dark", "Light"],
       "colors": ["Auto", "Follow the avatar", "Follow the wallpaper", "Terminal colors"],
       "from_avatar": "From {name}'s avatar",
