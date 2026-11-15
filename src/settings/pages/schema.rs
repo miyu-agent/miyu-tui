@@ -127,7 +127,7 @@ const OWN_GROUPS: [(&str, &str, &str); 7] = [
     ("tui.icons", "tui.icons", APPEARANCE),
     ("tui.timeline_", "tui.timeline", GENERAL),
     ("tui.keys", "tui.keys", GENERAL),
-    // 新会话不问人格、预设（2026-10-22）：也是怎么操作的事，跟按键模式一组。
+    // 新会话不问人格、预设（2026-10-22）：先挂在按键模式那一组（交互），核心有「新会话」一组时再挪过去（`join_new_session`）。
     ("tui.skip_pick", "tui.keys", GENERAL),
 ];
 
