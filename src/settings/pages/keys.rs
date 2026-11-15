@@ -416,8 +416,9 @@ impl Settings {
             json!({"persona": id}),
             Waiting::PersonaDetail(id.clone()),
         );
-        // 推演人生那一行照它写（「推演人生」第 2 条）
+        // 推演人生那一行照它写（「推演人生」第 2 条）；她在人生里记下的变化列在最后（核心 LF-11）
         self.ask_life(&id);
+        self.ask_changes(&id);
         self.popup = Some(Popup::Persona(PersonaView {
             id,
             detail: None,

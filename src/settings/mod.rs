@@ -130,6 +130,8 @@ enum Waiting {
     Life(String),
     /// 开人生会话（`life.start`）：人格。
     LifeStarted(String),
+    /// 这个人格记下的变化（`memory.list {class: "change"}`，核心 LF-11）：人格。
+    Changes(String),
     /// 存示范对话：人格。
     ExamplesSaved(String),
     /// 列表页 `d`：先读一次详情看能不能删、删了是什么（`remove`）。
@@ -341,6 +343,7 @@ impl Settings {
             Waiting::ExamplesRead(id) => self.examples_read(id, result),
             Waiting::Life(id) => self.life_answer(id, result),
             Waiting::LifeStarted(id) => self.life_started(&id, result),
+            Waiting::Changes(id) => self.changes_answer(id, result),
             Waiting::ExamplesSaved(id) => self.examples_saved(id, result, texts),
             Waiting::PresetRemove(id) => self.preset_remove_read(&id, result, texts),
             Waiting::PersonaRemove(id) => self.persona_remove_read(&id, result, texts),

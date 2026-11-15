@@ -31,6 +31,8 @@ pub struct LifeTexts {
     pub context: String,
     /// 没写时暗色写的：`{n}` 是出厂的那个数。
     pub context_default: String,
+    /// 她在人生里记下的自己的变化那几行的名字（核心 LF-11「后天」）。
+    pub changes: String,
 }
 
 /// 一个人格的人生会话在哪一步（`life.status` 的回应）。
