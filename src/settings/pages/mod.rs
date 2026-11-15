@@ -4,6 +4,7 @@
 
 mod avatar;
 pub mod catalog;
+pub mod changes;
 pub mod choose;
 pub mod combo;
 pub mod create;
@@ -129,6 +130,8 @@ pub struct More {
     pub section: Option<Section>,
     /// 人格的窗里那一个人格的人生会话在哪一步（`life.status`，「推演人生」第 2 条）：人格编号和状态。
     pub life: Option<(String, life::LifeState)>,
+    /// 人格的窗里那一个人格记下的变化（核心 LF-11「后天」，`changes.rs`）：人格编号和一条条。
+    pub changes: Option<(String, Vec<changes::Change>)>,
     /// 「软件包」三页（第 43c 条）。
     pub store: store::Store,
     /// 滑块调了还没存的（第 33 条子规则）。

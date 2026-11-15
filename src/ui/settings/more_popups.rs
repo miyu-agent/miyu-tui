@@ -8,6 +8,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::popup::{Body, Lines};
 use crate::features;
+use crate::settings::pages::changes::Change;
 use crate::settings::pages::choose::{LineEdit, PersonaView, PresetView};
 use crate::settings::pages::life::LifeTexts;
 use crate::settings::pages::preset_edit::{Field, fields};
@@ -150,7 +151,8 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
         .max(id_label.width())
         .max(life.name.width())
         .max(life.method.width())
-        .max(life.context.width());
+        .max(life.context.width())
+        .max(life.changes.width());
     id_row(lines, id_label, label_w, &view.id);
     let n = rows.len();
     for (i, (name, value)) in rows.into_iter().enumerate() {
@@ -237,6 +239,26 @@ fn life_rows(
             vec![value],
             view.cursor == n + 2,
         );
+    }
+    changes_rows(lines, page.changes_of(&view.id), (&texts.changes, label_w));
+}
+
+/// 她在人生里记下的自己的变化（核心 LF-11「后天」）：只读、光标不停，旧的在前，第一条前面写名字；为什么变的暗色写在下面
+/// 一行。没有的一行都不写。
+fn changes_rows(lines: &mut Lines, changes: &[Change], (name, label_w): (&str, usize)) {
+    for (i, change) in changes.iter().enumerate() {
+        let label = if i == 0 { name } else { "" };
+        let pad = " ".repeat(label_w.saturating_sub(label.width()));
+        lines.plain(Line::from(vec![
+            Span::styled(format!("  {label}{pad}  "), theme::dim()),
+            Span::raw(change.text.clone()),
+        ]));
+        if let Some(why) = &change.why {
+            lines.plain(Line::from(vec![
+                Span::raw(" ".repeat(label_w + 4)),
+                Span::styled(why.clone(), theme::faint()),
+            ]));
+        }
     }
 }
 
