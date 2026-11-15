@@ -768,7 +768,8 @@
   "workspace": {
     "need_path": "请指定路径",
     "pending": "新会话的工作区：{path}",
-    "changed": "工作区已切换到 {path}"
+    "changed": "工作区已切换到 {path}",
+    "moved": "工作目录 {given} 范围过大，改用 {used}"
   },
   "themes": {
     "title": "配色",

@@ -50,6 +50,11 @@ impl App {
                 }
                 None
             }
+            // 开会话时核心换了工作目录（核心 WN-1）：提示行说一句（`workspace.rs`）。
+            Update::WorkspaceMoved(moved) => {
+                self.workspace_moved(&moved);
+                None
+            }
             // 重连时重新订阅主会话的回应（`core/spawn.rs`）：断开那一段漏掉的用量补回来。
             Update::Snapshot(snapshot) => {
                 if let Some(main) = self.talk.main_session() {

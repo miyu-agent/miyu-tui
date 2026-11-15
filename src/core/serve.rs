@@ -9,7 +9,7 @@ use tokio::sync::mpsc;
 
 use super::asides;
 use super::awaiting::Awaiting;
-use super::connect::{create, subscribe};
+use super::connect::fresh;
 use super::link::Link;
 use super::request::request;
 use super::rpc::Rpc;
@@ -264,6 +264,7 @@ pub(super) async fn serve(
                                         !notify(Update::Workspace { cwd })
                                     })
                                     || joined.snapshot.is_some_and(|s| !notify(Update::Snapshot(s)))
+                                    || joined.moved.is_some_and(|m| !notify(Update::WorkspaceMoved(m)))
                                 {
                                     return Served::Quit;
                                 }
@@ -442,24 +443,6 @@ async fn send(
         (Ok(id), Some(kind)) => Sent::Awaiting(id, kind, opened),
         (Ok(_), None) => Sent::Skipped,
     }
-}
-
-/// `/new` 以后的第一句话：开会话、订阅。被拒的（模型、人格、预设不在了这类）是这一句没发出去，照「没发出去」办：字放回
-/// 输入框、弹核心的原话（review A5，2026-10-11：原来当成连不上核心，连接好好的却什么都发不出去）。
-async fn fresh(
-    rpc: &mut Rpc,
-    chosen: &super::connect::Chosen,
-) -> Result<(String, super::connect::Joined), Update> {
-    let unsent = |update| match update {
-        Update::Failed(message) => Update::Unsent {
-            reason: None,
-            message,
-        },
-        other => other,
-    };
-    let id = create(rpc, chosen).await.map_err(unsent)?;
-    let joined = subscribe(rpc, &id).await.map_err(unsent)?;
-    Ok((id, joined))
 }
 
 /// 订阅另一个会话，不等回应（回应里的限额由 `take` 交给界面）。重连时带 `after`：从读到的那一条往后补。

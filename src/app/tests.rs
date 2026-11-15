@@ -113,3 +113,4 @@ mod theme_auto;
 mod too_long;
 mod unread;
 mod unseen;
+mod workspace_moved;

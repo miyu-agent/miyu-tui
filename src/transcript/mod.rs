@@ -253,6 +253,7 @@ impl Transcript {
             | Update::PackageProgress(_)
             | Update::Older { .. }
             | Update::Workspace { .. }
+            | Update::WorkspaceMoved(_)
             | Update::SessionGone(_)
             | Update::SessionReadOnly { .. }
             | Update::SessionUnavailable { .. }

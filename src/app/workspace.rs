@@ -50,6 +50,14 @@ impl App {
         }
     }
 
+    /// 开会话时核心换了工作目录（目录太宽，核心 WN-1；蓝图「新会话」第 4 条）：提示行照 `miyu ask` 说一句。
+    pub(super) fn workspace_moved(&mut self, (given, used): &(String, String)) {
+        let note = (self.config.text.workspace.moved)
+            .replace("{given}", given)
+            .replace("{used}", used);
+        self.hint(note, false);
+    }
+
     /// `/new` 以后回到终端所在的目录。
     pub(super) fn forget_workspace(&mut self) {
         self.talk.workspace_pending = None;

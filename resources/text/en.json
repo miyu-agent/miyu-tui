@@ -768,7 +768,8 @@
   "workspace": {
     "need_path": "Specify a path",
     "pending": "New session will open in {path}",
-    "changed": "Workspace changed to {path}"
+    "changed": "Workspace changed to {path}",
+    "moved": "Working directory {given} is too broad; using {used}"
   },
   "themes": {
     "title": "Colors",
