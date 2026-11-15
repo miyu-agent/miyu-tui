@@ -44,6 +44,8 @@ pub struct PackageTexts {
     pub slash: String,
     /// 一行打头的：包含、读不成、需要、一并删除、大小。
     pub includes: String,
+    /// 「包含」下面一个驱动一行（核心 HT-4 的 `hosted`）：`{driver}` 驱动名，`{tools}` 让供应商自己跑的工具。
+    pub hosted: String,
     /// 见 `includes`。
     pub skipped: String,
     /// 见 `includes`。
@@ -146,6 +148,18 @@ pub fn plan(detail: &Detail, texts: &PackageTexts) -> Option<Plan> {
         source::from(preview, texts).into_iter().collect(),
     );
     row(&texts.includes, included(preview, doing, texts));
+    // 模型驱动会让供应商自己跑的工具：「包含」下面一个驱动一行，同 `miyu pkg install` 的确认屏（核心 HT-4）
+    let indent = " ".repeat(unicode_width::UnicodeWidthStr::width(
+        texts.includes.as_str(),
+    ));
+    for (driver, tools) in crate::settings::pages::store::read::hosted(preview) {
+        let tools = tools.join(&texts.separator);
+        let line = texts
+            .hosted
+            .replace("{driver}", &driver)
+            .replace("{tools}", &tools);
+        row(&indent, vec![line]);
+    }
     let skipped = list(&preview["skipped"])
         .map(|one| {
             texts
