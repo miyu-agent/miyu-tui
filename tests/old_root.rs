@@ -18,8 +18,8 @@ fn an_old_data_root_is_named_as_such() {
     .expect("写得进去");
     let mut tui = support::Tui::at(&home, &work, "zh_CN.UTF-8", &[]);
     // 整句写全（「连核心」第 8 条子条）：后半句怎么办也看得到，底栏只写「连不上核心」。照界面的语言写核心资源里的那一句
-    // （排期第 43 条），不是核心的原话（原话的后半句是「照施工单 FH-7 自己搬」）。
-    tui.wait_for("迁移程序");
+    // （排期第 43 条），不是核心的原话。核心 85fb27c67 起那一句的后半句是「把 MIYU_HOME 设成一个空目录」（不再提迁移程序）。
+    tui.wait_for("空目录");
     for l in tui.lines() {
         println!("|{l}|");
     }
@@ -41,7 +41,7 @@ fn an_old_data_root_is_explained_in_the_interface_language() {
     std::fs::create_dir_all(&work).expect("建得了");
     std::fs::write(home.join(".miyu-root"), "").expect("写得进去");
     let mut tui = support::Tui::at(&home, &work, "en_US.UTF-8", &[("MIYU_CORE_BIN", "miyu")]);
-    tui.wait_for("migration");
+    tui.wait_for("empty folder");
     let lines = tui.lines();
     assert!(
         !lines.iter().any(|l| l.contains("旧版")),
