@@ -768,7 +768,8 @@
   "workspace": {
     "need_path": "パスを指定してください",
     "pending": "新しいセッションは {path} で開きます",
-    "changed": "作業場所を {path} に変更しました"
+    "changed": "作業場所を {path} に変更しました",
+    "moved": "作業ディレクトリ {given} は範囲が広すぎるため {used} を使います"
   },
   "themes": {
     "title": "配色",

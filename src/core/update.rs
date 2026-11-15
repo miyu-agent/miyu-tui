@@ -184,6 +184,8 @@ pub enum Update {
         /// 会话在哪个目录干活。
         cwd: String,
     },
+    /// 开会话时核心换了工作目录（目录太宽，核心 WN-1，`connect::moved`）：交的、实际用的，提示行说一句。
+    WorkspaceMoved(super::connect::Moved),
     /// 更早的一页（[`Command::Older`] 的回应）：读成的推送、再往前还有没有；读不成的是核心的原话。
     Older {
         /// 照补发的读成的推送。

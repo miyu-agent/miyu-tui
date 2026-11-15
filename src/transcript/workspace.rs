@@ -18,6 +18,8 @@ pub struct Texts {
     pub pending: String,
     /// 推来换了工作区：正文那一行，`{path}` 是换到的目录。
     pub changed: String,
+    /// 开会话时核心换了工作目录（目录太宽，核心 WN-1）：提示行，`{given}` 交的、`{used}` 实际用的（照 `miyu ask`）。
+    pub moved: String,
 }
 
 impl Transcript {

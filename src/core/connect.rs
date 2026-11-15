@@ -78,11 +78,46 @@ pub(super) struct Chosen {
     pub cwd: Option<String>,
 }
 
-/// 开一个会话：工作目录照换过的、没换的照终端现在的，带上选了的模型、人格、预设（核心 8-8、P-1 上、P-2 上）。
-pub(super) async fn create(rpc: &mut Rpc, chosen: &Chosen) -> Result<String, Update> {
+/// `/new` 以后的第一句话：开会话、订阅。被拒的（模型、人格、预设不在了这类）是这一句没发出去，照「没发出去」办：字放回
+/// 输入框、弹核心的原话（review A5，2026-10-11：原来当成连不上核心，连接好好的却什么都发不出去）。
+pub(super) async fn fresh(rpc: &mut Rpc, chosen: &Chosen) -> Result<(String, Joined), Update> {
+    let unsent = |update| match update {
+        Update::Failed(message) => Update::Unsent {
+            reason: None,
+            message,
+        },
+        other => other,
+    };
+    let (id, moved) = create(rpc, chosen).await.map_err(unsent)?;
+    let mut joined = subscribe(rpc, &id).await.map_err(unsent)?;
+    joined.moved = moved;
+    Ok((id, joined))
+}
+
+/// 开一个会话：工作目录照换过的、没换的照终端现在的，带上选了的模型、人格、预设（核心 8-8、P-1 上、P-2 上）。交回会话编号，
+/// 和核心换了工作目录时的「交的、实际用的」（[`moved`]）。
+async fn create(rpc: &mut Rpc, chosen: &Chosen) -> Result<(String, Option<Moved>), Update> {
     let params = create_params(chosen, cwd);
-    let created = rpc.call("session.create", params).await.map_err(refused)?;
-    Ok(created["session"].as_str().unwrap_or_default().to_string())
+    let created = rpc
+        .call("session.create", params.clone())
+        .await
+        .map_err(refused)?;
+    let id = created["session"].as_str().unwrap_or_default().to_string();
+    let given = params["cwd"].as_str().unwrap_or_default();
+    Ok((id, moved(given, created["cwd"].as_str())))
+}
+
+/// 交的工作目录、核心实际用的（两个都是给人看的写法，家目录写成 `~`）。
+pub type Moved = (String, String);
+
+/// 核心说会话实际在别的目录干活（目录太宽、退回了这个会话的默认工作区，核心 WN-1）：和交的不一样就交回两个，照 `miyu ask`
+/// 「工作目录 ~ 范围过大，改用 …」那一句提示（蓝图「新会话」第 4 条）。一样的、旧核心不回 `cwd` 的是 `None`。
+pub(super) fn moved(given: &str, used: Option<&str>) -> Option<Moved> {
+    let (given, used) = (
+        crate::local::home_short(given),
+        crate::local::home_short(used?),
+    );
+    (given != used).then_some((given, used))
 }
 
 /// `session.create` 的参数。工作目录照 `/workspace` 换过的，没换的照终端现在的目录（`here`）；太宽的（`~` 这类）核心都照用
@@ -117,6 +152,8 @@ pub(super) struct Joined {
     /// 订阅回应里「当前的」几格：新会话真正的权限级别在这里（照配置的开局级别开，2026-10-14 项目主人报：开成开放权限、
     /// 界面却写工作区）。
     pub snapshot: Option<super::Snapshot>,
+    /// 开会话时核心换了工作目录（[`moved`]）：交的、实际用的。订阅的回应里没有，开会话那一步填。
+    pub moved: Option<Moved>,
 }
 
 /// 订阅刚开的会话的事件流，交回订阅的回应里头要的几样（已有的会话照 `serve.rs` 读页、带 `after` 订阅）。
@@ -133,6 +170,7 @@ pub(super) async fn subscribe(rpc: &mut Rpc, session: &str) -> Result<Joined, Up
         preset: super::session_preset(&subscribed),
         workspace: workspace(&subscribed),
         snapshot: super::Snapshot::read(&subscribed),
+        moved: None,
     })
 }
 
@@ -182,7 +220,7 @@ mod tests {
 
     use miyu_client::connect::StartError;
 
-    use super::{Chosen, Update, create_params, start_failed};
+    use super::{Chosen, Update, create_params, moved, start_failed};
 
     #[test]
     fn a_missing_core_program_names_its_path() {
@@ -256,6 +294,24 @@ mod tests {
         assert_eq!(
             create_params(&named, here),
             serde_json::json!({"cwd": "/w", "persona": "miyu", "preset": "full"})
+        );
+    }
+
+    #[test]
+    fn a_workspace_the_core_changed_is_reported_and_the_same_one_is_not() {
+        // 核心 WN-1：交的目录太宽，核心退回会话自己的默认工作区，回应里的 `cwd` 和交的不一样；家目录照 `~` 比。
+        let home = std::env::home_dir().unwrap();
+        let mine = home.join("src").display().to_string();
+        assert_eq!(
+            moved(&mine, Some("~/src")),
+            None,
+            "同一个目录，写法不同也不算"
+        );
+        assert_eq!(moved("/", Some("/")), None);
+        assert_eq!(moved("/", None), None, "旧核心不回 cwd");
+        assert_eq!(
+            moved("/", Some("~/.miyu/workspace/abc")),
+            Some(("/".to_string(), "~/.miyu/workspace/abc".to_string()))
         );
     }
 }
