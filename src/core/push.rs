@@ -13,6 +13,7 @@ mod asking;
 mod attached;
 mod called;
 mod compaction;
+mod delta;
 mod goal;
 mod jobs;
 mod policy;
@@ -26,6 +27,7 @@ pub use asking::Asking;
 pub use attached::Attached;
 pub(crate) use attached::read as read_attached;
 pub use compaction::Compaction;
+pub use delta::Outcome;
 pub(crate) use goal::read as read_goal;
 pub use goal::{Goal, GoalState};
 pub use sent::Sent;
@@ -68,6 +70,8 @@ pub enum Block {
     Reasoning,
     /// 调一件工具，带着工具名。
     ToolCall(String),
+    /// 供应商侧工具（`hosted_tool`，模型在供应商那边自己跑的）：供应商自己的工具名原样、谁跑的（`by` 的端点）。
+    Hosted(String, String),
 }
 
 /// 界面关心的一件事。
@@ -172,6 +176,10 @@ pub enum Push {
     BlockEnd(u64),
     /// 这一次请求里她调的工具，照先后的调用编号（`message.assistant` 里的 `tool_call` 块）。
     Calls(Vec<String>),
+    /// 第几块供应商侧工具的结果（`outcome`）。
+    HostedOutcome(u64, Outcome),
+    /// 回复落盘了（`message.assistant`）：还没结果的供应商侧工具，回复被打断了（`true`）写取消，不然写成了。
+    Settled(bool),
     /// 一件工具的结果。
     ToolResult {
         /// 调用编号。
@@ -415,35 +423,14 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
             entry: body["entry"].as_u64(),
         })),
         "turn.ended" => out.push(Push::TurnEnded(EndReason::parse(&text(&body["reason"])))),
-        "model.delta" => {
-            let index = body["index"].as_u64().unwrap_or_default();
-            if let Some(start) = body["start"].as_str() {
-                if let Some(seen) = body["seen"].as_u64() {
-                    out.push(Push::Heard(seen));
-                }
-                let block = match start {
-                    "text" => Block::Text,
-                    "reasoning" => Block::Reasoning,
-                    _ => Block::ToolCall(text(&body["name"])),
-                };
-                out.push(Push::BlockStart { index, block });
-            }
-            if let Some(piece) = body["text"].as_str() {
-                out.push(Push::Delta {
-                    index,
-                    text: piece.to_string(),
-                });
-            }
-            if body["end"] == true {
-                out.push(Push::BlockEnd(index));
-            }
-        }
+        "model.delta" => delta::read(event, &mut out),
         "message.assistant" => {
             let calls = blocks(body)
                 .filter(|b| b["type"] == "tool_call")
                 .map(|b| text(&b["call_id"]))
                 .collect();
             out.push(Push::Calls(calls));
+            out.push(Push::Settled(body["interrupted"] == true));
         }
         "goal.changed" => out.push(Push::Goal(goal::read(&body["goal"]))),
         "todos.changed" => out.extend(super::todos::read(body).map(|todos| Push::Todos { todos })),

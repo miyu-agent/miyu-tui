@@ -17,6 +17,7 @@ mod foreign;
 mod fresh;
 mod goal;
 mod gone;
+mod hosted;
 mod jobs;
 mod media;
 mod model;
@@ -397,12 +398,9 @@ impl Transcript {
             Push::ToolProgress { call_id, text } => self.tool_progress(&call_id, &text),
             Push::Media(images) => self.sent(images),
             Push::Shown(file) => self.shown(file),
-            Push::ToolImages { call_id, blobs } => {
-                let at = self.calls.get(&call_id).copied();
-                if let Some(step) = at.and_then(|at| self.step_mut(at)) {
-                    step.images = blobs;
-                }
-            }
+            Push::ToolImages { call_id, blobs } => self.tool_images(&call_id, blobs),
+            Push::HostedOutcome(index, outcome) => self.hosted_outcome(index, outcome),
+            Push::Settled(interrupted) => self.settle_hosted(interrupted),
             // 别处来的话、后台任务：界面照会话、任务表先办了（`app/sessions.rs`），正文不直接收。
             Push::GoalRound { seq, round } => self.goal_round(seq, round, &texts.goal),
             Push::Goal(goal) => self.goal = goal,

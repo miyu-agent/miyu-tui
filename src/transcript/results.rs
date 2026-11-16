@@ -45,6 +45,14 @@ impl Transcript {
         }
     }
 
+    /// 结果里的图（读了图片文件的 `read`）：接在那一步下面。
+    pub(super) fn tool_images(&mut self, call_id: &str, blobs: Vec<String>) {
+        let at = self.calls.get(call_id).copied();
+        if let Some(step) = at.and_then(|at| self.step_mut(at)) {
+            step.images = blobs;
+        }
+    }
+
     /// 在跑的工具推来一段输出：收全了一行进度的，写进那一步。
     pub(super) fn tool_progress(&mut self, call_id: &str, text: &str) {
         let Some(line) = self.progress.feed(call_id, text) else {

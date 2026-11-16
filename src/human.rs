@@ -19,6 +19,7 @@ pub struct Human {
     tools: BTreeMap<String, Face>,
     packages: BTreeMap<String, String>,
     icons: BTreeMap<String, String>,
+    providers: BTreeMap<String, String>,
     said: Phrases,
 }
 
@@ -45,6 +46,7 @@ impl Human {
             tools,
             packages,
             icons: BTreeMap::new(),
+            providers: BTreeMap::new(),
             said,
         }
     }
@@ -62,6 +64,26 @@ impl Human {
     /// 换上每个包清单里写的图标（包编号到 Lucide 名，`package.list` 的 `icon`）：`human.get` 不带，另外要。
     pub fn set_icons(&mut self, icons: BTreeMap<String, String>) {
         self.icons = icons;
+    }
+
+    /// 换语言重要来的字里留下另外要的几样：包的图标、供应商的名字（`human.get` 不带）。
+    pub fn carry(&mut self, old: &Human) {
+        self.icons.clone_from(&old.icons);
+        self.providers.clone_from(&old.providers);
+    }
+
+    /// 记下供应商给人看的名字（`model.list` 的 `providers`，编号到名字）：同一家后来的盖过先前的。交回变没变。
+    pub fn add_providers(&mut self, names: &BTreeMap<String, String>) -> bool {
+        let mut changed = false;
+        for (id, name) in names {
+            changed |= self.providers.insert(id.clone(), name.clone()).as_ref() != Some(name);
+        }
+        changed
+    }
+
+    /// 供应商 `id` 给人看的名字；没记下的照编号（同核心 `title.via`）。
+    pub fn provider<'a>(&'a self, id: &'a str) -> &'a str {
+        self.providers.get(id).map_or(id, String::as_str)
     }
 
     /// 每个包清单里写的图标（包编号到 Lucide 名）。

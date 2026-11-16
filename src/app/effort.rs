@@ -64,6 +64,10 @@ impl App {
     pub(super) fn efforts_listed(&mut self, list: EffortList) {
         // 收哪几种附件照同一份 `model.list`（`attachments.rs`）。
         self.link.abilities = list.abilities.clone();
+        // 供应商的名字也照它（供应商侧工具那一步写是谁跑的，`ui/timeline/hosted.rs`）：变了的扔掉排好的行重排。
+        if self.link.human.add_providers(&list.providers) {
+            *self.media.row_cache.borrow_mut() = Default::default();
+        }
         self.link.default_chat = list.chat.clone();
         self.footer_effort(&list);
         if !matches!(self.boxes.panel, Some(Panel::Effort { .. })) {

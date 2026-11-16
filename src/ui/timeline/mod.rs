@@ -8,6 +8,7 @@
 //! - 一步的标题、预览、点开的内容在 `step.rs`。
 
 mod detail;
+mod hosted;
 mod message;
 mod shapes;
 mod step;
