@@ -43,6 +43,7 @@ impl UsageShow {
                 today: jiff::Zoned::now().date(),
                 rates: Vec::new(),
                 quota: Vec::new(),
+                balance: None,
             },
             tab: 0,
             scroll: 0,

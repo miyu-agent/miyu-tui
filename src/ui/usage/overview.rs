@@ -31,7 +31,11 @@ pub(super) fn page(
         block: &block,
         edge: &edge,
     };
-    let mut out = super::quota::lines(&src.config.text.usage, &data.quota, now, width, &glyphs);
+    let texts = &src.config.text.usage;
+    let mut out = super::quota::lines(texts, &data.quota, now, width, &glyphs);
+    // 用 DeepSeek 官方供应商的（核心 QU-2）：同一个地方一种币一行余额。
+    let symbols = &src.config.layout.currencies;
+    out.extend(super::balance::lines(texts, data.balance.as_ref(), symbols));
     if !out.is_empty() {
         out.push(Line::default());
     }

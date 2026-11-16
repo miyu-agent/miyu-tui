@@ -1,4 +1,4 @@
-//! `/usage` 开框时问看着的会话的套餐额度（核心 QU-1，2026-11-14 项目主人定样子）。
+//! `/usage` 开框时问看着的会话的套餐额度（核心 QU-1，2026-11-14 项目主人定样子）、账户余额（核心 QU-2）。
 
 use serde_json::json;
 
@@ -49,4 +49,38 @@ fn no_session_no_question_and_empty_answer_draws_nothing() {
         result: Ok(json!({})),
     });
     assert!(app.boxes.usage.as_ref().unwrap().quota.is_empty());
+}
+
+#[test]
+fn a_balance_answer_is_kept_and_absent_means_none() {
+    // 用 DeepSeek 官方供应商的回应是余额（核心 QU-2）：金额照原样的字符串，没带这一格的不画。
+    let (mut app, mut sent) = app();
+    app.talk.transcript.session = Some("s1".into());
+    app.open_usage();
+    let (tag, _) = asked(&mut sent).unwrap();
+    app.core(Update::Answer {
+        tag,
+        result: Ok(json!({"balance": {"available": true, "items": [
+            {"currency": "CNY", "total": "12.34", "granted": "2.00", "topped_up": "10.34"}]}})),
+    });
+    let balance = app.boxes.usage.as_ref().unwrap().balance.clone().unwrap();
+    assert!(balance.available);
+    assert_eq!(balance.items[0].currency, "CNY");
+    assert_eq!(balance.items[0].total, "12.34");
+    assert_eq!(balance.items[0].granted, "2.00");
+    app.open_usage();
+    let (tag, _) = asked(&mut sent).unwrap();
+    app.core(Update::Answer {
+        tag,
+        result: Ok(json!({"balance": {"available": false, "items": []}})),
+    });
+    let balance = app.boxes.usage.as_ref().unwrap().balance.clone().unwrap();
+    assert!(!balance.available && balance.items.is_empty());
+    app.open_usage();
+    let (tag, _) = asked(&mut sent).unwrap();
+    app.core(Update::Answer {
+        tag,
+        result: Ok(json!({})),
+    });
+    assert_eq!(app.boxes.usage.as_ref().unwrap().balance, None);
 }
