@@ -24,7 +24,7 @@ fn a_background_session_that_finishes_is_marked() {
         busy: false,
         ..busy("there")
     };
-    app.note_finished(&SessionChange::Entry(done));
+    app.note_finished(&SessionChange::Entry(Box::new(done)));
     assert!(app.talk.unseen.contains("there"));
 }
 
@@ -45,15 +45,15 @@ fn a_session_open_elsewhere_or_here_or_never_busy_is_not_marked() {
         viewed: true,
         ..busy("there")
     };
-    app.note_finished(&SessionChange::Entry(open_elsewhere));
+    app.note_finished(&SessionChange::Entry(Box::new(open_elsewhere)));
     let this_one = SessionInfo {
         busy: false,
         ..busy("here")
     };
-    app.note_finished(&SessionChange::Entry(this_one));
-    app.note_finished(&SessionChange::Entry(SessionInfo {
+    app.note_finished(&SessionChange::Entry(Box::new(this_one)));
+    app.note_finished(&SessionChange::Entry(Box::new(SessionInfo {
         session: "idle".into(),
         ..SessionInfo::default()
-    }));
+    })));
     assert!(app.talk.unseen.is_empty(), "{:?}", app.talk.unseen);
 }

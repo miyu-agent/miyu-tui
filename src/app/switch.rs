@@ -48,6 +48,8 @@ impl App {
             return;
         };
         crate::core::apply_session_change(seen, change);
+        // 照人最后一次发话重排（2026-11-16 项目主人，`core/spoken.rs`）：人发了话的挪到顶上，切进去、没人说话的轮不挪。
+        crate::core::sort_sessions(seen);
         if let Some(list) = &mut self.boxes.session_list {
             list.replace(seen.clone());
         }
@@ -67,7 +69,9 @@ impl App {
     }
 
     /// 核心交回了列表。
-    pub(super) fn sessions_listed(&mut self, all: Vec<SessionInfo>) {
+    pub(super) fn sessions_listed(&mut self, mut all: Vec<SessionInfo>) {
+        // 核心照最近动静交回：照人最后一次发话重排，重连、置顶以后整份重读也不跳（`core/spoken.rs`）。
+        crate::core::sort_sessions(&mut all);
         self.talk.sessions_seen = Some(all.clone());
         self.note_last();
         if let Some(list) = &mut self.boxes.session_list {

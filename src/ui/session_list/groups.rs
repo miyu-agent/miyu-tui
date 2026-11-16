@@ -1,5 +1,5 @@
 //! 会话列表照时间分段（蓝图 `tui.md`「会话列表」第 10 条，2026-10-19 项目主人定「算作标题式」）：正在用的、置顶的在最上面
-//! 不带段头，别的照最近动静分「最近」「近 7 天」「近 30 天」「30 天前」，存档最后单独一段「存档」（排期第 38 条），每段前面
+//! 不带段头，别的照人最后一次发话（没人说过话的照开的时刻，和排的先后同一个时刻，`core/spoken.rs`）分「最近」「近 7 天」「近 30 天」「30 天前」，存档最后单独一段「存档」（排期第 38 条），每段前面
 //! 一行段头，选不中、不能收起。
 
 use jiff::Timestamp;
@@ -8,7 +8,7 @@ use jiff::tz::TimeZone;
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 
-use crate::core::SessionInfo;
+use crate::core::{SessionInfo, session_order_key};
 use crate::theme;
 
 /// 哪一段：照最近动静离今天几天。
@@ -56,7 +56,7 @@ pub fn group(info: &SessionInfo, current: Option<&str>, today: Date, tz: &TimeZo
     if info.archived {
         return Some(Age::Archived);
     }
-    (!info.pinned).then(|| age(info.last_active, today, tz))
+    (!info.pinned).then(|| age(session_order_key(info), today, tz))
 }
 
 /// 段头那一行：标题那一列起头，暗色加粗。

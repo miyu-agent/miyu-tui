@@ -20,6 +20,8 @@ pub struct SessionInfo {
     pub busy: bool,
     /// 最近一次动静（C-3 的 `last_active`）。
     pub last_active: Option<jiff::Timestamp>,
+    /// 人最后一次发话的时刻（核心 SX-1 的 `last_spoken`）：会话列表照它排（[`super::spoken`]）。还没人说过话的是 `None`。
+    pub last_spoken: Option<jiff::Timestamp>,
     /// 没标题时核心给的预览：第一句话的第一行，最多 50 个字（核心 9-5）。
     pub preview: Option<String>,
     /// 用的人格的编号；没带人格（无人格）的是 `None`。新会话的人格框照最近那个会话停（「新会话」第 1 条）。
@@ -46,8 +48,8 @@ pub struct SessionInfo {
     pub life_ended: bool,
 }
 
-/// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话、整理会话不要，照核心交回的先后（新的
-/// 在前）。
+/// 读 `session.list` 的回应、订阅会话列表的回应（两样一个形状）：子会话、一次性会话、整理会话不要，照核心交回的先后（照最近
+/// 动静，新的在前；界面上的先后由 `app/switch.rs` 照人最后一次发话重排）。
 pub fn read(result: &Value) -> Vec<SessionInfo> {
     result["sessions"]
         .as_array()
@@ -76,6 +78,7 @@ fn entry(s: &Value) -> Option<SessionInfo> {
         cwd: s["cwd"].as_str().map(str::to_string),
         busy: s["busy"] == true,
         last_active: s["last_active"].as_str().and_then(|t| t.parse().ok()),
+        last_spoken: s["last_spoken"].as_str().and_then(|t| t.parse().ok()),
         preview: text(&s["preview"]),
         persona: text(&s["persona"]),
         preset: super::session_preset(s),
@@ -113,8 +116,8 @@ pub(super) async fn follow(rpc: &mut super::rpc::Rpc) -> std::io::Result<String>
 /// 推来的一条 `sessions.changed`（核心 9-5）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Change {
-    /// 照编号整项换上，没有的加到最前面。
-    Entry(SessionInfo),
+    /// 照编号整项换上，没有的加到最前面（装在盒子里：一项比别的几样大得多，推送的枚举跟着大）。
+    Entry(Box<SessionInfo>),
     /// 删掉了（不列的子会话、一次性会话也照这个：列表里本来就不该有）。
     Removed(String),
 }
@@ -125,7 +128,11 @@ pub fn change(params: &Value) -> Option<Change> {
     if params["removed"] == true {
         return Some(Change::Removed(session));
     }
-    Some(entry(&params["entry"]).map_or(Change::Removed(session), Change::Entry))
+    Some(
+        entry(&params["entry"]).map_or(Change::Removed(session), |info| {
+            Change::Entry(Box::new(info))
+        }),
+    )
 }
 
 /// 发了删除、核心还没推来「删掉了」的会话（蓝图「会话列表」第 2 条，2026-10-18 项目主人报多选删除时列表跳动）：核心一个
@@ -159,8 +166,8 @@ impl Deleting {
 pub fn apply(list: &mut Vec<SessionInfo>, change: Change) {
     match change {
         Change::Entry(info) => match list.iter_mut().find(|s| s.session == info.session) {
-            Some(slot) => *slot = info,
-            None => list.insert(0, info),
+            Some(slot) => *slot = *info,
+            None => list.insert(0, *info),
         },
         Change::Removed(session) => list.retain(|s| s.session != session),
     }
@@ -191,11 +198,14 @@ mod tests {
         apply(&mut seen, b);
         assert_eq!(ids(&seen), ["a", "d"]);
         // c 删完以前推来它的整项：不要。
-        assert!(!deleting.admits(&Change::Entry(info("c"))));
+        assert!(!deleting.admits(&Change::Entry(Box::new(info("c")))));
         // c 删掉了以后，同一个编号再来的照常收（不会再有，防它记一辈子）。
         assert!(deleting.admits(&Change::Removed("c".into())));
-        assert!(deleting.admits(&Change::Entry(info("c"))));
-        assert!(deleting.admits(&Change::Entry(info("a"))), "别的照常");
+        assert!(deleting.admits(&Change::Entry(Box::new(info("c")))));
+        assert!(
+            deleting.admits(&Change::Entry(Box::new(info("a")))),
+            "别的照常"
+        );
     }
 
     use serde_json::json;
