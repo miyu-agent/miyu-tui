@@ -54,7 +54,7 @@ pub use notes::CompactionTexts;
 pub use notify::{NotifyLook, NotifyTexts};
 pub use open::OpenTexts;
 pub use panels::{HistoryTexts, MenuTexts, UsageCellTexts};
-pub use timeline::{Body, Summary, Timeline, ToolKind};
+pub use timeline::{Body, Hosted, Summary, Timeline, ToolKind};
 pub use unread::UnreadTexts;
 pub use widgets::{WidgetLayout, WidgetMarks};
 pub use words::{

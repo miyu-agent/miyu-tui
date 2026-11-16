@@ -136,6 +136,7 @@ fn answer(said: &Value, called: Option<&Value>) -> Vec<Push> {
                 Block::ToolCall(block["name"].as_str().unwrap_or_default().to_string()),
                 &block["args"],
             ),
+            "hosted_tool" => (hosted(block, &said["by"]), &block["args"]),
             _ => continue,
         };
         let (from, to) = times.get(i).copied().unwrap_or((None, None));
@@ -145,12 +146,19 @@ fn answer(said: &Value, called: Option<&Value>) -> Vec<Push> {
             index,
             text: text.as_str().unwrap_or_default().to_string(),
         });
+        out.extend(push::Outcome::read(&block["outcome"]).map(|o| Push::HostedOutcome(index, o)));
         tick(&mut out, to.or(end));
         out.push(Push::BlockEnd(index));
     }
     tick(&mut out, end);
     out.extend(push::read(said, &|_| false));
     out
+}
+
+/// 落了盘的一块供应商侧工具：工具名原样、谁跑的（回答 `by` 的端点）。
+fn hosted(block: &Value, by: &Value) -> Block {
+    let text = |v: &Value| v.as_str().unwrap_or_default().to_string();
+    Block::Hosted(text(&block["name"]), text(&by["endpoint"]))
 }
 
 /// 垫一条钟：没有时刻的不垫（`Clock(None)` 是补完了）。

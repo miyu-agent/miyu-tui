@@ -96,6 +96,8 @@ pub struct Step {
     /// 在跑时最新的一行进度（`tool.progress` 里 `miyu-progress: ` 开头的，见 `progress.rs`）：标题后面暗色接着写，
     /// 有了结果就去掉（「时间线」第 8a 条）。
     pub progress: Option<String>,
+    /// 供应商侧工具（模型在供应商那边自己跑的，事件里的 `hosted_tool`）：谁跑的，供应商编号。核心执行的是 `None`。
+    pub hosted: Option<String>,
 }
 
 /// 一步的种类。
@@ -191,6 +193,7 @@ impl Step {
             sent: 0,
             detail: None,
             progress: None,
+            hosted: None,
         }
     }
 

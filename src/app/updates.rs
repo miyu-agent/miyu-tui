@@ -143,9 +143,9 @@ impl App {
             self.ask_packages();
             return;
         }
-        // 给人看的字到了：换上（包的图标是另外要的，留着），排好的行里有旧的工具名，扔掉重排（`human.rs`）。
+        // 给人看的字到了：换上（包的图标、供应商的名字是另外要的，留着），排好的行里有旧的工具名，扔掉重排（`human.rs`）。
         if let Update::Human(mut human) = update {
-            human.set_icons(self.link.human.icons().clone());
+            human.carry(&self.link.human);
             self.link.human = human;
             *self.media.row_cache.borrow_mut() = Default::default();
             return;

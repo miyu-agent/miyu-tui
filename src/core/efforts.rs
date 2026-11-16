@@ -30,6 +30,8 @@ pub struct EffortList {
     pub rotating: Vec<String>,
     /// 每个模型、池收哪几种附件（「输入框」第 12 条「照模型收」）。
     pub abilities: super::Abilities,
+    /// 供应商编号到给人看的名字（`providers` 的 `name`，配置里写的、目录里那一家的）：供应商侧工具那一步写是谁跑的。
+    pub providers: std::collections::BTreeMap<String, String>,
 }
 
 /// 底栏、`/effort` 只看这几个模型：会话的引用、正在请求的那个、默认的聊天模型（核心 V-6 上的 `models`，不要整份）。
@@ -87,6 +89,15 @@ impl EffortList {
             chat: text(&result["uses"]["chat"]),
             rotating,
             abilities: super::Abilities::read(result),
+            providers: result["providers"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|p| {
+                    let name = text(&p["name"]["value"])?.trim().to_string();
+                    Some((text(&p["id"])?, name)).filter(|(_, name)| !name.is_empty())
+                })
+                .collect(),
         }
     }
 

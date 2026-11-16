@@ -56,6 +56,10 @@ pub struct Summary {
 pub struct Timeline {
     /// 哪几件工具算哪一类（`command`、`edit`），没写的算工具。图标在 `resources/icons/`（蓝图「图标」）。
     pub kinds: HashMap<String, ToolKind>,
+    /// 供应商侧工具（模型在供应商那边自己跑的，事件里的 `hosted_tool`）对上的核心工具：照核心 `resources/core/view.json`
+    /// 的 `hosted` 抄的，标题照对上的那件写显示名、对象；对不上的写原名、没有对象（核心 `view.md`「供应商侧工具」）。
+    #[serde(default)]
+    pub hosted: HashMap<String, Hosted>,
     /// 对象是本机路径的几件工具：标题里的路径文件真在的，点了用系统的打开方式开（蓝图「时间线」第 7a 条）。
     pub path_tools: Vec<String>,
     /// 参数里会话编号叫什么：带着它的一步，对象后面跟「会话 短编号」（蓝图「时间线」第 8 条，核心 C-4 的 `history`）。
@@ -85,6 +89,17 @@ pub struct Timeline {
     /// 英文，点开要画给人看的）。
     #[serde(default)]
     pub bodies: HashMap<String, Body>,
+}
+
+/// 一件供应商侧工具对上的核心工具（`timeline.json` 的 `hosted`）。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct Hosted {
+    /// 核心那件工具的名字，例如 `web_search`。
+    #[serde(rename = "as")]
+    pub core: String,
+    /// 对象看供应商那件工具的哪个参数；拿不准的不写。
+    #[serde(default)]
+    pub subject: Option<String>,
 }
 
 /// 点开一步画的东西（`timeline.json` 的 `bodies`）。

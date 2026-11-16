@@ -9,6 +9,11 @@ use crate::core::Block;
 impl Transcript {
     /// 一块开始了：回答另起一条，收起前面那一段；思考、调工具记进在进行的那一段。
     pub(super) fn open_block(&mut self, block: Block) -> Slot {
+        // 供应商侧工具没有 `tool.result` 会来，不等调用编号（`hosted.rs`）。
+        let hosted = match &block {
+            Block::Hosted(_, via) => Some(via.clone()),
+            Block::Text | Block::Reasoning | Block::ToolCall(_) => None,
+        };
         let kind = match block {
             Block::Text => {
                 self.finish_segment();
@@ -18,7 +23,7 @@ impl Transcript {
             Block::Reasoning => StepKind::Thought {
                 text: String::new(),
             },
-            Block::ToolCall(name) => StepKind::Tool {
+            Block::ToolCall(name) | Block::Hosted(name, _) => StepKind::Tool {
                 name,
                 args: String::new(),
                 parsed: Value::Null,
@@ -27,14 +32,17 @@ impl Transcript {
                 said: None,
             },
         };
-        let is_tool = matches!(kind, StepKind::Tool { .. });
+        let is_tool = matches!(kind, StepKind::Tool { .. }) && hosted.is_none();
         let now = self.clock.now();
         let entry = self.open_segment();
         let steps = &mut self.entries[entry]
             .segment
             .get_or_insert_with(Segment::new)
             .steps;
-        steps.push(Step::starting(kind, now));
+        steps.push(Step {
+            hosted,
+            ..Step::starting(kind, now)
+        });
         let at = (entry, steps.len() - 1);
         if is_tool {
             self.unnamed.push(at);

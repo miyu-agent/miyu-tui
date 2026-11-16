@@ -82,7 +82,7 @@ pub use personas::{
 };
 pub use push::{
     Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobLines, JobReason,
-    JobStart, Push, Sender, Sent, ShellRan, Shown, Usage,
+    JobStart, Outcome, Push, Sender, Sent, ShellRan, Shown, Usage,
 };
 use rpc::Rpc;
 pub use sessions::{

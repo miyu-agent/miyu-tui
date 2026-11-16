@@ -81,19 +81,8 @@ pub fn title(
             ..
         } => {
             let face = ctx.human.tool(name);
-            let shown = ctx
-                .human
-                .step_name(name, &step.display, ctx.config.language.code());
-            // 结果那一句带了来源（`human.fields.via`，核心 2026-10-19）：接在名字后面「网络搜索（Exa）」。
-            let via = said
-                .as_ref()
-                .and_then(|s| s.fields.iter().find(|(f, _)| f.as_str() == "via"))
-                .map(|(_, v)| v.trim())
-                .filter(|v| !v.is_empty());
-            let shown = match via {
-                Some(via) => text.via.replace("{name}", &shown).replace("{via}", via),
-                None => shown,
-            };
+            // 名字后面接经谁做的：「网络搜索（Exa）」「网络搜索（agy）」（`hosted.rs`）。
+            let shown = super::hosted::name(step, ctx);
             if *state == ToolState::Preparing {
                 (text.prepare.replace("{name}", &shown), Vec::new())
             } else {
@@ -102,9 +91,7 @@ pub fn title(
                     Some(ToolKind::Command) => step.arg("description"),
                     // 留言的发给谁、消息开头另写（`message.rs`）。
                     Some(ToolKind::Message) => None,
-                    _ => face
-                        .and_then(|f| f.subject.as_deref())
-                        .and_then(|k| step.arg(k)),
+                    _ => super::hosted::subject(step, face, ctx),
                 };
                 // 执行命令有短标题的只写短标题（发版前 check 60）。
                 let titled = kind == Some(ToolKind::Command)
