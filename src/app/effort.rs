@@ -180,7 +180,7 @@ impl App {
     }
 
     /// 这个会话的思考强度换成了（核心答应了，或者还没开会话、当场算换成了）：定了一档的底栏当场写它；回到跟随设置的再要
-    /// 一次 `model.list`，底栏照配置的那一档写（核心只改思考强度时不当场推 `model.changed`，SM-1）。
+    /// 一次 `model.list`，底栏照配置的那一档写（SM-1）。
     pub(super) fn effort_set(&mut self, level: Option<String>) {
         let back = level.is_none();
         self.talk.transcript.own_effort_set(level);

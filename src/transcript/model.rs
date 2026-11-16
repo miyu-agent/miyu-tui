@@ -22,6 +22,11 @@ pub struct ModelWatch {
     effort: Option<String>,
     /// 那一档是会话自己定的（核心 SM-1）：`/effort` 的框照它标现在用的那一行。
     effort_own: bool,
+    /// 核心说接下来请求的那一个（订阅回应、换了的 `model.changed`、`/model` 换成的），还没见它答过话：这期间别的模型答的
+    /// （换的时候正在跑的那一轮，核心 MC-1）不改底栏。
+    pending: Option<(String, String)>,
+    /// 最近一次答话的端点、模型（事件的 `by`）：回答末尾那一行照它写。
+    answered: Option<(String, String)>,
 }
 
 impl Transcript {
@@ -66,6 +71,7 @@ impl Transcript {
         let to = match (model, endpoint) {
             (Some(model), Some(endpoint)) => {
                 let to = format!("{endpoint}/{model}");
+                self.models.pending = (!failover).then(|| (model.clone(), endpoint.clone()));
                 self.show_model(model, endpoint);
                 Some(to)
             }
@@ -176,15 +182,38 @@ impl Transcript {
     pub(super) fn current_model(&mut self, current: Current) {
         self.models.reference = Some(current.reference);
         if let (Some(model), Some(endpoint)) = (current.model, current.endpoint) {
+            self.models.pending = Some((model.clone(), endpoint.clone()));
             self.show_model(model, endpoint);
         }
         self.models.effort = current.effort;
         self.models.effort_own = current.effort_own;
     }
 
-    /// 推来的这一次用的端点、模型：记下（回答末尾那一行照它写）。
+    /// 底栏照这个端点、模型写。
     pub(super) fn show_model(&mut self, model: String, endpoint: String) {
         self.model = Some((model, endpoint));
+    }
+
+    /// 事件带来的答话的端点、模型：记下（回答末尾那一行照它写）；底栏也照它，除非核心说过接下来是别的、那一个还没答过话
+    /// （2026-11-16 核心 MC-1：跑着的时候换了模型，这一轮后面的请求还是原来的，底栏不画回去）。
+    pub(super) fn answered_by(&mut self, model: String, endpoint: String) {
+        let answered = (model, endpoint);
+        self.models.answered = Some(answered.clone());
+        if self
+            .models
+            .pending
+            .as_ref()
+            .is_some_and(|next| *next != answered)
+        {
+            return;
+        }
+        self.models.pending = None;
+        self.model = Some(answered);
+    }
+
+    /// 回答末尾那一行写的端点、模型：最近一次答话的，还没有的照底栏的。
+    pub(super) fn answered(&self) -> Option<&(String, String)> {
+        self.models.answered.as_ref().or(self.model.as_ref())
     }
 
     /// 底栏模型那一格写什么：会话用的是池的写池名，不跟着轮到的成员变（「配置与模型」第 8 条，2026-10-07 项目主人定：
@@ -207,6 +236,10 @@ impl Transcript {
     /// `/model` 换成了（下一个回合开始生效）：记下引用，底栏当场写成选的那个（`供应商/模型` 的分开写，池、挡位照写）。
     pub(super) fn configured(&mut self, reference: String) {
         self.show_reference(&reference);
+        self.models.pending = self
+            .model
+            .clone()
+            .filter(|(_, endpoint)| !endpoint.is_empty());
         self.models.reference = Some(reference);
         // 原来那个模型的思考强度不是这个的：先不写，等 `model.list`、推来的（池的照推来的）。
         self.models.effort = None;

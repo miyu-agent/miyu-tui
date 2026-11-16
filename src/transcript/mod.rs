@@ -347,7 +347,7 @@ impl Transcript {
             }
             Push::UndoLine => self.undo_line(crate::core::Report::default()),
             Push::UndoGone => self.undo_gone(),
-            Push::Model { endpoint, model } => self.show_model(model, endpoint),
+            Push::Model { endpoint, model } => self.answered_by(model, endpoint),
             Push::Heard(seen) => self.heard(seen),
             Push::Clock(at) => self.clock.set(at),
             Push::Tried { endpoint, model } => self.tried(&endpoint, &model),
