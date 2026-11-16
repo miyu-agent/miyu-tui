@@ -5,7 +5,7 @@ use jiff::Timestamp;
 use super::super::{Kind, Transcript};
 use super::apply;
 use crate::config::Config;
-use crate::core::{CallError, Current, Limits, Push, Update};
+use crate::core::{CallError, Current, EndReason, Limits, Push, Update};
 
 fn failed(class: &str) -> Push {
     Push::CallFailed(CallError {
@@ -256,4 +256,58 @@ fn a_pool_as_the_default_and_after_a_turn_on_a_pool_stays_the_pool() {
     let mut fresh = Transcript::default();
     fresh.keep_footer_model(carried);
     assert_eq!(fresh.shown_model(), Some(("@normal".into(), String::new())));
+}
+
+#[test]
+fn a_switch_while_a_turn_runs_keeps_the_new_model_in_the_footer() {
+    // 核心 MC-1：换了模型当场推 `model.changed`（在 `session.configure` 的回应以前），正在跑的这一轮照旧是原来的模型答，
+    // 它后面的事件带着原来的模型。底栏写的是接下来请求的那一个，不画回原来的；这一轮的收尾行照真答话的写。
+    let texts = Config::builtin().unwrap().text;
+    let mut t = Transcript::default();
+    let old = Push::Model {
+        endpoint: "dev".into(),
+        model: "m1".into(),
+    };
+    apply(&mut t, vec![Push::TurnStarted(1, Some(1)), old.clone()]);
+    apply(
+        &mut t,
+        vec![Push::ModelChanged {
+            endpoint: Some("dev2".into()),
+            model: Some("m2".into()),
+            limits: None,
+            failover: false,
+            reference: None,
+            effort: None,
+        }],
+    );
+    t.update(Update::Configured("dev2/m2".into()), &texts);
+    let new = Some(("m2".into(), "dev2".into()));
+    assert_eq!(t.shown_model(), new, "当场换成选的");
+    apply(&mut t, vec![old, Push::TurnEnded(EndReason::Completed)]);
+    assert_eq!(
+        t.shown_model(),
+        new,
+        "这一轮后面的请求还是原来的模型：底栏不画回去"
+    );
+    let done = t.entries.last().unwrap();
+    assert_eq!(done.kind, Kind::Done);
+    assert!(done.text.contains(" · dev/m1 · "), "{}", done.text);
+    assert!(
+        t.entries.iter().all(|e| e.kind != Kind::Note),
+        "自己换的正文里不写"
+    );
+    apply(
+        &mut t,
+        vec![
+            Push::TurnStarted(2, Some(2)),
+            Push::Model {
+                endpoint: "dev2".into(),
+                model: "m2".into(),
+            },
+            Push::TurnEnded(EndReason::Completed),
+        ],
+    );
+    assert_eq!(t.shown_model(), new);
+    let done = t.entries.last().unwrap();
+    assert!(done.text.contains(" · dev2/m2 · "), "{}", done.text);
 }

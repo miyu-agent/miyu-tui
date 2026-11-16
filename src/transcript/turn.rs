@@ -107,8 +107,7 @@ impl Transcript {
                     return;
                 }
                 let (model, endpoint) = self
-                    .model
-                    .as_ref()
+                    .answered()
                     .map_or(("", ""), |(m, e)| (m.as_str(), e.as_str()));
                 let time = self.clock.wall().strftime("%H:%M").to_string();
                 let text = texts
