@@ -356,6 +356,9 @@ impl App {
             self.talk.transcript.link = link;
             self.talk.board = back.board;
             self.screen.view = back.view;
+            // 停放着的时候时间线收起、正文变短了：切走那一刻「只往下走」记下的底边作废，不然只露最底下一行、上面一片空白
+            // （2026-11-16 项目主人报）。滚上去看着的地方照旧留着。
+            self.screen.view.settle();
             // 补完换上来的这一下当场画，不等下一拍（「每一帧」；2026-10-15 查出 `--resume` 打开长会话时正文要等到上一帧
             // 后面的那一拍，白等二十多毫秒）。
             self.screen.draw_now = true;
