@@ -39,6 +39,7 @@ fn info(session: &str, title: Option<&str>, cwd: &str) -> SessionInfo {
         archived: false,
         life: false,
         life_ended: false,
+        last_spoken: None,
     }
 }
 
@@ -253,6 +254,7 @@ fn sessions_are_grouped_by_age_under_plain_headings_unless_searching() {
     let with = |id: &str, title: &str, days: Option<i64>, pinned: bool| SessionInfo {
         pinned,
         last_active: days.and_then(ago),
+        last_spoken: days.and_then(ago),
         ..info(id, Some(title), "~/src/miyu")
     };
     let mut list = SessionList::default();

@@ -74,7 +74,7 @@ fn a_background_session_that_finishes_is_marked_and_told() {
         info("idle", false),
     ]);
     for id in ["me", "bg", "idle"] {
-        app.session_changed(crate::core::SessionChange::Entry(info(id, false)));
+        app.session_changed(crate::core::SessionChange::Entry(Box::new(info(id, false))));
     }
     assert_eq!(
         app.talk.unseen,
@@ -110,7 +110,9 @@ fn a_session_open_in_another_head_is_left_to_that_head() {
     };
     app.talk.transcript.session = Some("me".into());
     app.talk.sessions_seen = Some(vec![info(true, true)]);
-    app.session_changed(crate::core::SessionChange::Entry(info(false, true)));
+    app.session_changed(crate::core::SessionChange::Entry(Box::new(info(
+        false, true,
+    ))));
     assert!(app.talk.unseen.is_empty(), "不标");
     assert!(app.notifier.outbox().concat().is_empty(), "不弹");
 }
@@ -186,7 +188,9 @@ fn a_claimed_tray_takes_over_notices_for_sessions_nobody_has_open() {
     app.talk.transcript.session = Some("me".into());
     app.talk.sessions_seen = Some(vec![info("me", true), info("bg", true)]);
     app.notice(&Notice::Claimed(true));
-    app.session_changed(crate::core::SessionChange::Entry(info("bg", false)));
+    app.session_changed(crate::core::SessionChange::Entry(Box::new(info(
+        "bg", false,
+    ))));
     assert!(app.talk.unseen.contains("bg"), "圆点照画");
     app.notice(&Notice::ScheduleRan {
         session: "new".into(),

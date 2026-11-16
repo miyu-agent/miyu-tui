@@ -107,6 +107,7 @@ mod quota;
 mod recent;
 mod rename;
 mod skill_word;
+mod spoken;
 mod status;
 mod switching;
 mod theme_auto;

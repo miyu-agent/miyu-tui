@@ -11,6 +11,7 @@ fn archives_sit_last_under_their_own_heading() {
         archived,
         pinned,
         last_active: today,
+        last_spoken: today,
         ..info(id, Some(title), "~/src/miyu")
     };
     let mut list = SessionList::default();

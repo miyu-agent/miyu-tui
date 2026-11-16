@@ -1,7 +1,7 @@
 //! 会话列表的状态（蓝图 `tui.md`「会话列表 `/sessions`」第 1–3 条）：核心交回的会话、打的字、选中哪一个、按过一次
 //! `Ctrl+D` 的是哪一个。排序、筛选在这里，画在 `ui/session_list.rs`。
 
-use crate::core::SessionInfo;
+use crate::core::{SessionInfo, session_order_key};
 
 /// 会话列表。
 #[derive(Debug, Default)]
@@ -27,8 +27,8 @@ pub struct SessionList {
 }
 
 impl SessionList {
-    /// 对得上的，照先后：正在用的最上面，置顶的接着，别的照最近动静，新的在前；没有最近动静的照核心交回的先后（第 3 条）。
-    /// 存档排在别的后面（第 3 条子条，排期第 38 条）。
+    /// 对得上的，照先后：正在用的最上面，置顶的接着，别的照人最后一次发话，新的在前，没人说过话的照开的时刻（第 3 条子条，
+    /// 2026-11-16 项目主人，`core/spoken.rs`）；都没有的照核心交回的先后。存档排在别的后面（第 3 条子条，排期第 38 条）。
     pub fn matches(&self) -> Vec<&SessionInfo> {
         let mut found: Vec<(usize, &SessionInfo)> = self.all.iter().enumerate().collect();
         let current = |s: &SessionInfo| self.current.as_deref() == Some(s.session.as_str());
@@ -37,7 +37,7 @@ impl SessionList {
                 .cmp(&current(a))
                 .then(a.archived.cmp(&b.archived))
                 .then(b.pinned.cmp(&a.pinned))
-                .then(b.last_active.cmp(&a.last_active))
+                .then(session_order_key(b).cmp(&session_order_key(a)))
                 .then(i.cmp(j))
         });
         // 打了字的：模糊搜索标题（没标题的照预览）、短编号，越像的越前，一样像的照上面的先后（`fuzzy.rs`）。
@@ -193,6 +193,7 @@ mod tests {
             archived: false,
             life: false,
             life_ended: false,
+            last_spoken: None,
         }
     }
 
@@ -201,7 +202,7 @@ mod tests {
     }
 
     #[test]
-    fn pinned_come_first_then_the_most_recently_active_then_the_core_order() {
+    fn pinned_come_first_then_the_latest_spoken_then_the_core_order() {
         let mut list = SessionList::default();
         list.replace(vec![
             info("0000-aaaaaaaa", Some("新的"), false, None),
@@ -212,25 +213,72 @@ mod tests {
             order(&list),
             ["0000-cccccccc", "0000-aaaaaaaa", "0000-bbbbbbbb"]
         );
+        let spoke = |session: &str, at: &str| SessionInfo {
+            last_spoken: Some(at.parse().unwrap()),
+            ..info(session, None, false, Some(at))
+        };
         list.replace(vec![
-            info("0000-aaaaaaaa", None, false, Some("2026-10-01T08:00:00Z")),
-            info("0000-bbbbbbbb", None, false, Some("2026-10-01T09:00:00Z")),
+            spoke("0000-aaaaaaaa", "2026-10-01T08:00:00Z"),
+            spoke("0000-bbbbbbbb", "2026-10-01T09:00:00Z"),
         ]);
         assert_eq!(
             order(&list),
             ["0000-bbbbbbbb", "0000-aaaaaaaa"],
-            "C-3 以后照最近动静"
+            "照人最后一次发话（2026-11-16 项目主人）"
         );
-        // 正在用的永远最上面，置顶的、最近动静的都排在它后面（2026-10-18 项目主人）。
+        // 正在用的永远最上面，置顶的、人发过话的都排在它后面（2026-10-18 项目主人）。
         list.current = Some("0000-aaaaaaaa".into());
         list.replace(vec![
-            info("0000-aaaaaaaa", None, false, Some("2026-10-01T08:00:00Z")),
-            info("0000-bbbbbbbb", None, false, Some("2026-10-01T09:00:00Z")),
+            spoke("0000-aaaaaaaa", "2026-10-01T08:00:00Z"),
+            spoke("0000-bbbbbbbb", "2026-10-01T09:00:00Z"),
             info("0000-cccccccc", None, true, None),
         ]);
         assert_eq!(
             order(&list),
             ["0000-aaaaaaaa", "0000-cccccccc", "0000-bbbbbbbb"]
+        );
+    }
+
+    #[test]
+    fn the_rest_follow_when_a_person_last_spoke_not_the_latest_activity() {
+        // 2026-11-16 项目主人：循环、人生自己醒这些没人说话的轮不挪；没人说过话的照开的时刻（编号是 UUIDv7）。
+        let spoke = |session: &str, spoken: &str, active: &str| SessionInfo {
+            last_spoken: Some(spoken.parse().unwrap()),
+            ..info(session, None, false, Some(active))
+        };
+        let mut list = SessionList::default();
+        list.replace(vec![
+            spoke(
+                "0000-aaaaaaaa",
+                "2026-11-16T01:00:00Z",
+                "2026-11-16T09:00:00Z",
+            ),
+            spoke(
+                "0000-bbbbbbbb",
+                "2026-11-16T03:00:00Z",
+                "2026-11-16T03:00:00Z",
+            ),
+            info(
+                "019a8b2c-3d4e-7f00-8000-cccccccccccc",
+                None,
+                false,
+                Some("2026-11-16T10:00:00Z"),
+            ),
+            spoke(
+                "0000-dddddddd",
+                "2026-11-16T02:00:00Z",
+                "2026-11-16T02:00:00Z",
+            ),
+        ]);
+        assert_eq!(
+            order(&list),
+            [
+                "0000-bbbbbbbb",
+                "0000-dddddddd",
+                "0000-aaaaaaaa",
+                "019a8b2c-3d4e-7f00-8000-cccccccccccc"
+            ],
+            "开在 2025 年、没人说过话的排在最后"
         );
     }
 
