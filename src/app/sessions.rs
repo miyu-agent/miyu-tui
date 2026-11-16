@@ -386,6 +386,8 @@ impl App {
             board: std::mem::replace(&mut self.talk.board, next.board),
             view: std::mem::replace(&mut self.screen.view, next.view),
         };
+        // 停放着的时候收起、变短了的，底边照换上来的这一份重算（同 `switch.rs` 的 `swap_in`）。
+        self.screen.view.settle();
         self.talk.parked.insert(current.clone(), old);
         let main = self.talk.home.clone().unwrap_or(current);
         self.talk.home = (session != main).then_some(main);
