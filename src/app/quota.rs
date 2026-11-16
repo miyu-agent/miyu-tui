@@ -1,6 +1,7 @@
 //! `/usage` 框里的套餐额度（核心 QU-1，蓝图「配置与模型」第 5 条，2026-11-14 项目主人定样子）：开框时和 `usage.query`
 //! 一起问一次看着的会话的 `session.quota`，回来了交给框画（`ui/usage/quota.rs`）。没有额度的核心回 `{}`，框里不画。
-//! 核心那边缓存 60 秒、每轮后台刷新，头只在开框时问，不轮询。
+//! 核心那边缓存 60 秒、每轮后台刷新，头只在开框时问，不轮询。用 DeepSeek 官方供应商的回应是账户余额（核心 QU-2，
+//! `balance`），和窗口各是各的。
 
 use serde_json::{Value, json};
 
@@ -20,6 +21,50 @@ pub struct QuotaWindow {
     pub percent: f64,
     /// 什么时候重置；没给、读不懂的不写。
     pub resets_at: Option<jiff::Timestamp>,
+}
+
+/// 账户余额的一种币（核心 QU-2）：金额都是官方写的原样字符串，不换成数。
+#[derive(Debug, Clone, PartialEq)]
+pub struct BalanceItem {
+    /// 币种代码，照官方写的（`CNY`、`USD`，也可能是别的）。
+    pub currency: String,
+    /// 一共多少。
+    pub total: String,
+    /// 其中赠送的。
+    pub granted: String,
+}
+
+/// 账户余额（核心 QU-2）：能不能用（官方说的原样），每种币一项、照官方的先后；`items` 可能是空的。
+#[derive(Debug, Clone, PartialEq)]
+pub struct Balance {
+    /// 能不能用。
+    pub available: bool,
+    /// 每种币一项。
+    pub items: Vec<BalanceItem>,
+}
+
+/// 读回应里的 `balance`：没查到的（不带这一格）、`available` 不是布尔的是 `None`；币种、金额缺的那一项不要。
+pub(crate) fn balance(result: &Value) -> Option<Balance> {
+    let b = result.get("balance")?;
+    let text = |v: &Value, key: &str| v.get(key).and_then(Value::as_str).map(str::to_string);
+    let items = b
+        .get("items")
+        .and_then(Value::as_array)
+        .map_or_else(Vec::new, |list| {
+            list.iter()
+                .filter_map(|i| {
+                    Some(BalanceItem {
+                        currency: text(i, "currency")?,
+                        total: text(i, "total")?,
+                        granted: text(i, "granted").unwrap_or_default(),
+                    })
+                })
+                .collect()
+        });
+    Some(Balance {
+        available: b.get("available")?.as_bool()?,
+        items,
+    })
 }
 
 /// 读 `session.quota` 的回应：`windows` 一项一个，照核心排好的先后；没有额度的（`{}`）、名字或百分比缺的不要。
@@ -63,6 +108,7 @@ impl App {
         }
         if let (Some(data), Ok(result)) = (self.boxes.usage.as_mut(), result) {
             data.quota = windows(result);
+            data.balance = balance(result);
         }
         true
     }

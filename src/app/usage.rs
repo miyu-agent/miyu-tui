@@ -32,6 +32,8 @@ pub struct UsageData {
     pub rates: Vec<String>,
     /// 看着的会话的套餐额度（核心 QU-1，`quota.rs`）：没有额度、还没回来的是空的，总览不画。
     pub quota: Vec<super::quota::QuotaWindow>,
+    /// 看着的会话的账户余额（核心 QU-2，`quota.rs`）：没查到、还没回来的是 `None`，总览不画。
+    pub balance: Option<super::quota::Balance>,
 }
 
 impl App {
@@ -48,6 +50,7 @@ impl App {
             today: now.date(),
             rates: Vec::new(),
             quota: Vec::new(),
+            balance: None,
         });
         self.ask_quota();
         let kinds = [

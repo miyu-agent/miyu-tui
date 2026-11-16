@@ -2,6 +2,7 @@
 //! 反色），右边暗色写全部的合计；下面是那一页：总览（四个数、热度图，`overview.rs`）、最近 30 天（柱状图加按天的表，
 //! `charts.rs`）、按模型（占比条加用途）、按会话（排行，`tables.rs`）。没回来的写「正在读用量…」，拒了的写原因。
 
+mod balance;
 mod charts;
 mod overview;
 mod quota;
@@ -82,6 +83,12 @@ pub struct Texts {
     pub quota_hours: String,
     /// 再远写日期时刻，`{time}`。
     pub quota_at: String,
+    /// 账户余额（核心 QU-2，`balance.rs`）：一种币一行，`{amount}`。
+    pub balance: String,
+    /// 有赠送的后面暗字写的，`{amount}`。
+    pub balance_granted: String,
+    /// 一项都没有又不能用的那一行。
+    pub balance_exhausted: String,
 }
 
 /// 框里几样图的尺寸（`layout.json` 的 `usage`）。

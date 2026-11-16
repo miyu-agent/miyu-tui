@@ -465,7 +465,10 @@
     },
     "quota_minutes": "{n} 分後にリセット",
     "quota_hours": "{n} 時間後にリセット",
-    "quota_at": "{time} にリセット"
+    "quota_at": "{time} にリセット",
+    "balance": "残高 {amount}",
+    "balance_granted": "うち付与 {amount}",
+    "balance_exhausted": "残高不足"
   },
   "help": {
     "title": "ヘルプ",
