@@ -11,25 +11,20 @@ fn texts() -> Texts {
     Config::builtin().unwrap().text.settings
 }
 
-/// 隐私页一项带选项的列表（照核心 5-15 下的 `sandbox.private.remove`），系统配置里写的是 `value`；照 `Enter` 那条路开窗。
-/// `ticks` 是核心给的画法提示（`"unlisted"` 反着勾），不写的照正着勾。
+/// 一项带选项的列表（某个包的「要看的城市」），系统配置里写的是 `value`；照 `Enter` 那条路开窗。
 fn opened(value: Value) -> Settings {
-    opened_with(value, Value::Null)
-}
-
-fn opened_with(value: Value, ticks: Value) -> Settings {
-    let schema = json!({"pages": [{"id": "privacy", "name": "隐私与安全"}],
-        "groups": [{"id": "private", "name": "私密目录", "page": "privacy"}],
-        "items": [{"key": "sandbox.private.remove", "type": "list", "control": "list", "element": "text",
-            "options": [{"value": "~/.ssh", "name": "~/.ssh"}, {"value": "~/.gnupg", "name": "~/.gnupg"},
-                        {"value": "~/.aws", "name": "~/.aws"}],
-            "layers": ["system"], "name": "不当私密的出厂目录", "page": "privacy", "group": "private", "ticks": ticks}]});
+    let schema = json!({"pages": [{"id": "extras", "name": "扩展"}],
+        "groups": [{"id": "weather", "name": "天气", "page": "extras"}],
+        "items": [{"key": "weather.cities", "type": "list", "control": "list", "element": "text",
+            "options": [{"value": "tokyo", "name": "东京"}, {"value": "osaka", "name": "大阪"},
+                        {"value": "kyoto", "name": "京都"}],
+            "layers": ["system"], "name": "要看的城市", "page": "extras", "group": "weather"}]});
     let layers = if value.is_null() {
         json!([])
     } else {
         json!([{"origin": {"layer": "system", "line": 1}, "value": value, "used": true}])
     };
-    let config = json!({"items": {"sandbox.private.remove": {"value": value, "layers": layers}}});
+    let config = json!({"items": {"weather.cities": {"value": value, "layers": layers}}});
     let mut page = Settings::open(false, true);
     for (tag, method, _) in page.take_asks() {
         let got = match method {
@@ -39,7 +34,7 @@ fn opened_with(value: Value, ticks: Value) -> Settings {
         };
         page.answer(tag, Ok(got), &texts());
     }
-    page.change("privacy", 0, &texts());
+    page.change("extras", 0, &texts());
     page
 }
 
@@ -67,7 +62,7 @@ fn saved(page: &mut Settings) -> String {
 #[test]
 fn a_list_with_options_ticks_them_and_enter_saves_in_option_order() {
     // 2026-10-21 项目主人：「做，照预设功能那样打勾」。
-    let mut page = opened(json!(["~/.aws"]));
+    let mut page = opened(json!(["kyoto"]));
     assert_eq!(ticked(&page), [false, false, true], "照现在的值勾上");
     press(&mut page, KeyCode::Char(' '));
     press(&mut page, KeyCode::Char('j'));
@@ -79,7 +74,7 @@ fn a_list_with_options_ticks_them_and_enter_saves_in_option_order() {
     assert!(page.popup.is_none());
     let sent = saved(&mut page);
     assert!(
-        sent.contains(r#""value":["~/.ssh"]"#),
+        sent.contains(r#""value":["tokyo"]"#),
         "Enter 收起时照选项的先后存：{sent}"
     );
 }
@@ -105,24 +100,10 @@ fn escape_closes_without_saving() {
 }
 
 #[test]
-fn an_unlisted_list_ticks_what_is_not_in_the_value() {
-    // 2026-10-21 项目主人：「默认私密目录」进去是几个已经勾着的目录，空格取消勾选、回车保存（核心给 `"ticks": "unlisted"`）。
-    let mut page = opened_with(json!(["~/.gnupg"]), json!("unlisted"));
-    assert_eq!(ticked(&page), [true, false, true], "不在值里的勾着");
-    press(&mut page, KeyCode::Char(' '));
-    press(&mut page, KeyCode::Enter);
-    let sent = saved(&mut page);
-    assert!(
-        sent.contains(r#""value":["~/.ssh","~/.gnupg"]"#),
-        "存的照旧是去掉的那几个（没勾的）：{sent}"
-    );
-}
-
-#[test]
 fn ctrl_a_ticks_all_or_clears_all() {
-    // 2026-10-22 项目主人验收默认私密目录：「这里应该支持ctrl+A切换全选」。
+    // 2026-10-22 项目主人验收时要的：「这里应该支持ctrl+A切换全选」。
     let ctrl_a = || KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL);
-    let mut page = opened(json!(["~/.aws"]));
+    let mut page = opened(json!(["kyoto"]));
     page.key(ctrl_a(), &texts());
     assert_eq!(ticked(&page), [true, true, true], "没全勾的全勾上");
     page.key(ctrl_a(), &texts());

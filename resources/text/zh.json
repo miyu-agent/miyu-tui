@@ -641,7 +641,6 @@
     "notes_label": "补充",
     "decisions": [
       "允许本次",
-      "此目录不再询问",
       "不允许"
     ],
     "reason_hint": "理由（可选）",
@@ -653,8 +652,6 @@
     "preview_below": "下面还有 {n} 行",
     "access": {
       "execute": "运行一条命令",
-      "write": "写入 {count} 个文件",
-      "read": "读取 {count} 个文件",
       "exec": "运行 {tool}"
     },
     "access_other": "使用 {tool}",
@@ -705,8 +702,6 @@
       "files": ["{size}，1 个文件", "{size}，{n} 个文件"],
       "separator": "、"
     },
-    "outside": "工作区外",
-    "private": "私密目录",
     "unanswered": "未回答",
     "keys": "↑/↓ 选择 · Enter 提交 · n 补充 · Esc ×2 取消",
     "keys_multi": "↑/↓ 选择 · Space 勾选 · Enter 提交 · n 补充 · Esc ×2 取消",
@@ -1253,7 +1248,6 @@
       "default_mark": "默认",
       "no_personas": "暂无人格",
       "loading": "正在加载…",
-      "counted": "{n} 个",
       "detail": [
         "名称",
         "具体人格提示词",

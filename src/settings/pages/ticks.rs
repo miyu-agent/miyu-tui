@@ -1,7 +1,7 @@
-//! 从几个选项里勾的列表（蓝图「配置页」第 47a 条，2026-10-21 项目主人照推荐定「照预设功能那样打勾」，起因是核心 5-15 下的
-//! `sandbox.private.remove`，同一天改名「默认私密目录」）。`control` 是 `list`、带 `options` 的开这个窗：一个选项一行，`[*]`
-//! 勾着、`[ ]` 没勾；空格勾上、取消，`Ctrl+A` 全勾、全不勾（2026-10-22 项目主人验收时要的），`j` `k` 挪，`Enter` 存了关窗、
-//! `Esc` 不存（同一天项目主人：「空格取消勾选，回车保存」），动过的照选项的先后整份存。核心标了 `"ticks": "unlisted"` 的反着勾：勾着的是不在值里的（默认私密目录：勾着的还是私密的）。
+//! 从几个选项里勾的列表（蓝图「配置页」第 47a 条，2026-10-21 项目主人照推荐定「照预设功能那样打勾」）。`control` 是 `list`、
+//! 带 `options` 的开这个窗：一个选项一行，`[*]` 勾着、`[ ]` 没勾；空格勾上、取消，`Ctrl+A` 全勾、全不勾（2026-10-22 项目主人
+//! 验收时要的），`j` `k` 挪，`Enter` 存了关窗、`Esc` 不存（同一天项目主人：「空格取消勾选，回车保存」），动过的照选项的先后
+//! 整份存。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::Deserialize;
@@ -36,8 +36,6 @@ pub struct TickEdit {
     pub sel: usize,
     /// 动过。
     pub changed: bool,
-    /// 反着勾：勾着的是不在值里的（`"ticks": "unlisted"`）。
-    pub unlisted: bool,
 }
 
 /// 按了一个键以后窗怎么办。
@@ -60,10 +58,7 @@ impl TickEdit {
             .iter()
             .map(|o| (o.value.clone(), o.name.clone()))
             .collect();
-        let on = options
-            .iter()
-            .map(|(v, _)| now.contains(v) != item.unlisted)
-            .collect();
+        let on = options.iter().map(|(v, _)| now.contains(v)).collect();
         Self {
             key: item.key.clone(),
             title: item.name.clone(),
@@ -71,7 +66,6 @@ impl TickEdit {
             on,
             sel: 0,
             changed: false,
-            unlisted: item.unlisted,
         }
     }
 
@@ -96,17 +90,16 @@ impl TickEdit {
             on,
             sel: 0,
             changed: false,
-            unlisted: false,
         }
     }
 
-    /// 存进去的值，照选项的先后：勾着的那几个；反着勾的是没勾的那几个。
+    /// 存进去的值，照选项的先后：勾着的那几个。
     pub fn value(&self) -> Value {
         let picked = self
             .options
             .iter()
             .zip(&self.on)
-            .filter(|(_, on)| **on != self.unlisted)
+            .filter(|(_, on)| **on)
             .map(|((v, _), _)| v.clone());
         Value::Array(picked.collect())
     }

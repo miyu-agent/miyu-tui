@@ -1,5 +1,5 @@
 //! 包的守卫要人确认（核心 HK-1，排期第 61 条）：问题行写哪个包的守卫、要调哪件工具；守卫的话照原样写在下面（长的折行写全）；
-//! 没有放行规则，只给「允许本次」「不允许」。
+//! 只给「允许本次」「不允许」。
 
 use serde_json::json;
 
@@ -38,7 +38,6 @@ fn a_guard_asks_with_its_package_tool_and_words() {
         "守卫的话在选项上面：{shown:?}"
     );
     assert!(at("不允许").is_some(), "{shown:?}");
-    assert!(at("不再询问").is_none(), "没有放行规则不给：{shown:?}");
 }
 
 #[test]

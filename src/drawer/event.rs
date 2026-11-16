@@ -50,10 +50,6 @@ pub struct Approval {
     pub call_id: String,
     /// 要什么权限：`write`、`read`、`exec` 这类。
     pub access: String,
-    /// 提的放行规则：有的才能选「此目录不再询问」（核心 D-1：没有的选了回 `no_rule`）。LV-3 起只有只读时读私密目录会带；
-    /// 完全放开下问的高危命令不带，只给「允许这一次」「不允许」。
-    #[serde(default)]
-    pub rule: Option<serde_json::Value>,
     /// 碰到哪些东西。
     #[serde(default)]
     pub detail: Option<Detail>,
@@ -65,9 +61,6 @@ pub struct Approval {
 /// 确认的细节。
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct Detail {
-    /// 碰到的路径。
-    #[serde(default)]
-    pub paths: Vec<Touched>,
     /// 哪件工具。
     #[serde(default)]
     pub tool: Option<String>,
@@ -98,16 +91,6 @@ pub struct Detail {
     /// 装、卸、打开扩展的：核心看一眼的回应（`package.install`、`package.remove` 带 `preview: true` 的）。
     #[serde(default)]
     pub preview: Option<serde_json::Value>,
-}
-
-/// 碰到的一个路径。
-#[derive(Debug, Clone, Deserialize)]
-pub struct Touched {
-    /// 路径。
-    pub path: String,
-    /// 在哪：`outside` 是工作区外。
-    #[serde(default)]
-    pub zone: Option<String>,
 }
 
 /// `question.answered` 的 `body`。
@@ -160,19 +143,17 @@ pub struct Decided {
     pub files: Vec<Pasted>,
 }
 
-/// 确认的几种回答（核心 D-1；「这个工作区都允许」核心还没有）。
+/// 确认的几种回答（核心 D-1）。核心 PV-RM 起确认请求都不带放行规则，「此目录不再询问」（`session`）随私密目录去掉，只剩这两种。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Decision {
     /// 允许这一次。
     Once,
-    /// 此目录不再询问（协议上叫 `session`，2026-10-20 项目主人改的叫法）。
-    Session,
     /// 不允许。
     Deny,
 }
 
 impl Decision {
     /// 抽屉里的先后。
-    pub const ALL: [Self; 3] = [Self::Once, Self::Session, Self::Deny];
+    pub const ALL: [Self; 2] = [Self::Once, Self::Deny];
 }

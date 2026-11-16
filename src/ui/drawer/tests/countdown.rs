@@ -7,7 +7,7 @@ use crate::drawer::{Approval, Drawer};
 
 fn approval(expires_at: Option<String>) -> Drawer {
     let mut body =
-        json!({"call_id": "c1", "access": "write", "detail": {"paths": [{"path": "/tmp/a"}]}});
+        json!({"call_id": "c1", "access": "execute", "detail": {"command": "ls", "tool": "shell"}});
     if let Some(at) = expires_at {
         body["expires_at"] = json!(at);
     }

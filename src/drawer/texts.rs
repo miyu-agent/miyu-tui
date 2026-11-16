@@ -37,7 +37,7 @@ pub struct Texts {
     /// 补充那一行打头的。
     pub notes_label: String,
     /// 确认的几项，照 `Decision::ALL` 的先后。
-    pub decisions: [String; 3],
+    pub decisions: [String; 2],
     /// 写「不允许」的理由时，还没打字暗色写的。
     pub reason_hint: String,
     /// 光标停在「不允许」上、没在写时后面写的：怎么写理由。
@@ -52,16 +52,12 @@ pub struct Texts {
     pub keys_scroll_preview: String,
     /// 预览放不下时「预览」后面写的：下面还有几行，`{n}`。
     pub preview_below: String,
-    /// 确认的问题行，照 `access` 找，`{count}` 路径数、`{tool}` 工具名。
+    /// 确认的问题行，照 `access` 找，`{tool}` 工具名。
     pub access: HashMap<String, String>,
     /// `access` 里没有的。
     pub access_other: String,
     /// 装、卸软件包，打开扩展的确认（核心 F-10 下）。
     pub package: super::PackageTexts,
-    /// 工作区外的路径后面标的。
-    pub outside: String,
-    /// 别的程序的私密目录（`zone` 是 `private`，核心 5-13）后面标的。
-    pub private: String,
     /// 「确认」页、留下的引用块里没答的那道。
     pub unanswered: String,
     /// 按键提示：提问单选、提问多选、确认、「确认」页、编辑时；几道题时提问的后面再接 `keys_tabs`。

@@ -641,7 +641,6 @@
     "notes_label": "Notes",
     "decisions": [
       "Allow once",
-      "Don't ask again for this folder",
       "Don't allow"
     ],
     "reason_hint": "Add a reason (optional)",
@@ -653,8 +652,6 @@
     "preview_below": "{n} more below",
     "access": {
       "execute": "Run a command",
-      "write": "Wants to write {count} file(s)",
-      "read": "Wants to read {count} file(s)",
       "exec": "Wants to run {tool}"
     },
     "access_other": "Wants to use {tool}",
@@ -705,8 +702,6 @@
       "files": ["{size}, 1 file", "{size}, {n} files"],
       "separator": ", "
     },
-    "outside": "outside the workspace",
-    "private": "private directory",
     "unanswered": "Unanswered",
     "keys": "↑/↓ select · Enter submit · n notes · Esc ×2 cancel",
     "keys_multi": "↑/↓ select · Space check · Enter submit · n notes · Esc ×2 cancel",
@@ -1253,7 +1248,6 @@
       "default_mark": "default",
       "no_personas": "No personas yet",
       "loading": "Reading…",
-      "counted": "{n} listed",
       "detail": [
         "Name",
         "Detailed persona prompt",

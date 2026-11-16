@@ -74,7 +74,6 @@ pub fn add_row(schema: &mut Schema, words: &Words, known: bool) {
         group: KEY.to_string(),
         package: String::new(),
         common: false,
-        unlisted: false,
         slide: None,
         title: None,
         fields: Vec::new(),

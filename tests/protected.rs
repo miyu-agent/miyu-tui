@@ -1,5 +1,5 @@
 //! 伪终端里的端到端测试：「受保护的命令」那一组（核心 HZ-1，蓝图 `tui.md`「配置页」）。真界面连一份真核心：这一组在
-//! 「隐私与安全」页、排在私密目录前面，组名下面写着核心给的说明，五个开关照清单画、拨了当场存进系统配置。
+//! 「隐私与安全」页，组名下面写着核心给的说明，五个开关照清单画、拨了当场存进系统配置；私密目录那一组随核心 PV-RM 去掉了。
 
 mod support;
 
@@ -9,7 +9,7 @@ use miyu_session::testkit::Script;
 use support::Home;
 
 #[test]
-fn the_protected_commands_group_comes_before_private_directories_and_its_switches_save() {
+fn the_protected_commands_group_shows_its_note_and_its_switches_save() {
     let home = Home::new(Script::new([]));
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     tui.wait_for("显示");
@@ -23,8 +23,8 @@ fn the_protected_commands_group_comes_before_private_directories_and_its_switche
             .unwrap_or_else(|| panic!("页里没有「{word}」：\n{}", lines.join("\n")))
     };
     assert!(
-        at("受保护的命令") < at("私密目录"),
-        "排在私密目录前面：\n{}",
+        !lines.iter().any(|l| l.contains("私密目录")),
+        "私密目录那一组没了（核心 PV-RM）：\n{}",
         lines.join("\n")
     );
     // 组名下面是核心给的说明（暗色，折行写全），再是五个开关。

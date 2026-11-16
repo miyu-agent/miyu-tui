@@ -307,7 +307,7 @@ impl Settings {
             // 选模型（第 33 条子规则）：开选默认模型的那个窗，写回这一项。
             "reference" => self.open_reference(super::target::Target::Setting, &item.key, &value),
             "textarea" => self.open_textarea(&item, &value),
-            // 带选项的（隐私页的去掉出厂私密目录）勾选，不手打（第 47a 条）。
+            // 带选项的勾选，不手打（第 47a 条）。
             // 记录列表（第 47b 条）：开列表窗。
             "list" if item.element == "record" => self.open_records(&item, &value),
             // 一项一个人格、预设、知识库的列表（排期第 41 条）：照列表勾。
