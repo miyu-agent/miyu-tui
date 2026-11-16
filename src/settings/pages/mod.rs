@@ -361,8 +361,6 @@ pub struct Texts {
     pub no_personas: String,
     /// 正在读。
     pub loading: String,
-    /// 只写个数的列表写的：`{n}`（[`list::counted`]）。
-    pub counted: String,
     /// 默认人格没设、选择窗第一行：不带人格（2026-10-08 项目主人定叫「无人格」）。
     pub no_persona: String,
     /// 软件包里选人格、选预设、选知识库的项没设、选择窗第一行：不选（排期第 41 条，选了交 `null`、去掉这一项）。

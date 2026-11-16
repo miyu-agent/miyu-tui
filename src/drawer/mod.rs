@@ -252,12 +252,9 @@ impl Drawer {
                     .chain([Item::Other])
                     .collect()
             }),
-            // 请求没提放行规则的不给「此目录不再询问」（核心会回 `no_rule`）。
-            Ask::Approval(a) if page == 0 => Decision::ALL
-                .into_iter()
-                .filter(|d| *d != Decision::Session || a.rule.is_some())
-                .map(Item::Decision)
-                .collect(),
+            Ask::Approval(_) if page == 0 => {
+                Decision::ALL.into_iter().map(Item::Decision).collect()
+            }
             Ask::Approval(_) => Vec::new(),
         }
     }

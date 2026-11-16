@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use super::choose::Choice;
 use super::schema::Item;
-use super::{DEFAULT_PERSONA, DEFAULT_PRESET, LOOK, MASCOT, Texts, list, secret};
+use super::{DEFAULT_PERSONA, DEFAULT_PRESET, LOOK, MASCOT, Texts, secret};
 use crate::core::Persona;
 use crate::settings::data::Data;
 
@@ -37,7 +37,7 @@ pub fn is_named(key: &str) -> bool {
 }
 
 /// 值写成给人看的样子：下拉写选项的名字（默认人格、默认预设写名字，`named` 是它们的列表），开关写开、关，密钥写设没设，
-/// 列表用顿号连（私密目录两项只写个数）。
+/// 列表用顿号连。
 pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Texts) -> String {
     // 记录列表写各条的标题（第 47b 条）。
     if let Some(titles) = super::records::summary(item, value, &texts.records, &texts.list_sep) {
@@ -84,12 +84,6 @@ pub fn shown(item: &Item, value: &Value, named: Option<&[Persona]>, texts: &Text
     // 密钥：只写设了没设，不露引用（第 48 条）。
     if secret::is_secret(item) {
         return texts.secret[usize::from(value.is_null())].clone();
-    }
-    if let Some(n) = list::counted(item, value) {
-        return match n {
-            0 => "—".to_string(),
-            n => texts.counted.replace("{n}", &n.to_string()),
-        };
     }
     match (item.control.as_str(), value) {
         // 默认人格没设：就是无人格。

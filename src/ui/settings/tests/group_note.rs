@@ -17,10 +17,11 @@ fn a_groups_description_is_written_dim_under_its_name_and_wraps() {
     };
     let schema = json!({"pages": [{"id": "privacy", "name": "隐私与安全"}],
         "groups": [{"id": "protected", "name": "受保护的命令", "page": "privacy", "description": said},
-                   {"id": "private", "name": "私密目录", "page": "privacy"}],
+                   {"id": "permission", "name": "权限", "page": "privacy"}],
         "items": [toggle("permission.confirm.git", "破坏性 git 操作", "protected"),
                   toggle("permission.confirm.power", "关机和重启", "protected"),
-                  toggle("sandbox.private.enabled", "保护私密目录", "private")]});
+                  json!({"key": "permission.confirm.timeout", "type": "int", "control": "number",
+                         "layers": ["system"], "name": "等人确认多久", "page": "privacy", "group": "permission"})]});
     let mut page = Settings::open(false, true);
     for (tag, method, _) in page.take_asks() {
         let got = match method {
@@ -38,7 +39,7 @@ fn a_groups_description_is_written_dim_under_its_name_and_wraps() {
             .unwrap_or_else(|| panic!("没有「{word}」：{text:#?}"))
     };
     // 组名、说明（折成几行，连起来一字不少）、这一组的项；再是下一组。
-    let (title, first, next) = (at("受保护的命令"), at("破坏性 git 操作"), at("私密目录"));
+    let (title, first, next) = (at("受保护的命令"), at("破坏性 git 操作"), at("权限"));
     assert!(title < first && first < next, "{text:#?}");
     let note = &lines[title + 1..first];
     assert!(note.len() > 1, "40 列放不下，折行：{text:#?}");
@@ -53,5 +54,5 @@ fn a_groups_description_is_written_dim_under_its_name_and_wraps() {
         assert!(unicode_width::UnicodeWidthStr::width(line.to_string().as_str()) <= 36);
     }
     // 没写说明的组：组名下面直接是项。
-    assert!(text[next + 1].contains("保护私密目录"), "{text:#?}");
+    assert!(text[next + 1].contains("等人确认多久"), "{text:#?}");
 }

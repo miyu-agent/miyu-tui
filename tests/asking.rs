@@ -57,8 +57,6 @@ fn a_hazardous_command_asks_and_allowing_once_lets_it_through() {
     tui.say("清一下");
     tui.wait_for("允许本次");
     assert!(target.exists(), "还没答就没跑");
-    // 高危命令没有放行规则：只有允许这一次、不允许（LV-3）。
-    assert!(!tui.shows("此目录不再询问"), "{}", tui.lines().join("\n"));
     assert!(
         !tui.lines().iter().any(|l| l.contains("在问")),
         "她自己问的不写谁在问"
@@ -110,17 +108,13 @@ fn a_command_approval_shows_its_short_title_and_the_command() {
     assert!(!screen.contains("使用 shell"), "{screen}");
     // 沙盒那一套去掉了（LV-3）：不再写「沙盒外运行」。
     assert!(!screen.contains("沙盒外运行"), "{screen}");
-    assert!(
-        !screen.contains("此目录不再询问"),
-        "跑命令的没有放行规则：{screen}"
-    );
     tui.key(b"\r");
     tui.wait_for("清好了。");
 }
 
 #[test]
 fn a_hazardous_command_says_so_and_only_offers_once_or_deny() {
-    // 核心 5-17：认成高危的命令带 `detail.hazard`、没有放行规则；2026-10-20 项目主人：写「高危命令」四个字。
+    // 核心 5-17：认成高危的命令带 `detail.hazard`；2026-10-20 项目主人：写「高危命令」四个字。
     let args = r#"{"command": "git push --force", "description": "强推上去"}"#;
     let script = Script::new([
         Play::Calls(vec![("shell".into(), args.into())]),
@@ -134,7 +128,6 @@ fn a_hazardous_command_says_so_and_only_offers_once_or_deny() {
     let screen = tui.lines().join("\n");
     assert!(screen.contains("高危命令"), "{screen}");
     assert!(screen.contains("$ git push --force"), "{screen}");
-    assert!(!screen.contains("此目录不再询问"), "{screen}");
     tui.key(DOWN);
     tui.key(b"\r");
     tui.wait_for("好，不推了。");

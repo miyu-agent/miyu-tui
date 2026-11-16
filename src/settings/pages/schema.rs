@@ -46,9 +46,6 @@ pub struct Item {
     pub package: String,
     /// 常用项：排在组里前面。
     pub common: bool,
-    /// 带选项的列表反着勾（核心给的 `"ticks": "unlisted"`）：勾着的是不在值里的（「配置页」第 47a 条，2026-10-21 项目主人：
-    /// 「默认私密目录」进去是几个已经勾着的目录，空格取消勾选）。
-    pub unlisted: bool,
     /// 滑块（`control: "slider"`，核心 PC-1）的范围和一步：最小、最大、一步；别的控件是 `None`。
     pub slide: Option<(f64, f64, f64)>,
     /// 记录列表（`element: "record"`，核心 PC-2）拿哪个字段当每一条的标题；没写的是 `None`。
@@ -376,7 +373,6 @@ fn read_item(i: &Value) -> Item {
         group: text(&i["group"]),
         package: text(&i["package"]),
         common: i["common"] == true,
-        unlisted: i["ticks"] == "unlisted",
         slide: slide(i),
         title: i["title"].as_str().map(str::to_string),
         // 记录列表的字段（核心 PC-2）：写法同一项，`hidden` 的不画。

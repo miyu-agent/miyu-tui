@@ -76,21 +76,13 @@ fn the_kernel_samples_read_and_there_is_no_decline() {
         d.items(0),
         vec![Item::Choice(0), Item::Choice(1), Item::Other]
     );
-    let a = Drawer::approval(None, approval());
     assert_eq!(
-        a.items(0).len(),
-        3,
-        "允许本次、此目录不再询问、不允许（核心 5-15 上改叫法）"
-    );
-    let mut bare = approval();
-    bare.rule = None;
-    assert_eq!(
-        Drawer::approval(None, bare).items(0),
+        Drawer::approval(None, approval()).items(0),
         vec![
             Item::Decision(Decision::Once),
             Item::Decision(Decision::Deny)
         ],
-        "没提放行规则的不给「此目录不再询问」：选了核心回 no_rule"
+        "允许本次、不允许（核心 PV-RM 起确认都不带放行规则）"
     );
     assert!(!d.has_review(), "一道题没有「确认」页");
     assert!(Drawer::question(None, two()).has_review());
@@ -264,15 +256,15 @@ fn esc_twice_within_the_window_cancels() {
 #[test]
 fn approval_decides_and_n_writes_a_reason() {
     let mut d = Drawer::approval(None, approval());
-    match d.key(key(KeyCode::Char('2'))) {
+    match d.key(key(KeyCode::Char('1'))) {
         Step::Done(Outcome::Decided(x)) => {
-            assert_eq!((x.decision, x.reason), (Decision::Session, None));
+            assert_eq!((x.decision, x.reason), (Decision::Once, None));
         }
         other => panic!("{other:?}"),
     }
     // 2026-10-22 项目主人：照提问的 `n` 补充，`n` 写理由；选「不允许」直接交。
     let mut d = Drawer::approval(None, approval());
-    match d.key(key(KeyCode::Char('3'))) {
+    match d.key(key(KeyCode::Char('2'))) {
         Step::Done(Outcome::Decided(x)) => {
             assert_eq!((x.decision, x.reason), (Decision::Deny, None));
         }
@@ -281,7 +273,7 @@ fn approval_decides_and_n_writes_a_reason() {
     let mut d = Drawer::approval(None, approval());
     assert_eq!(d.key(key(KeyCode::Char('n'))), Step::Stay);
     assert_eq!(d.editing, Some(Edit::Reason), "n：写理由");
-    assert_eq!(d.cursor[0], 2, "光标挪到「不允许」");
+    assert_eq!(d.cursor[0], 1, "光标挪到「不允许」");
     assert_eq!(d.key(key(KeyCode::Char('n'))), Step::Stay, "编辑时 n 是字");
     d.key(key(KeyCode::Backspace));
     typed(&mut d, "别动家目录");
@@ -397,14 +389,14 @@ fn a_command_ask_takes_its_title_and_command_from_the_core() {
         Some("rm -rf build")
     );
     assert!(!d.hazardous(), "没认成高危的不写");
-    assert_eq!(d.items(0).len(), 2, "没有 rule：只有允许本次、不允许");
+    assert_eq!(d.items(0).len(), 2, "只有允许本次、不允许");
 }
 
 #[test]
 fn a_hazardous_command_says_so_and_offers_only_once_or_deny() {
-    // 核心 5-17：认成高危的带 `detail.hazard`，`rule` 一定是 null；2026-10-20 项目主人：写「高危命令」四个字。
+    // 核心 5-17：认成高危的带 `detail.hazard`；2026-10-20 项目主人：写「高危命令」四个字。
     let approval: Approval = serde_json::from_value(serde_json::json!({
-        "call_id": "c1", "access": "execute", "rule": null,
+        "call_id": "c1", "access": "execute",
         "detail": {"command": "git push --force", "hazard": "git_force_push", "tool": "shell"}
     }))
     .unwrap();
@@ -428,28 +420,6 @@ fn vim_keys_move_and_turn_pages_while_not_typing() {
     d.key(key(KeyCode::Char('n')));
     typed(&mut d, "jk");
     assert_eq!(d.notes[0], "jk", "写字时照常打字");
-}
-
-#[test]
-fn a_path_outside_the_workspace_or_in_a_private_directory_is_marked() {
-    // 核心 5-13：别的程序的私密目录（钥匙、登录这类）`zone` 是 `private`，2026-10-12 项目主人定标「私密目录」；工作区外的照旧。
-    // 受保护的路径（`read_only`）随沙盒去掉了（核心 LV-5，2026-11-11），不再标。
-    let texts = Config::builtin().unwrap().text.drawer;
-    let approval: Approval = serde_json::from_value(serde_json::json!({
-        "call_id": "c1", "access": "read",
-        "detail": {"tool": "read", "paths": [
-            {"path": "/srv/keys/id_ed25519", "write": false, "zone": "private"},
-            {"path": "/srv/other/notes.md", "write": false, "zone": "outside"},
-            {"path": "/srv/work/a.md", "write": false}
-        ]}
-    }))
-    .unwrap();
-    let d = Drawer::approval(None, approval);
-    let marks: Vec<Option<String>> = d.paths(&texts).into_iter().map(|(_, m)| m).collect();
-    assert_eq!(
-        marks,
-        [Some("私密目录".into()), Some("工作区外".into()), None]
-    );
 }
 
 #[test]

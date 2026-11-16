@@ -1,8 +1,7 @@
 //! 了结以后正文里留什么（蓝图「确认和提问的抽屉」第 7 条），和抽屉、「确认」页共用的几样写法：
-//! 一道的回答写成一句、确认的问题行、碰到的路径。
+//! 一道的回答写成一句、确认的问题行。
 
 use super::{Answer, Ask, Decision, Drawer, Outcome, Texts};
-use crate::local::home_short;
 
 /// 了结以后留什么。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,12 +56,12 @@ impl Drawer {
                     };
                     Report::Denied(texts.denied_with.replace("{reason}", &head), full)
                 }
-                _ => Report::Denied(texts.decisions[2].clone(), String::new()),
+                _ => Report::Denied(texts.decisions[1].clone(), String::new()),
             },
         }
     }
 
-    /// 确认的问题行：「要写 1 个文件」这类，照 `access` 找（第 3 条）。
+    /// 确认的问题行：「运行一条命令」这类，照 `access` 找（第 3 条）。
     pub fn title(&self, texts: &Texts) -> String {
         let Ask::Approval(a) = &self.ask else {
             return String::new();
@@ -82,11 +81,9 @@ impl Drawer {
         if let Some(plan) = self.package_plan(texts) {
             return plan.title;
         }
-        let detail = a.detail.clone().unwrap_or_default();
+        let tool = a.detail.as_ref().and_then(|d| d.tool.as_deref());
         let template = texts.access.get(&a.access).unwrap_or(&texts.access_other);
-        template
-            .replace("{count}", &detail.paths.len().to_string())
-            .replace("{tool}", detail.tool.as_deref().unwrap_or(&a.access))
+        template.replace("{tool}", tool.unwrap_or(&a.access))
     }
 
     /// 包的守卫要人确认的（核心 HK-1，`detail.guard`）：包编号、要调的工具；别的是 `None`。
@@ -115,26 +112,6 @@ impl Drawer {
             return None;
         };
         super::package::plan(a.detail.as_ref()?, &texts.package)
-    }
-
-    /// 确认碰到的路径：家目录写 `~`，工作区外的、别的程序的私密目录（核心 5-13）带上标记。受保护的路径（`read_only`）核心去掉
-    /// 沙盒以后不再有（LV-5，2026-11-11）。
-    pub fn paths(&self, texts: &Texts) -> Vec<(String, Option<String>)> {
-        let Ask::Approval(a) = &self.ask else {
-            return Vec::new();
-        };
-        a.detail
-            .iter()
-            .flat_map(|d| &d.paths)
-            .map(|p| {
-                let mark = match p.zone.as_deref() {
-                    Some("outside") => Some(texts.outside.clone()),
-                    Some("private") => Some(texts.private.clone()),
-                    _ => None,
-                };
-                (home_short(&p.path), mark)
-            })
-            .collect()
     }
 }
 

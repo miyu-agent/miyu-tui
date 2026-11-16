@@ -641,7 +641,6 @@
     "notes_label": "補足",
     "decisions": [
       "今回だけ許可",
-      "このフォルダでは今後確認しない",
       "許可しない"
     ],
     "reason_hint": "理由を入力（任意）",
@@ -653,8 +652,6 @@
     "preview_below": "下にあと {n} 行",
     "access": {
       "execute": "コマンドを実行します",
-      "write": "{count} 個のファイルへの書き込みを求めています",
-      "read": "{count} 個のファイルの読み込みを求めています",
       "exec": "{tool} の実行を求めています"
     },
     "access_other": "{tool} の使用を求めています",
@@ -705,8 +702,6 @@
       "files": ["{size}、1 ファイル", "{size}、{n} ファイル"],
       "separator": "、"
     },
-    "outside": "ワークスペース外",
-    "private": "プライベートディレクトリ",
     "unanswered": "未回答",
     "keys": "↑/↓ 選択 · Enter 送信 · n 補足 · Esc ×2 キャンセル",
     "keys_multi": "↑/↓ 選択 · Space チェック · Enter 送信 · n 補足 · Esc ×2 キャンセル",
@@ -1253,7 +1248,6 @@
       "default_mark": "既定",
       "no_personas": "ペルソナがまだありません",
       "loading": "読み込み中…",
-      "counted": "{n} 件",
       "detail": [
         "名前",
         "詳しいペルソナプロンプト",

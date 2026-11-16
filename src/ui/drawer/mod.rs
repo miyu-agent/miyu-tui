@@ -16,7 +16,6 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
-use unicode_width::UnicodeWidthStr;
 
 use super::rows::clip;
 use crate::caret::Caret;
@@ -184,17 +183,6 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
         for (piece, _) in pieces(&row, width) {
             v.push(Line::styled(piece, theme::dim()), None);
         }
-    }
-    for (path, mark) in d.paths(texts) {
-        // 标记不截：路径长的先截路径，给后面的空格和标记留出地方（原来整行宽截路径，长路径把标记挤没了）。
-        let room = mark.as_deref().map_or(0, |m| m.width() + 1);
-        let room = width.saturating_sub(u16::try_from(room).unwrap_or(u16::MAX));
-        let mut spans = vec![Span::styled(clip(&path, room), theme::dim())];
-        if let Some(mark) = mark {
-            spans.push(Span::raw(" "));
-            spans.push(Span::styled(mark, theme::warn()));
-        }
-        v.push(Line::from(spans), None);
     }
     // 要跑的命令原文（2026-10-07 项目主人：确认时看不到具体的命令）：空一行，自成一块，长的能滚（`command.rs`）。
     command::push(d, texts, width, v);
