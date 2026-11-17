@@ -118,6 +118,11 @@ impl Picker for UsageShow {
         }
     }
 
+    /// 用量是整个账号的，用不着终端会话（2026-11-17 验收第 19 条查别的命令时一起改：原来没说过话的终端 `/usage` 也只写「先说一句」）。
+    fn needs_session(&self) -> bool {
+        false
+    }
+
     fn ready(&mut self, _turn: &mut Turn, _core: &Core, config: &Config) -> Picked {
         if !self.leaving {
             return Picked::Stay;

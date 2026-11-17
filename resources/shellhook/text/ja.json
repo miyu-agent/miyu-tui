@@ -12,7 +12,7 @@
   "status_stale": "{shell}：インストール済み（{path}）ですが、呼び出すプログラム {program} がありません。もう一度インストールしてください",
   "no_program": "スクリプトから呼び出すプログラムが見つかりません：{program}",
   "ps_policy": "PowerShell の実行ポリシーが {policy} のため、プロファイルが読み込まれずフックは効きません。PowerShell で Set-ExecutionPolicy -Scope CurrentUser RemoteSigned を実行してから新しいウィンドウを開いてください",
-  "no_session": "この端末ではまだ彼女と話していません。先に何か話してからこのコマンドを使ってください",
+  "no_session": "この端末ではまだセッションがありません。先に何か話してからこのコマンドを使ってください",
   "too_long": "送信していません：メッセージが長すぎます（{size}）。上限は 1 MB です。ファイルに保存してパスを書いてください",
   "too_long_attached": "1 MB を超えたため、添付ファイル {name} として送りました",
   "unknown_command": "コマンドがありません：/{name}",

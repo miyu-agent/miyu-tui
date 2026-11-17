@@ -45,20 +45,21 @@ impl ModelPick {
         }
     }
 
-    /// 换成 `choice`：终端会话换、新会话的默认也换（同终端界面）。没有 key 的不换。
+    /// 换成 `choice`：终端会话换、新会话的默认也换（同终端界面）。这个终端还没说过话（没有终端会话，核心 T-22 只问不开）的
+    /// 只换新会话的默认，说第一句话时开的终端会话照它（同终端界面首页的 `/model`，2026-11-17 验收第 19 条）。没有 key 的不换。
     fn choose(&self, choice: &Choice, turn: &Turn, core: &Core) -> Picked {
-        let Some(session) = turn.transcript.session.clone() else {
-            return Picked::Stay;
-        };
-        if !choice.state.pickable() {
+        let session = turn.transcript.session.clone();
+        if (session.is_none() && !turn.terminal.none) || !choice.state.pickable() {
             return Picked::Stay;
         }
         if turn.transcript.current_ref().as_deref() != Some(choice.reference.as_str()) {
-            core.send(Command::Ask {
-                tag: CONFIGURE_TAG,
-                method: "session.configure",
-                params: json!({ "session": session, "model": choice.reference }),
-            });
+            if let Some(session) = session {
+                core.send(Command::Ask {
+                    tag: CONFIGURE_TAG,
+                    method: "session.configure",
+                    params: json!({ "session": session, "model": choice.reference }),
+                });
+            }
             core.send(Command::SetChat(choice.reference.clone()));
         }
         Picked::Done(Some(result(&fill(
@@ -69,6 +70,11 @@ impl ModelPick {
 }
 
 impl Picker for ModelPick {
+    /// 列表、换新会话的默认用不着终端会话（2026-11-17 验收第 19 条：原来没说过话的终端 `/model` 只写「先说一句」）。
+    fn needs_session(&self) -> bool {
+        false
+    }
+
     fn start(&mut self, core: &Core) {
         core.send(Command::ListChoices);
     }
@@ -95,7 +101,8 @@ impl Picker for ModelPick {
         let Some(given) = &self.given else {
             return Picked::Stay;
         };
-        if !self.list.loaded || turn.transcript.session.is_none() {
+        // 等终端会话问清楚：有的读回来，没有的（还没说过话）照只换新会话的默认办。
+        if !self.list.loaded || (turn.transcript.session.is_none() && !turn.terminal.none) {
             return Picked::Stay;
         }
         // 只认写全的名字、引用（不分大小写）：`v4.1 flash` 这样能对上好几个的不猜（2026-10-21 项目主人：「怎么能知道自己要换
@@ -177,3 +184,6 @@ impl Picker for ModelPick {
         (chrome, lines)
     }
 }
+
+#[cfg(test)]
+mod tests;
