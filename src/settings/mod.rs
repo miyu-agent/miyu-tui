@@ -354,6 +354,7 @@ impl Settings {
             Waiting::Choices(key) => self.choices_answer(&key, result),
             Waiting::ChoiceNames(key) => self.note_choices(&key, result.as_ref().ok()),
         }
+        self.back_to_choose(texts);
     }
 
     fn loaded(&mut self, which: Load, got: Option<Value>) {

@@ -1497,6 +1497,8 @@
       "appearance": "Appearance",
       "service": {"group": "Startup", "name": "Start the core at login", "enabling": "Turning on start at login…", "disabling": "Turning off start at login…", "enabled": "Starts at login: {file}", "disabled": "No longer starts at login", "failed": "Failed: {step}: {said}", "no_home": "Home directory not found", "windows": "Not available on Windows with MIYU_HOME set"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font icons", "plain": "Plain characters"}, "tui.theme": {"auto": "Auto", "persona": "Follow the avatar", "wallpaper": "Follow the wallpaper", "tokyonight": "Tokyo Night", "terminal": "Terminal colors"}, "tui.theme_mode": {"auto": "Auto", "dark": "Dark", "light": "Light"}, "tui.sidebar_sessions": {"0": "Off"}, "tui.keys": {"arrows": "Arrow keys", "vim": "Vim"}},
+      "edit_hint": ["e", "Edit"],
+      "cant_edit": "This one can't be edited",
       "unavailable": "Not installed",
       "custom_model": "Enter a model…",
       "combo": ["Not set", "Other…"],

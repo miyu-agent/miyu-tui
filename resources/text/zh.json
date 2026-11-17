@@ -1497,6 +1497,8 @@
       "appearance": "外观",
       "service": {"group": "启动", "name": "开机启动核心", "enabling": "正在设为开机启动…", "disabling": "正在取消开机启动…", "enabled": "已设为开机启动：{file}", "disabled": "已取消开机启动", "failed": "没成：{step}：{said}", "no_home": "找不到家目录", "windows": "设了 MIYU_HOME 时 Windows 上装不了"},
       "choice_names": {"tui.icons": {"nerd": "Nerd Font 图标", "plain": "普通字符"}, "tui.theme": {"auto": "自动", "persona": "跟随头像", "wallpaper": "跟随壁纸", "tokyonight": "Tokyo Night", "terminal": "终端配色"}, "tui.theme_mode": {"auto": "自动", "dark": "深色", "light": "浅色"}, "tui.sidebar_sessions": {"0": "不显示"}, "tui.keys": {"arrows": "方向键", "vim": "Vim"}},
+      "edit_hint": ["e", "编辑"],
+      "cant_edit": "这一项不能编辑",
       "unavailable": "未安装",
       "custom_model": "输入模型…",
       "combo": ["不设", "其他…"],

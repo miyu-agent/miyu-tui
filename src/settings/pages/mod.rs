@@ -6,6 +6,7 @@ mod avatar;
 pub mod catalog;
 pub mod changes;
 pub mod choose;
+mod choose_edit;
 pub mod combo;
 pub mod create;
 pub mod dialogs;
@@ -136,6 +137,8 @@ pub struct More {
     pub store: store::Store,
     /// 滑块调了还没存的（第 33 条子规则）。
     pub sliding: Option<slider::Sliding>,
+    /// 从选人格、预设的选择窗按 `e` 开的详情窗：关了回到哪一项的选择窗、光标停在哪个值上（`choose_edit.rs`）。
+    pub back_to: Option<(String, Value)>,
     /// 包在运行时给的选项（核心 SG-2 的 `choices_from`）：键到选项，那一行照名字写（`runtime_choices.rs`）。
     pub package_choices: HashMap<String, Vec<Choice>>,
     /// 知识库（`kb.list`，选知识库的项照它列）；还没读到、核心不认的是 `None`。
@@ -387,6 +390,10 @@ pub struct Texts {
     pub appearance: String,
     /// 终端自己的选项写成什么（清单里只有值，照界面语言写名字）：键、值、名字。
     pub choice_names: HashMap<String, HashMap<String, String>>,
+    /// 选人格、预设的选择窗下面多的那一格按键提示：`e` 编辑（`choose_edit.rs`）。
+    pub edit_hint: [String; 2],
+    /// 选择窗里光标那一行不能编辑：「无人格」、写错了读不出来的。
+    pub cant_edit: String,
     /// 选项用不了（核心给了 `available: false`，现在只有没装内置语义模型时的「内置模型」）。
     pub unavailable: String,
     /// 人格的窗：名字、具体人格提示词、示范对话、人设提醒短语、`{n} 轮`、已写、简单描述、子代理可选（2026-10-17 加在最后，不挪下标）。没有的空着（2026-10-09 项目主人：「没有的东西

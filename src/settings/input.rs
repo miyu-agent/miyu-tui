@@ -305,6 +305,7 @@ impl Settings {
     }
 
     fn popup_key(&mut self, key: KeyEvent, texts: &Texts) -> Outcome {
+        let mut outcome = Outcome::Stay;
         match self.popup.take() {
             Some(Popup::Form(mut form)) => match form_key(&mut form, key) {
                 FormAction::Stay => self.popup = Some(Popup::Form(form)),
@@ -313,11 +314,12 @@ impl Settings {
             },
             Some(Popup::Pick(pick)) => self.pick_key(pick, key, texts),
             Some(Popup::Catalog(pick)) => self.catalog_key(pick, key),
-            Some(Popup::Confirm(confirm)) => return self.confirm_key(confirm, key, texts),
+            Some(Popup::Confirm(confirm)) => outcome = self.confirm_key(confirm, key, texts),
             Some(popup) => self.more_popup_key(popup, key, texts),
             None => {}
         }
-        Outcome::Stay
+        self.back_to_choose(texts);
+        outcome
     }
 
     /// 编辑窗里存（`s`、`q`、「保存」）：照窗里的值记进这一次的改动，马上存；新加的存成了关窗（再按一次 `s` 就成了

@@ -70,7 +70,11 @@ pub fn draw(
             lines.hints = texts.popup_hints[3].clone();
         }
         Popup::Choose(choose) => {
-            let hints = texts.more.hints[2].clone();
+            let mut hints = texts.more.hints[2].clone();
+            // 选人格、预设的多一格「e 编辑」，排在 Esc 前面（`settings/pages/choose_edit.rs`）。
+            if page.more.edits(choose).is_some() {
+                hints.insert(hints.len().saturating_sub(1), texts.more.edit_hint.clone());
+            }
             floating::choose(&mut lines, choose, hints, width, Hit::PickRow);
         }
         // 预设的名称、描述就在详情窗那一行里改，不另开小窗（2026-10-23 项目主人：「回车直接编辑就好了」）。
