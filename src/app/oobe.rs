@@ -199,7 +199,11 @@ impl App {
                 self.send_oobe_asks();
                 false
             }
-            Update::Disconnected | Update::Failed(_) | Update::NoCoreBin | Update::Missing(_) => {
+            Update::Disconnected
+            | Update::Failed(_)
+            | Update::Down(_)
+            | Update::NoCoreBin
+            | Update::Missing(_) => {
                 self.boxes.welcome_known = true;
                 self.boxes.personas_known = true;
                 let (lost, texts) = (

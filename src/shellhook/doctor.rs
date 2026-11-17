@@ -31,10 +31,11 @@ pub fn run(words: &Words) -> io::Result<ExitCode> {
     };
     match core() {
         Ok(()) => say(true, words.doctor_core_ok.clone()),
-        Err(e) => say(
-            false,
-            fill(&words.doctor_core_bad, &[("reason", &e.to_string())]),
-        ),
+        // 核心起不来：照界面的语言写核心那一整句，不套「连不上核心」（2026-11-17 项目主人定）。
+        Err(Unreached::Said(said)) => say(false, said),
+        Err(Unreached::Other(reason)) => {
+            say(false, fill(&words.doctor_core_bad, &[("reason", &reason)]))
+        }
     }
     let depth = crate::theme::Depth::detect(|name| std::env::var(name).ok());
     let truecolor = depth == crate::theme::Depth::True;
@@ -72,9 +73,18 @@ pub fn run(words: &Words) -> io::Result<ExitCode> {
     })
 }
 
+/// 连不上核心的原因。
+enum Unreached {
+    /// 核心起不来，照界面的语言说好了的那一整句。
+    Said(String),
+    /// 别的：原话。
+    Other(String),
+}
+
 /// 连一次核心（不进会话）：头的配置推来了就算连上。
-fn core() -> io::Result<()> {
-    let config = super::say::config()?;
+fn core() -> Result<(), Unreached> {
+    let other = |reason: &str| Err(Unreached::Other(reason.to_string()));
+    let config = super::say::config().map_err(|e| Unreached::Other(e.to_string()))?;
     let (sender, incoming) = std::sync::mpsc::channel();
     let _core = crate::core::spawn(config.layout.reconnect_ms, Start::Bare, move |update| {
         sender.send(update).is_ok()
@@ -82,13 +92,13 @@ fn core() -> io::Result<()> {
     loop {
         match incoming.recv_timeout(CORE_WAIT) {
             Ok(Update::HeadConfig(_)) => return Ok(()),
-            Ok(Update::NoCoreBin) => return Err(io::Error::other("no core program")),
-            Ok(Update::Failed(reason)) => return Err(io::Error::other(reason)),
+            Ok(Update::NoCoreBin) => return other("no core program"),
+            Ok(Update::Failed(reason)) => return other(&reason),
             Ok(Update::StartRefused(refusal)) => {
-                return Err(io::Error::other(refusal.say(config.language.code())));
+                return Err(Unreached::Said(refusal.say(config.language.code())));
             }
             Ok(_) => {}
-            Err(_) => return Err(io::Error::other("no answer")),
+            Err(_) => return other("no answer"),
         }
     }
 }

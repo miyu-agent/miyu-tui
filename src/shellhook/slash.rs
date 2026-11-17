@@ -174,12 +174,11 @@ fn open_tui(config: &crate::config::Config, shell: Option<u32>) -> io::Result<Ex
                 Ok(found) => break found["session"].as_str().unwrap_or_default().to_string(),
                 Err(refusal) => return tell(&refusal.message),
             },
-            Ok(
-                crate::core::Update::NoCoreBin
-                | crate::core::Update::Failed(_)
-                | crate::core::Update::StartRefused(_),
-            )
-            | Err(_) => {
+            // 核心起不来的照界面的语言写核心那一整句（2026-11-17 项目主人定）。
+            Ok(crate::core::Update::StartRefused(refusal)) => {
+                return Err(io::Error::other(refusal.say(config.language.code())));
+            }
+            Ok(crate::core::Update::NoCoreBin | crate::core::Update::Failed(_)) | Err(_) => {
                 return Err(io::Error::other("can't reach the core"));
             }
             Ok(_) => {}
