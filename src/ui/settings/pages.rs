@@ -333,7 +333,11 @@ pub(super) fn page_lines(
                 let slid = slider::fraction(item, value);
                 // 没设的密钥「未设置」暗着写、不加粗（2026-10-19 项目主人），设了的照常。
                 let unset = crate::settings::pages::secret::is_secret(item) && value.is_null();
-                let value = shown(item, value, page.more.named_item(item), &texts.more);
+                // 选项由包给的（核心 SG-2）：照选项的名字写，问不到的照原值（`runtime_choices.rs`）。
+                let value = page
+                    .more
+                    .choice_name(item, value)
+                    .unwrap_or_else(|| shown(item, value, page.more.named_item(item), &texts.more));
                 let style = if item.writable() {
                     Style::new()
                 } else {
