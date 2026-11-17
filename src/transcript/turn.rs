@@ -91,6 +91,20 @@ impl Transcript {
         // 请求带上了、还没出字就结束的排着的话进这一轮（`queue.rs` 的 `took`）。
         self.heard(self.seen);
         let (took, failure) = self.wind_up();
+        // 最后一段回答后面只有回报的那一段：收尾行写完以后照一轮外来的单独几行画（`jobs.rs`）。
+        let reports = self.trailing_reports();
+        self.closing_line(reason, (took, failure), texts);
+        self.turn = None;
+        self.put_reports(reports);
+    }
+
+    /// 一轮的收尾行、打断或出错的那一行。
+    fn closing_line(
+        &mut self,
+        reason: EndReason,
+        (took, failure): (std::time::Duration, Option<crate::core::CallError>),
+        texts: &Texts,
+    ) {
         match reason {
             // 清空那一轮：正文已经有「上下文已清空」那一行，不另起收尾行、不接用时（「正文」第 9 条）。
             EndReason::Completed if self.cleared => {}
@@ -103,7 +117,6 @@ impl Transcript {
                     crate::meter::seconds(took)
                 );
                 if self.manual && self.append_to_result(&tail) {
-                    self.turn = None;
                     return;
                 }
                 let (model, endpoint) = self
@@ -131,7 +144,6 @@ impl Transcript {
             }
             EndReason::Other(other) => self.push(Kind::Note, other),
         }
-        self.turn = None;
     }
 
     /// 核心断开了：在进行的那一轮当场收尾，写一行和被打断的一个样子、整行红的（「连核心」第 7 条）。

@@ -53,6 +53,48 @@ impl Transcript {
         }
     }
 
+    /// 一轮收尾时：最后一段回答后面只有回报的那一段拿出来，交回一条条回报（通知、那一行的字）。她写正文时来的回报原来另起一段
+    /// 时间线，一轮就成了「正文 → 回报 → 收尾行」（2026-11-17 项目主人定：回报排在收尾行后面，同一轮结束以后来的）。回报后面
+    /// 还跟着工具的、不在最后一段回答后面的，照旧留在时间线里。
+    pub(super) fn trailing_reports(&mut self) -> Vec<(JobNote, String)> {
+        let Some(tail) = self.tail() else {
+            return Vec::new();
+        };
+        let last = &self.entries[tail];
+        let only_reports = last.kind == Kind::Steps
+            && last.segment.as_ref().is_some_and(|s| {
+                !s.steps.is_empty()
+                    && s.steps
+                        .iter()
+                        .all(|step| matches!(step.kind, StepKind::Report { .. }))
+            });
+        let after_reply = tail.checked_sub(1).is_some_and(|i| {
+            self.entries[i].kind == Kind::Reply && self.entries[i].turn == last.turn
+        });
+        if !(only_reports && after_reply) {
+            return Vec::new();
+        }
+        let steps = self.entries.remove(tail).segment.map(|s| s.steps);
+        steps
+            .into_iter()
+            .flatten()
+            .filter_map(|step| match step.kind {
+                StepKind::Report { note, text, .. } => Some((note, text)),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// 收尾行写完以后：拿出来的回报一条一行，同一轮结束以后来的（[`Transcript::job_from`]）。
+    pub(super) fn put_reports(&mut self, reports: Vec<(JobNote, String)>) {
+        for (note, text) in reports {
+            self.note(Kind::Job, text);
+            if let Some(entry) = self.entries.last_mut() {
+                entry.job = Some(note);
+            }
+        }
+    }
+
     /// 任务 `source` 结束的那一行点开看的全文换成 `detail`（后台命令的输出读回来了）。
     pub fn fill_job(&mut self, source: &str, detail: String) {
         let note = self
