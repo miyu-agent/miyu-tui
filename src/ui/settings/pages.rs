@@ -7,7 +7,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
-use super::{bar, crumb, fit, footer};
+use super::{bar, crumb, fit, footer, status_extra};
 use crate::core::Persona;
 use crate::settings::pages::packages::package_of;
 use crate::settings::pages::schema::Row;
@@ -36,10 +36,14 @@ pub(super) fn menu(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
     let room = stage
         .width
         .min(u16::try_from(widest.max(46)).unwrap_or(u16::MAX));
+    // 状态行长出来的几行让给它（`status.rs`）。
+    let floor = stage
+        .bottom()
+        .saturating_sub(4 + status_extra(page, texts, stage.width));
     for (i, (name, note)) in words.into_iter().enumerate() {
         let step = usize::from(2 + gap);
         let y = stage.y + 2 + u16::try_from(i * step).unwrap_or(u16::MAX);
-        if y + 1 >= stage.bottom().saturating_sub(4) {
+        if y + 1 >= floor {
             break;
         }
         let row = Rect::new(stage.x, y, room, 2);
@@ -150,7 +154,9 @@ pub(super) fn draw(frame: &mut Frame, stage: Rect, page: &mut Settings, texts: &
         stage.x,
         stage.y + 2 + shift,
         stage.width,
-        stage.height.saturating_sub(6 + shift),
+        stage
+            .height
+            .saturating_sub(6 + shift + status_extra(page, texts, stage.width)),
     );
     let (lines, at, count) = match &section {
         Section::Page(id, at) => (
