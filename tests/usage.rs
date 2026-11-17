@@ -110,3 +110,32 @@ fn requests_without_a_price_are_counted_not_guessed() {
         "框下面那一行也不写：\n{screen}"
     );
 }
+
+/// `/usage` 里 `←` `→`、`h` `l` 换页（2026-11-17 验收第 7 条：只有 `Tab` 换得了）；按键模式是 Vim 的也一样。
+#[test]
+fn arrows_and_h_l_turn_the_usage_pages() {
+    for (settings, hint) in [
+        ("", "Tab/←/→ 换页"),
+        ("[tui]\nkeys = \"vim\"\n", "Tab/h/l 换页"),
+    ] {
+        let home = Home::with_settings(Script::new([Play::Says("好。")]).priced(usd()), settings);
+        let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
+        tui.wait_for("开放权限");
+        tui.say("在吗");
+        tui.wait_for("好。");
+        tui.say("/usage");
+        tui.wait_for("单日最高");
+        tui.wait_for(hint);
+        tui.key(b"\x1b[C");
+        tui.wait_for("今天");
+        tui.key(b"\x1b[C");
+        tui.wait_for("主对话 100%");
+        tui.key(b"\x1b[D");
+        tui.wait_for("今天");
+        tui.key(b"l");
+        tui.wait_for("主对话 100%");
+        tui.key(b"h");
+        tui.wait_for("今天");
+        tui.key(b"\x1b");
+    }
+}

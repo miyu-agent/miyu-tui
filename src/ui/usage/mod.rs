@@ -124,11 +124,16 @@ pub fn lines(
         None => {
             let texts = &seen.config.text.usage;
             (
-                Chrome::new(&texts.title, Vec::new()).hint(&texts.hint),
+                Chrome::new(&texts.title, Vec::new()).hint(&hint(seen.config)),
                 Vec::new(),
             )
         }
     }
+}
+
+/// 下边框的按键提示：按键模式是 Vim 的换页写「h/l」（上下的「j/k」由框统一换，`panel.rs`）。
+fn hint(config: &crate::config::Config) -> String {
+    super::hint_keys::vim_sides(&config.text.usage.hint, config.layout.vim)
 }
 
 /// 排一页要的几样，不碰界面（shellhook 的 `/usage` 照它排，2026-10-20 和终端界面会话商定）：配置、币种、会话编号写成
@@ -185,7 +190,7 @@ pub fn page_lines(
     max: usize,
 ) -> (Chrome, Vec<Line<'static>>) {
     let texts = &src.config.text.usage;
-    let chrome = Chrome::new(&texts.title, Vec::new()).hint(&texts.hint);
+    let chrome = Chrome::new(&texts.title, Vec::new()).hint(&hint(src.config));
     let total = match &data.total {
         Some(Ok(rows)) => rows.first().and_then(|r| amounts(src, &r.bill)),
         _ => None,

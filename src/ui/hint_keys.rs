@@ -1,10 +1,19 @@
 //! 按键提示里的箭头（蓝图 `tui.md`「按键」表「按键模式」那一行）：按键模式是 Vim 时，界面上的字（`resources/text`）里写好的
-//! 「↑/↓」「↑↓」写成「j/k」。箭头是那份字里的，不是画的记号，不归主题（`sheet/guard.rs` 照这个放过这一份）。
+//! 「↑/↓」「↑↓」写成「j/k」，换页的「←/→」写成「h/l」（`/usage`）。箭头是那份字里的，不是画的记号，不归主题（`sheet/guard.rs` 照这个放过这一份）。
 
 /// `vim` 时把提示里的上下箭头换成 `j/k`。
 pub fn vim(hint: &str, vim: bool) -> String {
     if vim {
         hint.replace("↑/↓", "j/k").replace("↑↓", "j/k")
+    } else {
+        hint.to_string()
+    }
+}
+
+/// `vim` 时把提示里换页的左右箭头「←/→」换成 `h/l`（`/usage` 认 `h`、`l` 换页，2026-11-17 验收第 7 条）。
+pub fn vim_sides(hint: &str, vim: bool) -> String {
+    if vim {
+        hint.replace("←/→", "h/l")
     } else {
         hint.to_string()
     }

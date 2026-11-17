@@ -1,8 +1,8 @@
 //! `/usage` 框（蓝图 `tui.md`「配置与模型」第 5 条，2026-10-07 项目主人定照 Codex 做细，对比页选了 A）：开框时向核心
-//! 要五次 `usage.query`（合计、全部时间按天、按模型、按会话、按用途），回来了交给框画；`Tab` `Shift+Tab`（`←` `→`
-//! 也行）换页，`↑` `↓` `PgUp` `PgDn` 滚，`t` 让热度图在 token 和花费之间切，`Esc` 关。
+//! 要五次 `usage.query`（合计、全部时间按天、按模型、按会话、按用途），回来了交给框画；`Tab` `Shift+Tab`（`←` `→`、
+//! `h` `l` 也行）换页，`↑` `↓` `PgUp` `PgDn` 滚，`t` 让热度图在 token 和花费之间切，`Esc` 关。
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use super::{App, Panel};
 use crate::core::{Command, UsageAsk, UsageKind, UsageRow};
@@ -104,20 +104,22 @@ impl App {
     /// 框开着时的按键。
     pub(super) fn usage_key(&mut self, (tab, scroll, money): (usize, usize, bool), key: KeyEvent) {
         let page = self.screen.panel_rows.len().max(1);
-        let (tab, scroll, money) = match key.code {
-            KeyCode::Tab | KeyCode::Right => ((tab + 1) % PAGES, 0, money),
-            KeyCode::BackTab | KeyCode::Left => ((tab + PAGES - 1) % PAGES, 0, money),
-            KeyCode::Char('t') => (tab, scroll, !money),
-            KeyCode::Up => (tab, scroll.saturating_sub(1), money),
-            KeyCode::Down => (tab, scroll + 1, money),
-            KeyCode::PageUp => (tab, scroll.saturating_sub(page), money),
-            KeyCode::PageDown => (tab, scroll + page, money),
-            KeyCode::Esc => {
-                self.boxes.panel = None;
-                self.boxes.usage = None;
-                return;
-            }
-            _ => return,
+        let (tab, scroll, money) = match (page_turn(&key), key.code) {
+            (Some(true), _) => ((tab + 1) % PAGES, 0, money),
+            (Some(false), _) => ((tab + PAGES - 1) % PAGES, 0, money),
+            (None, code) => match code {
+                KeyCode::Char('t') => (tab, scroll, !money),
+                KeyCode::Up => (tab, scroll.saturating_sub(1), money),
+                KeyCode::Down => (tab, scroll + 1, money),
+                KeyCode::PageUp => (tab, scroll.saturating_sub(page), money),
+                KeyCode::PageDown => (tab, scroll + page, money),
+                KeyCode::Esc => {
+                    self.boxes.panel = None;
+                    self.boxes.usage = None;
+                    return;
+                }
+                _ => return,
+            },
         };
         // 滚过头停在最后一屏：标签那两行不滚。
         let width = self.screen.areas.menu_text.width;
@@ -125,6 +127,19 @@ impl App {
         let shown = page.saturating_sub(2).max(1);
         let scroll = scroll.min(rows.saturating_sub(shown));
         self.boxes.panel = Some(Panel::Usage { tab, scroll, money });
+    }
+}
+
+/// 换页的键：`Tab`、`→`、`l` 下一页（`true`），`Shift+Tab`、`←`、`h` 上一页（`false`）；别的是 `None`。终端界面和 shellhook
+/// 的 `/usage` 都照它（2026-11-17 验收第 7 条：`h` `l` 同 `←` `→`）。
+pub(crate) fn page_turn(key: &KeyEvent) -> Option<bool> {
+    let plain = key.modifiers == KeyModifiers::NONE;
+    match key.code {
+        KeyCode::Tab | KeyCode::Right => Some(true),
+        KeyCode::Char('l') if plain => Some(true),
+        KeyCode::BackTab | KeyCode::Left => Some(false),
+        KeyCode::Char('h') if plain => Some(false),
+        _ => None,
     }
 }
 

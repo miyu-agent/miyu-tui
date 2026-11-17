@@ -7,7 +7,7 @@ use std::path::Path;
 const EXEMPT: [(&str, &str); 11] = [
     (
         "src/ui/hint_keys.rs",
-        "改写界面上的字里写好的箭头（↑/↓ 换成 j/k），箭头是那份字里的",
+        "改写界面上的字里写好的箭头（↑/↓ 换成 j/k、←/→ 换成 h/l），箭头是那份字里的",
     ),
     ("src/sheet/guard.rs", "这道检查自己，例子里有记号"),
     ("src/linebreak.rs", "折行用的标点表，不是画的记号"),
