@@ -9,11 +9,22 @@ use crate::theme;
 use crate::transcript::Link;
 
 /// 这一块的几行，照 `width` 列排（首页照首页框里的字宽）。
-pub(super) fn lines(app: &App, width: u16) -> Vec<Line<'static>> {
+pub(crate) fn lines(app: &App, width: u16) -> Vec<Line<'static>> {
     let todo = super::todos::todo_lines(&app.talk.board, &app.config, width, app.talk.todo_full);
-    let parts = super::layout::slot::column(vec![("todo", todo)], (&app.config.layout.above, 1));
+    let mut parts =
+        super::layout::slot::column(vec![("todo", todo)], (&app.config.layout.above, 1));
     let link = &app.talk.transcript.link;
     let Some(reason) = link.reason() else {
+        // 她自己结束了、还没看过的人生：最上面一行提示，下面空一行接挂着的几件（「推演人生」第 9 条，`app/life_ended.rs`）。
+        if let Some(first) = app.link.ended_unseen.first() {
+            let more = app.link.ended_unseen.len() - 1;
+            let mut out = vec![ended(first, more, app)];
+            if !parts.is_empty() {
+                out.push(Line::default());
+            }
+            out.append(&mut parts);
+            return out;
+        }
         return parts;
     };
     let mut out: Vec<Line<'static>> = crate::input::pieces(reason, width.max(1))
@@ -33,6 +44,19 @@ pub(super) fn lines(app: &App, width: u16) -> Vec<Line<'static>> {
         out.extend(parts);
     }
     out
+}
+
+/// 结束了的人生那一行：「美羽 的人生结束了」，后面「打开」「收起」强调色（点得动），中间暗色空两格。
+fn ended(first: &crate::core::LifeEnded, more: usize, app: &App) -> Line<'static> {
+    let texts = &app.config.text.loops.life;
+    let (said, _) = crate::app::life_ended::ended_line(first, more, texts);
+    Line::from(vec![
+        Span::raw(said),
+        Span::raw("  "),
+        Span::styled(texts.ended[2].clone(), theme::accent()),
+        Span::raw("  "),
+        Span::styled(texts.ended[3].clone(), theme::accent()),
+    ])
 }
 
 /// 连不上时底栏写的那一截：原因前面「连不上核心」这样的头（到第一个冒号）；没有冒号的照全句。

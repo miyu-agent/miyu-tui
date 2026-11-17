@@ -38,7 +38,7 @@ mod replay;
 mod request;
 mod rpc;
 mod schedules;
-pub use lives::{Life, lives as read_lives};
+pub use lives::{Ended as LifeEnded, Life, ended as read_ended, lives as read_lives};
 #[cfg(test)]
 pub use schedules::Life as LoopLife;
 pub use schedules::{Change as LoopChange, Every as LoopEvery, Loop, apply as apply_loops};
