@@ -199,7 +199,7 @@ impl Turn {
             }
             Update::Elsewhere { .. } => return,
             // 核心起不来、连不上的：照界面的语言换成一句话，往下当连不上办（同全屏 `app/updates.rs`）。
-            Update::StartRefused(refusal) => Update::Failed(refusal.say(config.language.code())),
+            Update::StartRefused(refusal) => Update::Down(refusal.say(config.language.code())),
             update => update,
         };
         if super::dreaming::update(self, &update, core) {
@@ -317,6 +317,7 @@ impl Turn {
             Update::Human(human) => self.human = human,
             update @ (Update::NoCoreBin
             | Update::Failed(_)
+            | Update::Down(_)
             | Update::Missing(_)
             | Update::SessionGone(_)) => {
                 self.transcript.update(update, &config.text);

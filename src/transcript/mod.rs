@@ -294,9 +294,10 @@ impl Transcript {
             Update::Failed(reason) => {
                 self.link = Link::Down(texts.core_failed.replace("{reason}", &reason));
             }
-            // 界面照它的语言换成 `Failed` 才交来（`app/updates.rs`）；直接交来的照核心的原话。
-            Update::StartRefused(refusal) => {
-                self.link = Link::Down(texts.core_failed.replace("{reason}", &refusal.reason));
+            // 核心说的整句，不加「连不上核心」：界面照它的语言换成 `Down` 交来（`app/updates.rs`），直接交来的照核心的原话。
+            Update::Down(said)
+            | Update::StartRefused(crate::core::StartRefusal { reason: said, .. }) => {
+                self.link = Link::Down(said);
             }
             // 核心断开了：在进行的那一轮当场收尾，马上重连（「连核心」第 7 条）。
             Update::Disconnected => {

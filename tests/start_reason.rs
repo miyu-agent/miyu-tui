@@ -1,5 +1,6 @@
 //! 伪终端里的端到端测试：核心起不来的每一步都带代码（核心 EN-2），原因只是会变的那一段（系统的原话、路径）。界面照它的语言写
-//! 核心资源里的那一整句，不写取不到字时的中文原话「核心起不来（代码）：原因」。
+//! 核心资源里的那一整句，不写取不到字时的中文原话「核心起不来（代码）：原因」；前面也不套「连不上核心」（2026-11-17 项目主人
+//! 定：首页、shellhook、doctor、斜杠命令都只写核心那一句）。
 
 mod support;
 
@@ -17,24 +18,72 @@ fn failing_core(dir: &std::path::Path) -> std::path::PathBuf {
     core
 }
 
+/// 照英文界面起 `args`（空的是全屏的首页），核心起不来：等原因写出来，交回屏上的几行。
 #[cfg(unix)]
-#[test]
-fn a_core_that_cannot_start_is_said_whole_in_the_interface_language() {
-    let base = std::env::temp_dir().join(format!("miyu-tui-start-reason-{}", std::process::id()));
+fn said_when_the_core_cannot_start(name: &str, args: &[&str]) -> Vec<String> {
+    let base = std::env::temp_dir().join(format!(
+        "miyu-tui-start-reason-{name}-{}",
+        std::process::id()
+    ));
     let (home, work, bin) = (base.join("home"), base.join("work"), base.join("bin"));
     for dir in [&home, &work, &bin] {
         std::fs::create_dir_all(dir).expect("建得了");
     }
-    let core = failing_core(&bin);
-    let core = core.display().to_string();
-    let mut tui = support::Tui::at(&home, &work, "en_US.UTF-8", &[("MIYU_CORE_BIN", &core)]);
+    let core = failing_core(&bin).display().to_string();
+    if let Some(input) = args.iter().position(|a| *a == "--input") {
+        std::fs::write(work.join(args[input + 1]), "hi").expect("写得进去");
+    }
+    let mut tui = support::Tui::program(
+        &home,
+        &work,
+        "en_US.UTF-8",
+        &[("MIYU_CORE_BIN", &core)],
+        args,
+        env!("CARGO_BIN_EXE_miyu-tui"),
+    );
     tui.wait_for("File exists");
     let lines = tui.lines();
-    assert!(
-        tui.shows("cannot write its log") && !lines.iter().any(|l| l.contains("起不来")),
-        "整句照英文界面写核心资源里的那一句：\n{}",
-        lines.join("\n")
-    );
     drop(tui);
     drop(std::fs::remove_dir_all(&base));
+    lines
+}
+
+/// 只写核心那一整句：英文、不带中文，前面不套「连不上核心」。
+#[cfg(unix)]
+fn only_the_core_sentence(lines: &[String]) {
+    let text = lines.join("\n");
+    assert!(
+        text.contains("cannot write its log")
+            && !text.contains("起不来")
+            && !text.contains("Can't connect")
+            && !text.contains("Can't reach"),
+        "只写核心资源里的那一整句：\n{text}"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn a_core_that_cannot_start_is_said_whole_in_the_interface_language() {
+    only_the_core_sentence(&said_when_the_core_cannot_start("home", &[]));
+}
+
+#[cfg(unix)]
+#[test]
+fn the_shellhook_says_only_the_core_sentence() {
+    let args = ["shellhook", "say", "--input", "said"];
+    only_the_core_sentence(&said_when_the_core_cannot_start("say", &args));
+}
+
+#[cfg(unix)]
+#[test]
+fn doctor_says_only_the_core_sentence() {
+    let lines = said_when_the_core_cannot_start("doctor", &["shellhook", "doctor"]);
+    only_the_core_sentence(&lines);
+}
+
+#[cfg(unix)]
+#[test]
+fn the_tui_slash_command_says_only_the_core_sentence() {
+    let lines = said_when_the_core_cannot_start("slash", &["shellhook", "tui"]);
+    only_the_core_sentence(&lines);
 }
