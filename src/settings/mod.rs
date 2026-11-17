@@ -146,6 +146,8 @@ enum Waiting {
     Store(pages::store::Ask),
     /// 问包要一项的选项（`package.call`，核心 SG-2 的 `choices_from`）：哪一项的键。
     Choices(String),
+    /// 同上，读到清单时问的：只记下，那一行照选项的名字写。
+    ChoiceNames(String),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -350,6 +352,7 @@ impl Settings {
             Waiting::Catalog(all) => self.catalog_answer(all, result.ok()),
             Waiting::Store(ask) => self.store_answer(ask, result, texts),
             Waiting::Choices(key) => self.choices_answer(&key, result),
+            Waiting::ChoiceNames(key) => self.note_choices(&key, result.as_ref().ok()),
         }
     }
 

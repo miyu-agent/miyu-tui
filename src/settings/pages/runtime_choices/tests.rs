@@ -190,3 +190,15 @@ fn an_item_without_choices_from_opens_the_text_box_at_once() {
         page.popup
     );
 }
+
+/// 值是空的那个选项（语音输入的本机 SenseVoice）就是「不设」：照它的名字列，选了交 `null`、去掉这一项，不另列一行「不设」。
+#[test]
+fn the_empty_valued_choice_is_the_unset_one() {
+    let got = json!({"choices": [{"value": "", "name": "本机 SenseVoice"}, {"value": "x"}]});
+    let list = read(&got, &Value::Null).expect("是选项");
+    assert_eq!(list.len(), 2, "不另加一行");
+    assert_eq!(
+        (&list[0].value, list[0].label.as_str()),
+        (&Value::Null, "本机 SenseVoice")
+    );
+}

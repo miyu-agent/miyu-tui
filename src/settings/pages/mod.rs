@@ -136,6 +136,8 @@ pub struct More {
     pub store: store::Store,
     /// 滑块调了还没存的（第 33 条子规则）。
     pub sliding: Option<slider::Sliding>,
+    /// 包在运行时给的选项（核心 SG-2 的 `choices_from`）：键到选项，那一行照名字写（`runtime_choices.rs`）。
+    pub package_choices: HashMap<String, Vec<Choice>>,
     /// 知识库（`kb.list`，选知识库的项照它列）；还没读到、核心不认的是 `None`。
     pub knowledge: Option<Vec<Persona>>,
     /// 找到了能取色的桌面壁纸：配色列表里列「跟随壁纸」（App 每一拍照 `theme/wallpaper.rs` 设，2026-10-14 项目主人定：

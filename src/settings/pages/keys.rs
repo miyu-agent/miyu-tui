@@ -49,6 +49,7 @@ impl Settings {
                     self.more.service_known,
                 );
                 self.more.schema = Some(schema);
+                self.ask_choice_names();
             }
             (Waiting::Personas, Ok(got)) => self.more.personas = Some(personas::read(&got)),
             (Waiting::Knowledge, Ok(got)) => self.more.knowledge = Some(super::picks::bases(&got)),
