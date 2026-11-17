@@ -136,15 +136,16 @@ impl Picker for UsageShow {
     }
 
     fn key(&mut self, key: KeyEvent, _turn: &mut Turn, _core: &Core, _config: &Config) -> Picked {
+        if let Some(next) = crate::app::usage::page_turn(&key) {
+            self.tab = if next {
+                (self.tab + 1) % PAGES
+            } else {
+                (self.tab + PAGES - 1) % PAGES
+            };
+            self.scroll = 0;
+            return Picked::Stay;
+        }
         match key.code {
-            KeyCode::Tab | KeyCode::Right => {
-                self.tab = (self.tab + 1) % PAGES;
-                self.scroll = 0;
-            }
-            KeyCode::BackTab | KeyCode::Left => {
-                self.tab = (self.tab + PAGES - 1) % PAGES;
-                self.scroll = 0;
-            }
             KeyCode::Char('t') => self.money = !self.money,
             KeyCode::Up => self.scroll = self.scroll.saturating_sub(1),
             KeyCode::Down => self.scroll += 1,

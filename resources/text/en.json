@@ -422,7 +422,7 @@
     "loading": "Reading usage…",
     "empty": "No usage yet",
     "failed": "Can't read usage: {reason}",
-    "hint": "Tab switch · t tokens/spend · ↑/↓ scroll · Esc close",
+    "hint": "Tab/←/→ switch · t tokens/spend · ↑/↓ scroll · Esc close",
     "lifetime": "Lifetime",
     "peak": "Peak day",
     "streak": "Streak",

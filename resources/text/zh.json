@@ -422,7 +422,7 @@
     "loading": "正在加载用量…",
     "empty": "暂无用量",
     "failed": "无法加载用量：{reason}",
-    "hint": "Tab 换页 · t token/花费 · ↑/↓ 滚动 · Esc 关闭",
+    "hint": "Tab/←/→ 换页 · t token/花费 · ↑/↓ 滚动 · Esc 关闭",
     "lifetime": "累计",
     "peak": "单日最高",
     "streak": "连续使用",
