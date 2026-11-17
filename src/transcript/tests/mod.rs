@@ -24,6 +24,7 @@ mod notes;
 mod queue;
 mod recap;
 mod redo;
+mod report_order;
 mod said_at;
 mod shell;
 mod shown;
