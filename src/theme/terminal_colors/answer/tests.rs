@@ -1,6 +1,6 @@
 //! 读终端的回话：16 色、字色和底色。
 
-use super::{Rebuilt, all_query, answered, ground, sixteen};
+use super::{Rebuilt, again_query, all_query, answered, ground, is_color, sixteen};
 
 /// 照 kitty 的样子答 16 色：4 位十六进制、`ESC \` 收尾；第 4 号（蓝）是 `#4080ff`。
 fn reply() -> Vec<u8> {
@@ -68,6 +68,11 @@ fn the_ground_reply_reads_both_colors_and_judges_dark_like_colorsaurus() {
     let query = all_query();
     assert!(query.starts_with("\x1b]10;?\x1b\\\x1b]11;?\x1b\\\x1b]4;0;?"));
     assert!(query.ends_with("\x1b[c"));
+    // Unix 拿回焦点再问的不带 DA1：回话由读按键的线程截下，不等它答完；截下的照打头认是不是颜色。
+    let again = again_query();
+    assert!(again.starts_with("\x1b]10;?") && !again.contains("\x1b[c"));
+    assert!(is_color("10;rgb:34/3b/58") && is_color("4;7;rgb:aa/bb/cc"));
+    assert!(!is_color("99;i=miyu-s-01a1;"), "kitty 通知的回话不是颜色");
 }
 
 #[test]

@@ -38,8 +38,15 @@ impl App {
         }
     }
 
-    /// 终端往输入里回的一句话（`reader/replies.rs`）：点了的 kitty 通知切过去，别的不管。
+    /// 终端往输入里回的一句话（`reader/replies.rs`）：终端颜色的回话收下，点了的 kitty 通知切过去，别的不管。
     pub fn terminal_reply(&mut self, reply: &str) {
+        // 拿回焦点再问的终端颜色（`theme.rs`）：到齐了、变了的照新的重挑。
+        if let Some(changed) = crate::theme::terminal_colors::reply(reply) {
+            if changed {
+                self.terminal_colors_changed();
+            }
+            return;
+        }
         if let Some(session) = crate::notify::clicked(reply) {
             self.open_clicked(session);
         }

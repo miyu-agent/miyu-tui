@@ -115,3 +115,36 @@ fn the_automatic_mode_turns_light_when_the_terminal_does_and_focus_comes_back() 
         "换成浅色那一份",
     );
 }
+
+#[test]
+fn typing_right_after_regaining_focus_keeps_every_character() {
+    // 2026-11-17 实测：niri 代理先往别的窗口打过字、再给界面打一句中英混排的，焦点回来那一下再问终端颜色，读回话时把排在
+    // 前面的按键一起读走了，输入框只剩前半截（到「spec.edi」）。终端在这里慢一拍才答：问句出去以后先到一串字，再到回话。
+    let home = Home::with_settings(Script::new([]), "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.answer_ground(DARK.0, DARK.1);
+    tui.answer_colors(sixteen((0x40, 0x80, 0xff)));
+    tui.wait_for("开放权限");
+    tui.send(b"\x1b[O");
+    tui.pump(Duration::from_millis(100));
+    tui.hold_answers();
+    tui.record();
+    tui.send(b"\x1b[I");
+    let end = Instant::now() + Duration::from_secs(5);
+    let mut out = Vec::new();
+    while !out.windows(5).any(|w| w == b"\x1b]10;") {
+        assert!(Instant::now() < end, "拿回焦点没再问终端的颜色");
+        tui.pump(Duration::from_millis(20));
+        out.extend(tui.recorded());
+        tui.record();
+    }
+    let typed = "联网搜索：EditorConfig 规范（spec.editorconfig.org）的版本号？";
+    tui.send(typed.as_bytes());
+    tui.pump(Duration::from_millis(100));
+    tui.release_answers();
+    let end = Instant::now() + Duration::from_secs(3);
+    while tui.input() != typed && Instant::now() < end {
+        tui.pump(Duration::from_millis(50));
+    }
+    assert_eq!(tui.input(), typed, "拿回焦点时打的字丢了");
+}

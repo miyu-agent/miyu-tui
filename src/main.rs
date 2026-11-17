@@ -354,7 +354,7 @@ fn run(
         app.tick();
         // 拿回焦点、主题跟着终端的颜色：再问一次终端的颜色（蓝图「主题」第 11 条）。
         if std::mem::take(&mut app.screen.ask_colors) {
-            app.ask_colors_again(&reader);
+            app.ask_colors_again(&reader)?;
         }
         // `/images off`：贴上去的图删掉、整屏重画（蓝图「图片、公式和 mermaid 图」第 10 条）。
         if std::mem::take(&mut app.screen.wipe) {
