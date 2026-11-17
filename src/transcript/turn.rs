@@ -44,7 +44,7 @@ impl Transcript {
         self.seen = 0;
         self.turn_usage = Usage::default();
         self.turn_speed = super::speed::Speed::default();
-        self.turn_level = self.level;
+        self.turn_level = self.known(self.level);
         // 手动压缩那一轮没有 `trigger`，不是哪一句开的（施工 6-8，蓝图「正文」第 9 条）。
         self.manual = trigger.is_none();
         self.cleared = false;

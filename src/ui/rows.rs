@@ -12,7 +12,6 @@ use std::cell::RefCell;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 use crate::config::Config;
-use crate::core::Level;
 use crate::figures::Figures;
 use crate::input::pieces;
 use crate::markdown::{self, MdLine};
@@ -183,8 +182,6 @@ pub struct Ctx<'a> {
     pub diagrams: &'a RefCell<crate::diagrams::Diagrams>,
     /// 她正在写的那一条回答：写完了才换卡片（蓝图「链接卡片」第 1 条）。
     pub writing: Option<u64>,
-    /// 现在的权限级别：你说的话没记着级别的（不该有），竖线照它上色。
-    pub level: Level,
     /// 窗口有几行高：图最多占它的几分之几（蓝图「图片、公式和 mermaid 图」第 3 条）。
     pub screen_rows: u16,
     /// 后来同一个路径又展示过的那几条（编号）：缩成一行「已更新」（蓝图「展示」第 5 条）。
@@ -437,9 +434,8 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         // 收尾行只在 ` · ` 处折（「窗口小的时候」第 5 条）。图标打头、和正文同一缩进，紧凑版面也一样（2026-10-27 项目主人：
         // 挂到第 0 列「有点丑」）。
         Kind::Done | Kind::Cut => {
-            // 没记级别的（读最新一页时还不知道）照现在的。
-            let level = entry.level.or(Some(ctx.level));
-            done_row::pieces(&done_row::line(level, &entry.text, layout), width)
+            // 没记级别的（读老会话时还不知道）用兜底的符号，不照现在的。
+            done_row::pieces(&done_row::line(entry.level, &entry.text, layout), width)
         }
         // 模型的回答常以换行开头、结尾，前后的空行不画。
         _ => pieces(entry.text.trim_matches('\n'), width),

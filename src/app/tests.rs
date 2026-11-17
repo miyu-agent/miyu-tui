@@ -114,4 +114,5 @@ mod theme_auto;
 mod too_long;
 mod unread;
 mod unseen;
+mod user_bar;
 mod workspace_moved;

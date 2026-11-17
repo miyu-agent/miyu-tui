@@ -84,6 +84,8 @@ pub enum Push {
         /// 只读开着：实际的级别就是只读。
         read_only: bool,
     },
+    /// 会话开头的权限（`session.created` 的 `permission`）：只读开着的是只读。读到会话开头才有。
+    Began(Level),
     /// 会话起了名字（`session.meta_changed` 的 `title`）；`named`：是人起的（`by` 是人），不是内核自动起的。
     Title { title: String, named: bool },
     /// 人要的重起标题没起成（`session.retitle_failed`，核心 TT-3）：给人看的那一句（`human`）、那一次的错。
@@ -359,6 +361,7 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         "command.ran" => out.push(Push::CommandRan),
         "message.withdrawn" => out.push(Push::Withdrawn(turns(&body["messages"]))),
         "session.policy_changed" => policy::read(body, &mut out),
+        "session.created" => policy::began(body, &mut out),
         // 写成了一段回顾：不进她的上下文，画在正文末尾（蓝图「回顾」）。
         "session.recapped" => {
             if let Some(text) = body["text"].as_str().filter(|t| !t.trim().is_empty()) {

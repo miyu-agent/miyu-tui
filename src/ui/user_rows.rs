@@ -1,4 +1,5 @@
-//! 你说的话（蓝图 `tui.md`「正文」第 2 条）：行首竖线，上下各多一行只有竖线的空行，竖线的颜色是发出去那一刻的权限级别。
+//! 你说的话（蓝图 `tui.md`「正文」第 2 条）：行首竖线，上下各多一行只有竖线的空行，竖线的颜色是发出去那一刻的权限级别，
+//! 之后换了级别不变；那一刻的级别还不知道的暗色。
 //! 里面有粘贴块的，块照输入框里的样子写（品红字、暗紫底），整条能点：点开原地把每一块换成全文，再点换回块；
 //! 悬停时块亮一档，展开着的粘的那几段铺上块的底色。附件（`[图片 1]`）也照块写，不展开，点块用系统的程序打开那个文件。
 //! 别处来的话（蓝图「别处来的话」）竖线暗色，第一行暗色写来处。
@@ -23,11 +24,11 @@ pub fn rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     if let Some(shell) = &entry.shell {
         return super::shell_rows::rows(entry, shell, ctx);
     }
-    // 别处来的话：竖线暗色（「别处来的话」第 1 条）；你说的照发出去那一刻的权限级别上色。
-    let bar_style = if entry.from.is_some() {
-        theme::dim()
-    } else {
-        theme::user_bar(entry.level.unwrap_or(ctx.level))
+    // 别处来的话：竖线暗色（「别处来的话」第 1 条）；你说的照发出去那一刻的权限级别上色，那一刻的级别还不知道的（读老会话，
+    // 换级别的那一条在更早的页里）也暗，不照现在的。
+    let bar_style = match entry.level {
+        Some(level) if entry.from.is_none() => theme::user_bar(level),
+        _ => theme::dim(),
     };
     let bar = Span::styled(ctx.config.layout.user_bar.clone(), bar_style);
     let said = entry.text.trim_matches('\n');

@@ -265,7 +265,6 @@ impl View<'_> {
             cards: &self.media.cards,
             diagrams: &self.media.diagrams,
             writing: transcript.writing().map(|e| e.id),
-            level: transcript.level,
             screen_rows: self.height,
             replaced: transcript.replaced_shown(),
             sessions: &[],

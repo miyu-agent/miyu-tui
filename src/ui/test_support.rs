@@ -5,7 +5,6 @@ use std::cell::RefCell;
 use crate::human::Human;
 
 use crate::config::Config;
-use crate::core::Level;
 use crate::figures::Figures;
 use crate::ui::rows::{Ctx, MdCache};
 
@@ -54,7 +53,6 @@ impl Fixture {
             cards: &self.cards,
             diagrams: &self.diagrams,
             writing: None,
-            level: Level::Full,
             screen_rows: self.config.figures.max_rows,
             replaced: Default::default(),
             sessions: &self.sessions,

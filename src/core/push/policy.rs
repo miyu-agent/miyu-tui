@@ -6,6 +6,15 @@ use serde_json::Value;
 use super::Push;
 use crate::core::kinds::Level;
 
+/// 会话创建（`session.created`）时的权限：只读开着的算只读。别的几格（人格、预设、模型）是开局的，不当成中途换了。
+pub(super) fn began(body: &Value, out: &mut Vec<Push>) {
+    let permission = &body["permission"];
+    if let Some(level) = permission["level"].as_str().map(Level::parse) {
+        let read_only = permission["read_only"] == true;
+        out.push(Push::Began(if read_only { Level::ReadOnly } else { level }));
+    }
+}
+
 /// 读成几样：没带权限的不改级别；认不出的级别照核心按只读画（AUD-4）。
 pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
     if let Some(level) = body["permission"]["level"].as_str().map(Level::parse) {

@@ -32,7 +32,6 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
         indent: " ".repeat(usize::from(indent)),
         width,
         hover: screen.view.hover,
-        level: seen.talk.transcript.level,
         // 图最多占窗口高度的几分之几：照窗口的高，不照正文区（开关列表时正文区变矮，照它算每次都要重做）。
         screen_rows: frame.area().height,
         md: &seen.media.md_cache,
