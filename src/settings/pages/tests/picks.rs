@@ -31,7 +31,8 @@ fn opened(kb: Option<Value>) -> Settings {
         "groups": [{"id": "draw", "name": "画图", "page": "packages"}],
         "items": [item("draw.persona", "persona"), item("draw.kb", "knowledge"),
                   item("draw.model", "reference"), accounts, item("draw.preset", "preset"), rota,
-                  item("terminal.persona", "persona")]});
+                  item("terminal.persona", "persona"), item("persona.default", "persona"),
+                  item("preset.default", "preset")]});
     let layer = |v: &str| {
         json!({"value": v, "layers": [
         {"origin": {"layer": "system", "line": 1}, "value": v, "used": true}]})
@@ -253,4 +254,16 @@ fn the_terminal_session_persona_unset_follows_new_sessions() {
     );
     page.change("packages/draw", 6, &texts());
     assert_eq!(labels(&page), ["跟随新会话设置", "美羽", "开发"]);
+}
+
+/// 默认人格、默认预设（核心 CK-1 起类型是 `persona`、`preset`，原来是名字）照旧照列表选：默认人格第一行「无人格」；默认预设
+/// 不多出「不选」（出厂是 `full`，去掉这一项还是它）。
+#[test]
+fn the_default_persona_and_preset_typed_as_picks_keep_their_lists() {
+    let mut page = opened(None);
+    page.change("packages/draw", 7, &texts());
+    assert_eq!(labels(&page), ["无人格", "美羽", "开发"]);
+    page.popup = None;
+    page.change("packages/draw", 8, &texts());
+    assert_eq!(labels(&page), ["全部"], "默认预设没有「不选」");
 }

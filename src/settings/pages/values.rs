@@ -126,6 +126,8 @@ pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Cho
         // 默认人格第一行「无人格」：选了就不设（2026-10-08 项目主人：人格允许为空）。
         let first = match item.key.as_str() {
             DEFAULT_PERSONA => Some(&texts.no_persona),
+            // 默认预设没有「不选」：出厂是 `full`，去掉这一项还是它（核心 CK-1 起类型是 `preset`，不照下面软件包那一条）。
+            DEFAULT_PRESET => None,
             // 吉祥物第一行「内置」：选了就不设（「吉祥物包」第 3 条）。
             MASCOT => Some(&texts.builtin_mascot),
             // 主题第一行「默认主题」：选了就不设（「主题」第 5 条）。
