@@ -26,10 +26,14 @@ fn said_when_the_core_cannot_start(name: &str, args: &[&str]) -> Vec<String> {
         std::process::id()
     ));
     let (home, work, bin) = (base.join("home"), base.join("work"), base.join("bin"));
-    for dir in [&home, &work, &bin] {
+    // 数据根单放一个空目录：测具把界面的缓存目录（`XDG_CACHE_HOME`）也放在 `home` 里，连核心以前里面先有了东西的，数据根
+    // 不空、认不出是 Miyu 的，等不到核心起不来的那一句（2026-11-17 Ubuntu CI 上 doctor 撞见）。
+    let root = base.join("root");
+    for dir in [&home, &work, &bin, &root] {
         std::fs::create_dir_all(dir).expect("建得了");
     }
     let core = failing_core(&bin).display().to_string();
+    let root = root.display().to_string();
     if let Some(input) = args.iter().position(|a| *a == "--input") {
         std::fs::write(work.join(args[input + 1]), "hi").expect("写得进去");
     }
@@ -37,7 +41,7 @@ fn said_when_the_core_cannot_start(name: &str, args: &[&str]) -> Vec<String> {
         &home,
         &work,
         "en_US.UTF-8",
-        &[("MIYU_CORE_BIN", &core)],
+        &[("MIYU_CORE_BIN", &core), ("MIYU_HOME", &root)],
         args,
         env!("CARGO_BIN_EXE_miyu-tui"),
     );
