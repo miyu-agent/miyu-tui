@@ -156,7 +156,7 @@ pub struct Sources<'a> {
     pub currency: &'a str,
     /// 知道的会话：按会话那一页照它写标题。
     pub sessions: &'a [SessionInfo],
-    /// 额度、余额是哪家的，给人看的名字（配置起的名字，没起的照目录的，同时间线上写的）；不知道的是空的。
+    /// 额度、余额是哪家的，给人看的名字（回应里的 `provider`，核心 QU-3）；不知道的是空的。
     pub provider: String,
 }
 
@@ -171,8 +171,7 @@ impl<'a> Sources<'a> {
                 .boxes
                 .usage
                 .as_ref()
-                .and_then(|data| data.quota_from.as_deref())
-                .map(|id| seen.link.human.provider(id).to_string())
+                .and_then(|data| data.quota_provider.clone())
                 .unwrap_or_default(),
         }
     }

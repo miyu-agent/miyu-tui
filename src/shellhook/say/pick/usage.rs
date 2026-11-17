@@ -44,7 +44,7 @@ impl UsageShow {
                 rates: Vec::new(),
                 quota: Vec::new(),
                 balance: None,
-                quota_from: None,
+                quota_provider: None,
             },
             tab: 0,
             scroll: 0,

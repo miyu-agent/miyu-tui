@@ -86,21 +86,32 @@ fn a_balance_answer_is_kept_and_absent_means_none() {
 }
 
 #[test]
-fn the_quota_is_named_after_the_provider_the_session_requests_next() {
-    // 2026-11-17 验收第 36 条：标题、余额那一行照供应商的名字（配置起的名字，没起的照目录的），不写死。
+fn the_quota_is_named_after_the_provider_the_core_says_it_checked() {
+    // 核心 QU-3：回应带 `provider {id, name}`，标题、余额那一行照它写；不照记着的当前模型猜（2026-11-17 验收第 6 条：换了
+    // 供应商、记着的还是上一个，标题写错了家）。
     let (mut app, mut sent) = app();
     app.talk.transcript.session = Some("s1".into());
-    app.talk.transcript.model = Some(("deepseek-v4.1-flash".into(), "opencode-go".into()));
-    let names = [("opencode-go".to_string(), "OpenCode Go".to_string())];
+    app.talk.transcript.model = Some(("deepseek-v4.1-flash".into(), "deepseek".into()));
+    let names = [("deepseek".to_string(), "DeepSeek".to_string())];
     app.link.human.add_providers(&names.into_iter().collect());
+    app.open_usage();
+    let (tag, _) = asked(&mut sent).unwrap();
+    app.core(Update::Answer {
+        tag,
+        result: Ok(
+            json!({"provider": {"id": "opencode-go", "name": "OpenCode Go"},
+            "windows": [{"id": "rolling", "label": "5 小时", "percent": 4, "status": "ok"}]}),
+        ),
+    });
+    let seen = app.seen();
+    assert_eq!(crate::ui::usage::Sources::of(&seen).provider, "OpenCode Go");
+    // 没带 `provider` 的（旧核心）不写哪一家，不猜。
     app.open_usage();
     let (tag, _) = asked(&mut sent).unwrap();
     app.core(Update::Answer {
         tag,
         result: Ok(json!({"windows": [{"id": "rolling", "label": "5 小时", "percent": 4, "status": "ok"}]})),
     });
-    let data = app.boxes.usage.as_ref().unwrap();
-    assert_eq!(data.quota_from.as_deref(), Some("opencode-go"));
     let seen = app.seen();
-    assert_eq!(crate::ui::usage::Sources::of(&seen).provider, "OpenCode Go");
+    assert_eq!(crate::ui::usage::Sources::of(&seen).provider, "");
 }
