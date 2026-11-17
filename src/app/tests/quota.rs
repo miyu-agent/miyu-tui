@@ -66,7 +66,7 @@ fn a_balance_answer_is_kept_and_absent_means_none() {
     let balance = app.boxes.usage.as_ref().unwrap().balance.clone().unwrap();
     assert!(balance.available);
     assert_eq!(balance.items[0].currency, "CNY");
-    assert_eq!(balance.items[0].total, "12.34");
+    assert_eq!(balance.items[0].topped_up, "10.34");
     assert_eq!(balance.items[0].granted, "2.00");
     app.open_usage();
     let (tag, _) = asked(&mut sent).unwrap();

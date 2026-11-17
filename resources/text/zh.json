@@ -467,9 +467,9 @@
     "quota_minutes": "{n} 分钟后重置",
     "quota_hours": "{n} 小时后重置",
     "quota_at": "{time} 重置",
-    "balance": "余额 {amount}",
-    "balance_granted": "含赠送 {amount}",
-    "balance_exhausted": "余额不足"
+    "balance": "{provider} 余额：{amounts}",
+    "balance_granted": "赠送 {amount}",
+    "balance_exhausted": "{provider} 余额不足"
   },
   "help": {
     "title": "帮助",
