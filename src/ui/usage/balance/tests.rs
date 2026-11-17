@@ -1,4 +1,4 @@
-//! 账户余额那几行怎么写（「配置与模型」第 5 条，核心 QU-2，2026-11-16 项目主人定的样子）。
+//! 账户余额那一行怎么写（「配置与模型」第 5 条，核心 QU-2；2026-11-17 验收第 4 条项目主人定照 DeepSeek 官网写成一行）。
 
 use ratatui::text::Line;
 
@@ -6,10 +6,10 @@ use super::lines;
 use crate::app::quota::{Balance, BalanceItem};
 use crate::config::Config;
 
-fn item(currency: &str, total: &str, granted: &str) -> BalanceItem {
+fn item(currency: &str, topped_up: &str, granted: &str) -> BalanceItem {
     BalanceItem {
         currency: currency.into(),
-        total: total.into(),
+        topped_up: topped_up.into(),
         granted: granted.into(),
     }
 }
@@ -18,8 +18,13 @@ fn balance(available: bool, items: Vec<BalanceItem>) -> Balance {
     Balance { available, items }
 }
 
+/// 照供应商「DeepSeek」画（名字照配置、目录，2026-11-17 验收第 36 条）。
 fn draw(config: &Config, balance: Option<&Balance>) -> Vec<Line<'static>> {
-    lines(&config.text.usage, balance, &config.layout.currencies)
+    lines(
+        &config.text.usage,
+        ("DeepSeek", balance),
+        &config.layout.currencies,
+    )
 }
 
 fn text(lines: &[Line]) -> Vec<String> {
@@ -27,26 +32,32 @@ fn text(lines: &[Line]) -> Vec<String> {
 }
 
 #[test]
-fn one_cny_item_with_granted_writes_the_dim_granted_part() {
+fn every_currency_tops_up_first_then_the_granted_part_in_one_line() {
+    // 官网：充值余额「-$0.01 USD + ¥3.12 CNY」，有赠送的再接赠送。
     let config = Config::builtin().unwrap();
-    let b = balance(true, vec![item("CNY", "12.34", "2.00")]);
+    let b = balance(
+        true,
+        vec![item("USD", "-0.01", "0.00"), item("CNY", "3.12", "2.00")],
+    );
     let got = draw(&config, Some(&b));
-    assert_eq!(text(&got), ["余额 ¥12.34  含赠送 ¥2.00"], "主人给的样子");
-    assert_eq!(got[0].spans[0].style.fg, None, "能用的照平常的字");
-    assert_eq!(got[0].spans[1].style, crate::theme::dim(), "赠送那一截暗色");
+    assert_eq!(
+        text(&got),
+        ["DeepSeek 余额：-$0.01 + ¥3.12 + 赠送 ¥2.00"],
+        "主人给的样子"
+    );
+    assert_eq!(got[0].spans[0].style, crate::theme::dim(), "开头的字暗色");
+    assert_eq!(got[0].spans[1].style.fg, None, "金额照平常的字");
 }
 
 #[test]
-fn granted_zero_has_no_dim_part() {
+fn no_granted_part_when_nothing_is_granted() {
     let config = Config::builtin().unwrap();
     let b = balance(true, vec![item("CNY", "10.34", "0.00")]);
-    let got = draw(&config, Some(&b));
-    assert_eq!(text(&got), ["余额 ¥10.34"]);
-    assert_eq!(got[0].spans.len(), 1);
+    assert_eq!(text(&draw(&config, Some(&b))), ["DeepSeek 余额：¥10.34"]);
 }
 
 #[test]
-fn usd_uses_its_sign_and_other_currencies_write_the_code_first() {
+fn other_currencies_write_the_code_first() {
     let config = Config::builtin().unwrap();
     let b = balance(
         true,
@@ -54,8 +65,8 @@ fn usd_uses_its_sign_and_other_currencies_write_the_code_first() {
     );
     assert_eq!(
         text(&draw(&config, Some(&b))),
-        ["余额 $5.00  含赠送 $1.50", "余额 EUR 3.00"],
-        "一种币一行，照核心的先后；人民币、美元以外写代码"
+        ["DeepSeek 余额：$5.00 + EUR 3.00 + 赠送 $1.50"],
+        "照核心的先后；人民币、美元以外写代码"
     );
 }
 
@@ -64,7 +75,7 @@ fn not_available_turns_the_whole_line_red() {
     let config = Config::builtin().unwrap();
     let b = balance(false, vec![item("CNY", "0.00", "2.00")]);
     let got = draw(&config, Some(&b));
-    assert_eq!(text(&got), ["余额 ¥0.00  含赠送 ¥2.00"]);
+    assert_eq!(text(&got), ["DeepSeek 余额：¥0.00 + 赠送 ¥2.00"]);
     let red = crate::theme::error().fg;
     assert!(red.is_some());
     assert!(
@@ -77,12 +88,27 @@ fn not_available_turns_the_whole_line_red() {
 fn empty_items_write_exhausted_only_when_not_available() {
     let config = Config::builtin().unwrap();
     let out = draw(&config, Some(&balance(false, Vec::new())));
-    assert_eq!(text(&out), ["余额不足"]);
+    assert_eq!(text(&out), ["DeepSeek 余额不足"]);
     assert_eq!(out[0].spans[0].style.fg, crate::theme::error().fg);
     assert!(
         draw(&config, Some(&balance(true, Vec::new()))).is_empty(),
         "一项都没有、能用的不画"
     );
+}
+
+#[test]
+fn the_head_names_the_provider_it_came_from() {
+    let config = Config::builtin().unwrap();
+    let b = balance(true, vec![item("CNY", "1.00", "0")]);
+    let named = |provider| {
+        text(&lines(
+            &config.text.usage,
+            (provider, Some(&b)),
+            &config.layout.currencies,
+        ))
+    };
+    assert_eq!(named("官方 DS"), ["官方 DS 余额：¥1.00"], "配置里起的名字");
+    assert_eq!(named(""), ["余额：¥1.00"], "不知道是哪家的不留空格");
 }
 
 #[test]
@@ -96,12 +122,15 @@ fn every_language_has_the_balance_words() {
     for lang in ["en", "ja"] {
         let table = crate::language::LanguageTable::builtin().unwrap();
         let config = Config::load(&table.find(lang).unwrap(), false).unwrap();
-        let b = balance(true, vec![item("CNY", "12.34", "2.00")]);
+        let b = balance(
+            true,
+            vec![item("USD", "1.00", "0"), item("CNY", "10.34", "2.00")],
+        );
         let got = text(&draw(&config, Some(&b)));
         let want = if lang == "en" {
-            "Balance ¥12.34  incl. ¥2.00 granted"
+            "DeepSeek balance: $1.00 + ¥10.34 + granted ¥2.00"
         } else {
-            "残高 ¥12.34  うち付与 ¥2.00"
+            "DeepSeek 残高：$1.00 + ¥10.34 + 付与 ¥2.00"
         };
         assert_eq!(got, [want], "{lang}");
     }

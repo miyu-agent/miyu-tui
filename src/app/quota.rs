@@ -28,9 +28,9 @@ pub struct QuotaWindow {
 pub struct BalanceItem {
     /// 币种代码，照官方写的（`CNY`、`USD`，也可能是别的）。
     pub currency: String,
-    /// 一共多少。
-    pub total: String,
-    /// 其中赠送的。
+    /// 充值的（官网「充值余额」照这一格写）。
+    pub topped_up: String,
+    /// 赠送的。
     pub granted: String,
 }
 
@@ -55,7 +55,7 @@ pub(crate) fn balance(result: &Value) -> Option<Balance> {
                 .filter_map(|i| {
                     Some(BalanceItem {
                         currency: text(i, "currency")?,
-                        total: text(i, "total")?,
+                        topped_up: text(i, "topped_up")?,
                         granted: text(i, "granted").unwrap_or_default(),
                     })
                 })

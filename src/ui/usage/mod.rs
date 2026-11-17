@@ -85,11 +85,11 @@ pub struct Texts {
     pub quota_hours: String,
     /// 再远写日期时刻，`{time}`。
     pub quota_at: String,
-    /// 账户余额（核心 QU-2，`balance.rs`）：一种币一行，`{amount}`。
+    /// 账户余额（核心 QU-2，`balance.rs`）：一行，`{provider}` 是哪家，`{amounts}` 是几笔用 ` + ` 连起来的，前面的字暗色。
     pub balance: String,
-    /// 有赠送的后面暗字写的，`{amount}`。
+    /// 赠送的那一笔，`{amount}`。
     pub balance_granted: String,
-    /// 一项都没有又不能用的那一行。
+    /// 一项都没有又不能用的那一行，`{provider}`。
     pub balance_exhausted: String,
 }
 
