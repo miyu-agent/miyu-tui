@@ -19,6 +19,7 @@ mod goal;
 mod gone;
 mod hosted;
 mod jobs;
+mod link;
 mod media;
 mod model;
 mod pages;
@@ -54,22 +55,10 @@ pub use cache::CacheWatch;
 pub use chips::Chip;
 pub use climb::Progress;
 pub use entry::{Entry, JobMark, JobNote, Kind, Shell};
+pub use link::Link;
 pub use steps::{ReportClass, Segment, Step, StepKind, Tally, ToolState};
 pub use stuck::Stuck;
 pub use words::undo_counts;
-
-/// 连核心的状态。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Link {
-    /// 还在连。
-    Connecting,
-    /// 连上了。
-    Ready,
-    /// 断开了，正在重新连接（「连核心」第 7 条）。
-    Reconnecting,
-    /// 连不上：给人看的一句（第 8 条）。
-    Down(String),
-}
 
 /// 发出去了、核心还没开轮（`turn.started` 没来）的那一小段：两下 `Esc` 记下要打断，轮一开就打断（蓝图「按键」`Esc`，2026-10-14）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -299,6 +288,7 @@ impl Transcript {
             | Update::StartRefused(crate::core::StartRefusal { reason: said, .. }) => {
                 self.link = Link::Down(said);
             }
+            Update::Stopped(said) => self.link = Link::Stopped(said),
             // 核心断开了：在进行的那一轮当场收尾，马上重连（「连核心」第 7 条）。
             Update::Disconnected => {
                 self.starting = Starting::No;

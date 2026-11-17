@@ -228,6 +228,7 @@ impl App {
             Update::Disconnected
             | Update::Failed(_)
             | Update::Down(_)
+            | Update::Stopped(_)
             | Update::NoCoreBin
             | Update::Missing(_) => {
                 page.disconnected(texts);

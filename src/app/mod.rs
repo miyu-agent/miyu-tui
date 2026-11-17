@@ -13,6 +13,7 @@ mod catalog;
 mod compact_line;
 mod compose;
 mod config_asks;
+mod core_stopped;
 mod deadline;
 mod desks;
 mod diagrams;

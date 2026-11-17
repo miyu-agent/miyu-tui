@@ -43,6 +43,7 @@
   "turn_cut": "コアが切断されました",
   "missing_core": "コアプログラムが見つかりません：{path}",
   "not_connected": "コア未接続",
+  "start_core": ["Enter", "起動"],
   "switching": "セッションを切り替え中",
   "crash_saved": "スタックトレースを {path} に保存しました",
   "notify": {

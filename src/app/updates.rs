@@ -10,6 +10,9 @@ impl App {
     pub fn core(&mut self, update: Update) {
         // 核心起不来、认得出是哪一种的：照界面的语言换成一整句，往下当连不上办（排期第 43 条）。
         let update = match update {
+            Update::StartRefused(r) if r.stopped() => {
+                Update::Stopped(r.say(self.config.language.code()))
+            }
             Update::StartRefused(refusal) => Update::Down(refusal.say(self.config.language.code())),
             update => update,
         };

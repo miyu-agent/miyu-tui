@@ -66,7 +66,7 @@ use std::thread;
 use tokio::sync::mpsc;
 
 use backoff::Backoff;
-use connect::connect;
+use connect::{Starting, connect};
 
 pub use abilities::Abilities;
 pub use catalog::{CoreCommand, CoreSkill};
@@ -325,6 +325,8 @@ pub enum Command {
 #[derive(Clone)]
 pub struct Core {
     commands: mpsc::UnboundedSender<Command>,
+    /// 人点了「启动」（核心是人停的，施工 CS-5）：连核心的线程照「人要用」马上拉一次，不等退避（`spawn.rs`）。
+    starts: mpsc::UnboundedSender<()>,
 }
 
 impl Core {
@@ -332,6 +334,12 @@ impl Core {
     pub fn send(&self, command: Command) {
         // 收的一头只在连核心的线程退出时关掉，那时已经报过「断开了」，丢了也无妨。
         if self.commands.send(command).is_err() {}
+    }
+
+    /// 人要核心起来（「核心已停止」那一屏的「启动」）：下一次连照 `connect_or_start` 拉起，删掉「人停的」记号。
+    pub fn start(&self) {
+        // 同 [`Core::send`]：收的一头没了，连核心的线程已经退了。
+        if self.starts.send(()).is_err() {}
     }
 }
 

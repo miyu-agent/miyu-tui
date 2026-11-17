@@ -9,6 +9,11 @@ use crate::transcript::Link;
 impl App {
     /// 发给核心的发不发得出去：连不上时（左下角是红字）不发，弹提示；正在连、正在重连的排着，连上再发。
     pub(super) fn reachable(&mut self) -> bool {
+        // 核心是人停的：人敲了话、点了命令就是要用，拉起来，这一句排着、连上再发（核心 CS-5 的「人要用」）。
+        if matches!(self.talk.transcript.link, Link::Stopped(_)) {
+            self.start_core();
+            return !self.switching();
+        }
         if matches!(self.talk.transcript.link, Link::Down(_)) {
             let note = self.config.text.not_connected.clone();
             self.hint(note, false);
