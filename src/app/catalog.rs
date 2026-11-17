@@ -30,7 +30,7 @@ impl App {
         }
         // 会话不在了（「连核心」第 7 条）：和说下一句话一样，开新会话。
         self.leave_gone();
-        // 还没开会话时光打 `/life`：不为它开会话，直接 `life.list`（`lives.rs`）。
+        // 还没开会话时光打 `/life`、`/life new`：不为它开会话，直接 `life.list`、`life.new`（`lives.rs`）。
         if self.bare_life(line) {
             return;
         }

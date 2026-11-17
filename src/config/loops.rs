@@ -47,6 +47,8 @@ pub struct LivesTexts {
     pub busy: String,
     /// 一条没结束的人生都没有（还没开会话时光打 `/life`）。
     pub none: String,
+    /// 还没开会话、选的是无人格时打 `/life new`：先选人格。
+    pub no_persona: String,
     /// 她自己结束了的人生（核心 LF-14）：系统通知、输入框上面那一行「{name} 的人生结束了」，还有别的没看过的「（还有 {n} 段）」，
     /// 点得动的「打开」「收起」。
     pub ended: [String; 4],

@@ -1,7 +1,8 @@
 //! 快速跳转人生会话（蓝图 `tui.md`「推演人生」第 1 条；2026-11-17 项目主人本机验收第 29 条，核心 LF-12）：光打 `/life` 的回应
 //! 带所有人格没结束的人生会话（`lives`）：一条直接跳过去，几条在输入框上面开一个列表挑（人格的名字、在跑还是暂停、下次
-//! 几点），`Enter` 跳过去。还没开会话（首页、`/new` 以后）时不为它开会话：直接 `life.list`，照同一个规矩办。别的 `/life …`
-//! 照旧交给核心，回执照它写。画在 `ui/lives.rs`。
+//! 几点），`Enter` 跳过去。还没开会话（首页、`/new` 以后）时不为它开会话：直接 `life.list`，照同一个规矩办；光打 `/life new`
+//! 也不开会话，照这个新会话选的人格直接 `life.new`，开出来的人生会话跳过去（原来先开一个空会话再交命令，留下一条「未命名
+//! 会话」）。别的 `/life …` 照旧交给核心，回执照它写。画在 `ui/lives.rs`。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
@@ -13,10 +14,17 @@ use crate::oobe::asker::TAG_BASE;
 
 /// 还没开会话时光打 `/life` 的 `life.list` 请求编号。
 const LIST_TAG: u64 = TAG_BASE - 51;
+/// 还没开会话时光打 `/life new` 的 `life.new` 请求编号。
+const NEW_TAG: u64 = TAG_BASE - 54;
 
 /// 这一行是光打的 `/life`（前后的空白不算）。
 pub(super) fn bare(line: &str) -> bool {
     line.trim() == "/life"
+}
+
+/// 这一行是光打的 `/life new`（空白不算）。
+fn bare_new(line: &str) -> bool {
+    line.split_whitespace().eq(["/life", "new"])
 }
 
 impl App {
@@ -52,17 +60,41 @@ impl App {
         }
     }
 
-    /// 还没开会话时光打 `/life`：不开会话，问 `life.list`，交回 `true`。开着会话的照旧交给核心（`false`）。
+    /// 还没开会话时光打 `/life`、`/life new`：不开会话，问 `life.list`、照选的人格 `life.new`，交回 `true`。开着会话的、别的
+    /// `/life …` 照旧交给核心（`false`）。
     pub(super) fn bare_life(&mut self, line: &str) -> bool {
-        if !bare(line) || self.talk.transcript.session.is_some() {
+        if self.talk.transcript.session.is_some() {
             return false;
         }
+        let (tag, method, params) = if bare(line) {
+            (LIST_TAG, "life.list", json!({}))
+        } else if bare_new(line) {
+            // 无人格（选了「无人格」、没有人格可选）的开不了：说一句先选人格，同核心在无人格的会话里回的。
+            let Some(persona) = self.new_persona() else {
+                let note = self.config.text.loops.life.no_persona.clone();
+                self.hint(note, false);
+                return true;
+            };
+            (NEW_TAG, "life.new", json!({ "persona": persona }))
+        } else {
+            return false;
+        };
         self.link.core.send(Command::Ask {
-            tag: LIST_TAG,
-            method: "life.list",
-            params: json!({}),
+            tag,
+            method,
+            params,
         });
         true
+    }
+
+    /// 这个还没开的会话用的人格：选了的、测具设的，都没有的照默认的；无人格（空的编号）是 `None`。
+    fn new_persona(&self) -> Option<String> {
+        let pick = &self.talk.persona;
+        pick.chosen
+            .clone()
+            .or_else(|| pick.env.clone())
+            .or_else(|| pick.default.clone())
+            .filter(|id| !id.is_empty())
     }
 
     /// 推演人生的几样回应：人生卡上的暂停、继续、结束（`life_card.rs`），还没开会话时的 `life.list`，结束了没看过的
@@ -71,15 +103,21 @@ impl App {
         self.life_card_answer(update) || self.life_list_answer(update) || self.ended_answer(update)
     }
 
-    /// `life.list` 的回应：同光打 `/life`。一条都没有的说「没有正在过的人生」；拒了的弹原话。回应归这里交回 `true`。
+    /// `life.list` 的回应：同光打 `/life`。一条都没有的说「没有正在过的人生」；`life.new` 的回应跳到开出来的那一条。拒了的
+    /// 弹原话。回应归这里交回 `true`。
     fn life_list_answer(&mut self, update: &Update) -> bool {
         let Update::Answer { tag, result } = update else {
             return false;
         };
-        if *tag != LIST_TAG {
+        if *tag != LIST_TAG && *tag != NEW_TAG {
             return false;
         }
         match result {
+            Ok(got) if *tag == NEW_TAG => {
+                if let Some(session) = got["session"].as_str() {
+                    self.switch_session(session.to_string());
+                }
+            }
             Ok(got) => {
                 let lives = crate::core::read_lives(&got["lives"]);
                 match lives.len() {
