@@ -136,6 +136,7 @@ fn fullscreen(launch: startup::Launch) -> io::Result<()> {
     let core = core::spawn(
         config.layout.reconnect_ms,
         launch.start.clone(),
+        core::Head::Tui,
         move |update| to_core.send(Incoming::Core(update)).is_ok(),
     );
     // 初始化原始模式、备用屏及 panic 收尾；自定义 writer 用来收齐一帧。

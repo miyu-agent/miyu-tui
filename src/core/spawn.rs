@@ -2,11 +2,12 @@
 
 use super::*;
 
-/// 起一个线程去连核心。`reconnect` 是连不上时隔多久再试（`layout.json` 的 `reconnect_ms`）；`notify` 把消息
-/// 交给界面，界面那头关了就交回 `false`，这边跟着停。
+/// 起一个线程去连核心。`reconnect` 是连不上时隔多久再试（`layout.json` 的 `reconnect_ms`）；`head` 是握手时报的这一头
+/// （[`Head`]）；`notify` 把消息交给界面，界面那头关了就交回 `false`，这边跟着停。
 pub fn spawn(
     reconnect: [u64; 2],
     start: Start,
+    head: Head,
     notify: impl Fn(Update) -> bool + Send + 'static,
 ) -> Core {
     let (commands, receiver) = mpsc::unbounded_channel();
@@ -19,7 +20,7 @@ pub fn spawn(
             Ok(runtime) => runtime.block_on(run(
                 (receiver, asked),
                 Backoff::new(reconnect),
-                start,
+                (start, head),
                 &notify,
             )),
             Err(e) => {
@@ -44,7 +45,7 @@ async fn run(
         mpsc::UnboundedReceiver<()>,
     ),
     mut wait: Backoff,
-    start: Start,
+    (start, head): (Start, Head),
     notify: &impl Fn(Update) -> bool,
 ) {
     let recent = start == Start::Usual;
@@ -61,7 +62,7 @@ async fn run(
     loop {
         // 连不上一直试；这期间界面发的命令在通道里排着，连上再发（第 1、7 条）。
         let mut rpc = loop {
-            match connect(starting).await {
+            match connect(starting, head).await {
                 Ok(connected) => break connected,
                 Err(update) => {
                     starting = Starting::Auto;

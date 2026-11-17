@@ -17,7 +17,7 @@ use super::{StartRefusal, Update};
 
 /// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来（[`reach`]）；没给的只连。连上以前出的错（找数据根、建骨架、连核心、
 /// 拉起核心）带着核心给的说法交给界面照它的语言说（核心 EN-1、EN-2，[`StartRefusal`]）。
-pub(super) async fn connect(starting: Starting) -> Result<Rpc, Update> {
+pub(super) async fn connect(starting: Starting, head: super::Head) -> Result<Rpc, Update> {
     let env = Env::current();
     let core_bin = std::env::var_os("MIYU_CORE_BIN")
         .map(|bin| crate::local::expand_home(bin, std::env::home_dir().as_deref()));
@@ -31,7 +31,8 @@ pub(super) async fn connect(starting: Starting) -> Result<Rpc, Update> {
     // 有确认、提问的抽屉：说这一头有人能当场回答（核心 D-1，`session.answer`）。
     let hello = json!({
         "protocol": [1, 1],
-        "head": {"kind": "tui", "version": env!("CARGO_PKG_VERSION")},
+        // 全屏的写 `tui`，终端无缝集成写 `shellhook`（核心 VN-1：AI 照它知道话从哪来）。
+        "head": {"kind": head.kind(), "version": env!("CARGO_PKG_VERSION")},
         // 系统的语言（核心 8-2：`ui.language` 是 `auto` 时核心照它说话），照 `miyu_client::places::locale`，和命令行认的一样。
         "locale": miyu_client::places::locale().unwrap_or_default(),
         // 前缀要变时先问人（蓝图「前缀要变」第 1 条）。
