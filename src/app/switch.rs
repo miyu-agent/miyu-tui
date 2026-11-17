@@ -9,7 +9,7 @@ use ratatui::layout::Position;
 
 use super::sessions::Parked;
 use super::{App, Panel};
-use crate::core::{Command, SessionInfo, Update};
+use crate::core::{Command, SessionInfo};
 use crate::list_search::{self, Step};
 use crate::session_list::SessionList;
 use crate::transcript::Transcript;
@@ -290,17 +290,6 @@ impl App {
         };
         // 照普通通知的颜色，不用绿色（发版前 check 12、32，2026-11-09、11-10 项目主人：通知的框不该是绿色）。
         self.hint(done, false);
-    }
-
-    /// 命令带回了要跳过去的会话（核心 LF-5 下的 `/life`、`/life new`，「推演人生」第 1 条）：切过去。
-    pub(super) fn follow_ran(&mut self, update: &Update) {
-        if let Update::CommandRan {
-            session: Some(session),
-            ..
-        } = update
-        {
-            self.switch_session(session.clone());
-        }
     }
 
     /// 切到 `session`（第 4、5 条）：停放着的（切走时还忙着的）直接换上来；别的先开一份停放着的空正文收补发来的，

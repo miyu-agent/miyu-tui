@@ -30,6 +30,7 @@ mod goal_box;
 mod jobs;
 mod jump;
 pub(crate) mod life_card;
+mod lives;
 mod widget_page;
 pub use files_page::FilesPage;
 mod widgets;

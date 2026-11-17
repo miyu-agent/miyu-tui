@@ -100,6 +100,7 @@ mod effort;
 mod files_page;
 mod goal;
 mod life_card;
+mod lives;
 mod models_changed;
 mod notices;
 mod pools;

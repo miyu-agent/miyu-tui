@@ -33,6 +33,7 @@ mod history;
 mod home;
 mod input_box;
 pub(crate) mod life_card;
+mod lives;
 pub(crate) use input_box::styled_line;
 mod job_rows;
 pub mod languages;
