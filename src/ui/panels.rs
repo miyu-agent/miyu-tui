@@ -96,6 +96,9 @@ fn rows(
         Some(crate::app::Panel::Goal { scroll }) => {
             super::goal_box::lines(seen, scroll, width, max)
         }
+        Some(crate::app::Panel::Life { button, arming }) => {
+            super::life_card::lines(seen, (button, arming), width, max)
+        }
         Some(crate::app::Panel::Tools { scroll }) => {
             super::tool_list::lines(seen, scroll, width, max)
         }

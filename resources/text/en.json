@@ -243,7 +243,7 @@
     "paused": "Paused",
     "next": "Next {time}",
     "dynamic": "Dynamic interval",
-    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"], "round": ["◷ ", "Loop · continue", "Life · continue"]
+    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"], "round": ["◷ ", "Loop · continue", "Life · continue"], "life": {"title": "Simulated life", "keys": ["Persona", "Started", "Next round", "Last round", "Status"], "states": ["Running", "Paused"], "buttons": ["Pause", "Resume", "End life", "Confirm end"], "kill_hint": "Once ended, this life never continues, the session becomes read-only, and the memories from this life are erased for good", "card_hint": "←/→ select · Enter confirm · Esc close"}
   },
   "files": {"title": "Changed files", "count": "{n} files", "more": "{n} more", "none": "No files changed in this session yet", "hints": [["↑/↓", "switch file"], ["PgUp/PgDn", "scroll"], ["Esc", "back"]]},
   "goal": {

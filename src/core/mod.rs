@@ -37,6 +37,8 @@ mod replay;
 mod request;
 mod rpc;
 mod schedules;
+#[cfg(test)]
+pub use schedules::Life as LoopLife;
 pub use schedules::{Change as LoopChange, Every as LoopEvery, Loop, apply as apply_loops};
 mod serve;
 mod session_effort;

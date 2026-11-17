@@ -18,6 +18,19 @@ pub struct Loop {
     pub paused: bool,
     /// 交进会话的那句话。
     pub prompt: String,
+    /// 人生那一行（`loop` 是 `life`，核心 LF-13）才有：哪个人格的、什么时候开始、上一轮什么时候；别的循环是 `None`。
+    pub life: Option<Life>,
+}
+
+/// 人生那一行多带的几格（核心 LF-13；`rounds` 只是记着，头不显示，不读）。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Life {
+    /// 哪个人格的（人格的编号）；核心刚起来、还没认出来的是 `None`。
+    pub persona: Option<String>,
+    /// 这一行建的时刻：人生开始的时刻。
+    pub created: Option<jiff::Timestamp>,
+    /// 上一轮开始的时刻（`last.at`）；还没跑过的是 `None`。
+    pub last: Option<jiff::Timestamp>,
 }
 
 /// 循环多久一次。
@@ -29,6 +42,8 @@ pub enum Every {
     Cron(String),
     /// 动态间隔：每一轮结束时定下一次。
     Dynamic,
+    /// 人生循环（核心 LF-13）：她自己定下一轮几点开始，`when` 只写一次的 `at`。
+    Life,
 }
 
 /// 唤醒表的变化。
@@ -85,10 +100,13 @@ pub fn apply(loops: &mut Vec<Loop>, change: Change) {
     }
 }
 
-/// 一项：带 `loop`、跑在已有会话上的才算。
+/// 一项：带 `loop`、跑在已有会话上的才算。人生那一行（`loop` 是 `life`）的 `when` 是 `{at}`，没有 `every`、`cron`，照样认
+/// （2026-11-17 项目主人本机验收第 23 条：人生会话右上角看不到下次几点）。
 fn entry(item: &Value) -> Option<Loop> {
+    let time = |v: &Value| v.as_str().and_then(|t| t.parse().ok());
     let every = match item["loop"].as_str()? {
         "dynamic" => Every::Dynamic,
+        "life" => Every::Life,
         _ => match (
             item["when"]["every"].as_u64(),
             item["when"]["cron"].as_str(),
@@ -101,10 +119,15 @@ fn entry(item: &Value) -> Option<Loop> {
     Some(Loop {
         id: item["id"].as_str()?.to_string(),
         session: item["target"]["session"].as_str()?.to_string(),
-        every,
-        next: item["next"].as_str().and_then(|t| t.parse().ok()),
+        next: time(&item["next"]),
         paused: item["paused"] == true,
         prompt: item["prompt"].as_str().unwrap_or_default().to_string(),
+        life: (every == Every::Life).then(|| Life {
+            persona: item["persona"].as_str().map(str::to_string),
+            created: time(&item["created"]),
+            last: time(&item["last"]["at"]),
+        }),
+        every,
     })
 }
 

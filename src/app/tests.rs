@@ -99,6 +99,7 @@ mod drawer_rows;
 mod effort;
 mod files_page;
 mod goal;
+mod life_card;
 mod models_changed;
 mod notices;
 mod pools;

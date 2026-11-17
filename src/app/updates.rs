@@ -63,8 +63,8 @@ impl App {
         }
         // 上面几处要读的配置合成一条，抢在人格、模型列表、给人看的字这些前头发（`config_asks.rs`）。
         self.flush_config_asks();
-        // `/tool-list` 的回应归它（`tool_list.rs`）。
-        if self.tool_list_update(&update) {
+        // `/tool-list` 的回应归它（`tool_list.rs`）；人生卡上暂停、继续、结束的回应归它（`life_card.rs`）。
+        if self.tool_list_update(&update) || self.life_card_answer(&update) {
             return;
         }
         // `/context` 的两样回应归它（`context_box.rs`）；`/export` 的估算、存文件归它（`export.rs`）。
