@@ -197,7 +197,7 @@ fn the_pool_form_keeps_its_head_while_members_scroll() {
             "{height} 行：按钮还在\n{text}"
         );
         if height >= 30 {
-            for head in ["名称", "调用方式", "子代理能选", "成员", "/ 搜索"] {
+            for head in ["名称", "分配策略", "子代理可用", "成员", "/ 搜索"] {
                 assert!(
                     text.contains(head),
                     "{height} 行：窗顶的「{head}」没被滚走\n{text}"

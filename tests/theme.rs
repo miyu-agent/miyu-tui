@@ -306,6 +306,6 @@ fn the_background_item_is_hidden_while_the_colors_follow_the_terminal() {
         tui.open_menu("外观");
         tui.wait_for("配色");
         tui.pump(std::time::Duration::from_millis(500));
-        assert_eq!(tui.shows("铺底色"), listed, "{}", tui.lines().join("\n"));
+        assert_eq!(tui.shows("背景填充"), listed, "{}", tui.lines().join("\n"));
     }
 }

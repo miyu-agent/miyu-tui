@@ -65,7 +65,7 @@ fn through_theme(tui: &mut support::Tui) {
 
 /// 「AI 怎么认识你」那一步（2026-10-13 项目主人定，都可以不填；2026-10-16 起多一格回复语言）：挪到「下一步」回车。
 fn through_profile(tui: &mut support::Tui) {
-    tui.wait_for("AI 怎么称呼你");
+    tui.wait_for("称呼");
     tui.key(b"j");
     tui.key(b"j");
     tui.key(b"j");
@@ -190,7 +190,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
         "{}",
         tui.lines().join("\n")
     );
-    assert!(tui.shows("铺底色"), "{}", tui.lines().join("\n"));
+    assert!(tui.shows("背景填充"), "{}", tui.lines().join("\n"));
     // 铺底色挪到关：当场不铺（2026-10-15 项目主人：主题设置那里的铺底色也缺了）。
     tui.key(b"j");
     tui.key(b"j");
@@ -236,7 +236,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     until(&mut tui, "主题写下深色", || {
         home.settings().contains("theme_mode = \"dark\"")
     });
-    until(&mut tui, "铺底色写下关", || {
+    until(&mut tui, "背景填充写下关", || {
         home.settings().contains("theme_background = false")
     });
     until(

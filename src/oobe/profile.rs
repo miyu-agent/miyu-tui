@@ -1,6 +1,6 @@
 //! 「AI 怎么认识你」那一步（蓝图 `tui.md`「第一次打开的引导」第 23b 条，2026-10-13 项目主人定，核心 P-9）：三项，
-//! 「AI 用什么语言回复」写 `profile.preferred_reply_language`（核心 P-9 补：下拉加「其他」手写，同配置页，
-//! `settings/pages/combo.rs`；2026-10-16 项目主人定排第一），「AI 怎么称呼你」写 `profile.name`，「更多描述（可选）」写
+//! 「回复语言」写 `profile.preferred_reply_language`（核心 P-9 补：下拉加「其他」手写，同配置页，
+//! `settings/pages/combo.rs`；2026-10-16 项目主人定排第一），「称呼」写 `profile.name`，「更多描述（可选）」写
 //! `profile.about`（长文，在大编辑浮窗里写，`sheet.rs`）。
 //! 都写系统配置，都可以不填：一个字没改的不写，清空了原来有的去掉。
 

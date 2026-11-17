@@ -55,7 +55,7 @@ pub enum Field {
     Multiplier,
     Pool,
     Strategy,
-    /// 池的「子代理能选」（`pools.<名字>.subagent`，2026-11-14 主人报新建池时设不了）。
+    /// 池的「子代理可用」（`pools.<名字>.subagent`，2026-11-14 主人报新建池时设不了）。
     Subagent,
     Members,
     /// 成员里「已选 N」那一行暗字（2026-11-14 主人：已选的排在前面）。
