@@ -243,7 +243,7 @@
     "paused": "Paused",
     "next": "Next {time}",
     "dynamic": "Dynamic interval",
-    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"], "wake": ["◷ ", "Loop · continue", "Life · continue"]
+    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"], "round": ["◷ ", "Loop · continue", "Life · continue"]
   },
   "files": {"title": "Changed files", "count": "{n} files", "more": "{n} more", "none": "No files changed in this session yet", "hints": [["↑/↓", "switch file"], ["PgUp/PgDn", "scroll"], ["Esc", "back"]]},
   "goal": {
@@ -1442,7 +1442,7 @@
         "avatar_path": "Avatar image path",
         "conflict": "Changed elsewhere meanwhile, not saved: open it again and redo",
         "reading": "Reading…",
-        "life": {"name": "Life simulation", "states": ["On", "Paused", "Off"], "next": "wakes {time}", "confirm": ["Turn on life simulation", "The AI wakes when it decides and lives a stretch of its own day", "Each wakeup is a model request and costs tokens", "What the AI does there goes into this persona's memory, and other sessions recall it", "Turn on", "Cancel"], "method": "Life method", "context": "Life session context", "context_default": "default {n}", "changes": "Acquired"},
+        "life": {"name": "Life simulation", "states": ["On", "Paused", "Off"], "next": "continues {time}", "confirm": ["Turn on life simulation", "The AI continues on its own schedule and lives a stretch of its own day", "Each round is a model request and costs tokens", "What the AI does there goes into this persona's memory, and other sessions recall it", "Turn on", "Cancel"], "method": "Life method", "context": "Life session context", "context_default": "default {n}", "changes": "Acquired"},
         "remove": {
           "delete": [
             "Delete persona {name}?",
@@ -1659,7 +1659,7 @@
       "avatar": "Avatar",
       "avatar_hint": "Image path",
       "avatar_set": "Set",
-      "life": ["Life simulation", "On", "Off", "Enter to change", "The AI wakes when it decides and lives a stretch of its own day", "Each wakeup is a model request and costs tokens", "What the AI does there goes into this persona's memory, and other sessions recall it"]
+      "life": ["Life simulation", "On", "Off", "Enter to change", "The AI continues on its own schedule and lives a stretch of its own day", "Each round is a model request and costs tokens", "What the AI does there goes into this persona's memory, and other sessions recall it"]
     },
     "preset": {
       "title": "Choose a preset",

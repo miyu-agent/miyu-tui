@@ -159,7 +159,7 @@ fn up_and_ctrl_k_move_the_command_list_and_never_recall_input_history() {
 #[test]
 fn loop_from_the_core_is_listed_and_taken_by_the_core() {
     // 核心 J-2：`/loop` 是核心的命令，照 `command.catalog` 列出来；打了整行交给 `command.run`，核心收下（2026-10-27 项目主人：
-    // 终端只做 loop）。工具面上要有 `schedule_wakeup`：测具登记出厂的工具。
+    // 终端只做 loop）。工具面上要有 `schedule_next`：测具登记出厂的工具。
     let home = Home::with_tools(Script::new([]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");

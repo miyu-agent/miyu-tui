@@ -73,6 +73,31 @@ fn no_text_speaks_of_accounts_or_personal_settings() {
 }
 
 #[test]
+fn loops_and_lives_never_wake_or_sleep() {
+    // 核心 WK-2（2026-11-17 项目主人定）：循环、人生不说「醒」「睡」，一律说「继续」「下一轮」；工具 schedule_wakeup 改名
+    // schedule_next，旧名不留。吉祥物的 `awake`、`wake_ms` 是动画的名字，不在这几份里。
+    // 「提醒」里也有「醒」字：照说法查。
+    let words = ["醒来", "醒着", "再醒", "睡", "目覚", "眠", "wake", "sleep"];
+    for (name, json) in [
+        ("zh", include_str!("../../resources/text/zh.json")),
+        ("en", include_str!("../../resources/text/en.json")),
+        ("ja", include_str!("../../resources/text/ja.json")),
+        ("ascii", include_str!("../../resources/icons/ascii.json")),
+        ("nerd", include_str!("../../resources/icons/nerd.json")),
+        ("plain", include_str!("../../resources/icons/plain.json")),
+    ] {
+        let lower = json.to_lowercase();
+        let found: Vec<_> = words.iter().filter(|w| lower.contains(*w)).collect();
+        assert!(found.is_empty(), "{name} 还在说：{found:?}");
+    }
+    let config = Config::builtin().unwrap();
+    assert_ne!(
+        config.icons.tool("schedule_next"),
+        config.icons.tool("没登记的工具")
+    );
+}
+
+#[test]
 fn only_the_new_tool_names_are_known() {
     // 2026-10-01 核心改名 agent → subagent、message_agent → send_message，同一天项目主人定不认旧名、不留兼容。
     let config = Config::builtin().unwrap();

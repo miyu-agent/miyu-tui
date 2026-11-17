@@ -39,7 +39,7 @@
     "cron_create": "\uf017",
     "cron_delete": "\uf017",
     "cron_list": "\uf017",
-    "schedule_wakeup": "\uf017"
+    "schedule_next": "\uf017"
   },
   "lucide": {
     "face-slightly-smiling": "\uf118",

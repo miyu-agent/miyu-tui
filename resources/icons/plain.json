@@ -5,7 +5,7 @@
     "cron_create": "◷",
     "cron_delete": "◷",
     "cron_list": "◷",
-    "schedule_wakeup": "◷"
+    "schedule_next": "◷"
   },
   "tool": "⚙",
   "think": "✳",
