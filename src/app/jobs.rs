@@ -83,6 +83,11 @@ pub enum Panel {
         /// 往下滚了几行。
         scroll: usize,
     },
+    /// 光打 `/life` 开的人生会话列表（`lives.rs`）：选中第几条；列的在 [`App::boxes`](super::App) 的 `lives` 上。
+    Lives {
+        /// 选中第几条。
+        selected: usize,
+    },
     /// 点人生记号开的人生卡（`life_card.rs`）：停在第几个按钮、「结束人生」按过一下了没有。
     Life {
         /// 停在第几个按钮。
@@ -225,6 +230,7 @@ impl App {
             Panel::Status { scroll } => return self.status_key(scroll, key),
             Panel::Goal { scroll } => return self.goal_key(scroll, key),
             Panel::Life { button, arming } => return self.life_card_key((button, arming), key),
+            Panel::Lives { selected } => return self.lives_key(selected, key),
             Panel::Tools { scroll } => return self.tool_list_key(scroll, key),
             Panel::Context { scroll } => return self.context_key(scroll, key),
             Panel::Changed {
@@ -287,6 +293,7 @@ impl App {
         if self.help_mouse(mouse, at)
             || self.language_mouse(mouse, at)
             || self.theme_mouse(mouse, at)
+            || self.lives_mouse(mouse, at)
             || self.sessions_mouse(mouse, at)
             || self.models_mouse(mouse, at)
             || self.effort_mouse(mouse, at)

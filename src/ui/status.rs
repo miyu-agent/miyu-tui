@@ -111,9 +111,9 @@ pub fn toast(
     let lines: Vec<String> = raw
         .iter()
         .enumerate()
-        .map(|(i, line)| {
+        .flat_map(|(i, line)| {
             let tail = if i == last { notice.tail.as_str() } else { "" };
-            fitted(line, tail, room)
+            folded(line, tail, room)
         })
         .collect();
     let lines = if lines.is_empty() {
@@ -147,6 +147,18 @@ pub fn toast(
     .intersection(area);
     frame.render_widget(block, area);
     frame.render_widget(Paragraph::new(lines), inner);
+}
+
+/// 提示框里的一行字排成几行：后面接着整个要留的 `tail` 的（`/goal` 看进度）照 [`fitted`] 截原文；别的放不下就折行写全，不截
+/// （2026-11-17 核心 LF-12 实测：`/life`、`/stop` 在人生会话里的长回执被截成「…」，后半句「用 /life resume 继续」看不到）。
+fn folded(text: &str, tail: &str, width: u16) -> Vec<String> {
+    if !tail.is_empty() || text.width() <= usize::from(width) {
+        return vec![fitted(text, tail, width)];
+    }
+    crate::input::pieces(text, width.max(1))
+        .into_iter()
+        .map(|(piece, _)| piece.trim_end().to_string())
+        .collect()
 }
 
 /// 提示框里写的：放得进 `width` 列的照原样；放不下的截 `text` 加 `…`，后面的 `tail` 整个留着（`/goal` 看进度的
@@ -208,7 +220,7 @@ pub struct Queued<'a> {
 mod tests {
     use ratatui::layout::Rect;
 
-    use super::{Queued, fitted, queued, swept, toast_area};
+    use super::{Queued, fitted, folded, queued, swept, toast_area};
     use crate::config::Config;
 
     #[test]
@@ -249,6 +261,32 @@ mod tests {
         assert_eq!(fitted("短的", tail, 30), "短的 · 进行中 · 第 1 轮");
         assert_eq!(fitted("没有结尾的长长长长长长", "", 8), "没有结…");
         assert_eq!(fitted("结尾自己就放不下", tail, 6), "结尾…", "整句截");
+    }
+
+    #[test]
+    fn a_long_receipt_folds_instead_of_being_clipped() {
+        // 2026-11-17 核心 LF-12 实测：人生会话里 `/stop` 的回执「…用 /life resume 继续」被截成「…」。
+        let said = "已停止这个会话的循环；人生会话已暂停，用 /life resume 继续";
+        let lines = folded(said, "", 24);
+        assert!(lines.len() > 1, "{lines:?}");
+        assert!(lines.iter().all(|l| !l.ends_with('…')), "{lines:?}");
+        assert_eq!(
+            lines.concat().replace(' ', ""),
+            said.replace(' ', ""),
+            "一个字都不少"
+        );
+        assert!(
+            lines
+                .iter()
+                .all(|l| unicode_width::UnicodeWidthStr::width(l.as_str()) <= 24)
+        );
+        assert_eq!(folded("短的", "", 24), ["短的"]);
+        let goal = folded(
+            "用 write 工具在当前目录写 count.txt，内容是 3",
+            " · 进行中 · 第 1 轮",
+            30,
+        );
+        assert_eq!(goal.len(), 1, "接着要留的尾巴的照旧截原文");
     }
 
     #[test]

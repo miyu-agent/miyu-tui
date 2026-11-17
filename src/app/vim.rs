@@ -44,6 +44,7 @@ impl App {
                             | Panel::Status { .. }
                             | Panel::Goal { .. }
                             | Panel::Life { .. }
+                            | Panel::Lives { .. }
                             | Panel::Tools { .. }
                             | Panel::Context { .. }
                     )

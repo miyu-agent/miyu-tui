@@ -39,4 +39,12 @@ pub struct LivesTexts {
     pub kill_hint: String,
     /// 人生卡下边框的按键提示。
     pub card_hint: String,
+    /// 光打 `/life` 开的跳转列表：标题、下边框的按键提示。
+    pub jump: [String; 2],
+    /// 在跑的接下次几点，`{time}`。
+    pub next: String,
+    /// 这会儿正在跑一轮。
+    pub busy: String,
+    /// 一条没结束的人生都没有（还没开会话时光打 `/life`）。
+    pub none: String,
 }
