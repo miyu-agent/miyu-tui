@@ -1442,7 +1442,7 @@
         "avatar_path": "Avatar image path",
         "conflict": "Changed elsewhere meanwhile, not saved: open it again and redo",
         "reading": "Reading…",
-        "life": {"name": "Life simulation", "states": ["On", "Paused", "Off"], "next": "continues {time}", "confirm": ["Turn on life simulation", "The AI continues on its own schedule and lives a stretch of its own day", "Each round is a model request and costs tokens", "What the AI does there goes into this persona's memory, and other sessions recall it", "Turn on", "Cancel"], "method": "Life method", "context": "Life session context", "context_default": "default {n}", "changes": "Acquired"},
+        "life": {"name": "Life simulation", "states": ["On", "Paused", "Off"], "next": "continues {time}", "confirm": ["Turn on life simulation", "The AI continues on its own schedule and lives a stretch of its own day", "Each round is a model request and costs tokens", "What the AI does there goes into this persona's memory, and other sessions recall it", "Turn on", "Cancel"], "method": "Life method", "context": "Life session context", "context_desc": "You can also change it on its own with /context in the life session", "changes": "Acquired prompt", "changes_desc": "Prompts the AI produced itself through its simulated life"},
         "remove": {
           "delete": [
             "Delete persona {name}?",
