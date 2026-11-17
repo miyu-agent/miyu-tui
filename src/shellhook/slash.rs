@@ -174,7 +174,12 @@ fn open_tui(config: &crate::config::Config, shell: Option<u32>) -> io::Result<Ex
                 Ok(found) => break found["session"].as_str().unwrap_or_default().to_string(),
                 Err(refusal) => return tell(&refusal.message),
             },
-            Ok(crate::core::Update::NoCoreBin | crate::core::Update::Failed(_)) | Err(_) => {
+            Ok(
+                crate::core::Update::NoCoreBin
+                | crate::core::Update::Failed(_)
+                | crate::core::Update::StartRefused(_),
+            )
+            | Err(_) => {
                 return Err(io::Error::other("can't reach the core"));
             }
             Ok(_) => {}

@@ -2,7 +2,7 @@
 //! 都换令牌，连上以后再读（门面 `miyu_client::connect` 连的时候读）。
 
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command as Process;
 
 use serde_json::json;
@@ -15,41 +15,33 @@ use super::limits::Limits;
 use super::rpc::{Failure, Rpc};
 use super::{StartRefusal, Update};
 
-/// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来；没给的只连。
+/// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来；没给的只连。连上以前出的错（找数据根、建骨架、连核心、拉起核心）
+/// 带着核心给的说法交给界面照它的语言说（核心 EN-1、EN-2，[`StartRefusal`]）。
 pub(super) async fn connect() -> Result<Rpc, Update> {
     let env = Env::current();
-    let root = DataRoot::locate(&env).map_err(|e| Update::Failed(e.to_string()))?;
     let core_bin = std::env::var_os("MIYU_CORE_BIN")
         .map(|bin| crate::local::expand_home(bin, std::env::home_dir().as_deref()));
-    root.prepare().map_err(|e| {
-        let refusal = |code: &str| StartRefusal {
-            code: code.to_string(),
-            reason: e.to_string(),
-            root: root.path().to_path_buf(),
-            bin: core_bin.as_deref().map(PathBuf::from),
-        };
-        e.code().map_or_else(
-            || Update::Failed(e.to_string()),
-            |code| Update::StartRefused(refusal(code)),
-        )
-    })?;
+    let bin = core_bin.as_deref();
+    let root = DataRoot::locate(&env)
+        .map_err(|e| StartRefusal::update(Some(e.said()), e.to_string(), bin))?;
+    root.prepare()
+        .map_err(|e| StartRefusal::update(e.said(), e.to_string(), bin))?;
     let connected = match core_bin {
         Some(bin) => {
-            let path = Path::new(&bin).to_path_buf();
-            let at = root.path().to_path_buf();
+            let path = bin.clone();
             miyu_client::connect::connect_or_start(&root, move || {
                 let mut core = Process::new(bin);
                 core.arg("core");
                 core
             })
             .await
-            .map_err(|e| start_failed(e, &path, &at))
+            .map_err(|e| start_failed(e, &path))
         }
         None => miyu_client::connect::connect(&root)
             .await
             .map_err(|e| match e {
                 ConnectError::NotRunning => Update::NoCoreBin,
-                e => Update::Failed(e.to_string()),
+                e => StartRefusal::update(e.said(), e.to_string(), None),
             }),
     };
     let (connection, token) = connected?;
@@ -188,23 +180,14 @@ pub(super) fn refused(failure: Failure) -> Update {
     }
 }
 
-/// 拉不起核心：`bin` 指的程序不存在，说清是哪个路径（第 8 条）；认得出是哪一种的交给界面照它的语言说（`root` 是数据根，
-/// 排期第 43 条）；别的照原样。
-fn start_failed(error: StartError, bin: &Path, root: &Path) -> Update {
-    let words = error.to_string();
+/// 拉不起核心：`bin` 指的程序不存在，说清是哪个路径（第 8 条）；别的带着核心给的说法交给界面照它的语言说（排期第 43 条，
+/// 核心 EN-2：原因只是会变的那一段，整句在说法里）。
+fn start_failed(error: StartError, bin: &Path) -> Update {
     match error {
         StartError::Io(e) if e.kind() == io::ErrorKind::NotFound && !bin.exists() => {
             Update::Missing(bin.display().to_string())
         }
-        StartError::Refused {
-            code: Some(code), ..
-        } => Update::StartRefused(StartRefusal {
-            code,
-            reason: words,
-            root: root.to_path_buf(),
-            bin: Some(bin.to_path_buf()),
-        }),
-        _ => Update::Failed(words),
+        error => StartRefusal::update(error.said(), error.to_string(), Some(bin)),
     }
 }
 
@@ -225,35 +208,47 @@ mod tests {
     #[test]
     fn a_missing_core_program_names_its_path() {
         let gone = Path::new("/nonexistent/miyu");
-        let root = Path::new("/home/me/.miyu");
         let not_found = || StartError::Io(io::Error::from(io::ErrorKind::NotFound));
         assert!(
-            matches!(start_failed(not_found(), gone, root), Update::Missing(p) if p == "/nonexistent/miyu")
+            matches!(start_failed(not_found(), gone), Update::Missing(p) if p == "/nonexistent/miyu")
         );
-        // 程序在，别的东西没找到：照原样。
-        let here = Path::new("/");
-        assert!(matches!(
-            start_failed(not_found(), here, root),
-            Update::Failed(_)
-        ));
-        assert!(matches!(
-            start_failed(StartError::Busy, gone, root),
-            Update::Failed(_)
-        ));
-        // 认得出是哪一种的交给界面照它的语言说（排期第 43 条）；没有代码的照原话。
+        // 程序在，别的东西没找到：照拉不起核心那一句说（核心 EN-2）。
+        let said = |update: Update| match update {
+            Update::StartRefused(r) => (r.said.key, r.said.fields.get("reason").cloned()),
+            other => panic!("交给界面照它的语言说：{other:?}"),
+        };
+        assert_eq!(
+            said(start_failed(not_found(), Path::new("/"))).0,
+            "core/start/spawn_failed"
+        );
+        assert_eq!(
+            said(start_failed(StartError::Busy, gone)).0,
+            "core/start/busy"
+        );
+        assert_eq!(
+            said(start_failed(StartError::Timeout, gone)).0,
+            "core/start/timeout"
+        );
+        // 核心说了起不来的：照 `start/<代码>`，原因只是会变的那一段，填进 `{reason}`；没有代码的照 `start/refused` 带上原话。
         let refused = |code: Option<&str>| StartError::Refused {
             code: code.map(str::to_string),
-            reason: "原话".into(),
+            reason: "File exists (os error 17)".into(),
         };
-        assert!(matches!(
-            start_failed(refused(Some("data_root_old_layout")), gone, root),
-            Update::StartRefused(r) if r.code == "data_root_old_layout"
-                && r.root == root && r.bin.as_deref() == Some(gone) && r.reason.contains("原话")
-        ));
-        assert!(matches!(
-            start_failed(refused(None), gone, root),
-            Update::Failed(r) if r.contains("原话")
-        ));
+        assert_eq!(
+            said(start_failed(refused(Some("log_failed")), gone)),
+            (
+                "core/start/log_failed".into(),
+                Some("File exists (os error 17)".into())
+            )
+        );
+        assert_eq!(
+            said(start_failed(refused(None), gone)).0,
+            "core/start/refused"
+        );
+        match start_failed(refused(Some("data_root_old_layout")), gone) {
+            Update::StartRefused(r) => assert_eq!(r.bin.as_deref(), Some(gone)),
+            other => panic!("{other:?}"),
+        }
     }
 
     #[test]

@@ -84,6 +84,9 @@ fn core() -> io::Result<()> {
             Ok(Update::HeadConfig(_)) => return Ok(()),
             Ok(Update::NoCoreBin) => return Err(io::Error::other("no core program")),
             Ok(Update::Failed(reason)) => return Err(io::Error::other(reason)),
+            Ok(Update::StartRefused(refusal)) => {
+                return Err(io::Error::other(refusal.say(config.language.code())));
+            }
             Ok(_) => {}
             Err(_) => return Err(io::Error::other("no answer")),
         }
