@@ -1075,6 +1075,7 @@
       "save_first": "Save the new provider with s before testing",
       "saved": "Saved",
       "saved_restart": "Takes effect after the core restarts",
+      "saved_warned": "{saved} · {warnings}",
       "saving": "Saving…",
       "conflict": "Changed elsewhere just now (now {current}); your changes are kept, reopen and save again",
       "offline": "Not connected to the core",

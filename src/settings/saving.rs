@@ -116,7 +116,7 @@ impl Settings {
                 self.named.clear();
                 self.rename_provider();
             }
-            Ok(_) => {
+            Ok(got) => {
                 // 存成了：界面上看的那一份先当成读来的，等重读回来再换成核心的（不闪一下旧的）。
                 let reconnect = self
                     .data
@@ -127,7 +127,16 @@ impl Settings {
                 self.draft.clear();
                 self.named.clear();
                 let said = if restart { "saved_restart" } else { "saved" };
-                self.say(texts.status(said), Tone::Good);
+                match warnings(&got) {
+                    None => self.say(texts.status(said), Tone::Good),
+                    Some(warned) => self.say(
+                        texts
+                            .status("saved_warned")
+                            .replace("{saved}", &texts.status(said))
+                            .replace("{warnings}", &warned),
+                        Tone::Note,
+                    ),
+                }
                 self.reload();
                 self.refresh();
                 // 新加的、换了地址、key 的：马上取模型列表，不用再按 r（2026-10-07 项目主人）。
@@ -192,6 +201,17 @@ impl Settings {
             Err(refusal) => self.failed(refusal.message),
         }
     }
+}
+
+/// 存成了的回应里核心的警告（核心 CK-1：改的那几项指着现在没有的人格、预设、知识库，照收不挡）：已经照连接的语言说，几句
+/// 用空格连；没有的是 `None`。
+fn warnings(reply: &Value) -> Option<String> {
+    let said: Vec<&str> = reply["problems"]
+        .as_array()?
+        .iter()
+        .filter_map(|problem| problem["message"].as_str())
+        .collect();
+    (!said.is_empty()).then(|| said.join(" "))
 }
 
 #[cfg(test)]
