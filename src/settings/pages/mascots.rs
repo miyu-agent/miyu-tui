@@ -35,6 +35,28 @@ pub fn looks(got: &Value, ascii: &str) -> Vec<Persona> {
     std::iter::once(builtin).chain(list).collect()
 }
 
+impl super::More {
+    /// 「吉祥物」「主题」选着的包关着（核心 UX-1补）：那一行写「<名字>（已关闭）」，不写「未安装」；别的是 `None`。
+    pub fn switched_off_label(
+        &self,
+        key: &str,
+        value: &Value,
+        texts: &super::Texts,
+    ) -> Option<String> {
+        if key != super::MASCOT && key != super::LOOK {
+            return None;
+        }
+        let id = value.as_str()?;
+        let local = self
+            .store
+            .local
+            .as_ref()?
+            .iter()
+            .find(|p| p.id == id && !p.on)?;
+        Some(texts.package_off.replace("{name}", &local.name))
+    }
+}
+
 /// `package.list` 一项外观包里终端主题的文件：`theme.tui.file`；核心改形状以前的 `theme.file` 也认（过渡）。只带网页主题
 /// （`theme.web`）的没有。
 pub fn tui_file(item: &Value) -> Option<&str> {
@@ -114,6 +136,34 @@ mod tests {
             .map(|p| p.id)
             .collect();
         assert_eq!(looks, ["ascii", "day"]);
+    }
+
+    /// 选着的主题包、吉祥物包关着：那一行写「<名字>（已关闭）」，不写「未安装」；开着的、没装的不管。
+    #[test]
+    fn a_chosen_package_that_is_switched_off_says_so() {
+        let texts = crate::config::Config::builtin().unwrap().text.settings.more;
+        let mut more = crate::settings::pages::More::default();
+        let local = |on: bool| crate::settings::pages::store::read::Local {
+            id: "night".into(),
+            name: "夜".into(),
+            on,
+            ..Default::default()
+        };
+        more.store.local = Some(vec![local(false)]);
+        let night = json!("night");
+        assert_eq!(
+            more.switched_off_label("tui.look", &night, &texts)
+                .as_deref(),
+            Some("夜（已关闭）")
+        );
+        assert_eq!(
+            more.switched_off_label("tui.mascot", &night, &texts)
+                .as_deref(),
+            Some("夜（已关闭）")
+        );
+        assert_eq!(more.switched_off_label("ui.language", &night, &texts), None);
+        more.store.local = Some(vec![local(true)]);
+        assert_eq!(more.switched_off_label("tui.look", &night, &texts), None);
     }
 
     /// 核心 SD-1：被盖住的那份（带 `covered`）不再列一行。

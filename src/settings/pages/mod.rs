@@ -380,6 +380,8 @@ pub struct Texts {
     pub ascii_look: String,
     /// 选着的吉祥物包卸掉了：`{id}` 是它的编号。
     pub mascot_missing: String,
+    /// 选着的吉祥物包、主题包关着（核心 UX-1补）：`{name}` 是它的名字。
+    pub package_off: String,
     /// 「主色」跟随头像时恢复默认问的那一句：清掉人格的主题色。
     pub seed_unset: String,
     /// 终端自己的配置项另分的几组的名字（「配置页」第 33 条）。

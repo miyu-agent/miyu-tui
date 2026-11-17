@@ -1492,6 +1492,7 @@
       "default_look": "默认主题",
       "ascii_look": "纯 ASCII",
       "mascot_missing": "{id}（未安装）",
+      "package_off": "{name}（已关闭）",
       "seed_unset": "清除人格的主色，恢复为头像取出的第一个",
       "own_groups": {"look": "主题", "theme": "配色方案", "timeline": "时间线", "mascot": "形象", "icons": "图标", "keys": "交互"},
       "appearance": "外观",

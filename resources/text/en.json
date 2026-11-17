@@ -1492,6 +1492,7 @@
       "default_look": "Default theme",
       "ascii_look": "Plain ASCII",
       "mascot_missing": "{id} (not installed)",
+      "package_off": "{name} (disabled)",
       "seed_unset": "Clear the persona's main color and go back to the avatar's first candidate",
       "own_groups": {"look": "Theme", "theme": "Color scheme", "timeline": "Timeline", "mascot": "Figure", "icons": "Icons", "keys": "Interaction"},
       "appearance": "Appearance",
