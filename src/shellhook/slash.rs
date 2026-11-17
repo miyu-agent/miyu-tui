@@ -146,6 +146,7 @@ fn open_tui(config: &crate::config::Config, shell: Option<u32>) -> io::Result<Ex
     let core = crate::core::spawn(
         config.layout.reconnect_ms,
         crate::core::Start::Bare,
+        crate::core::Head::Shellhook,
         move |update| sender.send(update).is_ok(),
     );
     let cwd = std::env::current_dir()

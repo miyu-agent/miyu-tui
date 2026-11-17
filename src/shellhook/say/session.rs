@@ -16,7 +16,7 @@ use super::paint::Painter;
 use super::turn::{Incoming, Turn};
 use super::view::{Media, Scope, View};
 use crate::config::Config;
-use crate::core::{Command, Core, EndReason, Start, Update};
+use crate::core::{Command, Core, EndReason, Head, Start, Update};
 use crate::notify::{self, Notifier};
 
 /// 这一轮结束后等多久看核心是不是叫醒她（`turn.rs` 的 `lingering`）：核心是同一刻开的，留够推送路上的时间。
@@ -56,9 +56,12 @@ impl Session {
         let config = super::config()?;
         let (sender, incoming) = mpsc::channel();
         let to_core = sender.clone();
-        let core = crate::core::spawn(config.layout.reconnect_ms, Start::Bare, move |update| {
-            to_core.send(Incoming::Core(update)).is_ok()
-        });
+        let core = crate::core::spawn(
+            config.layout.reconnect_ms,
+            Start::Bare,
+            Head::Shellhook,
+            move |update| to_core.send(Incoming::Core(update)).is_ok(),
+        );
         ratatui::crossterm::terminal::enable_raw_mode()?;
         let mut raw = RawMode { keyboard: false };
         let look = Look::new(terminal_colors());

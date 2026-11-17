@@ -30,3 +30,23 @@ pub enum Start {
     /// 不进任何会话、不看 `ui.startup`（`--page config`，蓝图「配置页」第 1 条）。
     Bare,
 }
+
+/// 这一头是什么（握手的 `head.kind`，核心 VN-1）：核心把它记在人说的话、打的命令上（`by.head`），AI 照它知道话从哪来。
+/// 全屏的终端界面是 `tui`，终端无缝集成（`miyu-tui shellhook …` 起的每一条连接）是 `shellhook`。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Head {
+    /// 全屏的终端界面。
+    Tui,
+    /// 终端无缝集成。
+    Shellhook,
+}
+
+impl Head {
+    /// 握手时写的 `head.kind`。
+    pub fn kind(self) -> &'static str {
+        match self {
+            Head::Tui => "tui",
+            Head::Shellhook => "shellhook",
+        }
+    }
+}

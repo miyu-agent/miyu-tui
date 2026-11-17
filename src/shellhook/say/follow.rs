@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use super::spool::{self, Record};
 use super::unseen::Unseen;
-use crate::core::{Command, JobStart, Push, Start, Update};
+use crate::core::{Command, Head, JobStart, Push, Start, Update};
 
 /// 交给盯后台的：终端会话、派出去还没结束的任务、哪个 shell。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,9 +65,12 @@ pub fn run(path: &Path) -> ExitCode {
     };
     let (sender, incoming) = mpsc::channel();
     let to_core = sender.clone();
-    let core = crate::core::spawn(config.layout.reconnect_ms, Start::Bare, move |update| {
-        to_core.send(Incoming::Core(Box::new(update))).is_ok()
-    });
+    let core = crate::core::spawn(
+        config.layout.reconnect_ms,
+        Start::Bare,
+        Head::Shellhook,
+        move |update| to_core.send(Incoming::Core(Box::new(update))).is_ok(),
+    );
     if !wait_for_exit(watch.shell, move || sender.send(Incoming::Gone).is_ok()) {
         return ExitCode::FAILURE;
     }

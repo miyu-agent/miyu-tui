@@ -7,7 +7,7 @@ use std::process::ExitCode;
 use std::time::Duration;
 
 use super::words::{Words, fill};
-use crate::core::{Start, Update};
+use crate::core::{Head, Start, Update};
 
 /// 连核心最多等多久：没在跑的要先拉起来。
 const CORE_WAIT: Duration = Duration::from_secs(15);
@@ -86,9 +86,12 @@ fn core() -> Result<(), Unreached> {
     let other = |reason: &str| Err(Unreached::Other(reason.to_string()));
     let config = super::say::config().map_err(|e| Unreached::Other(e.to_string()))?;
     let (sender, incoming) = std::sync::mpsc::channel();
-    let _core = crate::core::spawn(config.layout.reconnect_ms, Start::Bare, move |update| {
-        sender.send(update).is_ok()
-    });
+    let _core = crate::core::spawn(
+        config.layout.reconnect_ms,
+        Start::Bare,
+        Head::Shellhook,
+        move |update| sender.send(update).is_ok(),
+    );
     loop {
         match incoming.recv_timeout(CORE_WAIT) {
             Ok(Update::HeadConfig(_)) => return Ok(()),

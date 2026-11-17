@@ -98,7 +98,7 @@ pub use sessions::{
 pub use snapshot::{Snapshot, Spent};
 pub use spawn::spawn;
 pub use todos::TodoItem;
-pub use types::{OutputRead, Refusal, Start};
+pub use types::{Head, OutputRead, Refusal, Start};
 pub use undo::{Report, UndoFile};
 
 /// 界面要核心做的事。
