@@ -35,7 +35,7 @@ fn data(sessions: usize) -> UsageData {
         rates: Vec::new(),
         quota: Vec::new(),
         balance: None,
-        quota_from: None,
+        quota_provider: None,
     }
 }
 

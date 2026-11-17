@@ -67,6 +67,20 @@ pub(crate) fn balance(result: &Value) -> Option<Balance> {
     })
 }
 
+/// 读回应里的 `provider`（核心 QU-3）：查的是哪一家，给人看的名字（配置起的名字，没起的照目录的，再没有的照编号，核心算好的）；
+/// 名字空着的照编号，没带的（`{}`、旧核心）是 `None`。
+pub(crate) fn provider(result: &Value) -> Option<String> {
+    let p = result.get("provider")?;
+    let text = |key: &str| {
+        p.get(key)
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|t| !t.is_empty())
+            .map(str::to_string)
+    };
+    text("name").or_else(|| text("id"))
+}
+
 /// 读 `session.quota` 的回应：`windows` 一项一个，照核心排好的先后；没有额度的（`{}`）、名字或百分比缺的不要。
 pub(crate) fn windows(result: &Value) -> Vec<QuotaWindow> {
     let Some(list) = result.get("windows").and_then(Value::as_array) else {
@@ -109,14 +123,8 @@ impl App {
         if let (Some(data), Ok(result)) = (self.boxes.usage.as_mut(), result) {
             data.quota = windows(result);
             data.balance = balance(result);
-            // 核心照会话接下来请求的那一家查（`subscribe` 的 `model.endpoint`，换模型推来的同一个）：标题照它写名字。
-            data.quota_from = self
-                .talk
-                .transcript
-                .model
-                .as_ref()
-                .map(|(_, endpoint)| endpoint.clone())
-                .filter(|endpoint| !endpoint.is_empty());
+            // 查的是哪一家，核心在回应里写明（核心 QU-3）：标题照它写，不照记着的当前模型猜。
+            data.quota_provider = provider(result);
         }
         true
     }
