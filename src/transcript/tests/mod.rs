@@ -277,10 +277,12 @@ fn policy(level: crate::core::Level) -> Push {
         Level::ReadOnly => Push::Policy {
             level: Level::Full,
             read_only: true,
+            from: None,
         },
         level => Push::Policy {
             level,
             read_only: false,
+            from: None,
         },
     }
 }

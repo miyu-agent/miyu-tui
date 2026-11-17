@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use super::{Entry, Kind, Slot, Transcript};
 use crate::config::Texts;
-use crate::core::{Level, Spent};
+use crate::core::{Level, Push, Spent};
 
 /// 按页读读到哪了。
 #[derive(Debug, Default)]
@@ -71,10 +71,27 @@ impl Transcript {
         self.older.top = None;
     }
 
-    /// 权限级别变了（日志里切换权限的那一条）：之后照它记。换以前那一段是什么级别这一条不说，还没记的照旧等。
-    pub(super) fn set_level(&mut self, level: Level) {
+    /// 权限级别变了：之后照它记。
+    fn set_level(&mut self, level: Level) {
         self.level = level;
         self.older.level_unknown = false;
+    }
+
+    /// 换了级别（日志里切换权限的那一条，[`Push::Policy`]，只读开着的是只读）：带着换以前的（核心 PL-1 的 `from`）的，这一条
+    /// 以前的就是它，还没记的当场补上，不等更早的一页；以前的日志没有，还没记的照旧等。
+    pub(super) fn switched(&mut self, policy: &Push) {
+        let Push::Policy {
+            level,
+            read_only,
+            from,
+        } = *policy
+        else {
+            return;
+        };
+        if let Some(from) = from {
+            self.settled(from);
+        }
+        self.set_level(if read_only { Level::ReadOnly } else { level });
     }
 
     /// 从读进来的最上面那一条到这一刻一直是 `level`（读到了 `session.created`，或者订阅回应来时这一页里还没换过级别）：

@@ -8,18 +8,32 @@ use crate::core::kinds::Level;
 
 /// 会话创建（`session.created`）时的权限：只读开着的算只读。别的几格（人格、预设、模型）是开局的，不当成中途换了。
 pub(super) fn began(body: &Value, out: &mut Vec<Push>) {
-    let permission = &body["permission"];
-    if let Some(level) = permission["level"].as_str().map(Level::parse) {
-        let read_only = permission["read_only"] == true;
-        out.push(Push::Began(if read_only { Level::ReadOnly } else { level }));
+    if let Some(level) = actual(&body["permission"]) {
+        out.push(Push::Began(level));
     }
 }
 
-/// 读成几样：没带权限的不改级别；认不出的级别照核心按只读画（AUD-4）。
+/// 一份权限（`{level, read_only}`）实际是哪一级：只读开着的是只读；没有 `level` 的是 `None`。
+fn actual(permission: &Value) -> Option<Level> {
+    let level = permission["level"].as_str().map(Level::parse)?;
+    Some(if permission["read_only"] == true {
+        Level::ReadOnly
+    } else {
+        level
+    })
+}
+
+/// 读成几样：没带权限的不改级别；认不出的级别照核心按只读画（AUD-4）。换级别的带着换以前的（核心 PL-1 的 `from`，以前的
+/// 日志没有）。
 pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
     if let Some(level) = body["permission"]["level"].as_str().map(Level::parse) {
         let read_only = body["permission"]["read_only"] == true;
-        out.push(Push::Policy { level, read_only });
+        let from = actual(&body["from"]);
+        out.push(Push::Policy {
+            level,
+            read_only,
+            from,
+        });
     }
     // 中途换人格、预设（核心 P-13）：之后核心马上开一轮压缩，照手动压缩画。
     if let Some(persona) = body["persona"].as_str() {
