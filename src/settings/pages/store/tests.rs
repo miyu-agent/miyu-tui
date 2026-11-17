@@ -96,6 +96,36 @@ fn the_installed_filter_also_reads_feature_ids() {
     }
 }
 
+/// 英文名也认（核心 NS-1 的 `name_en`，2026-11-17 验收第 10 条：中文界面搜 web 找不到「网络搜索」）：包的、归它的项的、
+/// 项那一组的。
+#[test]
+fn the_installed_filter_also_reads_english_names() {
+    let got = serde_json::json!({"packages": [
+        {"package": "base-net", "name": "网络服务", "name_en": "Network services"},
+        {"package": "memes", "name": "表情包"}]});
+    let mut store = Store {
+        tab: Tab::Installed,
+        local: Some(super::read::locals(&got)),
+        ..Store::default()
+    };
+    let schema = super::super::schema::Schema::read(&serde_json::json!({
+        "pages": [{"id": "packages", "name": "软件包"}],
+        "groups": [{"id": "memes", "name": "表情包", "name_en": "Stickers", "page": "packages"}],
+        "items": [{"key": "memes.x", "type": "text", "control": "text", "layers": ["system"],
+                   "name": "联网", "name_en": "Online lookup", "page": "packages", "group": "memes",
+                   "package": "memes"}]}));
+    store.note_keys(&schema);
+    let ids = |s: &Store| -> Vec<String> { s.rows().iter().map(|r| r.id().to_string()).collect() };
+    for (query, want) in [
+        ("network", "base-net"),
+        ("sticker", "memes"),
+        ("lookup", "memes"),
+    ] {
+        store.query = query.into();
+        assert_eq!(ids(&store), [want], "筛「{query}」");
+    }
+}
+
 /// 归包的配置项的键、名字也认（联网搜索的键是 `net.*`），「下载软件」照包带的东西的名字认。
 #[test]
 fn the_filters_also_read_setting_keys_and_what_a_package_brings() {

@@ -16,6 +16,20 @@ pub fn current<'a>(item: &'a Item, data: &'a Data) -> (&'a Value, &'a str) {
     }
 }
 
+/// 借来的项（来源 `inherited`，核心 NS-1）写什么：「已继承（来自 DeepSeek）」，借的是哪一家照供应商的名字，没有的照编号；
+/// 不是借来的是 `None`（2026-11-17 项目主人本机验收第 10 条：配好了 DeepSeek 供应商，网络搜索那里的 key 还写未设置）。
+pub fn inherited(item: &Item, data: &Data, texts: &Texts) -> Option<String> {
+    let from = data.inherited.get(&item.key)?;
+    let provider = from
+        .strip_prefix("providers.")
+        .and_then(|rest| rest.strip_suffix(".key"));
+    let name = provider.map_or(from.as_str(), |id| {
+        data.provider(id).map_or(id, |p| p.shown())
+    });
+    let template = texts.origins.get("inherited")?;
+    Some(template.replace("{from}", name))
+}
+
 /// 软件包里选 Miyu 自己的东西的类型（核心 PC-3）：人格、预设、知识库，存编号。
 pub const PICKED_KINDS: [&str; 3] = ["persona", "preset", "knowledge"];
 

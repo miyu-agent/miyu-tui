@@ -185,7 +185,15 @@ impl Store {
                 "" => item.group.as_str(),
                 id => id,
             };
-            let line = format!("{}\n{}\n", item.key, item.name);
+            // 英文名也认（核心 NS-1：中文界面搜 web 找得到「网络搜索」），项的、它那一组的。
+            let english = [&item.key, &item.group].map(|k| schema.english.get(k.as_str()));
+            let english = english.into_iter().flatten().map(String::as_str);
+            let line = format!(
+                "{}\n{}\n{}\n",
+                item.key,
+                item.name,
+                english.collect::<Vec<_>>().join("\n")
+            );
             self.keys
                 .entry(owner.to_string())
                 .or_default()
