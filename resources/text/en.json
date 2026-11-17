@@ -1659,7 +1659,7 @@
       "avatar": "Avatar",
       "avatar_hint": "Image path",
       "avatar_set": "Set",
-      "life": ["Life simulation", "On", "Off", "Press Enter to turn on: the AI wakes up and lives its own days", "The AI wakes when it decides and lives a stretch of its own day", "Each wakeup is a model request and costs tokens", "What the AI does there goes into this persona's memory, and other sessions recall it", "Press Enter again to turn on, Esc to cancel"]
+      "life": ["Life simulation", "On", "Off", "Enter to change", "The AI wakes when it decides and lives a stretch of its own day", "Each wakeup is a model request and costs tokens", "What the AI does there goes into this persona's memory, and other sessions recall it"]
     },
     "preset": {
       "title": "Choose a preset",
