@@ -65,9 +65,8 @@ pub fn next(now: Option<Sort>, list: &[Remote]) -> Option<Sort> {
 
 /// 照 `sort` 排（`None` 照软件源给的先后），照 `query` 筛：交回下标。
 pub fn shown(list: &[Remote], sort: Option<Sort>, query: &str) -> Vec<usize> {
-    let words: Vec<String> = query.split_whitespace().map(str::to_lowercase).collect();
     let mut out: Vec<usize> = (0..list.len())
-        .filter(|&i| matches(&list[i], &words))
+        .filter(|&i| matches(&list[i], query))
         .collect();
     if let Some(sort) = sort {
         out.sort_by(|&i, &j| {
@@ -83,10 +82,28 @@ pub fn shown(list: &[Remote], sort: Option<Sort>, query: &str) -> Vec<usize> {
     out
 }
 
-/// 几个词每个都出现在名字、编号、说明里。
-fn matches(p: &Remote, words: &[String]) -> bool {
-    let hay = format!("{}\n{}\n{}", p.name, p.id, p.summary).to_lowercase();
-    words.iter().all(|w| hay.contains(w.as_str()))
+/// 几个词每个都出现在名字、编号、说明、带的东西（`provides`：功能、技能、脚本……的名字）里。
+fn matches(p: &Remote, query: &str) -> bool {
+    let provides = p.provides.iter().flat_map(|(_, names)| names.iter());
+    let hay: Vec<&str> = [p.name.as_str(), p.id.as_str(), p.summary.as_str()]
+        .into_iter()
+        .chain(provides.map(String::as_str))
+        .collect();
+    hit(query, &hay.join("\n"))
+}
+
+/// 筛的字对得上：照空白分的几个词每个都出现在 `hay` 里，不分大小写，`-`、`_`、`.` 当空格（`web search` 找得到 `web-search`、
+/// `net search` 找得到 `net.search.source`，同网页的设置搜索）。
+pub fn hit(query: &str, hay: &str) -> bool {
+    let plain = |text: &str| {
+        text.to_lowercase()
+            .replace(['-', '_', '.'], " ")
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    let hay = plain(hay);
+    plain(query).split(' ').all(|word| hay.contains(word))
 }
 
 #[cfg(test)]

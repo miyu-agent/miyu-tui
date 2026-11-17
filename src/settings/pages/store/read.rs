@@ -57,6 +57,9 @@ pub struct Local {
     pub covers: Option<Covered>,
     /// 接入方式的标签（[`super::access`]）。
     pub access: Vec<&'static str>,
+    /// 筛的时候也认的字：带的功能的编号、名字、说明（`package.list` 的 `features`；联网搜索的功能编号 `web-search` 是英文的，
+    /// 搜 `web` 靠它找得到，2026-11-17 项目主人验收第 10 条）。
+    pub words: String,
 }
 
 /// 被上面一层盖住的那一份（核心 SD-1，`package.list` 一项的 `covered`）：不单列，并进认的那一行（2026-11-05 项目主人）。
@@ -209,12 +212,26 @@ pub fn locals(got: &Value) -> Vec<Local> {
                 removed: p["removed"] == Value::Bool(true),
                 covers: covered.remove(&id),
                 access: super::access::of(p),
+                words: feature_words(p),
                 id,
             })
         })
         .collect();
     out.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.id.cmp(&b.id)));
     out
+}
+
+/// 一个包带的功能（`features`：`{id, name, summary?}`）的字，一行一样。
+fn feature_words(p: &Value) -> String {
+    let fields = |f: &Value| ["id", "name", "summary"].map(|k| text(&f[k]).unwrap_or_default());
+    p["features"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .flat_map(fields)
+        .filter(|w| !w.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// 读 `package.upgrades` 的回应：能升的，编号到新版本。
