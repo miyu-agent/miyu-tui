@@ -34,6 +34,10 @@ pub struct Areas {
     pub goal: Rect,
     /// 那一行里长期目标的字占的那一截（点它开浮窗、悬停变手）；没写的是空的（`goal_tag.rs`）。
     pub goal_text: Rect,
+    /// 那一行里人生记号占的那一截（人生会话才有，点它开人生卡、悬停变手）；没写的是空的（`loop_tag.rs`）。
+    pub loop_text: Rect,
+    /// 侧边栏「循环」那一段（人生会话才有，点它开人生卡）；没画的是空的。
+    pub side_loops: Rect,
     /// 抽屉往下滑了几行（`body_view/slide.rs`）：框的下边不画，抽屉底下这么多行减一行裁掉；0 是在原位。
     pub slid: u16,
     /// 首页的吉祥物；不在首页、放不下时高是 0（`tui.md`「空会话的首页」）。

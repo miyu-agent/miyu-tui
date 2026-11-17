@@ -162,12 +162,19 @@ impl Part<Side<'_, '_>> for Loops {
         let at_now = (jiff::Timestamp::now(), &jiff::tz::TimeZone::system());
         let mine =
             super::super::loop_tag::of(&seen.link.loops, seen.talk.transcript.session.as_deref());
+        let name = |id: &str| seen.talk.persona.name(id).to_string();
         Laid::Lines(super::super::loop_tag::sidebar(
             &mine,
-            seen.config,
+            (seen.config, &name),
             at_now,
             width,
         ))
+    }
+
+    fn placed(&mut self, _: &mut Frame, area: Rect, _: (usize, usize), side: &mut Side) {
+        // 人生会话的这一段点得动（开人生卡，`app/life_card.rs`）。
+        let life = crate::app::life_card::life_row(side.seen.talk, side.seen.link).is_some();
+        side.screen.areas.side_loops = if life { area } else { Rect::default() };
     }
 }
 

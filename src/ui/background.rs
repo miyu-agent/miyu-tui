@@ -41,6 +41,7 @@ pub fn lines(
             | Panel::Usage { .. }
             | Panel::Status { .. }
             | Panel::Goal { .. }
+            | Panel::Life { .. }
             | Panel::Tools { .. }
             | Panel::Context { .. }
             | Panel::Pick { .. }

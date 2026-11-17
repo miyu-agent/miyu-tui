@@ -83,6 +83,13 @@ pub enum Panel {
         /// 往下滚了几行。
         scroll: usize,
     },
+    /// 点人生记号开的人生卡（`life_card.rs`）：停在第几个按钮、「结束人生」按过一下了没有。
+    Life {
+        /// 停在第几个按钮。
+        button: usize,
+        /// 「结束人生」按过一下：再按才结束。
+        arming: bool,
+    },
     /// 工具（`/tool-list`，`tool_list.rs`）：往下滚了几行；读回来的在 `boxes.tools` 上。
     Tools {
         /// 往下滚了几行。
@@ -217,6 +224,7 @@ impl App {
             Panel::Pick { kind, selected } => return self.pick_key(kind, selected, key),
             Panel::Status { scroll } => return self.status_key(scroll, key),
             Panel::Goal { scroll } => return self.goal_key(scroll, key),
+            Panel::Life { button, arming } => return self.life_card_key((button, arming), key),
             Panel::Tools { scroll } => return self.tool_list_key(scroll, key),
             Panel::Context { scroll } => return self.context_key(scroll, key),
             Panel::Changed {
@@ -345,7 +353,7 @@ impl App {
             }
             return true;
         }
-        if self.prefix_click(at, press) {
+        if self.prefix_click(at, press) || self.life_card_click(at, press) {
             return true;
         }
         if let Some(Panel::Background { open, all, .. }) = self.boxes.panel
@@ -434,6 +442,9 @@ impl App {
             || over(self.screen.areas.pinned)
             // 长期目标那一截字（点了开浮窗，`goal_box.rs`）。
             || over(self.screen.areas.goal_text)
+            // 人生会话的人生记号、侧边栏「循环」那一段（点了开人生卡，`life_card.rs`）。
+            || over(self.screen.areas.loop_text)
+            || over(self.screen.areas.side_loops)
             || over(self.screen.areas.bottom)
             // 正文的滚动条（`body_view.rs`）。
             || self.screen.view.bar_hover
