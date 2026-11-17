@@ -77,6 +77,8 @@ pub struct Texts {
     pub main_purpose: String,
     /// 别的用途的名字；没有的照原样写。
     pub purposes: HashMap<String, String>,
+    /// 套餐额度那几行上面的标题，`{provider}`（2026-11-17 验收第 6、36 条项目主人给的字）。
+    pub quota_title: String,
     /// 套餐额度（核心 QU-1，`quota.rs`）：一小时以内重置写几分钟后，`{n}`。
     pub quota_minutes: String,
     /// 24 小时以内重置写几小时后，`{n}`。
@@ -131,6 +133,14 @@ pub fn lines(
     }
 }
 
+/// 带 `{provider}` 的字填上供应商的名字；不知道是哪家的去掉这一截，不留空格。
+pub(super) fn named(template: &str, provider: &str) -> String {
+    template
+        .replace("{provider}", provider)
+        .trim_start()
+        .to_string()
+}
+
 /// 下边框的按键提示：按键模式是 Vim 的换页写「h/l」（上下的「j/k」由框统一换，`panel.rs`）。
 fn hint(config: &crate::config::Config) -> String {
     super::hint_keys::vim_sides(&config.text.usage.hint, config.layout.vim)
@@ -144,6 +154,8 @@ pub struct Sources<'a> {
     pub currency: &'a str,
     /// 知道的会话：按会话那一页照它写标题。
     pub sessions: &'a [SessionInfo],
+    /// 额度、余额是哪家的，给人看的名字（配置起的名字，没起的照目录的，同时间线上写的）；不知道的是空的。
+    pub provider: String,
 }
 
 impl<'a> Sources<'a> {
@@ -153,6 +165,13 @@ impl<'a> Sources<'a> {
             config: seen.config,
             currency: &seen.link.currency,
             sessions: seen.talk.sessions_seen.as_deref().unwrap_or_default(),
+            provider: seen
+                .boxes
+                .usage
+                .as_ref()
+                .and_then(|data| data.quota_from.as_deref())
+                .map(|id| seen.link.human.provider(id).to_string())
+                .unwrap_or_default(),
         }
     }
 
@@ -293,3 +312,6 @@ pub(super) fn amounts(src: &Sources<'_>, bill: &Bill) -> Option<String> {
 pub(super) fn tokens(rows: &[UsageRow]) -> u64 {
     rows.iter().map(|r| r.tokens).sum()
 }
+
+#[cfg(test)]
+mod tests;

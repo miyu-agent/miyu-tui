@@ -84,3 +84,23 @@ fn a_balance_answer_is_kept_and_absent_means_none() {
     });
     assert_eq!(app.boxes.usage.as_ref().unwrap().balance, None);
 }
+
+#[test]
+fn the_quota_is_named_after_the_provider_the_session_requests_next() {
+    // 2026-11-17 验收第 36 条：标题、余额那一行照供应商的名字（配置起的名字，没起的照目录的），不写死。
+    let (mut app, mut sent) = app();
+    app.talk.transcript.session = Some("s1".into());
+    app.talk.transcript.model = Some(("deepseek-v4.1-flash".into(), "opencode-go".into()));
+    let names = [("opencode-go".to_string(), "OpenCode Go".to_string())];
+    app.link.human.add_providers(&names.into_iter().collect());
+    app.open_usage();
+    let (tag, _) = asked(&mut sent).unwrap();
+    app.core(Update::Answer {
+        tag,
+        result: Ok(json!({"windows": [{"id": "rolling", "label": "5 小时", "percent": 4, "status": "ok"}]})),
+    });
+    let data = app.boxes.usage.as_ref().unwrap();
+    assert_eq!(data.quota_from.as_deref(), Some("opencode-go"));
+    let seen = app.seen();
+    assert_eq!(crate::ui::usage::Sources::of(&seen).provider, "OpenCode Go");
+}

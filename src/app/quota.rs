@@ -109,6 +109,14 @@ impl App {
         if let (Some(data), Ok(result)) = (self.boxes.usage.as_mut(), result) {
             data.quota = windows(result);
             data.balance = balance(result);
+            // 核心照会话接下来请求的那一家查（`subscribe` 的 `model.endpoint`，换模型推来的同一个）：标题照它写名字。
+            data.quota_from = self
+                .talk
+                .transcript
+                .model
+                .as_ref()
+                .map(|(_, endpoint)| endpoint.clone())
+                .filter(|endpoint| !endpoint.is_empty());
         }
         true
     }
