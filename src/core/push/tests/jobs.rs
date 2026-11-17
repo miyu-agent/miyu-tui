@@ -213,3 +213,62 @@ fn a_batch_of_lines_from_a_watched_command_is_read() {
         })]
     );
 }
+
+#[test]
+fn venue_speakers_and_pokes_are_read() {
+    // 核心 VW-2、VP-1补：场所里的人带平台身份、那条消息写的名字、是不是管理员；戳了一下的带后缀。
+    use crate::core::push::{Sender, Speaker};
+    let said = |by: serde_json::Value, venue: serde_json::Value| {
+        let event = json!({"seq": 21, "kind": "message.user", "by": by, "cause": "fq-1",
+            "body": {"blocks": [], "venue": venue}});
+        match crate::core::push::read(&event, &|_| false).remove(0) {
+            Push::Foreign(said) => said,
+            other => panic!("{other:?}"),
+        }
+    };
+    let group = |id: &str, role: &str| json!({"kind": "external", "venue": "qq:group:1", "id": id, "role": role});
+    let poked = said(
+        group("qq:20002", "manager"),
+        json!({"msg": "1", "name": "小美", "poke": true, "poke_text": "的小脑袋"}),
+    );
+    assert_eq!(
+        poked.from,
+        Sender::External(Speaker {
+            id: Some("qq:20002".into()),
+            name: Some("小美".into()),
+            manager: true,
+        })
+    );
+    assert_eq!(poked.poke.as_deref(), Some("的小脑袋"));
+    let bare = said(
+        group("qq:20001", "member"),
+        json!({"msg": "2", "poke": true}),
+    );
+    assert_eq!(bare.poke.as_deref(), Some(""), "没设后缀的也是戳");
+    assert!(matches!(
+        bare.from,
+        Sender::External(Speaker {
+            manager: false,
+            name: None,
+            ..
+        })
+    ));
+    let plain = said(
+        group("qq:20001", "member"),
+        json!({"msg": "3", "name": "阿杰"}),
+    );
+    assert_eq!(plain.poke, None);
+    // 对应表认出的主人（`person` 带 `via`）在场所里也照昵称、号写。
+    let owner = said(
+        json!({"kind": "person", "via": "qq:10001"}),
+        json!({"msg": "4", "name": "主人"}),
+    );
+    assert_eq!(
+        owner.from,
+        Sender::External(Speaker {
+            id: Some("qq:10001".into()),
+            name: Some("主人".into()),
+            manager: false,
+        })
+    );
+}

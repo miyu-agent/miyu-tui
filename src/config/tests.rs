@@ -57,7 +57,8 @@ fn no_text_speaks_of_accounts_or_personal_settings() {
         "admin mode",
         "account",
         "個人設定",
-        "管理者",
+        // 群里的管理员（QQ 的群管理）照常写「管理者」，同网页（VP-1补）；不许提的是 Miyu 自己的管理员模式。
+        "管理者モード",
         "アカウント",
     ];
     for (name, json) in [

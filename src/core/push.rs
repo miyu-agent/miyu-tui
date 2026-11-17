@@ -35,7 +35,7 @@ pub use shell::ShellRan;
 pub use shown::Shown;
 pub use usage::Usage;
 
-pub use jobs::{JobEnd, JobLines, JobReason, JobStart, Said as Foreign, Sender};
+pub use jobs::{JobEnd, JobLines, JobReason, JobStart, Said as Foreign, Sender, Speaker};
 
 /// 一次请求出的错（`model.called` 的 `error`）。
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -27,6 +27,14 @@ impl Transcript {
         }
     }
 
+    /// 场所里的人戳了 AI 一下（核心 VP-1补，蓝图「别处来的话」第 2 条）：一行暗字，序号记上，开轮时照它归到那一轮。
+    pub fn poked(&mut self, seq: u64, line: String) {
+        self.note(Kind::Note, line);
+        if let Some(entry) = self.entries.last_mut() {
+            entry.seq = Some(seq);
+        }
+    }
+
     /// 另起一份空的正文，把现在这份交出来（`/new` 时旧会话还有任务在跑，停放着它）：连接、模型、限额照旧，条目编号接着往上数。
     pub fn split_off(&mut self) -> Transcript {
         let next = Transcript {

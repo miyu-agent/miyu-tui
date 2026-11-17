@@ -124,6 +124,14 @@ pub struct JobTexts {
     pub doing_replying: String,
     /// 别处来的话那一行写的来处（蓝图「别处来的话」第 2 条）：同一个人在别处（网页、命令行）说的。
     pub from_person: String,
+    /// 来处：通讯平台上的人（`external`，核心 VW-2），名字、号都没有的。
+    pub external: String,
+    /// 来处：通讯平台上的人，`{name}` 是那条消息写的名字（不可信），`{id}` 是平台身份；没名字的只写号。
+    pub external_speaker: String,
+    /// 桥报的是管理员的（`role: manager`）：`{who}` 后面接。
+    pub external_manager: String,
+    /// 场所里的人戳了 AI 一下（核心 VP-1补）：一行暗字，`{who}` 同来处、不带管理员，`{suffix}` 是那人设的后缀（不可信）。
+    pub poke: String,
     /// 来处：主会话（在子会话里看，交代的活、留言）。
     pub from_main: String,
     /// 来处：别的主会话（核心 C-5），`{id}` 短编号、`{title}` 标题。

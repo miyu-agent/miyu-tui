@@ -119,4 +119,5 @@ mod unread;
 mod unseen;
 mod usage_keys;
 mod user_bar;
+mod venue;
 mod workspace_moved;
