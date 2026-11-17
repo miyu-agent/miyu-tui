@@ -225,32 +225,43 @@ fn life_rows(
             method_row,
             view.cursor == n + 1,
         );
+        // 没写的暗色写出厂的那个数，不加「默认」、不加千分位（2026-11-17 项目主人本机验收第 30 条：「空着用出厂的 100,000」改「100000」）。
         let value = match context {
             (Some(n), _) => Span::raw(n.to_string()),
-            (None, Some(n)) => Span::styled(
-                texts.context_default.replace("{n}", &n.to_string()),
-                theme::faint(),
-            ),
+            (None, Some(n)) => Span::styled(n.to_string(), theme::faint()),
             (None, None) => Span::raw(""),
         };
-        field_row(
-            lines,
-            (&texts.context, label_w),
-            vec![value],
-            view.cursor == n + 2,
-        );
+        let focused = view.cursor == n + 2;
+        field_row(lines, (&texts.context, label_w), vec![value], focused);
+        if focused {
+            lines.plain(Line::from(vec![
+                Span::raw(" ".repeat(label_w + 4)),
+                Span::styled(texts.context_desc.clone(), theme::faint()),
+            ]));
+        }
     }
-    changes_rows(lines, page.changes_of(&view.id), (&texts.changes, label_w));
+    let changes = (texts.changes.as_str(), texts.changes_desc.as_str());
+    changes_rows(lines, page.changes_of(&view.id), (changes, label_w));
 }
 
-/// 她在人生里记下的自己的变化（核心 LF-11「后天」）：只读、光标不停，旧的在前，第一条前面写名字；为什么变的暗色写在下面
-/// 一行。没有的一行都不写。
-fn changes_rows(lines: &mut Lines, changes: &[Change], (name, label_w): (&str, usize)) {
-    for (i, change) in changes.iter().enumerate() {
-        let label = if i == 0 { name } else { "" };
-        let pad = " ".repeat(label_w.saturating_sub(label.width()));
+/// 她在人生里记下的自己的变化（核心 LF-11「后天提示词」）：只读、光标不停。第一行名字后面暗色写说明，下面一条一行、旧的在前；
+/// 为什么变的暗色写在下面一行。没有的一行都不写。
+fn changes_rows(
+    lines: &mut Lines,
+    changes: &[Change],
+    ((name, desc), label_w): ((&str, &str), usize),
+) {
+    if changes.is_empty() {
+        return;
+    }
+    let pad = " ".repeat(label_w.saturating_sub(name.width()));
+    lines.plain(Line::from(vec![
+        Span::styled(format!("  {name}{pad}  "), theme::dim()),
+        Span::styled(desc.to_string(), theme::faint()),
+    ]));
+    for change in changes {
         lines.plain(Line::from(vec![
-            Span::styled(format!("  {label}{pad}  "), theme::dim()),
+            Span::raw(" ".repeat(label_w + 4)),
             Span::raw(change.text.clone()),
         ]));
         if let Some(why) = &change.why {

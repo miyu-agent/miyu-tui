@@ -21,7 +21,7 @@ pub struct LifeTexts {
     pub name: String,
     /// 在跑、暂停着、没开（没有、结束了）。
     pub states: [String; 3],
-    /// 在跑的后面暗色接的：`{time}` 是下次醒来的时刻。
+    /// 在跑的后面暗色接的：`{time}` 是下一轮开始的时刻。
     pub next: String,
     /// 开之前问的：标题、三行影响、开启、取消。
     pub confirm: [String; 6],
@@ -29,10 +29,12 @@ pub struct LifeTexts {
     pub method: String,
     /// 人生会话上下文上限那一行的名字（也是编辑窗的标题）。
     pub context: String,
-    /// 没写时暗色写的：`{n}` 是出厂的那个数。
-    pub context_default: String,
-    /// 她在人生里记下的自己的变化那几行的名字（核心 LF-11「后天」）。
+    /// 光标停在上下文上限那一行时，下面暗色写的说明。
+    pub context_desc: String,
+    /// 她在人生里记下的自己的变化那几行的名字（核心 LF-11「后天」；2026-11-17 项目主人本机验收第 30 条改叫「后天提示词」）。
     pub changes: String,
+    /// 「后天提示词」后面暗色写的说明。
+    pub changes_desc: String,
 }
 
 /// 一个人格的人生会话在哪一步（`life.status` 的回应）。
