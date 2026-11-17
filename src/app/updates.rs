@@ -383,8 +383,7 @@ impl App {
         if matches!(update, Update::Undone { restore: true, .. }) {
             self.typing.input.take_back();
         }
-        // 限制了进行中那一段的高度就不放开视口（`tui.md`「正文」第 1 条、「时间线」第 20 条）。
-        // 限制着的，一轮结束运行状态行收起时也按住不往下落。
+        // 限制了进行中那一段的高度就不放开视口（`tui.md`「正文」第 1 条、「时间线」第 20 条）；限制着的，一轮结束运行状态行收起时也按住不往下落。
         let release = crate::ui::release_on_fold(&self.config.timeline);
         if matches!(update, Update::Push(crate::core::Push::TurnEnded(_))) {
             if release {
@@ -439,9 +438,10 @@ impl App {
         if release && self.talk.transcript.folds() > folds {
             self.screen.view.settle();
         }
-        // 被退回的排队消息连同粘贴块放回输入框（`takeback.rs`）。
+        // 被退回的排队消息连同粘贴块放回输入框（`takeback.rs`）；她刚说的语音该放的当场放（`voice/clips.rs`）。
         let returned = self.talk.transcript.take_returned();
         self.put_returned(returned);
+        self.voice_arrived();
         if undone {
             let said = self
                 .talk

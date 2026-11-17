@@ -42,6 +42,10 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
         replaced: seen.talk.transcript.replaced_shown(),
         sessions: seen.talk.sessions_seen.as_deref().unwrap_or(&[]),
         board: Some(&seen.talk.board),
+        speaker: crate::ui::voice_rows::Speaker {
+            ready: seen.link.voice.tts(),
+            playing: seen.link.voice.clip.as_deref(),
+        },
         frame: usize::try_from(screen.started.elapsed().as_millis() / u128::from(spinner_ms))
             .unwrap_or(0),
     };
@@ -138,7 +142,9 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     // 展示的卡片、图和 mermaid 大图挂的地址整行都能点，下划线只画在字下面（2026-10-17 项目主人：原来右边拖着一整行横线；
     // 同一天又要了悬停效果）。
     let internal = |url: &str| {
-        url.starts_with(crate::shown_files::SCHEME) || url.starts_with(crate::shown_files::ZOOM)
+        url.starts_with(crate::shown_files::SCHEME)
+            || url.starts_with(crate::shown_files::ZOOM)
+            || url.starts_with(crate::ui::voice_rows::SCHEME)
     };
     if let Some(url) = &screen.view.hover_link {
         let only_text = internal(url);

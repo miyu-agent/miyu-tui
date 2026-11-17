@@ -96,8 +96,12 @@ impl App {
         }
     }
 
-    /// 语音那几次请求的回应归这里，交回 `true`：录完的字插进输入框（没听清的不放空字、说一句），出错的照出错码说一句。
+    /// 语音那几次请求的回应归这里，交回 `true`：录完的字插进输入框（没听清的不放空字、说一句），出错的照出错码说一句；放她说的
+    /// 语音的那几次归 `clips.rs`。
     pub(super) fn voice_answer(&mut self, update: &Update) -> bool {
+        if self.clip_answer(update) {
+            return true;
+        }
         let Update::Answer { tag, result } = update else {
             return false;
         };
@@ -130,6 +134,8 @@ impl App {
         true
     }
 }
+
+mod clips;
 
 #[cfg(test)]
 mod tests;

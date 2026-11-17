@@ -120,4 +120,5 @@ mod unseen;
 mod usage_keys;
 mod user_bar;
 mod venue;
+mod voice_clips;
 mod workspace_moved;

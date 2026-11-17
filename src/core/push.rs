@@ -22,10 +22,12 @@ mod sent;
 mod shell;
 mod shown;
 mod usage;
+mod voice;
 
 pub use asking::Asking;
 pub use attached::Attached;
 pub(crate) use attached::read as read_attached;
+pub use called::CallError;
 pub use compaction::Compaction;
 pub use delta::Outcome;
 pub(crate) use goal::read as read_goal;
@@ -34,32 +36,9 @@ pub use sent::Sent;
 pub use shell::ShellRan;
 pub use shown::Shown;
 pub use usage::Usage;
+pub use voice::{Spoken, Voice};
 
 pub use jobs::{JobEnd, JobLines, JobReason, JobStart, Said as Foreign, Sender, Speaker};
-
-/// 一次请求出的错（`model.called` 的 `error`）。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CallError {
-    /// 分类，例如 `auth`。
-    pub class: String,
-    /// 原话。
-    pub message: String,
-    /// HTTP 状态码（施工 3-5 三补）；没有状态的（连不上、流里报的、内核自己造的）、以前的核心没有。
-    pub status: Option<u16>,
-    /// 还要等多久才恢复，毫秒（核心 3-5 四补：供应商的 retry-after、原话里的 try again in，池全在冷却的是最早恢复的那个）。
-    pub retry_after_ms: Option<u64>,
-}
-
-impl CallError {
-    fn read(error: &Value) -> Self {
-        Self {
-            class: error["class"].as_str().unwrap_or_default().to_string(),
-            message: error["message"].as_str().unwrap_or_default().to_string(),
-            status: error["status"].as_u64().and_then(|s| u16::try_from(s).ok()),
-            retry_after_ms: error["retry_after_ms"].as_u64(),
-        }
-    }
-}
 
 /// 一块的种类：`model.delta` 开头那一条的 `start`。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -292,6 +271,8 @@ pub enum Push {
         /// 那个会话最后一轮回复的第一行；可以没有。
         status: Option<String>,
     },
+    /// 语音条要的（核心 SD-1）：谁开的这一轮、她说的一段语音（`voice.rs`）。
+    Voice(Spoken),
     /// 一次真发出去的请求（`model.called` 带 `request`；没编码就失败的没有这一条）：侧边栏数缓存断裂用。
     Sent {
         /// 看到第几条为止（`seen`）。
@@ -347,11 +328,13 @@ pub fn read(event: &Value, mine: &dyn Fn(&str) -> bool) -> Vec<Push> {
         });
     }
     match event["kind"].as_str().unwrap_or_default() {
-        "turn.started" => out.push(Push::TurnStarted(
-            event["turn"].as_u64().unwrap_or_default(),
-            body["trigger"].as_u64(),
-        )),
+        "turn.started" => {
+            let turn = event["turn"].as_u64().unwrap_or_default();
+            out.push(Push::TurnStarted(turn, body["trigger"].as_u64()));
+            out.push(voice::opened(event, mine));
+        }
         "message.user" => {
+            out.extend(voice::asked(event));
             out.extend(jobs::said(event, mine));
             out.extend(jobs::sent_as_path(event, mine));
             out.extend(shell::asked(event));

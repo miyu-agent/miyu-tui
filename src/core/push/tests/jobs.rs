@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::read_mine;
+use super::{plain, read_mine};
 use crate::core::push::Push;
 
 #[test]
@@ -76,20 +76,23 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     let mine = |c: &str| c == "tui-1";
     let person = json!({"kind": "person"});
     assert_eq!(
-        crate::core::push::read(&said(person.clone(), "tui-1"), &mine),
+        plain(crate::core::push::read(
+            &said(person.clone(), "tui-1"),
+            &mine
+        )),
         [Push::UserMessage(12)]
     );
     // 这个界面发的那句里有只给了路径的附件（核心 AT-1）：序号后面再交这一句附的，界面照先后补「仅路径」。
     let with_path = json!({"seq": 14, "kind": "message.user", "by": person.clone(), "cause": "tui-1",
         "body": {"blocks": [{"type": "text", "text": "看看 [视频 1]"},
             {"type": "path", "name": "旅行.mp4", "path": "/home/me/旅行.mp4", "size": 31_457_280}]}});
-    let got = crate::core::push::read(&with_path, &mine);
+    let got = plain(crate::core::push::read(&with_path, &mine));
     assert_eq!(got[0], Push::UserMessage(14));
     match &got[1] {
         Push::PathOnly { seq: 14, attached } => assert!(attached[0].path_only),
         other => panic!("{other:?}"),
     }
-    let foreign = |by| match crate::core::push::read(&said(by, "web-7"), &mine).remove(0) {
+    let foreign = |by| match plain(crate::core::push::read(&said(by, "web-7"), &mine)).remove(0) {
         Push::Foreign(f) => (f.seq, f.from, f.text),
         other => panic!("{other:?}"),
     };
@@ -105,7 +108,10 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     // 到点的定时任务交进来的照你说的话画（2026-10-27 项目主人），不写「收到你在其他端发送的消息」。
     let schedule = json!({"kind": "schedule", "schedule": "t3"});
     assert_eq!(
-        crate::core::push::read(&said(schedule, "schedule/t3/1"), &mine),
+        plain(crate::core::push::read(
+            &said(schedule, "schedule/t3/1"),
+            &mine
+        )),
         [Push::Said {
             seq: 12,
             text: "看看测试".into(),
@@ -116,7 +122,7 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     for (looped, life) in [("fixed", false), ("dynamic", false), ("life", true)] {
         let by = json!({"kind": "schedule", "schedule": "t3", "loop": looped});
         assert_eq!(
-            crate::core::push::read(&said(by, "schedule/t3/1"), &mine),
+            plain(crate::core::push::read(&said(by, "schedule/t3/1"), &mine)),
             [Push::Wake { seq: 12, life }],
             "{looped}"
         );
@@ -220,7 +226,7 @@ fn which_head_you_said_it_on_is_read() {
     use crate::core::push::Sender;
     let said = json!({"seq": 20, "kind": "message.user", "by": {"kind": "person", "head": "web"},
         "cause": "web-1", "body": {"blocks": [{"type": "text", "text": "在网页说的"}]}});
-    let Push::Foreign(said) = crate::core::push::read(&said, &|_| false).remove(0) else {
+    let Push::Foreign(said) = plain(crate::core::push::read(&said, &|_| false)).remove(0) else {
         panic!("别处来的话")
     };
     assert_eq!(said.from, Sender::Person(Some("web".into())));
@@ -233,7 +239,7 @@ fn venue_speakers_and_pokes_are_read() {
     let said = |by: serde_json::Value, venue: serde_json::Value| {
         let event = json!({"seq": 21, "kind": "message.user", "by": by, "cause": "fq-1",
             "body": {"blocks": [], "venue": venue}});
-        match crate::core::push::read(&event, &|_| false).remove(0) {
+        match plain(crate::core::push::read(&event, &|_| false)).remove(0) {
             Push::Foreign(said) => said,
             other => panic!("{other:?}"),
         }

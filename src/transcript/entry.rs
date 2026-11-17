@@ -37,6 +37,8 @@ pub enum Kind {
     Media,
     /// 她给人看的一个文件（核心 D-5 `show`）：图画出来，别的一张卡片（蓝图「展示」）。
     Shown,
+    /// 她说出来的一段语音（核心 SD-1）：一行语音条，点一下放、再点停（蓝图「她说的语音」）。
+    Voice,
     /// 人打的 `/dream` 整理完的回执：暗色 `✦` 打头一行，点开列日志里真正存下的改、删、摘要（蓝图「整理记忆」第 6 条）。
     Dreamt,
 }
@@ -108,6 +110,8 @@ pub struct Entry {
     pub media: Option<Sent>,
     /// 她给人看的那个文件（蓝图「展示」）。别的条是 `None`。
     pub shown: Option<crate::core::Shown>,
+    /// 她说出来的那段语音（蓝图「她说的语音」）。别的条是 `None`。
+    pub voice: Option<crate::core::Voice>,
     /// 用程序开不了：副本的完整路径，卡片最后一行写它（蓝图「展示」第 7 条）。别的是 `None`。
     pub unopened: Option<String>,
     /// 你说的话什么时候说的：看着发的是发的那一刻，补发来的是事件的时刻（`/jump` 的列表右边写它）。别的条是 `None`。
@@ -149,6 +153,7 @@ impl Entry {
             mark: None,
             media: None,
             shown: None,
+            voice: None,
             unopened: None,
             at: None,
             kept: Vec::new(),

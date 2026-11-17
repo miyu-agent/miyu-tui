@@ -5,10 +5,12 @@ use serde_json::json;
 use super::ToolStatus;
 
 use super::{Block, CallError, Push};
+pub(super) use mine::{plain, read_mine};
 
 mod detail;
 mod goal;
 mod jobs;
+mod mine;
 mod policy;
 mod sent;
 mod shown;
@@ -374,11 +376,6 @@ fn a_clear_is_a_compaction_marked_clear() {
     assert_eq!(read_mine(&auto), vec![Push::Compacted { clear: false }]);
 }
 
-/// 测试里的话都当是这个界面发的。
-pub(super) fn read_mine(event: &serde_json::Value) -> Vec<Push> {
-    super::read(event, &|_| true)
-}
-
 #[test]
 fn a_summary_prepared_in_the_background_only_counts_as_usage() {
     // 核心 6-11 上：后台提前压的摘要请求 `purpose` 是 `compaction`，不带 `compaction` 那一格；出错了不算压缩失败，也不算
@@ -492,7 +489,7 @@ fn venue_events_are_skipped_and_a_venue_on_a_message_changes_nothing() {
     }
     let said = json!({"seq": 4, "kind": "message.user", "by": {"kind": "person"},
         "cause": "tui-1", "body": {"blocks": [{"type": "text", "text": "在吗"}], "venue": {"id": "qq-group-1"}}});
-    assert_eq!(super::read(&said, &mine), [Push::UserMessage(4)]);
+    assert_eq!(plain(super::read(&said, &mine)), [Push::UserMessage(4)]);
     // 核心 O-2 中：扩展登记、关掉工具以后，下一个回合开头多一条只带 `policy` 的 `session.policy_changed`，不画。
     let tools = json!({"seq": 5, "kind": "session.policy_changed", "by": {"kind": "kernel"},
         "body": {"policy": {"tools": {"off": ["web_fetch"]}}}});

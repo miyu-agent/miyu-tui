@@ -2,7 +2,7 @@
 
 use serde_json::Value;
 
-use super::{CallError, Compaction, Push, Usage};
+use super::{Compaction, Push, Usage};
 use crate::core::Cost;
 
 /// 读一条 `model.called`，照先后放进 `out`。
@@ -106,6 +106,30 @@ mod tests {
         for odd in [json!(null), json!([]), json!([{"block": "x"}])] {
             let got = called(odd);
             assert!(!got.iter().any(|p| matches!(p, Push::Cut(_))), "{got:?}");
+        }
+    }
+}
+
+/// 一次请求出的错（`model.called` 的 `error`）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CallError {
+    /// 分类，例如 `auth`。
+    pub class: String,
+    /// 原话。
+    pub message: String,
+    /// HTTP 状态码（施工 3-5 三补）；没有状态的（连不上、流里报的、内核自己造的）、以前的核心没有。
+    pub status: Option<u16>,
+    /// 还要等多久才恢复，毫秒（核心 3-5 四补：供应商的 retry-after、原话里的 try again in，池全在冷却的是最早恢复的那个）。
+    pub retry_after_ms: Option<u64>,
+}
+
+impl CallError {
+    fn read(error: &Value) -> Self {
+        Self {
+            class: error["class"].as_str().unwrap_or_default().to_string(),
+            message: error["message"].as_str().unwrap_or_default().to_string(),
+            status: error["status"].as_u64().and_then(|s| u16::try_from(s).ok()),
+            retry_after_ms: error["retry_after_ms"].as_u64(),
         }
     }
 }
