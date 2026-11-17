@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use super::rows::{self, Ctx, Row, Target};
 use crate::theme;
-use crate::transcript::{Entry, Kind, Step, StepKind, ToolState};
+use crate::transcript::{Entry, Step, StepKind, ToolState};
 
 /// 这一帧的全部行：一条一块，共享记着的那一份。
 #[derive(Debug, Clone, Default)]
@@ -229,13 +229,10 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
     }
     let mut h = DefaultHasher::new();
     // 排版的条件：行里带着条目的位置（点中的东西），颜色、图标烤在行里，图占几行看图做好没有（只算带图的条目）。
-    // 权限级别只有没记下当时级别的「你说的话」用得上：它的竖线照现在的级别上色（「正文」第 8 条）。
-    let level = (matches!(entry.kind, Kind::User) && entry.level.is_none()).then_some(ctx.level);
     (
         i,
         ctx.width,
         ctx.indent.len(),
-        level,
         theme::generation(),
         &ctx.config.icons.name,
         // 时间线的几个开关（配置页能改，「时间线」第 18 条）。

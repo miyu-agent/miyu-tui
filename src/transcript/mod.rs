@@ -139,8 +139,8 @@ pub struct Transcript {
     turn_usage: Usage,
     /// 这一轮主请求出字的速度：收尾那一行写（2026-10-26 项目主人，同网页、核心 SP-1）。
     turn_speed: speed::Speed,
-    /// 这一轮开始时的权限级别：收尾行打头的图标照它，之后换了级别也不变。
-    turn_level: Level,
+    /// 这一轮开始时的权限级别：收尾行打头的图标照它，之后换了级别也不变。开始时还不知道的是 `None`，知道了补上。
+    turn_level: Option<Level>,
     /// 最近一次请求占了多少上下文：输入加输出。
     pub context: u64,
     /// 压过几次、意外断过几次缓存（侧边栏写）。
@@ -335,6 +335,8 @@ impl Transcript {
             Push::Policy { level, read_only } => {
                 self.set_level(if read_only { Level::ReadOnly } else { level });
             }
+            // 会话开头的级别：读到了这一条，前面再没有了。
+            Push::Began(level) => self.settled(level),
             Push::Reverted(turns) => {
                 self.cache.reverted();
                 self.hide(&turns, true);
@@ -475,7 +477,7 @@ impl Transcript {
         // 你说的话记发出去时的级别（竖线的颜色）；收尾行记这一轮开始时的（打头的图标）。
         let level = match kind {
             Kind::User => self.known(self.level),
-            Kind::Done | Kind::Cut => self.known(self.turn_level),
+            Kind::Done | Kind::Cut => self.turn_level,
             _ => None,
         };
         let id = self.fresh_id();

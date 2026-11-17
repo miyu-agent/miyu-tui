@@ -161,7 +161,6 @@ mod tests {
 
     use super::rows;
     use crate::config::Config;
-    use crate::core::Level;
     use crate::figures::{self, Figures, Graphics};
     use crate::markdown::{self, Figure, FigureKind};
     use crate::ui::rows::{Ctx, MdCache};
@@ -202,7 +201,6 @@ mod tests {
             cards: &cards,
             diagrams: &book,
             writing: None,
-            level: Level::Full,
             screen_rows: 40,
             replaced: Default::default(),
             sessions: &[],
@@ -280,7 +278,6 @@ mod tests {
             cards: &RefCell::default(),
             diagrams: &book,
             writing: None,
-            level: Level::Full,
             screen_rows: 40,
             replaced: Default::default(),
             sessions: &[],
@@ -369,7 +366,6 @@ mod tests {
             cards: &RefCell::default(),
             diagrams: &RefCell::default(),
             writing: None,
-            level: Level::Full,
             screen_rows: 45,
             replaced: Default::default(),
             sessions: &[],
@@ -434,7 +430,6 @@ mod tests {
             cards: &RefCell::default(),
             diagrams: &RefCell::default(),
             writing: None,
-            level: Level::Full,
             screen_rows: 45,
             replaced: Default::default(),
             sessions: &[],

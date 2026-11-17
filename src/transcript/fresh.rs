@@ -30,7 +30,7 @@ impl Default for Transcript {
             preset: None,
             turn_usage: Usage::default(),
             turn_speed: super::speed::Speed::default(),
-            turn_level: Level::Full,
+            turn_level: Some(Level::Full),
             context: 0,
             cache: CacheWatch::default(),
             limits: Limits::default(),

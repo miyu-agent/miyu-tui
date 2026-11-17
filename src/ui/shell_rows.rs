@@ -18,7 +18,7 @@ const KEEP: usize = 10;
 pub fn rows(entry: &Entry, shell: &Shell, ctx: &Ctx) -> Vec<Row> {
     let bar = Span::styled(
         ctx.config.layout.user_bar.clone(),
-        theme::user_bar(entry.level.unwrap_or(ctx.level)),
+        entry.level.map_or_else(theme::dim, theme::user_bar),
     );
     let line = |content: Vec<Span<'static>>| ctx.row(bar.clone(), content);
     let mut out = vec![line(Vec::new())];

@@ -191,27 +191,25 @@ fn a_finished_figure_rebuilds_only_entries_with_figures() {
 }
 
 #[test]
-fn switching_the_level_rebuilds_only_what_you_said_without_a_level() {
-    // 权限级别只有没记下当时级别的「你说的话」用得上（它的竖线照现在的级别上色）：别的条目换级别不重排。
+fn a_level_filled_in_later_rebuilds_only_that_entry() {
+    // 竖线只照这一条记下的级别上色（「正文」第 2 条），不照现在的：读到更早的一页补上了级别的那一句重排，别的不动。
     let _theme = crate::theme::hold();
     let f = Fixture::new();
-    let t = sample();
-    let mut ctx = f.ctx();
+    let mut t = sample();
+    let ctx = f.ctx();
     let cache = RefCell::new(RowCache::default());
     build(&t.entries, &ctx, &cache, Plan::all());
-    let unlevelled = t
+    let said = t
         .entries
-        .iter()
-        .filter(|e| matches!(e.kind, Kind::User) && e.level.is_none())
-        .count();
-    ctx.level = if ctx.level == crate::core::Level::ReadOnly {
-        crate::core::Level::Full
-    } else {
-        crate::core::Level::ReadOnly
+        .iter_mut()
+        .find(|e| matches!(e.kind, Kind::User))
+        .expect("有你说的话");
+    said.level = match said.level {
+        Some(crate::core::Level::ReadOnly) => Some(crate::core::Level::Full),
+        _ => Some(crate::core::Level::ReadOnly),
     };
     build(&t.entries, &ctx, &cache, Plan::all());
-    assert_eq!(cache.borrow().rebuilt, unlevelled);
-    assert!(unlevelled < 4);
+    assert_eq!(cache.borrow().rebuilt, 1);
 }
 
 #[test]
