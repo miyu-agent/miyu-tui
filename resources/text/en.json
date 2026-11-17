@@ -463,6 +463,7 @@
       "recap": "recaps",
       "vision": "vision"
     },
+    "quota_title": "{provider} quota",
     "quota_minutes": "resets in {n}m",
     "quota_hours": "resets in {n}h",
     "quota_at": "resets {time}",

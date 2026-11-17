@@ -463,6 +463,7 @@
       "recap": "回顾",
       "vision": "看图"
     },
+    "quota_title": "{provider} 额度情况",
     "quota_minutes": "{n} 分钟后重置",
     "quota_hours": "{n} 小时后重置",
     "quota_at": "{time} 重置",

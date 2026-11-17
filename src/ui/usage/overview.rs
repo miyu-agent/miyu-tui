@@ -32,7 +32,13 @@ pub(super) fn page(
         edge: &edge,
     };
     let texts = &src.config.text.usage;
-    let mut out = super::quota::lines(texts, &data.quota, now, width, &glyphs);
+    // 窗口上面一行暗色的标题「OpenCode Go 额度情况」，照供应商的名字（2026-11-17 验收第 6、36 条）。
+    let mut out = Vec::new();
+    if !data.quota.is_empty() {
+        let title = super::named(&texts.quota_title, &src.provider);
+        out.push(Line::styled(title, theme::dim()));
+    }
+    out.extend(super::quota::lines(texts, &data.quota, now, width, &glyphs));
     // 用 DeepSeek 官方供应商的（核心 QU-2）：同一个地方一种币一行余额。
     let symbols = &src.config.layout.currencies;
     out.extend(super::balance::lines(texts, data.balance.as_ref(), symbols));

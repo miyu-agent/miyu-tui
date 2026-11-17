@@ -44,6 +44,7 @@ impl UsageShow {
                 rates: Vec::new(),
                 quota: Vec::new(),
                 balance: None,
+                quota_from: None,
             },
             tab: 0,
             scroll: 0,
@@ -59,6 +60,7 @@ impl UsageShow {
             config,
             currency: &self.currency,
             sessions: &self.sessions,
+            provider: String::new(),
         };
         page_lines(
             &src,

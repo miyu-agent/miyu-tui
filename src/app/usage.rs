@@ -34,6 +34,8 @@ pub struct UsageData {
     pub quota: Vec<super::quota::QuotaWindow>,
     /// 看着的会话的账户余额（核心 QU-2，`quota.rs`）：没查到、还没回来的是 `None`，总览不画。
     pub balance: Option<super::quota::Balance>,
+    /// 额度、余额是哪一家的：额度回来时会话接下来请求的那个供应商的编号（核心照同一个查），不知道的是 `None`。
+    pub quota_from: Option<String>,
 }
 
 impl App {
@@ -51,6 +53,7 @@ impl App {
             rates: Vec::new(),
             quota: Vec::new(),
             balance: None,
+            quota_from: None,
         });
         self.ask_quota();
         let kinds = [
