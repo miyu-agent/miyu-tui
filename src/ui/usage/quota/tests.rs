@@ -170,3 +170,46 @@ impl WidthOk for String {
         unicode_width::UnicodeWidthStr::width(self.as_str()) <= width
     }
 }
+
+#[test]
+fn rows_line_up_as_a_grid_when_the_reset_texts_differ_in_width() {
+    // 2026-11-17 验收第 36 条：「1 小时后重置」和「11-23 09:00 重置」宽窄不同，窄的时候条也要一样长、各列对齐。
+    let config = Config::builtin().unwrap();
+    let texts = &config.text.usage;
+    let windows = [
+        window("5 小时", 0.0, Some("2026-11-15T02:00:00Z")),
+        window("每周", 1.0, Some("2026-11-23T09:00:00Z")),
+        window("每月", 42.0, None),
+    ];
+    for width in [80, 40, 36] {
+        let got = lines(
+            texts,
+            &windows,
+            (now(), &TimeZone::UTC),
+            width,
+            &Glyphs {
+                block: "█",
+                edge: &plain(),
+            },
+        );
+        let bar = |line: &ratatui::text::Line| line.spans[2].width();
+        let percent_at =
+            |line: &ratatui::text::Line| line.spans[..4].iter().map(|s| s.width()).sum::<usize>();
+        assert_eq!(bar(&got[0]), bar(&got[1]), "条一样长（宽 {width}）");
+        assert_eq!(bar(&got[1]), bar(&got[2]), "条一样长（宽 {width}）");
+        assert_eq!(
+            percent_at(&got[0]),
+            percent_at(&got[1]),
+            "百分比一列（宽 {width}）"
+        );
+        let with_reset: Vec<usize> = got.iter().map(|l| l.spans.len()).collect();
+        assert!(
+            with_reset[..2] == [6, 6] || with_reset[..2] == [5, 5],
+            "重置时刻要么都写、要么都不写（宽 {width}）：{with_reset:?}"
+        );
+        assert!(
+            got.iter().all(|l| l.width() <= usize::from(width)),
+            "放得下（宽 {width}）"
+        );
+    }
+}
