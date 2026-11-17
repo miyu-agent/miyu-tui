@@ -615,6 +615,8 @@
     "doing_thinking": "思考中",
     "doing_replying": "回答中",
     "from_person": "收到你在其他端发送的消息",
+    "from_person_at": "收到你在{head}发送的消息",
+    "heads": {"tui": "终端界面", "web": "网页", "cli": "命令行", "shellhook": "终端集成"},
     "external": "外部",
     "external_speaker": "{name}（{id}）",
     "external_manager": "{who} · 管理员",

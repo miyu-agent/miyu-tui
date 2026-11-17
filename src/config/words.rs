@@ -124,6 +124,10 @@ pub struct JobTexts {
     pub doing_replying: String,
     /// 别处来的话那一行写的来处（蓝图「别处来的话」第 2 条）：同一个人在别处（网页、命令行）说的。
     pub from_person: String,
+    /// 来处：同一个人在别的头上说的、认得出是哪种头（`by.head`，核心 VN-1），`{head}` 照 `heads` 换。认不得的照 `from_person`。
+    pub from_person_at: String,
+    /// 头的种类给人看的名字：`tui`、`web`、`cli`、`shellhook`。
+    pub heads: std::collections::BTreeMap<String, String>,
     /// 来处：通讯平台上的人（`external`，核心 VW-2），名字、号都没有的。
     pub external: String,
     /// 来处：通讯平台上的人，`{name}` 是那条消息写的名字（不可信），`{id}` 是平台身份；没名字的只写号。

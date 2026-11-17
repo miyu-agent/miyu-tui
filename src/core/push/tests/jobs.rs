@@ -95,7 +95,7 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     };
     assert_eq!(
         foreign(person),
-        (12, Sender::Person, "看看测试".into()),
+        (12, Sender::Person(None), "看看测试".into()),
         "同一个人在别处说的"
     );
     let harness = json!({"kind": "harness", "name": "claude-code"});
@@ -212,6 +212,18 @@ fn a_batch_of_lines_from_a_watched_command_is_read() {
             lines: 2,
         })]
     );
+}
+
+#[test]
+fn which_head_you_said_it_on_is_read() {
+    // 核心 VN-1：人在本机的头上说的带 `head`（握手报的种类）。
+    use crate::core::push::Sender;
+    let said = json!({"seq": 20, "kind": "message.user", "by": {"kind": "person", "head": "web"},
+        "cause": "web-1", "body": {"blocks": [{"type": "text", "text": "在网页说的"}]}});
+    let Push::Foreign(said) = crate::core::push::read(&said, &|_| false).remove(0) else {
+        panic!("别处来的话")
+    };
+    assert_eq!(said.from, Sender::Person(Some("web".into())));
 }
 
 #[test]

@@ -264,8 +264,9 @@ impl App {
     /// （核心 C-5），照最近一次会话列表写标题，没见过的先只写短编号、顺手要一次列表。
     fn label(&self, session: &str, from: &Sender, words: &JobTexts) -> String {
         match from {
-            Sender::Person | Sender::Other => words.from_person.clone(),
+            Sender::Person(head) => notes::from_person(head.as_deref(), words),
             Sender::External(speaker) => venue::label(speaker, words),
+            Sender::Other => words.from_person.clone(),
             Sender::Harness(name) => words.from_harness.replace("{name}", &untrusted(name)),
             Sender::Session(id) => {
                 let receiver_is_child = self.agent_job(session).is_some();
