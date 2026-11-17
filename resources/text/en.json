@@ -805,7 +805,7 @@
     "pinned": "Pinned",
     "unpinned": "Unpinned",
     "tokens": "Σ{tokens}",
-    "groups": ["Recent", "Past 7 days", "Past 30 days", "Older", "Archived"],
+    "groups": ["Recent", "Past 7 days", "Past 30 days", "Older", "Archived"], "ended": ["Ended lives", "Ended lives · {name}"],
     "ticked": " · {count} ticked",
     "delete_many": "Press Ctrl+D again to delete {count} sessions",
     "deleted_many": "Deleted {count} sessions"
