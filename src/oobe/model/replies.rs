@@ -28,6 +28,7 @@ impl ModelStep {
                     data
                 };
                 self.configured = data.providers.iter().map(|p| p.id.clone()).collect();
+                self.usable = rows::usable(&data.providers);
                 self.chat = data.chat.as_ref().map(|chat| {
                     data.model(chat)
                         .and_then(|(_, m)| m.fact("name").as_str().map(str::to_string))
@@ -63,7 +64,7 @@ impl ModelStep {
         else {
             return;
         };
-        self.rows = rows::rows(catalog, detect, &self.configured);
+        self.rows = rows::rows(catalog, detect, &self.configured, &self.usable);
         self.cursor = self.rows.iter().position(Row::selectable).unwrap_or(0);
         self.phase = if self.chat.is_some() {
             Phase::Ready(true)
