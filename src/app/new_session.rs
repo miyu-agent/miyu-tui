@@ -421,7 +421,7 @@ impl App {
         self.link.core.send(Command::ListPresets);
     }
 
-    /// 「新会话不再询问人格预设」读到了（连上、配置变了）：开着的是这个还没开的会话的框、人还没挪过光标的，收掉照
+    /// 「自动选择人格和预设」（`tui.skip_pick`）读到了（连上、配置变了）：开着的是这个还没开的会话的框、人还没挪过光标的，收掉照
     /// 默认的选（第 1a 条：设置读回来比人格列表晚时框已经开了）。
     pub(super) fn skip_pick_read(&mut self) {
         if !self.config.layout.skip_pick || !self.not_opened() {

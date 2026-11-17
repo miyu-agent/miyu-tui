@@ -86,7 +86,7 @@ fn the_terminals_look_items_move_to_an_appearance_page_after_general() {
             item("tui.theme_mode", "明暗"),
             item("tui.timeline_fold", "回复完成后折叠时间线"),
             item("tui.keys", "按键模式"),
-            item("tui.skip_pick", "新会话不再询问人格预设"),
+            item("tui.skip_pick", "自动选择人格和预设"),
             item("tui.mascot_home", "首页显示吉祥物"),
             item("tui.mascot", "吉祥物")
         ]

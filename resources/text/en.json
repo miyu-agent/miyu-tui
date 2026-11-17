@@ -913,7 +913,7 @@
       "key": "API key",
       "env_key": "Variable",
       "model": "Model",
-      "inputs": "Inputs",
+      "inputs": "Input types",
       "window": "Context window",
       "effort": "Thinking effort",
       "temperature": "Temperature",
@@ -925,8 +925,8 @@
       "currency": "Currency",
       "multiplier": "Multiplier",
       "pool": "Name",
-      "strategy": "Strategy",
-      "subagent": "Subagents can pick it",
+      "strategy": "Allocation strategy",
+      "subagent": "Available to subagents",
       "members": "Members",
       "chosen": "Selected {n}",
       "others": "Not selected"
@@ -1262,7 +1262,7 @@
         "{n} rounds",
         "Written",
         "Short description",
-        "Selectable for subagents"
+        "Available to subagents"
       ],
       "hints": [
         [
@@ -1671,7 +1671,7 @@
     "theme": {
       "title": "Color scheme",
       "sub": "Choose mode and colors. Applies immediately. You can change this in settings later",
-      "rows": ["Light or dark", "Colors", "Figure", "Main color", "Paint the background"],
+      "rows": ["Color mode", "Colors", "Figure", "Main color", "Background fill"],
       "modes": ["Auto", "Dark", "Light"],
       "colors": ["Auto", "Follow the avatar", "Follow the wallpaper", "Terminal colors"],
       "from_avatar": "From {name}'s avatar",
@@ -1688,7 +1688,7 @@
     "profile": {
       "title": "How the AI knows you",
       "sub": "Applies to new sessions. You can change this in settings later. All are optional",
-      "fields": ["What language should the AI reply in", "What should the AI call you", "More about you (optional)"],
+      "fields": ["Reply language", "Preferred name", "Additional details (optional)"],
       "hints": ["Not set", "e.g. Alex", "What you do and how you'd like the AI to treat you"],
       "other": "Other…",
       "next": "Next",

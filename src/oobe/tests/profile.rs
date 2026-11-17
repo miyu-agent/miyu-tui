@@ -124,12 +124,16 @@ fn the_reply_language_is_picked_from_the_suggestions_or_typed_after_other() {
 
 #[test]
 fn the_reply_language_comes_first() {
-    // 2026-10-16 项目主人定：「AI 用什么语言回复」排在「AI 怎么称呼你」上面，进这一步光标就在它上。
+    // 2026-10-16 项目主人定：回复语言排在称呼上面，进这一步光标就在它上。名字照核心 UX-1 的 `profile.*`（2026-11-17：软件术语的
+    // 名词短语，不写成句子、不带「AI」「你」）。
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = at_profile(t0, &texts, json!({}));
     assert_eq!(oobe.profile.focus, Slot::Language);
-    assert_eq!(texts.profile.fields[0], "AI 用什么语言回复");
+    assert_eq!(
+        texts.profile.fields,
+        ["回复语言", "称呼", "更多描述（可选）"].map(String::from)
+    );
     oobe.key(key(KeyCode::Enter), t0, &texts);
     assert!(
         oobe.profile.picking.is_some(),

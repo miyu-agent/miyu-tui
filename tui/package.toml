@@ -40,7 +40,7 @@ description = { en = "Which icon set the terminal interface draws: Nerd Font gly
 type = "bool"
 default = true
 applies = "now"
-name = { en = "Fold the timeline after a reply", zh = "回复完成后折叠时间线", ja = "返答後にタイムラインを折りたたむ" }
+name = { en = "Auto-fold timeline", zh = "自动折叠时间线", ja = "タイムラインの自動折りたたみ" }
 description = { en = "Fold the finished steps into one line once the reply is done.", zh = "回复完成后，把这一段的步骤折叠为一行。", ja = "返答が終わったら、その一連のステップを1行に折りたたむ。" }
 
 [settings.timeline_expand_thought]
@@ -68,7 +68,7 @@ description = { en = "Show edit diffs in full instead of a preview.", zh = "编�
 type = "bool"
 default = true
 applies = "now"
-name = { en = "Limit timeline area height", zh = "限制时间线区域高度", ja = "タイムライン領域の高さを制限" }
+name = { en = "Timeline area height limit", zh = "时间线区域高度限制", ja = "タイムライン領域の高さ制限" }
 description = { en = "Show only the latest lines of the running steps.", zh = "进行中的步骤只显示最新的几行。", ja = "実行中のステップは最新の数行だけ表示する。" }
 
 # 思考、命令预览各露几行（终端蓝图「时间线」第 20 条的子条目，2026-11-12 项目主人）：出厂同 `resources/timeline.json`；
@@ -98,14 +98,14 @@ description = { en = "How many lines of a command the timeline previews.", zh = 
 type = "bool"
 default = false
 applies = "now"
-name = { en = "Show the figure on the home screen", zh = "首页显示形象", ja = "ホーム画面にキャラクターを表示" }
+name = { en = "Home screen figure", zh = "首页形象", ja = "ホーム画面のキャラクター" }
 description = { en = "Show the persona's avatar, or the built-in mascot without one, above the input box of an empty session.", zh = "在空会话的输入框上方显示人格的头像，没有头像的显示内置吉祥物。", ja = "空のセッションの入力欄の上にペルソナのアバター（なければ内蔵のマスコット）を表示する。" }
 
 [settings.mascot_sidebar]
 type = "bool"
 default = false
 applies = "now"
-name = { en = "Show the figure in the sidebar", zh = "侧边栏显示形象", ja = "サイドバーにキャラクターを表示" }
+name = { en = "Sidebar figure", zh = "侧边栏形象", ja = "サイドバーのキャラクター" }
 description = { en = "Show the persona's avatar, or the built-in mascot without one, at the top of the sidebar.", zh = "在侧边栏顶部显示人格的头像，没有头像的显示内置吉祥物。", ja = "サイドバーの上部にペルソナのアバター（なければ内蔵のマスコット）を表示する。" }
 
 # 侧边栏「最近会话」列几个（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，2026-10-26 项目主人：默认 5 个（2026-11-03 改 8 个，排期第 14 条）、
@@ -140,14 +140,14 @@ name = { en = "Part", zh = "部件", ja = "部品" }
 [settings.side.fields.hidden]
 type = "bool"
 default = false
-name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+name = { en = "Hidden", zh = "隐藏", ja = "非表示" }
 
 [settings.side.fields.rows]
 type = "int"
 min = 0
 max = 200
 default = 0
-name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+name = { en = "Max rows (0 for no limit)", zh = "最大行数（0 为不限）", ja = "最大行数（0 は無制限）" }
 
 # 底栏两段挂哪几件、什么先后（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条 SL-2）：左段 level、model，右段 usage（原来的 context 11-03 并进 usage），
 # 各在各的那一段里排；只有一行，rows 不管。配置页不画。
@@ -168,14 +168,14 @@ name = { en = "Part", zh = "部件", ja = "部品" }
 [settings.footer.fields.hidden]
 type = "bool"
 default = false
-name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+name = { en = "Hidden", zh = "隐藏", ja = "非表示" }
 
 [settings.footer.fields.rows]
 type = "int"
 min = 0
 max = 200
 default = 0
-name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+name = { en = "Max rows (0 for no limit)", zh = "最大行数（0 为不限）", ja = "最大行数（0 は無制限）" }
 
 # 输入框上面那一块挂哪几件、什么先后、最多几行（终端蓝图 `docs/blueprint/tui.md`「挂载位」第 4 条 SL-2）：出厂只有 todo。
 # 配置页不画。
@@ -196,14 +196,14 @@ name = { en = "Part", zh = "部件", ja = "部品" }
 [settings.above.fields.hidden]
 type = "bool"
 default = false
-name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+name = { en = "Hidden", zh = "隐藏", ja = "非表示" }
 
 [settings.above.fields.rows]
 type = "int"
 min = 0
 max = 200
 default = 0
-name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+name = { en = "Max rows (0 for no limit)", zh = "最大行数（0 为不限）", ja = "最大行数（0 は無制限）" }
 
 # 侧边栏「跳转消息」列几条（终端蓝图 `docs/blueprint/tui.md`「后台命令、子代理和侧边栏」第 7 条，排期第 15 条，2026-11-02 项目主人：
 # 出厂 8 条、可配）：这个会话里你说的话，新的在下（发版前 check 第 18 条），点一条跳过去。0 是不显示。自己填数（发版前 check
@@ -256,14 +256,14 @@ name = { en = "Part", zh = "部件", ja = "部品" }
 [settings.top.fields.hidden]
 type = "bool"
 default = false
-name = { en = "Hidden", zh = "藏起来", ja = "隠す" }
+name = { en = "Hidden", zh = "隐藏", ja = "非表示" }
 
 [settings.top.fields.rows]
 type = "int"
 min = 0
 max = 200
 default = 0
-name = { en = "Max rows (0 for no limit)", zh = "最多几行（0 是不限）", ja = "最大行数（0 は無制限）" }
+name = { en = "Max rows (0 for no limit)", zh = "最大行数（0 为不限）", ja = "最大行数（0 は無制限）" }
 
 # 按键模式（终端蓝图 `docs/blueprint/tui.md`「按键」表「按键模式」那一行，2026-10-21 项目主人）：`vim` 时会话列表、`/model`
 # 里 `j`、`k` 挪，`/` 才开始搜；`arrows` 照方向键的用法，打字就搜。配置页排在「通用」页「按键模式」一组；出厂方向键，引导里「你喜欢的操作方式」那一步选。
@@ -275,14 +275,14 @@ applies = "now"
 name = { en = "Key mode", zh = "按键模式", ja = "キー操作モード" }
 description = { en = "Vim: in the session list and the model list, j and k move and / starts a search. Arrow keys: typing searches right away and the arrow keys move.", zh = "Vim：会话列表、模型列表里 j、k 上下，按 / 才开始搜。方向键：打字直接搜，方向键上下。", ja = "Vim：セッション一覧とモデル一覧で j と k で移動し、/ で検索を始める。矢印キー：入力するとすぐ検索し、矢印キーで移動する。" }
 
-# 新会话不问人格、预设（终端蓝图 `docs/blueprint/tui.md`「新会话：人格、工作区」第 1a 条，2026-10-22 项目主人）：开着时新会话
+# 新会话自动选择人格、预设（UX-1 起名字正着说，键沿用 skip_pick：核心的三家对比测具照它配；终端蓝图 `docs/blueprint/tui.md`「新会话：人格、工作区」第 1a 条，2026-10-22 项目主人）：开着时新会话
 # 直接用默认的人格、预设（`persona.default`、`preset.default`），不弹框；默认的预设用不了时照旧弹。配置页排在「通用」页「新会话」
 # 一组，和默认人格、默认预设在一起（2026-10-23 项目主人）；核心没有「新会话」这一组时才退回「交互」（`settings/pages/schema.rs`）。
 [settings.skip_pick]
 type = "bool"
 default = false
 applies = "now"
-name = { en = "Don't ask for persona and preset in new sessions", zh = "新会话不再询问人格预设", ja = "新しいセッションでペルソナとプリセットを尋ねない" }
+name = { en = "Auto-select persona and preset", zh = "自动选择人格和预设", ja = "ペルソナとプリセットの自動選択" }
 description = { en = "New sessions start with the default persona and preset. /persona and /preset still switch.", zh = "新会话直接用默认的人格和预设。之后仍可以用 /persona、/preset 换。", ja = "新しいセッションはデフォルトのペルソナとプリセットで始まる。/persona と /preset で後から切り替えられる。" }
 
 # 换哪一只吉祥物（终端蓝图 `docs/blueprint/tui.md`「吉祥物包」第 3 条，2026-10-11 项目主人）：值是一个吉祥物包的编号，
@@ -325,12 +325,12 @@ type = "option"
 choices = ["auto", "dark", "light"]
 default = "auto"
 applies = "now"
-name = { en = "Light or dark", zh = "明暗", ja = "明暗" }
+name = { en = "Color mode", zh = "明暗", ja = "明暗" }
 description = { en = "Follow the terminal's background, or always dark or light.", zh = "跟随终端的底色，或者一直用深色、浅色。", ja = "ターミナルの背景に合わせるか、常にダーク／ライト。" }
 
 [settings.theme_background]
 type = "bool"
 default = true
 applies = "now"
-name = { en = "Paint the background", zh = "铺底色", ja = "背景を塗る" }
+name = { en = "Background fill", zh = "背景填充", ja = "背景の塗りつぶし" }
 description = { en = "Paint the whole screen in the theme's background.", zh = "整个界面铺主题的底色。", ja = "画面全体をテーマの背景色で塗る。" }

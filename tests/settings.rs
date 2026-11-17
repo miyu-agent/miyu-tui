@@ -79,7 +79,7 @@ fn the_config_page_starts_on_its_own_edits_a_model_and_saves_to_the_settings() {
     tui.key(b"l");
     tui.key(b"\r");
     tui.wait_for("上下文窗口");
-    // 模型名只读，开窗停在「支持输入」；往下一行是窗口。光标停在原来的值末尾、不选中（2026-10-20 项目主人），先删掉。
+    // 模型名只读，开窗停在「输入类型」；往下一行是窗口。光标停在原来的值末尾、不选中（2026-10-20 项目主人），先删掉。
     tui.key(DOWN);
     tui.key(b"\r");
     for _ in 0..12 {
@@ -230,7 +230,7 @@ fn audio_can_be_ticked_and_the_core_takes_it() {
     tui.key(b"l");
     tui.key(b"\r");
     tui.wait_for("音频");
-    // 停在「支持输入」：往右三下到音频，勾上，存。
+    // 停在「输入类型」：往右三下到音频，勾上，存。
     for _ in 0..3 {
         tui.key(b"\x1b[C");
     }
@@ -393,13 +393,13 @@ fn the_terminals_own_switches_sit_on_the_general_page() {
     tui.wait_for("显示");
     tui.key(b"\r");
     tui.wait_for("界面语言");
-    // 一组在最后：往下挪到看得见「完成后折叠」，光标停在它上面。
+    // 一组在最后：往下挪到看得见「自动折叠」，光标停在它上面。
     for _ in 0..60 {
-        if tui.shows("完成后折叠")
+        if tui.shows("自动折叠")
             && tui
                 .lines()
                 .iter()
-                .any(|l| l.contains('┃') && l.contains("完成后折叠"))
+                .any(|l| l.contains('┃') && l.contains("自动折叠"))
         {
             break;
         }
