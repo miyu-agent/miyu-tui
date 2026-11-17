@@ -87,6 +87,8 @@ pub struct Schema {
     pub items: Vec<Item>,
     /// 包里分的组（核心 SG-1，[`super::sections`]）。
     pub sections: Vec<super::sections::Section>,
+    /// 项、组的英文名（核心 NS-1 的 `name_en`：连接的语言不是英文的才有）：项照键、组照编号，搜的时候和名字一起认。
+    pub english: std::collections::BTreeMap<String, String>,
 }
 
 /// 一页里的一行。
@@ -199,6 +201,7 @@ impl Schema {
             groups,
             items,
             sections: Vec::new(),
+            english: english(got),
         };
         super::sections::split(&mut schema, got);
         schema.own_items_to_general();
@@ -388,6 +391,27 @@ fn read_item(i: &Value) -> Item {
             .zip(i["choices_from"]["method"].as_str())
             .map(|(package, method)| (package.to_string(), method.to_string())),
     }
+}
+
+/// 项、组的英文名（核心 NS-1）：项照键、组照编号；没写的、空的不要。
+fn english(got: &Value) -> std::collections::BTreeMap<String, String> {
+    let named = |list: &Value, id: &'static str| {
+        list.as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(move |v| {
+                let name = v["name_en"]
+                    .as_str()
+                    .map(str::trim)
+                    .filter(|n| !n.is_empty())?;
+                Some((v[id].as_str()?.to_string(), name.to_string()))
+            })
+            .collect::<Vec<_>>()
+    };
+    named(&got["items"], "key")
+        .into_iter()
+        .chain(named(&got["groups"], "id"))
+        .collect()
 }
 
 /// 滑块的范围和一步：要有 `min`、`max`；`step` 没写的整数是 1、小数是范围的百分之一（同核心）。

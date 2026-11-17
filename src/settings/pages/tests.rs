@@ -1,5 +1,6 @@
 use serde_json::json;
 
+mod inherited;
 mod package_config;
 mod picks;
 

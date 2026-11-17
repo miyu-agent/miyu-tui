@@ -44,7 +44,7 @@ use serde_json::Value;
 use choose::{Choice, Choose};
 use personas::Persona;
 use schema::Schema;
-pub use values::{choices, current, is_named, shown};
+pub use values::{choices, current, inherited, is_named, shown};
 
 /// 默认人格那一项的键：下拉照 `persona.list` 列。
 pub const DEFAULT_PERSONA: &str = "persona.default";

@@ -1232,7 +1232,8 @@
       "origins": {
         "default": "默认",
         "system": "系统配置",
-        "project": "项目配置"
+        "project": "项目配置",
+        "inherited": "已继承（来自 {from}）"
       },
       "toggle": [
         "开",

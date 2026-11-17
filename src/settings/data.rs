@@ -24,6 +24,8 @@ pub struct Data {
     pub secrets: BTreeSet<String>,
     /// 每一项的最终值和来自哪一层（`default`、`system`、`project`、`env`）：通用这类的页照它写。
     pub values: BTreeMap<String, (Value, String)>,
+    /// 借来的项（来源 `inherited`，核心 NS-1）：键到借的那一项（`providers.<编号>.key`）。
+    pub inherited: BTreeMap<String, String>,
 }
 
 /// 一家供应商。
@@ -114,8 +116,16 @@ impl Data {
         let Some(items) = got["items"].as_object() else {
             return;
         };
+        self.inherited.clear();
         for (key, item) in items {
             let origin = item["origin"]["layer"].as_str().unwrap_or("default");
+            // 借来的（核心 NS-1）：哪一层都没写、照 `from` 那一项的值用，值是 `null`、不交 key。
+            if let Some(from) = item["origin"]["from"]
+                .as_str()
+                .filter(|_| origin == "inherited")
+            {
+                self.inherited.insert(key.clone(), from.to_string());
+            }
             self.values
                 .insert(key.clone(), (item["value"].clone(), origin.to_string()));
             for layer in item["layers"].as_array().into_iter().flatten() {

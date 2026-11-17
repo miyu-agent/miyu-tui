@@ -1232,7 +1232,8 @@
       "origins": {
         "default": "既定",
         "system": "システム設定",
-        "project": "プロジェクト設定"
+        "project": "プロジェクト設定",
+        "inherited": "継承済み（{from} から）"
       },
       "toggle": [
         "オン",

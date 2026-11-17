@@ -57,7 +57,7 @@ pub struct Local {
     pub covers: Option<Covered>,
     /// 接入方式的标签（[`super::access`]）。
     pub access: Vec<&'static str>,
-    /// 筛的时候也认的字：带的功能的编号、名字、说明（`package.list` 的 `features`；联网搜索的功能编号 `web-search` 是英文的，
+    /// 筛的时候也认的字：包的英文名（核心 NS-1），带的功能的编号、名字、说明（`package.list` 的 `features`；联网搜索的功能编号 `web-search` 是英文的，
     /// 搜 `web` 靠它找得到，2026-11-17 项目主人验收第 10 条）。
     pub words: String,
 }
@@ -212,7 +212,8 @@ pub fn locals(got: &Value) -> Vec<Local> {
                 removed: p["removed"] == Value::Bool(true),
                 covers: covered.remove(&id),
                 access: super::access::of(p),
-                words: feature_words(p),
+                // 包的英文名也认（核心 NS-1 的 `name_en`，连接的语言不是英文的才有）。
+                words: [feature_words(p), text(&p["name_en"]).unwrap_or_default()].join("\n"),
                 id,
             })
         })

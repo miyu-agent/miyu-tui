@@ -1232,7 +1232,8 @@
       "origins": {
         "default": "default",
         "system": "system config",
-        "project": "project config"
+        "project": "project config",
+        "inherited": "Inherited (from {from})"
       },
       "toggle": [
         "on",
