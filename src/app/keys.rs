@@ -91,7 +91,7 @@ impl App {
             return Action::None;
         }
         // 确认和提问的抽屉开着时按键先归它（`tui.md`「确认和提问的抽屉」第 4 条）。
-        if self.drawer_key(key) {
+        if self.drawer_key(key) || self.stopped_enter(&key) {
             return Action::None;
         }
         // 新会话开头那个换掉输入框的人格、预设框（列表读到以前写「正在加载…」也算）：没有输入框，`Ctrl+C`、`Ctrl+D` 直接

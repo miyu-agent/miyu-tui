@@ -10,18 +10,24 @@ pub fn spawn(
     notify: impl Fn(Update) -> bool + Send + 'static,
 ) -> Core {
     let (commands, receiver) = mpsc::unbounded_channel();
+    let (starts, asked) = mpsc::unbounded_channel();
     thread::spawn(move || {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build();
         match runtime {
-            Ok(runtime) => runtime.block_on(run(receiver, Backoff::new(reconnect), start, &notify)),
+            Ok(runtime) => runtime.block_on(run(
+                (receiver, asked),
+                Backoff::new(reconnect),
+                start,
+                &notify,
+            )),
             Err(e) => {
                 notify(Update::Failed(e.to_string()));
             }
         }
     });
-    Core { commands }
+    Core { commands, starts }
 }
 
 /// 一条连接用到头了：界面关了，或者连接断了。
@@ -33,7 +39,10 @@ pub(super) enum Served {
 /// 连上，然后收发；断了就重连，接着原来那个会话（蓝图「连核心」第 7 条）。主会话怎么接上（读最新一页、带 `after`
 /// 补）是收发那一头的事（`serve.rs`）。
 async fn run(
-    mut commands: mpsc::UnboundedReceiver<Command>,
+    (mut commands, mut asked): (
+        mpsc::UnboundedReceiver<Command>,
+        mpsc::UnboundedReceiver<()>,
+    ),
     mut wait: Backoff,
     start: Start,
     notify: &impl Fn(Update) -> bool,
@@ -47,19 +56,32 @@ async fn run(
     let mut link = super::link::Link::default();
     // 启动时进哪个会话只在头一次连上时看（「会话列表」第 8 条）；之后重连、`/new` 照旧。
     let mut first = true;
+    // 界面刚打开算人要用，照拉起；之后断了线自己重连的，人停的核心不拉，等人点「启动」（核心 CS-5）。
+    let mut starting = Starting::Asked;
     loop {
         // 连不上一直试；这期间界面发的命令在通道里排着，连上再发（第 1、7 条）。
         let mut rpc = loop {
-            match connect().await {
+            match connect(starting).await {
                 Ok(connected) => break connected,
                 Err(update) => {
+                    starting = Starting::Auto;
                     if !notify(update) {
                         return;
                     }
-                    tokio::time::sleep(wait.next()).await;
+                    // 等下一次试的时候人点了「启动」：马上照人要用的拉一次。
+                    tokio::select! {
+                        () = tokio::time::sleep(wait.next()) => {}
+                        Some(()) = asked.recv() => {
+                            starting = Starting::Asked;
+                            wait.reset();
+                        }
+                    }
                 }
             }
         };
+        starting = Starting::Auto;
+        // 连着时点过的「启动」不算数，不留到下一次断线。
+        while asked.try_recv().is_ok() {}
         wait.reset();
         let said = if std::mem::take(&mut first) {
             match entered(&mut rpc, resume.clone(), recent).await {

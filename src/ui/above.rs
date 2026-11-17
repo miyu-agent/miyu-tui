@@ -1,8 +1,8 @@
 //! 输入框上面那一块（蓝图「挂载位」第 4 条 SL-2、「连核心」第 8 条）：连不上核心时整句原因红字折行写全（2026-11-03 项目
 //! 主人：旧版数据根那句在左下角被截掉了后半句，选「首页中间红字折行写全」；底栏只写前面那一截），下面空一行接挂着的几件
-//! （出厂只有待办，第 4a 条）。
+//! （出厂只有待办，第 4a 条）。核心是人停的（核心 CS-5）：「核心已停止」下面一行「Enter 启动」（「连核心」第 9 条）。
 
-use ratatui::text::Line;
+use ratatui::text::{Line, Span};
 
 use crate::app::App;
 use crate::theme;
@@ -12,13 +12,22 @@ use crate::transcript::Link;
 pub(super) fn lines(app: &App, width: u16) -> Vec<Line<'static>> {
     let todo = super::todos::todo_lines(&app.talk.board, &app.config, width, app.talk.todo_full);
     let parts = super::layout::slot::column(vec![("todo", todo)], (&app.config.layout.above, 1));
-    let Link::Down(reason) = &app.talk.transcript.link else {
+    let link = &app.talk.transcript.link;
+    let Some(reason) = link.reason() else {
         return parts;
     };
     let mut out: Vec<Line<'static>> = crate::input::pieces(reason, width.max(1))
         .into_iter()
         .map(|(piece, _)| Line::styled(piece.trim_end().to_string(), theme::error()))
         .collect();
+    // 人停的核心（核心 CS-5）：下面一行「Enter 启动」，键名强调色、做什么暗色，同框下的按键提示。
+    if matches!(link, Link::Stopped(_)) {
+        let [key, does] = &app.config.text.start_core;
+        out.push(Line::from(vec![
+            Span::styled(key.clone(), theme::accent()),
+            Span::styled(format!(" {does}"), theme::dim()),
+        ]));
+    }
     if !parts.is_empty() {
         out.push(Line::default());
         out.extend(parts);

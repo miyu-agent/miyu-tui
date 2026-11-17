@@ -39,6 +39,9 @@ pub enum Update {
     /// 核心起不来、连不上，照界面的语言说好了的那一整句（[`Update::StartRefused`] 换成的）：照它写，前面不加「连不上核心」
     /// （2026-11-17 项目主人定）。
     Down(String),
+    /// 核心是人停的（核心 CS-5，[`StartRefusal::stopped`]），照界面的语言说好了的那一句：画「核心已停止」和「启动」，
+    /// 断了线不自己拉起（蓝图「连核心」第 9 条）。
+    Stopped(String),
     /// 一条请求被拒绝：原因码（`data.reason`，没有的是 `None`），和核心照握手时的语言说的原话。
     Refused {
         /// 原因码，例如 `nothing_to_unrevert`（`protocol/undo.md`）。

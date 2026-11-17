@@ -33,6 +33,11 @@ impl StartRefusal {
         }
     }
 
+    /// 是不是核心是人停的（核心 CS-5 的 `StartError::StoppedByUser`）：界面画「核心已停止」和「启动」。
+    pub fn stopped(&self) -> bool {
+        self.said.key == "core/start/stopped_by_user"
+    }
+
     /// 照 `language` 说：资源目录里有这一句的照它，没有的照原话。
     pub fn say(&self, language: &str) -> String {
         self.resources()

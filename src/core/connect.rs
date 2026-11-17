@@ -2,12 +2,12 @@
 //! 都换令牌，连上以后再读（门面 `miyu_client::connect` 连的时候读）。
 
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command as Process;
 
 use serde_json::json;
 
-use miyu_client::connect::{ConnectError, StartError};
+use miyu_client::connect::{ConnectError, Connection, StartError};
 use miyu_client::places::DataRoot;
 use miyu_client::places::Env;
 
@@ -15,9 +15,9 @@ use super::limits::Limits;
 use super::rpc::{Failure, Rpc};
 use super::{StartRefusal, Update};
 
-/// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来；没给的只连。连上以前出的错（找数据根、建骨架、连核心、拉起核心）
-/// 带着核心给的说法交给界面照它的语言说（核心 EN-1、EN-2，[`StartRefusal`]）。
-pub(super) async fn connect() -> Result<Rpc, Update> {
+/// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来（[`reach`]）；没给的只连。连上以前出的错（找数据根、建骨架、连核心、
+/// 拉起核心）带着核心给的说法交给界面照它的语言说（核心 EN-1、EN-2，[`StartRefusal`]）。
+pub(super) async fn connect(starting: Starting) -> Result<Rpc, Update> {
     let env = Env::current();
     let core_bin = std::env::var_os("MIYU_CORE_BIN")
         .map(|bin| crate::local::expand_home(bin, std::env::home_dir().as_deref()));
@@ -26,25 +26,7 @@ pub(super) async fn connect() -> Result<Rpc, Update> {
         .map_err(|e| StartRefusal::update(Some(e.said()), e.to_string(), bin))?;
     root.prepare()
         .map_err(|e| StartRefusal::update(e.said(), e.to_string(), bin))?;
-    let connected = match core_bin {
-        Some(bin) => {
-            let path = bin.clone();
-            miyu_client::connect::connect_or_start(&root, move || {
-                let mut core = Process::new(bin);
-                core.arg("core");
-                core
-            })
-            .await
-            .map_err(|e| start_failed(e, &path))
-        }
-        None => miyu_client::connect::connect(&root)
-            .await
-            .map_err(|e| match e {
-                ConnectError::NotRunning => Update::NoCoreBin,
-                e => StartRefusal::update(e.said(), e.to_string(), None),
-            }),
-    };
-    let (connection, token) = connected?;
+    let (connection, token) = reach(&root, core_bin, starting).await?;
     let mut rpc = Rpc::new(connection);
     // 有确认、提问的抽屉：说这一头有人能当场回答（核心 D-1，`session.answer`）。
     let hello = json!({
@@ -58,6 +40,43 @@ pub(super) async fn connect() -> Result<Rpc, Update> {
     });
     rpc.call("hello", hello).await.map_err(refused)?;
     Ok(rpc)
+}
+
+/// 这一次连核心为什么（核心 CS-5「人停的核心，头不再自动拉起」）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Starting {
+    /// 人要用：界面刚打开、点了「启动」、核心是人停的时敲了话。照 `connect_or_start` 拉起，核心起来删掉「人停的」记号。
+    Asked,
+    /// 断了线自己重连：核心是人停的（`miyu core stop`、别的头的「停止」、托盘的「退出」）不拉，交回「核心已停止」。
+    /// 崩了、空闲退出的照旧拉起。
+    Auto,
+}
+
+/// 连上核心（还没握手），交回连接和本机令牌：给了核心程序的，没在跑就照 `starting` 拉起来（[`Starting`]）；没给的只连。
+pub(super) async fn reach(
+    root: &DataRoot,
+    core_bin: Option<PathBuf>,
+    starting: Starting,
+) -> Result<(Connection, String), Update> {
+    let Some(bin) = core_bin else {
+        return miyu_client::connect::connect(root)
+            .await
+            .map_err(|e| match e {
+                ConnectError::NotRunning => Update::NoCoreBin,
+                e => StartRefusal::update(e.said(), e.to_string(), None),
+            });
+    };
+    let path = bin.clone();
+    let core = move || {
+        let mut core = Process::new(bin);
+        core.arg("core");
+        core
+    };
+    let reached = match starting {
+        Starting::Asked => miyu_client::connect::connect_or_start(root, core).await,
+        Starting::Auto => miyu_client::connect::reconnect_or_start(root, core).await,
+    };
+    reached.map_err(|e| start_failed(e, &path))
 }
 
 /// 开会话时带上的：`/model` 选的模型、人格框、预设框选的（没选的不写，核心照默认），`/workspace` 换的目录。
@@ -249,6 +268,35 @@ mod tests {
             Update::StartRefused(r) => assert_eq!(r.bin.as_deref(), Some(gone)),
             other => panic!("{other:?}"),
         }
+    }
+
+    #[test]
+    fn a_core_a_person_stopped_is_only_started_again_when_a_person_asks() {
+        // 核心 CS-5：`miyu core stop`、别的头的「停止」、托盘的「退出」留下 `run/stopped`。断了线自己重连的不拉起、交回「核心已停止」；
+        // 人要用的（界面刚打开、点「启动」）照拉：这里的核心程序不存在，拉的那一下交回「找不到核心程序」，证明它真去拉了。
+        let dir = std::env::temp_dir().join(format!("miyu-tui-stopped-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let root = miyu_client::places::DataRoot::at(dir.canonicalize().unwrap());
+        root.prepare().unwrap();
+        miyu_ipc::mark_stopped(&root).unwrap();
+        let bin = || {
+            Some(std::path::PathBuf::from(
+                "/nonexistent/miyu-tui-stopped/miyu",
+            ))
+        };
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        match runtime.block_on(super::reach(&root, bin(), super::Starting::Auto)) {
+            Err(Update::StartRefused(r)) => assert_eq!(r.said.key, "core/start/stopped_by_user"),
+            other => panic!("自己重连不拉起人停的核心：{:?}", other.map(drop)),
+        }
+        match runtime.block_on(super::reach(&root, bin(), super::Starting::Asked)) {
+            Err(Update::Missing(path)) => assert!(path.ends_with("miyu"), "{path}"),
+            other => panic!("人要用的照拉起：{:?}", other.map(drop)),
+        }
+        drop(std::fs::remove_dir_all(&dir));
     }
 
     #[test]

@@ -171,6 +171,8 @@ pub struct Texts {
     pub missing_core: String,
     /// 连不上核心时按 `Enter`：发不出去，字留在输入框里。
     pub not_connected: String,
+    /// 核心是人停的（核心 CS-5）：「核心已停止」下面那一行，键名、做什么（「连核心」第 9 条）。
+    pub start_core: [String; 2],
     /// 切会话还没换上来时按 `Enter`、打断、对着会话的命令：这一下不做（review B1）。
     pub switching: String,
     /// 崩了以后终端里说调用栈记在哪，`{path}` 是文件（蓝图「崩了」）。
