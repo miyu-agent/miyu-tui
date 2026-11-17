@@ -16,6 +16,7 @@ pub const USAGE: &str = concat!(
   --page config, config open the settings page without a session; Esc on its menu exits
   --page oobe           walk through the first-run guide again
   -h, --help            print this help
+  -V, --version         print the version
 
 Environment: MIYU_HOME, MIYU_RESOURCES, MIYU_CORE_BIN, MIYU_TUI_IME=0 (don't switch the input method)"
 );
@@ -32,6 +33,8 @@ pub struct Launch {
     pub page: Option<&'static str>,
     /// 只印用法（`-h`、`--help`）。
     pub help: bool,
+    /// 只印版本（`-V`、`--version`，2026-11-17 项目主人本机验收第 11 条）。
+    pub version: bool,
     /// 另起的取色进程（隐藏的 `--wallpaper-seeds`，`theme/seeds.rs`）：从标准输入读图、印候选主色就退。
     pub seeds: bool,
 }
@@ -40,10 +43,32 @@ pub struct Launch {
 pub fn early(launch: &Launch) -> bool {
     if launch.help {
         println!("{USAGE}");
+    } else if launch.version {
+        println!("{}", version_line("tui"));
     } else if launch.seeds {
         crate::theme::seeds::print_from_stdin();
     }
-    launch.help || launch.seeds
+    launch.help || launch.version || launch.seeds
+}
+
+/// `--version` 印的那一行：`miyu <命令> <版本>`，同核心 VS-1 替包的命令答的（`miyu tui --version`，版本照清单 `[package] version`，
+/// 和程序同号，`tests/versions.rs` 钉着），两条路印的一样。
+pub fn version_line(command: &str) -> String {
+    format!("miyu {command} {}", env!("CARGO_PKG_VERSION"))
+}
+
+/// 读这个进程的参数；不认的印一句和用法到标准错误，交回退出码 2（2026-11-17 验收第 11 条：原来交给 `main` 印成
+/// `Error: Custom { kind: InvalidInput, … }`）。
+pub fn parse() -> Result<Launch, std::process::ExitCode> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    launch(args.clone()).map_err(|_| {
+        eprintln!(
+            "{}: unrecognized arguments: {}\n\n{USAGE}",
+            env!("CARGO_PKG_NAME"),
+            args.join(" ")
+        );
+        std::process::ExitCode::from(2)
+    })
 }
 
 /// 读参数：不带的照配置启动；`--resume <完整会话编号>`；`--page <页名>` 或 `config`。
@@ -53,12 +78,17 @@ pub fn launch(args: impl IntoIterator<Item = String>) -> io::Result<Launch> {
         start: Start::Usual,
         page: None,
         help: false,
+        version: false,
         seeds: false,
     };
     match args.as_slice() {
         [] => Ok(usual),
         [flag] if flag == "-h" || flag == "--help" => Ok(Launch {
             help: true,
+            ..usual
+        }),
+        [flag] if flag == "-V" || flag == "--version" => Ok(Launch {
+            version: true,
             ..usual
         }),
         [flag] if flag == crate::theme::seeds::SEEDS_FLAG => Ok(Launch {
@@ -83,6 +113,7 @@ fn page_named(name: &str) -> Option<Launch> {
         start: Start::Bare,
         page: Some(page),
         help: false,
+        version: false,
         seeds: false,
     })
 }
@@ -102,6 +133,11 @@ mod tests {
         assert_eq!(launch(Vec::new()).unwrap().start, Start::Usual);
         assert!(launch(args(&["-h"])).unwrap().help);
         assert!(launch(args(&["--help"])).unwrap().help);
+        // `--version`、`-V` 只印版本（2026-11-17 验收第 11 条：原来当不认的参数报错）。
+        for flag in ["--version", "-V"] {
+            let got = launch(args(&[flag])).unwrap();
+            assert!(got.version && !got.help, "{flag}");
+        }
         // 隐藏的取色参数（另起的取色进程用，2026-11-02）：不进界面。
         let seeds = launch(args(&["--wallpaper-seeds"])).unwrap();
         assert!(seeds.seeds && !seeds.help);
@@ -126,6 +162,7 @@ mod tests {
             start: Start::Bare,
             page: Some("config"),
             help: false,
+            version: false,
             seeds: false,
         };
         assert_eq!(launch(args(&["--page", "config"])).unwrap(), config);

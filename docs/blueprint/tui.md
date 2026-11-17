@@ -818,7 +818,8 @@
 
 **指定会话启动与 herdr 恢复**（2026-10-03 项目主人批准试做）
 
-- `miyu-tui --resume <完整会话 ID>`：优先于 `ui.startup`，和启动时进最近的那个一样按页读（「会话列表」第 5 条）；不存在的会话照「连核心」第 7 条写「会话不存在」，不回退 recent、不自动另开，下一句话开新会话（2026-10-11 review B2、B3：原来先订阅一次验证、订阅一直留着，读最新一页的回应到达之前这条订阅推来的事件把读到的序号推到最新，页里的几乎全被当成读过的丢掉；不存在的一直重连）。参数缺失或未知参数在进入全屏前报错。
+- `miyu-tui --resume <完整会话 ID>`：优先于 `ui.startup`，和启动时进最近的那个一样按页读（「会话列表」第 5 条）；不存在的会话照「连核心」第 7 条写「会话不存在」，不回退 recent、不自动另开，下一句话开新会话（2026-10-11 review B2、B3：原来先订阅一次验证、订阅一直留着，读最新一页的回应到达之前这条订阅推来的事件把读到的序号推到最新，页里的几乎全被当成读过的丢掉；不存在的一直重连）。参数缺失或未知参数在进入全屏前报错：标准错误印「miyu-tui: unrecognized arguments: …」和用法，退出码 2（2026-11-17 项目主人本机验收第 11 条：原来交给 `main` 印成 `Error: Custom { kind: InvalidInput, … }`）。
+- `miyu-tui --version`、`-V`：印一行 `miyu tui <版本>`、退出码 0；`miyu-tui shellhook --version`、`-V` 印 `miyu shellhook <版本>`（同一天第 11 条）。核心 VS-1 起 `miyu tui --version` 由主程序自己照清单 `[package] version` 答，不交给终端；清单的版本和程序同号（`tests/versions.rs`），两条路印的一样（`tests/version_flag.rs`）。
 - 在 herdr 中，主会话创建、恢复、切换后，上报 `miyu-tui --resume <ID>`；进入子代理仅浏览时保持主会话绑定。`/new` 清除旧恢复信息，第一句话创建后再绑定。所有状态、恢复命令、release 串行上报；退出释放。恢复程序须在 PATH 中；核心连接仍照 MIYU_HOME / MIYU_CORE_BIN。
   - 登记会话、恢复命令照人敲的（2026-11-02 项目主人：「我在herdr里开了miyu，然后我直接重启电脑……claudecode的会话自动开启tab后resume了，而miyu-remake的甚至连tab都没重开」，反馈 1102 第 10 条）：报状态时带 `--agent-session-id <会话编号>`（herdr 0.9.5 重启以后只给登记了会话的窗格跑恢复命令，`herdr agent list` 里原来 Miyu 那一格没有 `agent_session`）。恢复命令打头照人敲的那个命令名（herdr 要 PATH 上的命令名，不是路径）：核心转交 `miyu tui` 来的（`MIYU_PROGRAM`）写 `<核心的名字> tui --resume <ID>`，直接开的写终端自己的名字；那个名字 PATH 上找不到的只登记会话、不报恢复命令。原来写死 `miyu-tui`，装的是 `miyu`、部署脚本是 `miyu-remake` 的，登记了也跑不起来。只在人真退出时退还（同上），被系统关机杀掉的不退还。
 - herdr 按窗格保存并在服务重启后运行恢复命令，不用全局 recent 或自己存窗格映射。只关闭客户端时进程仍在运行。
