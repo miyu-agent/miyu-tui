@@ -10,6 +10,7 @@ mod more_popups;
 mod pages;
 mod popup;
 mod records;
+mod status;
 mod store;
 
 use ratatui::Frame;
@@ -22,7 +23,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::caret::Caret;
 use crate::config::Config;
 use crate::settings::nav::Page;
-use crate::settings::{Hit, Settings, Texts, Tone};
+use crate::settings::{Hit, Settings, Texts};
 use crate::theme;
 
 /// 配置页的尺寸（`layout.json` 的 `settings`）。
@@ -134,7 +135,9 @@ fn models(
         stage.x,
         stage.y + 4,
         stage.width,
-        stage.height.saturating_sub(8),
+        stage
+            .height
+            .saturating_sub(8 + status::extra(page, texts, stage.width)),
     );
     columns::draw(frame, body, page, texts, look);
     let hints = match page.nav.page {
@@ -244,15 +247,19 @@ pub(super) fn footer(
         return;
     }
     let bottom = stage.bottom();
-    let status_y = bottom - 4;
     let buf = frame.buffer_mut();
-    let (text, style) = status(page, texts);
-    buf.set_line(
-        stage.x,
-        status_y,
-        &Line::from(vec![Span::styled(text, style)]),
-        stage.width,
-    );
+    // 状态行放不下的往上长（`status.rs`），最后一行照旧在细线上面；上面几栏已经照它让出了地方。
+    let (rows, style) = status::lines(page, texts, stage.width);
+    let rows = &rows[rows.len().saturating_sub(usize::from(stage.height - 3))..];
+    let top = bottom - 3 - u16::try_from(rows.len()).unwrap_or(1);
+    for (y, row) in (top..).zip(rows) {
+        buf.set_line(
+            stage.x,
+            y,
+            &Line::from(vec![Span::styled(row.as_str(), style)]),
+            stage.width,
+        );
+    }
     let rule = crate::sheet::mark(|m| &m.rule).repeat(stage.width as usize);
     buf.set_string(stage.x, bottom - 3, &rule, theme::faint());
     let (hint_y, second_y) = if second.is_some() {
@@ -292,50 +299,8 @@ pub(super) fn footer(
     }
 }
 
-/// 状态行左边写什么：在筛的写筛的字；有话的写话；没有的照这一页写模型、池有几个。
-fn status(page: &Settings, texts: &Texts) -> (String, Style) {
-    if let Some(search) = &page.nav.search {
-        let text = format!("/ {}", search.text);
-        return (
-            text,
-            if search.typing {
-                Style::new()
-            } else {
-                theme::dim()
-            },
-        );
-    }
-    if let Some((text, tone)) = &page.status {
-        let style = match tone {
-            Tone::Note => theme::warn(),
-            Tone::Good => theme::good(),
-            Tone::Bad => theme::error(),
-            Tone::Busy => theme::dim(),
-        };
-        return (text.clone(), style);
-    }
-    // 主菜单照记下的清单已经画全了的不写「正在加载配置…」，免得读回来时底下那一行闪一下（2026-10-21）。
-    if page.loading() && !(page.on_menu && page.more.schema.is_some()) {
-        return (texts.status("loading"), theme::dim());
-    }
-    if page.on_menu {
-        return (String::new(), Style::new());
-    }
-    let text = match page.nav.page {
-        Page::Providers => match page.nav.provider(&page.view).map(|p| p.models.len()) {
-            Some(0) => texts.status("no_models"),
-            Some(n) => texts.status("fetched").replace("{n}", &n.to_string()),
-            None => String::new(),
-        },
-        Page::Pools => texts
-            .status("pools")
-            .replace("{n}", &page.view.pools.len().to_string()),
-        Page::Defaults => String::new(),
-    };
-    (text, theme::warn())
-}
-
 pub(super) use super::floating::{bar, fit, hint_line_within};
+pub(super) use status::extra as status_extra;
 
 #[cfg(test)]
 mod tests;

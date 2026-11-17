@@ -13,7 +13,7 @@ use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
 use super::pages::{Painted, paint};
-use super::{crumb, footer};
+use super::{crumb, footer, status_extra};
 use crate::caret::Caret;
 use crate::settings::pages::store::flow::Doing;
 use crate::settings::pages::store::remove::{self, Button};
@@ -69,7 +69,9 @@ pub(super) fn draw(
     }
     // 列表、空一行、预览块，下面留给状态行、细线、按键提示（`footer` 的四行）再空一行。装、卸、升级的那几步画在弹窗里
     // （`popup.rs`，排期第 42 条），列表照常。
-    let room = stage.height.saturating_sub(4 + 5 + 1);
+    // 状态行长出来的几行（`status.rs`）也让出来。
+    let grown = status_extra(page, texts, stage.width);
+    let room = stage.height.saturating_sub(4 + 5 + 1 + grown);
     let confirming = matches!(store.flow, Some(Flow::Confirm { .. }));
     // 一半一半：上半列表，下半预览块（发版前 check 13，2026-11-08 项目主人：「列表和选中信息全部是上对齐导致空间利用率
     // 存在问题」）；列表放不下的跟着光标滚。
@@ -89,7 +91,10 @@ pub(super) fn draw(
     }
     let store = &page.more.store;
     let pv_y = body.bottom() + 1;
-    let room = stage.bottom().saturating_sub(5).saturating_sub(pv_y);
+    let room = stage
+        .bottom()
+        .saturating_sub(5 + grown)
+        .saturating_sub(pv_y);
     let mut shown = preview::lines(store, words, &texts.more.package_from);
     crate::tabs::printable_lines(&mut shown);
     // 预览块铺满下半（上下各空一行）；放不下的截掉。
