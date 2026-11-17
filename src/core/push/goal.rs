@@ -14,6 +14,17 @@ pub(super) fn round(event: &Value, seq: u64) -> Option<Push> {
     Some(Push::GoalRound { seq, round })
 }
 
+/// 循环、人生到点交进来的那一句（`by` 是 `{kind: "schedule", loop}`，核心 J-2、LO-1、LF-2；`loop` 是 `fixed`、`dynamic`、
+/// `life`）读成叫醒她的一行，序号是 `seq`；不带 `loop` 的定时任务交的是人写的那句，是 `None`（照你说的画）。
+pub fn wake(event: &Value, seq: u64) -> Option<Push> {
+    let by = &event["by"];
+    let looped = by["loop"].as_str().filter(|_| by["kind"] == "schedule")?;
+    Some(Push::Wake {
+        seq,
+        life: looped == "life",
+    })
+}
+
 /// 核心造的命令编号 `goal-<第几轮>-<UUID>` 里的第几轮（核心 X-8 补定的约定；FX-2 起后一段是每一轮新造的 UUIDv7，原来是毫秒，
 /// 系统时间往回拨时两轮会撞号）；对不上这个写法的没有。
 fn number(cause: &str) -> Option<u32> {

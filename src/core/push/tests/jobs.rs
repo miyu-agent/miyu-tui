@@ -102,8 +102,8 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     assert_eq!(foreign(harness).1, Sender::Harness("claude-code".into()));
     let session = json!({"kind": "session", "id": "s-child"});
     assert_eq!(foreign(session).1, Sender::Session("s-child".into()));
-    // 到点的定时任务、循环交进来的照你说的话画（2026-10-27 项目主人），不写「收到你在其他端发送的消息」。
-    let schedule = json!({"kind": "schedule", "schedule": "t3", "loop": "fixed"});
+    // 到点的定时任务交进来的照你说的话画（2026-10-27 项目主人），不写「收到你在其他端发送的消息」。
+    let schedule = json!({"kind": "schedule", "schedule": "t3"});
     assert_eq!(
         crate::core::push::read(&said(schedule, "schedule/t3/1"), &mine),
         [Push::Said {
@@ -112,6 +112,15 @@ fn job_effects_reports_and_foreign_messages_are_read() {
             attached: Vec::new(),
         }]
     );
+    // 循环、人生叫醒她的那句不照原文画，画叫醒的一行（2026-11-17 项目主人验收第 3 条：不是你发的，还是英文）。
+    for (looped, life) in [("fixed", false), ("dynamic", false), ("life", true)] {
+        let by = json!({"kind": "schedule", "schedule": "t3", "loop": looped});
+        assert_eq!(
+            crate::core::push::read(&said(by, "schedule/t3/1"), &mine),
+            [Push::Wake { seq: 12, life }],
+            "{looped}"
+        );
+    }
 }
 
 #[test]

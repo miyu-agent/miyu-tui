@@ -16,4 +16,7 @@ pub struct LoopTexts {
     pub dynamic: String,
     /// 固定间隔，`{n}`：秒、分钟、小时、天。
     pub every: [String; 4],
+    /// 到点叫醒她的那句（`message.user` 的 `by` 是 `{kind: "schedule", loop}`）不照原文画，画暗色一行：记号连同后面的空格、循环的、
+    /// 人生的（2026-11-17 项目主人验收第 3 条；核心 WK-2 要把「醒来」改成「继续」，字只在这里）。
+    pub wake: [String; 3],
 }
