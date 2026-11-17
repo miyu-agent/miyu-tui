@@ -101,6 +101,8 @@ pub struct Store {
     pub web: Option<(String, String)>,
     /// 按了 `r`、软件源还在刷（`sync.rs`）：刷完以前再按不发。
     pub syncing: bool,
+    /// 每个包的配置项的键和名字（照 `config.schema`，一行一样）：「已安装」筛的时候也认（联网搜索的键是 `net.*`）。
+    pub keys: HashMap<String, String>,
 }
 
 /// 列表里的一行指的包：哪一页、第几个。
@@ -163,17 +165,32 @@ impl Store {
         self.local.iter().flatten()
     }
 
-    /// 装着的里头对得上筛的字的：几个词每个都出现在名字、编号、说明里（同「下载软件」，`sort::shown`）。
+    /// 装着的里头对得上筛的字的：几个词每个都出现在名字、编号、说明、功能、配置项的键和名字里（同「下载软件」，`sort::hit`）。
     fn found(&self) -> impl Iterator<Item = &Local> {
-        let words: Vec<String> = self
-            .query
-            .split_whitespace()
-            .map(str::to_lowercase)
-            .collect();
         self.locals().filter(move |p| {
-            let hay = format!("{}\n{}\n{}", p.name, p.id, p.summary).to_lowercase();
-            words.iter().all(|w| hay.contains(w.as_str()))
+            let keys = self.keys.get(&p.id).map_or("", String::as_str);
+            let hay = [&p.name, &p.id, &p.summary, &p.words]
+                .map(String::as_str)
+                .join("\n");
+            let hay = format!("{hay}\n{keys}");
+            sort::hit(&self.query, &hay)
         })
+    }
+
+    /// 读到清单了：记下每个包的配置项的键和名字（归哪个包照 `package`，没写的照组的编号，同包那一页）。
+    pub fn note_keys(&mut self, schema: &super::schema::Schema) {
+        self.keys.clear();
+        for item in &schema.items {
+            let owner = match item.package.as_str() {
+                "" => item.group.as_str(),
+                id => id,
+            };
+            let line = format!("{}\n{}\n", item.key, item.name);
+            self.keys
+                .entry(owner.to_string())
+                .or_default()
+                .push_str(&line);
+        }
     }
 
     /// 这一页的光标，挪进列表里。

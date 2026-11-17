@@ -75,3 +75,47 @@ fn without_the_core_program_the_hint_names_pkg_page() {
     let line = super::keys::run_page(&texts, "im");
     assert_eq!(line, "在终端里运行 miyu pkg page im");
 }
+
+/// 2026-11-17 项目主人验收第 10 条：联网搜索的名字只有连接语言的（「联网搜索」），筛 `web` 要靠功能编号 `web-search` 才找得到；
+/// `-`、`_`、`.` 当空格。
+#[test]
+fn the_installed_filter_also_reads_feature_ids() {
+    let got = serde_json::json!({"packages": [
+        {"package": "base-net", "name": "联网搜索", "summary": "", "features": [
+            {"id": "web-search", "name": "网络搜索"}, {"id": "web-fetch", "name": "抓取网页"}]},
+        {"package": "memes", "name": "表情包"}]});
+    let mut store = Store {
+        tab: Tab::Installed,
+        local: Some(super::read::locals(&got)),
+        ..Store::default()
+    };
+    let ids = |s: &Store| -> Vec<String> { s.rows().iter().map(|r| r.id().to_string()).collect() };
+    for query in ["web", "WEB search", "抓取"] {
+        store.query = query.into();
+        assert_eq!(ids(&store), ["base-net"], "筛「{query}」");
+    }
+}
+
+/// 归包的配置项的键、名字也认（联网搜索的键是 `net.*`），「下载软件」照包带的东西的名字认。
+#[test]
+fn the_filters_also_read_setting_keys_and_what_a_package_brings() {
+    let mut store = store();
+    store.tab = Tab::Installed;
+    let schema = super::super::schema::Schema::read(&serde_json::json!({
+        "pages": [{"id": "packages", "name": "软件包"}],
+        "groups": [{"id": "b", "name": "B", "page": "packages"}],
+        "items": [{"key": "net.search.source", "type": "text", "control": "select", "layers": ["system"],
+                   "name": "联网服务", "page": "packages", "group": "b", "package": "b"}]}));
+    store.note_keys(&schema);
+    let ids = |s: &Store| -> Vec<String> { s.rows().iter().map(|r| r.id().to_string()).collect() };
+    for query in ["net search", "联网服务"] {
+        store.query = query.into();
+        assert_eq!(ids(&store), ["b"], "筛「{query}」");
+    }
+    store.tab = Tab::Source;
+    if let Listing::Got(list) = &mut store.source {
+        list[1].provides = vec![("features".into(), vec!["web-search".into()])];
+    }
+    store.query = "web".into();
+    assert_eq!(ids(&store), ["y"]);
+}

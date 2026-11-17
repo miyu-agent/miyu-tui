@@ -48,6 +48,7 @@ impl Settings {
                     &texts.service,
                     self.more.service_known,
                 );
+                self.more.store.note_keys(&schema);
                 self.more.schema = Some(schema);
                 self.ask_choice_names();
             }
