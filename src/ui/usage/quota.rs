@@ -38,20 +38,25 @@ pub(super) fn lines(
 ) -> Vec<Line<'static>> {
     let name_w = windows.iter().map(|w| w.label.width()).max().unwrap_or(0);
     let width = usize::from(width);
+    let resets: Vec<Option<String>> = windows
+        .iter()
+        .map(|w| w.resets_at.map(|at| reset_text(texts, at, now, tz)))
+        .collect();
+    // 几行排成一张表：条一样长，照最宽的那个重置时刻留地方（2026-11-17 验收第 36 条：右边的字宽窄不同时条不能跟着变短）。
+    // 名字、两格、条（两边框各一格）、两格、百分比（四格）；放得下再接两格和重置时刻，放不下的几行都不写。
+    let fixed = name_w + 2 + 2 + 2 + 4;
+    let widest = resets.iter().flatten().map(|r| 2 + r.width()).max();
+    let room = |extra: usize| width.saturating_sub(fixed + extra);
+    let (cells, with_reset) = match widest {
+        Some(extra) if room(extra) >= MIN_CELLS => (room(extra).min(CELLS), true),
+        _ => (room(0).clamp(1, CELLS), false),
+    };
     windows
         .iter()
-        .map(|w| {
+        .zip(resets)
+        .map(|(w, reset)| {
             let percent = format!("{:>4}", format!("{}%", w.percent.round() as i64));
-            let reset = w.resets_at.map(|at| reset_text(texts, at, now, tz));
-            // 名字、两格、条（两边框各一格）、两格、百分比；放得下再接两格和重置时刻。
-            let fixed = name_w + 2 + 2 + 2 + percent.width();
-            let with_reset = reset.as_ref().map_or(0, |r| 2 + r.width());
-            let room = |extra: usize| width.saturating_sub(fixed + extra);
-            let (cells, reset) = if room(with_reset) >= MIN_CELLS {
-                (room(with_reset).min(CELLS), reset)
-            } else {
-                (room(0).clamp(1, CELLS), None)
-            };
+            let reset = reset.filter(|_| with_reset);
             let style = level(w.percent);
             let pad = name_w - w.label.width();
             let mut spans = vec![
