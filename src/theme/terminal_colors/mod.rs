@@ -8,7 +8,7 @@
 //! 窗口拿回焦点时再问一次（2026-10-15 项目主人定，设计 13 的 H15）：终端换了配色，跟着它的（明暗自动、终端配色）照新的
 //! 重挑；问句和读回话在 `answer.rs`。
 
-use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Mutex, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::time::Duration;
 
 use ratatui::style::Color;
@@ -22,8 +22,12 @@ pub type Colors = [(u8, u8, u8); 16];
 
 /// 最多等这么久。
 const WAIT: Duration = Duration::from_secs(1);
-/// 拿回焦点再问时最多等这么久：这一下读按键停着，等久了这时按的键会丢（起来时答过的终端几毫秒就答完）。
+/// Windows 拿回焦点再问时最多等这么久：这一下读按键停着，等久了这时按的键会丢（起来时答过的终端几毫秒就答完）。
+#[cfg(not(unix))]
 const WAIT_AGAIN: Duration = Duration::from_millis(300);
+
+/// 拿回焦点再问以后收到的颜色回话，原样拼回 `ESC ] … ESC \`，一句句到齐了照它盖上（[`reply`]）。
+static ANSWERS: Mutex<String> = Mutex::new(String::new());
 
 /// 终端自己的字色、底色。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -98,15 +102,51 @@ pub fn seen() -> Seen {
     *read()
 }
 
-/// 窗口拿回焦点：再问一次字色、底色和 16 色（一次问全），问到的盖上，交回变了没有。要在读按键停着时问（回话不能让
-/// 读按键的读走）。起来时一样都没问到的不问：不答的终端每次拿回焦点都白等；这次没答的照旧用上次的。
-pub fn ask_again() -> bool {
+/// 起来时问到过（一样都没问到的不再问：不答的终端每次拿回焦点都白问）。测试里不问。
+fn asked_before() -> bool {
     let before = seen();
-    if cfg!(test) || (before.sixteen.is_none() && before.ground.is_none()) {
-        return false;
+    !cfg!(test) && (before.sixteen.is_some() || before.ground.is_some())
+}
+
+/// 窗口拿回焦点：再问一次字色、底色和 16 色（一次问全），写出问句就回来，不停下读按键、不自己读输入。回话夹在按键里
+/// 由读按键的线程截下，交给 [`reply`]。原来停下读按键、自己读到回话为止，排在回话前面的按键跟着读走就丢了（2026-11-17
+/// niri 代理实测：焦点回来时打的一句只进了前半截）。这次没答的照旧用上次的。
+///
+/// # Errors
+/// 问句写不出去。
+#[cfg(unix)]
+pub fn ask_again() -> std::io::Result<()> {
+    if !asked_before() {
+        return Ok(());
     }
-    answer::ask(&answer::all_query(), WAIT_AGAIN)
-        .is_some_and(|got| update(answer::sixteen(&got), answer::ground(&got)))
+    ANSWERS
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clear();
+    answer::send(&answer::again_query())
+}
+
+/// Windows：终端的回话在那边要开着控制台的「虚拟终端输入」才收得到、打头的 ESC 还读不到（`answer.rs`），照旧停下读按键
+/// 自己读到 DA1 答了为止，问到的盖上，交回变了没有。
+#[cfg(not(unix))]
+pub fn ask_again() -> bool {
+    asked_before()
+        && answer::ask(&answer::all_query(), WAIT_AGAIN)
+            .is_some_and(|got| update(answer::sixteen(&got), answer::ground(&got)))
+}
+
+/// 终端回的一句（`reader/replies.rs` 截下的 `ESC ]` 和收尾中间的字）：不是颜色的回话交回 `None`；是的收下，字色、底色
+/// 两句或者 16 色都到齐了的盖上，交回变了没有。
+pub fn reply(text: &str) -> Option<bool> {
+    if !answer::is_color(text) {
+        return None;
+    }
+    let mut answers = ANSWERS.lock().unwrap_or_else(PoisonError::into_inner);
+    answers.push_str("\x1b]");
+    answers.push_str(text);
+    answers.push_str("\x1b\\");
+    let got = answers.as_bytes();
+    Some(update(answer::sixteen(got), answer::ground(got)))
 }
 
 /// 盖上问到的（`None` 的照旧），交回变了没有。

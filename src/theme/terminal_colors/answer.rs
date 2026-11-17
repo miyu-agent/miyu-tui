@@ -7,16 +7,37 @@ use super::{Colors, Ground};
 
 /// 只问 16 色（起来时；字色、底色另由 `terminal-colorsaurus` 问）。
 pub(super) fn sixteen_query() -> String {
-    let mut query: String = (0..16).map(|n| format!("\x1b]4;{n};?\x1b\\")).collect();
+    let mut query = colors_query();
     query.push_str("\x1b[c");
     query
 }
 
-/// 字色、底色、16 色一次问全（拿回焦点再问时）。
-pub(super) fn all_query() -> String {
+/// 0 到 15 号一号一句。
+fn colors_query() -> String {
+    (0..16).map(|n| format!("\x1b]4;{n};?\x1b\\")).collect()
+}
+
+/// 字色、底色、16 色一次问全，不带 DA1（拿回焦点再问时）：Unix 上回话由读按键的线程截下（`reader/replies.rs`），
+/// 不用等它答完。
+pub(super) fn again_query() -> String {
     let mut query = String::from("\x1b]10;?\x1b\\\x1b]11;?\x1b\\");
-    query.push_str(&sixteen_query());
+    query.push_str(&colors_query());
     query
+}
+
+/// 字色、底色、16 色一次问全，后面跟 DA1（Windows 拿回焦点再问时，停下读按键自己读到 DA1 答了为止）。
+#[cfg(any(windows, test))]
+pub(super) fn all_query() -> String {
+    let mut query = again_query();
+    query.push_str("\x1b[c");
+    query
+}
+
+/// 是颜色的回话：`ESC ]` 和收尾中间的字是 `4;`、`10;`、`11;` 打头的。
+pub(super) fn is_color(reply: &str) -> bool {
+    ["4;", "10;", "11;"]
+        .iter()
+        .any(|head| reply.starts_with(head))
 }
 
 /// 终端的回话：`ESC ] 4 ; 序号 ; rgb:RRRR/GGGG/BBBB` 后面跟 BEL 或 `ESC \`，一个颜色一句。一个通道 1 到 4 位十六进制。
@@ -105,6 +126,19 @@ fn answered(got: &[u8]) -> bool {
 }
 
 /// 写问句、读回话，直到 DA1 答了；超时、读不成、标准输入不是终端的是 `None`。
+/// 只写问句，不等回话（回话由读按键的线程截下）。标准输出不是终端的不写。
+#[cfg(unix)]
+pub(super) fn send(query: &str) -> std::io::Result<()> {
+    use std::io::{IsTerminal, Write};
+
+    let mut out = std::io::stdout();
+    if !out.is_terminal() {
+        return Ok(());
+    }
+    out.write_all(query.as_bytes())?;
+    out.flush()
+}
+
 #[cfg(unix)]
 pub(super) fn ask(query: &str, wait: Duration) -> Option<Vec<u8>> {
     use std::io::{IsTerminal, Write};

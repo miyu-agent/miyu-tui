@@ -131,16 +131,35 @@ impl App {
         }
     }
 
-    /// 再问一次终端的颜色：读按键停下（回话不能让它读走），问完接着读；变了照新的重挑（终端配色照它重新生成、明暗自动
-    /// 照它挑深浅）。没变的什么都不做。
-    pub fn ask_colors_again(&mut self, reader: &crate::reader::Reader) {
+    /// 再问一次终端的颜色。Unix：只写问句，回话跟按键一起由读按键的线程收下，到了走 [`App::terminal_reply`]，读按键不停，
+    /// 这时打的字一个不丢。
+    ///
+    /// # Errors
+    /// 问句写不出去。
+    #[cfg(unix)]
+    pub fn ask_colors_again(&mut self, _reader: &crate::reader::Reader) -> std::io::Result<()> {
+        terminal_colors::ask_again()
+    }
+
+    /// 再问一次终端的颜色。Windows：读按键停下（回话不能让它读走），问完接着读（`terminal_colors::ask_again`）。
+    ///
+    /// # Errors
+    /// 不会出错，和 Unix 的一个样子。
+    #[cfg(not(unix))]
+    pub fn ask_colors_again(&mut self, reader: &crate::reader::Reader) -> std::io::Result<()> {
         reader.pause();
         let changed = terminal_colors::ask_again();
         reader.resume();
         if changed {
-            let dark = terminal_colors::seen().ground.map(|g| g.dark);
-            self.set_terminal_dark(dark.or(self.screen.terminal_dark));
+            self.terminal_colors_changed();
         }
+        Ok(())
+    }
+
+    /// 终端的颜色变了：照新的重挑（终端配色照它重新生成、明暗自动照它挑深浅）。
+    pub(super) fn terminal_colors_changed(&mut self) {
+        let dark = terminal_colors::seen().ground.map(|g| g.dark);
+        self.set_terminal_dark(dark.or(self.screen.terminal_dark));
     }
 
     /// 主色的候选、正在用的那个交给外观页（「主色」那一项照它画、开色块列表；跟随头像的选了写那个人格）。

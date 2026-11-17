@@ -58,6 +58,8 @@ pub struct Tui {
     colors: Option<[Rgb; 16]>,
     /// 问终端字色、底色（OSC 10、11）时答什么（[`Tui::answer_ground`]）；不设的不答。
     ground: Option<(Rgb, Rgb)>,
+    /// 攒着没回的终端回话（[`Tui::hold_answers`]）；`None` 的当场回。
+    held: Option<Vec<u8>>,
     bytes: Receiver<Vec<u8>>,
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     child: Box<dyn Child + Send + Sync>,
@@ -177,6 +179,7 @@ impl Tui {
             recording: None,
             colors: None,
             ground: None,
+            held: None,
             bytes,
             writer,
             child,
@@ -225,17 +228,17 @@ impl Tui {
     fn feed(&mut self, data: &[u8]) {
         let has = |needle: &[u8]| data.windows(needle.len()).any(|w| w == needle);
         if has(b"_Gi=31") {
-            self.send(b"\x1b[?62c\x1b[6;20;10t\x1b[0n");
+            self.answer(b"\x1b[?62c\x1b[6;20;10t\x1b[0n");
             return;
         }
         if has(b"\x1b[?u") {
-            self.send(b"\x1b[?0u");
+            self.answer(b"\x1b[?0u");
         }
         // 先答颜色、再答 DA1：真终端照问的先后答。
         let rgb = |(r, g, b): Rgb| format!("rgb:{r:02x}{r:02x}/{g:02x}{g:02x}/{b:02x}{b:02x}");
         if let Some((fg, bg)) = self.ground.filter(|_| has(b"\x1b]10;?")) {
             let answer = format!("\x1b]10;{}\x1b\\\x1b]11;{}\x1b\\", rgb(fg), rgb(bg));
-            self.send(answer.as_bytes());
+            self.answer(answer.as_bytes());
         }
         if let Some(colors) = self.colors.filter(|_| has(b"\x1b]4;")) {
             let answer: String = colors
@@ -245,18 +248,38 @@ impl Tui {
                     format!("\x1b]4;{n};rgb:{r:02x}{r:02x}/{g:02x}{g:02x}/{b:02x}{b:02x}\x1b\\")
                 })
                 .collect();
-            self.send(answer.as_bytes());
+            self.answer(answer.as_bytes());
         }
         if has(b"\x1b[c") {
-            self.send(b"\x1b[?62c");
+            self.answer(b"\x1b[?62c");
         }
         if has(b"\x1b[6n") {
-            self.send(b"\x1b[1;1R");
+            self.answer(b"\x1b[1;1R");
         }
         if let Some(recording) = &mut self.recording {
             recording.extend_from_slice(data);
         }
         self.screen.process(data);
+    }
+
+    /// 回终端的查询：攒着的时候先攒下（[`Tui::hold_answers`]）。
+    fn answer(&mut self, bytes: &[u8]) {
+        match &mut self.held {
+            Some(held) => held.extend_from_slice(bytes),
+            None => self.send(bytes),
+        }
+    }
+
+    /// 从现在起终端的回话先攒着不回：像一个慢一拍才答的终端，回话前面插得进按键（[`Tui::release_answers`] 一起回）。
+    pub fn hold_answers(&mut self) {
+        self.held = Some(Vec::new());
+    }
+
+    /// 攒着的回话一起回，以后照旧当场回。
+    pub fn release_answers(&mut self) {
+        if let Some(held) = self.held.take() {
+            self.send(&held);
+        }
     }
 
     /// 界面起来问终端 16 色时照这一组答（kitty 这类终端会答）：要在第一次读屏以前设。
