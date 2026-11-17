@@ -69,6 +69,23 @@ pub struct Texts {
     pub groups: [String; 5],
     /// 编号后面那一列：一共用了多少 token，`{tokens}`。
     pub tokens: String,
+    /// 结束了的人生那几段的段头：会话不带人格的、带人格的（`{name}`，「推演人生」第 8 条）。
+    pub ended: [String; 2],
+}
+
+/// 结束了的人生那一段的段头：「已结束的人生 · 美羽」，名字照人格列表（没有的写编号），不带人格的只写「已结束的人生」。
+fn ended_heading(
+    names: &std::collections::HashMap<String, String>,
+    persona: Option<&str>,
+    texts: &Texts,
+) -> String {
+    match persona {
+        Some(id) => {
+            let name = names.get(id).map_or(id, String::as_str);
+            texts.ended[1].replace("{name}", name)
+        }
+        None => texts.ended[0].clone(),
+    }
 }
 
 /// 哪个会话是正在用的，哪几个有确认、提问在等你（「确认和提问的抽屉」第 10 条），哪几个做完了还没看。
@@ -211,8 +228,12 @@ pub fn lines(
     for (i, info) in found.iter().enumerate().skip(top).take(shown) {
         if grouped {
             let group = groups::group(info, marks.current, today, &tz);
-            if let Some(age) = group.filter(|_| group != last_group) {
-                rows.push((None, groups::heading(&texts.groups[age.index()])));
+            if let Some(group) = group.filter(|_| group != last_group) {
+                let text = match group {
+                    groups::Group::Age(age) => texts.groups[age.index()].clone(),
+                    groups::Group::Ended(persona) => ended_heading(&list.names, persona, texts),
+                };
+                rows.push((None, groups::heading(&text)));
             }
             last_group = group;
         }
