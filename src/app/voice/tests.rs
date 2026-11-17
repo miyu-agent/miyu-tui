@@ -128,6 +128,37 @@ fn an_unclear_take_or_a_busy_microphone_only_says_so() {
     assert_eq!(app.link.voice.mic, Mic::Idle);
 }
 
+/// 语音包 VO-33：整段没听到说话的回 `speech: false` 和录的那个麦克风（`device`），说一句看看麦克风选对没有、带上设备名（2026-11-17
+/// 项目主人验收第 22 条）；不带设备名的照样说，不带 `speech` 的（旧包）照旧「没听清」。假的回应，不开麦克风。
+#[test]
+fn no_speech_heard_names_the_microphone() {
+    let (mut app, mut sent) = app();
+    app.core(Update::Bus(names(&["stt"])));
+    let mut said = |result: Value| {
+        app.voice_input();
+        let record = calls(&mut sent)[0].0;
+        app.core(Update::Answer {
+            tag: record,
+            result: Ok(result),
+        });
+        assert!(app.typing.input.editor.is_empty(), "不放空字");
+        app.typing.notice.take().map(|n| n.text)
+    };
+    let quiet =
+        json!({"text": "", "clear": false, "speech": false, "device": "fifine Microphone Mono"});
+    assert_eq!(
+        said(quiet).as_deref(),
+        Some("没听到说话，看看麦克风选对没有，现在用的是 fifine Microphone Mono")
+    );
+    let nameless = json!({"text": "", "clear": false, "speech": false});
+    assert_eq!(
+        said(nameless).as_deref(),
+        Some("没听到说话，看看麦克风选对没有")
+    );
+    let old = json!({"text": "", "clear": false});
+    assert_eq!(said(old).as_deref(), Some("没听清，再说一次"));
+}
+
 #[test]
 fn reading_aloud_plays_the_last_reply_and_a_second_press_stops_it() {
     let (mut app, mut sent) = app();
