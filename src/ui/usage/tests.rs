@@ -60,6 +60,39 @@ fn page(
 }
 
 #[test]
+fn a_long_session_list_does_not_make_the_box_take_most_of_the_screen() {
+    let config = Config::builtin().unwrap();
+    let data = data(100);
+    let overview = page(&config, &data, (0, 0), 50);
+    assert!(
+        overview.len() <= 2 + 24,
+        "总览不比放得下的一半高：{} 行",
+        overview.len()
+    );
+    let sessions = page(&config, &data, (3, 0), 50);
+    assert_eq!(sessions.len(), overview.len(), "换页不改框的高度");
+    let last = sessions.last().unwrap();
+    assert!(
+        last.starts_with("⋮ 还有 ") && last.ends_with(" 行"),
+        "{last}"
+    );
+    // 滚到底：最后一个会话露出来，不再写还有几行。
+    let end = page(&config, &data, (3, 1000), 50);
+    assert!(end.last().unwrap().contains("#00000099"), "{end:?}");
+    assert!(!end.iter().any(|l| l.starts_with("⋮ 还有 ")));
+}
+
+#[test]
+fn short_pages_keep_the_tallest_height() {
+    // 会话少、放得下的：照四页里最高的那一页，不写「还有」（2026-10-07 项目主人：换页不改框的高度）。
+    let config = Config::builtin().unwrap();
+    let data = data(3);
+    let sessions = page(&config, &data, (3, 0), 50);
+    assert_eq!(page(&config, &data, (0, 0), 50).len(), sessions.len());
+    assert!(!sessions.iter().any(|l| l.starts_with("⋮ 还有 ")));
+}
+
+#[test]
 fn the_quota_windows_have_a_title_above_them() {
     let config = Config::builtin().unwrap();
     let mut data = data(1);

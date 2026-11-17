@@ -47,6 +47,8 @@ pub struct Texts {
     pub failed: String,
     /// 下边框的按键提示。
     pub hint: String,
+    /// 框里放不下、下面还有几行，`{n}`（2026-11-17 验收第 5 条）。
+    pub below: String,
     /// 总览四个数的名字：累计。
     pub lifetime: String,
     /// 单日最高。
@@ -215,17 +217,19 @@ pub fn page_lines(
         _ => None,
     };
     let mut out = vec![tabs(texts, tab, total, width), Line::default()];
-    // 换页不改框的高度：照四页里最高的那一页留地方，矮的下面空着（2026-10-07 项目主人）。
-    let tallest = (0..TABS)
-        .map(|page| body(src, data, (page, by_money), width).len())
-        .max()
-        .unwrap_or(0);
-    let body = body(src, data, (tab, by_money), width);
     let room = max.saturating_sub(out.len()).max(1);
-    let start = scroll.min(body.len().saturating_sub(room));
-    out.extend(body.into_iter().skip(start).take(room));
-    let high = 2 + tallest.min(room);
-    out.resize(out.len().max(high), Line::default());
+    let shown = shown_rows(src, data, by_money, width, room);
+    let mut body = body(src, data, (tab, by_money), width);
+    let start = scroll.min(body.len().saturating_sub(shown));
+    // 下面还有没露出来的：最后一行换成暗色的「还有 n 行」（2026-11-17 验收第 5 条），滚到底就没有了。
+    let below = body.len().saturating_sub(start + shown);
+    if below > 0 {
+        body.truncate(start + shown - 1);
+        let more = texts.below.replace("{n}", &(below + 1).to_string());
+        body.push(Line::styled(more, theme::dim()));
+    }
+    out.extend(body.into_iter().skip(start).take(shown));
+    out.resize(out.len().max(2 + shown), Line::default());
     // 用到要署名的汇率源（open.er-api.com）：底下暗色注明来源（核心 UC-1，那一家要求署名）。
     if !data.rates.is_empty() {
         let source = data.rates.join(crate::sheet::sep().as_str());
@@ -236,6 +240,23 @@ pub fn page_lines(
         ));
     }
     (chrome, out)
+}
+
+/// 标签以下露几行，换页不变（2026-10-07 项目主人：照四页里最高的那一页留地方，矮的下面空着）；最多放得下的一半，总览本身
+/// 更高的照总览（2026-11-17 验收第 5 条：按会话的列表长，框占了大半屏）。更长的那一页在框里滚。
+fn shown_rows(
+    src: &Sources<'_>,
+    data: &UsageData,
+    by_money: bool,
+    width: u16,
+    room: usize,
+) -> usize {
+    let pages: Vec<usize> = (0..TABS)
+        .map(|page| body(src, data, (page, by_money), width).len())
+        .collect();
+    let tallest = pages.iter().copied().max().unwrap_or(0);
+    let cap = (room / 2).max(pages[0]);
+    tallest.min(cap).min(room).max(1)
 }
 
 /// 那一页标签以下有几行：按键滚到头照它停。
