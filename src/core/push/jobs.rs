@@ -17,6 +17,9 @@ pub struct Said {
     pub text: String,
     /// 附的图片、文件（核心 C-9：别的会话发来的话也能带附件），照先后。
     pub attached: Vec<super::Attached>,
+    /// 场所里的人戳了 AI 一下（`venue.poke`，核心 VP-1补）：那人设的后缀（`venue.poke_text`，不可信），没写的是空的。没戳的是
+    /// `None`。
+    pub poke: Option<String>,
 }
 
 /// 谁发的（`by`）。
@@ -24,12 +27,25 @@ pub struct Said {
 pub enum Sender {
     /// 人：同一个人在别的地方（网页、命令行）说的。
     Person,
+    /// 通讯平台上的人（`external`，核心 VW-2；对应表认出是主人、带 `via` 的也算）：只有看场所会话时才见得到。
+    External(Speaker),
     /// 别的 harness 报的名字（`miyu ask --from`，施工 7-10）。名字不可信。
     Harness(String),
     /// 另一个会话：子代理给主会话的留言，或者子会话里看到的主会话的交代、留言（施工 7-7）。
     Session(String),
     /// 别的（新版本才有的）。
     Other,
+}
+
+/// 通讯平台上说话的人（`by` 是 `external`）。
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Speaker {
+    /// 平台身份（`by.id`，例如 `qq:20001`）。
+    pub id: Option<String>,
+    /// 那条消息写的名字（`venue.name`，群名片、昵称）：只当显示名，不可信。
+    pub name: Option<String>,
+    /// 桥报的是管理员（`by.role` 是 `manager`）。
+    pub manager: bool,
 }
 
 /// 派出去一个后台任务（`job.started`）。
@@ -231,8 +247,26 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
             attached: super::read_attached(&event["body"]),
         });
     }
+    let words = |v: &Value| {
+        v.as_str()
+            .map(str::trim)
+            .filter(|t| !t.is_empty())
+            .map(str::to_string)
+    };
+    let venue = &event["body"]["venue"];
     let from = match by["kind"].as_str() {
+        // 主人在平台上说的（对应表认出来的，带 `via`）：在场所会话里和别人一样写「昵称（qq:号）」。
+        Some("person") if by.get("via").is_some() => Sender::External(Speaker {
+            id: words(&by["via"]),
+            name: words(&venue["name"]),
+            manager: false,
+        }),
         Some("person") => Sender::Person,
+        Some("external") => Sender::External(Speaker {
+            id: words(&by["id"]),
+            name: words(&venue["name"]),
+            manager: by["role"] == "manager",
+        }),
         Some("harness") => Sender::Harness(by["name"].as_str().unwrap_or_default().to_string()),
         Some("session") => Sender::Session(by["id"].as_str().unwrap_or_default().to_string()),
         _ => Sender::Other,
@@ -242,5 +276,6 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
         from,
         text: typed.unwrap_or_else(text),
         attached: super::read_attached(&event["body"]),
+        poke: (venue["poke"] == true).then(|| words(&venue["poke_text"]).unwrap_or_default()),
     }))
 }

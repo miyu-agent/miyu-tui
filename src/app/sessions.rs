@@ -13,6 +13,7 @@ use crate::jobs::{Board, Job, JobKind};
 use crate::transcript::Transcript;
 
 pub(super) mod notes;
+mod venue;
 mod watched;
 use notes::{Relation, announce, doing, tokens, untrusted};
 
@@ -153,6 +154,17 @@ impl App {
                     transcript.job(mark, text, status.clone().unwrap_or_default());
                 }
             }
+            // 场所里的人戳了 AI 一下：一行暗字，不画成一句话（`venue.rs`）。
+            Push::Foreign(said) if said.poke.is_some() => {
+                let speaker = match &said.from {
+                    Sender::External(speaker) => speaker.clone(),
+                    _ => crate::core::Speaker::default(),
+                };
+                let line = venue::poked(&speaker, said.poke.as_deref().unwrap_or_default(), &words);
+                if let Some((transcript, _)) = self.slot(session) {
+                    transcript.poked(said.seq, line);
+                }
+            }
             Push::Foreign(said) => {
                 let from = self.label(session, &said.from, &words);
                 let attach = self.config.text.attach.clone();
@@ -253,6 +265,7 @@ impl App {
     fn label(&self, session: &str, from: &Sender, words: &JobTexts) -> String {
         match from {
             Sender::Person | Sender::Other => words.from_person.clone(),
+            Sender::External(speaker) => venue::label(speaker, words),
             Sender::Harness(name) => words.from_harness.replace("{name}", &untrusted(name)),
             Sender::Session(id) => {
                 let receiver_is_child = self.agent_job(session).is_some();
