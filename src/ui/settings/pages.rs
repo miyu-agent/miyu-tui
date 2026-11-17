@@ -337,6 +337,7 @@ pub(super) fn page_lines(
                 let value = page
                     .more
                     .choice_name(item, value)
+                    .or_else(|| page.more.switched_off_label(&item.key, value, &texts.more))
                     .unwrap_or_else(|| shown(item, value, page.more.named_item(item), &texts.more));
                 let style = if item.writable() {
                     Style::new()

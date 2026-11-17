@@ -1492,6 +1492,7 @@
       "default_look": "デフォルトテーマ",
       "ascii_look": "ASCII のみ",
       "mascot_missing": "{id}（未インストール）",
+      "package_off": "{name}（無効）",
       "seed_unset": "ペルソナのメインカラーを消して、アバターの最初の候補に戻す",
       "own_groups": {"look": "テーマ", "theme": "配色", "timeline": "タイムライン", "mascot": "キャラクター", "icons": "アイコン", "keys": "操作"},
       "appearance": "外観",
