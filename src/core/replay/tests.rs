@@ -166,3 +166,24 @@ fn a_replayed_undo_draws_its_line_and_a_restore_or_redo_takes_it_away() {
         ["said", "gone"]
     );
 }
+
+/// 循环、人生叫醒她的那句补发时也画叫醒的一行，不照你说的画（2026-11-17 项目主人验收第 3 条）。
+#[test]
+fn a_replayed_wake_is_the_wake_line() {
+    let mut replay = Replay::default();
+    let user = json!({"seq":41,"at":"2026-09-25T07:04:05.123Z","kind":"message.user",
+        "by":{"kind": "schedule", "schedule": "t3", "loop": "dynamic"}, "cause":"schedule/t3/1",
+        "body":{"blocks":[{"type":"text","text":"No new instructions."}]}});
+    let got = replay.read(&user);
+    assert!(
+        got.contains(&Push::Wake {
+            seq: 41,
+            life: false
+        }),
+        "{got:?}"
+    );
+    assert!(
+        !got.iter().any(|p| matches!(p, Push::Said { .. })),
+        "{got:?}"
+    );
+}

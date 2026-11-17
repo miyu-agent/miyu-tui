@@ -242,7 +242,7 @@
     "paused": "Paused",
     "next": "Next {time}",
     "dynamic": "Dynamic interval",
-    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"]
+    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"], "wake": ["◷ ", "Loop · continue", "Life · continue"]
   },
   "files": {"title": "Changed files", "count": "{n} files", "more": "{n} more", "none": "No files changed in this session yet", "hints": [["↑/↓", "switch file"], ["PgUp/PgDn", "scroll"], ["Esc", "back"]]},
   "goal": {

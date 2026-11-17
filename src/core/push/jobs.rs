@@ -196,7 +196,7 @@ pub(super) fn sent_as_path(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option
 /// `message.user`：这个界面发的交回序号，长期目标开一轮的交回第几轮，别处来的交回谁发的、说了什么。`mine` 照 `cause` 认。
 pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
     let seq = event["seq"].as_u64()?;
-    if let Some(round) = super::goal::round(event, seq) {
+    if let Some(round) = super::goal::round(event, seq).or_else(|| super::goal::wake(event, seq)) {
         return Some(round);
     }
     let by = &event["by"];
