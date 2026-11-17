@@ -108,14 +108,15 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
         home.data().packages().join("weather").exists(),
         "问的时候还没卸"
     );
-    // 排期第 42 条（2026-11-04 项目主人）：问的那几行画在弹窗里（圆角框，按钮左右是框线），列表照常不收起（别的包还看得见）。
+    // 排期第 42 条（2026-11-04 项目主人）：问的那几行画在弹窗里，列表照常不收起（别的包还看得见）。2026-11-17 本机验收第 12 条：
+    // 弹窗不画边框（同配置页选值的窗），按钮左右没有框线、上面没有上边框。
     let lines = tui.lines();
     let ask = lines
         .iter()
         .position(|l| l.contains("[ 卸载 ]"))
         .expect("在");
     assert!(
-        lines[ask].contains("│ [ 卸载 ]  [ 取消 ]") && lines[ask].trim_end().ends_with('│'),
+        lines[ask].contains("[ 卸载 ]  [ 取消 ]") && !lines[ask].contains("│ [ 卸载 ]"),
         "弹窗：\n{}",
         lines.join("\n")
     );
@@ -125,8 +126,8 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
         lines.join("\n")
     );
     assert!(
-        lines[..ask].iter().any(|l| l.contains("╭──")),
-        "弹窗上边框：\n{}",
+        !lines[..ask].iter().any(|l| l.contains("╭──")),
+        "弹窗没有上边框：\n{}",
         lines.join("\n")
     );
     assert!(

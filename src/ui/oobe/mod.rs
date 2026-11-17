@@ -313,6 +313,16 @@ fn popup_frame(
         }
         return (true, None);
     }
+    // 建人格那一步「推演人生」的窗（「推演人生」第 6 条）：同配置页选值的窗，居中、照内容高。
+    if p.oobe.step == Step::Persona
+        && let Some(on) = p.oobe.persona.life.asking()
+    {
+        if paint {
+            let words = &p.config.text.oobe.persona;
+            persona::life_dialog(frame, area, on, words, p.config, &mut p.screen.caret);
+        }
+        return (true, None);
+    }
     let look = p.config.oobe.popup.clone();
     let texts = p.config.text.oobe.clone();
     let dialogs = p.config.text.settings.more.dialogs.clone();
