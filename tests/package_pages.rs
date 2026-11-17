@@ -76,20 +76,20 @@ fn row(tui: &Tui, name: &str) -> String {
         .unwrap_or_default()
 }
 
-/// 联网搜索的 key、地址那一组归联网搜索（核心 F-14，2026-10-20 项目主人验收报）：从「已安装」进联网搜索那一页，有
+/// 网络搜索的 key、地址那一组归网络搜索（核心 F-14，2026-10-20 项目主人验收报）：从「已安装」进网络搜索那一页，有
 /// 「API Key 和地址」这一组；`Esc` 回「已安装」、停在它上面（第 43c 条）。
 #[test]
 fn the_web_search_keys_live_on_the_web_search_page() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     installed(&mut tui);
-    enter(&mut tui, "联网搜索");
+    enter(&mut tui, "网络搜索");
     tui.wait_for("联网服务");
     tui.wait_for("API Key 和地址");
     tui.key(b"\x1b");
     tui.wait_for("全部升级");
-    until(&mut tui, "停回联网搜索", |t| {
-        !row(t, "联网搜索").is_empty()
+    until(&mut tui, "停回网络搜索", |t| {
+        !row(t, "网络搜索").is_empty()
     });
 }
 
@@ -168,8 +168,8 @@ fn installed_rows_say_how_each_package_plugs_in() {
     until(&mut tui, "终端写带程序和界面", |t| {
         row(t, "终端界面").contains("带程序 · 界面")
     });
-    reach(&mut tui, "联网搜索");
-    let builtin = row(&tui, "联网搜索");
+    reach(&mut tui, "网络搜索");
+    let builtin = row(&tui, "网络搜索");
     assert!(
         !builtin.contains("外观") && !builtin.contains("带程序") && !builtin.contains(" · "),
         "内置的没有标签：{builtin:?}"
@@ -182,16 +182,16 @@ fn space_turns_a_shipped_package_off_and_on() {
     let home = Home::new(Script::new([Play::Says("好。")]));
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     installed(&mut tui);
-    reach(&mut tui, "联网搜索");
+    reach(&mut tui, "网络搜索");
     tui.key(b" ");
-    tui.wait_for("联网搜索 已关闭");
+    tui.wait_for("网络搜索 已关闭");
     until(&mut tui, "写「关」", |t| {
-        row(t, "联网搜索").trim_end().ends_with('关')
+        row(t, "网络搜索").trim_end().ends_with('关')
     });
     tui.key(b" ");
-    tui.wait_for("联网搜索 已打开");
+    tui.wait_for("网络搜索 已打开");
     until(&mut tui, "不写「关」", |t| {
-        !row(t, "联网搜索").trim_end().ends_with('关')
+        !row(t, "网络搜索").trim_end().ends_with('关')
     });
 }
 
