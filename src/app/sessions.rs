@@ -73,6 +73,8 @@ impl App {
                     parked
                         .transcript
                         .update(Update::Push(push), &self.config.text);
+                    let play = parked.transcript.take_play();
+                    self.parked_voice(play);
                 }
                 self.refresh_agent(session);
                 // 切走时还忙着的：这一轮做完了、空下来就退订（「会话列表」第 4 条）。

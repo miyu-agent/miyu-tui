@@ -27,6 +27,12 @@ pub struct Texts {
     pub auto: [String; 2],
     /// 自动朗读开着时底栏写的。
     pub auto_tag: String,
+    /// 她说的语音那一行（蓝图「她说的语音」）：打头的记号，没在放的、在放的。
+    pub clip_marks: [String; 2],
+    /// 工具没报多长的语音写的时长。
+    pub clip_unknown: String,
+    /// 放不了（没有能放声音的软件包、终端不认的格式）。
+    pub unplayable: String,
 }
 
 /// 麦克风那一格在哪一步：不在听（暗）、在听（红）、停了在等字（转圈）。
@@ -52,6 +58,10 @@ pub struct Voice {
     pub speaking: bool,
     /// 她每一轮答完自动念。
     pub auto_read: bool,
+    /// 在放的那一段她说的语音（内容哈希，蓝图「她说的语音」）；没在放的是 `None`。
+    pub clip: Option<String>,
+    /// 发了几个放语音的 `tts.play` 还没回：都回了才算没在放（换一段放时先停的那一段后回）。
+    pub clips: u32,
 }
 
 impl Voice {

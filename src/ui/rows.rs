@@ -190,6 +190,8 @@ pub struct Ctx<'a> {
     pub sessions: &'a [crate::core::SessionInfo],
     /// 这个会话的后台任务：发给子代理的那一步点开写它的名字。
     pub board: Option<&'a crate::jobs::Board>,
+    /// 这个终端放声音的情况：语音条照它画（`voice_rows.rs`）。
+    pub speaker: super::voice_rows::Speaker<'a>,
 }
 
 impl Ctx<'_> {
@@ -246,6 +248,7 @@ pub fn entry_rows(i: usize, entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         (None, Kind::Reply) => reply_rows(i, entry, ctx),
         (None, Kind::Media) => super::media_rows::rows(entry, ctx),
         (None, Kind::Shown) => super::shown_rows::rows(entry, ctx),
+        (None, Kind::Voice) => super::voice_rows::rows(entry, ctx),
         (None, Kind::User) => super::user_rows::rows(i, entry, ctx),
         (None, Kind::Answered) => super::answered_rows::rows(entry, ctx),
         (None, _) if entry.progress.is_some() => super::compaction_rows::rows(entry, ctx),
@@ -263,6 +266,7 @@ pub fn shown(entry: &Entry) -> bool {
                 entry.kind == Kind::Undo
                     || entry.media.is_some()
                     || entry.shown.is_some()
+                    || entry.voice.is_some()
                     || !entry.text.trim().is_empty()
             }
         }
@@ -419,6 +423,7 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         | Kind::Job
         | Kind::Media
         | Kind::Shown
+        | Kind::Voice
         | Kind::Dreamt => (ctx.blank_slot(), Style::new()),
     };
     // 前面带绿色记号的（压好了的 `● `）：记号是引子，折下来的行和字对齐（「正文」第 9 条）。回顾的 `※` 一样，暗色（「回顾」第 2 条）；

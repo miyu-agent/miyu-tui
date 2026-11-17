@@ -57,6 +57,7 @@ impl Fixture {
             replaced: Default::default(),
             sessions: &self.sessions,
             board: Some(&self.board),
+            speaker: crate::ui::voice_rows::Speaker::default(),
         }
     }
 }

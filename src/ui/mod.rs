@@ -49,6 +49,7 @@ mod oobe;
 mod pinned;
 mod prefix_ask;
 pub mod shown_rows;
+pub mod voice_rows;
 pub use oobe::idle_look as oobe_idle_look;
 mod overlay;
 mod panel;

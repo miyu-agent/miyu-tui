@@ -88,7 +88,7 @@ pub use personas::{
 };
 pub use push::{
     Asking, Attached, Block, CallError, Compaction, Goal, GoalState, JobEnd, JobLines, JobReason,
-    JobStart, Outcome, Push, Sender, Sent, ShellRan, Shown, Speaker, Usage,
+    JobStart, Outcome, Push, Sender, Sent, ShellRan, Shown, Speaker, Spoken, Usage, Voice,
 };
 use rpc::Rpc;
 pub use sessions::{

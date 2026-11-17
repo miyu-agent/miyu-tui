@@ -286,6 +286,12 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
     if let Some(job) = &entry.job {
         (discriminant(&job.mark), job.detail.len()).hash(&mut h);
     }
+    // 语音条：放得了没有、在不在放（「她说的语音」）。
+    entry
+        .voice
+        .as_ref()
+        .map(|v| ctx.speaker.state(v))
+        .hash(&mut h);
     if let Some(segment) = &entry.segment {
         (segment.finished, segment.open, segment.steps.len()).hash(&mut h);
         for step in &segment.steps {

@@ -38,6 +38,7 @@ mod title;
 pub use switched::set_names;
 mod turn;
 mod undo;
+mod voice;
 mod waited;
 mod words;
 pub mod workspace;
@@ -58,6 +59,7 @@ pub use entry::{Entry, JobMark, JobNote, Kind, Shell};
 pub use link::Link;
 pub use steps::{ReportClass, Segment, Step, StepKind, Tally, ToolState};
 pub use stuck::Stuck;
+pub use voice::Opener;
 pub use words::undo_counts;
 
 /// 发出去了、核心还没开轮（`turn.started` 没来）的那一小段：两下 `Esc` 记下要打断，轮一开就打断（蓝图「按键」`Esc`，2026-10-14）。
@@ -176,6 +178,8 @@ pub struct Transcript {
     older: pages::Older,
     /// 会话在哪个目录干活（订阅回应、`session.workspace_changed`，核心 9-7 上）；还没开会话、核心旧的是 `None`。
     pub workspace: Option<String>,
+    /// 她说的语音：谁开的这一轮、该放的那一段（`voice.rs`）。
+    voices: voice::Voices,
 }
 
 impl Transcript {
@@ -388,6 +392,7 @@ impl Transcript {
             push @ Push::ToolResult { .. } => self.tool_result(push),
             Push::ToolProgress { call_id, text } => self.tool_progress(&call_id, &text),
             Push::Media(images) => self.sent(images),
+            Push::Voice(spoken) => self.spoken(spoken),
             Push::Shown(file) => self.shown(file),
             Push::ToolImages { call_id, blobs } => self.tool_images(&call_id, blobs),
             Push::HostedOutcome(index, outcome) => self.hosted_outcome(index, outcome),

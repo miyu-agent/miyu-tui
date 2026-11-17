@@ -162,8 +162,8 @@ impl App {
     pub(super) fn open_link(&mut self, url: &str) {
         use crate::launch::{Env, Launched, launch};
         use crate::open::OpenError;
-        // 她给人看的文件：照展示的退路开（「展示」第 6、7 条）。
-        if self.open_shown_link(url) {
+        // 她给人看的文件：照展示的退路开（「展示」第 6、7 条）；她说的语音：放、停（「她说的语音」）。
+        if self.open_shown_link(url) || self.open_voice_link(url) {
             return;
         }
         // 本机的文件、目录：同展示（2026-10-24 项目主人：点 `.html` 进了编辑器，「和 show 用类似点击打开策略」；原来

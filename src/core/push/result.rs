@@ -1,10 +1,10 @@
-//! 一件工具的结果（`tool.result`）：状态、文字、给人看的那一句、调用那一刻的显示名，结果里的图、她发出去的图各另交一条。
+//! 一件工具的结果（`tool.result`）：状态、文字、给人看的那一句、调用那一刻的显示名，结果里的图、她发出去的图、语音各另交一条。
 
 use std::collections::BTreeMap;
 
 use serde_json::Value;
 
-use super::{Push, blocks, jobs, sent, shown};
+use super::{Push, blocks, jobs, sent, shown, voice};
 use crate::core::kinds::ToolStatus;
 
 /// 读一条 `tool.result`，照先后放进 `out`。
@@ -39,6 +39,8 @@ pub(super) fn read(body: &Value, out: &mut Vec<Push>) {
     if !images.is_empty() {
         out.push(Push::Media(images));
     }
+    // 她说出来的语音（核心 SD-1）一段一条，排在发的图后面，同网页 W-1212（蓝图「她说的语音」）。
+    out.extend(voice::clips(&body["sent"]));
     // 她给人看的文件（核心 D-5）：排在那一步后面，同她发的图（蓝图「展示」第 2 条）。
     shown::read(body, out);
 }
