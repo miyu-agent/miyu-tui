@@ -316,9 +316,9 @@ impl App {
             }
             return true;
         }
-        // 待办那一块：点了展开全部，再点收起（第 4 条）。
+        // 待办那一块：点了展开全部，再点收起（第 4 条）。最上面一行是结束了的人生的提示的，点「打开」「收起」（`life_ended.rs`）。
         if areas.todo.contains(at) {
-            if press {
+            if press && !self.ended_clicked(at) {
                 self.talk.todo_full = !self.talk.todo_full;
             }
             return true;

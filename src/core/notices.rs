@@ -1,5 +1,5 @@
 //! 给人的通知（核心 J-3 中，`notices` 流；蓝图 `tui.md`「系统通知」第 8 条）：每次新开会话的定时跑完了、唤醒表坏了换了
-//! 一份空的。连上就订（老核心不认的不说），掉了队重新订；不补以前的。
+//! 一份空的，一段人生结束了、被看过了（核心 LF-14）。连上就订（老核心不认的不说），掉了队重新订；不补以前的。
 
 use serde_json::{Value, json};
 
@@ -12,6 +12,15 @@ pub enum Notice {
     SchedulesReset,
     /// 有没有人认领了后台通知（核心 TR-1：订阅回应的 `claimed`、推来的 `notices.claimed`）。
     Claimed(bool),
+    /// 一段人生结束了（核心 LF-14）：那个人生会话、人格给人看的名字（不带人格的是 `None`）、是不是她自己结束的（`by` 是
+    /// `self`；人结束的是 `owner`）。遗言不读：界面不显示（主人定）。
+    LifeEnded {
+        session: String,
+        name: Option<String>,
+        by_self: bool,
+    },
+    /// 一段她自己结束了、还没看过的人生被看过了（有头打开了那个会话、调了 `life.seen`、会话删了）：收起提示。
+    LifeSeen { session: String },
 }
 
 /// 订阅。交回请求编号。
@@ -39,6 +48,14 @@ pub fn read(message: &Value) -> Option<Notice> {
             ok: params["ok"].as_bool().unwrap_or(false),
         }),
         "schedules.reset" => Some(Notice::SchedulesReset),
+        "life.ended" => Some(Notice::LifeEnded {
+            session: params["session"].as_str()?.to_string(),
+            name: params["name"].as_str().map(str::to_string),
+            by_self: params["by"] == "self",
+        }),
+        "life.seen" => Some(Notice::LifeSeen {
+            session: params["session"].as_str()?.to_string(),
+        }),
         _ => None,
     }
 }
@@ -89,6 +106,39 @@ mod tests {
         assert!(!lost(
             &json!({"method": "resync", "params": {"stream": "sessions"}})
         ));
+    }
+
+    /// 核心 LF-14：一段人生结束了（带名字，`by` 分她自己、人）、被看过了；遗言不读。
+    #[test]
+    fn a_life_that_ended_and_was_seen_is_read() {
+        let push = |params| json!({"jsonrpc": "2.0", "method": "notice", "params": params});
+        assert_eq!(
+            read(&push(
+                json!({"kind": "life.ended", "at": "2026-11-17T08:00:00.000Z", "persona": "miyu",
+                "name": "美羽", "session": "s-life", "by": "self", "last_words": "再见"})
+            )),
+            Some(Notice::LifeEnded {
+                session: "s-life".into(),
+                name: Some("美羽".into()),
+                by_self: true
+            })
+        );
+        assert_eq!(
+            read(&push(
+                json!({"kind": "life.ended", "session": "s-2", "by": "owner"})
+            )),
+            Some(Notice::LifeEnded {
+                session: "s-2".into(),
+                name: None,
+                by_self: false
+            })
+        );
+        assert_eq!(
+            read(&push(json!({"kind": "life.seen", "session": "s-life"}))),
+            Some(Notice::LifeSeen {
+                session: "s-life".into()
+            })
+        );
     }
 
     /// 核心 TR-1：订阅回应的 `claimed`、推来的 `notices.claimed`。

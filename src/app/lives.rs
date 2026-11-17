@@ -65,9 +65,10 @@ impl App {
         true
     }
 
-    /// 推演人生的几样回应：人生卡上的暂停、继续、结束（`life_card.rs`），还没开会话时的 `life.list`。归这里交回 `true`。
+    /// 推演人生的几样回应：人生卡上的暂停、继续、结束（`life_card.rs`），还没开会话时的 `life.list`，结束了没看过的
+    /// （`life_ended.rs`）。归这里交回 `true`。
     pub(super) fn life_answer(&mut self, update: &Update) -> bool {
-        self.life_card_answer(update) || self.life_list_answer(update)
+        self.life_card_answer(update) || self.life_list_answer(update) || self.ended_answer(update)
     }
 
     /// `life.list` 的回应：同光打 `/life`。一条都没有的说「没有正在过的人生」；拒了的弹原话。回应归这里交回 `true`。

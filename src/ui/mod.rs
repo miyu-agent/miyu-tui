@@ -102,6 +102,8 @@ use ratatui::layout::Rect;
 
 use crate::app::App;
 
+#[cfg(test)]
+pub(crate) use above::lines as above_lines;
 use layout::text_width;
 pub use layout::{Areas, areas};
 pub(super) use layout::{above, agents_area, box_width, list_text};

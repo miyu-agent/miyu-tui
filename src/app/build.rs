@@ -97,6 +97,7 @@ impl App {
                 core,
                 viewing: None,
                 notices_claimed: false,
+                ended_unseen: Vec::new(),
                 abilities: crate::core::Abilities::default(),
                 human,
                 currency: "USD".to_string(),
