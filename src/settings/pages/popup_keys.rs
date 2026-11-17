@@ -17,6 +17,9 @@ impl Settings {
         texts: &Texts,
     ) {
         match popup {
+            // 选人格、预设的按 `e` 开详情窗（`choose_edit.rs`）。
+            Popup::Choose(choose)
+                if key.code == KeyCode::Char('e') && self.edit_from_choose(&choose, texts) => {}
             Popup::Choose(mut choose) => match choose.press(key) {
                 Pressed::Picked(value) => self.write_to(choose.target, &choose.key, value, texts),
                 Pressed::Cancelled => self.edit_cancel(choose.target),

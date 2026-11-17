@@ -94,17 +94,18 @@ impl Settings {
 
     /// 从框进来的详情窗关了：回框。新建的交出去还没回来时不算（两格窗关了、详情窗还没开）。
     pub fn lone_done(&self) -> bool {
+        self.watch.lone && self.detail_closed()
+    }
+
+    /// 详情窗关了、没有在编辑器里改的、没有新建了等着开详情窗的：从框、选择窗进来的照它回去。
+    pub(super) fn detail_closed(&self) -> bool {
         let creating = self.waiting.values().any(|w| {
             matches!(
                 w,
                 Waiting::PersonaSaved(_, true) | Waiting::PresetSaved(true)
             )
         });
-        self.watch.lone
-            && self.popup.is_none()
-            && self.prompt.is_none()
-            && !self.editing
-            && !creating
+        self.popup.is_none() && self.prompt.is_none() && !self.editing && !creating
     }
 
     /// 新建成了、开它的详情窗时：从框进来的记下，回框停在它上面。
