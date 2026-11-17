@@ -615,6 +615,8 @@
     "doing_thinking": "Thinking",
     "doing_replying": "Replying",
     "from_person": "Message from you elsewhere",
+    "from_person_at": "Message from you in {head}",
+    "heads": {"tui": "the terminal UI", "web": "the web UI", "cli": "the command line", "shellhook": "the shell"},
     "external": "External",
     "external_speaker": "{name} ({id})",
     "external_manager": "{who} · Admin",

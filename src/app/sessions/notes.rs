@@ -114,6 +114,15 @@ pub(super) fn peer_note(
     }
 }
 
+/// 同一个人在别的头上说的话的来处（「别处来的话」第 2 条）：认得出是哪种头的（`by.head`，核心 VN-1）写「收到你在网页发送的消息」，
+/// 认不得、没写的照旧写「收到你在其他端发送的消息」。
+pub(super) fn from_person(head: Option<&str>, words: &JobTexts) -> String {
+    match head.and_then(|h| words.heads.get(h)) {
+        Some(head) => words.from_person_at.replace("{head}", head),
+        None => words.from_person.clone(),
+    }
+}
+
 /// 别的主会话发来的话的来处（「别处来的话」第 2 条，核心 C-5）：短编号，有标题的再写标题（标题照不可信的字清理）。
 pub(super) fn from_session(id: &str, title: Option<&str>, words: &JobTexts) -> String {
     let short = crate::session_list::short(id);

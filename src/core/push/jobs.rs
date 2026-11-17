@@ -25,8 +25,9 @@ pub struct Said {
 /// 谁发的（`by`）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Sender {
-    /// 人：同一个人在别的地方（网页、命令行）说的。
-    Person,
+    /// 人：同一个人在别的地方说的，带着那个头报的种类（`by.head`，核心 VN-1：`tui`、`web`、`cli`、`shellhook`）；没写的是
+    /// `None`。
+    Person(Option<String>),
     /// 通讯平台上的人（`external`，核心 VW-2；对应表认出是主人、带 `via` 的也算）：只有看场所会话时才见得到。
     External(Speaker),
     /// 别的 harness 报的名字（`miyu ask --from`，施工 7-10）。名字不可信。
@@ -261,7 +262,7 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
             name: words(&venue["name"]),
             manager: false,
         }),
-        Some("person") => Sender::Person,
+        Some("person") => Sender::Person(words(&by["head"])),
         Some("external") => Sender::External(Speaker {
             id: words(&by["id"]),
             name: words(&venue["name"]),

@@ -33,6 +33,33 @@ fn drawn(events: &[Value]) -> Vec<(String, String)> {
 }
 
 #[test]
+fn what_you_said_on_another_head_says_which_head() {
+    let got = drawn(&[
+        said(
+            2,
+            json!({"kind": "person", "head": "web"}),
+            "网页上说的",
+            json!(null),
+        ),
+        said(
+            3,
+            json!({"kind": "person", "head": "shellhook"}),
+            "shell 里说的",
+            json!(null),
+        ),
+        said(4, json!({"kind": "person"}), "老头说的", json!(null)),
+    ]);
+    assert_eq!(
+        got,
+        [
+            ("收到你在网页发送的消息".into(), "网页上说的".into()),
+            ("收到你在终端集成发送的消息".into(), "shell 里说的".into()),
+            ("收到你在其他端发送的消息".into(), "老头说的".into()),
+        ]
+    );
+}
+
+#[test]
 fn venue_speakers_show_nickname_and_number_and_a_poke_is_one_dim_line() {
     let got = drawn(&[
         said(

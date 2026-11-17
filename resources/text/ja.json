@@ -615,6 +615,8 @@
     "doing_thinking": "考え中",
     "doing_replying": "返信中",
     "from_person": "他の場所からのメッセージ",
+    "from_person_at": "{head}からのメッセージ",
+    "heads": {"tui": "ターミナル画面", "web": "ウェブ", "cli": "コマンドライン", "shellhook": "シェル連携"},
     "external": "外部",
     "external_speaker": "{name}（{id}）",
     "external_manager": "{who} · 管理者",
