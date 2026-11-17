@@ -9,12 +9,19 @@ fn texts() -> Texts {
     Config::builtin().unwrap().text.settings
 }
 
-/// 开一个只有一项的配置页，写那一项，交回那一次 `config.set` 的编号。
+/// 开一个只有一项的配置页，写那一项，核心照 `applies` 回。
 fn written(applies: &str) -> Settings {
+    let reply = json!({"keys": {"core.workers": {"value": 4, "effective": 4, "applies": applies}}});
+    answered(reply)
+}
+
+/// 开一个只有一项的配置页，写那一项，核心照 `reply` 回。
+fn answered(reply: serde_json::Value) -> Settings {
     let schema = json!({"pages": [{"id": "advanced", "name": "高级"}],
         "groups": [{"id": "core", "name": "核心", "page": "advanced"}],
         "items": [{"key": "core.workers", "type": "integer", "control": "number", "layers": ["system"],
-            "name": "核心的工作线程数", "page": "advanced", "group": "core", "applies": applies}]});
+            "name": "核心的工作线程数", "page": "advanced", "group": "core",
+            "applies": reply["keys"]["core.workers"]["applies"]}]});
     let config = json!({"items": {"core.workers": {"value": 0}}});
     let mut page = Settings::open(false, true);
     for (tag, method, _) in page.take_asks() {
@@ -31,7 +38,6 @@ fn written(applies: &str) -> Settings {
         .iter()
         .find(|(_, m, _)| *m == "config.set")
         .expect("当场存");
-    let reply = json!({"keys": {"core.workers": {"value": 4, "effective": 4, "applies": applies}}});
     page.answer(*tag, Ok(reply), &texts());
     page
 }
@@ -47,5 +53,20 @@ fn a_setting_that_needs_a_restart_says_so_when_saved() {
     assert_eq!(
         page.status.as_ref().map(|(text, _)| text.as_str()),
         Some("已保存")
+    );
+}
+
+#[test]
+fn a_saved_setting_that_names_a_missing_persona_shows_the_core_warning() {
+    // 核心 CK-1：指着现在没有的人格、预设照收，回应带 `problems`（已经照连接的语言说）：回执后面接上，黄字提示。
+    let reply = json!({"keys": {"core.workers": {"value": 4, "effective": 4, "applies": "now"}},
+        "problems": [{"code": "unknown_persona", "level": "warning", "key": "persona.default",
+            "message": "没有人格 ghost"}]});
+    let page = answered(reply);
+    let (text, tone) = page.status.as_ref().expect("写了回执");
+    assert_eq!(text, "已保存 · 没有人格 ghost");
+    assert!(
+        matches!(tone, crate::settings::Tone::Note),
+        "提示，不是出错"
     );
 }
