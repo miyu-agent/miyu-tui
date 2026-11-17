@@ -124,10 +124,15 @@ impl App {
                 _ => return,
             },
         };
-        // 滚过头停在最后一屏：标签那两行不滚。
+        // 滚过头停在最后一屏：标签那两行、底下注明汇率源的两行不滚。
         let width = self.screen.areas.menu_text.width;
         let rows = crate::ui::usage::body_rows(&self.seen(), (tab, money), width);
-        let shown = page.saturating_sub(2).max(1);
+        let rates = self
+            .boxes
+            .usage
+            .as_ref()
+            .is_some_and(|d| !d.rates.is_empty());
+        let shown = page.saturating_sub(if rates { 4 } else { 2 }).max(1);
         let scroll = scroll.min(rows.saturating_sub(shown));
         self.boxes.panel = Some(Panel::Usage { tab, scroll, money });
     }

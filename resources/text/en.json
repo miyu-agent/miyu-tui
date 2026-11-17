@@ -423,6 +423,7 @@
     "empty": "No usage yet",
     "failed": "Can't read usage: {reason}",
     "hint": "Tab/←/→ switch · t tokens/spend · ↑/↓ scroll · Esc close",
+    "below": "⋮ {n} more line(s)",
     "lifetime": "Lifetime",
     "peak": "Peak day",
     "streak": "Streak",
