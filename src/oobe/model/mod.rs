@@ -68,6 +68,8 @@ pub struct ModelStep {
     detect: Option<Value>,
     list: Option<Value>,
     configured: Vec<String>,
+    /// 配置里接得上的几家（`rows::usable`）。
+    usable: Vec<rows::Provider>,
 }
 
 impl ModelStep {
@@ -452,5 +454,7 @@ fn needs_secret(target: &Target, key: &str) -> bool {
         && !matches!(target, Target::Listed(p) if p.env.is_some() || p.configured.is_some())
 }
 
+#[cfg(test)]
+mod configured_tests;
 #[cfg(test)]
 mod tests;

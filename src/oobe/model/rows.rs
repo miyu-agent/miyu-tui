@@ -1,6 +1,6 @@
-//! 选一家那一屏的一行行（「第一次打开的引导」第 16 条）：照 `provider.catalog {"featured": true}` 列常用的几家，
-//! `provider.detect` 的 `keys` 对上的标「已找到 key」，配置里有的标「已配好」；本机跑着的服务另一段；最后「更多供应商…」
-//! 「自定义…」。
+//! 选一家那一屏的一行行（「第一次打开的引导」第 16 条）：配置里已经接得上、上面两份都没列到的几家（扩展驱动接的这类）
+//! 排最前；照 `provider.catalog {"featured": true}` 列常用的几家，`provider.detect` 的 `keys` 对上的标「已找到 key」，
+//! 配置里有的标「已配好」；本机跑着的服务另一段；最后「更多供应商…」「自定义…」。
 
 use serde_json::Value;
 
@@ -85,10 +85,32 @@ pub fn providers(catalog: &Value, detect: &Value, configured: &[String]) -> Vec<
         .collect()
 }
 
-/// 照三份回应排好一行行。`configured` 是 `model.list` 里配置的那几家的编号。
-pub fn rows(catalog: &Value, detect: &Value, configured: &[String]) -> Vec<Row> {
+/// 配置里的几家（`model.list` 读好的）里接得上的（核心没报 `problem`，扩展驱动接的也算），当作「已配好」的一行行。
+pub fn usable(providers: &[crate::settings::data::Provider]) -> Vec<Provider> {
+    providers
+        .iter()
+        .filter(|p| p.problem.is_none())
+        .map(|p| Provider {
+            catalog: p.id.clone(),
+            name: p.name.clone().unwrap_or_else(|| p.id.clone()),
+            env: None,
+            configured: Some(p.id.clone()),
+            base_url: None,
+            supported: true,
+        })
+        .collect()
+}
+
+/// 照三份回应排好一行行。`configured` 是 `model.list` 里配置的那几家的编号，`usable` 是其中接得上的（[`usable`]）：常用的
+/// 几家、本机的都没列到的排最前（2026-11-17：只配了一家扩展驱动接的、编号不在目录里的，引导里原来找不到它）。
+pub fn rows(
+    catalog: &Value,
+    detect: &Value,
+    configured: &[String],
+    usable: &[Provider],
+) -> Vec<Row> {
     let text = |v: &Value| v.as_str().map(str::to_string);
-    let mut out: Vec<Row> = providers(catalog, detect, configured)
+    let featured: Vec<Row> = providers(catalog, detect, configured)
         .into_iter()
         .map(Row::Provider)
         .collect();
@@ -108,6 +130,19 @@ pub fn rows(catalog: &Value, detect: &Value, configured: &[String]) -> Vec<Row> 
             }))
         })
         .collect();
+    let listed = |id: &str| {
+        featured
+            .iter()
+            .chain(&local)
+            .any(|row| matches!(row, Row::Provider(p) if p.configured.as_deref() == Some(id)))
+    };
+    let mut out: Vec<Row> = usable
+        .iter()
+        .filter(|p| !listed(&p.catalog))
+        .cloned()
+        .map(Row::Provider)
+        .collect();
+    out.extend(featured);
     if !local.is_empty() {
         out.push(Row::Section(Section::Local));
         out.extend(local);
@@ -133,7 +168,7 @@ mod tests {
         let detect = json!({
             "keys": [{"env": "DEEPSEEK_API_KEY", "provider": "deepseek", "supported": true}],
             "local": [{"provider": "ollama", "name": "Ollama", "base_url": "http://127.0.0.1:11434/v1", "models": []}]});
-        let got = rows(&catalog, &detect, &["opencode".to_string()]);
+        let got = rows(&catalog, &detect, &["opencode".to_string()], &[]);
         let Row::Provider(deepseek) = &got[0] else {
             panic!("{got:?}")
         };
@@ -153,7 +188,7 @@ mod tests {
             got[5..],
             [Row::Section(Section::Other), Row::More, Row::Custom]
         );
-        let bare = rows(&catalog, &json!({}), &[]);
+        let bare = rows(&catalog, &json!({}), &[], &[]);
         assert!(
             !bare.contains(&Row::Section(Section::Local)),
             "本机没有服务就不列这一段"
