@@ -1,6 +1,7 @@
 //! 换主题（蓝图 `tui.md`「主题」第 3、5 条）：连上时、配置变了时读 `tui.look`；是一个主题包的编号就照 `package.list` 找它的
 //! `theme.json`、`package.file` 读来、盖在默认主题上换上；没写的、是默认主题包的照编进程序的默认主题；包没了、读不成的照默认
-//! 主题画，弹一句。照吉祥物包的那一套（`mascot_pick.rs`）。
+//! 主题画，弹一句。包关着的（核心 UX-1补）照默认主题画、不弹；包开关了（`package.changed`）再查一次。照吉祥物包的那一套
+//! （`mascot_pick.rs`）。
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
@@ -26,6 +27,8 @@ pub struct ThemePick {
     shown: Option<String>,
     /// 这一次运行里说过「控制台显示不了中文」（todolist 63）。
     console_noted: bool,
+    /// 包开关、装卸了：下一次读到配置时画着的那个也再查一次开没开。
+    recheck: bool,
 }
 
 impl App {
@@ -33,6 +36,11 @@ impl App {
     pub(super) fn theme_pick_update(&mut self, update: &Update) -> bool {
         match update {
             Update::HeadConfig(_) => {
+                self.ask_config(SETTING_TAG, &[crate::settings::pages::LOOK]);
+                false
+            }
+            Update::Packages(_) => {
+                self.media.theme_pick.recheck = true;
                 self.ask_config(SETTING_TAG, &[crate::settings::pages::LOOK]);
                 false
             }
@@ -46,7 +54,21 @@ impl App {
                 true
             }
             Update::Answer { tag, result } if *tag == LIST_TAG => {
-                let file = result.as_ref().ok().and_then(|got| self.theme_file_of(got));
+                let got = result.as_ref().ok();
+                let pick = &mut self.media.theme_pick;
+                if got.is_some_and(|got| {
+                    super::mascot_pick::switched_off(got, pick.loading.as_deref())
+                }) {
+                    pick.loading = None;
+                    self.put_look(&crate::sheet::default_value(), None);
+                    return true;
+                }
+                let file = got.and_then(|got| self.theme_file_of(got));
+                let pick = &mut self.media.theme_pick;
+                if file.is_some() && pick.loading.is_some() && pick.loading == pick.shown {
+                    pick.loading = None;
+                    return true;
+                }
                 match (self.media.theme_pick.loading.clone(), file) {
                     (Some(id), Some(path)) => {
                         let params = json!({"package": id, "path": path});
@@ -79,7 +101,12 @@ impl App {
     /// 配置里选的：没写的换回默认主题；和画着的一样的不动；别的去找它的文件。
     fn look_chosen(&mut self, id: Option<String>) {
         let pick = &mut self.media.theme_pick;
-        if id == pick.shown && pick.loading.is_none() {
+        // 包开关了只再查主题包：编进程序的没有开关。
+        let packaged = id
+            .as_deref()
+            .is_some_and(|i| crate::sheet::builtin(i).is_none());
+        let recheck = std::mem::take(&mut pick.recheck) && packaged;
+        if id == pick.shown && pick.loading.is_none() && !recheck {
             return;
         }
         match id {
@@ -182,3 +209,6 @@ impl App {
         });
     }
 }
+
+#[cfg(test)]
+mod tests;

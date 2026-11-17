@@ -45,6 +45,11 @@ pub fn live_packages(got: &Value) -> impl Iterator<Item = &Value> {
         .filter(|p| shadowed(p).is_none())
 }
 
+/// `package.list` 的一项开着（核心 UX-1补：每个包都有开关，`enabled` 是假的就是关着，它带来的一切都不在）；没写的当开着。
+pub fn switched_on(package: &Value) -> bool {
+    package["enabled"] != Value::Bool(false)
+}
+
 /// 读 `package.list` 的回应；没有编号的那一项不要。
 pub(super) fn listed(result: &Value) -> Vec<PackageEntry> {
     let names: std::collections::HashMap<&str, &str> = result["groups"]

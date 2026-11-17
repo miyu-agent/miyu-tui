@@ -1,5 +1,6 @@
 //! 换吉祥物（蓝图 `tui.md`「吉祥物包」第 3、5 条）：连上时、配置变了时读 `tui.mascot`；是一个吉祥物包的编号就照
-//! `package.list` 找它的模型、`package.file` 读来、查过换上；没写的、包没了、读不成、查不过的照内置画，后三种弹一句。
+//! `package.list` 找它的模型、`package.file` 读来、查过换上；没写的、包没了、读不成、查不过的照内置画，后三种弹一句。包关着的
+//! （核心 UX-1补）照内置画、不弹；包开关了（`package.changed`）再查一次。
 //! 起终端时设了 `MIYU_TUI_MASCOT` 的照那份本机文件画、不看配置（做吉祥物的人试画、测具用），查不过的提示里带原因。
 
 use base64::Engine;
@@ -32,6 +33,15 @@ pub struct MascotPick {
     loading: Option<String>,
     /// 现在画着的包；内置的是 `None`。
     shown: Option<String>,
+    /// 包开关、装卸了：下一次读到配置时画着的那个也再查一次开没开。
+    recheck: bool,
+}
+
+/// `package.list` 里 `id` 这个包在、关着（核心 UX-1补）。
+pub(super) fn switched_off(got: &Value, id: Option<&str>) -> bool {
+    id.is_some_and(|id| {
+        crate::core::live_packages(got).any(|p| p["package"] == id && !crate::core::switched_on(p))
+    })
 }
 
 impl App {
@@ -57,6 +67,11 @@ impl App {
                 self.ask_config(SETTING_TAG, &["tui.mascot"]);
                 false
             }
+            Update::Packages(_) if !self.media.mascot_pick.preview => {
+                self.media.mascot_pick.recheck = true;
+                self.ask_config(SETTING_TAG, &["tui.mascot"]);
+                false
+            }
             Update::Answer { tag, result } if *tag == SETTING_TAG => {
                 let id = result.as_ref().ok().and_then(|got| {
                     got["items"]["tui.mascot"]["value"]
@@ -67,7 +82,19 @@ impl App {
                 true
             }
             Update::Answer { tag, result } if *tag == LIST_TAG => {
-                let model = result.as_ref().ok().and_then(|got| self.model_of(got));
+                let got = result.as_ref().ok();
+                let pick = &mut self.media.mascot_pick;
+                if got.is_some_and(|got| switched_off(got, pick.loading.as_deref())) {
+                    pick.loading = None;
+                    self.restore_mascot();
+                    return true;
+                }
+                let model = got.and_then(|got| self.model_of(got));
+                let pick = &mut self.media.mascot_pick;
+                if model.is_some() && pick.loading.is_some() && pick.loading == pick.shown {
+                    pick.loading = None;
+                    return true;
+                }
                 match (self.media.mascot_pick.loading.clone(), model) {
                     (Some(id), Some(path)) => {
                         self.mascot_ask(
@@ -102,7 +129,9 @@ impl App {
 
     /// 配置里选的：没写的换回内置的；和画着的一样的不动；别的去找它的模型。
     fn mascot_chosen(&mut self, id: Option<String>) {
-        if id == self.media.mascot_pick.shown && self.media.mascot_pick.loading.is_none() {
+        let pick = &mut self.media.mascot_pick;
+        let recheck = std::mem::take(&mut pick.recheck) && id.is_some();
+        if id == pick.shown && pick.loading.is_none() && !recheck {
             return;
         }
         match id {
@@ -162,3 +191,6 @@ impl App {
         });
     }
 }
+
+#[cfg(test)]
+mod tests;

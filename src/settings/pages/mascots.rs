@@ -1,5 +1,6 @@
-//! 「吉祥物」「主题」两项的选择窗列的包（蓝图 `tui.md`「吉祥物包」第 3 条、「主题」第 5 条）：照 `package.list` 挑读成了的
-//! `kind = "mascot"`、`kind = "theme"`，和人格一个形状（编号、名字），第一行「内置」「默认主题」由 `choices` 加。
+//! 「吉祥物」「主题」两项的选择窗列的包（蓝图 `tui.md`「吉祥物包」第 3 条、「主题」第 5 条）：照 `package.list` 挑读成了的、
+//! 开着的 `kind = "mascot"`、`kind = "theme"`（关着的不列，核心 UX-1补），和人格一个形状（编号、名字），第一行「内置」「默认主题」
+//! 由 `choices` 加。
 
 use serde_json::Value;
 
@@ -42,11 +43,12 @@ pub fn tui_file(item: &Value) -> Option<&str> {
         .or_else(|| item["theme"]["file"].as_str())
 }
 
-/// 这一种（`kind`）读成了的包，跳过 `skip` 那一个。
+/// 这一种（`kind`）读成了的、开着的包，跳过 `skip` 那一个。
 fn of_kind(got: &Value, kind: &str, skip: Option<&str>) -> Vec<Persona> {
     let text = |v: &Value| v.as_str().map(str::to_string);
     crate::core::live_packages(got)
         .filter(|p| p["kind"] == kind && p["package"].as_str() != skip)
+        .filter(|p| crate::core::switched_on(p))
         .map(|p| Persona {
             id: text(&p["package"]).unwrap_or_default(),
             name: text(&p["name"]),
@@ -94,6 +96,24 @@ mod tests {
             super::looks(&json!({"packages": []}), "Plain ASCII").len(),
             1
         );
+    }
+
+    /// 核心 UX-1补：关着的吉祥物包、主题包不列（关掉以后它带来的都不在）；没写 `enabled` 的照开着。
+    #[test]
+    fn switched_off_mascots_and_themes_are_not_listed() {
+        let got = json!({"packages": [
+            {"package": "pudding", "kind": "mascot", "name": "布丁", "enabled": false},
+            {"package": "bun", "kind": "mascot", "name": "包子", "enabled": true},
+            {"package": "night", "kind": "theme", "name": "夜", "enabled": false, "theme": {"tui": {"file": "t.json"}}},
+            {"package": "day", "kind": "theme", "name": "昼", "theme": {"tui": {"file": "t.json"}}}
+        ]});
+        let mascots: Vec<String> = read(&got).into_iter().map(|p| p.id).collect();
+        assert_eq!(mascots, ["bun"]);
+        let looks: Vec<String> = super::looks(&got, "纯 ASCII")
+            .into_iter()
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(looks, ["ascii", "day"]);
     }
 
     /// 核心 SD-1：被盖住的那份（带 `covered`）不再列一行。
