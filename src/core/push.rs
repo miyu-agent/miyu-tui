@@ -83,6 +83,8 @@ pub enum Push {
         level: Level,
         /// 只读开着：实际的级别就是只读。
         read_only: bool,
+        /// 换以前实际是哪一级（核心 PL-1 的 `from`，只读开着的是只读）：这一条以前的照它画；以前的日志没有，是 `None`。
+        from: Option<Level>,
     },
     /// 会话开头的权限（`session.created` 的 `permission`）：只读开着的是只读。读到会话开头才有。
     Began(Level),

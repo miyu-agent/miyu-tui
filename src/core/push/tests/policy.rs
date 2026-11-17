@@ -79,6 +79,7 @@ fn an_unknown_level_is_drawn_read_only() {
             Push::Policy {
                 level,
                 read_only: false,
+                ..
             },
         ] => Some(*level),
         _ => None,
@@ -87,4 +88,30 @@ fn an_unknown_level_is_drawn_read_only() {
     assert_eq!(level("full"), Some(Level::Full));
     assert_eq!(level("workspace"), Some(Level::ReadOnly));
     assert_eq!(level("sandbox"), Some(Level::ReadOnly));
+}
+
+/// 换级别的带着换以前的（核心 PL-1 的 `from`，同样两格，只读开着的是只读）；以前的日志没有这一格。
+#[test]
+fn a_level_switch_carries_the_level_before_it() {
+    use crate::core::Level;
+    let event = |body: serde_json::Value| json!({"seq": 12, "kind": "session.policy_changed", "by": {"kind": "person"}, "body": body});
+    let switched = event(json!({"permission": {"level": "full", "read_only": false},
+        "from": {"level": "full", "read_only": true}}));
+    assert_eq!(
+        read_mine(&switched),
+        [Push::Policy {
+            level: Level::Full,
+            read_only: false,
+            from: Some(Level::ReadOnly),
+        }]
+    );
+    let old = event(json!({"permission": {"level": "full", "read_only": true}}));
+    assert_eq!(
+        read_mine(&old),
+        [Push::Policy {
+            level: Level::Full,
+            read_only: true,
+            from: None,
+        }]
+    );
 }

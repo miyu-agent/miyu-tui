@@ -17,9 +17,17 @@ fn created(read_only: bool) -> Value {
                     "persona": "miyu", "preset": "work", "model": "a/b", "cwd": "~/a"}})
 }
 
+/// 换级别的那一条，以前的日志写法：没有 `from`。
 fn policy(seq: u64, read_only: bool) -> Value {
     json!({"seq": seq, "at": AT, "kind": "session.policy_changed", "by": {"kind": "person"},
            "body": {"permission": {"level": "full", "read_only": read_only}}})
+}
+
+/// 换级别的那一条，核心 PL-1 起的写法：`from` 是换以前的。
+fn switched(seq: u64, read_only: bool) -> Value {
+    json!({"seq": seq, "at": AT, "kind": "session.policy_changed", "by": {"kind": "person"},
+           "body": {"permission": {"level": "full", "read_only": read_only},
+                    "from": {"level": "full", "read_only": !read_only}}})
 }
 
 /// 第 `seq` 条你说 `said`，接着一轮：开轮、收尾。
@@ -151,15 +159,46 @@ fn a_level_change_between_two_messages_in_one_page_splits_their_colors() {
 }
 
 #[test]
+fn messages_before_the_first_change_take_its_from_at_once() {
+    // 核心 PL-1：换级别的那一条带着换以前的级别（`from`），这一页开头那一段当场照它画，不等更早的一页。
+    let (mut app, _sent) = app();
+    let events = vec![
+        turn(30, "三"),
+        vec![switched(35, true)],
+        turn(40, "四"),
+        vec![switched(45, false)],
+    ];
+    resume(&mut app, page(events), true, Level::Full);
+    let want = vec![
+        ("三".to_string(), Some(Level::Full)),
+        ("四".to_string(), Some(Level::ReadOnly)),
+    ];
+    assert_eq!(said(&app), want);
+    let bars = |app: &App| levels(app).into_iter().map(|(_, l)| l).collect::<Vec<_>>();
+    let (full, read_only) = (Some(Level::Full), Some(Level::ReadOnly));
+    assert_eq!(bars(&app), [full, full, read_only, read_only], "收尾行也是");
+    live_switch(&mut app, true);
+    assert_eq!(said(&app), want, "换了级别，已经发出去的不变");
+    assert_eq!(bars(&app), [full, full, read_only, read_only]);
+}
+
+#[test]
 fn messages_before_the_first_change_in_the_page_wait_for_the_older_page_then_stay() {
-    // 这一页开头的级别不知道（换级别的那一条在更早的页里）：先不照现在的画，更早的一页读进来照它的末尾补上。
+    // 以前的日志：换级别的那一条没有 `from`，这一页开头的级别不知道（在更早的页里）：先不照现在的画（暗色），
+    // 更早的一页读进来照它的末尾补上。
     let (mut app, _sent) = app();
     let events = vec![turn(30, "三"), vec![policy(35, true)], turn(40, "四")];
     resume(&mut app, page(events), true, Level::ReadOnly);
     let before = said(&app);
     live_switch(&mut app, false);
     assert_eq!(said(&app), before, "换了级别，已经发出去的不变");
-    assert_eq!(before[1], ("四".to_string(), Some(Level::ReadOnly)));
+    assert_eq!(
+        before,
+        [
+            ("三".to_string(), None),
+            ("四".to_string(), Some(Level::ReadOnly))
+        ]
+    );
     let older = page(vec![
         vec![created(true)],
         turn(10, "一"),

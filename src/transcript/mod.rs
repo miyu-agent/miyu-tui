@@ -332,9 +332,7 @@ impl Transcript {
             // 重起标题没起成：只弹提示（界面那头办），标题不变。
             Push::RetitleFailed { .. } => {}
             Push::Workspace(cwd) => self.workspace_changed(cwd, texts),
-            Push::Policy { level, read_only } => {
-                self.set_level(if read_only { Level::ReadOnly } else { level });
-            }
+            policy @ Push::Policy { .. } => self.switched(&policy),
             // 会话开头的级别：读到了这一条，前面再没有了。
             Push::Began(level) => self.settled(level),
             Push::Reverted(turns) => {
