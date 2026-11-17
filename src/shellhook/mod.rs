@@ -39,7 +39,8 @@ Commands:
 Options:
   --shell <name>     fish, bash, zsh, pwsh (PowerShell 7) or powershell (Windows PowerShell 5.1)
   --program <path>   the program the hook calls (default: the `miyu` next to this program)
-  -h, --help         print this help";
+  -h, --help         print this help
+  -V, --version      print the version";
 
 /// 自己的子命令：不当斜杠命令认。
 const INTERNAL: [&str; 10] = [
@@ -95,6 +96,11 @@ fn run(args: Vec<String>, words: &Words, stale: bool) -> ExitCode {
         }
         Some((first, _)) if first == "-h" || first == "--help" => {
             println!("{USAGE}");
+            return ExitCode::SUCCESS;
+        }
+        // 同 `miyu shellhook --version` 核心替包答的那一行（核心 VS-1，2026-11-17 验收第 11 条）。
+        Some((first, [])) if first == "-V" || first == "--version" => {
+            println!("{}", crate::startup::version_line("shellhook"));
             return ExitCode::SUCCESS;
         }
         Some((command, rest)) => (command.as_str(), rest),
