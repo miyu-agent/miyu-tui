@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use super::App;
 use crate::core::{Command, EndReason, Push, Update};
 use crate::oobe::asker::TAG_BASE;
-use crate::voice::{Mic, heard, said};
+use crate::voice::{Mic, heard, said, unheard};
 
 /// `stt.record` 那一次：一直到录完、认完才回。
 const RECORD_TAG: u64 = TAG_BASE - 40;
@@ -110,7 +110,7 @@ impl App {
                         self.typing.input.editor.insert(&text);
                         None
                     }
-                    None => Some(texts.unclear.clone()),
+                    None => Some(unheard(got, texts)),
                 }
             }
             (RECORD_TAG, Err(refusal)) => {

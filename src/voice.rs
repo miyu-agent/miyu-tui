@@ -19,6 +19,8 @@ pub struct Texts {
     pub failed: String,
     /// 没听清（`clear` 是假的）：不往输入框里放空字。
     pub unclear: String,
+    /// 没听到说话（语音包 VO-33：`speech` 是假的）：带设备名的（`{device}`）、没带的。
+    pub no_speech: [String; 2],
     /// `/read-aloud` 时还没有她的回答。
     pub nothing_to_read: String,
     /// `/auto-read` 打开、关上。
@@ -81,6 +83,22 @@ pub fn ready(names: &Value) -> Vec<String> {
 pub fn heard(result: &Value) -> Option<String> {
     let text = result["text"].as_str().map(str::trim).unwrap_or_default();
     (result["clear"] != false && !text.is_empty()).then(|| text.to_string())
+}
+
+/// `stt.record` 没交回字时说的一句：没听到说话的（语音包 VO-33：`speech: false`，整段电平都够不上说话）提醒看看麦克风选对没有、
+/// 带上现在录的那个（`device`，2026-11-17 项目主人验收第 22 条：系统默认输入是另一个麦克风，只录到环境声）；别的照「没听清」。
+pub fn unheard(result: &Value, texts: &Texts) -> String {
+    if result["speech"] != false {
+        return texts.unclear.clone();
+    }
+    match result["device"]
+        .as_str()
+        .map(str::trim)
+        .filter(|d| !d.is_empty())
+    {
+        Some(device) => texts.no_speech[0].replace("{device}", device),
+        None => texts.no_speech[1].clone(),
+    }
 }
 
 /// 出错时说的一句：照 `data.code` 挑表里的；表里没有的照 `failed` 写核心的原话。
