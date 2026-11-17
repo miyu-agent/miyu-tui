@@ -99,6 +99,44 @@ fn a_session_not_yet_started_asks_the_list_without_opening_one() {
         Some("没有正在过的人生")
     );
     // 别的 `/life …` 照旧交给核心。
+    app.slash("/life pause");
+    assert_eq!(sent_of(&mut sent), ["/life pause"]);
+}
+
+#[test]
+fn life_new_in_a_session_not_yet_started_starts_the_life_without_an_empty_session() {
+    // 2026-11-17 本机验收的剩项：原来先开一个空会话、再交 `/life new`，留下一条「未命名会话」。
+    let (mut app, mut sent) = app();
+    app.talk.persona.chosen = Some("miyu".into());
+    app.slash("/life  new ");
+    let mut asked = Vec::new();
+    while let Ok(command) = sent.try_recv() {
+        match command {
+            Command::Ask { method, params, .. } => asked.push((method, params)),
+            other => panic!("只问 life.new，不开会话、不交命令：{other:?}"),
+        }
+    }
+    assert_eq!(asked, [("life.new", json!({"persona": "miyu"}))]);
+    app.core(Update::Answer {
+        tag: crate::oobe::asker::TAG_BASE - 54,
+        result: Ok(json!({"session": "s-life"})),
+    });
+    assert_eq!(
+        sent_of(&mut sent),
+        ["open s-life"],
+        "开出来的人生会话跳过去"
+    );
+}
+
+#[test]
+fn life_new_without_a_persona_says_to_pick_one_first() {
+    // 选的是无人格：开不了，说一句，什么都不发。
+    let (mut app, mut sent) = app();
+    app.talk.persona.chosen = Some(String::new());
     app.slash("/life new");
-    assert_eq!(sent_of(&mut sent), ["/life new"]);
+    assert!(sent_of(&mut sent).is_empty());
+    assert_eq!(
+        app.typing.notice.as_ref().map(|n| n.text.as_str()),
+        Some("先选一个人格，再开始人生会话")
+    );
 }
