@@ -87,6 +87,7 @@ pub fn draw(frame: &mut Frame, page: &mut Settings, config: &Config, caret: &mut
     } else {
         // 下一个窗从头露起（`popup.rs` 照上一帧接着露）。
         page.popup_top = 0;
+        page.popup_left = 0;
     }
 }
 

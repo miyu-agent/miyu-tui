@@ -37,6 +37,7 @@ pub(super) fn line(lines: &mut Lines, edit: &LineEdit, texts: &Texts) {
         lines.body.len(),
         2 + u16::try_from(before.width()).unwrap_or(0),
     ));
+    lines.field = Some(2);
     lines.body.push(Body {
         line: Line::from(vec![Span::raw("  "), Span::styled(typed, style)]),
         focused: true,
@@ -232,6 +233,7 @@ pub(super) fn preset(
                 let before = &typed[..edit.editor.cursor().min(typed.len())];
                 let col = lead.width() + before.width();
                 lines.caret = Some((lines.body.len(), u16::try_from(col).unwrap_or(0)));
+                lines.field = u16::try_from(lead.width()).ok();
                 lines.error = edit.error.clone();
                 lines.hints = words.hints[3].clone();
                 typed.to_string()

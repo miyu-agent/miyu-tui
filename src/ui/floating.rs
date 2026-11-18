@@ -12,6 +12,7 @@ use crate::caret::Caret;
 use crate::settings::pages::choose::Choose;
 use crate::theme;
 
+mod slide;
 #[cfg(test)]
 mod tests;
 
@@ -27,6 +28,11 @@ pub struct Lines<H> {
     pub hints: Vec<[String; 2]>,
     /// 正在改的那一行：第几行、光标在第几列。
     pub caret: Option<(usize, u16)>,
+    /// 光标那一行是单行输入框的：框里的字从第几列起。字比窗宽时只露光标附近那一截，碰到左右边才挪（`floating/slide.rs`，
+    /// 审计 #084）；`None` 的整行照画。
+    pub field: Option<u16>,
+    /// 输入框露的那一截从字的第几列起：画之前填上一帧的，画完是这一帧的（同 `top`）。
+    pub left: usize,
     /// 光标在第几行、只照它滚不铺整行（功能树两列，光标那一格自己画，`ui/feature_tree.rs`）；`None` 的照 `focused` 那一行。
     pub focus: Option<usize>,
     /// 窗里从第几行露起：画之前填上一帧的，画完是这一帧的（叫的人记着，下一帧再交回来）。选中的碰到上下边才挪（`menu::edge`，
@@ -47,6 +53,8 @@ impl<H> Default for Lines<H> {
             button: None,
             hints: Vec::new(),
             caret: None,
+            field: None,
+            left: 0,
             focus: None,
             top: 0,
             fixed: 0,
@@ -230,7 +238,20 @@ fn paint<H: Copy>(
             frame.buffer_mut().set_style(row, theme::row_focus());
             bar(frame, row);
         }
-        frame.buffer_mut().set_line(row.x, y, &body.line, row.width);
+        // 正在改的单行输入框：字比窗宽的只露光标附近那一截（「配置页」第 15 条）。
+        let typing = lines.caret.filter(|&(caret_at, _)| caret_at == at);
+        let (line, caret_x) = match (typing, lines.field) {
+            (Some((_, x)), Some(from)) => {
+                let (line, x, left) = slide::slide(&body.line, (from, x), row.width, lines.left);
+                lines.left = left;
+                (std::borrow::Cow::Owned(line), Some(x))
+            }
+            (typing, _) => (
+                std::borrow::Cow::Borrowed(&body.line),
+                typing.map(|(_, x)| x),
+            ),
+        };
+        frame.buffer_mut().set_line(row.x, y, &line, row.width);
         // 没有颜色可靠的（[`theme::arrows`]）只靠行首的箭头看出选中：每一行行首空两格，箭头在字后面再写一遍，不让那两格空白
         // 盖掉（check 13 ②，2026-11-14 主人验收：tty 里上下挪看不出动）。有颜色的照旧靠底色。
         if body.focused && theme::arrows() {
@@ -239,9 +260,7 @@ fn paint<H: Copy>(
         if let Some(hit) = body.hit {
             hits.push((row, hit));
         }
-        if let Some((caret_at, x)) = lines.caret
-            && caret_at == at
-        {
+        if let Some(x) = caret_x {
             caret.put(
                 Position::new((row.x + x).min(row.right().saturating_sub(1)), y),
                 true,

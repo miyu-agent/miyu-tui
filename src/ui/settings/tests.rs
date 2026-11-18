@@ -431,6 +431,7 @@ mod status_wrap;
 mod store_halves;
 mod store_remove;
 mod store_scroll;
+mod wide_fields;
 
 #[test]
 fn the_fixed_pools_are_named_and_listed_first() {
