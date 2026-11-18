@@ -25,7 +25,7 @@ fn plain(scope: Scope, transcript: &Transcript) -> String {
         frame: 0,
         speaker: crate::ui::voice_rows::Speaker::default(),
     };
-    view.rows_held(transcript, scope)
+    view.rows_held(transcript, scope, true)
         .0
         .iter()
         .map(|r| r.plain())
@@ -139,4 +139,49 @@ fn lines_fit_the_terminal_width_with_the_slot_in_front() {
         "表格右上角在：\n{}",
         text.join("\n")
     );
+}
+
+#[test]
+fn settled_lines_never_end_with_the_spinner() {
+    // `/loop 10m 看一眼`：核心回执的同一刻开了第一次那一轮（不是这句话开的，不跟），回执印完收工；原来定下来的那几行末尾
+    // 还接着「等第一个字」的转圈，留在提示符上面擦不掉（2026-11-18 截图 loop-2-loop-started）。
+    let config = Config::builtin().unwrap();
+    let human = Human::default();
+    let media = Media::new(&config);
+    let board = crate::jobs::Board::default();
+    let view = View {
+        config: &config,
+        human: &human,
+        media: &media,
+        board: &board,
+        width: 80,
+        height: 40,
+        frame: 0,
+        speaker: crate::ui::voice_rows::Speaker::default(),
+    };
+    let mut transcript = Transcript::default();
+    transcript.update(
+        crate::core::Update::Push(crate::core::Push::TurnStarted(7, Some(3))),
+        &config.text,
+    );
+    transcript.note(Kind::Note, "已开始循环：每 10m · 看一眼".into());
+    assert!(transcript.waiting(), "那一轮在跑、还没出字");
+    let text = |lines: Vec<ratatui::text::Line<'static>>| {
+        lines
+            .iter()
+            .map(|l| {
+                l.spans
+                    .iter()
+                    .map(|s| s.content.as_ref())
+                    .collect::<String>()
+            })
+            .filter(|l| !l.trim().is_empty())
+            .collect::<Vec<_>>()
+    };
+    let settled = text(view.lines(&transcript, Scope::All, false));
+    assert_eq!(settled.len(), 1, "只有回执那一句：{settled:?}");
+    assert!(settled[0].contains("已开始循环"), "{settled:?}");
+    // 活动区照旧转着（还在等的时候看得出在等）。
+    let (live, _) = view.lines_held(&transcript, Scope::All, false);
+    assert_eq!(text(live).len(), 2, "活动区末尾转着");
 }
