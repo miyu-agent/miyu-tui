@@ -11,10 +11,13 @@ pub fn clean(text: &str, tab: usize) -> String {
     let mut chars = text.chars().peekable();
     while let Some(c) = chars.next() {
         match c {
-            '\x1b' => skip_escape(&mut chars),
+            '\x1b' => skip_escapes(&mut chars, true),
             // 8 位的写法（发布前审查 T2-3）：CSI、OSC 和几种字串同 7 位的。
             '\u{9b}' => skip_csi(&mut chars),
-            '\u{9d}' | '\u{90}' | '\u{98}' | '\u{9e}' | '\u{9f}' => skip_string(&mut chars),
+            '\u{9d}' | '\u{90}' | '\u{98}' | '\u{9e}' | '\u{9f}' => {
+                let next = skip_string(&mut chars);
+                skip_escapes(&mut chars, next);
+            }
             '\n' => {
                 out.push_str(&line);
                 out.push('\n');
@@ -44,14 +47,25 @@ pub fn note_detail(output: &crate::core::JobOutput, tab: usize, nothing: &str) -
     }
 }
 
+/// `pending`（刚读过一个 `ESC`）时跳过它起头的那一段；那一段是没收尾的字串、又碰上一个 `ESC` 的，接着跳下一段。
+/// 一段一段地循环，不递归：一长串没收尾的字串也不会把栈用完。
+fn skip_escapes(chars: &mut Peekable<Chars>, mut pending: bool) {
+    while pending {
+        pending = skip_escape(chars);
+    }
+}
+
 /// 跳过 `ESC` 后面的一段：CSI（`ESC [` 到结尾那个字）；OSC（`ESC ]`）、DCS（`ESC P`，sixel、tmux 透传）、APC（`ESC _`，
 /// kitty 的图）、PM（`ESC ^`）、SOS（`ESC X`）到字串结尾（发布前审查 T2-3：原来只认前两种，图的 base64 整段铺在面板里）；
-/// 别的只跳一个字。
-fn skip_escape(chars: &mut Peekable<Chars>) {
+/// 别的只跳一个字。交回字串是不是停在了下一段的 `ESC` 上（见 [`skip_string`]）。
+fn skip_escape(chars: &mut Peekable<Chars>) -> bool {
     match chars.next() {
-        Some('[') => skip_csi(chars),
+        Some('[') => {
+            skip_csi(chars);
+            false
+        }
         Some(']' | 'P' | '_' | '^' | 'X') => skip_string(chars),
-        _ => {}
+        _ => false,
     }
 }
 
@@ -64,18 +78,23 @@ fn skip_csi(chars: &mut Peekable<Chars>) {
     }
 }
 
-/// 字串到结尾：`BEL`、`ESC \\` 或 8 位的 ST（U+009C）。
-fn skip_string(chars: &mut Peekable<Chars>) {
+/// 字串到结尾：`BEL`、`ESC \\` 或 8 位的 ST（U+009C）。字串里的 `ESC` 后面不是 `\\` 的，是字串没收尾就开始了下一段
+/// 转义（终端照这样认）：字串到此为止，交回 `true`，那个 `ESC` 已经读过了，由调用的接着认下一段（审计 #064）。
+fn skip_string(chars: &mut Peekable<Chars>) -> bool {
     while let Some(c) = chars.next() {
         match c {
-            '\x07' | '\u{9c}' => break,
+            '\x07' | '\u{9c}' => return false,
             '\x1b' => {
-                chars.next();
-                break;
+                if chars.peek() == Some(&'\\') {
+                    chars.next();
+                    return false;
+                }
+                return true;
             }
             _ => {}
         }
     }
+    false
 }
 
 #[cfg(test)]
@@ -138,5 +157,22 @@ mod tests {
         assert_eq!(clean("\x1bPq#0;2;0;0;0~-\x1b\\ok", 4), "ok");
         // 8 位的 CSI（U+009B）：控制字符本身去掉了，参数留成了字。
         assert_eq!(clean("\u{9b}31mred\u{9b}0m", 4), "red");
+    }
+
+    /// 审计 2026-11-18 #064（`skip_string` 那一半）：字串（OSC 这些）里碰到的 `ESC` 后面不是 `\` 的，是字串没收尾、后面接着一段新的
+    /// 转义（终端照这样认：`ESC` 结束字串，从它起认下一段）。原来不管后面是什么都吃掉一个字就当收尾，后面那段 CSI 的参数成了字。
+    #[test]
+    fn an_escape_inside_an_unfinished_string_starts_the_next_sequence() {
+        assert_eq!(clean("\x1b]0;title\x1b[31mred\x1b[0m", 4), "red");
+        assert_eq!(
+            clean("\u{9d}0;title\x1b[31mred", 4),
+            "red",
+            "8 位的字串同样"
+        );
+        assert_eq!(
+            clean("\x1b]0;a\x1b]0;b\x1b[1mok", 4),
+            "ok",
+            "一串没收尾的字串一段段认"
+        );
     }
 }
