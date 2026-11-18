@@ -62,7 +62,7 @@ impl Part<Placed> for Picture {
 fn slot(part: &str, hidden: bool, rows: u16) -> Slot {
     Slot {
         part: part.into(),
-        hidden,
+        shown: !hidden,
         rows,
     }
 }

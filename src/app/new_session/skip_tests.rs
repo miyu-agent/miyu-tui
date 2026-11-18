@@ -25,7 +25,7 @@ fn row(id: &str, problem: Option<&str>) -> Persona {
 fn a_new_session_takes_the_defaults_without_asking_when_told_to() {
     let (mut app, _sent) = app();
     app.talk.transcript.link = Link::Ready;
-    app.config.layout.skip_pick = true;
+    app.config.layout.auto_pick = true;
     app.listed(
         Kind::Persona,
         vec![row("pirate", None), row("captain", None)],
@@ -55,7 +55,7 @@ fn a_new_session_takes_the_defaults_without_asking_when_told_to() {
 fn no_default_persona_means_none_and_an_unusable_default_preset_still_asks() {
     let (mut app, _sent) = app();
     app.talk.transcript.link = Link::Ready;
-    app.config.layout.skip_pick = true;
+    app.config.layout.auto_pick = true;
     app.picks_configured(None, Some("work".into()));
     app.listed(Kind::Persona, vec![row("pirate", None)]);
     app.listed(
@@ -92,8 +92,8 @@ fn the_setting_arriving_late_closes_an_untouched_box() {
         matches!(app.boxes.panel, Some(Panel::Pick { .. })),
         "设置还没读到：照常开框"
     );
-    app.config.layout.skip_pick = true;
-    app.skip_pick_read();
+    app.config.layout.auto_pick = true;
+    app.auto_pick_read();
     assert!(app.boxes.panel.is_none());
     assert_eq!(app.talk.persona.chosen.as_deref(), Some("captain"));
 }

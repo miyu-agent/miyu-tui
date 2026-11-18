@@ -204,7 +204,7 @@ fn the_left_side_follows_the_configured_order() {
     use crate::config::slots::Slot;
     let slot = |part: &str, hidden: bool| Slot {
         part: part.into(),
-        hidden,
+        shown: !hidden,
         rows: 0,
     };
     let joined = |config: &[Slot], model: Vec<Span<'static>>| -> String {

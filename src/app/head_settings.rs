@@ -25,7 +25,7 @@ const CHAT_TAG: u64 = TAG_BASE - 11;
 /// 读按键模式的请求编号：单问，旧核心不认这个键时别的照样读得到。
 const VIM_TAG: u64 = TAG_BASE - 12;
 /// 读「新会话不问人格、预设」的请求编号：单问，同按键模式（`TAG_BASE - 13` 到 `- 15` 是 `theme_pick.rs` 的）。
-const SKIP_PICK_TAG: u64 = TAG_BASE - 16;
+const AUTO_PICK_TAG: u64 = TAG_BASE - 16;
 /// 读侧边栏「最近会话」几个的请求编号：单问，同按键模式。
 const SIDEBAR_SESSIONS_TAG: u64 = TAG_BASE - 23;
 /// 读侧边栏挂哪几件的请求编号（「挂载位」第 2 条）：单问，同按键模式。
@@ -52,7 +52,7 @@ impl App {
                 self.ask_config(TIMELINE_TAG, &Timeline::KEYS);
                 self.ask_config(MASCOT_TAG, &Layout::MASCOT_KEYS);
                 self.ask_config(VIM_TAG, &[Layout::KEYS_KEY]);
-                self.ask_config(SKIP_PICK_TAG, &[Layout::SKIP_PICK_KEY]);
+                self.ask_config(AUTO_PICK_TAG, &[Layout::AUTO_PICK_KEY]);
                 self.ask_config(
                     SIDEBAR_SESSIONS_TAG,
                     &[Layout::SIDEBAR_SESSIONS_KEY, Layout::SIDEBAR_JUMPS_KEY],
@@ -118,10 +118,10 @@ impl App {
                 }
                 true
             }
-            Update::Answer { tag, result } if *tag == SKIP_PICK_TAG => {
+            Update::Answer { tag, result } if *tag == AUTO_PICK_TAG => {
                 if let Ok(got) = result {
-                    self.config.layout.apply_skip_pick(got);
-                    self.skip_pick_read();
+                    self.config.layout.apply_auto_pick(got);
+                    self.auto_pick_read();
                 }
                 true
             }
@@ -156,7 +156,7 @@ impl App {
         self.config.timeline.apply(got);
         self.config.layout.apply_mascot(got);
         self.config.layout.apply_keys(got);
-        self.config.layout.apply_skip_pick(got);
+        self.config.layout.apply_auto_pick(got);
     }
 
     /// 图标那一套（「图标」第 4 条）。

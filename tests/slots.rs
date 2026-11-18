@@ -17,7 +17,7 @@ fn side(lines: &[String], word: &str) -> Option<usize> {
 fn the_sidebar_follows_the_configured_order_and_hides_what_is_hidden() {
     let script = Script::new([Play::Says("answer-one")]);
     let settings =
-        "[[tui.side]]\npart = \"recent\"\n\n[[tui.side]]\npart = \"cwd\"\nhidden = true\n";
+        "[[tui.side]]\npart = \"recent\"\n\n[[tui.side]]\npart = \"cwd\"\nshown = false\n";
     let home = Home::with_settings(script, settings);
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
     tui.wait_for("开放权限");
@@ -63,7 +63,7 @@ fn footer_line(lines: &[String]) -> Option<String> {
 fn the_status_line_follows_the_configured_order_and_hides_what_is_hidden() {
     // 底栏（SL-2）：左段藏起权限级别，右段只有用量那一格（排期第 22 条：环 + 累计 + 花费），照常写。
     let script = Script::new([Play::Says("answer-one")]);
-    let settings = "[[tui.footer]]\npart = \"level\"\nhidden = true\n";
+    let settings = "[[tui.footer]]\npart = \"level\"\nshown = false\n";
     let home = Home::with_settings(script, settings);
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
     // 首页的底栏左段只有权限级别（模型要等开了会话），藏起来了就空着：等首页的提示。
@@ -98,7 +98,7 @@ fn the_status_line_follows_the_configured_order_and_hides_what_is_hidden() {
 #[test]
 fn a_hidden_usage_part_leaves_the_right_side_empty() {
     let script = Script::new([Play::Says("answer-one")]);
-    let home = Home::with_settings(script, "[[tui.footer]]\npart = \"usage\"\nhidden = true\n");
+    let home = Home::with_settings(script, "[[tui.footer]]\npart = \"usage\"\nshown = false\n");
     let mut tui = home.tui_wide("zh_CN.UTF-8", 140);
     tui.wait_for("开放权限");
     tui.say("topic-one");
@@ -123,7 +123,7 @@ fn a_hidden_todo_list_does_not_show_above_the_input_box() {
         Play::Calls(vec![("todowrite".into(), args)]),
         Play::Says("列好了。"),
     ]);
-    let home = Home::with_tools(script, "[[tui.above]]\npart = \"todo\"\nhidden = true\n");
+    let home = Home::with_tools(script, "[[tui.above]]\npart = \"todo\"\nshown = false\n");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
     tui.say("排一下要做的");

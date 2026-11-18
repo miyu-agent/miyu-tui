@@ -138,7 +138,7 @@ fn a_hidden_prompt_part_never_pins() {
             Play::Says(long("乙")),
             Play::Says(long("丙")),
         ]),
-        "[[tui.top]]\npart = \"prompt\"\nhidden = true\n",
+        "[[tui.top]]\npart = \"prompt\"\nshown = false\n",
     );
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");

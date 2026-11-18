@@ -1,21 +1,25 @@
 //! 挂载位的配置（蓝图 `tui.md`「挂载位」第 2 条，反馈 1102 第 13 条）：终端软件包清单里每个多件挂载位一项记录列表
-//! （`tui.side` 这种，配置页不画），一条一个部件：名字、藏不藏、最多几行。这里只管读和排先后，不知道有哪些部件：出厂的
+//! （`tui.side` 这种，配置页不画），一条一个部件：名字、显不显示、最多几行。这里只管读和排先后，不知道有哪些部件：出厂的
 //! 先后由画那一处交进来。
 
 use serde::Deserialize;
 use serde_json::Value;
 
 /// 配置里写的一条。
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Slot {
     /// 部件名（`recent`、`pkg:<包>/<块>` 这种）。
     pub part: String,
-    /// 藏起来。
-    #[serde(default)]
-    pub hidden: bool,
+    /// 显示，没写的显示（开关正着说，核心 UX-1；原来是 `hidden`，2026-11-18 发版前改，不认旧写法）。
+    #[serde(default = "shown")]
+    pub shown: bool,
     /// 最多显示几行；0 是不限。
     #[serde(default)]
     pub rows: u16,
+}
+
+fn shown() -> bool {
+    true
 }
 
 /// 侧边栏出厂的部件名，照出厂的先后（「挂载位」第 4 条，画在 `ui/sidebar/parts.rs`）：配置里没写到的照它接在后面。跳转消息在
@@ -59,7 +63,7 @@ pub fn read(got: &Value, key: &str) -> Vec<Slot> {
         .collect()
 }
 
-/// 照配置排出这一处要画的部件：写了的照写的先后（藏起来的去掉），没写到的出厂部件照出厂的先后接在后面；交回
+/// 照配置排出这一处要画的部件：写了的照写的先后（不显示的去掉），没写到的出厂部件照出厂的先后接在后面；交回
 /// （部件名，最多几行），连同配置里写了、`known` 里没有的名字（不画，提示一次）。同一个名字写了两遍的照第一条。
 pub fn arrange<'a>(known: &[&'a str], config: &[Slot]) -> (Vec<(&'a str, u16)>, Vec<String>) {
     let mut out = Vec::new();
@@ -72,7 +76,7 @@ pub fn arrange<'a>(known: &[&'a str], config: &[Slot]) -> (Vec<(&'a str, u16)>, 
         match known.iter().find(|name| **name == slot.part) {
             Some(name) => {
                 seen.push(name);
-                if !slot.hidden {
+                if slot.shown {
                     out.push((*name, slot.rows));
                 }
             }
@@ -94,10 +98,10 @@ mod tests {
 
     use super::{SIDE_KEY, Slot, arrange, read};
 
-    fn slot(part: &str, hidden: bool, rows: u16) -> Slot {
+    fn slot(part: &str, shown: bool, rows: u16) -> Slot {
         Slot {
             part: part.into(),
-            hidden,
+            shown,
             rows,
         }
     }
@@ -106,10 +110,10 @@ mod tests {
     fn written_ones_go_first_hidden_ones_drop_and_the_rest_follow_in_factory_order() {
         let known = ["avatar", "session", "cwd", "recent"];
         let config = [
-            slot("recent", false, 8),
-            slot("avatar", true, 0),
-            slot("nope", false, 0),
-            slot("recent", false, 3),
+            slot("recent", true, 8),
+            slot("avatar", false, 0),
+            slot("nope", true, 0),
+            slot("recent", true, 3),
         ];
         let (parts, unknown) = arrange(&known, &config);
         assert_eq!(parts, [("recent", 8), ("session", 0), ("cwd", 0)]);
@@ -123,14 +127,32 @@ mod tests {
     fn the_record_list_is_read_from_config_get_and_bad_items_are_skipped() {
         let got = json!({"items": {SIDE_KEY: {"value": [
             {"part": "recent", "rows": 8},
-            {"part": "avatar", "hidden": true},
-            {"hidden": true},
+            {"part": "avatar", "shown": false},
+            {"part": "cwd", "shown": true},
+            {"shown": false},
             "recent"
         ]}}});
         assert_eq!(
             read(&got, SIDE_KEY),
-            [slot("recent", false, 8), slot("avatar", true, 0)]
+            [
+                slot("recent", true, 8),
+                slot("avatar", false, 0),
+                slot("cwd", true, 0)
+            ],
+            "开关正着说：没写的显示，`shown = false` 的不显示"
         );
         assert!(read(&json!({}), SIDE_KEY).is_empty(), "旧核心没这一项");
+    }
+
+    /// 开关正着说（2026-11-18）：`shown = false` 的不画，没写的照画。
+    #[test]
+    fn a_part_written_with_shown_false_is_not_drawn() {
+        let got = json!({"items": {SIDE_KEY: {"value": [
+            {"part": "avatar", "shown": false},
+            {"part": "cwd", "shown": true},
+            {"part": "recent"}
+        ]}}});
+        let (parts, _) = arrange(&["avatar", "cwd", "recent"], &read(&got, SIDE_KEY));
+        assert_eq!(parts, [("cwd", 0), ("recent", 0)]);
     }
 }

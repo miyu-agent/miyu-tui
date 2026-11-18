@@ -119,7 +119,7 @@
   "mascot_home": false,
   "mascot_sidebar": false,
   "vim": false,
-  "skip_pick": false,
+  "auto_pick": false,
   "dream": {
     "float_ms": 500,
     "wake_ms": 1200,

@@ -113,7 +113,7 @@ pub const PRIVACY: &str = "privacy";
 /// 核心的「新会话」一组（核心排着做，2026-10-23）。
 const NEW_SESSION: &str = "new_session";
 /// 「新会话不再询问人格预设」。
-const SKIP_PICK: &str = "tui.skip_pick";
+const AUTO_PICK: &str = "tui.auto_pick";
 /// 终端自己的配置项的键打头的那一截（终端软件包的编号）。
 const OWN: &str = "tui.";
 
@@ -127,7 +127,7 @@ const OWN_GROUPS: [(&str, &str, &str); 7] = [
     ("tui.timeline_", "tui.timeline", GENERAL),
     ("tui.keys", "tui.keys", GENERAL),
     // 新会话不问人格、预设（2026-10-22）：先挂在按键模式那一组（交互），核心有「新会话」一组时再挪过去（`join_new_session`）。
-    ("tui.skip_pick", "tui.keys", GENERAL),
+    ("tui.auto_pick", "tui.keys", GENERAL),
 ];
 
 /// 另分的那几组的名字（`text/zh.json` 的 `settings.more.own_groups`）。
@@ -275,7 +275,7 @@ impl Schema {
         else {
             return;
         };
-        for item in self.items.iter_mut().filter(|i| i.key == SKIP_PICK) {
+        for item in self.items.iter_mut().filter(|i| i.key == AUTO_PICK) {
             item.group = NEW_SESSION.to_string();
             item.page = page.clone();
         }
