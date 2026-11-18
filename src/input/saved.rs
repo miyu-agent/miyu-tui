@@ -146,7 +146,8 @@ impl Line {
         }
     }
 
-    /// 读成发过的一句；块的位置对不上字的（手改坏了）不要块，字照留。
+    /// 读成发过的一句；块的位置对不上字的（手改坏了）不要块，字照留。块要一块接一块往后排、互不压着（`Draft::expand`
+    /// 照这个顺序切，审计 #059）。
     fn into_sent(self) -> Sent {
         let text = self.text;
         let fits = |b: &SavedBlock| {
@@ -155,7 +156,8 @@ impl Line {
                 && text.is_char_boundary(b.start)
                 && text.is_char_boundary(b.end)
         };
-        let blocks = if self.blocks.iter().all(fits) {
+        let in_order = self.blocks.windows(2).all(|w| w[0].end <= w[1].start);
+        let blocks = if in_order && self.blocks.iter().all(fits) {
             self.blocks
                 .into_iter()
                 .map(|b| Block {
@@ -288,5 +290,35 @@ mod tests {
         // 拿不到状态目录：照旧用老位置。
         assert_eq!(place(None, Some(old.clone())), Some(old));
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// 审计 2026-11-18 #059：手改坏了（或者别的版本写的）`history.jsonl` 里两块倒着排、互相压着，每块单看都在字的范围里、
+    /// 落在字的边界上。原来只查每一块自己，读回来照留；翻到这一句回车发出去、复制时换回原文（`Draft::expand`）切片倒着切，
+    /// 当场崩（`byte range starts at 11 but ends at 0`）。块的位置对不上的照「不要块、字照留」。
+    #[test]
+    fn blocks_out_of_order_are_dropped_instead_of_crashing() {
+        let dir = std::env::temp_dir().join(format!("miyu-tui-saved-order-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("history.jsonl");
+        std::fs::write(
+            &path,
+            concat!(
+                r#"{"at":1,"text":"hello world","blocks":[{"start":6,"end":11,"text":"B"},{"start":0,"end":5,"text":"A"}]}"#,
+                "\n",
+                r#"{"at":2,"text":"hello there","blocks":[{"start":0,"end":8,"text":"A"},{"start":6,"end":11,"text":"B"}]}"#,
+                "\n",
+            ),
+        )
+        .unwrap();
+        let back = Saved::at(Some(path)).load(10);
+        std::fs::remove_dir_all(&dir).unwrap();
+        assert_eq!(back.len(), 2);
+        for sent in &back {
+            assert_eq!(
+                sent.draft.expand(),
+                sent.draft.text,
+                "位置对不上的块不要，字照留"
+            );
+        }
     }
 }
