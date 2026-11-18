@@ -1,5 +1,5 @@
 //! 蓝图「旧版那一份」的测试：家目录、`ZDOTDIR`、`XDG_CONFIG_HOME` 都经 `env` 指到临时目录，不碰真的启动文件。
-//! 这一份是 bash、zsh 的启动文件；fish 的在 `fish.rs`，出错、`status`、引导在 `trouble.rs`。
+//! 这一份是 bash、zsh 的启动文件；fish 的在 `fish.rs`，出错、`status`、引导在 `trouble.rs`，记号没配上对的在 `nested.rs`。
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,6 +10,7 @@ use super::super::words::Words;
 use super::{Said, install};
 
 mod fish;
+mod nested;
 mod trouble;
 
 /// 一个测试一个临时的家目录，用完删掉。`zdotdir` 是家目录下的相对路径（`ZDOTDIR`），没有的不设。
