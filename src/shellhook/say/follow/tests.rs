@@ -130,3 +130,34 @@ fn a_report_she_saw_in_a_running_turn_is_not_waited_for() {
     )));
     assert!(follow.finished());
 }
+
+/// shell 退出了要知道（审计 #076：macOS 上原来不等，关了终端盯后台的一直留着）；登记时已经不在了的交回 `false`。
+#[cfg(unix)]
+#[test]
+fn the_shell_exiting_is_noticed() {
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    let mut shell = std::process::Command::new("sleep")
+        .arg("30")
+        .spawn()
+        .expect("起得来 sleep");
+    let (sender, gone) = mpsc::channel();
+    assert!(super::wait_for_exit(shell.id(), move || sender
+        .send(())
+        .is_ok()));
+    assert!(
+        gone.recv_timeout(Duration::from_millis(300)).is_err(),
+        "还在的不叫"
+    );
+    shell.kill().expect("杀得掉");
+    assert!(
+        gone.recv_timeout(Duration::from_secs(10)).is_ok(),
+        "退出了要叫"
+    );
+    shell.wait().expect("收得回");
+    assert!(
+        !super::wait_for_exit(shell.id(), || true),
+        "已经不在了的交回 false"
+    );
+}

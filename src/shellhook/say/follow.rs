@@ -1,7 +1,7 @@
 //! 盯后台（设计 22 第七节「后台任务和回报」，图纸 `shellhook.md`「后台回报」）：一轮答完还有派出去没结束的后台任务时，
 //! `say` 起一个这个，它订阅终端会话的推送，只认交给它的那几个任务编号：结束了的、报回来叫醒她的那一轮，记进这个 shell 的
 //! 信箱（`spool.rs`），给 shell 发 `SIGUSR1`，shell 回到提示符时印。不定时去查：等核心的推送、等 shell 退出（Linux 上
-//! `pidfd`），没事的时候一直睡着。shell 退出了就收工，不再回报。
+//! `pidfd`，macOS 上 kqueue），没事的时候一直睡着。shell 退出了就收工，不再回报。
 
 use std::collections::HashMap;
 use std::io;
@@ -42,7 +42,10 @@ pub fn spawn(watch: &Watch) -> io::Result<()> {
         .stderr(std::process::Stdio::null());
     #[cfg(unix)]
     std::os::unix::process::CommandExt::process_group(&mut command, 0);
-    command.spawn().map(drop)
+    // 起不来的，交给它的那份没人读：删掉，不留在信箱目录里（审计 #076）
+    command.spawn().map(drop).inspect_err(|_| {
+        drop(std::fs::remove_file(&path));
+    })
 }
 
 /// 主循环等的东西。
@@ -190,9 +193,10 @@ fn signal(shell: u32) {
     {}
 }
 
-/// shell 退出时叫 `gone`：Linux 上照 `pidfd` 等（不轮询）；Windows 上起一个系统自带的 `powershell` 跑 `Wait-Process`
-/// 等它（不写 unsafe、不轮询，2026-10-24 项目主人要 Windows 上也做）。macOS 还没做（kqueue），不叫：任务都结束了照样收工。
-/// shell 已经不在了交回 `false`。
+/// shell 退出时叫 `gone`：Linux 上照 `pidfd` 等（不轮询）；macOS 上照 kqueue 的 `EVFILT_PROC` 等（审计 #076：原来不等，
+/// 关了终端它一直留着，shell 的进程号给了别的进程以后还会给那个进程发 `SIGUSR1`，默认就是结束它）；Windows 上起一个系统自带的
+/// `powershell` 跑 `Wait-Process` 等它（不写 unsafe、不轮询，2026-10-24 项目主人要 Windows 上也做）。别的系统不叫：任务都结束了
+/// 照样收工。shell 已经不在了交回 `false`。
 fn wait_for_exit(shell: u32, gone: impl FnOnce() -> bool + Send + 'static) -> bool {
     #[cfg(target_os = "linux")]
     {
@@ -241,7 +245,36 @@ fn wait_for_exit(shell: u32, gone: impl FnOnce() -> bool + Send + 'static) -> bo
         });
         true
     }
-    #[cfg(not(any(target_os = "linux", windows)))]
+    #[cfg(target_os = "macos")]
+    {
+        use kqueue::{EventData, EventFilter, FilterFlag, Proc, Watcher};
+        let Ok(pid) = i32::try_from(shell) else {
+            return false;
+        };
+        let Ok(mut watcher) = Watcher::new() else {
+            return false;
+        };
+        // 进程已经不在了，登记就不成（ESRCH）
+        if watcher
+            .add_pid(pid, EventFilter::EVFILT_PROC, FilterFlag::NOTE_EXIT)
+            .and_then(|()| watcher.watch())
+            .is_err()
+        {
+            return false;
+        }
+        std::thread::spawn(move || {
+            loop {
+                if let Some(event) = watcher.poll_forever(None)
+                    && matches!(event.data, EventData::Proc(Proc::Exit(_)))
+                {
+                    break;
+                }
+            }
+            gone();
+        });
+        true
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
     {
         drop(gone);
         shell > 0

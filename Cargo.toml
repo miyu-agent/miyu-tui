@@ -61,6 +61,11 @@ ratex-render = { version = "0.1.14", features = ["embed-fonts"] }
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "1", features = ["stdio", "process", "event"] }
 
+# macOS 上盯 shell 退出（`shellhook/say/follow.rs`，审计 #076）：kqueue 的 `EVFILT_PROC` 等它退出，不轮询。rustix 的 `kevent` 是
+# unsafe 的，用这个的安全接口；依赖树里本来就有（notify 在 BSD 上用的那份）。
+[target.'cfg(target_os = "macos")'.dependencies]
+kqueue = "1.2.1"
+
 # Windows 上同上那一下把 stderr 临时指到 NUL（`figures/math.rs`），照系统的界面语言认语言（`language.rs`：Windows 一般不设
 # `LANG`）。都用它们的安全接口，依赖树里本来就有。
 [target.'cfg(windows)'.dependencies]

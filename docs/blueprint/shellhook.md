@@ -127,7 +127,7 @@
 设计 22 第七节「后台任务和回报」（2026-10-20 项目主人定，核心 b3777b13）。
 
 1. **谁盯**：`say` 记下这一轮派出去的后台任务（`job.started`，前台跑的子代理不算）；收工时还有没结束的，写一份交接（终端会话、任务、`$fish_pid`）进信箱目录，起 `miyu-tui shellhook follow`：自己一个进程组、不接终端。
-2. **怎么盯**：订阅终端会话（`Open`，补发的那一页不算），只认交接来的任务编号：结束了（`job.reported`、`child.reported`）记一件「结束了」；她没看到的回报（`unseen.rs`：回报的序号，界面推送 `Reported` 带着；之后请求的 `seen` 够着了就是看到了，不叫醒）叫醒她开的那一轮，`trigger` 是这里盯的回报的，记一件「那一轮」（同一天验收 SH-31：原来认「下一个不是你说的话开的」，别的 shell 里说的话推来是 `Foreign`，没认出来，那一轮被当成叫醒的又印一遍）；这一轮里又派出去的接着盯。都结束了、叫醒的那几轮也跑完了，收工。shell 退出了（Linux 上 `pidfd`，等事件不轮询；Windows 上起一个系统自带的 `powershell` 跑 `Wait-Process` 等它，不写 unsafe、不轮询，2026-10-24；macOS 的 kqueue 还没做）当场收工，不再回报。
+2. **怎么盯**：订阅终端会话（`Open`，补发的那一页不算），只认交接来的任务编号：结束了（`job.reported`、`child.reported`）记一件「结束了」；她没看到的回报（`unseen.rs`：回报的序号，界面推送 `Reported` 带着；之后请求的 `seen` 够着了就是看到了，不叫醒）叫醒她开的那一轮，`trigger` 是这里盯的回报的，记一件「那一轮」（同一天验收 SH-31：原来认「下一个不是你说的话开的」，别的 shell 里说的话推来是 `Foreign`，没认出来，那一轮被当成叫醒的又印一遍）；这一轮里又派出去的接着盯。都结束了、叫醒的那几轮也跑完了，收工。shell 退出了（Linux 上 `pidfd`，等事件不轮询；macOS 上照 kqueue 的 `EVFILT_PROC` 等，用 `kqueue` crate 的安全接口，审计 #076；Windows 上起一个系统自带的 `powershell` 跑 `Wait-Process` 等它，不写 unsafe、不轮询，2026-10-24）当场收工，不再回报。
 3. **信箱**：缓存目录 `shellhook/<shell 的编号>.jsonl`，一件一行，追加；`report` 先换名再读，拿的时候追加的留给下一次。记一件给 shell 发 `SIGUSR1`。
 4. **fish 那边**：收到信号时停在提示符上的（`status current-command` 是 `fish`）当场印：回到提示符第一行往下清掉，跑 `report`，补「提示符行数 - 1」个换行再 `commandline -f repaint`（fish 照记着的位置往上回这么多行重画，不补会盖掉刚印的，实测）。前台在跑命令的（vim、一行里的几条）、她正在答的（`say`、`report` 跑着时记着 `__miyu_busy`：她答话时来的信号 fish 等答完才办，那时 `current-command` 已经是 `fish`，会当成停在提示符上往上擦掉刚印的收尾行，同一天验收）先记着，回到提示符（`fish_prompt` 事件）再印；印的时候又来的接着印。敲到一半的字 fish 自己留着；印的时候敲的接在后面。
 5. **bash、zsh 那边**（2026-10-20 项目主人要）：找不到命令交给她时带 `--shell-pid $$`（bash 的处理函数在子 shell 里，`$$` 照样是那个 bash）。
@@ -198,4 +198,4 @@
 
 ### 还没做
 
-拿回焦点再问终端颜色；回答里的图（Markdown 图片、公式、mermaid，她展示的图第 3b 条做了）；macOS 上盯后台等 shell 退出（kqueue）。
+拿回焦点再问终端颜色；回答里的图（Markdown 图片、公式、mermaid，她展示的图第 3b 条做了）。
