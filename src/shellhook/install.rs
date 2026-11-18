@@ -55,15 +55,25 @@ pub fn install(shell: Shell, program: Option<PathBuf>, words: &Words) -> io::Res
             &[("program", &program)],
         )));
     }
-    let done = install_at(shell, &path, &program)?;
+    let (done, said) = super::old::install(shell, &path, &program, &env, words)?;
     let shown = path.display().to_string();
     let values = [("path", shown.as_str()), ("shell", shell.name())];
     match done {
         Done::Installed => println!("{}", fill(&words.installed, &values)),
         Done::Updated => println!("{}", fill(&words.updated, &values)),
-        Done::Foreign => return Err(io::Error::other(fill(&words.foreign, &values))),
+        Done::Foreign => {}
     }
-    warn_old(shell, &env, words);
+    // 清旧版那一份的话（蓝图「旧版那一份」第 6 条）：清掉的同「已装」印到标准输出，出错、提醒的印到标准错误。
+    for said in said {
+        if said.trouble {
+            eprintln!("{}", said.text);
+        } else {
+            println!("{}", said.text);
+        }
+    }
+    if done == Done::Foreign {
+        return Err(io::Error::other(fill(&words.foreign, &values)));
+    }
     warn_policy(shell, words);
     Ok(())
 }
@@ -114,7 +124,7 @@ pub fn uninstall(shell: Shell, words: &Words) -> io::Result<()> {
     Ok(())
 }
 
-/// 三种 shell 各装没装，一行一种；旧版的那一份也在的说一声。
+/// 三种 shell 各装没装，一行一种；旧版的那一份也在的说一声（只说不删，蓝图「旧版那一份」第 7 条）。
 ///
 /// # Errors
 ///
@@ -149,7 +159,6 @@ pub fn status_to(
         let shown = path.display().to_string();
         let mut values = vec![("path", shown.as_str()), ("shell", shell.name())];
         let found = found(shell, &path)?;
-        let ours = matches!(found, Found::Ours(_));
         let line = match found {
             Found::Missing => fill(&words.status_missing, &values),
             Found::Foreign => fill(&words.status_foreign, &values),
@@ -161,9 +170,8 @@ pub fn status_to(
             Found::Ours(_) => fill(&words.status_installed, &values),
         };
         writeln!(out, "{line}")?;
-        if ours && let Some(old) = shell.old_hook(env).filter(|p| p.exists()) {
-            let shown = old.display().to_string();
-            writeln!(err, "{}", fill(&words.old_hook, &[("path", &shown)]))?;
+        for said in super::old::warnings(shell, env, words) {
+            writeln!(err, "{said}")?;
         }
     }
     Ok(())
@@ -256,24 +264,41 @@ pub fn block(shell: Shell, program: &Path) -> String {
 ///
 /// 读写失败。
 pub fn install_at(shell: Shell, path: &Path, program: &Path) -> io::Result<Done> {
+    put(shell, path, program, read(path)?)
+}
+
+/// 装进 `path`，`existing` 当作它现在的内容（不在的是 `None`）：清旧版那一份的拿去掉旧段以后的，和装新的同一次写。
+///
+/// # Errors
+///
+/// 写失败。
+pub(super) fn put(
+    shell: Shell,
+    path: &Path,
+    program: &Path,
+    existing: Option<Vec<u8>>,
+) -> io::Result<Done> {
     let block = block(shell, program);
-    let existing = read(path)?;
     let (text, done) = match (shell, existing) {
-        (Shell::Fish, None) => (block, Done::Installed),
+        (Shell::Fish, None) => (block.into_bytes(), Done::Installed),
         // 新建的 PowerShell 启动文件带 BOM：Windows PowerShell 5.1 才照 UTF-8 读（程序的路径里可能有中文）。
-        (Shell::Pwsh | Shell::WinPs, None) => (format!("\u{feff}{block}"), Done::Installed),
-        (Shell::Fish, Some(old)) if old.starts_with(MARK) => (block, Done::Updated),
+        (Shell::Pwsh | Shell::WinPs, None) => {
+            (format!("\u{feff}{block}").into_bytes(), Done::Installed)
+        }
+        (Shell::Fish, Some(old)) if old.starts_with(MARK.as_bytes()) => {
+            (block.into_bytes(), Done::Updated)
+        }
         (Shell::Fish, Some(_)) => return Ok(Done::Foreign),
-        (_, None) => (block, Done::Installed),
+        (_, None) => (block.into_bytes(), Done::Installed),
         (_, Some(old)) => match cut(&old) {
-            Some((before, after)) => (format!("{before}{block}{after}"), Done::Updated),
+            Some((before, after)) => ([before, block.as_bytes(), after].concat(), Done::Updated),
             None => {
-                let gap = if old.is_empty() || old.ends_with('\n') {
-                    ""
+                let gap: &[u8] = if old.is_empty() || old.ends_with(b"\n") {
+                    b""
                 } else {
-                    "\n"
+                    b"\n"
                 };
-                (format!("{old}{gap}{block}"), Done::Installed)
+                ([&old[..], gap, block.as_bytes()].concat(), Done::Installed)
             }
         },
     };
@@ -291,14 +316,14 @@ pub fn uninstall_at(shell: Shell, path: &Path) -> io::Result<bool> {
         return Ok(false);
     };
     match shell {
-        Shell::Fish if old.starts_with(MARK) => {
+        Shell::Fish if old.starts_with(MARK.as_bytes()) => {
             fs::remove_file(path)?;
             Ok(true)
         }
         Shell::Fish => Ok(false),
         Shell::Bash | Shell::Zsh | Shell::Pwsh | Shell::WinPs => match cut(&old) {
             Some((before, after)) => {
-                write(path, &format!("{before}{after}"))?;
+                write(path, &[before, after].concat())?;
                 Ok(true)
             }
             None => Ok(false),
@@ -316,14 +341,15 @@ pub fn found(shell: Shell, path: &Path) -> io::Result<Found> {
         return Ok(Found::Missing);
     };
     let ours = match shell {
-        Shell::Fish if text.starts_with(MARK) => Some(text.as_str()),
+        Shell::Fish if text.starts_with(MARK.as_bytes()) => Some(&text[..]),
         Shell::Fish => return Ok(Found::Foreign),
         Shell::Bash | Shell::Zsh | Shell::Pwsh | Shell::WinPs => {
             cut(&text).map(|(before, _)| &text[before.len()..])
         }
     };
+    // 只拿来读记的程序，不写回去：不是 UTF-8 的字照替换符读。
     Ok(match ours {
-        Some(ours) => Found::Ours(program_in(ours)),
+        Some(ours) => Found::Ours(program_in(&String::from_utf8_lossy(ours))),
         None => Found::Missing,
     })
 }
@@ -363,22 +389,25 @@ fn program_in(block: &str) -> Option<PathBuf> {
     None
 }
 
-/// 启动文件里自己那一段切出来：前面的、后面的（不含那一段）。没有的是 `None`。
-fn cut(text: &str) -> Option<(&str, &str)> {
-    let start = text
-        .match_indices(MARK)
-        .map(|(i, _)| i)
-        .find(|&i| i == 0 || text[..i].ends_with('\n') || &text[..i] == "\u{feff}")?;
-    let end_at = text[start..].find(END)? + start + END.len();
-    let end = text[end_at..]
-        .strip_prefix('\n')
-        .map_or(end_at, |_| end_at + 1);
+/// 启动文件里自己那一段切出来：前面的、后面的（不含那一段）。没有的是 `None`。照字节切：文件不是 UTF-8 的也一样。
+fn cut(text: &[u8]) -> Option<(&[u8], &[u8])> {
+    let (mark, end) = (MARK.as_bytes(), END.as_bytes());
+    let start = (0..text.len()).find(|&i| {
+        text[i..].starts_with(mark)
+            && (i == 0 || text[i - 1] == b'\n' || &text[..i] == "\u{feff}".as_bytes())
+    })?;
+    let end_at = text[start..].windows(end.len()).position(|w| w == end)? + start + end.len();
+    let end = if text.get(end_at) == Some(&b'\n') {
+        end_at + 1
+    } else {
+        end_at
+    };
     Some((&text[..start], &text[end..]))
 }
 
-/// 读一个文件；不在的是 `None`。
-fn read(path: &Path) -> io::Result<Option<String>> {
-    match fs::read_to_string(path) {
+/// 读一个文件（顺着符号链接）；不在的是 `None`。
+pub(super) fn read(path: &Path) -> io::Result<Option<Vec<u8>>> {
+    match fs::read(path) {
         Ok(text) => Ok(Some(text)),
         Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(None),
         Err(e) => Err(e),
@@ -386,7 +415,7 @@ fn read(path: &Path) -> io::Result<Option<String>> {
 }
 
 /// 写一个文件：顺着符号链接写到它指的那个，先写在旁边再换过去，权限照原来的。
-fn write(path: &Path, text: &str) -> io::Result<()> {
+pub(super) fn write(path: &Path, text: &[u8]) -> io::Result<()> {
     let target = real(path)?;
     if let Some(dir) = target.parent() {
         fs::create_dir_all(dir)?;
@@ -420,14 +449,6 @@ fn real(path: &Path) -> io::Result<PathBuf> {
         "{}: too many symlinks",
         path.display()
     )))
-}
-
-/// 旧版那一份也在：说一声（不删，不是自己写的）。
-fn warn_old(shell: Shell, env: &impl Fn(&str) -> Option<String>, words: &Words) {
-    if let Some(old) = shell.old_hook(env).filter(|p| p.exists()) {
-        let shown = old.display().to_string();
-        eprintln!("{}", fill(&words.old_hook, &[("path", &shown)]));
-    }
 }
 
 pub fn no_home() -> io::Error {

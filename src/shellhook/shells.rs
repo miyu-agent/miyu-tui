@@ -86,11 +86,30 @@ impl Shell {
         }
     }
 
-    /// 旧版装的那一份（并行期两份都在，一句话会交两遍）：只有 fish 是单独的文件，认得出来。
-    pub fn old_hook(self, env: &impl Fn(&str) -> Option<String>) -> Option<PathBuf> {
+    /// 旧版（0.7）装那一份的地方（蓝图「旧版那一份」第 1 条，照旧版 `startup.rs`）：bash 的四个启动文件（旧版在 macOS 上
+    /// 写登录文件），zsh 的 `$ZDOTDIR/.zshrc`（设了的）和 `~/.zshrc`，fish 的 `conf.d/miyu.fish`。PowerShell 旧版没装过。
+    pub fn old_hooks(self, env: &impl Fn(&str) -> Option<String>) -> Vec<PathBuf> {
+        let home = env("HOME").filter(|h| !h.is_empty()).map(PathBuf::from);
         match self {
-            Self::Fish => Some(self.target(env)?.with_file_name("miyu.fish")),
-            Self::Bash | Self::Zsh | Self::Pwsh | Self::WinPs => None,
+            Self::Fish => self
+                .target(env)
+                .map(|target| target.with_file_name("miyu.fish"))
+                .into_iter()
+                .collect(),
+            Self::Bash => home
+                .map(|home| {
+                    [".bashrc", ".bash_profile", ".bash_login", ".profile"]
+                        .map(|name| home.join(name))
+                        .to_vec()
+                })
+                .unwrap_or_default(),
+            Self::Zsh => env("ZDOTDIR")
+                .filter(|d| !d.is_empty())
+                .map(|dir| PathBuf::from(dir).join(".zshrc"))
+                .into_iter()
+                .chain(home.map(|home| home.join(".zshrc")))
+                .collect(),
+            Self::Pwsh | Self::WinPs => Vec::new(),
         }
     }
 

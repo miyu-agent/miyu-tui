@@ -66,9 +66,23 @@ fn targets_follow_xdg_and_zdotdir() {
     assert_eq!(Shell::Bash.target(&env), Some(PathBuf::from("/h/.bashrc")));
     assert_eq!(Shell::Zsh.target(&env), Some(PathBuf::from("/z/.zshrc")));
     assert_eq!(
-        Shell::Fish.old_hook(&env),
-        Some(PathBuf::from("/c/fish/conf.d/miyu.fish")),
+        Shell::Fish.old_hooks(&env),
+        [PathBuf::from("/c/fish/conf.d/miyu.fish")],
         "旧版的那一份和自己的在同一个目录、名字不一样"
+    );
+    assert_eq!(
+        Shell::Bash.old_hooks(&env),
+        [".bashrc", ".bash_profile", ".bash_login", ".profile"]
+            .map(|n| PathBuf::from("/h").join(n)),
+        "旧版的 bash 那一段四个启动文件都可能在"
+    );
+    assert_eq!(
+        Shell::Zsh.old_hooks(&env),
+        [PathBuf::from("/z/.zshrc"), PathBuf::from("/h/.zshrc")]
+    );
+    assert!(
+        Shell::Pwsh.old_hooks(&env).is_empty(),
+        "旧版没装过 PowerShell"
     );
     let bare = |name: &str| (name == "HOME").then(|| "/h".to_string());
     assert_eq!(
