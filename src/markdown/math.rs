@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 
 /// 嵌套的上限：公式是模型写的，递归没有上限就是一个爆栈的口子。超了的原样交回。
-const MAX_NESTING: usize = 64;
+pub(super) const MAX_NESTING: usize = 64;
 
 /// 公式的对照表（`resources/math.json`）。
 #[derive(Debug, Clone, Deserialize)]

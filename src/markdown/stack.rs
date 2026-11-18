@@ -4,7 +4,7 @@
 
 use unicode_width::UnicodeWidthStr;
 
-use super::math::{Math, unicode};
+use super::math::{MAX_NESTING, Math, unicode};
 
 /// 排成的一块：几行字、分数线（基线）在第几行、多宽。
 #[derive(Debug, Clone)]
@@ -137,6 +137,12 @@ fn sequence(
                 *at += 1;
                 take_args(chars, at, &mut run);
             }
+            // 套得太深的（审计 #052：几万层 `{` 把界面线程的栈撑爆，进程直接退出、终端停在备用屏）：剩下的整段当字攒着，
+            // 交给 `unicode`，它照样数层、超了原样写。
+            '{' if depth >= MAX_NESTING => {
+                run.extend(&chars[*at..]);
+                *at = chars.len();
+            }
             '{' => {
                 out = flush(out, &mut run);
                 *at += 1;
@@ -245,6 +251,23 @@ mod tests {
         assert!(lines[2].contains("2a"), "{lines:?}");
         let nested = stacked(r"\frac{1}{1+\frac{1}{x}}", &m);
         assert_eq!(nested.len(), 5, "分母里的分式也摞：{nested:?}");
+    }
+
+    /// 审计 #052（2026-11-18）：`{` 往里排没有层数上限，`\\frac` 后面几万个 `{` 把栈撑爆（SIGSEGV 绕过崩溃处理，终端停在
+    /// 备用屏）。超过上限的剩下那段原样写；`[…]` 里的 `}` 让单数 `{` 的层数数不准的写法也一样。
+    #[test]
+    fn braces_nested_too_deep_fall_back_to_the_source() {
+        let m = math();
+        let deep = format!(r"\frac{}", "{".repeat(100_000));
+        let lines = stacked(&deep, &m);
+        assert!(lines.concat().contains(&"{".repeat(1000)), "原样写");
+        let sneaky = format!(r"\frac{}", r"{\sqrt[}]".repeat(50_000));
+        assert!(!stacked(&sneaky, &m).concat().is_empty(), "排得完");
+        assert_eq!(
+            stacked(r"\frac{1}{1+\frac{1}{x}}", &m).len(),
+            5,
+            "浅的照常摞"
+        );
     }
 
     #[test]
