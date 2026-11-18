@@ -181,8 +181,10 @@ pub(crate) fn report_into(
             transcript.note(Kind::Answered, text);
         }
         Report::Denied(text, full) => transcript.job_line(JobMark::Failed, text, full),
-        Report::Nothing => {}
+        Report::Nothing => return,
     }
+    // 记在这一轮名下：撤掉这一轮时跟着藏，恢复时跟着回来。
+    transcript.tie_last_to_turn();
 }
 
 /// 回答里贴的图：第几道的（拒绝的是外面的）、本机的文件，照贴的先后。shellhook 的抽屉也照它交。
@@ -196,5 +198,48 @@ pub(crate) fn answer_files(outcome: &Outcome) -> Vec<(Option<usize>, std::path::
             .collect(),
         Outcome::Decided(d) => d.files.iter().map(|f| (None, f.file.clone())).collect(),
         Outcome::Cancelled => Vec::new(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::report_into;
+    use crate::config::Config;
+    use crate::core::{Push, Update};
+    use crate::drawer::{Approval, Decided, Decision, Drawer, Outcome};
+    use crate::transcript::{Kind, Transcript};
+
+    /// 一轮里确认时选了「不允许」：撤掉这一轮，那一行「× 不允许」跟着藏；恢复，跟着回来。原来那一行不带轮次，撤销以后还在。
+    #[test]
+    fn a_denial_goes_away_with_its_turn_and_comes_back_with_it() {
+        let config = Config::builtin().unwrap();
+        let mut t = Transcript::default();
+        let push = |t: &mut Transcript, p: Push| t.update(Update::Push(p), &config.text);
+        push(&mut t, Push::TurnStarted(7, None));
+        let approval: Approval = serde_json::from_value(serde_json::json!({
+            "call_id": "c1", "access": "exec",
+            "detail": {"tool": "shell", "command": "rm -rf build"}
+        }))
+        .unwrap();
+        let deny = Outcome::Decided(Decided {
+            call_id: "c1".into(),
+            decision: Decision::Deny,
+            reason: Some("不要".into()),
+            files: Vec::new(),
+        });
+        let drawer = Drawer::approval(None, approval);
+        report_into(&mut t, &drawer, &deny, &config.text.drawer);
+        push(&mut t, Push::TurnEnded(crate::core::EndReason::Completed));
+        let denied = |t: &Transcript| {
+            t.entries
+                .iter()
+                .find(|e| e.kind == Kind::Job && e.text.contains("不要"))
+                .map(|e| e.hidden)
+        };
+        assert_eq!(denied(&t), Some(false), "写了那一行：{:?}", t.entries);
+        push(&mut t, Push::Reverted(vec![7]));
+        assert_eq!(denied(&t), Some(true), "撤掉那一轮，那一行跟着藏");
+        push(&mut t, Push::Unreverted(vec![7]));
+        assert_eq!(denied(&t), Some(false), "恢复，那一行跟着回来");
     }
 }
