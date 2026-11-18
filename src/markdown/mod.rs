@@ -99,6 +99,10 @@ pub fn render(text: &str, width: u16, kit: &Kit, flipped: &[usize]) -> Vec<MdLin
     r.finish()
 }
 
+/// 引子最多画几层：引用、列表、`<details>` 套得更深的不再往里缩（`layout.rs` 的 `shown`）。16 层的引子在 80 列里占
+/// 32 列上下，再深的正常写不出来。
+const MAX_NESTING: usize = 16;
+
 /// 套在外面的一层：引用、列表的一项，或者展开着的 `<details>`。
 enum Container {
     Quote,
@@ -485,5 +489,7 @@ impl Renderer<'_> {
     }
 }
 
+#[cfg(test)]
+mod nesting_tests;
 #[cfg(test)]
 mod tests;
