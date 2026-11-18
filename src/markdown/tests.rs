@@ -4,7 +4,7 @@ use super::{Kit, MdLine, render};
 use crate::config::Config;
 use crate::theme;
 
-fn draw(text: &str, width: u16) -> Vec<MdLine> {
+pub(super) fn draw(text: &str, width: u16) -> Vec<MdLine> {
     let config = Config::builtin().unwrap();
     let kit = Kit {
         languages: &config.languages,
@@ -16,7 +16,7 @@ fn draw(text: &str, width: u16) -> Vec<MdLine> {
 }
 
 /// 每行：引子加内容。
-fn lines(text: &str, width: u16) -> Vec<String> {
+pub(super) fn lines(text: &str, width: u16) -> Vec<String> {
     draw(text, width)
         .iter()
         .map(|l| {

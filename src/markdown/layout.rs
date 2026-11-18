@@ -4,7 +4,7 @@ use ratatui::text::Span;
 use unicode_width::UnicodeWidthStr;
 
 use super::inline::{Folded, Piece};
-use super::{Container, MdLine, Renderer};
+use super::{Container, MAX_NESTING, MdLine, Renderer};
 use crate::theme;
 
 impl MdLine {
@@ -22,11 +22,21 @@ impl MdLine {
 }
 
 impl Renderer<'_> {
+    /// 画得出来的那几层（编号）：套得比 [`MAX_NESTING`] 深的，只画外面的 `MAX_NESTING - 1` 层和最里面那一层，中间的不再往里
+    /// 缩，更深的和第 `MAX_NESTING` 层排在一列上、字照画（LiteMiyu 查到：引子一层一段，几千层的每一行几千段，排一次照层数的
+    /// 平方涨，`<details>` 套 4000 层 2.3 GB）。
+    fn shown(&self) -> impl Iterator<Item = usize> + use<> {
+        let len = self.containers.len();
+        let cut = len.saturating_sub(1).min(MAX_NESTING - 1);
+        (0..cut).chain((len > cut).then(|| len - 1))
+    }
+
     /// 行首的引子：引用、展开着的 `<details>` 一层一个 `│ `；列表这一项的第一行写记号，别的行写一样宽的空白。
+    /// 只画 [`Self::shown`] 那几层。
     pub(super) fn lead(&mut self, first: bool) -> Vec<Span<'static>> {
         let mut spans = Vec::new();
-        for container in &mut self.containers {
-            match container {
+        for at in self.shown() {
+            match &mut self.containers[at] {
                 Container::Quote | Container::Details => {
                     spans.push(Span::styled(crate::sheet::mark(|m| &m.quote), theme::dim()));
                 }
@@ -46,12 +56,11 @@ impl Renderer<'_> {
         spans
     }
 
-    /// 内容还剩几列：减去引子。
+    /// 内容还剩几列：减去引子（[`Self::shown`] 那几层）。
     pub(super) fn room(&self) -> u16 {
         let lead: usize = self
-            .containers
-            .iter()
-            .map(|c| match c {
+            .shown()
+            .map(|at| match &self.containers[at] {
                 Container::Quote | Container::Details => 2,
                 Container::Item { marker, .. } => marker.width(),
             })
