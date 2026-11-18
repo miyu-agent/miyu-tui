@@ -13,6 +13,16 @@ use crate::ui::rows::Target;
 const SIDE_WHEEL: u16 = 3;
 
 impl App {
+    /// 终端收回来了（挂起回来、编辑器退出了）：走的时候 `main.rs` 的 `leave` 关了终端的像素坐标，这边记的也记成关着
+    /// （不然抓着滚动条按 `Ctrl+Z` 回来，这边当开着、不再写打开，终端照格子报、这边照像素换，审计 #067）。
+    pub fn terminal_back(&mut self) {
+        // 终端那边已经关了，不用再写。
+        self.screen
+            .pixel
+            .reset(&mut std::io::sink())
+            .unwrap_or_default();
+    }
+
     /// 鼠标：按下时看落在哪一块，之后的拖动、松开都归那一块；悬停、滚轮照位置分。
     pub(super) fn mouse(&mut self, mouse: MouseEvent) -> Action {
         // 拖滚动条时终端按像素报（`pixel_mouse.rs`）：先换回格子，带小数的第几行交给正文。
