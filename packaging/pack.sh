@@ -60,6 +60,8 @@ stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 mkdir -p "$stage/tui/bin" "$out"
 cp "$repo/tui/package.toml" "$stage/tui/"
+# 许可证两份随包走，同发版的 `release.yml`（审计 #086：原来本机打的包里没有）。
+cp "$repo/LICENSE" "$repo/THIRD-PARTY-LICENSES.txt" "$stage/tui/"
 cp "$bin" "$stage/tui/bin/$exe"
 chmod 755 "$stage/tui/bin/$exe"
 
