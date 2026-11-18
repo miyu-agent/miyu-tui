@@ -48,11 +48,11 @@ struct Spot {
 
 /// 那一处是什么样。
 enum Seen {
-    /// 启动文件（`text` 是读到的整份）：几段旧的，和只有开头没有结尾的那一行（行号从 1 起）。
+    /// 启动文件（`text` 是读到的整份）：几段旧的，和只有开头没有结尾的那几行（原文件里的行号，从 1 起）。
     Blocks {
         text: Vec<u8>,
         blocks: Vec<Block>,
-        open: Option<usize>,
+        orphans: Vec<usize>,
     },
     /// fish 的旧文件，有戳。
     File,
@@ -121,11 +121,13 @@ fn install_rc(
     let Some(text) = install::read(target)? else {
         return install::install_at(shell, target, program);
     };
-    let (blocks, open) = scan(&text, shell);
+    let (blocks, orphans) = scan(&text, shell);
     let shown = target.display().to_string();
-    if let Some(line) = open {
-        said.push(Said::trouble(unclosed(&shown, line, words)));
-    }
+    said.extend(
+        orphans
+            .iter()
+            .map(|&line| Said::trouble(unclosed(&shown, line, words))),
+    );
     if blocks.is_empty() {
         return install::put(shell, target, program, Some(text));
     }
@@ -160,10 +162,14 @@ fn clean(spot: Spot, shell: Shell, words: &Words) -> Vec<Said> {
         Err(e) => return vec![Said::trouble(unreadable(&shown, &e, words))],
     };
     match seen {
-        Seen::Blocks { text, blocks, open } => {
-            let mut said: Vec<Said> = open
-                .map(|line| Said::trouble(unclosed(&shown, line, words)))
-                .into_iter()
+        Seen::Blocks {
+            text,
+            blocks,
+            orphans,
+        } => {
+            let mut said: Vec<Said> = orphans
+                .iter()
+                .map(|&line| Said::trouble(unclosed(&shown, line, words)))
                 .collect();
             if blocks.is_empty() {
                 return said;
@@ -244,8 +250,14 @@ fn rc(path: &Path, shell: Shell) -> io::Result<Option<Seen>> {
     let Some(text) = install::read(path)? else {
         return Ok(None);
     };
-    let (blocks, open) = scan(&text, shell);
-    Ok((!blocks.is_empty() || open.is_some()).then_some(Seen::Blocks { text, blocks, open }))
+    let (blocks, orphans) = scan(&text, shell);
+    Ok(
+        (!blocks.is_empty() || !orphans.is_empty()).then_some(Seen::Blocks {
+            text,
+            blocks,
+            orphans,
+        }),
+    )
 }
 
 /// fish 的 `miyu.fish`：不在的是 `None`。
@@ -279,33 +291,38 @@ fn identity(path: &Path) -> PathBuf {
     fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }
 
-/// 找出旧的几段：整行（两头的空白、行尾的 `\r` 不算）的开头记号到它后面头一个整行的结尾记号。交回几段，和最后只有
-/// 开头没有结尾的那一行。
-fn scan(text: &[u8], shell: Shell) -> (Vec<Block>, Option<usize>) {
+/// 找出旧的几段：一段是一个整行（两头的空白、行尾的 `\r` 不算）的结尾记号和它前面最近的那个整行的开头记号之间。
+/// 开头后面没等到结尾又来一个开头的，前一个算没有结尾（被人动过的文件里，不从它一路删到后面那一段的结尾，连着中间
+/// 用户自己的行）；前面没有开着的开头的结尾不算。交回几段，和没有结尾的那几个开头在第几行。
+fn scan(text: &[u8], shell: Shell) -> (Vec<Block>, Vec<usize>) {
     let begin = format!("# >>> miyu {} hook >>>", shell.name());
     let end = format!("# <<< miyu {} hook <<<", shell.name());
     let mut blocks = Vec::new();
+    let mut orphans = Vec::new();
     let mut open: Option<(usize, usize)> = None;
     let mut at = 0;
     for (i, line) in text.split_inclusive(|&b| b == b'\n').enumerate() {
         let bare = line.trim_ascii();
         let next = at + line.len();
-        match open {
-            None if bare == begin.as_bytes() => open = Some((i + 1, at)),
-            Some((first, start)) if bare == end.as_bytes() => {
-                blocks.push(Block {
-                    first,
-                    last: i + 1,
-                    start,
-                    end: next,
-                });
-                open = None;
+        if bare == begin.as_bytes() {
+            if let Some((first, _)) = open {
+                orphans.push(first);
             }
-            _ => {}
+            open = Some((i + 1, at));
+        } else if bare == end.as_bytes()
+            && let Some((first, start)) = open.take()
+        {
+            blocks.push(Block {
+                first,
+                last: i + 1,
+                start,
+                end: next,
+            });
         }
         at = next;
     }
-    (blocks, open.map(|(first, _)| first))
+    orphans.extend(open.map(|(first, _)| first));
+    (blocks, orphans)
 }
 
 /// 去掉那几段，别的字节一个不动。
@@ -325,8 +342,10 @@ fn told(spot: &Spot, shell: Shell, words: &Words) -> Vec<String> {
     let shown = spot.path.display().to_string();
     match &spot.seen {
         Err(e) => vec![unreadable(&shown, e, words)],
-        Ok(Seen::Blocks { blocks, open, .. }) => still(&shown, blocks, shell, words)
-            .chain(open.map(|line| unclosed(&shown, line, words)))
+        Ok(Seen::Blocks {
+            blocks, orphans, ..
+        }) => still(&shown, blocks, shell, words)
+            .chain(orphans.iter().map(|&line| unclosed(&shown, line, words)))
             .collect(),
         Ok(Seen::File | Seen::Link(_)) => vec![fill(
             &words.old_file,
