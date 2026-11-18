@@ -121,8 +121,29 @@ pub fn uninstall(shell: Shell, words: &Words) -> io::Result<()> {
 /// 读文件失败（不在的不算）。
 pub fn status(words: &Words) -> io::Result<()> {
     let env = |name: &str| std::env::var(name).ok();
-    for shell in shells::ALL {
-        let Some(path) = shell.target(&env) else {
+    status_to(
+        &shells::ALL,
+        &env,
+        words,
+        &mut io::stdout(),
+        &mut io::stderr(),
+    )
+}
+
+/// [`status`] 的做法：看 `shells` 这几种，`env` 读环境变量，装没装印到 `out`，提醒印到 `err`。
+///
+/// # Errors
+///
+/// 读文件失败（不在的不算）、写不出去。
+pub fn status_to(
+    shells: &[Shell],
+    env: &impl Fn(&str) -> Option<String>,
+    words: &Words,
+    out: &mut impl io::Write,
+    err: &mut impl io::Write,
+) -> io::Result<()> {
+    for &shell in shells {
+        let Some(path) = shell.target(env) else {
             continue;
         };
         let shown = path.display().to_string();
@@ -139,9 +160,10 @@ pub fn status(words: &Words) -> io::Result<()> {
             }
             Found::Ours(_) => fill(&words.status_installed, &values),
         };
-        println!("{line}");
-        if ours {
-            warn_old(shell, &env, words);
+        writeln!(out, "{line}")?;
+        if ours && let Some(old) = shell.old_hook(env).filter(|p| p.exists()) {
+            let shown = old.display().to_string();
+            writeln!(err, "{}", fill(&words.old_hook, &[("path", &shown)]))?;
         }
     }
     Ok(())

@@ -42,15 +42,26 @@ pub fn shells() -> Vec<Entry> {
 ///
 /// 认不出的名字、没有家目录、读写失败、fish 那个文件不是自己写的、PowerShell 的执行策略不让加载（这时已经装上了）：
 /// 交回给人看的一句。
-pub fn install(name: &str) -> Result<(), String> {
+pub fn install(name: &str) -> Result<Vec<String>, String> {
     let words = Words::detect().map_err(|e| e.to_string())?;
-    let (shell, target) = locate(name, &words)?;
     let program = install::default_program().map_err(|e| e.to_string())?;
-    match install::install_at(shell, &target, &program).map_err(|e| e.to_string())? {
+    let env = |key: &str| std::env::var(key).ok();
+    install_in(name, &env, &program, &words)
+}
+
+/// [`install`] 的做法：`env` 读环境变量，调 `program`。
+pub(super) fn install_in(
+    name: &str,
+    env: &impl Fn(&str) -> Option<String>,
+    program: &std::path::Path,
+    words: &Words,
+) -> Result<Vec<String>, String> {
+    let (shell, target) = locate(name, env, words)?;
+    match install::install_at(shell, &target, program).map_err(|e| e.to_string())? {
         // 装上了，可 PowerShell 的执行策略不让加载启动文件：照失败说，告诉人怎么改（不替人改安全设置）。
         Done::Installed | Done::Updated => match install::blocking_policy(shell) {
             Some(policy) => Err(fill(&words.ps_policy, &[("policy", &policy)])),
-            None => Ok(()),
+            None => Ok(Vec::new()),
         },
         Done::Foreign => {
             let shown = target.display().to_string();
@@ -69,18 +80,22 @@ pub fn install(name: &str) -> Result<(), String> {
 /// 认不出的名字、没有家目录、读写失败：交回给人看的一句。
 pub fn uninstall(name: &str) -> Result<(), String> {
     let words = Words::detect().map_err(|e| e.to_string())?;
-    let (shell, target) = locate(name, &words)?;
+    let env = |key: &str| std::env::var(key).ok();
+    let (shell, target) = locate(name, &env, &words)?;
     install::uninstall_at(shell, &target)
         .map(drop)
         .map_err(|e| e.to_string())
 }
 
 /// 名字认成 shell、找到装在哪。
-fn locate(name: &str, words: &Words) -> Result<(Shell, PathBuf), String> {
+fn locate(
+    name: &str,
+    env: &impl Fn(&str) -> Option<String>,
+    words: &Words,
+) -> Result<(Shell, PathBuf), String> {
     let shell = Shell::named(name).ok_or_else(|| fill(&words.unknown_shell, &[("shell", name)]))?;
-    let env = |key: &str| std::env::var(key).ok();
     let target = shell
-        .target(&env)
+        .target(env)
         .ok_or_else(|| install::no_home().to_string())?;
     Ok((shell, target))
 }
