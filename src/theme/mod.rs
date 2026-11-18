@@ -205,6 +205,16 @@ pub fn picked_bar() -> Style {
     bar_style(barless())
 }
 
+/// 停着的按钮：同 [`picked_bar`]；不上色的（`NO_COLOR`）颜色都成了终端默认的，另加反显（同危险按钮停着时），原来和别的
+/// 按钮一模一样。列表的选中行照旧写箭头、不反显（「主题」第 6 条）。
+pub fn picked_button() -> Style {
+    let bar = picked_bar();
+    if terminal_colors::mono() {
+        return bar.add_modifier(Modifier::REVERSED);
+    }
+    bar
+}
+
 /// 选中的那一条照主题铺不铺底：不铺底的只换成选中色（`picked`）。原来换强调色，和配置页标题一个颜色分不出（2026-10-22
 /// 项目主人验收纯 ASCII 主题时报，照推荐定）。
 fn bar_style(barless: bool) -> Style {

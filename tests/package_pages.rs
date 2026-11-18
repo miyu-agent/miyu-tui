@@ -8,13 +8,13 @@ use std::time::{Duration, Instant};
 use miyu_session::testkit::{Play, Script};
 use support::{Home, Tui};
 
-/// 往下挪到选中的那一行（行首 `┃`）是 `to`：每按一下看一眼，慢的机器上按键早到也不会多挪、少挪。
+/// 往下挪到选中的那一行（行首 `┃`，不上色的是 `❯`）是 `to`：每按一下看一眼，慢的机器上按键早到也不会多挪、少挪。
 fn reach(tui: &mut Tui, to: &str) {
     for _ in 0..40 {
         if tui
             .lines()
             .iter()
-            .any(|l| l.contains('┃') && l.contains(to))
+            .any(|l| (l.contains('┃') || l.contains('❯')) && l.contains(to))
         {
             return;
         }
@@ -91,6 +91,48 @@ fn the_web_search_keys_live_on_the_web_search_page() {
     until(&mut tui, "停回网络搜索", |t| {
         !row(t, "网络搜索").is_empty()
     });
+}
+
+/// 屏幕上写着 `text` 的第一格：（行, 列）。
+fn spot(tui: &Tui, text: &str) -> (u16, u16) {
+    let first = text.chars().next().expect("有字").to_string();
+    let row = tui
+        .lines()
+        .iter()
+        .position(|l| l.contains(text))
+        .expect("在");
+    let row = u16::try_from(row).expect("行");
+    let col = (0..400)
+        .find(|&c| tui.cell(row, c) == first)
+        .expect("找得到那一格");
+    (row, col)
+}
+
+/// `NO_COLOR` 下问卸载的那一排按钮：停着的那个看得出，挪一下跟着走。原来停着的按钮铺的选中色降成终端默认的，和没停着的
+/// 一模一样。
+#[test]
+fn without_colour_the_focused_button_still_stands_out() {
+    let home = Home::prepared(Script::new([Play::Says("好。")]), "", weather);
+    let mut tui = home.tui_args_with("zh_CN.UTF-8", &["config"], &[("NO_COLOR", "1")]);
+    installed(&mut tui);
+    reach(&mut tui, "Weather");
+    tui.key(b"d");
+    tui.wait_for("[ 卸载 ]");
+    let look = |tui: &Tui, label: &str| {
+        let (row, col) = spot(tui, label);
+        tui.marked(row, col)
+    };
+    assert_ne!(look(&tui, "卸载 ]"), look(&tui, "取消 ]"), "停在「卸载」");
+    tui.key(b"\x1b[C");
+    until(&mut tui, "挪到「取消」", |t| {
+        look(t, "卸载 ]") == (false, false)
+    });
+    assert_ne!(
+        look(&tui, "取消 ]"),
+        (false, false),
+        "停着的「取消」看得出：\n{}",
+        tui.lines().join("\n")
+    );
 }
 
 /// `d` 先列出要卸的、问一句，`y` 才卸：包目录没了，列表里也没了（第 43c 条）。

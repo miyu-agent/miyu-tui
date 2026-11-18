@@ -8,6 +8,7 @@
 //! 窗口拿回焦点时再问一次（2026-10-15 项目主人定，设计 13 的 H15）：终端换了配色，跟着它的（明暗自动、终端配色）照新的
 //! 重挑；问句和读回话在 `answer.rs`。
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::time::Duration;
 
@@ -87,9 +88,18 @@ pub fn probe_ground() -> Option<Ground> {
     })
 }
 
+/// 不上色（色深是 [`Depth::Mono`]）：停着的按钮另加反显（`theme::picked_button`）。
+static MONO: AtomicBool = AtomicBool::new(false);
+
+/// 起来时定的色深是不上色。
+pub fn mono() -> bool {
+    MONO.load(Ordering::Relaxed)
+}
+
 /// 装上问到的（启动时一次）。
 pub fn install(sixteen: Option<Colors>, ground: Option<Ground>, depth: Depth) {
     super::set_arrows(depth == Depth::Mono || crate::sheet::on_console());
+    MONO.store(depth == Depth::Mono, Ordering::Relaxed);
     *write() = Seen {
         sixteen,
         ground,

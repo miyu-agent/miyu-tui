@@ -299,7 +299,7 @@ fn keyed_row(
     for (i, (label, danger)) in buttons.iter().enumerate() {
         let style = match (selected == Some(i), danger) {
             (true, true) => theme::error().add_modifier(Modifier::REVERSED),
-            (true, false) => theme::picked_bar(),
+            (true, false) => theme::picked_button(),
             _ => Style::new(),
         };
         let key = keys.get(i).filter(|k| !k.is_empty());

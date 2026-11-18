@@ -394,6 +394,12 @@ impl Tui {
             .map_or(vt100::Color::Default, vt100::Cell::bgcolor)
     }
 
+    /// 一格反显没有、加粗没有（不上色时停在哪就靠它们认）。
+    pub fn marked(&self, row: u16, col: u16) -> (bool, bool) {
+        let cell = self.screen.screen().cell(row, col);
+        cell.map_or((false, false), |c| (c.inverse(), c.bold()))
+    }
+
     /// 一格的字带不带下划线。
     pub fn underlined(&self, row: u16, col: u16) -> bool {
         self.screen
