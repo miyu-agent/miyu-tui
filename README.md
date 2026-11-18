@@ -2,11 +2,11 @@
 
 全屏的终端界面：程序 `miyu-tui`，连上 Miyu 的核心跟 AI 说话。核心在 [miyu-agent/miyu](https://github.com/miyu-agent/miyu)，这里照 `Cargo.toml` 的 git 依赖钉住核心的一个提交，只经门面 `miyu-client` 用核心的东西（核心仓库的设计 `32-仓库拆分.md`）。
 
-怎么用（启动参数、按键、斜杠命令、设置）见 [终端](https://github.com/miyu-agent/miyu/blob/main/docs/guide/heads/tui.md)。
+怎么用（启动参数、按键、斜杠命令、设置）见 [终端](https://github.com/miyu-agent/miyu/blob/main/docs/zh/guide/heads/tui.md)。
 
 ### 怎么跑
 
-先在核心仓库的检出里编一次核心（`cargo build -p miyu`），下面的 `<核心检出>` 换成它的路径。模型的配置用核心的 `cargo xtask dev-home` 造（见 [开发者：参与开发](https://github.com/miyu-agent/miyu/blob/main/docs/dev/contributing.md)），它写的供应商地址、key 照环境变量 `MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY` 取。
+先在核心仓库的检出里编一次核心（`cargo build -p miyu`），下面的 `<核心检出>` 换成它的路径。模型的配置用核心的 `cargo xtask dev-home` 造（见 [开发者：参与开发](https://github.com/miyu-agent/miyu/blob/main/docs/zh/dev/contributing.md)），它写的供应商地址、key 照环境变量 `MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY` 取。
 
 第一次用这个 `MIYU_HOME` 时，在这个仓库的根目录装上终端自己的软件包 `tui/`（核心不自带它：`tui.*` 配置项、放输入历史的状态目录都照它认；编号照文件夹名，配置键照清单的 `prefix = "tui"`，发版时核心照 `heads.toml` 放进 `packages/tui/`）：
 
@@ -28,7 +28,7 @@ MIYU_DEV_BASE_URL=<地址，写到 /v1> MIYU_DEV_API_KEY=<key> MIYU_HOME=$HOME/.
 
 ### 按键、鼠标、版式
 
-见 [终端](https://github.com/miyu-agent/miyu/blob/main/docs/guide/heads/tui.md)，这里不再抄一份。
+见 [终端](https://github.com/miyu-agent/miyu/blob/main/docs/zh/guide/heads/tui.md)，这里不再抄一份。
 
 ### herdr 中恢复会话
 
