@@ -24,36 +24,18 @@ pub struct SessionList {
     pub pinned: Option<usize>,
     /// 正在用的会话：永远排在最上面（2026-10-18 项目主人：都在跑的时候看不出哪个是当前的）。
     pub current: Option<String>,
-    /// 人格的编号 → 给人看的名字：结束了的人生照人格分段，段头写名字（「推演人生」第 8 条）。
-    pub names: std::collections::HashMap<String, String>,
-}
-
-/// 排在哪一摞：别的会话、存档、结束了的人生（「推演人生」第 8 条：存档后面，照人格一段一段）。
-fn shelf(s: &SessionInfo) -> u8 {
-    if s.life_ended {
-        2
-    } else {
-        u8::from(s.archived)
-    }
-}
-
-/// 结束了的人生是哪个人格的（照它分段）；别的会话不分，都是 `None`。
-fn ended_persona(s: &SessionInfo) -> Option<&str> {
-    s.persona.as_deref().filter(|_| s.life_ended)
 }
 
 impl SessionList {
     /// 对得上的，照先后：正在用的最上面，置顶的接着，别的照人最后一次发话，新的在前，没人说过话的照开的时刻（第 3 条子条，
-    /// 2026-11-16 项目主人，`core/spoken.rs`）；都没有的照核心交回的先后。存档排在别的后面（第 3 条子条，排期第 38 条），
-    /// 结束了的人生再后面，同一个人格的挨着（「推演人生」第 8 条）。
+    /// 2026-11-16 项目主人，`core/spoken.rs`）；都没有的照核心交回的先后。存档排在别的后面（第 3 条子条，排期第 38 条）。
     pub fn matches(&self) -> Vec<&SessionInfo> {
         let mut found: Vec<(usize, &SessionInfo)> = self.all.iter().enumerate().collect();
         let current = |s: &SessionInfo| self.current.as_deref() == Some(s.session.as_str());
         found.sort_by(|(i, a), (j, b)| {
             current(b)
                 .cmp(&current(a))
-                .then(shelf(a).cmp(&shelf(b)))
-                .then(ended_persona(a).cmp(&ended_persona(b)))
+                .then(a.archived.cmp(&b.archived))
                 .then(b.pinned.cmp(&a.pinned))
                 .then(session_order_key(b).cmp(&session_order_key(a)))
                 .then(i.cmp(j))
@@ -209,8 +191,6 @@ mod tests {
             waiting: false,
             viewed: false,
             archived: false,
-            life: false,
-            life_ended: false,
             last_spoken: None,
         }
     }
@@ -259,7 +239,7 @@ mod tests {
 
     #[test]
     fn the_rest_follow_when_a_person_last_spoke_not_the_latest_activity() {
-        // 2026-11-16 项目主人：循环、人生自己醒这些没人说话的轮不挪；没人说过话的照开的时刻（编号是 UUIDv7）。
+        // 2026-11-16 项目主人：循环、定时任务这些没人说话的轮不挪；没人说过话的照开的时刻（编号是 UUIDv7）。
         let spoke = |session: &str, spoken: &str, active: &str| SessionInfo {
             last_spoken: Some(spoken.parse().unwrap()),
             ..info(session, None, false, Some(active))

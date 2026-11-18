@@ -74,8 +74,8 @@ fn no_text_speaks_of_accounts_or_personal_settings() {
 }
 
 #[test]
-fn loops_and_lives_never_wake_or_sleep() {
-    // 核心 WK-2（2026-11-17 项目主人定）：循环、人生不说「醒」「睡」，一律说「继续」「下一轮」；工具 schedule_wakeup 改名
+fn loops_never_wake_or_sleep() {
+    // 核心 WK-2（2026-11-17 项目主人定）：循环不说「醒」「睡」，一律说「继续」「下一轮」；工具 schedule_wakeup 改名
     // schedule_next，旧名不留。吉祥物的 `awake`、`wake_ms` 是动画的名字，不在这几份里。
     // 「提醒」里也有「醒」字：照说法查。
     let words = ["醒来", "醒着", "再醒", "睡", "目覚", "眠", "wake", "sleep"];

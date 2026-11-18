@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::{Change, Every, Life, Loop, apply, changed, lost, table};
+use super::{Change, Every, Loop, apply, changed, lost, table};
 
 fn item(id: &str) -> serde_json::Value {
     json!({"id": id, "when": {"every": 600}, "prompt": "看看 CI", "target": {"session": "s-1"},
@@ -27,7 +27,6 @@ fn only_loops_on_a_session_are_kept() {
             next: Some("2026-10-30T04:07:00Z".parse().unwrap()),
             paused: false,
             prompt: "看看 CI".into(),
-            life: None,
         }
     );
     assert_eq!(got.len(), 3, "定时任务不算");
@@ -75,28 +74,4 @@ fn changes_replace_add_and_remove_one_by_one() {
     assert!(lost(
         &json!({"method": "resync", "params": {"stream": "schedules"}})
     ));
-}
-
-#[test]
-fn the_life_row_is_kept_though_it_only_has_a_time() {
-    // 2026-11-17 项目主人本机验收第 23 条：人生那一行（核心 LF-13）的 `when` 只有 `at`，原来没有 every、cron 的被扔掉，右上角
-    // 看不到下次几点。
-    let got = table(&json!({"schedules": [
-        {"id": "t9", "when": {"at": "2026-11-17T09:00:00.000Z"}, "prompt": "推演方法……", "target": {"session": "s-life"},
-         "by": {"kind": "person"}, "recurring": false, "paused": false, "loop": "life", "persona": "miyu", "rounds": 3,
-         "created": "2026-11-17T06:00:00.000Z", "next": "2026-11-17T09:00:00.000Z",
-         "last": {"at": "2026-11-17T08:00:00.000Z", "result": "ran"}}
-    ]}));
-    assert_eq!(got.len(), 1, "人生那一行照样认");
-    assert_eq!(got[0].every, Every::Life);
-    assert_eq!(got[0].session, "s-life");
-    assert_eq!(
-        got[0].life,
-        Some(Life {
-            persona: Some("miyu".into()),
-            created: Some("2026-11-17T06:00:00Z".parse().unwrap()),
-            last: Some("2026-11-17T08:00:00Z".parse().unwrap()),
-        })
-    );
-    assert_eq!(got[0].next, Some("2026-11-17T09:00:00Z".parse().unwrap()));
 }

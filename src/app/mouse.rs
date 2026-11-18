@@ -57,10 +57,7 @@ impl App {
             return Action::None;
         }
         // 点目标那一行：开长期目标的浮窗（`goal_box.rs`，2026-10-26 项目主人）。
-        if !captured
-            && matches!(mouse.kind, MouseEventKind::Down(_))
-            && (self.goal_clicked(at) || self.life_clicked(at))
-        {
+        if !captured && matches!(mouse.kind, MouseEventKind::Down(_)) && self.goal_clicked(at) {
             return Action::None;
         }
         // 正文顶上钉着的你说的话：点一下跳回那句话（排期第 16 条，`ui/pinned.rs`）。

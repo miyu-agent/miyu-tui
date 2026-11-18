@@ -47,7 +47,7 @@ pub use files::FilesTexts;
 pub use goal::GoalTexts;
 pub use icons::{ASCII as ASCII_ICONS, Icons};
 pub use layout::{Bar, Dots, Layout, Shimmer, TodoMarks};
-pub use loops::{LivesTexts, LoopTexts};
+pub use loops::LoopTexts;
 pub use mention::{MentionLook, MentionTexts, SkillWordTexts};
 pub use motion::CompactionMotion;
 pub use notes::CompactionTexts;

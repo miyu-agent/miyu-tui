@@ -17,8 +17,6 @@ struct Row<'a> {
     id: &'a str,
     name: &'a str,
     status: Status,
-    /// 人生会话：名字前面写记号（「推演人生」第 3 条）。
-    life: bool,
 }
 
 /// 一个会话的几样状态，挑行首记号用（[`mark`]）。
@@ -50,7 +48,6 @@ pub fn recent_lines(
         .map(|s| Row {
             id: &s.session,
             name: name(s).unwrap_or(&config.text.untitled),
-            life: s.life,
             status: Status {
                 current: Some(s.session.as_str()) == me,
                 busy: s.busy,
@@ -69,7 +66,6 @@ pub fn recent_lines(
                 Row {
                     id,
                     name: title.unwrap_or(&config.text.untitled),
-                    life: false,
                     status: Status {
                         current: true,
                         ..Status::default()
@@ -97,12 +93,6 @@ pub fn recent_lines(
     let room = width.saturating_sub(2);
     for row in rows {
         let (mark, mark_style) = mark(&row.status, frame, config);
-        let life = if row.life {
-            config.icons.life_mark()
-        } else {
-            String::new()
-        };
-        let room = room.saturating_sub(u16::try_from(life.width()).unwrap_or(0));
         let text = super::rows::clip(row.name, room);
         let style = if row.status.current {
             Style::new()
@@ -112,7 +102,6 @@ pub fn recent_lines(
         let pad = 2usize.saturating_sub(mark.width());
         lines.push(Line::from(vec![
             Span::styled(format!("{mark}{}", " ".repeat(pad)), mark_style),
-            Span::styled(life, theme::accent()),
             Span::styled(text, style),
         ]));
         ids.push(Some(row.id.to_string()));

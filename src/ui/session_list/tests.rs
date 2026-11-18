@@ -37,8 +37,6 @@ fn info(session: &str, title: Option<&str>, cwd: &str) -> SessionInfo {
         waiting: false,
         viewed: false,
         archived: false,
-        life: false,
-        life_ended: false,
         last_spoken: None,
     }
 }

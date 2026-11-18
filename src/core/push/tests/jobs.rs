@@ -118,12 +118,12 @@ fn job_effects_reports_and_foreign_messages_are_read() {
             attached: Vec::new(),
         }]
     );
-    // 循环、人生叫醒她的那句不照原文画，画叫醒的一行（2026-11-17 项目主人验收第 3 条：不是你发的，还是英文）。
-    for (looped, life) in [("fixed", false), ("dynamic", false), ("life", true)] {
+    // 循环交进来的那句不照原文画，画「循环 · 继续」那一行（2026-11-17 项目主人验收第 3 条：不是你发的，还是英文）。
+    for looped in ["fixed", "dynamic"] {
         let by = json!({"kind": "schedule", "schedule": "t3", "loop": looped});
         assert_eq!(
             plain(crate::core::push::read(&said(by, "schedule/t3/1"), &mine)),
-            [Push::Wake { seq: 12, life }],
+            [Push::Wake { seq: 12 }],
             "{looped}"
         );
     }

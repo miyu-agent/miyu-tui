@@ -60,8 +60,6 @@ pub struct Pick {
     /// 最近那个会话用的（`Some(None)` 是它没带）：起来时先照记下的（`look.rs`），会话列表到了照它换。会话列表还没到时
     /// 首页照它画、框照它停，不先闪默认人格的头像（2026-10-19 项目主人报：无人格也闪一帧头像）。
     pub last: Option<Option<String>>,
-    /// 不列进框里的（预设写了 `hidden` 的，「推演人生」第 4 条）：名字照常认（[`Pick::name`]）。
-    pub hidden: Vec<Persona>,
 }
 
 impl Pick {
@@ -107,7 +105,6 @@ impl Pick {
         self.list
             .iter()
             .flatten()
-            .chain(&self.hidden)
             .find(|p| p.id == id)
             .map_or(id, |p| p.label())
     }
@@ -144,7 +141,6 @@ impl App {
                     seed: None,
                     seeds: None,
                     tokens: None,
-                    hidden: false,
                 },
             );
         }
@@ -154,9 +150,6 @@ impl App {
             .map(|p| (p.id.clone(), p.label().to_string()))
             .collect();
         crate::transcript::set_names(kind == Kind::Persona, names);
-        // 写了 `hidden` 的预设（出厂的「推演人生」）不列进框（「推演人生」第 4 条）
-        let (hidden, list) = list.into_iter().partition(|p| p.hidden);
-        self.pick_mut(kind).hidden = hidden;
         self.pick_mut(kind).list = Some(list);
         self.refit_pick(kind);
         self.ask_next();

@@ -83,18 +83,6 @@ pub enum Panel {
         /// 往下滚了几行。
         scroll: usize,
     },
-    /// 光打 `/life` 开的人生会话列表（`lives.rs`）：选中第几条；列的在 [`App::boxes`](super::App) 的 `lives` 上。
-    Lives {
-        /// 选中第几条。
-        selected: usize,
-    },
-    /// 点人生记号开的人生卡（`life_card.rs`）：停在第几个按钮、「结束人生」按过一下了没有。
-    Life {
-        /// 停在第几个按钮。
-        button: usize,
-        /// 「结束人生」按过一下：再按才结束。
-        arming: bool,
-    },
     /// 工具（`/tool-list`，`tool_list.rs`）：往下滚了几行；读回来的在 `boxes.tools` 上。
     Tools {
         /// 往下滚了几行。
@@ -229,8 +217,6 @@ impl App {
             Panel::Pick { kind, selected } => return self.pick_key(kind, selected, key),
             Panel::Status { scroll } => return self.status_key(scroll, key),
             Panel::Goal { scroll } => return self.goal_key(scroll, key),
-            Panel::Life { button, arming } => return self.life_card_key((button, arming), key),
-            Panel::Lives { selected } => return self.lives_key(selected, key),
             Panel::Tools { scroll } => return self.tool_list_key(scroll, key),
             Panel::Context { scroll } => return self.context_key(scroll, key),
             Panel::Changed {
@@ -293,7 +279,6 @@ impl App {
         if self.help_mouse(mouse, at)
             || self.language_mouse(mouse, at)
             || self.theme_mouse(mouse, at)
-            || self.lives_mouse(mouse, at)
             || self.sessions_mouse(mouse, at)
             || self.models_mouse(mouse, at)
             || self.effort_mouse(mouse, at)
@@ -316,9 +301,9 @@ impl App {
             }
             return true;
         }
-        // 待办那一块：点了展开全部，再点收起（第 4 条）。最上面一行是结束了的人生的提示的，点「打开」「收起」（`life_ended.rs`）。
+        // 待办那一块：点了展开全部，再点收起（第 4 条）。
         if areas.todo.contains(at) {
-            if press && !self.ended_clicked(at) {
+            if press {
                 self.talk.todo_full = !self.talk.todo_full;
             }
             return true;
@@ -360,7 +345,7 @@ impl App {
             }
             return true;
         }
-        if self.prefix_click(at, press) || self.life_card_click(at, press) {
+        if self.prefix_click(at, press) {
             return true;
         }
         if let Some(Panel::Background { open, all, .. }) = self.boxes.panel
@@ -449,9 +434,6 @@ impl App {
             || over(self.screen.areas.pinned)
             // 长期目标那一截字（点了开浮窗，`goal_box.rs`）。
             || over(self.screen.areas.goal_text)
-            // 人生会话的人生记号、侧边栏「循环」那一段（点了开人生卡，`life_card.rs`）。
-            || over(self.screen.areas.loop_text)
-            || over(self.screen.areas.side_loops)
             || over(self.screen.areas.bottom)
             // 正文的滚动条（`body_view.rs`）。
             || self.screen.view.bar_hover

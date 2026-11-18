@@ -63,8 +63,8 @@ impl App {
         }
         // 上面几处要读的配置合成一条，抢在人格、模型列表、给人看的字这些前头发（`config_asks.rs`）。
         self.flush_config_asks();
-        // `/tool-list` 的回应归它（`tool_list.rs`）；推演人生的几样回应归它（`lives.rs`）。
-        if self.tool_list_update(&update) || self.life_answer(&update) {
+        // `/tool-list` 的回应归它（`tool_list.rs`）。
+        if self.tool_list_update(&update) {
             return;
         }
         // `/context` 的两样回应归它（`context_box.rs`）；`/export` 的估算、存文件归它（`export.rs`）。
@@ -344,8 +344,6 @@ impl App {
         {
             return;
         }
-        // `/life` 带回人生会话：一条跳过去、几条开列表挑（「推演人生」第 1 条，`lives.rs`），开了列表的不再弹回执
-        let update = self.follow_ran(update);
         if let Update::CommandRan { command, said, .. } = &update {
             let said = said.trim_end().trim_end_matches(['。', '.']);
             // `/goal` 看进度的：原文长了截原文，在哪一步、第几轮留着（「长期目标」第 1 条）。

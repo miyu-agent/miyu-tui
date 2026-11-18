@@ -43,8 +43,6 @@ impl App {
                             | Panel::Usage { .. }
                             | Panel::Status { .. }
                             | Panel::Goal { .. }
-                            | Panel::Life { .. }
-                            | Panel::Lives { .. }
                             | Panel::Tools { .. }
                             | Panel::Context { .. }
                     )

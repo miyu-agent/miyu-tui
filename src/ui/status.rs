@@ -150,7 +150,7 @@ pub fn toast(
 }
 
 /// 提示框里的一行字排成几行：后面接着整个要留的 `tail` 的（`/goal` 看进度）照 [`fitted`] 截原文；别的放不下就折行写全，不截
-/// （2026-11-17 核心 LF-12 实测：`/life`、`/stop` 在人生会话里的长回执被截成「…」，后半句「用 /life resume 继续」看不到）。
+/// （2026-11-17 实测：核心命令的长回执被截成「…」，后半句看不到）。
 fn folded(text: &str, tail: &str, width: u16) -> Vec<String> {
     if !tail.is_empty() || text.width() <= usize::from(width) {
         return vec![fitted(text, tail, width)];
@@ -265,8 +265,8 @@ mod tests {
 
     #[test]
     fn a_long_receipt_folds_instead_of_being_clipped() {
-        // 2026-11-17 核心 LF-12 实测：人生会话里 `/stop` 的回执「…用 /life resume 继续」被截成「…」。
-        let said = "已停止这个会话的循环；人生会话已暂停，用 /life resume 继续";
+        // 2026-11-17 实测：核心命令的长回执被截成「…」。
+        let said = "已停止这个会话的循环和后台任务，排着的消息退回输入框，可以再发";
         let lines = folded(said, "", 24);
         assert!(lines.len() > 1, "{lines:?}");
         assert!(lines.iter().all(|l| !l.ends_with('…')), "{lines:?}");

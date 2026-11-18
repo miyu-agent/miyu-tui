@@ -435,7 +435,7 @@ impl Settings {
                 confirm.sel = (confirm.sel + 1) % n;
             }
             KeyCode::Enter => return self.decide(&confirm.ask, confirm.sel, texts),
-            KeyCode::Esc => return self.decide(&confirm.ask, usize::MAX, texts),
+            KeyCode::Esc => return Outcome::Stay,
             _ => {}
         }
         self.popup = Some(Popup::Confirm(confirm));
@@ -444,9 +444,6 @@ impl Settings {
 
     /// 问的那一句选了第几个按钮：删除的当场存。
     fn decide(&mut self, ask: &Delete, button: usize, texts: &Texts) -> Outcome {
-        if let Delete::Life(view) = ask {
-            self.life_decided(view, button == 0);
-        }
         if button != 0 {
             return Outcome::Stay;
         }
@@ -474,7 +471,7 @@ impl Settings {
             Delete::Provider(id) => super::keys::provider(id),
             Delete::Model(p, m) => super::keys::model_table(p, m),
             Delete::Pool(name) => super::keys::pool(name),
-            Delete::Preset(_) | Delete::Persona(_) | Delete::PersonaSeed(_) | Delete::Life(_) => {
+            Delete::Preset(_) | Delete::Persona(_) | Delete::PersonaSeed(_) => {
                 return Outcome::Stay;
             }
             // 恢复默认：去掉系统配置里的这一项。

@@ -67,8 +67,7 @@ fn a_new_persona_is_created_in_one_go_and_becomes_the_default() {
         !oobe.persona.listing && oobe.step == Step::Persona,
         "Esc 只关列表"
     );
-    // 人设提醒短语空着、推演人生不开；到「下一步」回车（vim 的 j 也认：这一格不打字）。
-    oobe.key(key(KeyCode::Char('j')), t0, &texts);
+    // 人设提醒短语空着；到「下一步」回车（vim 的 j 也认：这一格不打字）。
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Char('j')), t0, &texts);
     oobe.key(key(KeyCode::Enter), t0, &texts);

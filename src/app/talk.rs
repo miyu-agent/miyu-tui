@@ -86,11 +86,6 @@ impl Talk {
         self.viewing_info().is_some_and(|s| s.archived)
     }
 
-    /// 正在看的会话是结束了的人生会话（会话列表那一项的 `life_ended`，「推演人生」第 3 条）：封存了，只能看。
-    pub fn life_ended(&self) -> bool {
-        self.viewing_info().is_some_and(|s| s.life_ended)
-    }
-
     /// 会话列表里正在看的那一项。
     fn viewing_info(&self) -> Option<&crate::core::SessionInfo> {
         let session = self.transcript.session.as_deref()?;

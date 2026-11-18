@@ -1,5 +1,5 @@
-//! 会话列表的先后（2026-11-16 项目主人）：只切进去不挪，人发了话才挪到顶上；循环、定时任务、人生自己醒这些没人说话的轮
-//! 不算；没人说过话的照开的时刻。侧边栏「最近会话」照手上这一份会话列表的先后列（`ui/recent.rs`）。
+//! 会话列表的先后（2026-11-16 项目主人）：只切进去不挪，人发了话才挪到顶上；循环、定时任务这些没人说话的轮不
+//! 算；没人说过话的照开的时刻。侧边栏「最近会话」照手上这一份会话列表的先后列（`ui/recent.rs`）。
 
 use super::app;
 use crate::app::App;
@@ -84,7 +84,7 @@ fn a_round_nobody_spoke_in_does_not_move_it() {
         info(&c, Some(10), 10),
     ]);
     let before = vec![a.clone(), b.clone(), c.clone()];
-    // 循环、定时任务、人生自己醒：只有最近动静变了。
+    // 循环、定时任务：只有最近动静变了。
     changed(&mut app, info(&c, Some(10), 60));
     assert_eq!(order(&app), before, "推来的一项不挪");
     // 重连、置顶以后核心整份交回，照最近动静排的：c 在最前。
@@ -103,7 +103,7 @@ fn sessions_nobody_spoke_in_sort_by_when_they_were_opened() {
     let spoke_early = id(2, 'b');
     let opened_late = id(40, 'c');
     let opened_early = id(20, 'd');
-    // 没人说过话的人生会话自己醒得最晚，也不照最近动静往上挪。
+    // 没人说过话、开着循环的会话最近动静最晚，也不照它往上挪。
     app.sessions_listed(vec![
         info(&opened_early, None, 90),
         info(&spoke_early, Some(10), 10),

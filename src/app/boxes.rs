@@ -22,8 +22,6 @@ pub struct Boxes {
     pub context: Option<crate::ui::context_box::ContextData>,
     /// 开着的配置页（`/config`、`--page config`，蓝图「配置页」）：开着时整屏归它。
     pub settings: Option<crate::settings::Settings>,
-    /// 光打 `/life` 开的跳转列表列的人生会话（`lives.rs`）。
-    pub lives: Vec<crate::core::Life>,
     /// 开着的配色框（`/theme`）：打开以前用的哪种、列哪几种（`theme_box.rs`）。
     pub theme_box: Option<super::theme_box::ThemeBox>,
     /// 开着的扩展整页（蓝图「界面块」第 2 条）：开着时整屏归它，`Esc` 回去。

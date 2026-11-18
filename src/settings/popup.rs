@@ -273,8 +273,6 @@ pub enum Delete {
     Persona(String),
     /// 一个人格的主题色（外观页「主色」跟随头像时恢复默认）：编号。
     PersonaSeed(String),
-    /// 不是删：开推演人生之前问的那一句（「推演人生」第 2 条），选完回到这个人格的窗。
-    Life(Box<super::pages::choose::PersonaView>),
 }
 
 #[cfg(test)]

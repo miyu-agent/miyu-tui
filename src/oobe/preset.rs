@@ -270,8 +270,6 @@ impl PresetStep {
                     .into_iter()
                     .flatten()
                     .filter(|p| p["problem"].is_null())
-                    // 出厂的「推演人生」这种 `hidden` 的不列（核心 LF-5 上，「推演人生」第 4 条）
-                    .filter(|p| p["hidden"] != true)
                     .filter_map(|p| {
                         let id = p["preset"].as_str()?.to_string();
                         let name = p["name"].as_str().unwrap_or(&id).to_string();

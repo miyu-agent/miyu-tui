@@ -5,7 +5,7 @@ use jiff::tz::TimeZone;
 
 use super::{fit, of, sidebar, tag};
 use crate::config::Config;
-use crate::core::{Loop, LoopEvery, LoopLife};
+use crate::core::{Loop, LoopEvery};
 
 fn one(id: &str, session: &str, every: LoopEvery, next: Option<&str>) -> Loop {
     Loop {
@@ -15,7 +15,6 @@ fn one(id: &str, session: &str, every: LoopEvery, next: Option<&str>) -> Loop {
         next: next.map(|t| t.parse().unwrap()),
         paused: false,
         prompt: "继续查询天气\n第二行不写".into(),
-        life: None,
     }
 }
 
@@ -94,13 +93,7 @@ fn the_sidebar_writes_how_often_when_and_what() {
     let cron = one("t3", "s", LoopEvery::Cron("0 8 * * *".into()), None);
     let mut hourly = one("t4", "s", LoopEvery::Seconds(7_200), None);
     hourly.paused = true;
-    let name = |id: &str| id.to_string();
-    let lines = sidebar(
-        &[&fixed, &dynamic, &cron, &hourly],
-        (&config, &name),
-        at,
-        40,
-    );
+    let lines = sidebar(&[&fixed, &dynamic, &cron, &hourly], &config, at, 40);
     assert_eq!(
         text(&lines),
         [
@@ -118,16 +111,13 @@ fn the_sidebar_writes_how_often_when_and_what() {
     assert_eq!(
         text(&sidebar(
             &[&one("t5", "s", LoopEvery::Seconds(90), None)],
-            (&config, &name),
+            &config,
             at,
             40
         ))[1],
         "  每 90 秒"
     );
-    assert!(
-        sidebar(&[], (&config, &name), at, 40).is_empty(),
-        "没有循环整段不画"
-    );
+    assert!(sidebar(&[], &config, at, 40).is_empty(), "没有循环整段不画");
 }
 
 /// 放不下整截的只写记号，记号也放不下的不写，不往框外伸（2026-11-02 项目主人：窄窗口里截掉了）。
@@ -137,36 +127,4 @@ fn a_narrow_row_keeps_only_the_mark_or_nothing() {
     assert_eq!(fit("◷ 13:07", "◷ ", 7).as_deref(), Some("◷ 13:07"));
     assert_eq!(fit("◷ 13:07", "◷ ", 6).as_deref(), Some("◷"));
     assert_eq!(fit("◷ 13:07", "◷ ", 0), None);
-}
-
-/// 人生那一行（核心 LF-13，2026-11-17 项目主人本机验收第 23 条）：输入框上面照样写下次几点，记号用人生的；侧边栏写「推演人生」
-/// 和人格的名字，不写推演方法那段话。
-#[test]
-fn the_life_row_shows_its_next_round_with_the_life_mark() {
-    let config = Config::builtin().unwrap();
-    let now: Timestamp = "2026-11-17T04:00:00Z".parse().unwrap();
-    let at = (now, &TimeZone::UTC);
-    let mut life = one("t9", "s", LoopEvery::Life, Some("2026-11-17T09:00:00Z"));
-    life.life = Some(LoopLife {
-        persona: Some("miyu".into()),
-        ..LoopLife::default()
-    });
-    let mark = config.icons.life_mark();
-    assert_eq!(mark, "\u{f21e} ", "nerd 那一套的心跳");
-    let mine = of(std::slice::from_ref(&life), Some("s"));
-    assert_eq!(tag(&mine, &config, at), Some(format!("{mark}09:00")));
-    let name = |id: &str| {
-        if id == "miyu" {
-            "美羽".to_string()
-        } else {
-            id.to_string()
-        }
-    };
-    assert_eq!(
-        text(&sidebar(&mine, (&config, &name), at, 40)),
-        ["循环", "  推演人生 · 下次 09:00", "  美羽"]
-    );
-    life.paused = true;
-    let mine = of(std::slice::from_ref(&life), Some("s"));
-    assert_eq!(tag(&mine, &config, at), Some(format!("{mark}已暂停")));
 }

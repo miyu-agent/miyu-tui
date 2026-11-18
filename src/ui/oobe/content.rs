@@ -292,20 +292,6 @@ impl Content {
         self.lines.push(Line::from(spans));
     }
 
-    /// 只写值的一格（开关这类，回车开窗选）：不铺底色，光标在的时候后面暗色写怎么改（2026-11-17 项目主人验收第 32 条：推演人生
-    /// 的开关原来像一格带底色的输入框）。
-    pub fn value(&mut self, label: &str, label_w: usize, value: &str, hint: &str, focused: bool) {
-        if focused {
-            self.focus = Some(self.at());
-        }
-        let mut spans = labelled(label, label_w, focused);
-        spans.push(Span::raw(value.to_string()));
-        if focused && !hint.is_empty() {
-            spans.push(Span::styled(format!("  {hint}"), theme::faint()));
-        }
-        self.lines.push(Line::from(spans));
-    }
-
     /// 一格颜色（主色）：名字后面一块这个颜色，接着写 `#rrggbb`，别的同 [`Content::chip`]。
     pub fn chip_swatch(&mut self, label: &str, label_w: usize, seed: u32, focused: bool) {
         if focused {
