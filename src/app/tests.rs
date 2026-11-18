@@ -109,6 +109,7 @@ mod skill_word;
 mod spoken;
 mod status;
 mod switching;
+mod terminal_back;
 mod theme_auto;
 mod too_long;
 mod unread;
