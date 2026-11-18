@@ -137,10 +137,10 @@ type = "text"
 max = 100
 name = { en = "Part", zh = "部件", ja = "部品" }
 
-[settings.side.fields.hidden]
+[settings.side.fields.shown]
 type = "bool"
-default = false
-name = { en = "Hidden", zh = "隐藏", ja = "非表示" }
+default = true
+name = { en = "Shown", zh = "显示", ja = "表示" }
 
 [settings.side.fields.rows]
 type = "int"
@@ -165,10 +165,10 @@ type = "text"
 max = 100
 name = { en = "Part", zh = "部件", ja = "部品" }
 
-[settings.footer.fields.hidden]
+[settings.footer.fields.shown]
 type = "bool"
-default = false
-name = { en = "Hidden", zh = "隐藏", ja = "非表示" }
+default = true
+name = { en = "Shown", zh = "显示", ja = "表示" }
 
 [settings.footer.fields.rows]
 type = "int"
@@ -193,10 +193,10 @@ type = "text"
 max = 100
 name = { en = "Part", zh = "部件", ja = "部品" }
 
-[settings.above.fields.hidden]
+[settings.above.fields.shown]
 type = "bool"
-default = false
-name = { en = "Hidden", zh = "隐藏", ja = "非表示" }
+default = true
+name = { en = "Shown", zh = "显示", ja = "表示" }
 
 [settings.above.fields.rows]
 type = "int"
@@ -253,10 +253,10 @@ type = "text"
 max = 100
 name = { en = "Part", zh = "部件", ja = "部品" }
 
-[settings.top.fields.hidden]
+[settings.top.fields.shown]
 type = "bool"
-default = false
-name = { en = "Hidden", zh = "隐藏", ja = "非表示" }
+default = true
+name = { en = "Shown", zh = "显示", ja = "表示" }
 
 [settings.top.fields.rows]
 type = "int"
@@ -275,10 +275,10 @@ applies = "now"
 name = { en = "Key mode", zh = "按键模式", ja = "キー操作モード" }
 description = { en = "Vim: in the session list and the model list, j and k move and / starts a search. Arrow keys: typing searches right away and the arrow keys move.", zh = "Vim：会话列表、模型列表里 j、k 上下，按 / 才开始搜。方向键：打字直接搜，方向键上下。", ja = "Vim：セッション一覧とモデル一覧で j と k で移動し、/ で検索を始める。矢印キー：入力するとすぐ検索し、矢印キーで移動する。" }
 
-# 新会话自动选择人格、预设（UX-1 起名字正着说，键沿用 skip_pick：核心的三家对比测具照它配；终端蓝图 `docs/blueprint/tui.md`「新会话：人格、工作区」第 1a 条，2026-10-22 项目主人）：开着时新会话
+# 新会话自动选择人格、预设（UX-1 起名字正着说；键原来是 skip_pick，2026-11-18 发版前改成正着说的 auto_pick，值的意思不变；终端蓝图 `docs/blueprint/tui.md`「新会话：人格、工作区」第 1a 条，2026-10-22 项目主人）：开着时新会话
 # 直接用默认的人格、预设（`persona.default`、`preset.default`），不弹框；默认的预设用不了时照旧弹。配置页排在「通用」页「新会话」
 # 一组，和默认人格、默认预设在一起（2026-10-23 项目主人）；核心没有「新会话」这一组时才退回「交互」（`settings/pages/schema.rs`）。
-[settings.skip_pick]
+[settings.auto_pick]
 type = "bool"
 default = false
 applies = "now"

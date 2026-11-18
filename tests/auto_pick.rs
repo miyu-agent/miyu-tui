@@ -9,8 +9,8 @@ use miyu_session::testkit::Script;
 use support::Home;
 
 #[test]
-fn with_skip_pick_on_no_frame_shows_the_pick_box() {
-    let home = Home::with_settings(Script::new([]), "[tui]\nskip_pick = true\n");
+fn with_auto_pick_on_no_frame_shows_the_pick_box() {
+    let home = Home::with_settings(Script::new([]), "[tui]\nauto_pick = true\n");
     // 两回：第一回没有记下的样子，第二回照记下的先画（`look.rs`）。
     for round in 0..2 {
         // 测具默认替人选好人格、预设；这里清掉，走真的新会话那一套。

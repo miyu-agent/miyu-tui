@@ -86,7 +86,7 @@ fn the_terminals_look_items_move_to_an_appearance_page_after_general() {
             item("tui.theme_mode", "明暗"),
             item("tui.timeline_fold", "回复完成后折叠时间线"),
             item("tui.keys", "按键模式"),
-            item("tui.skip_pick", "自动选择人格和预设"),
+            item("tui.auto_pick", "自动选择人格和预设"),
             item("tui.mascot_home", "首页显示吉祥物"),
             item("tui.mascot", "吉祥物")
         ]
@@ -126,14 +126,14 @@ fn the_terminals_look_items_move_to_an_appearance_page_after_general() {
     );
     // 不问人格预设并进「交互」，不另开一组（2026-10-22）。
     assert_eq!(
-        group("tui.skip_pick"),
+        group("tui.auto_pick"),
         Some(("general".into(), "tui.keys".into()))
     );
     assert_eq!(s.groups.iter().filter(|g| g.id == "tui.keys").count(), 1);
 }
 
 #[test]
-fn skip_pick_joins_the_cores_new_session_group_when_there_is_one() {
+fn auto_pick_joins_the_cores_new_session_group_when_there_is_one() {
     // 2026-10-23 项目主人：默认人格、默认预设、不问人格预设、开局只读做成「新会话」一组；核心的组是 `new_session`。
     let item = |key: &str, page: &str, group: &str| json!({"key": key, "control": "toggle", "layers": ["system"], "name": key, "page": page, "group": group});
     let mut s = Schema::read(&json!({
@@ -143,7 +143,7 @@ fn skip_pick_joins_the_cores_new_session_group_when_there_is_one() {
         "items": [
             item("persona.default", "general", "new_session"),
             item("tui.keys", "packages", "tui"),
-            item("tui.skip_pick", "packages", "tui")
+            item("tui.auto_pick", "packages", "tui")
         ]
     }));
     s.split_own(
@@ -164,7 +164,7 @@ fn skip_pick_joins_the_cores_new_session_group_when_there_is_one() {
             .map(|i| (i.page.clone(), i.group.clone()))
     };
     assert_eq!(
-        at("tui.skip_pick"),
+        at("tui.auto_pick"),
         Some(("general".into(), "new_session".into()))
     );
     assert_eq!(at("tui.keys"), Some(("general".into(), "tui.keys".into())));

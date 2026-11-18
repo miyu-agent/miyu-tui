@@ -49,7 +49,7 @@ pub struct Pick {
     pub list: Option<Vec<Persona>>,
     /// 默认的编号（`persona.default`、`preset.default`）。
     pub default: Option<String>,
-    /// 默认的这一回从核心读到过（`picks_configured`）：不问人格预设时（`tui.skip_pick`）等它到了才照它选。
+    /// 默认的这一回从核心读到过（`picks_configured`）：不问人格预设时（`tui.auto_pick`）等它到了才照它选。
     pub default_known: bool,
     /// 这个新会话选了的；还没选的是 `None`。
     pub chosen: Option<String>,
@@ -213,7 +213,7 @@ impl App {
                 continue;
             }
             // 不问人格预设（第 1a 条）：等默认的读到，照它选；默认的预设用不了的照旧开框（开会话一定要有预设，核心 Y12）。
-            if self.config.layout.skip_pick {
+            if self.config.layout.auto_pick {
                 if !pick.default_known {
                     return;
                 }
@@ -238,7 +238,7 @@ impl App {
     /// 时照旧画输入框，不算）。
     pub(super) fn start_box_shown(&self) -> bool {
         let open = matches!(self.boxes.panel, Some(Panel::Pick { .. }));
-        self.seen().start_pick().is_some() && (open || !self.config.layout.skip_pick)
+        self.seen().start_pick().is_some() && (open || !self.config.layout.auto_pick)
     }
 
     /// 上一次选的：最近那个会话用的（`Some(None)` 是它没带）；会话列表还没到、一个会话都没有的是 `None`。
@@ -421,10 +421,10 @@ impl App {
         self.link.core.send(Command::ListPresets);
     }
 
-    /// 「自动选择人格和预设」（`tui.skip_pick`）读到了（连上、配置变了）：开着的是这个还没开的会话的框、人还没挪过光标的，收掉照
+    /// 「自动选择人格和预设」（`tui.auto_pick`）读到了（连上、配置变了）：开着的是这个还没开的会话的框、人还没挪过光标的，收掉照
     /// 默认的选（第 1a 条：设置读回来比人格列表晚时框已经开了）。
-    pub(super) fn skip_pick_read(&mut self) {
-        if !self.config.layout.skip_pick || !self.not_opened() {
+    pub(super) fn auto_pick_read(&mut self) {
+        if !self.config.layout.auto_pick || !self.not_opened() {
             return;
         }
         if let Some(Panel::Pick { kind, selected }) = self.boxes.panel

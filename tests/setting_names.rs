@@ -86,10 +86,7 @@ fn terminal_setting_names_are_noun_phrases_and_switches_say_it_positively() {
                     "{section} 的名字「{name}」像一句话：带了「{word}」"
                 ));
             }
-            // 部件列表的「藏不藏」（`tui.side` 这类）只在配置文件里写、配置页不画；改成正着说要连配置的写法一起改，另议。
-            let parts = section.ends_with(".fields.hidden");
             if kind == "bool"
-                && !parts
                 && let Some(word) = found(name, negative_words(language), language)
             {
                 problems.push(format!("{section} 的名字「{name}」反着说：带了「{word}」"));
