@@ -4,7 +4,7 @@ use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::text::Line;
 
-use super::{Body, Lines, centered};
+use super::{Body, Lines, centered, hint_line_within};
 use crate::caret::Caret;
 
 /// 20 行、选中第 `focus` 行的窗，接着上一帧的 `top` 画一次：交回窗里第一行写的是哪一行、这一帧的 `top`。
@@ -117,4 +117,31 @@ fn the_buttons_stay_at_the_bottom_with_their_keys_while_a_long_list_scrolls() {
     let key = buf[(at("s"), y)].fg;
     let name = buf[(at("保"), y)].fg;
     assert_ne!(key, name, "快捷键暗着写");
+}
+
+/// 窄窗口里按键提示放不下：从后往前整条去掉，不切成半截（原来一格还放不下的照一格画，画的那一处在右边截掉）。
+#[test]
+fn hints_that_do_not_fit_are_dropped_whole() {
+    let hints: Vec<[String; 2]> = [["↑/↓", "移动"], ["Enter", "确定"], ["Esc", "取消"]]
+        .iter()
+        .map(|[k, w]| [(*k).to_string(), (*w).to_string()])
+        .collect();
+    let text = |width: usize| hint_line_within(&hints, width).to_string();
+    assert_eq!(text(80), "↑/↓ 移动   Enter 确定   Esc 取消", "放得下照三格");
+    assert_eq!(text(28), "↑/↓ 移动 Enter 确定 Esc 取消", "收窄到一格");
+    for width in 0..28 {
+        let shown = text(width);
+        assert!(
+            unicode_width::UnicodeWidthStr::width(shown.as_str()) <= width,
+            "{width} 列放不下「{shown}」"
+        );
+        let whole = [
+            "",
+            "↑/↓ 移动",
+            "↑/↓ 移动 Enter 确定",
+            "↑/↓ 移动  Enter 确定",
+            "↑/↓ 移动   Enter 确定",
+        ];
+        assert!(whole.contains(&shown.as_str()), "{width} 列：「{shown}」");
+    }
 }
