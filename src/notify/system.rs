@@ -1,6 +1,7 @@
 //! 交给系统弹的通知（蓝图 `tui.md`「系统通知」第 4 条）：别的终端、tmux、herdr 里用。Linux 用 `notify-send`，
 //! macOS 用 `osascript`，Windows 用自带的 Windows PowerShell 调 Windows 运行时的 Toast（2026-11-15 三平台摸底：原来 Windows
-//! 也去调 `notify-send`，拉不起来什么都不弹）。丢出去不等，另起一个线程收尸；拉不起来什么都不做。
+//! 也去调 `notify-send`，拉不起来什么都不弹）。丢出去不等，另起一个线程收尸；拉不起来什么都不做。Windows 上拉起时不给控制台窗口
+//! （[`CREATE_NO_WINDOW`]，审计 #083）。
 
 use std::process::{Command, Stdio};
 
@@ -91,17 +92,16 @@ pub fn toast_args(title: &str, body: &str) -> Vec<String> {
         single(title),
         single(body)
     );
-    [
-        "-NoProfile",
-        "-NonInteractive",
-        "-WindowStyle",
-        "Hidden",
-        "-Command",
-        &script,
-    ]
-    .map(str::to_string)
-    .to_vec()
+    // 不写 `-WindowStyle Hidden`：conhost 里它藏的是和界面共用的那个控制台窗口（审计 #083）；不开新窗口靠 [`spawn`] 的
+    // `CREATE_NO_WINDOW`。
+    ["-NoProfile", "-NonInteractive", "-Command", &script]
+        .map(str::to_string)
+        .to_vec()
 }
+
+/// Windows 上拉起控制台程序不给它控制台窗口（`CREATE_NO_WINDOW`）：不闪一个黑框，也不碰界面自己那个窗口。
+#[cfg_attr(not(windows), allow(dead_code))]
+pub const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 /// PowerShell 单引号字串里，单引号成对写。
 fn single(text: &str) -> String {
@@ -118,13 +118,15 @@ pub fn spawn(program: &str, args: &[String]) -> bool {
     if !guard(program) {
         return false;
     }
-    let child = Command::new(program)
+    let mut command = Command::new(program);
+    command
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn();
-    match child {
+        .stderr(Stdio::null());
+    #[cfg(windows)]
+    std::os::windows::process::CommandExt::creation_flags(&mut command, CREATE_NO_WINDOW);
+    match command.spawn() {
         Ok(mut child) => {
             std::thread::spawn(move || child.wait());
             true
@@ -156,17 +158,8 @@ mod tests {
     #[test]
     fn the_windows_toast_quotes_its_words() {
         let args = super::toast_args("O'Neil 的会话", "回答'完了");
-        assert_eq!(
-            args[..5],
-            [
-                "-NoProfile",
-                "-NonInteractive",
-                "-WindowStyle",
-                "Hidden",
-                "-Command"
-            ]
-        );
-        let script = &args[5];
+        assert_eq!(args[..3], ["-NoProfile", "-NonInteractive", "-Command"]);
+        let script = &args[3];
         assert!(
             script.contains("CreateTextNode('O''Neil 的会话')"),
             "{script}"
@@ -177,6 +170,20 @@ mod tests {
                 && script.contains(r"WindowsPowerShell\v1.0\powershell.exe"),
             "{script}"
         );
+    }
+
+    /// conhost 里拉起的 `powershell` 和界面共用一个控制台窗口：`-WindowStyle Hidden` 藏的就是那个窗口，界面跟着不见（审计 #083）。
+    /// 弹通知、放提示音的都不许带它。
+    #[test]
+    fn powershell_never_hides_the_console_it_shares() {
+        let hides = |args: &[String]| args.iter().any(|a| a.eq_ignore_ascii_case("-WindowStyle"));
+        assert!(!hides(&super::toast_args("Miyu", "回答完了")));
+        let config = crate::config::Config::builtin().unwrap();
+        for player in &config.notify.players.windows {
+            assert!(!hides(player), "{player:?}");
+        }
+        // 不开新窗口靠的是拉起时的这一位（Windows 的 `CREATE_NO_WINDOW`）。
+        assert_eq!(super::CREATE_NO_WINDOW, 0x0800_0000);
     }
 
     #[test]
