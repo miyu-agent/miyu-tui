@@ -56,6 +56,28 @@ fn a_reader_that_hangs_is_cut_off() {
 
 #[cfg(unix)]
 #[test]
+fn a_reader_whose_child_keeps_the_pipe_is_cut_off_too() {
+    // 审计 #077：命令自己卡住、被杀了，它起的子进程还拿着输出的管道，原来到点以后还在等读输出的线程，一直等到子进程退出，
+    // 界面跟着卡住。到点就不再等。
+    let t = Instant::now();
+    let hung = read_with(
+        &[("sh", &["-c", "sleep 8 & sleep 8"])],
+        Duration::from_millis(200),
+    );
+    assert_eq!(hung, Err(Unreadable));
+    assert!(t.elapsed() < Duration::from_secs(3), "命令卡住：到点就放弃");
+    // 命令印完正常退出了，留下的子进程还拿着管道：也只等到点
+    let t = Instant::now();
+    let left = read_with(
+        &[("sh", &["-c", "printf 字; sleep 8 &"])],
+        Duration::from_millis(200),
+    );
+    assert_eq!(left, Err(Unreadable));
+    assert!(t.elapsed() < Duration::from_secs(3), "管道没关：到点就放弃");
+}
+
+#[cfg(unix)]
+#[test]
 fn a_big_clipboard_is_read_whole() {
     // 超过管道缓冲（64KB）的：边跑边读，不会被当成卡住。
     let got = read_with(
