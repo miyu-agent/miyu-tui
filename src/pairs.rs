@@ -92,7 +92,7 @@ pub fn opened(pair: &Pair) -> [Editor; 2] {
     [side(&pair.user), side(&pair.assistant)]
 }
 
-/// 两格窗的按键：`↑` `↓`（`Tab` 也行）换格；在「你问的」按 `Enter` 跳到「AI回的」，在「AI回的」按 `Enter` 交回这一轮
+/// 两格窗的按键：`↑` `↓`（`Tab` 也行）换格；在「你问的」按 `Enter` 跳到「AI 回的」，在「AI 回的」按 `Enter` 交回这一轮
 /// （有一格空着的光标跳过去）；`Esc` 不存；别的照常打字（2026-10-08 项目主人）。
 pub fn form_key(sides: &mut [Editor; 2], focus: &mut usize, key: KeyEvent) -> FormKey {
     match key.code {

@@ -150,7 +150,7 @@ impl Settings {
         self.popup = Some(Popup::Dialogs(view));
     }
 
-    /// 两格窗的按键：`↑` `↓`（`Tab` 也行）换格；在「你问的」按 `Enter` 跳到「AI回的」，在「AI回的」按 `Enter` 存这一轮
+    /// 两格窗的按键：`↑` `↓`（`Tab` 也行）换格；在「你问的」按 `Enter` 跳到「AI 回的」，在「AI 回的」按 `Enter` 存这一轮
     /// （有一格空着的不存，光标跳过去、写一句）；`Esc` 回列表不存；别的照常打字（2026-10-08 项目主人）。
     pub(in crate::settings) fn pair_key(
         &mut self,
@@ -259,17 +259,17 @@ mod tests {
             panic!("开了两格窗");
         };
         edit.sides[0].insert("192 乘 45？");
-        // 在「你问的」回车：跳到「AI回的」，不存。
+        // 在「你问的」回车：跳到「AI 回的」，不存。
         page.pair_key(edit, key(KeyCode::Enter), &texts);
         let Some(Popup::Pair(edit)) = page.popup.take() else {
             panic!("还在两格窗");
         };
         assert_eq!(edit.focus, 1);
         assert!(edit.error.is_none());
-        // 「AI回的」空着回车：不存，写一句。
+        // 「AI 回的」空着回车：不存，写一句。
         page.pair_key(edit, key(KeyCode::Enter), &texts);
         let Some(Popup::Pair(mut edit)) = page.popup.take() else {
-            panic!("AI回的空着不存");
+            panic!("AI 回的空着不存");
         };
         assert!(edit.error.is_some());
         edit.sides[1].insert("8640");

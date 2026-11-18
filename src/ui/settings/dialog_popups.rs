@@ -1,4 +1,4 @@
-//! 示范对话的两种窗（蓝图「配置页」第 41 条，照旧版的「预设对话」）：列表一轮两行（你问的、AI回的），选中的那一轮铺底
+//! 示范对话的两种窗（蓝图「配置页」第 41 条，照旧版的「预设对话」）：列表一轮两行（你问的、AI 回的），选中的那一轮铺底
 //! 色；两格窗各一行，光标在的那一格铺底色、跟着光标。配置页的列表窗（第 47 条）按键和它一样，画法也放在这里；勾选窗（第 47a
 //! 条）同列表窗的样子，前面多一个勾。
 
@@ -23,7 +23,7 @@ pub(super) fn dialogs(lines: &mut Lines, view: &DialogsView, texts: &Texts, widt
         lines.plain(Line::styled(format!("  {}", words.empty), theme::dim()));
         return;
     }
-    // 一轮两行：你问的、AI回的，名字对齐；选中的那一轮两行都铺底色。
+    // 一轮两行：你问的、AI 回的，名字对齐；选中的那一轮两行都铺底色。
     let label_w = words.sides.iter().map(|s| s.width()).max().unwrap_or(0);
     let room = usize::from(width).saturating_sub(label_w + 8);
     for (i, pair) in view.pairs.iter().enumerate() {
