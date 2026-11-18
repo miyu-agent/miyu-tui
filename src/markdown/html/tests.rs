@@ -338,3 +338,18 @@ fn common_block_tags_are_drawn_like_their_markdown() {
         ["│ md", "", "after"]
     );
 }
+
+#[test]
+fn a_nested_svg_is_taken_whole_up_to_its_own_end() {
+    // SVG 里能套 `<svg>`：原来照第一个 `</svg>` 收，收到里面那个的结尾就停，外面那个的后半截漏成字（审计 #085）。
+    let svg = "<svg width=\"120\" height=\"80\">\n<svg x=\"10\" width=\"50\"><rect width=\"20\" height=\"20\"/></svg>\n<circle cx=\"90\" cy=\"40\" r=\"20\"/>\n</svg>";
+    let drawn = draw(&format!("{svg}\n\n完。"), 80, &[]);
+    let figure = drawn
+        .iter()
+        .find_map(|l| l.figure.as_ref())
+        .expect("收成一张图");
+    assert_eq!(figure.source.trim_end(), svg);
+    let text = lines(&format!("{svg}\n\n完。"), &[]).join("\n");
+    assert!(!text.contains("circle"), "后半截不漏成字：\n{text}");
+    assert_eq!(text.lines().last(), Some("完。"));
+}

@@ -13,7 +13,7 @@ use unicode_width::UnicodeWidthStr;
 use super::inline::{Piece, fold};
 use super::{Container, FigureKind, MdLine, Renderer};
 use crate::theme;
-use scan::{Token, entities, find, tokens};
+use scan::{Token, entities, find, svg_end, tokens};
 
 /// 套着的一块 `<details>`。
 pub(super) struct Details {
@@ -118,8 +118,8 @@ impl Renderer<'_> {
         }
     }
 
-    /// `<svg` 开头的 HTML：从原文里这一处找到 `</svg>`，整段收成一张图，里面的事件跳过；还没到 `</svg>` 的
-    /// （回答还在流）照代码块写到结尾。交回真表示收走了。
+    /// `<svg` 开头的 HTML：从原文里这一处找到和它配对的 `</svg>`（套着的照层数配），整段收成一张图，里面的事件跳过；
+    /// 还没到 `</svg>` 的（回答还在流）照代码块写到结尾。交回真表示收走了。
     pub(super) fn svg(&mut self, text: &str, event: &Event, at: usize) -> bool {
         let (Event::Html(html) | Event::InlineHtml(html)) = event else {
             return false;
@@ -133,7 +133,7 @@ impl Renderer<'_> {
             self.gap();
         }
         let start = at + find(&text[at..], "<svg").unwrap_or(0);
-        let end = find(&text[start..], "</svg>").map(|i| start + i + "</svg>".len());
+        let end = svg_end(&text[start..]).map(|i| start + i);
         let source = &text[start..end.unwrap_or(text.len())];
         if end.is_some() {
             let fallback = self.aside(|r| r.code_lines("svg", source));

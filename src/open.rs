@@ -35,13 +35,13 @@ pub fn open(url: &str) -> Result<(), OpenError> {
     Ok(())
 }
 
-/// 交给打开程序的是什么：认得的协议照原样；本机的路径（和图片同一套认法，`local.rs`）换成文件的完整路径，
-/// 文件得在；别的协议不开。
+/// 交给打开程序的是什么：认得的协议照原样（协议不分大小写，RFC 3986 第 3.1 节：`HTTPS://` 一样开，审计 #085）；本机的路径
+/// （和图片同一套认法，`local.rs`）换成文件的完整路径，文件得在；别的协议不开。
 fn target(url: &str) -> Result<String, OpenError> {
-    if ["http://", "https://", "file://"]
-        .iter()
-        .any(|s| url.starts_with(s))
-    {
+    if ["http://", "https://", "file://"].iter().any(|s| {
+        url.get(..s.len())
+            .is_some_and(|head| head.eq_ignore_ascii_case(s))
+    }) {
         return Ok(url.to_string());
     }
     if has_scheme(url) {
@@ -114,6 +114,19 @@ mod tests {
     fn other_schemes_are_refused() {
         assert!(open("javascript:alert(1)").is_err());
         assert!(open("ssh://host").is_err());
+    }
+
+    /// 协议不分大小写（RFC 3986 第 3.1 节）：`HTTPS://` 照 `https://` 开，原样交出去（审计 #085）。
+    #[test]
+    fn schemes_are_read_in_any_case() {
+        use super::target;
+        for url in [
+            "HTTPS://example.com",
+            "Http://example.com/A",
+            "FILE:///etc/hosts",
+        ] {
+            assert_eq!(target(url).ok().as_deref(), Some(url), "{url}");
+        }
     }
 
     #[test]
