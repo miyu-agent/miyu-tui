@@ -19,7 +19,28 @@ pub struct Words {
     pub foreign: String,
     pub removed: String,
     pub not_installed: String,
+    /// fish 的 `conf.d/miyu.fish` 在，认不出是旧版的（`{path}`）：没动它。
     pub old_hook: String,
+    /// 旧版那一段还在启动文件里（`{path}` 第 `{first}`–`{last}` 行，`{shell}`），装上时会备份后清掉。
+    pub old_block: String,
+    /// 旧版 fish 的文件、链接还在（`{path}`、`{shell}`），装上时会备份后清掉。
+    pub old_file: String,
+    /// 启动文件 `{path}` 第 `{line}` 行是旧版那一段的开头，没有结尾：没动它。
+    pub old_unclosed: String,
+    /// 读不了 `{path}`（`{reason}`），看不出有没有旧版那一份。
+    pub old_unreadable: String,
+    /// 清掉了 `{path}` 第 `{first}`–`{last}` 行，原文件备份在 `{backup}`。
+    pub old_cleaned_block: String,
+    /// 旧版 fish 的文件 `{path}` 改名成了 `{backup}`。
+    pub old_cleaned_file: String,
+    /// 删掉了旧版 fish 的链接 `{path}`（原来指到 `{target}`）。
+    pub old_cleaned_link: String,
+    /// 没清掉旧版的 `{path}`（`{reason}`）：原样不动。
+    pub old_failed: String,
+    /// 备份成了，`{path}` 没改成（`{reason}`），备份留在 `{backup}`。
+    pub old_failed_kept: String,
+    /// 备份 `{backup}` 读回来和原文件不一样。
+    pub old_backup_differs: String,
     pub unknown_shell: String,
     pub status_installed: String,
     pub status_missing: String,

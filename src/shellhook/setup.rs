@@ -36,12 +36,13 @@ pub fn shells() -> Vec<Entry> {
         .collect()
 }
 
-/// 装进 `name` 这种 shell，调这个程序旁边的 `miyu`（同 `shellhook install` 不带 `--program`）。
+/// 装进 `name` 这种 shell，调这个程序旁边的 `miyu`（同 `shellhook install` 不带 `--program`）。旧版那一份同样先备份
+/// 再删（蓝图「旧版那一份」），清了哪几处、出了什么错的话交回来，一处一行，由界面显示。
 ///
 /// # Errors
 ///
 /// 认不出的名字、没有家目录、读写失败、fish 那个文件不是自己写的、PowerShell 的执行策略不让加载（这时已经装上了）：
-/// 交回给人看的一句。
+/// 交回给人看的话，那一句在前，清旧版那一份的几行跟在后面（一行一句）。
 pub fn install(name: &str) -> Result<Vec<String>, String> {
     let words = Words::detect().map_err(|e| e.to_string())?;
     let program = install::default_program().map_err(|e| e.to_string())?;
@@ -49,7 +50,7 @@ pub fn install(name: &str) -> Result<Vec<String>, String> {
     install_in(name, &env, &program, &words)
 }
 
-/// [`install`] 的做法：`env` 读环境变量，调 `program`。
+/// [`install`](fn@install) 的做法：`env` 读环境变量，调 `program`。
 pub(super) fn install_in(
     name: &str,
     env: &impl Fn(&str) -> Option<String>,
@@ -57,15 +58,25 @@ pub(super) fn install_in(
     words: &Words,
 ) -> Result<Vec<String>, String> {
     let (shell, target) = locate(name, env, words)?;
-    match install::install_at(shell, &target, program).map_err(|e| e.to_string())? {
+    let (done, said) =
+        super::old::install(shell, &target, program, env, words).map_err(|e| e.to_string())?;
+    let lines: Vec<String> = said.into_iter().map(|said| said.text).collect();
+    // 失败的那一句在前，清旧版那一份的几行跟在后面，界面不丢。
+    let failed = |error: String| {
+        Err(std::iter::once(error)
+            .chain(lines.clone())
+            .collect::<Vec<_>>()
+            .join("\n"))
+    };
+    match done {
         // 装上了，可 PowerShell 的执行策略不让加载启动文件：照失败说，告诉人怎么改（不替人改安全设置）。
         Done::Installed | Done::Updated => match install::blocking_policy(shell) {
-            Some(policy) => Err(fill(&words.ps_policy, &[("policy", &policy)])),
-            None => Ok(Vec::new()),
+            Some(policy) => failed(fill(&words.ps_policy, &[("policy", &policy)])),
+            None => Ok(lines),
         },
         Done::Foreign => {
             let shown = target.display().to_string();
-            Err(fill(
+            failed(fill(
                 &words.foreign,
                 &[("path", shown.as_str()), ("shell", shell.name())],
             ))

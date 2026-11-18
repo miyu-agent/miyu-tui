@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use super::super::super::install::status_to;
 use super::super::super::setup::install_in;
 use super::super::super::shells::Shell;
-use super::{Home, old, program, says, shown, words};
+use super::{Home, old, program, shown, words};
 
 /// 家目录下每个文件（不跟链接）的内容：跑之前、跑之后比，一个字节都不许变。
 fn snapshot(home: &Home) -> BTreeMap<PathBuf, Vec<u8>> {
@@ -69,7 +69,7 @@ fn a_backup_that_cannot_be_written_leaves_the_old_block_and_still_installs() {
     );
     assert!(home.backups().is_empty());
     assert!(
-        says(&said, true, &[&shown(&link)]),
+        super::says(&said, true, &[&shown(&link)]),
         "第 5 条：说清原因、提醒旧的还在：{said:?}"
     );
     assert!(
@@ -103,7 +103,7 @@ fn a_file_that_cannot_be_changed_keeps_its_block_and_the_backup_stays() {
     let bak = home.at(".bash_profile.miyu-old-hook.bak");
     assert_eq!(fs::read_to_string(&bak).unwrap(), before, "备份成了的留着");
     assert!(
-        says(&said, true, &[&shown(&bak)]),
+        super::says(&said, true, &[&shown(&bak)]),
         "第 5 条：话里说到备份留着：{said:?}"
     );
 }
