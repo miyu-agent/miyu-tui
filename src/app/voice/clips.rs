@@ -8,7 +8,8 @@ use super::{App, STOP_TAG};
 use crate::core::{Update, Voice};
 use crate::oobe::asker::TAG_BASE;
 use crate::transcript::Opener;
-use crate::ui::voice_rows::{SCHEME, State};
+use crate::ui::voice_rows::SCHEME;
+use crate::voice::clips::Tags;
 
 /// 放语音的 `tts.play`：放完、被停才回。
 const CLIP_TAG: u64 = TAG_BASE - 55;
@@ -28,21 +29,15 @@ impl App {
         }
     }
 
-    /// 放一段：放不了的不放。在放别的的先停掉（`tts.stop` 连排着的一起停），不排在后面等。
+    /// 放一段：放不了的不放，在放别的先停（`crate::voice::clips`，终端集成共用）。
     fn play_clip(&mut self, voice: &Voice) {
-        let speaker = crate::ui::voice_rows::Speaker {
-            ready: self.link.voice.tts(),
-            playing: self.link.voice.clip.as_deref(),
+        let tags = Tags {
+            play: CLIP_TAG,
+            stop: STOP_TAG,
         };
-        if speaker.state(voice) == State::Unplayable {
-            return;
+        for call in self.link.voice.play_clip(voice, tags) {
+            self.link.core.send(call);
         }
-        if self.link.voice.clip.is_some() {
-            self.bus_call(STOP_TAG, "tts", "stop", json!({}));
-        }
-        self.bus_call(CLIP_TAG, "tts", "play", json!({ "audio": voice.blob }));
-        self.link.voice.clip = Some(voice.blob.clone());
-        self.link.voice.clips += 1;
     }
 
     /// 点了语音条（挂着 [`SCHEME`] 的那一格）：在放的停，别的放；不是的交回 `false`。
@@ -76,11 +71,7 @@ impl App {
         if *tag != CLIP_TAG {
             return false;
         }
-        let voice = &mut self.link.voice;
-        voice.clips = voice.clips.saturating_sub(1);
-        if voice.clips == 0 {
-            voice.clip = None;
-        }
+        self.link.voice.clip_answered();
         if let Err(refusal) = result {
             let note = crate::voice::said(refusal, &self.config.text.voice);
             self.hint(note, false);

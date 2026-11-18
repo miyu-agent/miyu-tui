@@ -6,7 +6,7 @@
 use serde_json::{Value, json};
 
 use super::App;
-use crate::core::{Command, EndReason, Push, Update};
+use crate::core::{EndReason, Push, Update};
 use crate::oobe::asker::TAG_BASE;
 use crate::voice::{Mic, heard, said, unheard};
 
@@ -26,11 +26,8 @@ impl App {
 
     /// 照名字调总线上的一个方法。
     fn bus_call(&mut self, tag: u64, name: &str, method: &str, params: Value) {
-        self.link.core.send(Command::Ask {
-            tag,
-            method: "bus.call",
-            params: json!({"name": name, "method": method, "params": params}),
-        });
+        let call = crate::voice::clips::bus_call(tag, name, method, params);
+        self.link.core.send(call);
     }
 
     /// 点麦克风、`/voice-input`：不在听的开始听，在听的停（停了等字回来）；`stt` 不可用的不做什么（麦克风不画、命令不列）。

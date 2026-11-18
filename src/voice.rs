@@ -9,6 +9,8 @@ use serde_json::Value;
 
 use crate::core::Refusal;
 
+pub mod clips;
+
 /// 给人看的字（`text/<语言>.json` 的 `voice`）。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

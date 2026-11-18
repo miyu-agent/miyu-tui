@@ -122,3 +122,101 @@ fn the_done_line_carries_how_fast_this_turn_wrote_like_the_full_screen() {
         .expect("有收尾行");
     assert!(done.text.ends_with(" · 200 tok/s"), "{}", done.text);
 }
+
+/// 一轮里她说了一段语音：开它的那句话（`asked`：到点叫醒的是真）、开它的请求是不是这条连接发的。
+fn spoke(asked: Option<bool>, mine: bool) -> Vec<Update> {
+    use crate::core::Spoken;
+    let mut pushes: Vec<Push> = asked
+        .map(|nobody| Push::Voice(Spoken::Asked { seq: 4, nobody }))
+        .into_iter()
+        .collect();
+    pushes.extend([
+        Push::TurnStarted(5, Some(4)),
+        Push::Voice(Spoken::Opened {
+            trigger: Some(4),
+            mine,
+        }),
+        Push::Voice(Spoken::Clip(crate::core::Voice {
+            blob: "sha256:aa".into(),
+            media_type: "audio/wav".into(),
+            name: Some("say-1.wav".into()),
+            duration_ms: Some(1200),
+        })),
+    ]);
+    pushes.into_iter().map(Update::Push).collect()
+}
+
+#[test]
+fn a_voice_plays_through_the_bus_only_in_a_turn_this_shell_or_nobody_opened() {
+    // 2026-11-18 项目主人定：shell 里也照全屏放（`turn/clips.rs`）；别处开的只画，总线上没有 `tts` 的写「无法播放」。
+    use crate::core::Command;
+    use crate::ui::voice_rows::State;
+    let cases = [
+        (Some(false), true, true, true),
+        (Some(true), false, true, true),
+        (Some(false), false, true, false),
+        (Some(false), true, false, false),
+    ];
+    for (asked, mine, tts, plays) in cases {
+        let mut config = crate::config::Config::builtin().expect("出厂配置读得懂");
+        let (core, mut sent) = crate::core::detached();
+        let mut turn = Turn::new("念一句".into(), None, Look::new(None));
+        let ready = if tts {
+            vec!["tts".to_string()]
+        } else {
+            Vec::new()
+        };
+        turn.core(Update::Bus(ready), &mut config, &core);
+        for update in spoke(asked, mine) {
+            turn.core(update, &mut config, &core);
+        }
+        let calls: Vec<serde_json::Value> = std::iter::from_fn(|| sent.try_recv().ok())
+            .filter_map(|command| match command {
+                Command::Ask {
+                    method: "bus.call",
+                    params,
+                    ..
+                } => Some(params),
+                _ => None,
+            })
+            .collect();
+        let want: Vec<serde_json::Value> = if plays {
+            vec![
+                serde_json::json!({"name": "tts", "method": "play", "params": {"audio": "sha256:aa"}}),
+            ]
+        } else {
+            Vec::new()
+        };
+        assert_eq!(calls, want, "{asked:?} {mine} {tts}");
+        let clip = turn.transcript.entries.iter().find_map(|e| e.voice.clone());
+        let clip = clip.expect("都画语音条");
+        let state = turn.speaker().state(&clip);
+        let drawn = match (tts, plays) {
+            (false, _) => State::Unplayable,
+            (true, true) => State::Playing,
+            (true, false) => State::Idle,
+        };
+        assert_eq!(state, drawn, "{asked:?} {mine} {tts}");
+    }
+}
+
+#[test]
+fn a_finished_clip_is_drawn_idle_again() {
+    let mut config = crate::config::Config::builtin().expect("出厂配置读得懂");
+    let (core, _sent) = crate::core::detached();
+    let mut turn = Turn::new("念一句".into(), None, Look::new(None));
+    turn.core(Update::Bus(vec!["tts".into()]), &mut config, &core);
+    for update in spoke(Some(false), true) {
+        turn.core(update, &mut config, &core);
+    }
+    assert_eq!(turn.speaker().playing, Some("sha256:aa"));
+    turn.core(
+        Update::Answer {
+            tag: 7,
+            result: Ok(serde_json::json!({"finished": true})),
+        },
+        &mut config,
+        &core,
+    );
+    assert_eq!(turn.speaker().playing, None);
+}

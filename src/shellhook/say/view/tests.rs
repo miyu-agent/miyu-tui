@@ -23,6 +23,7 @@ fn plain(scope: Scope, transcript: &Transcript) -> String {
         width: 80,
         height: 40,
         frame: 0,
+        speaker: crate::ui::voice_rows::Speaker::default(),
     };
     view.rows_held(transcript, scope)
         .0
@@ -64,6 +65,7 @@ fn lines_from_an_unsettled_timeline_on_are_held_back_from_the_scrollback() {
         width: 80,
         height: 40,
         frame: 0,
+        speaker: crate::ui::voice_rows::Speaker::default(),
     };
     let mut transcript = Transcript::default();
     said(&mut transcript, Kind::Reply, Some(5), "前面那段");
@@ -114,6 +116,7 @@ fn lines_fit_the_terminal_width_with_the_slot_in_front() {
         width: 40,
         height: 40,
         frame: 0,
+        speaker: crate::ui::voice_rows::Speaker::default(),
     };
     let mut transcript = Transcript::default();
     said(

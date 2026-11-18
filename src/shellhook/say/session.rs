@@ -266,6 +266,7 @@ impl Session {
             self.send_out()?;
         }
         self.wait_pictures(turn);
+        turn.settle_clips(&self.incoming, &mut self.config, &self.core);
         // 收工以前读按键的线程已经读走、还没处理的字也收下：先让它停下，再把排着的拿完（实测：答得快时最后几个字会丢）。
         self.reader.pause();
         for event in self.incoming.try_iter() {
@@ -417,6 +418,7 @@ impl Session {
             width,
             height,
             frame,
+            speaker: turn.speaker(),
         }
     }
 
