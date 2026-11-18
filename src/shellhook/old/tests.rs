@@ -60,7 +60,7 @@ impl Home {
                 if meta.is_dir() {
                     dirs.push(path.clone());
                 }
-                let rel = path.strip_prefix(&self.root).unwrap().display().to_string();
+                let rel = plain(&path.strip_prefix(&self.root).unwrap().display().to_string());
                 if rel.contains("miyu-old-hook") {
                     found.push(rel);
                 }
@@ -94,12 +94,20 @@ fn old(shell: &str) -> String {
 
 /// `said` 里有一行（`trouble` 照给的）同时写着 `parts` 的每一样。
 fn says(said: &[Said], trouble: bool, parts: &[&str]) -> bool {
-    said.iter()
-        .any(|s| s.trouble == trouble && parts.iter().all(|p| s.text.contains(p)))
+    said.iter().any(|s| {
+        let text = plain(&s.text);
+        s.trouble == trouble && parts.iter().all(|p| text.contains(p))
+    })
+}
+
+/// 路径里的分隔符一律当 `/` 比：Windows 上程序拼出来的路径 `\`、`/` 混着（`…\.config\fish/conf.d\miyu.fish`），
+/// 测试里另拼的同一个路径写法不一定一样。比的是说没说到这个文件，不是分隔符。
+fn plain(text: &str) -> String {
+    text.replace('\\', "/")
 }
 
 fn shown(path: &Path) -> String {
-    path.display().to_string()
+    plain(&path.display().to_string())
 }
 
 #[cfg(unix)]

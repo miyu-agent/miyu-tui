@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use super::super::super::install::status_to;
 use super::super::super::setup::install_in;
 use super::super::super::shells::Shell;
-use super::{Home, old, program, shown, words};
+use super::{Home, old, plain, program, shown, words};
 
 /// 家目录下每个文件（不跟链接）的内容：跑之前、跑之后比，一个字节都不许变。
 fn snapshot(home: &Home) -> BTreeMap<PathBuf, Vec<u8>> {
@@ -129,7 +129,7 @@ fn the_rc_file_that_cannot_be_changed_fails_the_install_and_names_the_backup() {
         .expect_err("装新的那一段的文件写不成，install 失败")
         .to_string();
     assert!(
-        error.contains(&shown(&bak)),
+        plain(&error).contains(&shown(&bak)),
         "第 5 条：话里说到备份留着：{error}"
     );
     assert_eq!(fs::read_to_string(&real).unwrap(), before, "原样不动");
@@ -157,7 +157,7 @@ fn status_names_every_old_copy_and_removes_nothing() {
         &mut err,
     )
     .unwrap();
-    let err = String::from_utf8(err).unwrap();
+    let err = plain(&String::from_utf8(err).unwrap());
     assert_eq!(
         snapshot(&home),
         before,
@@ -188,6 +188,7 @@ fn the_setup_gets_the_lines_back() {
     assert!(
         lines
             .iter()
+            .map(|l| plain(l))
             .any(|l| l.contains(&shown(&rc)) && l.contains("2–4") && l.contains(&shown(&bak))),
         "第 6 条：引导不往标准输出印，清了哪几处跟着结果交回去：{lines:?}"
     );
