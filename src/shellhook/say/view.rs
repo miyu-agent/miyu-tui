@@ -73,12 +73,17 @@ pub struct View<'a> {
 }
 
 impl View<'_> {
-    /// 照 `scope` 排的几条排成行，一条之间空一行，和全屏一样；你说的话 fish 已经重放过了，不排。还在等她的第一个字的，
-    /// 末尾转着。
+    /// 照 `scope` 排的几条排成行，一条之间空一行，和全屏一样；你说的话 fish 已经重放过了，不排。`spinning` 的（活动区），
+    /// 还在等第一个字的末尾转着。
     ///
     /// 另交回前几行定下来了：从第一段还没收好的时间线（进行中只露最新几步，收好了收成一行）、末尾转着的
     /// 起，往下的还会变，不能先印进终端的滚动历史（图纸「怎么印」第 2 条）。
-    pub fn rows_held(&self, transcript: &Transcript, scope: Scope) -> (Vec<Row>, usize) {
+    pub fn rows_held(
+        &self,
+        transcript: &Transcript,
+        scope: Scope,
+        spinning: bool,
+    ) -> (Vec<Row>, usize) {
         let ctx = self.ctx(transcript);
         let first = match &scope {
             Scope::Turns(turns) => turns.iter().min().copied(),
@@ -131,28 +136,41 @@ impl View<'_> {
             }));
         }
         let held = held.unwrap_or(rows.len());
-        if transcript.waiting() {
+        if spinning && transcript.waiting() {
             rows.extend(crate::ui::tail_rows(&ctx));
         }
         (rows, held)
     }
 
-    /// 排好的行只要画出来的样子，前面空一行和提示符那一行隔开（2026-10-20 项目主人验收）。展示的卡片在 shell 里点不开：
-    /// 「点击打开」那一行换成文件的路径（同一天项目主人：点不开的不必印）。`todos` 时末尾接待办。
+    /// 定下来要印进滚动历史的行：只要画出来的样子，前面空一行和提示符那一行隔开（2026-10-20 项目主人验收）。展示的卡片在
+    /// shell 里点不开：「点击打开」那一行换成文件的路径（同一天项目主人：点不开的不必印）。`todos` 时末尾接待办。末尾不转：
+    /// 收工时还有一轮在等第一个字（`/loop` 回执的同一刻开了第一次那一轮，不是这句话开的、不跟），转圈留在提示符上面擦不掉
+    /// （2026-11-18 截图）。
     pub fn lines(&self, transcript: &Transcript, scope: Scope, todos: bool) -> Vec<Line<'static>> {
-        self.lines_held(transcript, scope, todos).0
+        self.laid(transcript, scope, todos, false).0
     }
 
-    /// 同 [`View::lines`]，另交回前几行定下来了（[`View::rows_held`]；末尾接的待办不算）。
+    /// 活动区里画的行：同 [`View::lines`]，还在等第一个字的末尾转着；另交回前几行定下来了（[`View::rows_held`]；末尾接的
+    /// 待办不算）。
     pub fn lines_held(
         &self,
         transcript: &Transcript,
         scope: Scope,
         todos: bool,
     ) -> (Vec<Line<'static>>, usize) {
+        self.laid(transcript, scope, todos, true)
+    }
+
+    fn laid(
+        &self,
+        transcript: &Transcript,
+        scope: Scope,
+        todos: bool,
+        spinning: bool,
+    ) -> (Vec<Line<'static>>, usize) {
         let open = &self.config.text.shown.open;
         let mut lines: Vec<Line<'static>> = Vec::new();
-        let (rows, held_rows) = self.rows_held(transcript, scope);
+        let (rows, held_rows) = self.rows_held(transcript, scope, spinning);
         let mut held = None;
         let mut pictured = None;
         for (i, row) in rows.into_iter().enumerate() {
