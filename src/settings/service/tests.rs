@@ -93,7 +93,7 @@ fn enter_runs_it_now_and_the_reply_sets_the_switch_and_the_status_line() {
     let (said, tone) = page.status.clone().unwrap();
     assert_eq!(
         said,
-        "没成：systemctl --user disable：Failed to connect to bus"
+        "设置失败：systemctl --user disable：Failed to connect to bus"
     );
     assert_eq!(tone, Tone::Bad);
     assert_eq!(shown(&page), Some(Value::Bool(true)));

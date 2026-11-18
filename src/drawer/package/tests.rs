@@ -182,7 +182,8 @@ fn installing_from_a_source_shows_the_hosted_tools_too() {
     .rows;
     assert!(
         rows.iter()
-            .any(|r| r.ends_with("模型驱动 ag 会让供应商自己跑：search_web、read_url_content")),
+            .any(|r| r
+                .ends_with("模型驱动 ag 会让供应商自己执行这些工具：search_web、read_url_content")),
         "{rows:?}"
     );
 }
@@ -200,7 +201,7 @@ fn a_driver_that_has_the_provider_run_tools_gets_a_line_under_what_it_carries() 
         got.map(|p| p.rows),
         Some(vec![
             "包含：扩展程序".into(),
-            "      模型驱动 ag 会让供应商自己跑：search_web、read_url_content".into(),
+            "      模型驱动 ag 会让供应商自己执行这些工具：search_web、read_url_content".into(),
         ])
     );
 }

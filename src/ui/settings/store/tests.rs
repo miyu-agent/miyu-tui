@@ -241,7 +241,7 @@ fn a_covered_copy_shows_on_the_row_that_covers_it() {
     assert!(
         shown
             .iter()
-            .any(|l| l.ends_with(": 系统安装 1.3.0（更新，卸掉这份就换回它）")),
+            .any(|l| l.ends_with(": 系统安装 1.3.0（版本较新，卸载当前这份就会换回它）")),
         "{shown:?}"
     );
     if let Some(local) = &mut store.local {
@@ -303,7 +303,10 @@ fn installing_says_where_from_what_it_needs_and_the_notice() {
         previews: vec![preview],
     };
     let go = preview::flowing(&store, &flow, &words());
-    assert_eq!(go.last().unwrap().to_string(), "安装并批准要的能力？ [Y/n]");
+    assert_eq!(
+        go.last().unwrap().to_string(),
+        "安装并批准所需的能力？ [Y/n]"
+    );
     // 升级只说新要的。
     let upgrade = Doing::Upgrade(None);
     let up = json!({"upgrades": [{"package": "im", "from": "0.8.4", "to": "0.9.0", "source": "official",
