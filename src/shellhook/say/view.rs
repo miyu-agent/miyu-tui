@@ -68,6 +68,8 @@ pub struct View<'a> {
     pub height: u16,
     /// 转圈转到第几帧。
     pub frame: usize,
+    /// 放声音的情况：语音条照它画 `▶`、`■`、「无法播放」（`turn/clips.rs`）。
+    pub speaker: crate::ui::voice_rows::Speaker<'a>,
 }
 
 impl View<'_> {
@@ -269,8 +271,7 @@ impl View<'_> {
             replaced: transcript.replaced_shown(),
             sessions: &[],
             board: Some(self.board),
-            // shell 里不放声音（点不了）：语音条写「无法播放」。
-            speaker: crate::ui::voice_rows::Speaker::default(),
+            speaker: self.speaker,
         }
     }
 }

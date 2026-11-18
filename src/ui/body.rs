@@ -42,10 +42,7 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
         replaced: seen.talk.transcript.replaced_shown(),
         sessions: seen.talk.sessions_seen.as_deref().unwrap_or(&[]),
         board: Some(&seen.talk.board),
-        speaker: crate::ui::voice_rows::Speaker {
-            ready: seen.link.voice.tts(),
-            playing: seen.link.voice.clip.as_deref(),
-        },
+        speaker: seen.link.voice.speaker(),
         frame: usize::try_from(screen.started.elapsed().as_millis() / u128::from(spinner_ms))
             .unwrap_or(0),
     };

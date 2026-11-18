@@ -88,6 +88,8 @@ pub struct Turn {
     pub interrupted: bool,
     /// 这句话开的那一轮怎么结束的：收工时照它弹通知。
     pub ended: Option<crate::core::EndReason>,
+    /// 她说的语音放没放、放到哪（`turn/clips.rs`）。
+    clips: clips::Clips,
     /// 收尾了。
     pub done: bool,
 }
@@ -175,6 +177,7 @@ impl Turn {
             typed: super::ahead::Ahead::default(),
             interrupted: false,
             ended: None,
+            clips: clips::Clips::default(),
             done: false,
         }
     }
@@ -202,6 +205,9 @@ impl Turn {
             Update::StartRefused(refusal) => Update::Down(refusal.say(config.language.code())),
             update => update,
         };
+        if self.clip_update(&update) {
+            return;
+        }
         if super::dreaming::update(self, &update, core) {
             return;
         }
@@ -350,6 +356,7 @@ impl Turn {
             update => self.transcript.update(update, &config.text),
         }
         self.take_back();
+        self.clip_arrived(core);
         // 这句话开的那一轮结束了：收工（接上的等最新一页补完；插的话没落着的不收，`turn/interject.rs`）。
         if self.ours.is_some()
             && !self.paging
@@ -455,6 +462,7 @@ impl Turn {
     }
 }
 
+mod clips;
 mod interject;
 mod keys;
 mod send;
