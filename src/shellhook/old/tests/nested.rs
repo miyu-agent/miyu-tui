@@ -5,7 +5,7 @@ use std::fs;
 
 use super::super::super::install::status_to;
 use super::super::super::shells::Shell;
-use super::{Home, says, shown, words};
+use super::{Home, plain, says, shown, words};
 
 const BEGIN: &str = "# >>> miyu bash hook >>>\n";
 const SOURCE: &str = "[ -r '/h/.miyu/hooks/bash.sh' ] && source '/h/.miyu/hooks/bash.sh'\n";
@@ -96,7 +96,7 @@ fn status_gives_the_same_lines_and_changes_nothing() {
     fs::write(&profile, &before).unwrap();
     let (mut out, mut err) = (Vec::new(), Vec::new());
     status_to(&[Shell::Bash], &home.env(), &words(), &mut out, &mut err).unwrap();
-    let err = String::from_utf8(err).unwrap();
+    let err = plain(&String::from_utf8(err).unwrap());
     let path = shown(&profile);
     assert!(
         err.lines()
