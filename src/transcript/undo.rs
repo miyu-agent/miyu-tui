@@ -19,6 +19,16 @@ impl Transcript {
         }
     }
 
+    /// 最后一条记在在跑的那一轮名下（抽屉了结的结果：回答了的提问那一块、「不允许」那一行，`app/drawer.rs` 的
+    /// `report_into`）：撤掉这一轮时跟着藏、恢复时跟着回来（[`Transcript::hide`]）。没在跑的不记。原来这两样不带轮次，
+    /// 撤销以后照样留在正文里（同 LiteMiyu `dd889d8`）。
+    pub fn tie_last_to_turn(&mut self) {
+        let turn = self.turn;
+        if let Some(last) = self.entries.last_mut().filter(|_| turn.is_some()) {
+            last.turn = turn;
+        }
+    }
+
     /// 画一行撤销说明：全文照这一次撤掉的第一轮里你说的话，没有的照回应里的第一行。
     pub(super) fn undo_line(&mut self, report: Report) {
         let said = self
