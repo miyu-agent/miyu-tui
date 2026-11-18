@@ -51,7 +51,7 @@ const PROMPTS: [&str; 3] = ["persona", "reminders", "examples"];
 /// 改、加一轮示范对话的两格。
 #[derive(Debug)]
 pub struct PairDraft {
-    /// 你问的、AI回的。
+    /// 你问的、AI 回的。
     pub sides: [Editor; 2],
     /// 光标在哪一格。
     pub focus: usize,
