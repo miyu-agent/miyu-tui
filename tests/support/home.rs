@@ -200,6 +200,25 @@ impl Home {
         self.data().config_file()
     }
 
+    /// 界面记下的样子（`<缓存目录>/tui/look/<一串>.json`，`app/look.rs`）的原文；还没写的是 `None`。缓存目录在数据根里
+    /// （测具设的 `XDG_CACHE_HOME`，macOS 照测具设的家目录），一层层找。
+    pub fn look(&self) -> Option<String> {
+        fn find(dir: &Path) -> Option<PathBuf> {
+            std::fs::read_dir(dir).ok()?.flatten().find_map(|entry| {
+                let path = entry.path();
+                if path.is_dir() {
+                    return find(&path);
+                }
+                let parent = path.parent()?;
+                let looks = parent.file_name()? == "look"
+                    && parent.parent()?.file_name()? == "tui"
+                    && path.extension()? == "json";
+                looks.then_some(path)
+            })
+        }
+        find(&self.dir).and_then(|file| std::fs::read_to_string(file).ok())
+    }
+
     /// 在伪终端里起界面，连这份核心；`lang` 是系统语言（`LANG`）。
     pub fn tui(&self, lang: &str) -> Tui {
         Tui::spawn(&self.dir, &self.work, lang, &[], &[])

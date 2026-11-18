@@ -458,7 +458,17 @@ fn a_second_config_page_draws_the_whole_menu_from_its_first_frame() {
     {
         let mut first = home.tui_args("zh_CN.UTF-8", &["--page", "config"]);
         first.wait_for("隐私与安全");
-        first.pump(Duration::from_millis(300));
+        // 等清单记下了再关（2026-11-18，终端 main 53e38905 那一轮 macOS CI 红过）：记下的样子要配置项、清单都读到了才写
+        // （`app/look.rs` 的 `save_look`），配置项比清单晚到时，原来画出整张菜单以后只等 300 毫秒就关，还没写下，
+        // 第二回起来没有清单可照，先画了「正在加载配置…」。
+        let end = Instant::now() + support::WAIT;
+        while !home
+            .look()
+            .is_some_and(|look| !look.contains("\"settings\":[null"))
+        {
+            assert!(Instant::now() < end, "等不到记下配置页的清单");
+            first.pump(Duration::from_millis(50));
+        }
     }
     let mut tui = home.tui_args("zh_CN.UTF-8", &["--page", "config"]);
     let start = tui.record_from_here();
