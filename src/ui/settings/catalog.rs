@@ -21,6 +21,7 @@ pub(super) fn lines(lines: &mut Lines, pick: &CatalogPick, texts: &Texts, width:
     };
     if pick.typing {
         lines.caret = Some((0, 3 + pick.search.width() as u16));
+        lines.field = Some(3);
     }
     lines.plain(search);
     let rows = pick.rows();

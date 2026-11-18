@@ -61,6 +61,7 @@ pub(super) fn pair(lines: &mut Lines, edit: &PairEdit, texts: &Texts) {
             let before = &typed[..editor.cursor().min(typed.len())];
             let col = lead.width() + before.width();
             lines.caret = Some((lines.body.len(), u16::try_from(col).unwrap_or(0)));
+            lines.field = u16::try_from(lead.width()).ok();
         }
         lines.body.push(Body {
             line: Line::from(vec![
@@ -92,6 +93,7 @@ pub(super) fn create(lines: &mut Lines, edit: &CreateEdit, texts: &Texts) {
             let before = &typed[..editor.cursor().min(typed.len())];
             let col = lead.width() + before.width();
             lines.caret = Some((lines.body.len(), u16::try_from(col).unwrap_or(0)));
+            lines.field = u16::try_from(lead.width()).ok();
         }
         let shown = if i == 0 && typed.is_empty() {
             Span::styled(words.id_hint.clone(), theme::dim())

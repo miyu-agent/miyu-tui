@@ -107,8 +107,9 @@ pub fn draw(
         Popup::Records(edit) => super::records::list(&mut lines, edit, texts, width),
         Popup::Record(form) => super::records::form(&mut lines, form, page, texts, width),
     }
-    // 窗里从第几行露起照上一帧接着（选中的碰到上下边才挪，`floating.rs`）。
+    // 窗里从第几行露起、输入框露的那一截照上一帧接着（碰到边才挪，`floating.rs`）。
     lines.top = page.popup_top;
+    lines.left = page.popup_left;
     floating::centered(
         frame,
         area,
@@ -118,6 +119,7 @@ pub fn draw(
         caret,
     );
     page.popup_top = lines.top;
+    page.popup_left = lines.left;
     page.popup = Some(popup);
 }
 
@@ -215,6 +217,7 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
         }
         if editing {
             lines.caret = Some((lines.body.len(), start + caret));
+            lines.field = Some(start);
         }
         lines.body.push(Body {
             line: Line::from(spans),
@@ -251,6 +254,7 @@ fn search_line(lines: &mut Lines, form: &Form, texts: &Texts) {
     let (search, typing) = &form.search;
     if *typing {
         lines.caret = Some((lines.body.len(), 4 + search.width() as u16));
+        lines.field = Some(4);
     }
     if *typing || !search.is_empty() {
         lines.plain(Line::raw(format!("  / {search}")));
@@ -274,6 +278,7 @@ fn pick_lines(lines: &mut Lines, pick: &Pick, page: &Settings, texts: &Texts, wi
     };
     if pick.typing {
         lines.caret = Some((0, 3 + pick.search.width() as u16));
+        lines.field = Some(3);
     }
     lines.plain(search);
     let current = match pick.usage {
