@@ -27,10 +27,6 @@ pub struct Persona {
     /// 预设占多少 token（核心 DM-4 的 `tokens`，估的、不算人格；发版前 check 4）：人格、写错的、算不出来的是 `None`。
     #[serde(default)]
     pub tokens: Option<u64>,
-    /// 预设写了 `hidden`（核心 LF-5 上，出厂的「推演人生」）：不列进新会话开头、`/preset` 换预设的框，名字照常认（「推演
-    /// 人生」第 4 条）；人格、写错的都是 `false`。
-    #[serde(default)]
-    pub hidden: bool,
 }
 
 impl Persona {
@@ -96,7 +92,6 @@ fn read_list(got: &Value, list: &str, id: &str) -> Vec<Persona> {
                     .collect()
             }),
             tokens: p["tokens"].as_u64(),
-            hidden: p["hidden"] == true,
         })
         .collect()
 }
@@ -106,17 +101,6 @@ mod tests {
     use serde_json::json;
 
     use super::{preset_param, read_preset_files, read_presets, session_preset};
-
-    #[test]
-    fn hidden_presets_are_marked_and_still_listed_for_the_settings_page() {
-        let got = json!({"presets": [
-            {"preset": "full", "name": "全部"},
-            {"preset": "life", "name": "推演人生", "hidden": true},
-        ]});
-        let hidden: Vec<bool> = read_presets(&got).iter().map(|p| p.hidden).collect();
-        assert_eq!(hidden, [false, true]);
-        assert_eq!(read_preset_files(&got).len(), 2, "配置页的预设页照列");
-    }
 
     /// 核心 P-16 下的 `preset.list`：末尾一项编号是 `null` 的「无工具」。
     fn listed() -> serde_json::Value {

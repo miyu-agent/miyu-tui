@@ -69,23 +69,6 @@ pub struct Texts {
     pub groups: [String; 5],
     /// 编号后面那一列：一共用了多少 token，`{tokens}`。
     pub tokens: String,
-    /// 结束了的人生那几段的段头：会话不带人格的、带人格的（`{name}`，「推演人生」第 8 条）。
-    pub ended: [String; 2],
-}
-
-/// 结束了的人生那一段的段头：「已结束的人生 · 美羽」，名字照人格列表（没有的写编号），不带人格的只写「已结束的人生」。
-fn ended_heading(
-    names: &std::collections::HashMap<String, String>,
-    persona: Option<&str>,
-    texts: &Texts,
-) -> String {
-    match persona {
-        Some(id) => {
-            let name = names.get(id).map_or(id, String::as_str);
-            texts.ended[1].replace("{name}", name)
-        }
-        None => texts.ended[0].clone(),
-    }
 }
 
 /// 哪个会话是正在用的，哪几个有确认、提问在等你（「确认和提问的抽屉」第 10 条），哪几个做完了还没看。
@@ -229,11 +212,7 @@ pub fn lines(
         if grouped {
             let group = groups::group(info, marks.current, today, &tz);
             if let Some(group) = group.filter(|_| group != last_group) {
-                let text = match group {
-                    groups::Group::Age(age) => texts.groups[age.index()].clone(),
-                    groups::Group::Ended(persona) => ended_heading(&list.names, persona, texts),
-                };
-                rows.push((None, groups::heading(&text)));
+                rows.push((None, groups::heading(&texts.groups[group.index()])));
             }
             last_group = group;
         }
@@ -319,23 +298,14 @@ fn marker(
     ))
 }
 
-/// 标题那一列有多宽：置顶的记号、人生会话的记号加标题（没起名的写「未命名会话」）。
+/// 标题那一列有多宽：置顶的记号加标题（没起名的写「未命名会话」）。
 fn head_width(info: &SessionInfo, config: &Config) -> usize {
     let pin = if info.pinned {
         config.icons.pin.width()
     } else {
         0
     };
-    pin + life(info, config).width() + title(info, config).width()
-}
-
-/// 人生会话标题前面的记号（「推演人生」第 3 条）；别的会话是空的。
-fn life(info: &SessionInfo, config: &Config) -> String {
-    if info.life {
-        config.icons.life_mark()
-    } else {
-        String::new()
-    }
+    pin + title(info, config).width()
 }
 
 /// 标题（没起名的写「未命名会话」，和起了名的一个颜色：2026-10-01 项目主人）。
@@ -354,11 +324,6 @@ fn head(info: &SessionInfo, config: &Config, column: usize) -> Vec<Span<'static>
     if info.pinned {
         spans.push(Span::styled(config.icons.pin.clone(), theme::accent()));
         room = room.saturating_sub(config.icons.pin.width());
-    }
-    let life = life(info, config);
-    if !life.is_empty() {
-        room = room.saturating_sub(life.width());
-        spans.push(Span::styled(life, theme::accent()));
     }
     let text = super::rows::clip(title(info, config), u16::try_from(room).unwrap_or(u16::MAX));
     let pad = room.saturating_sub(text.width());

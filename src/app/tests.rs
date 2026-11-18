@@ -15,7 +15,6 @@ fn persona(id: &str, name: &str) -> Persona {
         seed: None,
         seeds: None,
         tokens: None,
-        hidden: false,
     }
 }
 
@@ -99,9 +98,6 @@ mod drawer_rows;
 mod effort;
 mod files_page;
 mod goal;
-mod life_card;
-mod life_ended;
-mod lives;
 mod models_changed;
 mod notices;
 mod pools;

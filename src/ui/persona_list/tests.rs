@@ -15,7 +15,6 @@ fn persona(id: &str, name: &str) -> Persona {
         seed: None,
         seeds: None,
         tokens: None,
-        hidden: false,
     }
 }
 

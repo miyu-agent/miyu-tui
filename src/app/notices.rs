@@ -34,17 +34,7 @@ impl App {
                 self.notifier.tell_notice((None, None), &body, None);
             }
             Notice::SchedulesReset => {}
-            // 连上核心（订 `notices` 的回应）也到这里：顺手问一次没看过的结束了的人生（`life_ended.rs`）。
-            Notice::Claimed(claimed) => {
-                self.link.notices_claimed = *claimed;
-                self.ask_ended();
-            }
-            Notice::LifeEnded {
-                session,
-                name,
-                by_self,
-            } => self.life_ended(session, name.as_deref(), *by_self),
-            Notice::LifeSeen { session } => self.life_seen(session),
+            Notice::Claimed(claimed) => self.link.notices_claimed = *claimed,
         }
     }
 

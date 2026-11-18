@@ -32,8 +32,6 @@ pub mod hint_keys;
 mod history;
 mod home;
 mod input_box;
-pub(crate) mod life_card;
-mod lives;
 pub(crate) use input_box::styled_line;
 mod job_rows;
 pub mod languages;
@@ -103,8 +101,6 @@ use ratatui::layout::Rect;
 
 use crate::app::App;
 
-#[cfg(test)]
-pub(crate) use above::lines as above_lines;
 use layout::text_width;
 pub use layout::{Areas, areas};
 pub(super) use layout::{above, agents_area, box_width, list_text};

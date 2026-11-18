@@ -363,8 +363,6 @@ pub struct Persona {
     pub avatar_hint: String,
     /// 已有的人格有头像、格子空着时写的。
     pub avatar_set: String,
-    /// 推演人生那一格（「推演人生」第 6 条）：名字、开、关、光标在这一格时暗色写的怎么改；回车开的窗里写的三行影响。
-    pub life: [String; 7],
 }
 
 /// 选预设那一步。

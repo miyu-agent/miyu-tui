@@ -12,8 +12,6 @@ pub struct Link {
     pub viewing: Option<Option<String>>,
     /// 有人认领了后台通知（核心 TR-1 `notices.claim`，托盘）：没人开着的会话、给人的通知不弹，开着的照常（`notices.rs`）。
     pub notices_claimed: bool,
-    /// 她自己结束了、还没人看过的人生（核心 LF-14 `life.list` 的 `ended_unseen`）：输入框上面那一块最上面写提示（`life_ended.rs`）。
-    pub ended_unseen: Vec<crate::core::LifeEnded>,
     /// 每个模型、池收哪几种附件（`attachments.rs`，照 `model.list`）。
     pub abilities: crate::core::Abilities,
     /// 工具给人看的显示名（仓库 `resources/software/basesystem/human/`）。

@@ -243,7 +243,6 @@ pub fn draw(
     // 这一帧没画到（藏起来、放不下）的件不留点击区。
     screen.areas.session_id = Rect::default();
     screen.areas.recent = Rect::default();
-    screen.areas.side_loops = Rect::default();
     screen.recent.clear();
     screen.areas.jumps = Rect::default();
     screen.jumps.clear();

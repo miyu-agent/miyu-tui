@@ -147,7 +147,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.type_text("说话简短。");
     tui.key(b"\x1b");
     tui.wait_for("说话简短。");
-    tui.key(b"\x1b[B\x1b[B"); // 推演人生那一格不开，挪到「下一步」
+    tui.key(b"\x1b[B"); // 挪到「下一步」
     tui.key(b"\r");
     // 建好、写成默认人格，到了主题（第 22a 条）：停在出厂的「自动」（2026-11-02 项目主人）；明暗那一格回车开列表（2026-10-14 项目主人：
     // 和配置页选值的同一个），挪到哪当场换成哪的底；选好深色，挪到「下一步」写下。
@@ -266,8 +266,8 @@ fn a_name_is_required_and_esc_walks_back_a_step() {
     tui.key(b"\r");
     tui.type_text("会写诗");
     tui.key(b"\r");
-    // 简单描述下面：头像、具体人格提示词、示范对话、人设提醒短语、推演人生，再下面是「下一步」。
-    for _ in 0..6 {
+    // 简单描述下面：头像、具体人格提示词、示范对话、人设提醒短语，再下面是「下一步」。
+    for _ in 0..5 {
         tui.key(b"\x1b[B");
     }
     tui.wait_for("下一步 →");
@@ -329,8 +329,8 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
     tui.key(b"\r");
     tui.type_text("小助手");
     tui.key(b"\r");
-    // 名称、简单描述、头像、具体人格提示词、示范对话、人设提醒短语、推演人生，下面是「下一步」。
-    for _ in 0..7 {
+    // 名称、简单描述、头像、具体人格提示词、示范对话、人设提醒短语，下面是「下一步」。
+    for _ in 0..6 {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
@@ -394,8 +394,8 @@ fn the_first_session_after_the_guide_uses_what_it_just_chose_without_asking() {
     tui.key(b"\r");
     tui.type_text("小助手");
     tui.key(b"\r");
-    // 名称、简单描述、头像、具体人格提示词、示范对话、人设提醒短语、推演人生，下面是「下一步」。
-    for _ in 0..7 {
+    // 名称、简单描述、头像、具体人格提示词、示范对话、人设提醒短语，下面是「下一步」。
+    for _ in 0..6 {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");

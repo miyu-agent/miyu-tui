@@ -21,7 +21,6 @@ mod limits;
 pub mod line_limit;
 mod link;
 mod links;
-mod lives;
 mod memory;
 mod mermaid;
 mod models;
@@ -38,9 +37,6 @@ mod replay;
 mod request;
 mod rpc;
 mod schedules;
-pub use lives::{Ended as LifeEnded, Life, ended as read_ended, lives as read_lives};
-#[cfg(test)]
-pub use schedules::Life as LoopLife;
 pub use schedules::{Change as LoopChange, Every as LoopEvery, Loop, apply as apply_loops};
 mod serve;
 mod session_effort;

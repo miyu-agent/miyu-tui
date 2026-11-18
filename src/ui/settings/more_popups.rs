@@ -8,9 +8,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::popup::{Body, Lines};
 use crate::features;
-use crate::settings::pages::changes::Change;
 use crate::settings::pages::choose::{LineEdit, PersonaView, PresetView};
-use crate::settings::pages::life::LifeTexts;
 use crate::settings::pages::preset_edit::{Field, fields};
 use crate::settings::pages::secret::masked;
 use crate::settings::pages::target::Target;
@@ -127,9 +125,7 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
     } else {
         none()
     };
-    // 照 `FIELDS` 的先后：名字、简单描述、子代理可选、头像、具体人格提示词、示范对话、人设提醒短语；推演人生、推演方法
-    // 另画（[`life_rows`]）。
-    let life = &avatar.life;
+    // 照 `FIELDS` 的先后：名字、简单描述、子代理可选、头像、具体人格提示词、示范对话、人设提醒短语。
     let rows = [
         (&words.detail[0], detail.name.clone().unwrap_or_else(none)),
         (
@@ -147,129 +143,18 @@ pub(super) fn persona(lines: &mut Lines, view: &PersonaView, page: &Settings, te
     ];
     let id_label = &words.create.sides[0];
     let label_w = rows.iter().map(|(n, _)| n.width()).max().unwrap_or(0);
-    let label_w = label_w
-        .max(id_label.width())
-        .max(life.name.width())
-        .max(life.method.width())
-        .max(life.context.width())
-        .max(life.changes.width());
+    let label_w = label_w.max(id_label.width());
     id_row(lines, id_label, label_w, &view.id);
-    let n = rows.len();
     for (i, (name, value)) in rows.into_iter().enumerate() {
-        field_row(
-            lines,
-            (name, label_w),
-            vec![Span::raw(value)],
-            i == view.cursor,
-        );
-    }
-    let method = written(detail.life);
-    life_rows(
-        lines,
-        (view, page),
-        (life, label_w),
-        (n, method, detail.life_context),
-    );
-}
-
-/// 一行能改的：暗色的名字对齐到 `label_w`，后面是值。
-fn field_row(
-    lines: &mut Lines,
-    (name, label_w): (&str, usize),
-    value: Vec<Span<'static>>,
-    focused: bool,
-) {
-    let pad = " ".repeat(label_w.saturating_sub(name.width()));
-    let mut spans = vec![Span::styled(format!("  {name}{pad}  "), theme::dim())];
-    spans.extend(value);
-    lines.body.push(Body {
-        line: Line::from(spans),
-        focused,
-        hit: None,
-    });
-}
-
-/// 人格的窗最后几行（「推演人生」第 2 条）：推演人生的开关（值照 `life.status`，在跑的暗色接下次醒来），她写过「现在
-/// 在干嘛」的下面暗色一行；开着（在跑）的才露出推演方法、人生会话的上下文上限（2026-11-14 项目主人定）。`n` 是推演人生在
-/// `FIELDS` 里排第几，`method` 是推演方法那一格写的，`context` 是写了的上限和出厂的那个数（没写的暗色写出厂的）。
-fn life_rows(
-    lines: &mut Lines,
-    (view, page): (&PersonaView, &Settings),
-    (texts, label_w): (&LifeTexts, usize),
-    (n, method, context): (usize, String, (Option<u64>, Option<u64>)),
-) {
-    let state = page.life_of(&view.id);
-    let (value, tail) = state.map_or_else(Default::default, |s| {
-        s.shown(texts, jiff::Timestamp::now(), &jiff::tz::TimeZone::system())
-    });
-    let mut spans = vec![Span::raw(value)];
-    if !tail.is_empty() {
-        spans.push(Span::styled(
-            format!("{}{tail}", crate::sheet::sep()),
-            theme::dim(),
-        ));
-    }
-    field_row(lines, (&texts.name, label_w), spans, view.cursor == n);
-    if let Some(doing) = state.and_then(|s| s.doing.as_deref()) {
-        let lead = " ".repeat(label_w + 4);
-        lines.plain(Line::from(vec![
-            Span::raw(lead),
-            Span::styled(doing.to_string(), theme::faint()),
-        ]));
-    }
-    if page.life_on(&view.id) {
-        let method_row = vec![Span::raw(method)];
-        field_row(
-            lines,
-            (&texts.method, label_w),
-            method_row,
-            view.cursor == n + 1,
-        );
-        // 没写的暗色写出厂的那个数，不加「默认」、不加千分位（2026-11-17 项目主人本机验收第 30 条：「空着用出厂的 100,000」改「100000」）。
-        let value = match context {
-            (Some(n), _) => Span::raw(n.to_string()),
-            (None, Some(n)) => Span::styled(n.to_string(), theme::faint()),
-            (None, None) => Span::raw(""),
-        };
-        let focused = view.cursor == n + 2;
-        field_row(lines, (&texts.context, label_w), vec![value], focused);
-        if focused {
-            lines.plain(Line::from(vec![
-                Span::raw(" ".repeat(label_w + 4)),
-                Span::styled(texts.context_desc.clone(), theme::faint()),
-            ]));
-        }
-    }
-    let changes = (texts.changes.as_str(), texts.changes_desc.as_str());
-    changes_rows(lines, page.changes_of(&view.id), (changes, label_w));
-}
-
-/// 她在人生里记下的自己的变化（核心 LF-11「后天提示词」）：只读、光标不停。第一行名字后面暗色写说明，下面一条一行、旧的在前；
-/// 为什么变的暗色写在下面一行。没有的一行都不写。
-fn changes_rows(
-    lines: &mut Lines,
-    changes: &[Change],
-    ((name, desc), label_w): ((&str, &str), usize),
-) {
-    if changes.is_empty() {
-        return;
-    }
-    let pad = " ".repeat(label_w.saturating_sub(name.width()));
-    lines.plain(Line::from(vec![
-        Span::styled(format!("  {name}{pad}  "), theme::dim()),
-        Span::styled(desc.to_string(), theme::faint()),
-    ]));
-    for change in changes {
-        lines.plain(Line::from(vec![
-            Span::raw(" ".repeat(label_w + 4)),
-            Span::raw(change.text.clone()),
-        ]));
-        if let Some(why) = &change.why {
-            lines.plain(Line::from(vec![
-                Span::raw(" ".repeat(label_w + 4)),
-                Span::styled(why.clone(), theme::faint()),
-            ]));
-        }
+        let pad = " ".repeat(label_w.saturating_sub(name.width()));
+        lines.body.push(Body {
+            line: Line::from(vec![
+                Span::styled(format!("  {name}{pad}  "), theme::dim()),
+                Span::raw(value),
+            ]),
+            focused: i == view.cursor,
+            hit: None,
+        });
     }
 }
 

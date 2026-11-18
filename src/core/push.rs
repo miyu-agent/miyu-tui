@@ -91,8 +91,8 @@ pub enum Push {
         /// 第几轮。
         round: Option<u32>,
     },
-    /// 循环、人生到点叫醒她的那一句落了盘（`by` 是 `{kind: "schedule", loop}`）：序号，是不是人生的。
-    Wake { seq: u64, life: bool },
+    /// 循环到点交进来的那一句落了盘（`by` 是 `{kind: "schedule", loop}`）：序号。
+    Wake { seq: u64 },
     /// 长期目标现在的样子（订阅回应里的 `goal`、推来的 `goal.changed`，核心 X-8 补）：`None` 是没有目标、清掉了。
     Goal(Option<Goal>),
     /// 派出去一个后台任务（工具结果 `effects` 里的 `job.started`）。

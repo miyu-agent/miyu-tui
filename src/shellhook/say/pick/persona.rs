@@ -52,7 +52,6 @@ impl PersonaPick {
                 seed: None,
                 seeds: None,
                 tokens: None,
-                hidden: false,
             },
             kind,
             list: None,
@@ -133,8 +132,7 @@ impl Picker for PersonaPick {
                 self.place();
             }
             (Update::Presets(list), Kind::Preset) => {
-                // 写了 `hidden` 的（出厂的「推演人生」）不列（「推演人生」第 4 条）
-                self.list = Some(list.iter().filter(|p| !p.hidden).cloned().collect());
+                self.list = Some(list.clone());
                 self.place();
             }
             (Update::HeadConfig(head), _) => {

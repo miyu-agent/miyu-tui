@@ -84,13 +84,8 @@ pub(super) fn draw_line(frame: &mut Frame, app: &mut crate::app::App, area: Rect
         let hover = app.screen.pointer.is_some_and(|p| spot.contains(p));
         draw(frame, area, &goal, hover);
     }
-    app.screen.areas.loop_text = Rect::default();
     if let Some(shown) = super::loop_tag::shown(app) {
-        let spot = super::loop_tag::draw(frame, area, app.screen.areas.goal_text, &shown);
-        // 人生的那一截点得动（开人生卡，`app/life_card.rs`）。
-        if crate::app::life_card::life_row(&app.talk, &app.link).is_some() {
-            app.screen.areas.loop_text = spot;
-        }
+        super::loop_tag::draw(frame, area, app.screen.areas.goal_text, &shown);
     }
 }
 

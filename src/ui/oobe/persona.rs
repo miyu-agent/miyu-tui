@@ -5,7 +5,6 @@ use ratatui::text::Span;
 use unicode_width::UnicodeWidthStr;
 
 use super::content::{Content, fill, wrap};
-use crate::oobe::PersonaTexts;
 use crate::oobe::Texts;
 use crate::oobe::persona::{PersonaStep, Slot};
 use crate::oobe::sheet::Sheet;
@@ -25,7 +24,7 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
     let label_w = words
         .fields
         .iter()
-        .chain([&words.avatar, &words.summary, &words.life[0]])
+        .chain([&words.avatar, &words.summary])
         .map(|f| f.width())
         .max()
         .unwrap_or(0);
@@ -97,8 +96,6 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
         on(Slot::Reminders),
     );
     c.blank();
-    life(&mut c, step, words, (label_w, on(Slot::Life)));
-    c.blank();
     let next = if step.blank() {
         &words.skip
     } else {
@@ -114,71 +111,6 @@ pub fn content(step: &PersonaStep, texts: &Texts, width: u16, avatar_rows: u16) 
         c.note(error, theme::error());
     }
     c
-}
-
-/// 推演人生那一格（「推演人生」第 6 条）：只写开、关，不铺底色；光标在上面时后面暗色写「Enter 修改」，回车开窗（[`life_dialog`]）。
-fn life(c: &mut Content, step: &PersonaStep, words: &PersonaTexts, (label_w, on): (usize, bool)) {
-    let life = &words.life;
-    let value = if step.life.shown_on() {
-        &life[1]
-    } else {
-        &life[2]
-    };
-    c.value(&life[0], label_w, value, &life[3], on);
-}
-
-/// 推演人生的窗（2026-11-17 项目主人本机验收第 32 条）：同配置页选值的窗、软件包页确认的窗，不画边框、浅一档的底（`floating`）：
-/// 标题、三行影响（暗色）、开和关两行（选着的那一行底色深一档、左边强调色竖条）、按键提示。`on` 是选着的是不是「开」。
-pub fn life_dialog(
-    frame: &mut ratatui::Frame,
-    area: ratatui::layout::Rect,
-    on: bool,
-    words: &PersonaTexts,
-    config: &crate::config::Config,
-    caret: &mut crate::caret::Caret,
-) {
-    use crate::ui::floating::{self, Body, Lines};
-    let life = &words.life;
-    let width = config
-        .layout
-        .settings
-        .popup_wide
-        .min(area.width.saturating_sub(4));
-    let mut lines: Lines<usize> = Lines::default();
-    lines.title(life[0].clone(), String::new());
-    let room = width.saturating_sub(6).max(1);
-    for said in &life[4..7] {
-        for (row, _) in crate::input::pieces(said, room) {
-            lines.plain(ratatui::text::Line::styled(
-                format!("  {}", row.trim()),
-                theme::dim(),
-            ));
-        }
-    }
-    lines.plain(ratatui::text::Line::default());
-    for (i, label) in [&life[1], &life[2]].into_iter().enumerate() {
-        lines.body.push(Body {
-            line: ratatui::text::Line::raw(format!("  {label}")),
-            focused: (i == 0) == on,
-            hit: Some(i),
-        });
-    }
-    lines.hints = config.text.settings.more.hints[2].clone();
-    let height = lines.height(width, area.height);
-    // 后面调暗，同引导别的浮窗（`popup.rs`）。
-    frame.buffer_mut().set_style(
-        area,
-        ratatui::style::Style::new().add_modifier(ratatui::style::Modifier::DIM),
-    );
-    let mut hits = Vec::new();
-    floating::centered(
-        frame,
-        area,
-        (width, height),
-        &mut lines,
-        (&mut hits, |i| i),
-        caret,
-    );
 }
 
 /// 长文在格子里只写第一行，多行的末尾 `…`。

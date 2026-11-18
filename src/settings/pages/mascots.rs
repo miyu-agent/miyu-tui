@@ -30,7 +30,6 @@ pub fn looks(got: &Value, ascii: &str) -> Vec<Persona> {
         seed: None,
         seeds: None,
         tokens: None,
-        hidden: false,
     };
     std::iter::once(builtin).chain(list).collect()
 }
@@ -80,7 +79,6 @@ fn of_kind(got: &Value, kind: &str, skip: Option<&str>) -> Vec<Persona> {
             seed: None,
             seeds: None,
             tokens: None,
-            hidden: false,
         })
         .collect()
 }

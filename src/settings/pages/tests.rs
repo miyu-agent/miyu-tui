@@ -124,7 +124,6 @@ fn a_removed_mascot_package_is_named_as_not_installed() {
         seed: None,
         seeds: None,
         tokens: None,
-        hidden: false,
     }];
     assert_eq!(
         super::shown(item, &json!("bun"), Some(&installed), &texts),

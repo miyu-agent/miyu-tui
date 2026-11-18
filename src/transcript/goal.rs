@@ -20,12 +20,12 @@ impl Transcript {
         });
     }
 
-    /// 循环、人生到点叫醒她的那一句（序号 `seq`）落了盘：不照原文画（交进去的是给模型看的英文、推演方法），画一行「◷ 循环 · 继续」
-    /// 「◷ 人生 · 继续」（2026-11-17 项目主人验收第 3 条，同网页）。和长期目标开的一轮那一行一个样子，开轮时照序号归到那一轮。
-    pub(super) fn wake(&mut self, seq: u64, life: bool, words: &[String; 3]) {
+    /// 循环到点交进来的那一句（序号 `seq`）落了盘：不照原文画（交进去的是给模型看的英文），画一行「◷ 循环 · 继续」（2026-11-17
+    /// 项目主人验收第 3 条，同网页）。和长期目标开的一轮那一行一个样子，开轮时照序号归到那一轮。
+    pub(super) fn wake(&mut self, seq: u64, words: &[String; 2]) {
         self.finish_segment();
         let id = self.fresh_id();
-        let text = words[1 + usize::from(life)].clone();
+        let text = words[1].clone();
         self.entries.push(Entry {
             seq: Some(seq),
             mark: Some(words[0].clone()),

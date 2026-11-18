@@ -166,10 +166,6 @@ pub enum Update {
         command: String,
         /// 回执那一句；读不出来的是空的。
         said: String,
-        /// 要跳过去的会话（核心 LF-5 下：`/life`、`/life new` 回人生会话的编号，「推演人生」第 1 条）；别的命令没有。
-        session: Option<String>,
-        /// 光打 `/life` 带回的所有人生会话（核心 LF-12）；别的命令、一条都没有的是空的。
-        lives: Vec<super::Life>,
     },
     /// 回顾交回的是上一句（`cached`：上次回顾以后没有新内容，核心不推 `session.recapped`），照它画（蓝图「回顾」第 3 条）。
     Recap(String),

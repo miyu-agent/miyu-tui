@@ -30,10 +30,6 @@ impl App {
         }
         // 会话不在了（「连核心」第 7 条）：和说下一句话一样，开新会话。
         self.leave_gone();
-        // 还没开会话时光打 `/life`、`/life new`：不为它开会话，直接 `life.list`、`life.new`（`lives.rs`）。
-        if self.bare_life(line) {
-            return;
-        }
         // 终端在看着的那一趟整理：`/dream stop` 照 Esc 叫停（`dream.rs`）；没在看的照常交给核心，由它停或者说为什么不行。
         if crate::dream::asks_to_stop(line) && self.dream_stop() {
             return;

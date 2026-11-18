@@ -18,10 +18,7 @@ impl Oobe {
         texts: &Texts,
     ) {
         let moved = match &waiting {
-            // 开人生会话（「推演人生」第 6 条）：回来了不管，已经有的核心回 `life_exists`
-            Waiting::Icons | Waiting::Keys | Waiting::CurrencySave | Waiting::LifeStart => {
-                Move::Stay
-            }
+            Waiting::Icons | Waiting::Keys | Waiting::CurrencySave => Move::Stay,
             Waiting::CurrencyRead => {
                 self.currency.answer(&result, &texts.currency.default);
                 Move::Stay

@@ -1,6 +1,5 @@
 //! 循环（蓝图 `tui.md`「循环」第 2、3 条，2026-10-30 项目主人）：看着的会话挂着循环时，输入框上面那一行右对齐写下一次
-//! 几点（长期目标在右、它在左），侧边栏多一段「循环」写多久一次、下一次、那句话。人生那一行（核心 LF-13，2026-11-17 项目主人
-//! 本机验收第 23 条）同一个样子，记号用人生的，侧边栏写「推演人生」和人格的名字（那句话是推演方法，不写）。
+//! 几点（长期目标在右、它在左），侧边栏多一段「循环」写多久一次、下一次、那句话。
 
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
@@ -24,24 +23,15 @@ pub(crate) fn of<'a>(loops: &'a [Loop], session: Option<&str>) -> Vec<&'a Loop> 
     mine
 }
 
-/// 打头的记号：人生那一行照人生的（会话列表里人生会话标题前面那一个），别的照图标那一套的 `loop`。
-pub(crate) fn mark(one: &Loop, config: &Config) -> String {
-    if one.life.is_some() {
-        config.icons.life_mark()
-    } else {
-        config.icons.loop_mark.clone()
-    }
-}
-
-/// 输入框上面那一截（第 2 条）：「◷ 13:07」，停着的「◷ 已暂停」，还没定下一次的只写「◷」（记号照图标那一套的 `loop`，
-/// 人生的照人生的）。没有循环的是 `None`。
+/// 输入框上面那一截（第 2 条）：「◷ 13:07」，停着的「◷ 已暂停」，还没定下一次的只写「◷」（记号照图标那一套的 `loop`）。
+/// 没有循环的是 `None`。
 pub(crate) fn tag(
     mine: &[&Loop],
     config: &Config,
     (now, tz): (Timestamp, &TimeZone),
 ) -> Option<String> {
     let first = mine.first()?;
-    let mark = &mark(first, config);
+    let mark = &config.icons.loop_mark;
     Some(match (first.paused, first.next) {
         (true, _) => format!("{mark}{}", config.text.loops.paused),
         (false, Some(next)) => format!("{mark}{}", when(next, now, tz)),
@@ -50,10 +40,10 @@ pub(crate) fn tag(
 }
 
 /// 侧边栏那一段（第 3 条）：标题，一个循环两行（缩两格，同别的几段）：「每 10 分钟 · 下次 13:07」，暗色的那句话截到一行。
-/// 人生那一行第一行「推演人生 · 下次 13:07」，第二行暗色写人格的名字（`name` 照人格的编号给名字）。没有循环的是空的。
+/// 没有循环的是空的。
 pub(crate) fn sidebar(
     mine: &[&Loop],
-    (config, name): (&Config, &dyn Fn(&str) -> String),
+    config: &Config,
     (now, tz): (Timestamp, &TimeZone),
     width: u16,
 ) -> Vec<Line<'static>> {
@@ -72,12 +62,9 @@ pub(crate) fn sidebar(
         }
         let head = head.join(&crate::sheet::sep());
         lines.push(Line::raw(format!("  {}", crate::cells::clip(&head, room))));
-        let said = match &one.life {
-            Some(life) => life.persona.as_deref().map(name).unwrap_or_default(),
-            None => one.prompt.lines().next().unwrap_or_default().to_string(),
-        };
+        let said = one.prompt.lines().next().unwrap_or_default();
         lines.push(Line::styled(
-            format!("  {}", crate::cells::clip(&said, room)),
+            format!("  {}", crate::cells::clip(said, room)),
             theme::dim(),
         ));
     }
@@ -91,17 +78,12 @@ pub(super) fn shown(app: &crate::app::App) -> Option<(String, String)> {
     let now = (Timestamp::now(), &TimeZone::system());
     let mine = of(&app.link.loops, session);
     let text = tag(&mine, &app.config, now)?;
-    Some((text, mark(mine.first()?, &app.config)))
+    Some((text, app.config.icons.loop_mark.clone()))
 }
 
 /// 画在框上面那一行，右对齐、暗色；`goal` 是长期目标那一截占的地方，有的话接在它左边、中间空两格。放不下整截的只写记号
-/// （`mark` 是它打头的记号），记号也放不下的不写，不往框外伸（2026-11-02 项目主人：窄窗口里截掉了）。交回画在哪（没画的是空的）。
-pub(super) fn draw(
-    frame: &mut Frame,
-    area: Rect,
-    goal: Rect,
-    (text, mark): &(String, String),
-) -> Rect {
+/// （`mark` 是它打头的记号），记号也放不下的不写，不往框外伸（2026-11-02 项目主人：窄窗口里截掉了）。
+pub(super) fn draw(frame: &mut Frame, area: Rect, goal: Rect, (text, mark): &(String, String)) {
     let right = if goal.width > 0 {
         goal.x.saturating_sub(2)
     } else {
@@ -109,12 +91,11 @@ pub(super) fn draw(
     };
     let room = usize::from(right.saturating_sub(area.x));
     let Some(text) = fit(text, mark, room) else {
-        return Rect::default();
+        return;
     };
     let width = u16::try_from(text.width()).unwrap_or(u16::MAX);
     let at = Rect::new(right - width, area.y, width, area.height.min(1));
     frame.render_widget(Paragraph::new(Span::styled(text, theme::dim())), at);
-    at
 }
 
 /// 放得进 `room` 列的那一截：整截，不然只写记号，都放不下的是 `None`。
@@ -140,7 +121,6 @@ fn every(every: &LoopEvery, config: &Config) -> String {
         }
         LoopEvery::Cron(cron) => cron.clone(),
         LoopEvery::Dynamic => texts.dynamic.clone(),
-        LoopEvery::Life => texts.life.title.clone(),
     }
 }
 

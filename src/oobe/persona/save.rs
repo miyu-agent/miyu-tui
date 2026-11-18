@@ -210,7 +210,6 @@ impl PersonaStep {
                     let name = self.name.trimmed();
                     self.chosen = Some(name.clone());
                     self.badge = Some(name);
-                    self.start_life(asker, id);
                     return Move::Next;
                 }
                 Err(refusal) => self.refused(&refusal),
