@@ -38,9 +38,13 @@ pub fn draw(frame: &mut Frame, page: &mut FilesPage, seen: &Seen, out: &mut File
     }
     let words = &seen.config.text.files;
     let hint = Rect::new(area.x, area.bottom() - 1, area.width, 1);
+    let room = hint.width.saturating_sub(2);
     frame.render_widget(
-        Paragraph::new(super::floating::hint_line(&words.hints)),
-        Rect::new(hint.x + 1, hint.y, hint.width.saturating_sub(2), 1),
+        Paragraph::new(super::floating::hint_line_within(
+            &words.hints,
+            usize::from(room),
+        )),
+        Rect::new(hint.x + 1, hint.y, room, 1),
     );
     let body = Rect::new(area.x, area.y, area.width, area.height - 1);
     let layout = &seen.config.layout;

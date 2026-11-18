@@ -120,6 +120,6 @@ pub fn draw(frame: &mut Frame, view: &PageView, seen: &Seen, screen: &mut Screen
     let rule = crate::sheet::mark(|m| &m.rule).repeat(usize::from(stage.width));
     let buf = frame.buffer_mut();
     buf.set_string(stage.x, stage.bottom() - 2, &rule, theme::faint());
-    let hints = crate::ui::floating::hint_line(&texts.page_keys);
+    let hints = crate::ui::floating::hint_line_within(&texts.page_keys, usize::from(stage.width));
     buf.set_line(stage.x, stage.bottom() - 1, &hints, stage.width);
 }
