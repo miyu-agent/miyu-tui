@@ -96,7 +96,8 @@ fn run(cmd: &str, args: &[&str], wait: Duration) -> Option<String> {
 }
 
 /// 跑一个命令，读它的输出；没装、失败、到点还没完的交回 `None`（到点的杀掉）。输出边跑边在另一个线程里读：
-/// 剪贴板里东西多时（超过管道的缓冲），命令要等人读走才写得完、才会退出。
+/// 剪贴板里东西多时（超过管道的缓冲），命令要等人读走才写得完、才会退出。读输出也只等到点：命令起的子进程还拿着管道的，
+/// 读不到头（审计 #077：原来到点杀了命令还一直等读完，`Ctrl+V` 把界面卡死），读的线程留给它，管道关了自己收工。
 pub(super) fn run_bytes(cmd: &str, args: &[&str], wait: Duration) -> Option<Vec<u8>> {
     let mut child = Command::new(cmd)
         .args(args)
@@ -106,9 +107,11 @@ pub(super) fn run_bytes(cmd: &str, args: &[&str], wait: Duration) -> Option<Vec<
         .spawn()
         .ok()?;
     let mut stdout = child.stdout.take()?;
-    let reader = std::thread::spawn(move || {
+    let (sender, read) = std::sync::mpsc::sync_channel(1);
+    std::thread::spawn(move || {
         let mut out = Vec::new();
-        stdout.read_to_end(&mut out).map(|_| out)
+        // 没人等了（到点放弃了）发不出去，不要紧
+        drop(sender.send(stdout.read_to_end(&mut out).map(|_| out)));
     });
     let start = Instant::now();
     let status = loop {
@@ -123,10 +126,12 @@ pub(super) fn run_bytes(cmd: &str, args: &[&str], wait: Duration) -> Option<Vec<
             }
         }
     };
-    let out = reader.join().ok()?.ok()?;
-    status
-        .filter(std::process::ExitStatus::success)
-        .map(|_| out)
+    // 命令退出了、输出也该读完了；到点前读不到头的（子进程拿着管道）也当读不到。留一点读最后一截的余量。
+    let left = wait
+        .saturating_sub(start.elapsed())
+        .max(Duration::from_millis(100));
+    status.filter(std::process::ExitStatus::success)?;
+    read.recv_timeout(left).ok()?.ok()
 }
 
 #[cfg(test)]
