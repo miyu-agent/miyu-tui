@@ -11,7 +11,10 @@ use super::{Said, install};
 
 mod fish;
 mod nested;
+mod paths;
 mod trouble;
+
+use self::paths::{plain, says, shown};
 
 /// 一个测试一个临时的家目录，用完删掉。`zdotdir` 是家目录下的相对路径（`ZDOTDIR`），没有的不设。
 struct Home {
@@ -90,24 +93,6 @@ fn old(shell: &str) -> String {
     format!(
         "# >>> miyu {shell} hook >>>\n[ -r '/h/.miyu/hooks/{shell}.sh' ] && source '/h/.miyu/hooks/{shell}.sh'\n# <<< miyu {shell} hook <<<\n"
     )
-}
-
-/// `said` 里有一行（`trouble` 照给的）同时写着 `parts` 的每一样。
-fn says(said: &[Said], trouble: bool, parts: &[&str]) -> bool {
-    said.iter().any(|s| {
-        let text = plain(&s.text);
-        s.trouble == trouble && parts.iter().all(|p| text.contains(p))
-    })
-}
-
-/// 路径里的分隔符一律当 `/` 比：Windows 上程序拼出来的路径 `\`、`/` 混着（`…\.config\fish/conf.d\miyu.fish`），
-/// 测试里另拼的同一个路径写法不一定一样。比的是说没说到这个文件，不是分隔符。
-fn plain(text: &str) -> String {
-    text.replace('\\', "/")
-}
-
-fn shown(path: &Path) -> String {
-    plain(&path.display().to_string())
 }
 
 #[cfg(unix)]
