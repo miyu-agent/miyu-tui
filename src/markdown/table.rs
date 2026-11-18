@@ -3,7 +3,7 @@
 
 use pulldown_cmark::Alignment;
 use ratatui::text::Span;
-use unicode_width::UnicodeWidthStr;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use super::inline::{Folded, Piece, fold, plain};
 use crate::theme;
@@ -195,23 +195,29 @@ fn row_lines(row: &[Cell], widths: &[usize], aligns: &[Alignment], head: bool) -
 }
 
 /// 折行时满了的那一格是空白的，留在行末（`linebreak.rs`：正文里超出的看不见）；格子里它会把竖线往右顶一格（发版前
-/// check 11，2026-11-08 项目主人报框线错位），超出列宽的行末空白去掉。
+/// check 11，2026-11-08 项目主人报框线错位），超出列宽的行末空白去掉。一个字一个字地去、照它的显示宽度扣（审计 #051：
+/// 原来照列数去切字节，全角空格、不间断空格切在字的中间）；宽的空白去掉以后可以比列宽窄一格，缺的由对齐补上。
 fn fit(folded: &mut Folded, width: usize) {
     let mut over = plain(folded).width().saturating_sub(width);
     while over > 0 {
         let Some(last) = folded.spans.last_mut() else {
             return;
         };
-        let text = last.content.to_string();
-        let kept = text.trim_end_matches(char::is_whitespace);
-        let cut = (text.len() - kept.len()).min(over);
-        if cut == 0 {
-            return;
+        let mut text = last.content.to_string();
+        while over > 0 {
+            let Some(c) = text.chars().next_back().filter(|c| c.is_whitespace()) else {
+                break;
+            };
+            text.pop();
+            over = over.saturating_sub(c.width().unwrap_or(0));
         }
-        last.content = text[..text.len() - cut].to_string().into();
-        over -= cut;
-        if last.content.is_empty() {
+        let emptied = text.is_empty();
+        last.content = text.into();
+        if emptied {
             folded.spans.pop();
+        } else if over > 0 {
+            // 这一段末尾不是空白了：剩下超出的不是空白，不去。
+            return;
         }
     }
 }
@@ -230,7 +236,7 @@ mod tests {
     use ratatui::style::Style;
     use unicode_width::UnicodeWidthStr;
 
-    use super::{bounded, render};
+    use super::{bounded, fit, line, render};
     use crate::markdown::inline::{Piece, plain};
 
     fn cell(text: &str) -> Vec<Piece> {
@@ -319,5 +325,57 @@ mod tests {
         // 放得下的照旧画表格。
         let fits = render(&head[..2], &[row("a")[..2].to_vec()], &aligns[..2], 40);
         assert!(plain(&fits[0]).starts_with('┌'));
+    }
+
+    /// 审计 #051（2026-11-18）：去掉行末空白时照列数去切字节，全角空格（3 字节、2 列）、不间断空格（2 字节、1 列）只超出一列
+    /// 时切在字的中间，发行版当场崩。去的是整个字，宽的空白去掉以后可以比列宽窄一格（缺的那格由对齐补）。
+    #[test]
+    fn trailing_wide_and_non_breaking_spaces_are_dropped_whole() {
+        let cases = [
+            (vec!["ab\u{3000}"], 3, "ab"),
+            (vec!["a\u{a0}\u{a0}"], 2, "a\u{a0}"),
+            (vec!["中", "\u{3000}\u{a0}"], 3, "中"),
+            (vec!["😀", " \u{3000}"], 2, "😀"),
+            (vec!["x\u{3000}"], 1, "x"),
+            (vec!["abc"], 2, "abc"),
+        ];
+        for (spans, width, want) in cases {
+            let mut folded = line(
+                spans
+                    .iter()
+                    .map(|s| ratatui::text::Span::raw((*s).to_string()))
+                    .collect(),
+            );
+            fit(&mut folded, width);
+            assert_eq!(plain(&folded), want, "{spans:?} 收到 {width} 列");
+        }
+    }
+
+    /// 同上，整张表：单元格里中英混排、表情，空白是全角空格、不间断空格、普通空格，各种宽度都排得出、框线对齐。
+    #[test]
+    fn tables_with_wide_and_non_breaking_spaces_render_at_every_width() {
+        let aligns = [Alignment::None, Alignment::None];
+        let head = vec![cell("col1"), cell("col2")];
+        for blank in ['\u{3000}', '\u{a0}', ' '] {
+            for k in 0..64 {
+                let text = format!(
+                    "{}{blank}中文 mixed😀{blank}{blank}tail_long_word_here",
+                    "a".repeat(k)
+                );
+                let rows = vec![vec![cell(&"x".repeat(12)), cell(&text)]];
+                for width in 20..90 {
+                    let lines: Vec<String> = render(&head, &rows, &aligns, width)
+                        .iter()
+                        .map(plain)
+                        .collect();
+                    if lines[0].starts_with('┌') {
+                        assert!(
+                            lines.iter().all(|l| l.width() == lines[0].width()),
+                            "{blank:?} k={k} 宽 {width}：{lines:#?}"
+                        );
+                    }
+                }
+            }
+        }
     }
 }
