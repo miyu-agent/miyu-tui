@@ -76,6 +76,34 @@ pub(super) fn find(hay: &str, needle: &str) -> Option<usize> {
     hay.to_ascii_lowercase().find(needle)
 }
 
+/// `svg` 开头那个 `<svg` 配对的 `</svg>` 后面一格：里面套的 `<svg>` 照层数配（审计 #085：原来照第一个 `</svg>` 收，停在里面
+/// 那个的结尾）；自己收尾的 `<svg … />` 不算一层。还没到的是 `None`（回答还在流）。
+pub(super) fn svg_end(svg: &str) -> Option<usize> {
+    let lower = svg.to_ascii_lowercase();
+    let mut depth = 0usize;
+    let mut at = 0;
+    while let Some(i) = lower[at..].find('<') {
+        let tag = at + i;
+        let rest = &lower[tag..];
+        let named = |name: &str| {
+            rest.strip_prefix(name).is_some_and(|after| {
+                after.starts_with(|c: char| c.is_ascii_whitespace() || c == '>' || c == '/')
+            })
+        };
+        let end = tag + rest.find('>')? + 1;
+        if named("</svg") {
+            depth = depth.checked_sub(1)?;
+            if depth == 0 {
+                return Some(end);
+            }
+        } else if named("<svg") && !lower[..end].ends_with("/>") {
+            depth += 1;
+        }
+        at = end;
+    }
+    None
+}
+
 /// 把一段 HTML 拆成标签和字。注释 `<!-- -->` 丢掉；不像标签的 `<` 当字。
 pub(super) fn tokens(html: &str) -> Vec<Token<'_>> {
     let mut out = Vec::new();

@@ -110,3 +110,13 @@ fn marks_skip_punctuation_and_word_starts_still_count() {
     let ranked = rank("opus55", vec!["xopusx55y", "claude-opus-5-5"], |s| vec![*s]);
     assert_eq!(ranked[0], "claude-opus-5-5", "落在词头的排前面");
 }
+
+#[test]
+fn a_letter_whose_lowercase_is_two_letters_still_finds_itself() {
+    // `İ` 的小写是 `i` 加一个附加点两个字：打的字和字段原来各照各的折法，打 `İ` 找不到 `İstanbul`（审计 #085）。
+    use super::marks;
+    assert!(hit("İ", ["İstanbul"]), "打的字照原样");
+    assert!(hit("İst", ["istanbul"]));
+    assert!(hit("ist", ["İstanbul"]));
+    assert_eq!(marks("İs", "İstanbul"), [0, 1]);
+}

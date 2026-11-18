@@ -6,6 +6,12 @@
 //! 字母、数字（照 Unicode，汉字算），只有标点的一段不算；字段里的标点照旧算词头，两个对上的字中间只隔着标点的不扣分，也不当
 //! 挨着加分（`f-l-a-s-h` 不该比 `flash` 排前）。
 
+/// 一个字不分大小写时当成哪个字：小写的头一个字。打的字和字段都照它折，一个字对一个字（`İ` 的小写是 `i` 加附加点两个字，
+/// 原来打的字照全折、字段只取头一个，打 `İ` 找不到它自己，审计 #085）。
+fn fold(c: char) -> char {
+    c.to_lowercase().next().unwrap_or(c)
+}
+
 /// 打的字照空格拆成的几段，每段只留字母、数字（标点不当要找的字：`opus5.5` 照 `opus55` 找）；只有标点的一段不算，全是空白、
 /// 标点的是空的（什么都对得上）。
 fn terms(query: &str) -> Vec<Vec<char>> {
@@ -14,7 +20,7 @@ fn terms(query: &str) -> Vec<Vec<char>> {
         .map(|t| {
             t.chars()
                 .filter(|c| c.is_alphanumeric())
-                .flat_map(char::to_lowercase)
+                .map(fold)
                 .collect::<Vec<char>>()
         })
         .filter(|t| !t.is_empty())
@@ -91,10 +97,7 @@ fn term_match(term: &[char], text: &[char], lower: &[char]) -> Option<(i64, Vec<
 /// 的文字我希望颜色能不一样」）。照先后对上的照那几个字；切成几截才对上的照每截原样出现的那一处。
 pub fn marks(query: &str, field: &str) -> Vec<usize> {
     let text: Vec<char> = field.chars().collect();
-    let lower: Vec<char> = text
-        .iter()
-        .map(|c| c.to_lowercase().next().unwrap_or(*c))
-        .collect();
+    let lower: Vec<char> = text.iter().copied().map(fold).collect();
     let mut out = Vec::new();
     for term in terms(query) {
         match term_match(&term, &text, &lower) {
@@ -136,10 +139,7 @@ pub fn score<'a>(query: &str, fields: impl IntoIterator<Item = &'a str>) -> Opti
         .into_iter()
         .map(|f| {
             let text: Vec<char> = f.chars().collect();
-            let lower = text
-                .iter()
-                .map(|c| c.to_lowercase().next().unwrap_or(*c))
-                .collect();
+            let lower = text.iter().copied().map(fold).collect();
             (text, lower)
         })
         .collect();
