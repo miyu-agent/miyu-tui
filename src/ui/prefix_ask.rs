@@ -46,7 +46,7 @@ pub fn lines(
             spans.push(Span::raw("  "));
         }
         let style = if i == button {
-            theme::picked_bar()
+            theme::picked_button()
         } else {
             Style::new()
         };
