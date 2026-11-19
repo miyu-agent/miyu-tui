@@ -190,7 +190,7 @@ mod tests {
         assert!(text[0].starts_with("● Flash"), "{text:#?}");
         assert!(!text.iter().any(|l| l.contains("当前")), "{text:#?}");
         assert!(text[1].trim_end().ends_with("冷却 2m"), "{text:#?}");
-        assert!(text[2].trim_end().ends_with("未设置 key"), "{text:#?}");
+        assert!(text[2].trim_end().ends_with("未设置密钥"), "{text:#?}");
         assert!(text.iter().all(|l| l.contains("dev · 300k")));
     }
 
