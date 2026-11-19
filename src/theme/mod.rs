@@ -6,6 +6,7 @@ pub mod choice;
 mod current;
 mod depth;
 mod derived;
+mod generation;
 mod ground;
 mod motion;
 mod palette;
@@ -17,7 +18,7 @@ pub mod terminal_colors;
 pub mod wallpaper;
 mod wallpaper_cache;
 
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use ratatui::style::{Color, Modifier, Style};
 
@@ -34,25 +35,22 @@ mod test_support;
 #[cfg(test)]
 pub use test_support::hold;
 
-/// 换过几次主题。排好存着的东西（回答的 Markdown）把它算进键里，换了主题就重排。
-static GENERATION: AtomicU64 = AtomicU64::new(0);
-
 /// 换主题。颜色和现在的一模一样的不算换：换代数不加，照它画好的图、排好的行照旧用（2026-10-15 T-235：引导关上时照配置项
 /// 重挑一次，颜色没变，头像却因为缓存键里的换代数变了重做、重传，首页那一块空了一下）。
 pub fn set(palette: Palette) {
     if current::replace(palette) {
-        GENERATION.fetch_add(1, Ordering::Relaxed);
+        generation::bump();
     }
 }
 
-/// 换过几次主题，见 [`GENERATION`]。
 /// 别处换了画法（主题，`sheet/`）：代数往前走一格，照它记的缓存重画。
 pub fn touch() {
-    GENERATION.fetch_add(1, Ordering::Relaxed);
+    generation::bump();
 }
 
+/// 换过几次主题（`generation.rs`）：排好存着的东西把它算进键里，换了主题就重排。
 pub fn generation() -> u64 {
-    GENERATION.load(Ordering::Relaxed)
+    generation::get()
 }
 
 /// 取当前主题里的一个颜色。
