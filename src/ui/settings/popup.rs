@@ -39,6 +39,7 @@ pub fn draw(
             target: Target::Provider(_),
             ..
         }) | Popup::Confirm(_)
+            | Popup::Notice(_)
     );
     let width = if wide {
         look.popup_wide
@@ -68,6 +69,17 @@ pub fn draw(
                 .collect();
             lines.button = Some(confirm.sel);
             lines.hints = texts.popup_hints[3].clone();
+        }
+        // 提示窗（`settings/pages/notice.rs`）：同问一句的窗，标题写选项的名字，那一句放不下折行写全，只有一个按钮。
+        Popup::Notice(notice) => {
+            lines.title(notice.title.clone(), String::new());
+            for row in crate::cells::wrap(&notice.text, usize::from(width.saturating_sub(4)).max(1))
+            {
+                lines.plain(Line::raw(row));
+            }
+            lines.buttons = vec![(texts.more.notice.button.clone(), false)];
+            lines.button = Some(0);
+            lines.hints = texts.more.notice.hints.clone();
         }
         Popup::Choose(choose) => {
             let mut hints = texts.more.hints[2].clone();

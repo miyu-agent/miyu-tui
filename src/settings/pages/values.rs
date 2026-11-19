@@ -155,6 +155,8 @@ pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Cho
             label: label.clone(),
             note: None,
             off: None,
+            description: None,
+            notice: None,
         });
         let named = list.iter().map(|p| Choice {
             value: Value::from(p.id.clone()),
@@ -162,6 +164,8 @@ pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Cho
             // 只写名字，说明在人格页、预设页看（2026-10-07 项目主人：没必要）。
             note: None,
             off: p.problem.clone(),
+            description: None,
+            notice: None,
         });
         return none.into_iter().chain(named).collect();
     }
@@ -173,6 +177,8 @@ pub fn choices(item: &Item, named: Option<&[Persona]>, texts: &Texts) -> Vec<Cho
             note: o.note.clone(),
             // 用不了的列着、灰的、选不了，为什么照头自己的一句（核心 R-5 三补）。
             off: (!o.available).then(|| texts.unavailable.clone()),
+            description: o.description.clone(),
+            notice: o.notice.clone(),
         })
         .collect()
 }

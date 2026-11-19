@@ -1509,6 +1509,7 @@
       "edit_hint": ["e", "Edit"],
       "cant_edit": "This one can't be edited",
       "unavailable": "Not installed",
+      "notice": {"button": "Got it", "hints": [["Enter", "close"]]},
       "custom_model": "Enter a model…",
       "combo": ["Not set", "Other…"],
       "sheet_hints": [["Enter", "new line"], ["Ctrl+G", "external editor"], ["Esc", "done"]],

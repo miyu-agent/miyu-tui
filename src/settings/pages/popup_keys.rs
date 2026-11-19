@@ -21,7 +21,12 @@ impl Settings {
             Popup::Choose(choose)
                 if key.code == KeyCode::Char('e') && self.edit_from_choose(&choose, texts) => {}
             Popup::Choose(mut choose) => match choose.press(key) {
-                Pressed::Picked(value) => self.write_to(choose.target, &choose.key, value, texts),
+                Pressed::Picked(value) => {
+                    // 带 `notice` 的照常存，再弹提示窗（「配置页」第 33 条「选项的说明和提示」）。
+                    let notice = choose.notice();
+                    self.write_to(choose.target, &choose.key, value, texts);
+                    self.show_notice(notice);
+                }
                 Pressed::Cancelled => self.edit_cancel(choose.target),
                 Pressed::Moved | Pressed::Ignored => self.popup = Some(Popup::Choose(choose)),
             },
@@ -72,6 +77,7 @@ impl Settings {
             Popup::Create(edit) => self.create_key(edit, key, texts),
             // 能改的预设详情窗（第 39 条）。
             Popup::Preset(view) => self.preset_key(view, key, texts),
+            Popup::Notice(notice) => self.notice_key(notice, key),
             other => self.popup = Some(other),
         }
     }

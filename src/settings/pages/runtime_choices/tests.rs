@@ -122,12 +122,16 @@ fn enter_asks_the_package_and_its_choices_open_the_chooser() {
     let rows: Vec<(&str, Option<&str>)> = choose
         .choices
         .iter()
-        .map(|c| (c.label.as_str(), c.note.as_deref()))
+        .map(|c| (c.label.as_str(), c.description.as_deref()))
         .collect();
     assert_eq!(
         rows,
         [("温柔", Some("女声")), ("b", None)],
-        "名字没写的照值写"
+        "名字没写的照值写；说明写在名字下面（「配置页」第 33 条「选项的说明和提示」）"
+    );
+    assert!(
+        choose.choices.iter().all(|c| c.note.is_none()),
+        "名字后面不写说明"
     );
     assert_eq!(choose.sel, 1, "停在存着的值上");
     // 选了第一行：把 value 写进配置。

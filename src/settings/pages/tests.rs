@@ -167,6 +167,8 @@ fn the_colors_list_hides_what_cannot_give_colors_and_tokyonight() {
         label: value.into(),
         note: None,
         off: None,
+        description: None,
+        notice: None,
     };
     let list = || {
         ["auto", "persona", "wallpaper", "tokyonight", "terminal"]

@@ -39,6 +39,8 @@ pub enum Popup {
     Record(super::pages::records::RecordForm),
     /// 新建预设、人格的两格窗（`pages/create.rs`）。
     Create(super::pages::create::CreateEdit),
+    /// 选了带 `notice` 的选项以后的提示窗（`pages/notice.rs`）。
+    Notice(super::pages::notice::Notice),
 }
 
 /// 选默认模型的窗。

@@ -242,6 +242,8 @@ impl ThemeStep {
                     label: name.clone(),
                     note: None,
                     off: None,
+                    description: None,
+                    notice: None,
                 })
                 .collect();
             (choices, json!(on))
@@ -274,6 +276,8 @@ impl ThemeStep {
                         label: format!("#{seed:06x}"),
                         note: (i == 0).then(|| words.seed_default.clone()),
                         off: None,
+                        description: None,
+                        notice: None,
                     })
                     .collect();
                 let current = self
@@ -320,6 +324,8 @@ impl ThemeStep {
                 label: name.clone(),
                 note: None,
                 off: None,
+                description: None,
+                notice: None,
             })
             .collect();
         self.before = at;

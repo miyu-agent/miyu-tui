@@ -45,6 +45,8 @@ impl Settings {
             label: texts.more.custom_model.clone(),
             note: None,
             off: None,
+            description: None,
+            notice: None,
         });
         let mut choose = Choose::open(key, &item.name, list, &at);
         choose.target = Target::ModelOr;

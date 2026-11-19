@@ -14,10 +14,14 @@ pub struct Choice {
     pub value: Value,
     /// 写什么。
     pub label: String,
-    /// 后面暗着写的（人格的说明）。
+    /// 后面暗着写的（人格的说明、核心查得出的「需要密钥」）。
     pub note: Option<String>,
     /// 选不了的原因（写错的人格）；能选的是 `None`。
     pub off: Option<String>,
+    /// 名字下面暗色写的说明（`options` 的 `description`），放不下折行写全；没有的是 `None`。
+    pub description: Option<String>,
+    /// 选了以后弹的一句提示（`options` 的 `notice`，核心设计 72）；没有的是 `None`。
+    pub notice: Option<String>,
 }
 
 /// 选择窗上按了一个键的结果。
@@ -48,6 +52,8 @@ pub struct Choose {
     pub target: Target,
     /// 值是 `#rrggbb` 的颜色：每一行前面画一块这个颜色（主色，2026-10-14）。
     pub swatches: bool,
+    /// 开窗时的值：选的还是它的不弹提示（[`Choose::notice`]）。
+    pub opened: Value,
 }
 
 impl Choose {
@@ -65,7 +71,18 @@ impl Choose {
             sel,
             target: Target::Setting,
             swatches: false,
+            opened: current.clone(),
         }
+    }
+
+    /// 选中的那一项要弹的提示窗：带 `notice`、又不是开窗时的值的才有（蓝图「配置页」第 33 条「选项的说明和提示」）。
+    pub fn notice(&self) -> Option<super::notice::Notice> {
+        let c = self.choices.get(self.sel).filter(|c| c.off.is_none())?;
+        let text = c.notice.as_ref().filter(|t| !t.trim().is_empty())?;
+        (c.value != self.opened).then(|| super::notice::Notice {
+            title: c.label.clone(),
+            text: text.clone(),
+        })
     }
 
     /// 按了一个键：`j` `k`、上下挪，`Enter` 选，`Esc`、`q` 不选。
@@ -228,6 +245,8 @@ mod tests {
             label: v.to_string(),
             note: None,
             off: off.then(|| "坏了".to_string()),
+            description: None,
+            notice: None,
         }
     }
 

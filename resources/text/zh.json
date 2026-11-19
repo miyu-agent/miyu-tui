@@ -1509,6 +1509,7 @@
       "edit_hint": ["e", "编辑"],
       "cant_edit": "这一项不能编辑",
       "unavailable": "未安装",
+      "notice": {"button": "知道了", "hints": [["Enter", "关闭"]]},
       "custom_model": "输入模型…",
       "combo": ["不设", "其他…"],
       "sheet_hints": [["Enter", "换行"], ["Ctrl+G", "外部编辑器"], ["Esc", "完成"]],
