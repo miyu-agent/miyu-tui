@@ -77,7 +77,7 @@ fn row(tui: &Tui, name: &str) -> String {
 }
 
 /// 网络搜索的 key、地址那一组归网络搜索（核心 F-14，2026-10-20 项目主人验收报）：从「已安装」进网络搜索那一页，有
-/// 「API Key 和地址」这一组；`Esc` 回「已安装」、停在它上面（第 43c 条）。
+/// 「API 密钥和地址」这一组；`Esc` 回「已安装」、停在它上面（第 43c 条）。
 #[test]
 fn the_web_search_keys_live_on_the_web_search_page() {
     let home = Home::new(Script::new([Play::Says("好。")]));
@@ -85,7 +85,7 @@ fn the_web_search_keys_live_on_the_web_search_page() {
     installed(&mut tui);
     enter(&mut tui, "网络搜索");
     tui.wait_for("联网服务");
-    tui.wait_for("API Key 和地址");
+    tui.wait_for("API 密钥和地址");
     tui.key(b"\x1b");
     tui.wait_for("全部升级");
     until(&mut tui, "停回网络搜索", |t| {

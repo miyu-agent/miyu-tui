@@ -29,8 +29,8 @@ fn the_protected_commands_group_shows_its_note_and_its_switches_save() {
     );
     // 组名下面是核心给的说明（暗色，折行写全），再是五个开关。
     assert!(
-        at("受保护的命令") < at("完全放开时也会先问你")
-            && at("完全放开时也会先问你") < at("破坏性 git 操作"),
+        at("受保护的命令") < at("完全放开时也会先询问你")
+            && at("完全放开时也会先询问你") < at("破坏性 git 操作"),
         "{}",
         lines.join("\n")
     );

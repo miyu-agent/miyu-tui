@@ -118,7 +118,7 @@ fn owner(item: &super::schema::Item) -> &str {
 }
 
 impl More {
-    /// 有配置项的包，照核心交回的先后。一个包可以有几组（2026-10-19 核心把联网搜索的 key 分出「API Key 和地址」一组，
+    /// 有配置项的包，照核心交回的先后。一个包可以有几组（2026-10-19 核心把联网搜索的 key 分出「API 密钥和地址」一组，
     /// 项都还带 `package: "net"`）：照项的包合成一行，名字照和包同编号的那一组，项数连几组一起数。
     pub fn packages(&self) -> Vec<Listed> {
         let Some(schema) = self.schema.as_ref() else {
