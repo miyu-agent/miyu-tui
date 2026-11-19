@@ -10,7 +10,7 @@ use crate::settings::Settings;
 fn a_groups_description_is_written_dim_under_its_name_and_wraps() {
     let config = Config::builtin().unwrap();
     let texts = &config.text.settings;
-    let said = "下面几类命令在完全放开时也会先问你，关掉就不再问。另有几类永远拒绝、不能关。";
+    let said = "下面几类命令即使在完全放开时也会先询问你，关闭后不再询问。另外有几类命令始终拒绝，不能关闭。";
     let toggle = |key: &str, name: &str, group: &str| {
         json!({"key": key, "type": "bool", "control": "toggle", "layers": ["system"], "name": name,
                "page": "privacy", "group": group})
