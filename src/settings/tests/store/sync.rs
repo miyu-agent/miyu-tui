@@ -51,7 +51,7 @@ fn a_stale_or_refused_sync_says_so() {
     page.answer(tag, Ok(stale), &super::texts());
     assert_eq!(
         status(&page),
-        Some(("软件源连不上，用的是本机存的索引".into(), Tone::Note))
+        Some(("无法连接软件源，使用本机索引".into(), Tone::Note))
     );
     sent(&mut page);
     press(&mut page, KeyCode::Char('r'));

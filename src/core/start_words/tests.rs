@@ -12,7 +12,7 @@ fn installed(name: &str) -> PathBuf {
     std::fs::write(
         human.join("zh.json"),
         r#"{"said": {"start/data_root_old_layout": "{path} 是旧版的数据根",
-            "start/log_failed": "核心起不来：运行日志写不了：{reason}"}}"#,
+            "start/log_failed": "核心无法启动：无法写入运行日志：{reason}"}}"#,
     )
     .unwrap();
     std::fs::write(
@@ -57,7 +57,7 @@ fn a_known_refusal_is_said_in_the_interface_language_from_the_core_resources() {
     );
     assert_eq!(
         log.say("zh"),
-        "核心起不来：运行日志写不了：File exists (os error 17)"
+        "核心无法启动：无法写入运行日志：File exists (os error 17)"
     );
     // 资源里没有这一句的照原话。
     assert_eq!(
