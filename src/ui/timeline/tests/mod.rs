@@ -16,6 +16,7 @@ mod command_title;
 mod detail;
 mod empty;
 mod hosted;
+mod hosted_fold;
 mod images;
 mod language;
 mod live_tail;

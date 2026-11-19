@@ -18,8 +18,7 @@ use crate::{diff, meter, theme};
 /// （`tui.md`「时间线」第 17 条）。
 pub fn line(segment: &Segment, ctx: &Ctx, base: Style) -> Vec<Span<'static>> {
     let words = &ctx.config.text.summary;
-    let kind_of = |name: &str| ctx.config.timeline.kinds.get(name).copied();
-    let tally = Tally::count(segment, kind_of);
+    let tally = Tally::count(segment, &ctx.config.timeline);
     let style = if failed(segment, &tally) {
         theme::error()
     } else {
@@ -235,13 +234,9 @@ fn changed(segment: &Segment, ctx: &Ctx) -> (usize, usize) {
         .iter()
         // 出错、被拒的编辑没改成：不算加减的行数。
         .filter(|step| !step.failed())
+        .filter(|step| step.tool_kind(&ctx.config.timeline) == Some(ToolKind::Edit))
         .filter_map(|step| match &step.kind {
-            StepKind::Tool { name, parsed, .. } => {
-                let kind = ctx.config.timeline.kinds.get(name).copied();
-                (kind == Some(ToolKind::Edit))
-                    .then(|| diff::from_args(parsed))
-                    .flatten()
-            }
+            StepKind::Tool { parsed, .. } => diff::from_args(parsed),
             StepKind::Thought { .. } | StepKind::Report { .. } => None,
         })
         .fold((0, 0), |(a, r), d| (a + d.added, r + d.removed))

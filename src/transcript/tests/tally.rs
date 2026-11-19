@@ -5,6 +5,11 @@ use super::super::{Tally, Transcript};
 use super::apply;
 use crate::core::{Block, Push};
 
+/// 内置的时间线配置：`shell` 是命令、`edit` 是编辑、`subagent` 是子代理。
+fn timeline() -> crate::config::Timeline {
+    crate::config::Config::builtin().unwrap().timeline
+}
+
 #[test]
 fn the_tally_names_a_lone_command_by_its_title() {
     let mut t = Transcript::default();
@@ -23,8 +28,7 @@ fn the_tally_names_a_lone_command_by_its_title() {
             Push::BlockEnd(0),
         ],
     );
-    let kind_of = |name: &str| (name == "shell").then_some(crate::config::ToolKind::Command);
-    let tally = Tally::count(t.entries[0].segment.as_ref().unwrap(), kind_of);
+    let tally = Tally::count(t.entries[0].segment.as_ref().unwrap(), &timeline());
     assert_eq!(tally.command_title.as_deref(), Some("列目录"));
     assert_eq!((tally.commands, tally.thoughts), (1, 0));
 }
@@ -55,8 +59,7 @@ fn thoughts_do_not_stop_a_lone_command_from_naming_the_segment() {
             Push::BlockEnd(1),
         ],
     );
-    let kind_of = |name: &str| (name == "shell").then_some(crate::config::ToolKind::Command);
-    let tally = Tally::count(t.entries[0].segment.as_ref().unwrap(), kind_of);
+    let tally = Tally::count(t.entries[0].segment.as_ref().unwrap(), &timeline());
     assert_eq!((tally.commands, tally.thoughts), (1, 1));
     assert_eq!(tally.command_title.as_deref(), Some("列目录"));
 }
@@ -89,12 +92,7 @@ fn a_command_names_the_segment_even_beside_other_tools() {
             Push::BlockEnd(1),
         ],
     );
-    let kind_of = |name: &str| match name {
-        "shell" => Some(crate::config::ToolKind::Command),
-        "edit" => Some(crate::config::ToolKind::Edit),
-        _ => None,
-    };
-    let tally = Tally::count(t.entries[0].segment.as_ref().unwrap(), kind_of);
+    let tally = Tally::count(t.entries[0].segment.as_ref().unwrap(), &timeline());
     assert_eq!(tally.command_title.as_deref(), Some("列目录"));
     assert!(!tally.lone, "还编辑了一处，不是只有一件");
 }
@@ -127,11 +125,6 @@ fn the_command_title_comes_from_the_command_not_another_tool() {
             Push::BlockEnd(1),
         ],
     );
-    let kind_of = |name: &str| match name {
-        "shell" => Some(crate::config::ToolKind::Command),
-        "subagent" => Some(crate::config::ToolKind::Agent),
-        _ => None,
-    };
-    let tally = Tally::count(t.entries[0].segment.as_ref().unwrap(), kind_of);
+    let tally = Tally::count(t.entries[0].segment.as_ref().unwrap(), &timeline());
     assert_eq!(tally.command_title.as_deref(), Some("列目录"));
 }
