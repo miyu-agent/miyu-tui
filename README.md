@@ -1,45 +1,68 @@
 ## Miyu 终端界面
 
-全屏的终端界面：程序 `miyu-tui`，连上 Miyu 的核心跟 AI 说话。核心在 [miyu-agent/miyu](https://github.com/miyu-agent/miyu)，这里照 `Cargo.toml` 的 git 依赖钉住核心的一个提交，只经门面 `miyu-client` 用核心的东西（核心仓库的设计 `32-仓库拆分.md`）。
+这个仓库是 Miyu 的终端界面：程序 `miyu-tui` 是一个全屏的终端程序，它连接 Miyu 的核心，让你在终端里和 AI 对话。核心在 [miyu-agent/miyu](https://github.com/miyu-agent/miyu)。这个仓库在 `Cargo.toml` 里用 git 依赖固定核心的一个提交，并且只通过核心提供的 `miyu-client` 使用核心的功能。
 
-怎么用（启动参数、按键、斜杠命令、设置）见 [终端](https://github.com/miyu-agent/miyu/blob/main/docs/zh/guide/heads/tui.md)。
+使用方法（启动参数、按键、斜杠命令、设置）见手册的 [终端界面](https://github.com/miyu-agent/miyu/blob/main/docs/zh/guide/heads/tui.md)。
 
-### 怎么跑
+### 运行
 
-先在核心仓库的检出里编一次核心（`cargo build -p miyu`），下面的 `<核心检出>` 换成它的路径。模型的配置用核心的 `cargo xtask dev-home` 造（见 [开发者：参与开发](https://github.com/miyu-agent/miyu/blob/main/docs/zh/dev/contributing.md)），它写的供应商地址、key 照环境变量 `MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY` 取。
+运行之前，需要先在核心仓库的检出里编译一次核心：
 
-第一次用这个 `MIYU_HOME` 时，在这个仓库的根目录装上终端自己的软件包 `tui/`（核心不自带它：`tui.*` 配置项、放输入历史的状态目录都照它认；编号照文件夹名，配置键照清单的 `prefix = "tui"`，发版时核心照 `heads.toml` 放进 `packages/tui/`）：
+```sh
+cargo build -p miyu
+```
+
+下面命令里的 `<核心检出>` 要换成核心仓库检出的路径。模型的配置用核心的 `cargo xtask dev-home` 生成（见 [贡献代码](https://github.com/miyu-agent/miyu/blob/main/docs/zh/dev/contributing.md)），它写进配置的供应商地址和密钥分别引用环境变量 `MIYU_DEV_BASE_URL` 和 `MIYU_DEV_API_KEY`。
+
+第一次使用一个新的 `MIYU_HOME` 时，要先在这个仓库的根目录安装终端界面自己的软件包 `tui/`。核心不自带这个软件包，而 `tui.*` 配置项和存放输入历史的状态目录都由它登记：
 
 ```sh
 MIYU_DEV_BASE_URL=<地址，写到 /v1> MIYU_DEV_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources <核心检出>/target/debug/miyu pkg install ./tui --yes
 ```
 
-`miyu pkg install` 会把核心拉起来、留着跑，下面的 `cargo run` 连的就是它：地址和 key 这一步也要给上。改了 `tui/` 里的清单的，再装一次。
+`miyu pkg install` 会启动核心并让它保持运行，后面的 `cargo run` 连接的就是这个核心，所以这一步也要提供地址和密钥。如果修改了 `tui/` 里的清单，需要重新安装一次。
 
-然后跑：
+> 软件包的编号取自文件夹的名字，配置键的前缀由清单里的 `prefix = "tui"` 决定。发版时，核心按照 `heads.toml` 把这个软件包放进 `packages/tui/`。
+
+然后运行终端界面：
 
 ```sh
 MIYU_DEV_BASE_URL=<地址，写到 /v1> MIYU_DEV_API_KEY=<key> MIYU_HOME=$HOME/.cache/miyu-tui-home MIYU_RESOURCES=<核心检出>/resources MIYU_CORE_BIN=<核心检出>/target/debug/miyu cargo run
 ```
 
-- 变量写在命令前面，不要 `export`：旧版 Miyu 也认 `MIYU_HOME`。
-- `MIYU_HOME` 放在持久目录里，别放 `/tmp`：`/tmp` 是 tmpfs，一重启模型配置、会话记录全没（2026-10-02 撞见过一次）。
-- 拉起核心只认 `MIYU_CORE_BIN`，不去 PATH 里找 `miyu`（PATH 上的可能是旧版）。核心已经在跑的，不给也能连上。
+运行时需要注意：
+
+- 环境变量写在命令前面，不要 `export`，因为旧版 Miyu 也会读取 `MIYU_HOME`。
+- `MIYU_HOME` 要放在不会被清空的目录里，不要放在 `/tmp`。`/tmp` 是 tmpfs，电脑重启以后，模型配置和会话记录会全部丢失。
+- 启动核心时只使用 `MIYU_CORE_BIN` 指定的程序，不会到 `PATH` 里查找 `miyu`，因为 `PATH` 上的可能是旧版。如果核心已经在运行，不设置这个变量也能连接。
 
 ### 按键、鼠标、版式
 
-见 [终端](https://github.com/miyu-agent/miyu/blob/main/docs/zh/guide/heads/tui.md)，这里不再抄一份。
+见手册的 [终端界面](https://github.com/miyu-agent/miyu/blob/main/docs/zh/guide/heads/tui.md)，这里不重复。
 
-### herdr 中恢复会话
+### 在 herdr 中恢复会话
 
-`miyu-tui --resume <完整的会话编号>` 恢复指定会话，优先于 `ui.startup = "recent"`。在 herdr 中创建或切换主会话后自动上报恢复命令；服务重启后每个窗格恢复各自的会话。`/new` 清掉旧绑定。只退出 herdr 客户端时原进程继续运行。
+`miyu-tui --resume <完整的会话编号>` 用来恢复指定的会话，它的优先级高于 `ui.startup = "recent"`。
 
-恢复程序 `miyu-tui` 必须在恢复 shell 的 PATH 中，MIYU_HOME、MIYU_RESOURCES、MIYU_CORE_BIN 也须可用；临时写在原启动命令前的环境变量不会被 herdr 保存。试用时可以写一个固定这些环境的启动脚本，放到 PATH 中；独立命名 herdr 会话先试，不停止默认服务。
+在 herdr 中新建或者切换主会话以后，终端界面会自动向 herdr 上报恢复命令。herdr 的服务重启以后，每个窗格会恢复各自的会话。运行 `/new` 会清除旧的绑定。如果只是退出 herdr 的客户端，原来的进程会继续运行。
 
-Linux 隔离验收（需要 herdr）：`cargo test --test herdr_resume -- --ignored`。使用临时数据根、假模型和独立 XDG 配置，验证两窗格各自恢复、/new 清掉旧绑定，不读写真实会话。
+恢复时使用的程序 `miyu-tui` 必须在恢复所用 shell 的 `PATH` 里，`MIYU_HOME`、`MIYU_RESOURCES`、`MIYU_CORE_BIN` 也必须可用。临时写在原启动命令前面的环境变量不会被 herdr 保存，所以试用时可以写一个固定了这些环境变量的启动脚本，放进 `PATH`。可以先用一个单独命名的 herdr 会话试用，这样不需要停止默认的服务。
+
+在 Linux 上可以运行隔离的验收测试（需要安装 herdr）：
+
+```sh
+cargo test --test herdr_resume -- --ignored
+```
+
+这个测试使用临时的数据根、假模型和独立的 XDG 配置，验证两个窗格各自恢复会话、`/new` 清除旧的绑定，不会读写真实的会话。
 
 ### 许可证
 
-这个仓库自己写的代码和资源用 AGPL-3.0-or-later，见 `LICENSE`：改过的终端界面拿去给别人用，包括只在网上提供服务，要把改过的源码交给用它的人。
+这个仓库自己编写的代码和资源使用 AGPL-3.0-or-later 许可证，全文见 `LICENSE`。如果你把修改过的终端界面提供给别人使用（包括只在网络上提供服务），需要把修改后的源码提供给使用它的人。
 
-不是这个仓库自己写的东西照它们原来的许可证，AGPL 只管这里自己写的部分：编进程序的 Rust 依赖照各自的 `license`；`tokyonight` 两套配色照 folke/tokyonight.nvim 的颜色移植（Apache-2.0，原文 `resources/themes/LICENSE-tokyonight.txt`）。这些的版权和许可证原文合在 `THIRD-PARTY-LICENSES.txt`（`cargo xtask notices` 生成），随发行包发。
+不是这个仓库自己编写的内容沿用它们原来的许可证，AGPL 只适用于这个仓库自己编写的部分：
+
+- 编进程序的 Rust 依赖沿用各自的 `license`。
+- `tokyonight` 的两套配色是按照 folke/tokyonight.nvim 的颜色移植的，许可证是 Apache-2.0，原文在 `resources/themes/LICENSE-tokyonight.txt`。
+
+这些内容的版权声明和许可证原文合并在 `THIRD-PARTY-LICENSES.txt` 里（由 `cargo xtask notices` 生成），随发行包一起发布。
