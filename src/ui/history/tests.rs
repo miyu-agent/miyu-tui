@@ -56,7 +56,6 @@ fn title(chrome: &crate::ui::panel::Chrome) -> String {
 
 #[test]
 fn time_on_the_left_preview_and_search_below_and_clicks_find_their_entry() {
-    let _theme = theme::hold();
     let config = Config::builtin().unwrap();
     let now = SystemTime::now();
     let list = [
@@ -122,7 +121,6 @@ fn time_on_the_left_preview_and_search_below_and_clicks_find_their_entry() {
 
 #[test]
 fn commands_lines_pastes_and_hits_are_marked() {
-    let _theme = theme::hold();
     let config = Config::builtin().unwrap();
     let now = SystemTime::now();
     let label = "[已粘贴 18 行]";

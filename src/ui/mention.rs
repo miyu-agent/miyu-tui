@@ -108,7 +108,6 @@ mod tests {
 
     #[test]
     fn the_frame_says_how_it_found_them_and_hits_are_marked() {
-        let _theme = theme::hold();
         let words = Config::builtin().unwrap().text.mention;
         let found = Found {
             start: 0,

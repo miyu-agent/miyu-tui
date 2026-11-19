@@ -89,7 +89,6 @@ mod tests {
 
     #[test]
     fn each_skill_shows_its_name_and_summary_with_hits_marked() {
-        let _theme = theme::hold();
         let words = Config::builtin().unwrap().text.skill_word;
         let all = vec![
             CoreSkill {

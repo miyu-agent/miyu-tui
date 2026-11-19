@@ -47,7 +47,6 @@ fn plain(laid: &Laid) -> Vec<String> {
 
 #[test]
 fn the_box_keeps_its_height_while_moving_and_filtering() {
-    let _theme = theme::hold();
     let config = Config::builtin().unwrap();
     let now = SystemTime::now();
     let list = many(now);
@@ -116,7 +115,6 @@ fn the_list_follows_the_window_unless_the_setting_gives_a_number() {
 
 #[test]
 fn a_wide_box_puts_the_preview_on_the_right() {
-    let _theme = theme::hold();
     let config = Config::builtin().unwrap();
     let now = SystemTime::now();
     let list = many(now);
@@ -185,7 +183,6 @@ fn the_terminal_width_decides_the_side_preview_not_the_box() {
 
 #[test]
 fn the_divider_joins_the_top_edge_and_the_rule() {
-    let _theme = theme::hold();
     let config = Config::builtin().unwrap();
     let now = SystemTime::now();
     let list = many(now);

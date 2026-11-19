@@ -132,7 +132,6 @@ mod tests {
     #[test]
     fn a_titled_frame_then_one_row_each_with_the_picked_on_a_blue_bar() {
         // 标题嵌在上边框，框里一条一行，不空行、不写按键提示（每打一个 `/` 都弹，不要太高）。
-        let _theme = theme::hold();
         let config = Config::builtin().unwrap();
         let matches: Vec<_> = config.commands.filter("").into_iter().cloned().collect();
         let rows = config.layout.menu_rows;
@@ -182,7 +181,6 @@ mod tests {
     #[test]
     fn one_long_argument_hint_does_not_push_every_summary_to_the_edge() {
         // 发版前 check 第 5 条（2026-11-09 项目主人）：带长参数提示的一条把名字那一列撑开，别的说明全被截成「…」。
-        let _theme = theme::hold();
         let config = Config::builtin().unwrap();
         let mut matches: Vec<_> = config.commands.filter("").into_iter().cloned().collect();
         let mut long = matches[0].clone();

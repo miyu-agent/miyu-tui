@@ -54,7 +54,6 @@ mod tests {
 
     #[test]
     fn the_frontier_swings_between_dark_and_light_and_lifting_brightens() {
-        let _theme = crate::theme::hold();
         let fg = |s: Style| match s.fg {
             Some(Color::Rgb(r, g, b)) => u32::from(r) + u32::from(g) + u32::from(b),
             _ => 0,
