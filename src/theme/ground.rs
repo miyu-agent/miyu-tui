@@ -1,34 +1,22 @@
 //! 铺底色（蓝图 `tui.md`「主题」第 4 条，2026-10-13 项目主人定）：手动选了深色、浅色的，整个界面铺这一套的底色，没上色的
 //! 字用这一套的字色（终端是深底又选了浅色也看得清）；跟随终端的、关了的不铺。画完一帧、换色深之前做。
 
-use std::sync::RwLock;
-
 use ratatui::buffer::Buffer;
 use ratatui::style::Color;
 
 /// kitty 的图占着的格子写这个字，前景色是图的编号（同 `depth.rs`）：只铺底色，前景色不碰。
 const KITTY_PLACEHOLDER: char = '\u{10EEEE}';
 
-/// 铺的底色、字色：手动选了深浅才有。
-static GROUND: RwLock<Option<(Color, Color)>> = RwLock::new(None);
-
 /// 换要铺的底色、字色；`None` 是不铺。
 pub fn set_ground(ground: Option<(Color, Color)>) {
-    match GROUND.write() {
-        Ok(mut current) => *current = ground,
-        Err(poisoned) => *poisoned.into_inner() = ground,
-    }
+    store::put(ground);
 }
 
 /// 画完的一帧铺底色：没上底色的格子铺底色，没上色的字用字色。不铺的什么都不做。kitty 的图占着的格子也铺底色、不动
 /// 前景色：图透明的地方、补齐格子的边露的是格子的底色，不铺就露出终端自己的底色，成了一块深色的方块（2026-10-16
 /// 真 kitty 里透明底的表情包、吉祥物右边的一条）。
 pub fn paint(buf: &mut Buffer) {
-    let ground = match GROUND.read() {
-        Ok(g) => *g,
-        Err(poisoned) => *poisoned.into_inner(),
-    };
-    let Some((bg, fg)) = ground else {
+    let Some((bg, fg)) = store::get() else {
         return;
     };
     for cell in &mut buf.content {
@@ -38,6 +26,44 @@ pub fn paint(buf: &mut Buffer) {
         if cell.fg == Color::Reset && !cell.symbol().starts_with(KITTY_PLACEHOLDER) {
             cell.fg = fg;
         }
+    }
+}
+
+/// 铺的底色、字色：手动选了深浅才有。程序里全局一份；单元测试里每个测试线程各一份、起头不铺（同 `current.rs`）：起界面的测试
+/// 照出厂设置铺一次，铺了的测试换的也只是自己那一份，别的测试画的那一帧不会正好被铺上或者揭掉。
+#[cfg(not(test))]
+mod store {
+    use std::sync::{PoisonError, RwLock};
+
+    use ratatui::style::Color;
+
+    static GROUND: RwLock<Option<(Color, Color)>> = RwLock::new(None);
+
+    pub fn get() -> Option<(Color, Color)> {
+        *GROUND.read().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    pub fn put(ground: Option<(Color, Color)>) {
+        *GROUND.write().unwrap_or_else(PoisonError::into_inner) = ground;
+    }
+}
+
+#[cfg(test)]
+mod store {
+    use std::cell::Cell;
+
+    use ratatui::style::Color;
+
+    thread_local! {
+        static GROUND: Cell<Option<(Color, Color)>> = const { Cell::new(None) };
+    }
+
+    pub fn get() -> Option<(Color, Color)> {
+        GROUND.get()
+    }
+
+    pub fn put(ground: Option<(Color, Color)>) {
+        GROUND.set(ground);
     }
 }
 

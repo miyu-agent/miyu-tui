@@ -2,13 +2,12 @@
 //! 出厂那份是默认主题包的 `packages/tui-theme-default/theme.json`，编进程序里；主题包只写想换的那几格，盖在它上面
 //! （[`merged`]）。
 //!
-//! 画的时候到处要用，放在一个全局的读写锁里（同配色方案）；换了主题照配色方案的代数一起往前走，各处的缓存跟着重画。
+//! 画的时候到处要用，现在这个主题放在 `current.rs`（同配色方案）；换了主题照配色方案的代数一起往前走，各处的缓存跟着重画。
 //! 表里的 `layout`、`timeline` 两节是盖在 `resources/layout.json`、`timeline.json` 上的记号，读配置时盖上（[`overlay`]），
 //! 不进这张表。
 
+mod current;
 mod parts;
-
-use std::sync::{Arc, LazyLock, RwLock};
 
 use serde_json::{Map, Value};
 
@@ -68,14 +67,6 @@ pub fn on_console() -> bool {
     !cfg!(test) && console_term(std::env::var("TERM").ok().as_deref())
 }
 
-static CURRENT: LazyLock<RwLock<Arc<Sheet>>> = LazyLock::new(|| {
-    let sheet = parse(&default_value()).unwrap_or_else(|e| panic!("默认主题读不懂：{e}"));
-    RwLock::new(Arc::new(sheet))
-});
-
-/// 现在这个主题的整份（[`merged`] 交回的）：读配置（换界面语言重读）时照它盖 `layout.json`、`timeline.json`。
-static WHOLE: LazyLock<RwLock<Value>> = LazyLock::new(|| RwLock::new(default_value()));
-
 /// 默认主题的整份（去掉了说明）。
 pub fn default_value() -> Value {
     let value = serde_json::from_str(DEFAULT).unwrap_or_else(|e| panic!("默认主题读不懂：{e}"));
@@ -113,10 +104,7 @@ pub fn overlay(base: &str, section: &str, theme: &Value) -> Result<Value, String
 
 /// 照现在的主题读一样东西。
 pub fn read<R>(get: impl FnOnce(&Sheet) -> R) -> R {
-    match CURRENT.read() {
-        Ok(current) => get(&current),
-        Err(poisoned) => get(&poisoned.into_inner()),
-    }
+    current::read(get)
 }
 
 /// 一个记号（`get` 从记号里挑哪一个）。
@@ -134,12 +122,9 @@ pub fn ellipsis() -> String {
     mark(|m| &m.ellipsis)
 }
 
-/// 现在这个主题的整份。
+/// 现在这个主题的整份（[`merged`] 交回的）：读配置（换界面语言重读）时照它盖 `layout.json`、`timeline.json`。
 pub fn whole() -> Value {
-    match WHOLE.read() {
-        Ok(whole) => whole.clone(),
-        Err(poisoned) => poisoned.into_inner().clone(),
-    }
+    current::whole()
 }
 
 /// 换主题（`whole` 是 [`merged`] 交回的整份）：和现在的一样的不动；换了的配色方案的代数往前走一格，缓存照它重画。
@@ -149,14 +134,7 @@ pub fn whole() -> Value {
 /// 读不成（有一格不认识、值不对）时什么都不换，交回说哪一格的一句。
 pub fn set(whole: &Value) -> Result<(), String> {
     let sheet = parse(whole)?;
-    *WHOLE
-        .write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner) = whole.clone();
-    let mut current = CURRENT
-        .write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if **current != sheet {
-        *current = Arc::new(sheet);
+    if current::replace(sheet, whole.clone()) {
         crate::theme::touch();
     }
     Ok(())
