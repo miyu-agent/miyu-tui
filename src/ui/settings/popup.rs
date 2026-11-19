@@ -11,7 +11,7 @@ use super::super::floating;
 use super::fields::{source, value};
 use super::{Look, fit};
 use crate::caret::Caret;
-use crate::settings::forms::{Field, Focus, Form, Target, Val, window_text};
+use crate::settings::forms::{Field, Focus, Form, PACKAGE, Target, Val, window_text};
 use crate::settings::nav::Use;
 use crate::settings::popup::{Choice, Item, Pick, Popup};
 use crate::settings::{Hit, Settings, Texts};
@@ -186,6 +186,16 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
             continue;
         }
         let editing = focused && form.editing.is_some();
+        let source = source(row, texts);
+        let right = width.saturating_sub(4) as usize;
+        // 软件包给的那几行（核心 PV-4）：「来自软件包 X」一定要露出来，长的地址截短让位。
+        let value_width = match row.source.as_deref() {
+            Some(s) if s.starts_with(PACKAGE) => {
+                let room = right.saturating_sub(LABEL as usize + source.0.width() + 4);
+                value_width.min(room)
+            }
+            _ => value_width,
+        };
         let (value, caret) = value(row, form, texts, focused, value_width);
         let mut spans = Vec::new();
         if !matches!(row.val, Val::Member { .. }) {
@@ -208,9 +218,7 @@ fn form_lines(lines: &mut Lines, form: &Form, page: &Settings, texts: &Texts, wi
         }
         let start: u16 = spans.iter().map(|s| s.content.width() as u16).sum();
         spans.extend(value);
-        let source = source(row, texts);
         let used: usize = spans.iter().map(|s| s.content.width()).sum();
-        let right = width.saturating_sub(4) as usize;
         if !source.0.is_empty() && used + source.0.width() + 2 <= right {
             spans.push(Span::raw(" ".repeat(right - used - source.0.width())));
             spans.push(Span::styled(source.0, source.1));

@@ -6,7 +6,7 @@ use unicode_width::UnicodeWidthStr;
 
 use super::fit;
 use crate::settings::Texts;
-use crate::settings::forms::{Field, Form, Row, Val};
+use crate::settings::forms::{Field, Form, PACKAGE, Row, Val};
 use crate::theme;
 
 /// 一项的值写成几段字，和正在改时光标在值里的第几列。
@@ -123,10 +123,15 @@ pub(super) fn value(
     }
 }
 
-/// 右边写的来源：自己写了的黄字「自定义」，继承的暗着写从哪来；成员写「图」。
+/// 右边写的来源：自己写了的黄字「自定义」，继承的暗着写从哪来，软件包给的写「来自软件包 X」；成员写「图」。
 pub(super) fn source(row: &Row, texts: &Texts) -> (String, Style) {
     if let Val::Member { sees: true, .. } = row.val {
         return (texts.tags[0].clone(), theme::dim());
+    }
+    // 软件包给的（核心 PV-4）：「来自软件包 X」，同别的来源暗着写。
+    if let Some(name) = row.source.as_deref().and_then(|s| s.strip_prefix(PACKAGE)) {
+        let said = texts.source("package").replace("{name}", name);
+        return (said, theme::dim());
     }
     // 价格那几行不写「默认」也不写「自定义」（2026-10-19 项目主人）：一列一样的字没有信息。
     let priced = matches!(
