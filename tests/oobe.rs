@@ -151,20 +151,20 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.key(b"\r");
     // 建好、写成默认人格，到了主题（第 22a 条）：停在出厂的「自动」（2026-11-02 项目主人）；明暗那一格回车开列表（2026-10-14 项目主人：
     // 和配置页选值的同一个），挪到哪当场换成哪的底；选好深色，挪到「下一步」写下。
-    tui.wait_for("选择明暗和配色");
-    assert!(tui.shows("自动"), "{}", tui.lines().join("\n"));
-    // 两格之间空一行，同别的几步的表单（2026-10-14 项目主人报：挤在一起）。
-    let lines = tui.lines();
     // 那一格的行：去掉光标的 `❯` 以后以名字打头（说明那一行里也有「明暗」「配色」）。
-    let row = |word: &str| {
+    let row = |lines: &[String], word: &str| {
         lines.iter().position(|l| {
-            let l = l.trim_start();
-            let l = l.trim_start_matches('❯').trim_start();
+            let l = l.trim_start().trim_start_matches('❯').trim_start();
             // 这一步的标题「配色方案」也是「配色」打头，不算（2026-10-21 从「主题」改名）。
             l.starts_with(word) && !l.starts_with("配色方案")
         })
     };
-    let (mode, colors) = (row("明暗").unwrap_or(0), row("配色").unwrap_or(0));
+    // 换一步要滑一阵：看得到标题时上一步可能还没滑走、挡在两格前面（11-18 macOS CI），等两格都打头了再量。
+    let rows = |l: &[String]| row(l, "明暗").zip(row(l, "配色"));
+    let lines = tui.wait_until("滑到位", |l| rows(l).is_some());
+    assert!(tui.shows("自动"), "{}", lines.join("\n"));
+    // 两格之间空一行，同别的几步的表单（2026-10-14 项目主人报：挤在一起）。
+    let (mode, colors) = rows(&lines).unwrap_or_default();
     assert_eq!(colors, mode + 2, "{}", lines.join("\n"));
     assert!(lines[mode + 1].trim().is_empty(), "{}", lines.join("\n"));
     // 自动的开着也铺（2026-10-15 项目主人定）：测试终端不答底色，当深色，铺 tokyonight 深色的底。

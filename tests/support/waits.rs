@@ -18,6 +18,23 @@ impl Tui {
         }
     }
 
+    /// 等到屏幕的各行合 `check`，交回那时的各行，最多 [`WAIT`]；等不到的说等的是 `what`，把屏幕打出来。
+    pub fn wait_until(&mut self, what: &str, check: impl Fn(&[String]) -> bool) -> Vec<String> {
+        let end = Instant::now() + WAIT;
+        loop {
+            let lines = self.lines();
+            if check(&lines) {
+                return lines;
+            }
+            assert!(
+                Instant::now() < end,
+                "等不到{what}，屏幕是：\n{}",
+                lines.join("\n")
+            );
+            self.pump(Duration::from_millis(50));
+        }
+    }
+
     /// 一路按 `Ctrl+End` 跟到底，等到屏幕上出现 `text`（长回答的最后一行、这一轮的收尾行）。长过视口的回答写着时正文停在
     /// 它的开头（蓝图「正文」第 1 条）：慢的机器上回答分几次到、中间画过一帧，写完了也照旧停在开头，等不到最后一行（11-05、
     /// 11-06 macOS CI 三次等不到「第60行」）。要用长回答把正文撑高的测试，接着往下做之前都照这个等。
