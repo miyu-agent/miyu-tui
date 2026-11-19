@@ -237,6 +237,19 @@ impl Step {
         self.took.unwrap_or_else(|| self.started.elapsed())
     }
 
+    /// 这一步的工具算哪一类，和核心视图的 `summary` 同一套：核心执行的照 `kinds`；供应商侧工具照 `hosted` 表对上的核心工具
+    /// 归类，表里没有的算别的工具（蓝图「时间线」第 17 条）。思考、回报是 `None`。
+    pub fn tool_kind(&self, timeline: &Timeline) -> Option<ToolKind> {
+        let StepKind::Tool { name, .. } = &self.kind else {
+            return None;
+        };
+        let name = match &self.hosted {
+            Some(_) => &timeline.hosted.get(name)?.core,
+            None => name,
+        };
+        timeline.kinds.get(name).copied()
+    }
+
     /// 参数里的一个字符串，没有的是 `None`。
     pub fn arg(&self, key: &str) -> Option<&str> {
         match &self.kind {
@@ -285,8 +298,8 @@ pub struct Tally {
 }
 
 impl Tally {
-    /// 数一段。`kind_of` 说一件工具算哪一类；没有的算工具。
-    pub fn count(segment: &Segment, kind_of: impl Fn(&str) -> Option<ToolKind>) -> Self {
+    /// 数一段：一步工具算哪一类照 [`Step::tool_kind`]，没有的算工具。
+    pub fn count(segment: &Segment, timeline: &Timeline) -> Self {
         let mut tally = Tally::default();
         for step in &segment.steps {
             if step.failed() {
@@ -297,7 +310,7 @@ impl Tally {
                     tally.thoughts += 1;
                     tally.thinking += step.elapsed();
                 }
-                StepKind::Tool { name, .. } => match kind_of(name) {
+                StepKind::Tool { .. } => match step.tool_kind(timeline) {
                     Some(ToolKind::Command) => tally.commands += 1,
                     // 出错、被拒的编辑没改成：算成用过一件工具、一个出错，不算编辑（「时间线」收起那一行）。
                     Some(ToolKind::Edit) if step.failed() => tally.tools += 1,
@@ -345,12 +358,8 @@ impl Tally {
             tally.command_title = segment
                 .steps
                 .iter()
-                .find_map(|step| match &step.kind {
-                    StepKind::Tool { name, .. } if kind_of(name) == Some(ToolKind::Command) => {
-                        step.arg("description").filter(|s| !s.trim().is_empty())
-                    }
-                    _ => None,
-                })
+                .filter(|step| step.tool_kind(timeline) == Some(ToolKind::Command))
+                .find_map(|step| step.arg("description").filter(|s| !s.trim().is_empty()))
                 .map(str::to_string);
         }
         tally
