@@ -53,6 +53,31 @@ impl Tui {
         })
     }
 
+    /// 按 `key` 直到屏幕的各行合 `check`，交回那时的各行：先看一眼，合了就不按；最多按 `times` 下，每按一下停一拍让界面画完。
+    /// 界面忙着时按的键会被丢掉（引导主题那一步读配置时），照按了几下数的会停错地方，要照屏幕上停在哪按。
+    pub fn press_until(
+        &mut self,
+        key: &[u8],
+        times: usize,
+        what: &str,
+        check: impl Fn(&[String]) -> bool,
+    ) -> Vec<String> {
+        for _ in 0..times {
+            let lines = self.lines();
+            if check(&lines) {
+                return lines;
+            }
+            self.key(key);
+        }
+        let lines = self.lines();
+        assert!(
+            check(&lines),
+            "按了 {times} 下也等不到{what}，屏幕是：\n{}",
+            lines.join("\n")
+        );
+        lines
+    }
+
     /// 一路按 `Ctrl+End` 跟到底，等到屏幕上出现 `text`（长回答的最后一行、这一轮的收尾行）。长过视口的回答写着时正文停在
     /// 它的开头（蓝图「正文」第 1 条）：慢的机器上回答分几次到、中间画过一帧，写完了也照旧停在开头，等不到最后一行（11-05、
     /// 11-06 macOS CI 三次等不到「第60行」）。要用长回答把正文撑高的测试，接着往下做之前都照这个等。
