@@ -282,7 +282,6 @@ mod tests {
     #[test]
     fn named_skills_are_colored_and_not_expanded() {
         // 发版前 check 26（2026-11-09 项目主人）：时间线上照人打的字写，`$技能名` 着色，技能正文不展开。
-        let _theme = theme::hold();
         let mut fixture = Fixture::new();
         fixture.config.commands.skills = vec![CoreSkill {
             name: "pdf".into(),

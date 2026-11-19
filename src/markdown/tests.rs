@@ -70,7 +70,6 @@ fn lists_nest_and_align_their_continuations() {
 #[test]
 fn list_markers_are_accented_and_quotes_are_dim_italic() {
     use ratatui::style::{Color, Modifier};
-    let _theme = theme::hold();
     // 2026-09-29 项目主人：列表记号暗色和字分不开层次，换主题色；引用暗一些、斜体（先改过正体，又改回来）。
     let list = draw("- 苹果", 30);
     let marker = &list[0].lead[0];
@@ -87,7 +86,6 @@ fn list_markers_are_accented_and_quotes_are_dim_italic() {
 fn links_are_dark_blue_and_bold_is_dark_orange() {
     use ratatui::style::{Color, Modifier};
     // 2026-09-29 项目主人：链接原来是高亮的蓝，标题、地址、裸地址一律换成暗蓝。
-    let _theme = theme::hold();
     let dark_blue = Some(Color::Rgb(0x6a, 0x8f, 0xd8));
     assert_eq!(theme::md_link().fg, dark_blue);
     assert_eq!(theme::md_url().fg, dark_blue);

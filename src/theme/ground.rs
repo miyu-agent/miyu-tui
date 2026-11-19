@@ -77,7 +77,6 @@ mod tests {
 
     #[test]
     fn a_painted_frame_fills_only_what_has_no_color_and_keeps_the_picture_ids() {
-        let _theme = crate::theme::hold();
         let mut buf = Buffer::empty(Rect::new(0, 0, 3, 1));
         buf[(1, 0)].set_fg(Color::Red).set_bg(Color::Blue);
         buf[(2, 0)].set_symbol("\u{10EEEE}");

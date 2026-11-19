@@ -46,7 +46,6 @@ fn the_frame_takes_two_rows_when_there_is_room_for_it() {
 #[test]
 fn a_rounded_frame_with_the_title_and_hint_on_its_edges_and_a_blue_picked_bar() {
     // 2026-09-30 项目主人看过对比页定的 A，再照 Cline 给选中的铺强调蓝，上面的字换深色。
-    let _theme = theme::hold();
     let mut terminal = Terminal::new(TestBackend::new(30, 5)).unwrap();
     let outer = Rect::new(0, 0, 30, 5);
     let text_area = inside(outer, 2, 26);
@@ -121,7 +120,6 @@ fn a_rounded_frame_with_the_title_and_hint_on_its_edges_and_a_blue_picked_bar() 
 
 #[test]
 fn without_room_for_the_frame_only_the_items_are_drawn() {
-    let _theme = theme::hold();
     let mut terminal = Terminal::new(TestBackend::new(20, 2)).unwrap();
     let outer = Rect::new(0, 0, 20, 2);
     let lines = vec![
