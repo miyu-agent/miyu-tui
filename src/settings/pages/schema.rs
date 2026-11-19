@@ -11,9 +11,13 @@ pub struct Opt {
     pub value: Value,
     /// 给人看的名字。
     pub name: String,
-    /// 核心查得出的一句，接在名字后面暗色写（核心 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字）；没有的照
-    /// 包写的说明（`description`，核心 PC-1）。
+    /// 核心查得出的一句，接在名字后面暗色写（核心 R-5 再补：`models.embedding` 的 `local` 写内置模型的名字；联网服务的
+    /// 「需要密钥」）。
     pub note: Option<String>,
+    /// 包写的说明（`description`，核心 PC-1）：选择窗里写在名字下面。
+    pub description: Option<String>,
+    /// 选了以后弹的一句提示（`notice`，核心设计 72）。
+    pub notice: Option<String>,
     /// 用得了：核心查得出用不了的（没装内置语义模型的包）列着、灰的、选不了（核心 R-5 三补）。
     pub available: bool,
 }
@@ -337,6 +341,13 @@ fn text(v: &Value) -> String {
 }
 
 /// 读一项（记录列表的字段同样读）。
+/// 有字的一格：空的、只有空白的当没有。
+fn said(v: &Value) -> Option<String> {
+    v.as_str()
+        .filter(|s| !s.trim().is_empty())
+        .map(str::to_string)
+}
+
 fn read_item(i: &Value) -> Item {
     Item {
         key: text(&i["key"]),
@@ -356,11 +367,9 @@ fn read_item(i: &Value) -> Item {
             .map(|o| Opt {
                 value: o["value"].clone(),
                 name: text(&o["name"]),
-                note: o["note"]
-                    .as_str()
-                    .or(o["description"].as_str())
-                    .filter(|s| !s.is_empty())
-                    .map(str::to_string),
+                note: said(&o["note"]),
+                description: said(&o["description"]),
+                notice: said(&o["notice"]),
                 available: o["available"] != false,
             })
             .collect(),

@@ -110,6 +110,8 @@ impl Settings {
                 match &mut self.popup {
                     Some(Popup::Form(form)) => form.focus = Focus::Button(b),
                     Some(Popup::Confirm(confirm)) => confirm.sel = b,
+                    // 提示窗只有一个按钮：点了就是关（`pages/notice.rs`）。
+                    Some(Popup::Notice(_)) => {}
                     _ => return Outcome::Stay,
                 }
                 return self.key(enter, texts);

@@ -14,6 +14,7 @@ pub mod list;
 pub mod mascots;
 pub mod mcp;
 pub mod model_or;
+pub mod notice;
 pub mod packages;
 pub mod persona_edit;
 mod persona_seed;
@@ -261,6 +262,8 @@ impl More {
                 label: format!("#{seed:06x}"),
                 note: (i == 0).then(|| default_mark.to_string()),
                 off: None,
+                description: None,
+                notice: None,
             })
             .collect();
         let at = self
@@ -328,6 +331,16 @@ impl More {
     }
 }
 
+/// 提示窗的字（`settings.more.notice`）。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NoticeTexts {
+    /// 唯一的按钮：「知道了」。
+    pub button: String,
+    /// 按键提示。
+    pub hints: Vec<[String; 2]>,
+}
+
 /// 新几页的字（`text/zh.json` 的 `settings.more`）。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -392,6 +405,8 @@ pub struct Texts {
     pub cant_edit: String,
     /// 选项用不了（核心给了 `available: false`，现在只有没装内置语义模型时的「内置模型」）。
     pub unavailable: String,
+    /// 选了带 `notice` 的选项以后的提示窗：按钮、按键提示（`notice.rs`）。
+    pub notice: NoticeTexts,
     /// 人格的窗：名字、具体人格提示词、示范对话、人设提醒短语、`{n} 轮`、已写、简单描述、子代理可选（2026-10-17 加在最后，不挪下标）。没有的空着（2026-10-09 项目主人：「没有的东西
     /// 就空着，不需要写`没有`」）。
     pub detail: [String; 8],

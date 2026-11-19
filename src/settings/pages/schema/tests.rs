@@ -170,22 +170,35 @@ fn auto_pick_joins_the_cores_new_session_group_when_there_is_one() {
     assert_eq!(at("tui.keys"), Some(("general".into(), "tui.keys".into())));
 }
 
-/// 核心 PC-1：选项写了说明的，照说明接在名字后面暗色写；核心自己查得出的一句（`note`）优先。
+/// 核心 PC-1、设计 72：选项的说明、核心查得出的一句（`note`）、选了弹的提示（`notice`）各是一格，两样都有的两样都留着。
 #[test]
-fn an_option_description_is_its_note() {
+fn an_option_keeps_its_description_note_and_notice_apart() {
     let s = Schema::read(&json!({
         "pages": [{"id": "packages", "name": "软件包"}],
         "groups": [{"id": "draw", "name": "画图", "page": "packages"}],
         "items": [{"key": "draw.size", "control": "select", "layers": ["system"], "name": "尺寸",
             "page": "packages", "group": "draw",
             "options": [{"value": "s", "name": "小", "description": "512 像素"},
-                        {"value": "m", "name": "中", "note": "推荐", "description": "1024 像素"},
-                        {"value": "l", "name": "大"}]}]
+                        {"value": "m", "name": "中", "note": "推荐", "description": "1024 像素", "notice": "很慢"},
+                        {"value": "l", "name": "大", "notice": "  "}]}]
     }));
-    let notes: Vec<Option<&str>> = s.items[0]
+    let got: Vec<_> = s.items[0]
         .options
         .iter()
-        .map(|o| o.note.as_deref())
+        .map(|o| {
+            (
+                o.note.as_deref(),
+                o.description.as_deref(),
+                o.notice.as_deref(),
+            )
+        })
         .collect();
-    assert_eq!(notes, [Some("512 像素"), Some("推荐"), None]);
+    assert_eq!(
+        got,
+        [
+            (None, Some("512 像素"), None),
+            (Some("推荐"), Some("1024 像素"), Some("很慢")),
+            (None, None, None),
+        ]
+    );
 }

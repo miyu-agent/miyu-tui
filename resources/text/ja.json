@@ -1509,6 +1509,7 @@
       "edit_hint": ["e", "編集"],
       "cant_edit": "この項目は編集できません",
       "unavailable": "未インストール",
+      "notice": {"button": "了解", "hints": [["Enter", "閉じる"]]},
       "custom_model": "モデルを入力…",
       "combo": ["設定しない", "その他…"],
       "sheet_hints": [["Enter", "改行"], ["Ctrl+G", "外部エディタ"], ["Esc", "完了"]],

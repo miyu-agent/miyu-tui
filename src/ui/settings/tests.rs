@@ -1,8 +1,7 @@
 //! 配置页画出来的样子：TestBackend 上看字、看光标，不连核心。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::layout::Position;
-use ratatui::{Terminal, backend::TestBackend};
+use ratatui::{Terminal, backend::TestBackend, layout::Position};
 use serde_json::json;
 
 use super::draw;
@@ -423,6 +422,7 @@ mod catalog;
 mod choice_names;
 mod dialog_sides;
 mod group_note;
+mod option_notice;
 mod package_provider;
 mod pools;
 mod presets;

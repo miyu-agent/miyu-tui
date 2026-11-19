@@ -28,11 +28,14 @@ pub(super) fn read(got: &Value, stored: &Value) -> Option<Vec<Choice>> {
                     value => Value::String(value.to_string()),
                 },
                 label: crate::tabs::printable(name.unwrap_or(value)).into_owned(),
-                note: c["description"]
+                note: None,
+                off: None,
+                // 说明写在名字下面（「配置页」第 33 条「选项的说明和提示」）。
+                description: c["description"]
                     .as_str()
                     .filter(|d| !d.trim().is_empty())
                     .map(|d| crate::tabs::printable(d).into_owned()),
-                off: None,
+                notice: None,
             })
         })
         .collect();
@@ -47,6 +50,8 @@ pub(super) fn read(got: &Value, stored: &Value) -> Option<Vec<Choice>> {
             label: text.to_string(),
             note: None,
             off: None,
+            description: None,
+            notice: None,
         });
     }
     Some(list)

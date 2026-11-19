@@ -91,7 +91,8 @@ impl<H> Lines<H> {
     }
 }
 
-/// 选择窗的一行行：一个选项一行，选不了的暗着、后面黄字写原因，有说明的暗色接在后面。点到第几行交回 `row(i)`。
+/// 选择窗的一行行：一个选项一行，选不了的暗着、后面黄字写原因，核心的暗字（`note`）接在后面；说明（`description`）暗色写在
+/// 名字下面、折行写全，和名字算同一项（「配置页」第 33 条「选项的说明和提示」）。点到第几行交回 `row(i)`。
 pub fn choose<H>(
     lines: &mut Lines<H>,
     choose: &Choose,
@@ -135,6 +136,16 @@ pub fn choose<H>(
             focused: i == choose.sel,
             hit: Some(row(i)),
         });
+        let said = c.description.as_deref().filter(|d| !d.trim().is_empty());
+        for text in said.map_or_else(Vec::new, |d| {
+            crate::cells::wrap(d, room.saturating_sub(2).max(1))
+        }) {
+            lines.body.push(Body {
+                line: Line::from(vec![Span::raw("  "), Span::styled(text, theme::dim())]),
+                focused: i == choose.sel,
+                hit: Some(row(i)),
+            });
+        }
     }
     lines.hints = hints;
 }
@@ -254,7 +265,9 @@ fn paint<H: Copy>(
         frame.buffer_mut().set_line(row.x, y, &line, row.width);
         // 没有颜色可靠的（[`theme::arrows`]）只靠行首的箭头看出选中：每一行行首空两格，箭头在字后面再写一遍，不让那两格空白
         // 盖掉（check 13 ②，2026-11-14 主人验收：tty 里上下挪看不出动）。有颜色的照旧靠底色。
-        if body.focused && theme::arrows() {
+        // 一项占几行的（选项的说明）只在第一行写箭头。
+        let lead = !(at > 0 && lines.body[at - 1].focused);
+        if body.focused && theme::arrows() && lead {
             bar(frame, row);
         }
         if let Some(hit) = body.hit {

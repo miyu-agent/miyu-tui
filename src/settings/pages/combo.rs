@@ -21,6 +21,8 @@ pub fn rows(suggestions: &[String], words: [&str; 2]) -> Vec<Choice> {
         label: label.to_string(),
         note: None,
         off: None,
+        description: None,
+        notice: None,
     };
     let mut list = vec![row(Value::Null, words[0])];
     list.extend(suggestions.iter().map(|s| row(Value::String(s.clone()), s)));
