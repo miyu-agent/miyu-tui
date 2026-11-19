@@ -99,7 +99,7 @@ fn packages_are_listed_first_and_each_opens_its_own_page() {
 
 #[test]
 fn a_package_with_two_groups_is_one_row_and_its_page_titles_the_second_group() {
-    // 2026-10-19 核心把联网搜索的 key、地址分出「API Key 和地址」一组（项都还带 `package: "net"`，项目主人要标题和空行）。
+    // 2026-10-19 核心把联网搜索的 key、地址分出「API 密钥和地址」一组（项都还带 `package: "net"`，项目主人要标题和空行）。
     let config = Config::builtin().unwrap();
     let item = |key: &str, name: &str, group: &str| {
         json!({"key": key, "control": "text", "layers": ["system"], "name": name,
@@ -107,7 +107,7 @@ fn a_package_with_two_groups_is_one_row_and_its_page_titles_the_second_group() {
     };
     let schema = json!({"pages": [{"id": "packages", "name": "软件包"}],
         "groups": [{"id": "net", "name": "联网搜索", "page": "packages"},
-                   {"id": "net_keys", "name": "API Key 和地址", "page": "packages"}],
+                   {"id": "net_keys", "name": "API 密钥和地址", "page": "packages"}],
         "items": [item("net.search.source", "搜索服务供应商", "net"),
                   item("net.search.tavily.key", "Tavily", "net_keys"),
                   item("net.search.searxng.url", "SearXNG 的地址", "net_keys")]});
@@ -146,7 +146,7 @@ fn a_package_with_two_groups_is_one_row_and_its_page_titles_the_second_group() {
         names,
         [
             "搜索服务供应商",
-            "# API Key 和地址",
+            "# API 密钥和地址",
             "Tavily",
             "SearXNG 的地址"
         ],
