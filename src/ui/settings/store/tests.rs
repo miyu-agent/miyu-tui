@@ -357,3 +357,27 @@ fn rows_carry_access_labels_after_the_version_and_drop_them_first_when_narrow() 
     let lines = texts(&store, 60);
     assert!(lines[0].contains("0.8.4  脚本"), "已安装一样画：{lines:?}");
 }
+
+#[test]
+fn a_package_for_other_systems_says_it_is_not_supported_here() {
+    // 核心 PL-2：`packages.other_systems` 开着时，软件源的列表里也列不支持本机系统的包，那一行带 `unsupported: true`。
+    // 终端照核心回的画，不自己再滤。
+    let got = json!({"packages": [
+        {"package": "winonly", "version": "1.0.0", "name": "只给 Windows", "unsupported": true},
+        {"package": "tarot", "version": "1.0.0", "name": "塔罗"}
+    ]});
+    let list = crate::settings::pages::store::read::remotes(&got);
+    let store = Store {
+        source: Listing::Got(list),
+        local: Some(Vec::new()),
+        ..Store::default()
+    };
+    let lines = texts(&store, 50);
+    assert_eq!(lines.len(), 2, "两个都列：{lines:?}");
+    let row = |name: &str| lines.iter().find(|l| l.starts_with(name)).unwrap();
+    assert!(
+        row("只给 Windows").trim_end().ends_with("不支持当前系统"),
+        "{lines:?}"
+    );
+    assert!(!row("塔罗").contains("不支持"), "{lines:?}");
+}

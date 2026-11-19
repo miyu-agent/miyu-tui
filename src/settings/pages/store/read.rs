@@ -20,6 +20,8 @@ pub struct Remote {
     pub installed: Option<String>,
     /// 拉黑的理由；没拉黑的是 `None`。
     pub blocked: Option<String>,
+    /// 不支持本机系统（核心 PL-2 的 `unsupported`：`packages.other_systems` 开着时才列得出来）。
+    pub unsupported: bool,
     /// 依赖的包的编号。
     pub depends: Vec<String>,
     /// 带了哪几样：种类、名字（索引的原样，照种类排）。
@@ -165,6 +167,7 @@ pub fn remotes(got: &Value) -> Vec<Remote> {
                 summary: text(&p["summary"]).unwrap_or_default(),
                 installed: p["installed"].as_str().map(str::to_string),
                 blocked: text(&p["blocked"]),
+                unsupported: p["unsupported"] == true,
                 depends: ids(&p["depends"]),
                 provides: provides(&p["provides"]),
                 source: text(&p["source"]).unwrap_or_else(|| "official".into()),
