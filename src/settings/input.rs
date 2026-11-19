@@ -172,7 +172,11 @@ impl Settings {
             Col::Provider => {
                 if let Some(id) = self.nav.provider(&self.view).map(|p| p.id.clone()) {
                     let drivers = forms::drivers::known(self.more.raw.0.as_ref());
-                    self.open_form(|v, d, dr| forms::provider(v, d, dr, Some(&id), &drivers));
+                    let names = self.more.package_names();
+                    self.open_form(|v, d, dr| {
+                        let name = |p: &str| names.get(p).cloned().unwrap_or_else(|| p.to_string());
+                        forms::provider(v, d, dr, Some(&id), &drivers).packaged(d, name)
+                    });
                 }
             }
             Col::Org => self.nav.sideways(true, &self.view),

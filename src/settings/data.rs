@@ -26,6 +26,8 @@ pub struct Data {
     pub values: BTreeMap<String, (Value, String)>,
     /// 借来的项（来源 `inherited`，核心 NS-1）：键到借的那一项（`providers.<编号>.key`）。
     pub inherited: BTreeMap<String, String>,
+    /// 软件包给的项（来源 `{"layer": "package", "package"}`，核心 PV-4：包带的供应商）：键到包的编号。
+    pub packaged: BTreeMap<String, String>,
 }
 
 /// 一家供应商。
@@ -117,6 +119,7 @@ impl Data {
             return;
         };
         self.inherited.clear();
+        self.packaged.clear();
         for (key, item) in items {
             let origin = item["origin"]["layer"].as_str().unwrap_or("default");
             // 借来的（核心 NS-1）：哪一层都没写、照 `from` 那一项的值用，值是 `null`、不交 key。
@@ -125,6 +128,13 @@ impl Data {
                 .filter(|_| origin == "inherited")
             {
                 self.inherited.insert(key.clone(), from.to_string());
+            }
+            // 包给的（核心 PV-4）：包的「启用」来源也是 `package`，但不带 `package`，不算。
+            if let Some(package) = item["origin"]["package"]
+                .as_str()
+                .filter(|_| origin == "package")
+            {
+                self.packaged.insert(key.clone(), package.to_string());
             }
             self.values
                 .insert(key.clone(), (item["value"].clone(), origin.to_string()));

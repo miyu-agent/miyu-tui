@@ -966,6 +966,7 @@
       "system": "system",
       "own": "カスタム",
       "default": "default",
+      "package": "パッケージ {name} から",
       "id": "ID"
     },
     "titles": [

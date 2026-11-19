@@ -13,11 +13,13 @@ use super::keys;
 use crate::input::Editor;
 
 mod names;
+mod packaged;
 mod pool;
 mod search;
 mod values;
 
 pub use names::{name_ok, path_name, unique};
+pub use packaged::PACKAGE;
 pub use pool::pool;
 pub use values::{plain, window_text, window_value};
 
@@ -146,7 +148,7 @@ pub struct Row {
     pub val: Val,
     /// 没写时暗着显示的继承来的值。
     pub inherit: Option<String>,
-    /// 继承来的值从哪来（`catalog` 这些）。
+    /// 继承来的值从哪来（`catalog` 这些）；软件包给的是 `package:<包的名字>`（`forms/packaged.rs`）。
     pub source: Option<String>,
 }
 

@@ -966,6 +966,7 @@
       "system": "系统",
       "own": "自定义",
       "default": "默认",
+      "package": "来自软件包 {name}",
       "id": "ID"
     },
     "titles": [
