@@ -59,8 +59,6 @@ fn terminal_colors_write_every_text_slot_with_the_terminals_own_sixteen() {
 #[test]
 fn thoughts_are_upright_not_dimmed() {
     use ratatui::style::Modifier;
-    // 读的是全局的主题：别的测试换着主题时等它换完。
-    let _hold = super::hold();
     let style = super::thought();
     assert!(
         !style.add_modifier.contains(Modifier::ITALIC),
@@ -110,7 +108,6 @@ fn the_band_lights_what_it_passes() {
 fn setting_the_same_palette_again_keeps_what_was_drawn_with_it() {
     // 2026-10-15 T-235：引导关上时主题照配置项重挑一次，颜色和引导里预览的一模一样，换代数却加了一，头像（图的缓存键带着
     // 换代数）就得重做、重传，首页那一块空了一下。同一套颜色再设一次不算换。
-    let _hold = super::hold();
     let themes = super::builtin().unwrap();
     let (_, night) = themes
         .iter()
@@ -130,7 +127,6 @@ fn setting_the_same_palette_again_keeps_what_was_drawn_with_it() {
 #[test]
 fn a_barless_pick_uses_the_picked_color_not_the_title_accent() {
     // 2026-10-22 项目主人验收纯 ASCII 主题：选中项换强调色，和配置页标题「* 配置」一个颜色分不出，照推荐换选中色。
-    let _hold = super::hold();
     let themes = super::builtin().unwrap();
     let (_, night) = themes
         .iter()
