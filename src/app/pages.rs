@@ -174,6 +174,7 @@ impl App {
         board.prepend(older_board);
         view.pin_top(&transcript.entries);
         transcript.prepend(older, more, &texts);
+        self.jump_settle(session);
     }
 
     /// 更早的一页里的一条：确认、提问不开抽屉，答了的照了结写一行；任务的几种只记进任务表；别的交给那份临时的正文。

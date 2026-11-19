@@ -21,6 +21,8 @@ pub struct History {
     pub pinned: Option<usize>,
     /// 按键模式是 Vim 时按了 `/` 正在打搜索的字（`list_search.rs`，发版前 check 第 31 条）；没在打时 `j` `k` 上下。
     pub typing: bool,
+    /// `/jump` 开着、更早的页还没读上来时按到头以后多按的 `↑` 几下（「跳到说过的话」第 2 条）：页读上来接着往上走。
+    pub owed: usize,
 }
 
 impl History {
@@ -60,22 +62,41 @@ impl History {
         crate::fuzzy::rank(&self.query, seen, |s| vec![s.draft.text.as_str()])
     }
 
-    /// 往更早的走（`↑`、再按 `Ctrl+R`），到头就停。`count` 是对得上的条数。
-    pub fn older(&mut self, count: usize) {
+    /// 往更早的走（`↑`、再按 `Ctrl+R`），到头就停。`count` 是对得上的条数；`more` 是更早的还有、没读上来：到头以后多按的
+    /// 记着（[`History::settle`]）。
+    pub fn older(&mut self, count: usize, more: bool) {
         self.pinned = None;
-        self.selected = (self.selected + 1).min(count.saturating_sub(1));
+        if self.selected + 1 < count {
+            self.selected += 1;
+        } else if more {
+            self.owed += 1;
+        }
     }
 
-    /// 往更新的走（`↓`），到头就停。
+    /// 往更新的走（`↓`），到头就停；记着没走的 `↑` 先抵掉一下。
     pub fn newer(&mut self) {
         self.pinned = None;
-        self.selected = self.selected.saturating_sub(1);
+        if self.owed > 0 {
+            self.owed -= 1;
+        } else {
+            self.selected = self.selected.saturating_sub(1);
+        }
+    }
+
+    /// 更早的一页读上来了，对得上的有 `count` 条：记着的 `↑` 接着走，走到头还欠的等下一页；读完了（`more` 是 `false`）
+    /// 不再欠。
+    pub fn settle(&mut self, count: usize, more: bool) {
+        let room = count.saturating_sub(self.selected + 1);
+        let step = self.owed.min(room);
+        self.selected += step;
+        self.owed = if more { self.owed - step } else { 0 };
     }
 
     /// 搜索的字后面接上 `text`，选中回到最新的一条。
     pub fn type_text(&mut self, text: &str) {
         self.query.push_str(text);
         self.selected = 0;
+        self.owed = 0;
         self.pinned = None;
     }
 
@@ -83,6 +104,7 @@ impl History {
     pub fn set_query(&mut self, query: String) {
         self.query = query;
         self.selected = 0;
+        self.owed = 0;
         self.pinned = None;
     }
 }
@@ -140,7 +162,7 @@ mod tests {
     fn typing_filters_ignoring_case_and_goes_back_to_the_newest() {
         let mut h = History::default();
         h.open();
-        h.older(3);
+        h.older(3, false);
         h.type_text("readme");
         assert_eq!(
             (texts(h.matches(&sent())), h.selected),
@@ -161,7 +183,7 @@ mod tests {
         h.newer();
         assert_eq!(h.selected, 0);
         for _ in 0..5 {
-            h.older(3);
+            h.older(3, false);
         }
         assert_eq!(h.selected, 2);
     }
