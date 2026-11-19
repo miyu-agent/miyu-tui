@@ -45,8 +45,13 @@ fn said_when_the_core_cannot_start(name: &str, args: &[&str]) -> Vec<String> {
         args,
         env!("CARGO_BIN_EXE_miyu-tui"),
     );
-    tui.wait_for("File exists");
-    let lines = tui.lines();
+    // 那一句和底栏不一定一起读到：底栏连核心时写过的话要换掉，等到换好了再交回去查。
+    let lines = tui.wait_until("核心起不来的那一句", |l| {
+        support::has(l, "File exists")
+            && !["起不来", "Can't connect", "Can't reach"]
+                .iter()
+                .any(|w| support::has(l, w))
+    });
     drop(tui);
     drop(std::fs::remove_dir_all(&base));
     lines

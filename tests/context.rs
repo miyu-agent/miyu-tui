@@ -47,7 +47,8 @@ fn context_lists_the_parts_and_the_usage_by_purpose_once_the_session_is_open() {
     tui.wait_for("系统提示");
     assert!(!tui.shows("核心说明"), "{}", tui.lines().join("\n"));
     tui.key(b"\r");
-    tui.wait_for("核心说明");
+    // 展开的那几行和上面的估算不一定一起读到：等两样都在了再看。
+    tui.wait_for_all(&["核心说明", "估算"]);
     assert!(
         tui.shows("估算") && !tui.shows("累计消耗"),
         "{}",
@@ -79,7 +80,12 @@ fn a_session_opened_with_no_tools_says_so_and_has_no_tools() {
     tui.wait_for("好。");
     // 测具的终端窄、没有侧边栏：看 `/status` 的预设那一行。
     tui.say("/status");
-    tui.wait_for("会话 ID");
+    // 状态框整个换上来：等到预设那一行写全了（右边框也画到了）再看。
+    tui.wait_until("状态框的预设那一行", |l| {
+        support::has(l, "会话 ID")
+            && l.iter()
+                .any(|r| r.contains("预设") && r.trim_end().ends_with('│'))
+    });
     let row = tui
         .lines()
         .into_iter()

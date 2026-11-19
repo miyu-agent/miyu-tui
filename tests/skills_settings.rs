@@ -13,8 +13,8 @@ fn other_skill_dirs_are_listed_under_advanced_with_the_shipped_dir() {
     tui.wait_for("运行日志");
     tui.open_menu("高级");
     tui.wait_for("读取其他目录的 Skills");
-    tui.wait_for("其他技能目录");
-    let screen = tui.lines();
+    // 值写在名字右边：等到出厂那一项也写出来再看。
+    let screen = tui.wait_for_all(&["其他技能目录", "~/.agents/skills"]);
     let row = |word: &str| {
         screen
             .iter()

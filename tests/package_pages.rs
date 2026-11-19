@@ -117,7 +117,8 @@ fn without_colour_the_focused_button_still_stands_out() {
     installed(&mut tui);
     reach(&mut tui, "Weather");
     tui.key(b"d");
-    tui.wait_for("[ 卸载 ]");
+    // 「取消」在「卸载」右边：等两个按钮都画出来再看。
+    tui.wait_for_all(&["[ 卸载 ]", "[ 取消 ]"]);
     let look = |tui: &Tui, label: &str| {
         let (row, col) = spot(tui, label);
         tui.marked(row, col)
@@ -145,7 +146,7 @@ fn removing_a_package_asks_first_and_takes_it_off_the_list() {
     tui.key(b"d");
     tui.wait_for("要卸载 Weather 1.2.0");
     // 卸的问法是按钮（PK-5）；核心没说配置目录的只有「卸载」「取消」。
-    tui.wait_for("[ 卸载 ]");
+    tui.wait_for_all(&["[ 卸载 ]", "[ 取消 ]"]);
     assert!(
         home.data().packages().join("weather").exists(),
         "问的时候还没卸"

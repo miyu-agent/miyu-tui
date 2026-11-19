@@ -231,13 +231,20 @@ fn ctrl_r_keeps_its_height_and_puts_the_preview_on_the_right_when_wide() {
     assert_eq!(box_rows(&tui), narrow, "{}", tui.lines().join("\n"));
 }
 
-/// 按 `Ctrl+R` 直到框的上边写着 `title`（输入历史等核心交回软件包列表才读进来）。
+/// 按 `Ctrl+R` 直到框的上边写着 `title`（输入历史等核心交回软件包列表才读进来），再等到下边框画到右下角：上边先到、
+/// 下边还在路上时读到的是半帧，量框的上下边、找 `┬`/`┴` 都会错。
 fn open_history(tui: &mut support::Tui, title: &str) {
     let end = std::time::Instant::now() + Duration::from_secs(5);
     loop {
         tui.key(b"\x12");
         tui.pump(Duration::from_millis(300));
         if tui.shows(title) {
+            tui.wait_until("历史框的下边框", |l| {
+                l.iter().any(|r| {
+                    r.split_once("Esc 关闭")
+                        .is_some_and(|(_, rest)| rest.contains('╯'))
+                })
+            });
             return;
         }
         assert!(

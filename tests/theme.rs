@@ -45,18 +45,12 @@ fn the_running_line_sweeps_in_the_color_of_the_mode_word() {
     tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for_line("…");
-    let lines = tui.lines();
+    // 运行状态行：最后是读秒（`0s`），在输入框上面。它在正文的「…」下面，等到它也画出来再找。
+    let lines = running(&mut tui);
     let mode = position(&lines, "开放权限").expect("底栏的模式字");
-    // 运行状态行：最后是读秒（`0s`），在输入框上面。
     let row = lines
         .iter()
-        .rposition(|l| {
-            l.split_whitespace().last().is_some_and(|w| {
-                w.len() > 1
-                    && w.ends_with('s')
-                    && w[..w.len() - 1].chars().all(|c| c.is_ascii_digit())
-            })
-        })
+        .rposition(|l| l.split_whitespace().last().is_some_and(seconds))
         .expect("运行状态行");
     let col = lines[row].chars().take_while(|c| c.is_whitespace()).count();
     let word = tui.foreground(u16::try_from(row).unwrap(), u16::try_from(col).unwrap());
@@ -88,7 +82,7 @@ fn the_running_line_sweeps_a_real_gradient_when_the_terminal_tells_its_colors() 
     tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for_line("…");
-    let lines = tui.lines();
+    let lines = running(&mut tui);
     let row = lines
         .iter()
         .rposition(|l| l.split_whitespace().last().is_some_and(seconds))
@@ -184,7 +178,10 @@ fn the_colors_list_offers_the_wallpaper_only_when_there_is_one() {
         tui.pump(std::time::Duration::from_millis(500));
         tui.key(b"j");
         tui.key(b"\r");
-        tui.wait_for("终端配色");
+        // 选择窗的几行不一定和「终端配色」一起读到：该有跟随壁纸的，等到它也画出来再看。
+        tui.wait_until("配色的选择窗", |l| {
+            support::has(l, "终端配色") && (!found || support::has(l, "跟随壁纸"))
+        });
         assert_eq!(tui.shows("跟随壁纸"), found, "{}", tui.lines().join("\n"));
     }
 }
@@ -283,6 +280,14 @@ fn matugen_source(home: &Home, source: &str) {
 }
 
 /// 一个词是读秒（`12s`）。
+/// 等到运行状态行（最后是读秒）也画出来，交回那一屏：它在正文的「…」下面，同一帧分几次读到时只等「…」会读到半帧。
+fn running(tui: &mut support::Tui) -> Vec<String> {
+    tui.wait_until("运行状态行", |l| {
+        l.iter()
+            .any(|r| r.split_whitespace().last().is_some_and(seconds))
+    })
+}
+
 fn seconds(w: &str) -> bool {
     w.len() > 1 && w.ends_with('s') && w[..w.len() - 1].chars().all(|c| c.is_ascii_digit())
 }

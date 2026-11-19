@@ -61,8 +61,12 @@ fn the_workspace_command_moves_an_open_session_and_says_why_it_cannot() {
     let other = scratch("ws-other");
     let name = other.file_name().unwrap().to_string_lossy().into_owned();
     tui.say(&format!("/workspace {}", other.display()));
-    tui.wait_for("工作区已切换到");
-    let screen = tui.lines().join("\n");
+    // 侧边栏换目录和正文那一行不一定在同一帧：等到两处都写了再看。
+    let screen = tui
+        .wait_until("正文和侧边栏都写新目录", |l| {
+            support::has(l, "工作区已切换到") && l.join("\n").matches(name.as_str()).count() >= 2
+        })
+        .join("\n");
     assert!(
         screen.matches(&name).count() >= 2,
         "正文那一行、侧边栏都写它：\n{screen}"

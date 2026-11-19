@@ -31,7 +31,8 @@ fn a_model_that_cannot_see_images_gets_the_path_instead() {
     tui.wait_for("Tab 切换权限级别");
     tui.pump(std::time::Duration::from_millis(600));
     tui.key(b"\x16");
-    tui.wait_for("当前模型不支持图片");
+    // 提示和框里退成路径是同一次画的，框在下面：等到路径也写进框里再看。
+    tui.wait_for_all(&["当前模型不支持图片", "[晚霞.png]"]);
     assert!(
         tui.shows("[晚霞.png]") && !tui.shows("[图片 1]"),
         "{}",

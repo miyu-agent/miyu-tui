@@ -69,7 +69,12 @@ fn made(home: &Home, editor: &str) -> Tui {
     until(&mut tui, "建好的人格", || {
         std::fs::read_to_string(&toml).is_ok_and(|t| t.contains("我的人格"))
     });
-    tui.wait_for("人设提醒短语");
+    // 窗里名字上面一行写 id：窗整个换上来，id 那一行和人设提醒短语不一定一起读到，等两样都在了再看。
+    tui.wait_until("建好的人格的窗", |l| {
+        support::has(l, "人设提醒短语")
+            && l.iter()
+                .any(|r| r.split_whitespace().collect::<Vec<_>>() == ["id", "writer"])
+    });
     assert!(
         !tui.shows("persona-1"),
         "照写的 id 建，核心不另起：\n{}",

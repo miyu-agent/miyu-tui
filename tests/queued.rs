@@ -31,7 +31,11 @@ fn a_message_sent_between_steps_is_drawn_once_where_she_heard_it() {
     tui.wait_for("睡一会");
     // 工具还在跑：普通回车发出去，排着。
     tui.say("插一句");
-    tui.wait_for("看到插的那句了。");
+    // 框上面排着的那一行收掉和回答不一定在同一帧（那一行在下面）：等到「插一句」只剩一处再看。
+    tui.wait_until("回答出来、排着的那一行收掉", |l| {
+        support::has(l, "看到插的那句了。")
+            && l.iter().filter(|r| r.contains("插一句")).count() == 1
+    });
     let (count, at) = spots(&tui, "插一句");
     let (_, reply) = spots(&tui, "看到插的那句了。");
     assert_eq!(count, 1, "只出一次：\n{}", tui.lines().join("\n"));

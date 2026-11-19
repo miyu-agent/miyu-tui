@@ -96,7 +96,8 @@ fn a_page_opens_at_once_and_its_card_opens_it_again() {
     tui.wait_for("开放权限");
     tui.say("给我看看页面");
     tui.wait_for("页面给你看了。");
-    tui.wait_for("HTML · 30 B · 2 行");
+    // 卡片的几行不一定一起读到：等两样都在了再看。
+    tui.wait_for_all(&["HTML · 30 B · 2 行", "点击打开"]);
     assert!(tui.shows("点击打开"), "{}", tui.lines().join("\n"));
     // 当场开了一次：照默认程序的桌面文件启动，交的是她展示的那个文件本身（核心 SW-1：内容不进核心，照 path 开，不再拷副本）。
     let opened = logged(&log);
@@ -166,7 +167,10 @@ fn showing_the_same_path_again_folds_the_earlier_card() {
     std::fs::write(home.work.join("notes.md"), "一行\n两行\n").expect("改笔记");
     tui.say("再看看");
     tui.wait_for("第二版。");
-    tui.wait_for("已更新");
+    // 新卡片画出来、旧的那张收成一行在同一帧里：等到只剩一张卡片再数。
+    tui.wait_until("新的那张卡片", |l| {
+        support::has(l, "已更新") && l.iter().filter(|r| r.contains("点击打开")).count() == 1
+    });
     assert_eq!(
         tui.lines()
             .iter()

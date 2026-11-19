@@ -57,12 +57,12 @@ fn the_main_color_is_picked_from_the_avatars_candidates_and_saved_on_the_persona
     tui.key(b"j");
     tui.key(b"j");
     tui.key(b"\r");
-    tui.wait_for("默认");
-    let swatches = tui
-        .lines()
-        .iter()
-        .filter(|l| l.trim_start().starts_with("██ #"))
-        .count();
+    // 四个色块一行一个，在「默认」下面：等到都画出来再数（多出来的照样数得出）。
+    let swatch = |l: &String| l.trim_start().starts_with("██ #");
+    tui.wait_until("四个色块", |l| {
+        support::has(l, "默认") && l.iter().filter(|r| swatch(r)).count() >= 4
+    });
+    let swatches = tui.lines().iter().filter(|l| swatch(l)).count();
     assert_eq!(swatches, 4, "{}", tui.lines().join("\n"));
     // 挑第二个：写进人格的主题色，颜色当场换。
     tui.key(b"j");

@@ -139,13 +139,14 @@ fn slash_config_in_a_conversation_goes_back_to_the_conversation() {
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/config");
-    tui.wait_for("供应商、默认模型、模型池");
+    // 配置页整页换上来、关了整页换回去：等到另一边的字也没了再看。
+    tui.wait_for_instead("供应商、默认模型、模型池", "好。");
     assert!(
         !tui.lines().iter().any(|l| l.contains("好。")),
         "配置页开着不画对话"
     );
     tui.key(b"\x1b");
-    tui.wait_for("好。");
+    tui.wait_for_instead("好。", "供应商、默认模型、模型池");
     assert!(
         !tui.lines()
             .iter()
@@ -254,7 +255,7 @@ fn slash_connect_goes_straight_to_providers_and_back_to_the_chat() {
         "不经过主菜单"
     );
     tui.key(b"\x1b");
-    tui.wait_for("开放权限");
+    tui.wait_for_instead("开放权限", "组织");
     assert!(
         !tui.lines().iter().any(|l| l.contains("组织")),
         "直接回对话"
@@ -327,7 +328,8 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
         tui.key(b"j");
     }
     tui.key(b"\r");
-    tui.wait_for("↑/↓ 选择");
+    // 列表的几行和提示不一定一起读到：等到都在了再看。
+    tui.wait_for_all(&["↑/↓ 选择", "海盗", "无人格"]);
     assert!(tui.shows("海盗"), "列人格：\n{}", tui.lines().join("\n"));
     assert!(!tui.shows("Enter 保存"), "不是编辑窗");
     // 第一行「无人格」：选了就不设默认人格（2026-10-08 项目主人：人格允许为空）。
@@ -336,7 +338,7 @@ fn the_general_page_comes_first_changes_a_select_resets_it_and_the_personas_page
     // 默认预设（人格那一组之后的第五项）：一样开预设列表（核心 P-2 上）。
     tui.key(b"j");
     tui.key(b"\r");
-    tui.wait_for("↑/↓ 选择");
+    tui.wait_for_all(&["↑/↓ 选择", "全部功能", "常规开发"]);
     assert!(
         tui.shows("全部功能") && tui.shows("常规开发"),
         "列预设：\n{}",

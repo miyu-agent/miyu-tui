@@ -113,7 +113,8 @@ fn effort_is_chosen_for_this_session_only() {
     tui.say("在吗");
     tui.wait_for_done();
     tui.say("/effort");
-    tui.wait_for("跟随设置");
+    // 选择窗第 0 行是跟随设置，high 在它下面：等到它也画出来再看。
+    tui.wait_for_all(&["跟随设置", "high"]);
     assert!(tui.shows("high"), "{}", tui.lines().join("\n"));
     // 第 0 行跟随设置，下面 off、low、high。
     for _ in 0..3 {
@@ -237,7 +238,8 @@ fn with_vim_keys_a_slash_searches_and_enter_keeps_the_filter() {
     tui.type_text("al");
     tui.key(b"\r");
     tui.key(b"\x1b");
-    tui.wait_for("dev · 64k");
+    // 去掉筛的以后列表整个换上来，两行不一定一起读到：等两样都在了再看。
+    tui.wait_for_all(&["dev · 64k", "dev · 128k"]);
     assert!(tui.shows("dev · 128k"), "Esc 先去掉筛的，框还开着");
     tui.key(b"\x1b");
     tui.pump(Duration::from_millis(300));

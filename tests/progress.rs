@@ -79,10 +79,21 @@ fn a_toast_over_a_running_step_clears_its_rows() {
     tui.say("跑一下");
     tui.wait_for("第 1 步");
     tui.key(b"\x1b");
-    tui.wait_for("再按一次");
-    let lines = tui.lines();
-    let at = lines.iter().position(|l| l.contains("再按一次")).unwrap();
     let braille = |c: char| ('\u{2800}'..='\u{28ff}').contains(&c);
+    let only_box = |row: &String| {
+        !row.chars().any(braille) && !row.contains("echo") && !row.contains("第 1 步")
+    };
+    // 提示换掉的是运行状态行那一块，下面那一行和提示在同一帧里画：等到上下两行也换好了再看。
+    let lines = tui.wait_until("提示和它上下两行", |l| {
+        l.iter()
+            .position(|r| r.contains("再按一次"))
+            .is_some_and(|at| {
+                at > 0
+                    && l.get(at - 1..=at + 1)
+                        .is_some_and(|rows| rows.iter().all(only_box))
+            })
+    });
+    let at = lines.iter().position(|l| l.contains("再按一次")).unwrap();
     for row in &lines[at - 1..=at + 1] {
         assert!(
             !row.chars().any(braille) && !row.contains("echo") && !row.contains("第 1 步"),

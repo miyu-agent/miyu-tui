@@ -14,8 +14,8 @@ fn the_protected_commands_group_shows_its_note_and_its_switches_save() {
     let mut tui = home.tui_args("zh_CN.UTF-8", &["config"]);
     tui.wait_for("显示");
     tui.open_menu("隐私与安全");
-    tui.wait_for("受保护的命令");
-    let lines = tui.lines();
+    // 说明和五个开关在组名下面：等到最后一个开关也画出来再读。
+    let lines = tui.wait_for_all(&["受保护的命令", "完全放开时也会先询问你", "容器使用宿主设备"]);
     let at = |word: &str| {
         lines
             .iter()

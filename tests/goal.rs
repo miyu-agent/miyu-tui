@@ -56,8 +56,12 @@ fn a_running_goal_shows_right_above_the_input_box() {
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
     tui.say("/goal --rounds 5 把测试写完");
-    tui.wait_for("◎ 目标 · 进行中 · 第 1/5 轮");
-    let lines = tui.lines();
+    // 上边框在目标那一行下面：等到它也画出来再量。
+    let lines = tui.wait_until("目标那一行和下面的上边框", |l| {
+        l.iter()
+            .position(|r| r.contains("◎ 目标 · 进行中 · 第 1/5 轮"))
+            .is_some_and(|at| l.get(at + 1).is_some_and(|b| b.contains('╭')))
+    });
     let at = lines
         .iter()
         .position(|l| l.contains("◎ 目标 · 进行中 · 第 1/5 轮"))
@@ -140,7 +144,8 @@ fn a_goal_without_its_package_is_no_command() {
     tui.say("你好");
     tui.wait_for("你好。");
     tui.say("/goal 把测试写完");
-    tui.wait_for("命令不存在");
+    // 回车时清空输入框，拒绝的提示紧跟着来，可能落在同一帧：等到框里没有那句了再看。
+    tui.wait_for_instead("命令不存在", "❯ /goal 把测试写完");
     assert!(!tui.shows("核心拒绝"), "{}", tui.lines().join("\n"));
     assert!(
         !tui.shows("❯ /goal 把测试写完"),
@@ -161,7 +166,8 @@ fn typing_goal_then_up_brings_back_the_last_goal_with_its_words() {
     // 命令列表开着时 ↑ 只在列表里挪（2026-10-20 项目主人）；打了空格、列表收起以后再翻（同一天项目主人选的）。
     tui.type_text("/goal ");
     tui.key(b"\x1b[A");
-    tui.wait_for("❯ /goal 把测试写完");
+    // 翻出来的那一行和命令列表收起在同一帧：列表在框上面、框在下面，等到列表也没了再看。
+    tui.wait_for_instead("❯ /goal 把测试写完", "命令 1 条");
     assert!(
         !tui.shows("命令 1 条"),
         "翻出来的不弹命令列表：\n{}",
