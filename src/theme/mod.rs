@@ -30,11 +30,6 @@ pub use shimmer::{shimmer, shimmer_on, shimmer_rest, shimmer_rest_on};
 
 use crate::core::Level;
 
-#[cfg(test)]
-mod test_support;
-#[cfg(test)]
-pub use test_support::hold;
-
 /// 换主题。颜色和现在的一模一样的不算换：换代数不加，照它画好的图、排好的行照旧用（2026-10-15 T-235：引导关上时照配置项
 /// 重挑一次，颜色没变，头像却因为缓存键里的换代数变了重做、重传，首页那一块空了一下）。
 pub fn set(palette: Palette) {

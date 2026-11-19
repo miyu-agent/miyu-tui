@@ -9,7 +9,6 @@ use crate::ui::test_support::Fixture;
 #[test]
 fn only_the_screen_height_changing_rebuilds_entries_with_figures() {
     // review C4（2026-10-11）：图占几行照屏高算（三分之一屏），只拉高、压矮窗口时按条缓存的行照旧，图不重算。
-    let _theme = crate::theme::hold();
     let f = Fixture::new();
     let mut t = Transcript::default();
     t.note(Kind::Reply, "$$\nx^2 + y^2\n$$".into());
@@ -41,7 +40,6 @@ fn only_the_screen_height_changing_rebuilds_entries_with_figures() {
 #[test]
 fn files_arriving_for_the_undo_line_rebuild_it() {
     // review C5（2026-10-11）：撤销的回应和改回的文件是两个事件，中间画过一帧的话「改回 N 个文件」一直不出现。
-    let _theme = crate::theme::hold();
     let f = Fixture::new();
     let mut t = Transcript::default();
     t.note(Kind::Undo, "已撤销".into());
