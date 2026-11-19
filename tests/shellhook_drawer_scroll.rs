@@ -50,6 +50,11 @@ fn ctrl_j_and_k_scroll_a_long_command_in_the_shell_drawer() {
     wait(&mut tui, &|t| !drawer(t, "echo line-01"), "Ctrl+J 往下滚");
     // Ctrl+K：滚回来。
     tui.key(b"\x0b");
-    wait(&mut tui, &|t| drawer(t, "echo line-01"), "Ctrl+K 往上滚");
+    // 滚回来那一帧整个抽屉重画，按钮在命令下面：等到按钮也画出来再看（2026-11-19 macOS CI 上读到过只有上半截的一帧）。
+    wait(
+        &mut tui,
+        &|t| drawer(t, "echo line-01") && t.shows("允许本次"),
+        "Ctrl+K 往上滚",
+    );
     assert!(tui.shows("允许本次"), "抽屉还开着");
 }

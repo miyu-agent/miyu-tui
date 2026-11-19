@@ -28,9 +28,11 @@ fn the_sidebar_lists_recent_sessions_and_a_click_switches() {
             .position(|l| l.find(word).is_some_and(|at| at > 100))
             .map(|at| at + from)
     };
-    // 两个会话的行在标题下面：等到两行都画出来再量。
-    let lines = tui.wait_until("最近会话的两行", |l| {
-        side(l, "topic-two").is_some() && side(l, "topic-one").is_some()
+    // 两个会话的行在标题下面、用量那一段更在下面：等到都画出来再量（2026-11-19 macOS CI 上只等到两行，读到的半帧没有用量那一段）。
+    let lines = tui.wait_until("最近会话的两行和用量那一段", |l| {
+        side(l, "topic-two").is_some()
+            && side(l, "topic-one").is_some()
+            && l.iter().any(|r| r.find("共 ").is_some_and(|at| at > 100))
     });
     let (title, two, one) = (
         lines.iter().position(|l| l.contains("最近会话")),

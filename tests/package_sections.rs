@@ -107,8 +107,9 @@ fn a_package_page_draws_one_block_per_section_and_only_the_chosen_engines() {
     // 选择窗停在正在用的 mimo 上，往下一个就是 minimax。
     tui.key(b"\x1b[B");
     tui.key(b"\r");
+    // 换引擎时整页换上来：等到 MiMo 那一组也收掉了再看。
     until(&mut tui, "MiniMax 那一组出来", |t| {
-        t.lines().iter().any(|l| l.trim() == "MiniMax  默认")
+        t.lines().iter().any(|l| l.trim() == "MiniMax  默认") && !t.shows("MiMo 音色")
     });
     assert!(
         !tui.lines().iter().any(|l| l.contains("MiMo 音色")),

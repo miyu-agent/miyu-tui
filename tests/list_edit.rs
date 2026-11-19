@@ -102,8 +102,9 @@ fn editing_the_preset_in_use_from_the_box_asks_to_compact() {
     toggle_and_close(&mut tui, &home);
     tui.wait_for("当前使用的预设发生变化");
     tui.key(b"\r");
+    // 框收起和压缩那一句不一定在同一帧：等到框也没了再看。
     until(&mut tui, "压缩", |t| {
-        t.shows("上下文已压缩") || t.shows("没有可压缩的内容")
+        (t.shows("上下文已压缩") || t.shows("没有可压缩的内容")) && !t.shows("请选择预设")
     });
     assert!(!tui.shows("请选择预设"), "框关了");
 }
