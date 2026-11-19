@@ -28,6 +28,20 @@ impl App {
         }
     }
 
+    /// 看着的会话 `session` 更早的一页拼上来了：`/jump` 开着时，页没到时多按的 `↑` 接着走（第 2 条）。
+    pub(super) fn jump_settle(&mut self, session: &str) {
+        let history = &self.typing.history;
+        if !(history.open && history.jump) || history.owed == 0 {
+            return;
+        }
+        if self.talk.transcript.session.as_deref() != Some(session) {
+            return;
+        }
+        let count = history.matches(&self.list_items().0).len();
+        let more = self.talk.transcript.has_older();
+        self.typing.history.settle(count, more);
+    }
+
     /// 跳到条目 `id`：照上一帧排好的行找它从第几行起，顶到视口第一行，竖线亮一下（第 3 条）。
     pub(super) fn jump_to(&mut self, id: u64) {
         let entries = &self.talk.transcript.entries;

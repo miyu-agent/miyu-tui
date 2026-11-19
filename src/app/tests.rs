@@ -98,6 +98,7 @@ mod drawer_rows;
 mod effort;
 mod files_page;
 mod goal;
+mod jump_older;
 mod models_changed;
 mod notices;
 mod pools;

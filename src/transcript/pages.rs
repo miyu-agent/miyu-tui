@@ -47,6 +47,11 @@ impl Transcript {
         self.older.more && !self.older.loading
     }
 
+    /// 更早的还有、没读上来（最上面那一行在）：要没要都算。
+    pub fn has_older(&self) -> bool {
+        self.older.more
+    }
+
     /// 要了更早的一页。
     pub fn asked_older(&mut self) {
         self.older.loading = true;
