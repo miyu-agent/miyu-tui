@@ -1089,7 +1089,7 @@
       "conflict": "Changed elsewhere just now (now {current}); your changes are kept, reopen and save again",
       "offline": "Not connected to the core",
       "not_custom": "Only models added with n can be deleted",
-      "fixed_pool": "Built-in pools can't be deleted; edit their members and strategy instead",
+      "fixed_pool": "Built-in pools can't be deleted; edit their members and allocation strategy instead",
       "members_hint": "Untick members in the pool editor (Enter)",
       "nothing_here": "Nothing to delete on this page",
       "no_new": "Nothing to add on this page",
