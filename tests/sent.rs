@@ -76,8 +76,8 @@ fn a_sticker_she_sends_is_written_after_its_step_when_pictures_cannot_be_shown()
     let mut tui = started(&home);
     tui.say("发个表情");
     tui.wait_for("好。");
-    tui.wait_for("[表情包] 招手的猫");
-    let lines = tui.lines();
+    // 收起那一行、图、回答都在了再量先后：不一定在同一帧里画完。
+    let lines = tui.wait_for_all(&["Send sticker · ", "[表情包] 招手的猫", "好。"]);
     let at = |text: &str| {
         lines
             .iter()

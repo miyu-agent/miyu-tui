@@ -39,7 +39,8 @@ fn a_changed_prefix_is_asked_and_send_anyway_or_cancel() {
     tui.wait_for("一。");
     edit(&home, &mut tui, "Use absolute paths, always.\n");
     tui.say("第二句");
-    tui.wait_for("下一轮的缓存会失效");
+    // 改了的文件列在那句话下面：等到它也画出来再看。
+    tui.wait_for_all(&["下一轮的缓存会失效", "local-paths-rule.txt"]);
     assert!(
         tui.shows("local-paths-rule.txt"),
         "列出改了的文件：\n{}",
@@ -67,8 +68,12 @@ fn a_changed_prefix_is_asked_and_send_anyway_or_cancel() {
     tui.key(b"\x1b[C");
     tui.key(b"\r");
     // 才两轮，压不了：核心回压缩自己的拒绝，那句没发出去，照「没发出去」办（弹拒绝的话、字回到框里）。
-    tui.wait_for("没有可压缩的内容");
-    let screen = tui.lines().join("\n");
+    // 拒绝的提示和退回框里的字是同一次画的，框在下面：等两样都在了再看。
+    let screen = tui
+        .wait_until("拒绝的提示、字回到框里", |l| {
+            support::has(l, "没有可压缩的内容") && support::input_in(l).contains("第三句")
+        })
+        .join("\n");
     assert!(!screen.contains("不该说"), "压不了就不发：\n{screen}");
     assert!(
         screen

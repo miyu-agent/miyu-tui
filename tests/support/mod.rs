@@ -31,6 +31,9 @@ mod fakes;
 mod home;
 mod waits;
 
+#[allow(unused_imports, reason = "只有等两样都在了再断言的测试用")]
+pub use waits::{done_in, has, input_in};
+
 #[allow(unused_imports, reason = "只有自己拼 PATH、要看通知记下了什么的测试用")]
 pub use fakes::{fake_notifiers, notify_log};
 #[allow(
@@ -321,7 +324,7 @@ impl Tui {
 
     /// 屏幕上有没有这串字。
     pub fn shows(&self, text: &str) -> bool {
-        self.lines().iter().any(|l| l.contains(text))
+        has(&self.lines(), text)
     }
 
     /// 配置页主菜单上挪到名字是 `name` 的那一项、回车进去：照选中那一行（左边的 `┃`；没有颜色可靠的、纯 ASCII 主题是行首的箭头 `❯`、`>`）认，不数第几项
@@ -410,13 +413,7 @@ impl Tui {
 
     /// 输入框里那一行的字（提示符后面的）。
     pub fn input(&self) -> String {
-        self.lines()
-            .iter()
-            .rev()
-            .find(|l| l.contains('❯') && l.contains('│'))
-            .and_then(|l| l.split_once('❯'))
-            .map(|(_, rest)| rest.trim_end_matches('│').trim().to_string())
-            .unwrap_or_default()
+        input_in(&self.lines())
     }
 }
 

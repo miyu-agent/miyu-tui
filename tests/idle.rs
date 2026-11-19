@@ -48,7 +48,8 @@ fn the_home_screen_settles_and_stays_silent_until_something_happens() {
     let home = Home::with_settings(Script::new([]), MASCOT_ON);
     let mascot = short_mascot(&home);
     let mut tui = home.tui_with("zh_CN.UTF-8", &[("MIYU_TUI_MASCOT", mascot.as_str())]);
-    tui.wait_for("Tab 切换权限级别");
+    // 吉祥物和输入框的占位字不一定一起读到：等两样都在了再看。
+    tui.wait_for_all(&["Tab 切换权限级别", "@"]);
     assert!(
         tui.shows("@"),
         "首页画着吉祥物：\n{}",
@@ -69,7 +70,8 @@ fn a_finished_turn_with_the_sidebar_mascot_stays_silent() {
     let mut tui = home.tui_wide_with("zh_CN.UTF-8", 130, &[("MIYU_TUI_MASCOT", mascot.as_str())]);
     tui.wait_for("Tab 切换权限级别");
     tui.say("在吗");
-    tui.wait_for("好。");
+    // 侧边栏的吉祥物和回答不一定一起读到：等两样都在了再看。
+    tui.wait_for_all(&["好。", "@"]);
     assert!(
         tui.shows("@"),
         "侧边栏画着吉祥物：\n{}",

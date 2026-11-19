@@ -21,7 +21,8 @@ fn a_loop_shows_above_the_input_and_in_the_sidebar() {
     tui.say("/loop 10m 看一眼 CI");
     // 记号照图标那一套，出厂 nerd 是钟（2026-11-02 项目主人）。
     tui.wait_for("\u{f017} ");
-    tui.wait_for("每 10 分钟 · 下次");
+    // 要做的那几个字和「每 10 分钟」不一定一起读到：等两样都在了再看。
+    tui.wait_for_all(&["每 10 分钟 · 下次", "看一眼 CI"]);
     assert!(tui.shows("看一眼 CI"), "{}", tui.lines().join("\n"));
     // 停掉：那一段和那一截都不画了。
     tui.say("/loop off");

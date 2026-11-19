@@ -23,7 +23,8 @@ fn a_template_command_is_listed_and_shows_the_typed_line() {
     tui.wait_for("Tab 切换权限级别");
     // 列表里有它：名字后面暗色跟着参数提示，说明照中文。
     tui.type_text("/revi");
-    tui.wait_for("/review <路径>");
+    // 说明在名字右边：等到它也画出来再看。
+    tui.wait_for_all(&["/review <路径>", "审一遍代码"]);
     assert!(tui.shows("审一遍代码"), "{}", tui.lines().join("\n"));
     // 接着打参数、回车：交给核心展开，正文里是打的那一行。
     tui.type_text("ew src/lib.rs");
@@ -70,7 +71,7 @@ fn a_skill_is_named_with_a_dollar_not_a_slash_and_the_typed_line_is_shown() {
         tui.key(b"\x7f");
     }
     tui.type_text("$forec");
-    tui.wait_for("$forecast");
+    tui.wait_for_all(&["$forecast", "看天气"]);
     assert!(tui.shows("看天气"), "{}", tui.lines().join("\n"));
     tui.key(b"\r");
     // 选定把词换成「$forecast 」、列表关上（读到的输入框去掉了行尾的空格；空格在不在看下面发出去的那一行）。
@@ -128,7 +129,10 @@ fn up_and_ctrl_k_move_the_command_list_and_never_recall_input_history() {
     tui.say("历史里的一句");
     tui.wait_for("好。");
     tui.type_text("/c");
-    tui.wait_for("命令");
+    // 选中的那一行在标题下面：等到它也画出来再记（输入框里也有一处「❯ /」，列表那一行是另一处）。
+    tui.wait_until("命令列表选中的那一行", |l| {
+        support::has(l, "命令") && l.iter().filter(|r| r.contains("❯ /")).count() >= 2
+    });
     let picked = |tui: &support::Tui| {
         tui.lines()
             .into_iter()

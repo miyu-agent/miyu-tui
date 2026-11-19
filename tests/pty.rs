@@ -109,7 +109,8 @@ fn a_manually_chosen_language_writes_the_folded_line_in_it() {
     tui.wait_for("自动（跟随系统：中文）");
     tui.key(DOWN);
     tui.key(b"\r");
-    tui.wait_for("思考了");
+    // 换了语言整屏重画：等到旧的那句也没了再看。
+    tui.wait_for_instead("思考了", "Thought for");
     assert!(!tui.shows("Thought for"), "{}", tui.lines().join("\n"));
 }
 
@@ -173,7 +174,8 @@ fn the_at_list_asks_the_core_and_the_data_root_stays_closed() {
     tui.key(b"\x03");
     tui.pump(Duration::from_millis(300));
     tui.type_text(&format!("@{}/", home.root().display()));
-    tui.wait_for("无匹配项");
+    // 一串字打进去时列表跟着一个字一个字筛过，「无匹配项」下面可能还留着上一帧的条目：等到它们也收掉了再看。
+    tui.wait_for_instead("无匹配项", "home/");
     assert!(!tui.shows("home/"), "{}", tui.lines().join("\n"));
 }
 
@@ -241,8 +243,9 @@ fn ctrl_g_edits_the_prompt_in_the_editor() {
     tui.type_text("原来的话");
     tui.pump(Duration::from_millis(300));
     tui.key(b"\x07");
+    // 从编辑器回来整屏重画：等到原来的话也没了再看。
     tui.wait_for("编辑器里写的");
-    tui.wait_for("第二行");
+    tui.wait_for_instead("第二行", "原来的话");
     assert!(!tui.shows("原来的话"), "{}", tui.lines().join("\n"));
 }
 
@@ -283,6 +286,10 @@ fn a_jump_to_bottom_hint_floats_over_the_body_and_brings_the_view_back() {
     tui.wait_for("开放权限");
     tui.say("说长一点");
     tui.wait_at_bottom_for_done();
+    // 跟到底那一下收掉提示，和收尾行不一定在同一帧：等到提示也没了再看。
+    tui.wait_until("到底了、提示收掉", |l| {
+        support::done_in(l) && !support::has(l, "跳转到底部（Ctrl+End）↓")
+    });
     let hint = |tui: &support::Tui| {
         tui.lines().iter().enumerate().find_map(|(y, l)| {
             l.find("跳转到底部（Ctrl+End）↓")

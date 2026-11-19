@@ -13,9 +13,7 @@ fn status_lists_the_session_with_its_title_on_the_frame_and_closes_on_escape() {
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/status");
-    tui.wait_for("会话 ID");
-    let screen = tui.lines().join("\n");
-    for key in [
+    let keys = [
         "权限模式",
         "当前工作目录",
         "模型",
@@ -23,7 +21,14 @@ fn status_lists_the_session_with_its_title_on_the_frame_and_closes_on_escape() {
         "用量",
         "缓存命中",
         "回忆 0 次 · 记住 0 条",
-    ] {
+    ];
+    // 状态框的各行不一定和「会话 ID」一起读到：等到都在了再看。
+    let screen = tui
+        .wait_until("状态框的各行", |l| {
+            support::has(l, "会话 ID") && keys.iter().all(|k| support::has(l, k))
+        })
+        .join("\n");
+    for key in keys {
         assert!(screen.contains(key), "少了「{key}」：\n{screen}");
     }
     // 框线上写会话标题，不写「会话状态」。

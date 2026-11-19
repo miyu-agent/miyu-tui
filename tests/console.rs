@@ -5,11 +5,11 @@
 mod support;
 
 use miyu_session::testkit::Script;
-use support::{Home, Tui};
+use support::Home;
 
 /// 行首（框线后面）写着箭头 `pointer` 的那一行，箭头后面的字（去掉两头空白）是 `choices` 里的哪一个。
-fn picked(tui: &Tui, pointer: char, choices: &[&str]) -> Option<String> {
-    tui.lines().iter().find_map(|l| {
+fn picked(lines: &[String], pointer: char, choices: &[&str]) -> Option<String> {
+    lines.iter().find_map(|l| {
         // 框里的行打头是框线（`│`、`|`），箭头在它后面
         let rest = l
             .trim_start()
@@ -29,7 +29,10 @@ fn walk(env: &[(&str, &str)], pointer: char) {
     let mut tui = home.tui_with("en_US.UTF-8", env);
     tui.wait_for("Full access");
     tui.say("/config");
-    tui.wait_for("Display, New sessions");
+    // 主菜单整页换上来：「General」那一行和它的说明不一定一起读到，等到箭头也停在它上面再看。
+    tui.wait_until("主菜单画完", |l| {
+        support::has(l, "Display, New sessions") && picked(l, pointer, &["General"]).is_some()
+    });
     assert!(
         !tui.lines().iter().any(|l| l.contains('、')),
         "英文界面不用「、」连：\n{}",
@@ -37,14 +40,14 @@ fn walk(env: &[(&str, &str)], pointer: char) {
     );
     let menu = ["General", "Appearance"];
     assert_eq!(
-        picked(&tui, pointer, &menu).as_deref(),
+        picked(&tui.lines(), pointer, &menu).as_deref(),
         Some("General"),
         "主菜单：\n{}",
         tui.lines().join("\n")
     );
     tui.key(b"j");
     assert_eq!(
-        picked(&tui, pointer, &menu).as_deref(),
+        picked(&tui.lines(), pointer, &menu).as_deref(),
         Some("Appearance"),
         "主菜单挪了一项：\n{}",
         tui.lines().join("\n")
@@ -54,7 +57,7 @@ fn walk(env: &[(&str, &str)], pointer: char) {
     tui.wait_for("Interface language");
     let rows = ["Interface language", "On start, open"];
     assert_eq!(
-        picked(&tui, pointer, &rows).as_deref(),
+        picked(&tui.lines(), pointer, &rows).as_deref(),
         Some("Interface language"),
         "页里的行：\n{}",
         tui.lines().join("\n")
@@ -63,14 +66,14 @@ fn walk(env: &[(&str, &str)], pointer: char) {
     tui.wait_for("Follow the system");
     let choices = ["Follow the system", "中文", "English", "日本語"];
     assert_eq!(
-        picked(&tui, pointer, &choices).as_deref(),
+        picked(&tui.lines(), pointer, &choices).as_deref(),
         Some("Follow the system"),
         "选择窗选中的那一行行首有箭头：\n{}",
         tui.lines().join("\n")
     );
     tui.key(b"j");
     assert_eq!(
-        picked(&tui, pointer, &choices).as_deref(),
+        picked(&tui.lines(), pointer, &choices).as_deref(),
         Some("中文"),
         "挪了一行，箭头跟着走：\n{}",
         tui.lines().join("\n")
@@ -101,14 +104,14 @@ fn without_colour_the_effort_list_shows_the_arrow_on_the_current_level_too() {
     tui.wait_for("跟随设置");
     let levels = ["跟随设置", "off", "low", "high"];
     assert_eq!(
-        picked(&tui, '❯', &levels).as_deref(),
+        picked(&tui.lines(), '❯', &levels).as_deref(),
         Some("跟随设置"),
         "光标在现在用的那一项上：\n{}",
         tui.lines().join("\n")
     );
     tui.key(b"\x1b[B");
     assert_eq!(
-        picked(&tui, '❯', &levels).as_deref(),
+        picked(&tui.lines(), '❯', &levels).as_deref(),
         Some("off"),
         "挪了一行：\n{}",
         tui.lines().join("\n")

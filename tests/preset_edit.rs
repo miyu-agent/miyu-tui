@@ -49,7 +49,12 @@ fn made(home: &Home) -> Tui {
         text(home).contains("我的预设")
     });
     // 建好开它的窗：名字、功能树（核心 FG-1，组名打头）；名字上面一行写 id（发版前 check 28，2026-11-09 项目主人）。
-    tui.wait_for("基础系统");
+    // id 那一行和功能树不一定一起读到：等两样都在了再看。
+    tui.wait_until("建好的预设的窗", |l| {
+        support::has(l, "基础系统")
+            && l.iter()
+                .any(|r| r.split_whitespace().collect::<Vec<_>>() == ["id", "preset-1"])
+    });
     assert!(
         tui.lines()
             .iter()

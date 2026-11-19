@@ -61,7 +61,12 @@ fn tab_cycles_the_level_on_the_home_screen_after_picking_a_persona_and_preset() 
         );
         tui.pump(std::time::Duration::from_millis(50));
     }
-    tui.wait_for("Tab 切换权限级别");
+    // 底栏在输入框下面：框关了以后输入框和底栏不一定一起读到，等两样都在了再看。
+    tui.wait_until("输入框的占位字和底栏", |l| {
+        support::has(l, "Tab 切换权限级别")
+            && l.iter()
+                .any(|r| ["开放权限", "只读"].iter().any(|w| r.contains(w)))
+    });
     assert!(footer(&tui).contains("开放权限"), "{}", footer(&tui));
     press_until(&mut tui, b"\t", "只读");
     press_until(&mut tui, BACK_TAB, "开放权限");

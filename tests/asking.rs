@@ -63,7 +63,8 @@ fn a_hazardous_command_asks_and_allowing_once_lets_it_through() {
     );
     tui.key(b"\r");
     wait(&mut tui, "文件清掉", || !target.exists());
-    tui.wait_for("清好了。");
+    // 抽屉收起和回答可能在同一帧：抽屉在下面，只等到回答时读到的可能是半帧。
+    tui.wait_for_instead("清好了。", "允许本次");
     assert!(
         !tui.lines().iter().any(|l| l.contains("允许本次")),
         "答了收起"
@@ -165,8 +166,10 @@ fn ask_user_opens_the_question_drawer_and_the_answers_reach_her() {
     tui.key(b"\r");
     tui.wait_for("好，照你说的写。");
     // 回答不进时间线，照你说的话的样子另起一块（2026-10-26 项目主人）：头一行「你回答了 N 个问题」，一题一行「问题 → 答案」。
-    tui.wait_for("┃ 你回答了 2 个问题");
-    let screen = tui.lines().join("\n");
+    // 一题一行在头一行下面：等到它们也画出来再看。
+    let screen = tui
+        .wait_for_all(&["┃ 你回答了 2 个问题", "┃ 语言 → ", "┃ 测试 → "])
+        .join("\n");
     assert!(screen.contains("┃ 语言 → Rust（推荐）"), "{screen}");
     assert!(
         screen.contains("┃ 测试 → 不要（补充：以后再说）"),

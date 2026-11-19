@@ -35,6 +35,24 @@ impl Tui {
         }
     }
 
+    /// 等到 `texts` 每一串都在同一屏上，交回那时的各行：一帧可能分几次读到，等到了这一串就查同一屏的别处，读到半帧时
+    /// 别处还是旧的（LiteMiyu f012974 在 CI 上红过的那种）。要查的几样都写进来，等到都在了再断言。
+    pub fn wait_for_all(&mut self, texts: &[&str]) -> Vec<String> {
+        let what = texts
+            .iter()
+            .map(|t| format!("「{t}」"))
+            .collect::<Vec<_>>()
+            .join("");
+        self.wait_until(&what, |lines| texts.iter().all(|t| has(lines, t)))
+    }
+
+    /// 等到屏幕上有 `text`、`old` 收掉了，交回那时的各行：整页、整段换上来时新的先到了、旧的还没擦掉的半帧不算。
+    pub fn wait_for_instead(&mut self, text: &str, old: &str) -> Vec<String> {
+        self.wait_until(&format!("「{text}」换掉「{old}」"), |lines| {
+            has(lines, text) && !has(lines, old)
+        })
+    }
+
     /// 一路按 `Ctrl+End` 跟到底，等到屏幕上出现 `text`（长回答的最后一行、这一轮的收尾行）。长过视口的回答写着时正文停在
     /// 它的开头（蓝图「正文」第 1 条）：慢的机器上回答分几次到、中间画过一帧，写完了也照旧停在开头，等不到最后一行（11-05、
     /// 11-06 macOS CI 三次等不到「第60行」）。要用长回答把正文撑高的测试，接着往下做之前都照这个等。
@@ -51,14 +69,9 @@ impl Tui {
         }
     }
 
-    /// 屏幕上有一轮的收尾行：开放权限的图标 `⏵⏵ ` 后面紧跟时间（底栏是 `⏵⏵ 开放权限`）。原来等 `▣  `（工作区的图标后面
-    /// 空两格），LV-3 去掉了工作区一级。
+    /// 屏幕上有一轮的收尾行（[`done_in`]）。
     pub fn shows_done(&self) -> bool {
-        self.lines().iter().any(|l| {
-            l.split("⏵⏵ ")
-                .skip(1)
-                .any(|rest| rest.starts_with(|c: char| c.is_ascii_digit()))
-        })
+        done_in(&self.lines())
     }
 
     /// 等到一轮的收尾行出来，最多 [`WAIT`]。
@@ -118,4 +131,30 @@ impl Tui {
         }
         Instant::now()
     }
+}
+
+/// 各行里有没有这串字（同 [`Tui::shows`]，给 [`Tui::wait_until`] 的条件用）。
+pub fn has(lines: &[String], text: &str) -> bool {
+    lines.iter().any(|l| l.contains(text))
+}
+
+/// 输入框里那一行的字，提示符后面的（同 [`Tui::input`]）。
+pub fn input_in(lines: &[String]) -> String {
+    lines
+        .iter()
+        .rev()
+        .find(|l| l.contains('❯') && l.contains('│'))
+        .and_then(|l| l.split_once('❯'))
+        .map(|(_, rest)| rest.trim_end_matches('│').trim().to_string())
+        .unwrap_or_default()
+}
+
+/// 有一轮的收尾行：开放权限的图标 `⏵⏵ ` 后面紧跟时间（底栏是 `⏵⏵ 开放权限`）。原来等 `▣  `（工作区的图标后面空两格），
+/// LV-3 去掉了工作区一级。
+pub fn done_in(lines: &[String]) -> bool {
+    lines.iter().any(|l| {
+        l.split("⏵⏵ ")
+            .skip(1)
+            .any(|rest| rest.starts_with(|c: char| c.is_ascii_digit()))
+    })
 }

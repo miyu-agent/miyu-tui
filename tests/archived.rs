@@ -28,11 +28,13 @@ fn an_archive_says_so_in_the_input_box_and_refuses_to_continue() {
     .expect("写得进去");
     home.stop_core();
     home.restart_core();
-    tui.wait_for("这是存档");
+    // 重连以后重读会话：存档那句和重读的正文不一定在同一帧，等两样都在了再看。
+    tui.wait_for_all(&["这是存档", "你好呀。"]);
     assert!(tui.shows("你好呀。"), "以前的对话照旧画着");
     // 还是要说：核心拒 `archived`，弹提示，字退回框里。
     tui.type_text("再说一句");
     tui.key(b"\r");
-    tui.wait_for("这是存档，不能接着说");
+    // 提示和退回框里的字是同一次拒绝画的：等两样都在了再看。
+    tui.wait_for_all(&["这是存档，不能接着说", "再说一句"]);
     assert!(tui.shows("再说一句"), "{}", tui.lines().join("\n"));
 }

@@ -4,8 +4,6 @@
 
 mod support;
 
-use std::time::{Duration, Instant};
-
 use miyu_session::testkit::{Play, Script};
 use support::{Home, Tui};
 
@@ -16,20 +14,21 @@ fn counted(line: &str) -> bool {
     COUNTED.iter().any(|w| line.contains(w))
 }
 
-/// 等到有一行收起行带着回报的数。
-fn wait_counted(tui: &mut Tui) -> usize {
-    let end = Instant::now() + support::WAIT;
-    loop {
-        if let Some(row) = tui.lines().iter().position(|l| counted(l)) {
-            return row;
-        }
-        assert!(
-            Instant::now() < end,
-            "等不到带回报数的收起行：\n{}",
-            tui.lines().join("\n")
-        );
-        tui.pump(Duration::from_millis(100));
-    }
+/// 等到回答上面有一行收起行带着回报的数、那几步也收掉了，交回那一屏：收起行先画、下面那几步收掉在同一帧的后半截，
+/// 只等到收起行就数，读到半帧时会多数出没收掉的那几步。
+fn wait_counted(tui: &mut Tui) -> Vec<String> {
+    tui.wait_until("带回报数的收起行", |l| {
+        let Some(reply) = l.iter().position(|r| r.contains("都做完了。")) else {
+            return false;
+        };
+        let above = &l[..reply];
+        above.iter().any(|r| counted(r))
+            && above
+                .iter()
+                .filter(|r| r.contains("后台命令完成") || counted(r))
+                .count()
+                == 1
+    })
 }
 
 #[test]
@@ -62,8 +61,8 @@ fn a_report_inside_a_turn_is_a_step_of_the_timeline() {
     tui.wait_for("开放权限");
     tui.say("做三件事");
     tui.wait_for("都做完了。");
-    let row = wait_counted(&mut tui);
-    let lines = tui.lines();
+    let lines = wait_counted(&mut tui);
+    let row = lines.iter().position(|l| counted(l)).expect("有收起行");
     let reply = lines
         .iter()
         .position(|l| l.contains("都做完了。"))
@@ -78,8 +77,8 @@ fn a_report_inside_a_turn_is_a_step_of_the_timeline() {
     // 点开那一段：回报是里面的一步，在两条命令中间。
     let click = format!("\x1b[<0;6;{}M\x1b[<0;6;{}m", row + 1, row + 1);
     tui.send(click.as_bytes());
-    tui.wait_for("● 后台命令完成");
-    let lines = tui.lines();
+    // 铺开的那几步一起画，后面那一步在回报下面：等两样都在了再看。
+    let lines = tui.wait_for_all(&["● 后台命令完成", "echo after-report"]);
     let at = |text: &str| lines.iter().position(|l| l.contains(text));
     let (Some(report), Some(after)) = (at("● 后台命令完成"), at("echo after-report"))
     else {

@@ -79,15 +79,15 @@ fn editing_the_preset_in_use_from_the_box_asks_to_compact() {
     let mut tui = long_talked(&home);
     // 无人格那一行不能编辑。
     tui.say("/persona");
-    tui.wait_for("请选择人格");
-    // 光标停在正在用的那一行，行首是 `●`（选中了也照旧，第 2a 条）。
+    // 光标停在正在用的那一行，行首是 `●`（选中了也照旧，第 2a 条）。列表在标题下面，等到它也画出来再看。
+    tui.wait_for_all(&["请选择人格", "无人格"]);
     assert!(tui.shows("● 无人格"), "{}", tui.lines().join("\n"));
     tui.key(b"e");
     tui.wait_for("这一项不能编辑");
     tui.key(b"\x1b");
     // 预设框按 `e`：直接开详情窗，提示行写着「e 编辑」。
     tui.say("/preset");
-    tui.wait_for("e 编辑");
+    tui.wait_for_all(&["e 编辑", "全部功能"]);
     assert!(tui.shows("● 全部功能"), "{}", tui.lines().join("\n"));
     tui.key(b"e");
     toggle_and_close(&mut tui, &home);
@@ -95,7 +95,7 @@ fn editing_the_preset_in_use_from_the_box_asks_to_compact() {
     tui.wait_for("当前使用的预设发生变化");
     tui.key(b"j");
     tui.key(b"\r");
-    tui.wait_for("请选择预设");
+    tui.wait_for_all(&["请选择预设", "全部功能"]);
     assert!(tui.shows("● 全部功能"), "{}", tui.lines().join("\n"));
     // 再改一次、答「是」：框关上，做一次前台压缩。
     tui.key(b"e");
