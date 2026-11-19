@@ -220,7 +220,6 @@ fn a_recap_leads_with_a_dim_reference_mark_and_folds_under_its_words() {
 
 #[test]
 fn a_new_theme_redraws_cached_replies() {
-    let _theme = theme::hold();
     let mut themes = theme::builtin().unwrap();
     let first = themes.remove(0).1;
     let other = themes.remove(0).1;
@@ -229,7 +228,7 @@ fn a_new_theme_redraws_cached_replies() {
     // 换一套颜色：排好的样子作废。同一套再设一次不算换（`theme/tests.rs`）。
     theme::set(other);
     assert_ne!(cache_key("**粗**", &[], "zh"), before);
-    // 换回出厂那一套，不扰别的测试。
+    // 换回出厂那一套。
     theme::set(first);
 }
 

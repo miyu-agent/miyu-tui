@@ -88,8 +88,6 @@ fn cached_rows_match_a_fresh_build() {
 
 #[test]
 fn only_changed_entries_are_rebuilt() {
-    // 数重排了几条：主题别在中途被别的测试换掉。
-    let _theme = crate::theme::hold();
     let f = Fixture::new();
     let mut t = sample();
     let mut ctx = f.ctx();
@@ -117,8 +115,6 @@ fn only_changed_entries_are_rebuilt() {
 
 #[test]
 fn a_live_segment_is_rebuilt_every_frame() {
-    // 数重排了几条：主题别在中途被别的测试换掉。
-    let _theme = crate::theme::hold();
     let f = Fixture::new();
     let mut t = sample();
     t.entries[1]
@@ -140,7 +136,6 @@ fn a_live_segment_is_rebuilt_every_frame() {
 #[test]
 fn a_running_compaction_line_is_rebuilt_every_frame() {
     // 流光、闪、呼吸都在动（`tui.md`「正文」第 9 条）：和在进行的时间线一样每帧重排。
-    let _theme = crate::theme::hold();
     let f = Fixture::new();
     let mut t = sample();
     t.note(Kind::Note, "正在压缩上下文 0".into());
@@ -177,8 +172,6 @@ fn entries_are_known_by_id_not_position() {
 
 #[test]
 fn a_finished_figure_rebuilds_only_entries_with_figures() {
-    // 数重排了几条：主题别在中途被别的测试换掉。
-    let _theme = crate::theme::hold();
     let f = Fixture::new();
     let t = sample();
     let ctx = f.ctx();
@@ -193,7 +186,6 @@ fn a_finished_figure_rebuilds_only_entries_with_figures() {
 #[test]
 fn a_level_filled_in_later_rebuilds_only_that_entry() {
     // 竖线只照这一条记下的级别上色（「正文」第 2 条），不照现在的：读到更早的一页补上了级别的那一句重排，别的不动。
-    let _theme = crate::theme::hold();
     let f = Fixture::new();
     let mut t = sample();
     let ctx = f.ctx();
@@ -433,7 +425,6 @@ fn a_details_title_opens_and_closes_its_reply() {
 fn a_full_relayout_is_spread_over_frames_starting_near_the_viewport() {
     // 2026-10-01 性能体检：改宽度、换语言以后整份重排，300 条消息那一帧要 29–37 毫秒。一帧只排预算这么多，先排视口附近的，
     // 没轮到的先用旧行，几帧排完；排完和一口气排的一模一样。
-    let _theme = crate::theme::hold();
     let f = Fixture::new();
     let mut t = Transcript::default();
     for _ in 0..5 {
@@ -481,7 +472,6 @@ fn a_full_relayout_is_spread_over_frames_starting_near_the_viewport() {
 #[test]
 fn switching_from_auto_to_the_same_language_by_hand_rebuilds_everything() {
     // 2026-10-01 伪终端测具查出来的：自动（系统中文）换成手动选中文，语言代码没变，收起那一行却要从英文换成中文。
-    let _theme = crate::theme::hold();
     let mut f = Fixture::new();
     let t = sample();
     let cache = RefCell::new(RowCache::default());

@@ -52,8 +52,6 @@ fn the_plain_set_draws_plain_icons() {
 
 #[test]
 fn another_icon_set_redraws_the_steps_already_laid_out() {
-    // 数重排了几条：主题别在中途被别的测试换掉。
-    let _theme = theme::hold();
     let mut f = Fixture::new();
     let mut t = Transcript::default();
     t.note(Kind::Steps, String::new());
