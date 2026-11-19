@@ -91,6 +91,16 @@ impl More {
 }
 
 impl More {
+    /// 装着的包的编号到名字（`package.list` 读来的，「已安装」那一页同一份）；还没读到的是空的。
+    pub fn package_names(&self) -> HashMap<String, String> {
+        self.store
+            .local
+            .iter()
+            .flatten()
+            .map(|p| (p.id.clone(), p.name.clone()))
+            .collect()
+    }
+
     /// 包 `id` 的上游完整网址：那一行末尾的上游点了照它打开（第 43a 条）。
     pub fn upstream(&self, id: &str) -> Option<&str> {
         self.origins.get(id)?.upstream.as_deref()

@@ -966,6 +966,7 @@
       "system": "system",
       "own": "custom",
       "default": "default",
+      "package": "from package {name}",
       "id": "ID"
     },
     "titles": [
