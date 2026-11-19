@@ -423,6 +423,7 @@ mod catalog;
 mod choice_names;
 mod dialog_sides;
 mod group_note;
+mod package_provider;
 mod pools;
 mod presets;
 mod records;
