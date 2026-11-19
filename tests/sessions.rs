@@ -92,7 +92,8 @@ fn switching_draws_the_other_ones_past_without_flashing_an_empty_session() {
     tui.key(DOWN);
     tui.record();
     tui.key(b"\r");
-    tui.wait_for("第 1 号的回答。");
+    // 整份正文换成 1 号的：等到 2 号的回答也收掉了再看。
+    tui.wait_for_instead("第 1 号的回答。", "第 2 号的回答。");
     let frames = tui.recorded();
     // 空会话的首页画吉祥物，吉祥物的字里有一串 `@`，正文里没有。
     assert!(
@@ -106,7 +107,7 @@ fn switching_draws_the_other_ones_past_without_flashing_an_empty_session() {
     tui.wait_for("2 个");
     tui.key(DOWN);
     tui.key(b"\r");
-    tui.wait_for("第 2 号的回答。");
+    tui.wait_for_instead("第 2 号的回答。", "第 1 号的回答。");
     assert!(!tui.shows("第 1 号的回答。"), "{}", tui.lines().join("\n"));
 }
 
@@ -138,7 +139,14 @@ fn pinning_moves_it_to_the_top() {
     tui.key(DOWN);
     tui.key(DOWN);
     tui.key(CTRL_P);
-    tui.wait_for("已置顶");
+    // 置顶以后列表重排：等到排好了（置顶的旧会话挪到第二行）再看。
+    tui.wait_until("置顶以后重排的列表", |l| {
+        support::has(l, "已置顶")
+            && l.iter()
+                .filter(|r| r.contains(" #"))
+                .nth(1)
+                .is_some_and(|r| r.contains("第 1 号的话"))
+    });
     let shown = rows(&tui);
     assert!(
         shown[0].contains("第 3 号的话"),
@@ -349,7 +357,8 @@ fn deleting_the_current_session_moves_to_the_latest_one_and_then_to_an_empty_one
     tui.key(CTRL_D);
     tui.wait_for("再按一次 Ctrl+D 删除「");
     tui.key(CTRL_D);
-    tui.wait_for("第 1 号的回答。");
+    // 整份正文换成 1 号的：等到 2 号的回答也收掉了再看。
+    tui.wait_for_instead("第 1 号的回答。", "第 2 号的回答。");
     assert!(!tui.shows("第 2 号的回答。"), "{}", tui.lines().join("\n"));
     tui.say("/sessions");
     wait_rows(&mut tui, 1);
@@ -377,7 +386,8 @@ fn delete_removes_the_current_session_and_lands_on_a_new_one() {
     tui.say("/delete");
     tui.wait_for("已删除「");
     let deleted = notice_border(&tui, "已删除「");
-    tui.wait_for("开放权限");
+    // 回到新会话的首页：整份正文换掉，等到 2 号的回答也没了再看。
+    tui.wait_for_instead("开放权限", "第 2 号的回答。");
     assert!(
         !tui.shows("第 2 号的回答。"),
         "回到新会话的首页：\n{}",

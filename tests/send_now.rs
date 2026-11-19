@@ -26,8 +26,10 @@ fn ctrl_enter_after_the_request_took_the_message_answers_it_once() {
     tui.type_text("插一句");
     tui.pump(Duration::from_millis(300));
     tui.key(b"\x1b[13;5u");
-    tui.wait_for("回答插的那句。");
-    let lines = tui.lines();
+    // 框里那句清掉和回答不一定在同一帧（框在下面）：等到「插一句」只剩一处再看。
+    let lines = tui.wait_until("回答出来、框里那句清掉", |l| {
+        support::has(l, "回答插的那句。") && l.iter().filter(|r| r.contains("插一句")).count() == 1
+    });
     assert_eq!(
         lines.iter().filter(|l| l.contains("插一句")).count(),
         1,

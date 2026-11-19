@@ -29,7 +29,8 @@ fn a_session_deleted_while_the_core_was_away_says_so_and_the_next_sentence_start
     tui.wait_for("会话不存在");
     assert!(tui.shows("第一句的回答。"), "上面的留着看");
     tui.say("第二句");
-    tui.wait_for("新会话的回答。");
+    // 换成一份空的正文和新的回答不一定在同一帧：等到旧的回答也没了再看。
+    tui.wait_for_instead("新会话的回答。", "第一句的回答。");
     assert!(
         !tui.shows("第一句的回答。"),
         "像按过 /new：换了一份空的正文\n{}",
@@ -72,7 +73,8 @@ fn what_the_core_wrote_while_reconnecting_is_caught_up() {
     home.stop_core();
     tui.wait_for(DOWN);
     home.restart_core();
-    tui.wait_for("核心重启时已停止");
+    // 那一格收掉和停了的那句不一定在同一帧：等两样都对了再看。
+    tui.wait_for_instead("核心重启时已停止", "1 个后台命令");
     assert!(!tui.shows("1 个后台命令"), "{}", tui.lines().join("\n"));
 }
 
@@ -105,6 +107,7 @@ fn a_switch_cut_off_by_the_core_going_away_lands_after_reconnecting() {
     home.stop_core();
     tui.wait_for(DOWN);
     home.restart_core();
-    tui.wait_for("第 1 号的回答。");
+    // 正文整个换成 1 号的：等到 2 号的回答也没了再看。
+    tui.wait_for_instead("第 1 号的回答。", "第 2 号的回答。");
     assert!(!tui.shows("第 2 号的回答。"), "{}", tui.lines().join("\n"));
 }

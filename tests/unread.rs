@@ -42,11 +42,13 @@ fn a_log_broken_in_the_middle_leaves_the_session_view_only() {
     home.stop_core();
     home.restart_core();
     tui.wait_for(&format!("会话日志第 {} 行坏了", broken + 1));
-    tui.wait_for("这个会话只能看，输入 /new 新开会话");
+    // 重连以后重读会话：坏行以前的正文和框里那句不一定在同一帧，等两样都在了再看。
+    tui.wait_for_all(&["这个会话只能看，输入 /new 新开会话", "一。"]);
     assert!(tui.shows("一。"), "坏行以前的照旧画着");
     tui.type_text("再说一句");
     tui.key(b"\r");
-    tui.wait_for("这个会话只能看，不能接着聊");
+    // 提示和退回框里的字是同一次拒绝画的：等两样都在了再看。
+    tui.wait_for_all(&["这个会话只能看，不能接着聊", "再说一句"]);
     assert!(tui.shows("再说一句"), "{}", tui.lines().join("\n"));
 }
 

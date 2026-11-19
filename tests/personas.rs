@@ -32,7 +32,8 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     home.persona("broken", "[persona]\nbad = 1\n", None);
     let mut tui = home.tui_with("zh_CN.UTF-8", &[ASK, ASK_PRESET]);
     tui.wait_for("请选择人格");
-    tui.wait_for("海盗");
+    // 列表的几行、写错的后面的原因不一定和海盗一起读到：等到都在了再看。
+    tui.wait_for_all(&["海盗", "broken", "不认识的键"]);
     assert!(tui.shows("broken"), "写错的也列着（选不了）");
     let broken = tui
         .lines()
@@ -232,7 +233,8 @@ fn a_persona_switched_midway_compacts_first_then_speaks_as_the_new_one() {
     tui.say("在吗");
     tui.wait_for("好。");
     tui.say("/persona");
-    tui.wait_for("请选择人格");
+    // 照选中那一行往下挪：列表没读到时按的 `j` 会挪错，等到海盗那一行也画出来再挪。
+    tui.wait_for_all(&["请选择人格", "海盗"]);
     for _ in 0..8 {
         if picked(&tui).contains("海盗") {
             break;

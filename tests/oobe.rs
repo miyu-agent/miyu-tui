@@ -78,7 +78,7 @@ fn through_semantic(tui: &mut support::Tui) {
     tui.wait_for("是否开启内置语义模型");
     assert!(!tui.shows("需下载"), "连不上软件源的不写大小");
     tui.key(b"\r");
-    tui.wait_for("重试");
+    tui.wait_for_all(&["重试", "跳过"]);
     assert!(tui.shows("跳过"), "{}", tui.lines().join("\n"));
     tui.key(b"j");
     tui.key(b"\r");
@@ -221,7 +221,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     tui.wait_for("全部功能");
     tui.key(b"\r");
     through_semantic(&mut tui);
-    tui.wait_for("按 Enter 开始对话");
+    tui.wait_for_all(&["按 Enter 开始对话", "小助手", "全部功能"]);
     assert!(
         tui.shows("小助手") && tui.shows("全部功能"),
         "{}",
@@ -249,7 +249,7 @@ fn walking_the_whole_guide_creates_the_persona_and_sets_the_defaults() {
     );
     // 回车走：记下走过了，回到平常的首页。
     tui.key(b"\r");
-    tui.wait_for("Tab 切换权限级别");
+    tui.wait_for_instead("Tab 切换权限级别", "按 Enter 开始对话");
     assert!(!tui.shows("按 Enter 开始对话"));
     until(&mut tui, "记下走过了", || {
         home.settings().contains("welcomed = true")
@@ -337,15 +337,15 @@ fn a_custom_preset_is_created_named_and_made_the_default() {
     through_theme(&mut tui);
     through_profile(&mut tui);
     tui.wait_for("选择预设");
-    tui.wait_for("全部功能");
     // 自定义在最后：回车开浮窗（光标在名字），回车填名字，关掉第一项功能，到最后一行「创建」回车建好。
+    tui.wait_for_all(&["全部功能", "自选启用的功能"]);
     assert!(tui.shows("自选启用的功能"));
     // 出厂预设几个随核心变（P-16 上多了「最少」），往下挪到底就是自定义。
     for _ in 0..8 {
         tui.key(b"\x1b[B");
     }
     tui.key(b"\r");
-    tui.wait_for("输入名称");
+    tui.wait_for_all(&["输入名称", "[*]"]);
     assert!(tui.shows("[*]"));
     tui.key(b"\r");
     tui.type_text("写代码");

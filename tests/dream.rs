@@ -51,8 +51,8 @@ fn dream_from_the_home_page_shows_the_block_and_a_receipt_that_opens() {
     // 她写的删推到滚动区：原文照编号取、只写种类。
     tui.wait_for("✗ 用户住在上海 · 过时");
     tui.wait_for("(・ω・)");
-    tui.wait_for("✦ 整理完成：检查 2 条");
-    // 核心 R-22 再补（2026-10-20 项目主人）：0 条的项不写，末尾带用时。
+    // 核心 R-22 再补（2026-10-20 项目主人）：0 条的项不写，末尾带用时。用时在同一行右边，等到它也画出来再看。
+    tui.wait_for_all(&["✦ 整理完成：检查 2 条", "用时"]);
     assert!(tui.shows("用时"), "{}", tui.lines().join("\n"));
     let end = std::time::Instant::now() + support::WAIT;
     while tui.shows("✦ 整理记忆") {
@@ -106,6 +106,15 @@ fn dreaming_forever(tui: &mut support::Tui) {
     tui.wait_for("✦ 整理记忆");
 }
 
+/// 等叫停的回执：「下次再整理」在它后面，整理那一行同时收掉，一帧分几次读到时只等回执会读到半帧，等三样都对了。
+fn wait_stopped(tui: &mut support::Tui) {
+    tui.wait_until("整理已中断的回执", |l| {
+        support::has(l, "✦ 整理已中断，用时")
+            && support::has(l, "下次再整理")
+            && !support::has(l, "✦ 整理记忆")
+    });
+}
+
 /// 一直不答的剧本：首页新开的会话不抽，第一问就是合并（同「首页打的」那条）；说话照 plays 答。
 fn holding() -> Script {
     Script::new([Play::Says("好的。"), Play::Says("在的。")]).once([Once::Holds])
@@ -121,7 +130,7 @@ fn two_escapes_while_dreaming_stop_the_dream() {
     tui.key(b"\x1b");
     tui.wait_for("再按一次 Esc 停止整理");
     tui.key(b"\x1b");
-    tui.wait_for("✦ 整理已中断，用时");
+    wait_stopped(&mut tui);
     assert!(tui.shows("下次再整理"), "{}", tui.lines().join("\n"));
     assert!(!tui.shows("✦ 整理记忆"), "{}", tui.lines().join("\n"));
 }
@@ -134,7 +143,7 @@ fn dream_stop_while_dreaming_stops_it() {
     let mut tui = home.tui("zh_CN.UTF-8");
     dreaming_forever(&mut tui);
     tui.say("/dream stop");
-    tui.wait_for("✦ 整理已中断，用时");
+    wait_stopped(&mut tui);
     assert!(tui.shows("下次再整理"), "{}", tui.lines().join("\n"));
     assert!(!tui.shows("❯ /dream stop"), "{}", tui.lines().join("\n"));
 }
@@ -148,6 +157,7 @@ fn speaking_while_dreaming_wakes_her_and_moves_the_dream_to_the_background() {
     dreaming_forever(&mut tui);
     tui.say("在吗");
     tui.wait_for("整理转到后台继续");
-    tui.wait_for("在的。");
+    // 整理那一行收掉和回答不一定在同一帧：等到回答出来、那一行也没了再看。
+    tui.wait_for_instead("在的。", "✦ 整理记忆");
     assert!(!tui.shows("✦ 整理记忆"), "{}", tui.lines().join("\n"));
 }

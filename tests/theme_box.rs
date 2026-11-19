@@ -22,12 +22,17 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     assert_eq!(tui.background(0, 0), NIGHT, "起来是 tokyonight 深色");
     tui.say("/theme");
     // 命令列表那一行的说明里也有这几种的名字：等框里用着的那种（行首 `●`，2026-10-19 起不写「当前」）。
-    tui.wait_for("● 自动");
-    let current = tui
-        .lines()
-        .into_iter()
-        .find(|l| l.contains("自动"))
-        .unwrap_or_default();
+    // 命令列表收起、框打开在同一帧：列表那一行也写着「自动」，没收掉时找到的是它，等到列表收掉再找。
+    let first = |l: &[String]| {
+        l.iter()
+            .find(|r| r.contains("自动"))
+            .cloned()
+            .unwrap_or_default()
+    };
+    tui.wait_until("配色框打开、命令列表收起", |l| {
+        first(l).contains("● 自动")
+    });
+    let current = first(&tui.lines());
     assert!(
         current.contains("● 自动"),
         "用着的那种行首写 ●：\n{}",

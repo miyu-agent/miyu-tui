@@ -28,7 +28,10 @@ fn the_sidebar_lists_recent_sessions_and_a_click_switches() {
             .position(|l| l.find(word).is_some_and(|at| at > 100))
             .map(|at| at + from)
     };
-    let lines = tui.lines();
+    // 两个会话的行在标题下面：等到两行都画出来再量。
+    let lines = tui.wait_until("最近会话的两行", |l| {
+        side(l, "topic-two").is_some() && side(l, "topic-one").is_some()
+    });
     let (title, two, one) = (
         lines.iter().position(|l| l.contains("最近会话")),
         side(&lines, "topic-two"),
@@ -104,7 +107,11 @@ fn clicking_a_recent_session_twice_never_flashes_an_empty_session() {
     tui.say("topic-two");
     tui.wait_for("answer-two");
     tui.wait_for("最近会话");
-    let lines = tui.lines();
+    // topic-one 那一行在标题下面：等到它也画出来再点。
+    let lines = tui.wait_until("侧边栏里的 topic-one", |l| {
+        l.iter()
+            .any(|r| r.find("topic-one").is_some_and(|at| at > 100))
+    });
     let row = lines
         .iter()
         .position(|l| l.find("topic-one").is_some_and(|at| at > 100))

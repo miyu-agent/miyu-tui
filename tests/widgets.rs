@@ -199,7 +199,10 @@ fn a_page_opens_from_a_button_or_its_command_scrolls_and_esc_goes_back() {
     tui.wait_for("refreshed");
     // Esc 回到首页，打了一半的字还在。
     tui.key(b"\x1b");
-    tui.wait_for("早上好，今天晴");
+    // 回首页整屏换回来，输入框在首页那一块下面：等到框里的字也画出来再看。
+    tui.wait_until("回到首页、框里的草稿", |l| {
+        support::has(l, "早上好，今天晴") && support::input_in(l) == "草稿"
+    });
     assert_eq!(tui.input(), "草稿", "{}", tui.lines().join("\n"));
     // 打整页带的命令：当场开那一页。
     tui.key(b"\x7f\x7f");

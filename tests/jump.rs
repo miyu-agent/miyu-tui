@@ -35,7 +35,8 @@ fn jump_lists_what_was_said_and_puts_the_picked_one_at_the_top() {
     tui.pump(Duration::from_millis(500));
     assert!(!tui.shows("第二问 beta"), "第二问早滚出视口了");
     tui.say("/jump");
-    tui.wait_for("跳到  3 条");
+    // 列表的行在标题下面：等到三条都画出来再看。
+    tui.wait_for_all(&["跳到  3 条", "第一问 alpha", "第二问 beta", "第三问 gamma"]);
     for said in ["第一问 alpha", "第二问 beta", "第三问 gamma"] {
         assert!(
             tui.shows(said),

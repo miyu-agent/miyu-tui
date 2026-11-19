@@ -46,8 +46,8 @@ fn the_sidebar_and_the_footer_show_what_was_spent_and_slash_usage_lists_it() {
     // 热度图的图例、格子：照等的写，不当场看（2026-10-12 macOS 的 CI 上框刚打开那一帧只画了上半截，当场看偶发红）。
     tui.wait_for("少");
     tui.wait_for("多");
-    tui.wait_for("■");
-    // 换页不改框的高度（2026-10-07 项目主人）。
+    // 换页不改框的高度（2026-10-07 项目主人）：下边框在格子下面，等到它也画出来再量。
+    tui.wait_for_all(&["■", "╰─ Tab"]);
     let height = |tui: &support::Tui| {
         let lines = tui.lines();
         let top = lines.iter().position(|l| l.contains("╭─ 用量"));
@@ -63,7 +63,8 @@ fn the_sidebar_and_the_footer_show_what_was_spent_and_slash_usage_lists_it() {
     // 按模型：占比条、用途。
     tui.key(b"\t");
     tui.wait_for("100%");
-    tui.wait_for("主对话 100%");
+    // 那个模型一行的数在占比右边：等到它也画出来再看。
+    tui.wait_for_all(&["主对话 100%", "1 次   110   $0.0001"]);
     let row = tui
         .lines()
         .into_iter()
