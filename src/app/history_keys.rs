@@ -26,9 +26,11 @@ impl App {
             }
         }
         let count = self.typing.history.matches(&self.list_items().0).len();
+        // `/jump` 列的会话更早的还没读上来：到头以后多按的记着，页到了接着走（「跳到说过的话」第 2 条）。
+        let more = self.typing.history.jump && self.talk.transcript.has_older();
         match key.code {
-            KeyCode::Up => self.typing.history.older(count),
-            KeyCode::Char('r') if ctrl => self.typing.history.older(count),
+            KeyCode::Up => self.typing.history.older(count, more),
+            KeyCode::Char('r') if ctrl => self.typing.history.older(count, more),
             KeyCode::Down => self.typing.history.newer(),
             KeyCode::Enter => self.pick_history(),
             KeyCode::Esc => self.typing.history.close(),

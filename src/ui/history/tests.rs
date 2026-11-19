@@ -227,7 +227,7 @@ fn the_preview_keeps_its_height_and_caps_long_ones() {
     let found: Vec<&Sent> = list.iter().collect();
     let mut history = History::default();
     let Laid { rows: short, .. } = lay(&history, &found, 40, &config, now, usize::MAX);
-    history.older(2);
+    history.older(2, false);
     let Laid { rows: tall, .. } = lay(&history, &found, 40, &config, now, usize::MAX);
     assert_eq!(short.len(), tall.len(), "{:?}", plain(&short));
     let text = plain(&tall);

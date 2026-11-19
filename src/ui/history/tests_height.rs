@@ -57,7 +57,7 @@ fn the_box_keeps_its_height_while_moving_and_filtering() {
     // 窗口 60 行：列表 60 / 2 − 6 − 6 = 18 条，预览固定 6 行连框 8 行，横线、搜索两行。
     assert_eq!(first, 18 + 8 + 2);
     for _ in 0..12 {
-        history.older(all.len());
+        history.older(all.len(), false);
         let laid = lines(&history, &all, at, &config, now);
         assert_eq!(laid.rows.len(), first, "上下选框不变：{:?}", plain(&laid));
     }
