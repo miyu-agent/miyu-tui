@@ -123,7 +123,13 @@ impl Tui {
                 pixel_height: 0,
             })
             .expect("开得了伪终端");
-        let mut command = CommandBuilder::new(program);
+        // 起子进程前 portable-pty 照环境找 `SHELL`，没有的调 `getpwuid` 查登录 shell（不是线程安全的：musl 上几条测试线程
+        // 同时调会写坏堆，LiteMiyu 137bfc8）。`new` 时跑测试的进程自己没有 `SHELL` 也会查：一次只让一个线程进去。
+        let mut command = {
+            static BASE_ENV: Mutex<()> = Mutex::new(());
+            let _one = BASE_ENV.lock().unwrap_or_else(PoisonError::into_inner);
+            CommandBuilder::new(program)
+        };
         command.args(args);
         command.cwd(work);
         for name in [
@@ -159,6 +165,9 @@ impl Tui {
         // 跟随壁纸只认测试家目录里的 matugen 那一份，不看跑测试的这台电脑的桌面。
         command.env("MIYU_TUI_DESKTOP_WALLPAPER", "0");
         command.env("LANG", lang);
+        // 不把跑测试这台电脑的登录 shell 带进被测程序（shellhook 认不出上一层进程时照 `SHELL` 认，`shellhook/shells.rs`）。
+        #[cfg(unix)]
+        command.env("SHELL", "/bin/sh");
         for (name, value) in env {
             command.env(name, value);
         }
