@@ -1,9 +1,9 @@
 //! 颜色和修饰。颜色都从当前配色方案取（蓝图 `tui.md`「配色方案」）；加粗、斜体这些修饰照主题（`sheet/`，「主题」）。
 //!
-//! 当前主题放在一个全局的读写锁里：各处画的时候直接取，不用把主题一层层传下去；启动时照配置设一次，
-//! `/theme` 换的也是它。
+//! 当前主题（`current.rs`）各处画的时候直接取，不用把主题一层层传下去；启动时照配置设一次，`/theme` 换的也是它。
 
 pub mod choice;
+mod current;
 mod depth;
 mod derived;
 mod ground;
@@ -18,7 +18,6 @@ pub mod wallpaper;
 mod wallpaper_cache;
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{LazyLock, RwLock};
 
 use ratatui::style::{Color, Modifier, Style};
 
@@ -35,26 +34,15 @@ mod test_support;
 #[cfg(test)]
 pub use test_support::hold;
 
-/// 当前主题。启动前是出厂的第一套。
-static CURRENT: LazyLock<RwLock<Palette>> = LazyLock::new(|| {
-    let first = palette::BUILTIN[0].1;
-    RwLock::new(serde_json::from_str(first).unwrap_or_else(|e| panic!("出厂主题读不懂：{e}")))
-});
-
 /// 换过几次主题。排好存着的东西（回答的 Markdown）把它算进键里，换了主题就重排。
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// 换主题。颜色和现在的一模一样的不算换：换代数不加，照它画好的图、排好的行照旧用（2026-10-15 T-235：引导关上时照配置项
 /// 重挑一次，颜色没变，头像却因为缓存键里的换代数变了重做、重传，首页那一块空了一下）。
 pub fn set(palette: Palette) {
-    let mut current = CURRENT
-        .write()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if *current == palette {
-        return;
+    if current::replace(palette) {
+        GENERATION.fetch_add(1, Ordering::Relaxed);
     }
-    *current = palette;
-    GENERATION.fetch_add(1, Ordering::Relaxed);
 }
 
 /// 换过几次主题，见 [`GENERATION`]。
@@ -69,10 +57,7 @@ pub fn generation() -> u64 {
 
 /// 取当前主题里的一个颜色。
 fn tone(get: impl Fn(&Palette) -> palette::Tone) -> palette::Tone {
-    match CURRENT.read() {
-        Ok(current) => get(&current),
-        Err(poisoned) => get(&poisoned.into_inner()),
-    }
+    current::read(get)
 }
 
 fn pick(get: impl Fn(&Palette) -> palette::Tone) -> Color {
