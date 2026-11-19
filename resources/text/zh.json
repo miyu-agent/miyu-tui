@@ -836,8 +836,8 @@
     "empty": "无匹配的模型",
     "cooling": "冷却 {n}m",
     "cooling_bare": "冷却中",
-    "no_key": "未设置 key",
-    "refuse_no_key": "该模型未设置 key"
+    "no_key": "未设置密钥",
+    "refuse_no_key": "该模型未设置密钥"
   },
   "settings": {
     "in_use": {
@@ -902,7 +902,7 @@
       "rotate": "每次请求轮换",
       "pin": "按会话固定",
       "ordered": "不可用时回退",
-      "secret": "API Key",
+      "secret": "API 密钥",
       "env": "环境变量",
       "text": "文字",
       "image": "图像",
@@ -917,7 +917,7 @@
       "base_url": "Base URL",
       "driver": "接口",
       "auth": "认证",
-      "key": "API Key",
+      "key": "API 密钥",
       "env_key": "变量名",
       "model": "模型",
       "inputs": "输入类型",
@@ -1103,7 +1103,7 @@
       "taken": "{name} 已存在",
       "need_name": "模型名不能为空",
       "bad_number": "请输入数字",
-      "need_key": "请填写变量名或改用 API Key"
+      "need_key": "请填写变量名或改用 API 密钥"
     },
     "empty": [
       "无项目",
@@ -1580,7 +1580,7 @@
       "title": "选择模型供应商",
       "sub": "选择供应商并填写密钥",
       "loading": "正在检测…",
-      "found": "已找到 key",
+      "found": "已找到密钥",
       "configured": "已配置",
       "local": "本机",
       "other": "其他",
