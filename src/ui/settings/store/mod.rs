@@ -223,6 +223,8 @@ pub(super) fn rows(store: &Store, words: &StoreTexts, width: u16) -> Vec<Painted
                 Item::Remote(p) => {
                     let state = match (&p.blocked, &p.installed) {
                         (Some(_), _) => (say("blocked"), theme::warn()),
+                        // 不支持本机系统的（核心 PL-2）：列不列由核心定，这里照回应画。
+                        _ if p.unsupported => (say("unsupported"), theme::dim()),
                         (None, Some(had)) if *had == p.version => (say("installed"), theme::good()),
                         (None, Some(_)) => (say("upgradable"), theme::accent()),
                         (None, None) => (String::new(), Style::new()),
