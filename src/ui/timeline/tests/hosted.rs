@@ -133,6 +133,116 @@ fn a_hosted_search_is_titled_with_the_core_tool_and_who_ran_it() {
     }
 }
 
+/// DeepSeek 官方 Responses 接口自己跑的一次搜索、一次读网页（核心 DSR-4）：参数是 `action` 的原文，搜索一次带几句
+/// `queries`。`live` 带流式的增量，不带的只有落了盘的。
+fn deepseek_events(live: bool) -> Vec<Value> {
+    let by = |seq: u64, kind: &str, body: Value| {
+        json!({"seq": seq, "at": "2026-11-19T08:00:00Z", "kind": kind, "turn": 1,
+            "by": {"kind": "model", "endpoint": "deepseek", "model": "deepseek-flash"}, "body": body})
+    };
+    let search = r#"{"type":"search","queries":["rust 1.90 release","rust blog"]}"#;
+    let open = r#"{"type":"open_page","url":"https://blog.rust-lang.org/"}"#;
+    let mut out = vec![
+        json!({"seq": 1, "at": "2026-11-19T08:00:00Z", "kind": "turn.started", "turn": 1,
+        "by": {"kind": "kernel"}, "body": {}}),
+    ];
+    if live {
+        for (index, name, args, said) in [
+            (
+                0,
+                "deepseek_web_search",
+                search,
+                "Rust Blog - https://blog.rust-lang.org/",
+            ),
+            (1, "deepseek_read_url", open, "https://blog.rust-lang.org/"),
+        ] {
+            let seq = 2 + index * 4;
+            out.extend([
+                by(
+                    seq,
+                    "model.delta",
+                    json!({"index": index, "start": "hosted_tool", "name": name}),
+                ),
+                by(
+                    seq + 1,
+                    "model.delta",
+                    json!({"index": index, "text": args}),
+                ),
+                by(
+                    seq + 2,
+                    "model.delta",
+                    json!({"index": index, "outcome": {"text": said}}),
+                ),
+                by(seq + 3, "model.delta", json!({"index": index, "end": true})),
+            ]);
+        }
+    }
+    out.push(by(
+        10,
+        "message.assistant",
+        json!({"blocks": [
+        {"type": "hosted_tool", "call_id": "ws_1", "name": "deepseek_web_search", "args": search,
+            "outcome": {"text": "Rust Blog - https://blog.rust-lang.org/"}},
+        {"type": "hosted_tool", "call_id": "ws_2", "name": "deepseek_read_url", "args": open,
+            "outcome": {"text": "https://blog.rust-lang.org/"}},
+        {"type": "text", "text": "done"}]}),
+    ));
+    out
+}
+
+#[test]
+fn deepseek_search_and_page_reads_are_titled_like_the_core_tools() {
+    for (how, pushes) in [
+        ("流出来的", crate::core::read_live(&deepseek_events(true))),
+        (
+            "补发来的",
+            crate::core::read_replayed(&deepseek_events(false)),
+        ),
+    ] {
+        let steps = steps(pushes);
+        let table = crate::language::LanguageTable::builtin().unwrap();
+        for (language, search, fetch) in [
+            (
+                "zh",
+                "网络搜索（DeepSeek） · rust 1.90 release",
+                "抓取网页（DeepSeek） · https://blog.rust-lang.org/",
+            ),
+            (
+                "en",
+                "Web search (DeepSeek) · rust 1.90 release",
+                "Fetch page (DeepSeek) · https://blog.rust-lang.org/",
+            ),
+            (
+                "ja",
+                "（DeepSeek） · rust 1.90 release",
+                "（DeepSeek） · https://blog.rust-lang.org/",
+            ),
+        ] {
+            let mut f = Fixture::new();
+            f.config = Config::load(&table.find(language).unwrap(), false).unwrap();
+            f.human = crate::human::Human::from_resources(language);
+            f.human.add_providers(&BTreeMap::from([(
+                "deepseek".to_string(),
+                "DeepSeek".to_string(),
+            )]));
+            let got = text(&rows(0, &segment(steps.clone(), Some(true)), &f.ctx()));
+            // 搜索写第一句查的词（同核心 `title.rs` 的 `first_text`），读网页写网址；不露 DeepSeek 自己的工具名。
+            assert!(
+                got.iter().any(|l| l.contains(search)),
+                "{how} {language}：{got:?}"
+            );
+            assert!(
+                got.iter().any(|l| l.contains(fetch)),
+                "{how} {language}：{got:?}"
+            );
+            assert!(
+                got.iter().all(|l| !l.contains("deepseek_")),
+                "{how} {language}：{got:?}"
+            );
+        }
+    }
+}
+
 #[test]
 fn an_unknown_hosted_tool_keeps_its_name_and_no_name_means_the_provider_id() {
     let mut events = events(true);

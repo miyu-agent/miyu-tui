@@ -4,6 +4,7 @@
 //! （`human.fields.via`，核心 2026-10-19）的同样接在后面：「网络搜索（Exa）」。
 
 use miyu_client::texts::Face;
+use serde_json::Value;
 
 use super::super::rows::Ctx;
 use crate::config::Hosted;
@@ -38,16 +39,23 @@ pub fn name(step: &Step, ctx: &Ctx) -> String {
     }
 }
 
-/// 对象：供应商侧工具照对上的那一条说的参数（对不上的、没说的没有）；核心执行的照工具自己说的 `subject`（`face`）。
+/// 对象：供应商侧工具照对上的那一条说的参数（对不上的、没说的没有；是数组的取第一个）；核心执行的照工具自己说的 `subject`（`face`）。
 /// 供应商侧工具空着的参数不算对象（同核心）。
 pub fn subject<'a>(step: &'a Step, face: Option<&Face>, ctx: &Ctx) -> Option<&'a str> {
     match (&step.hosted, &step.kind) {
-        (Some(_), StepKind::Tool { name, .. }) => {
+        (Some(_), StepKind::Tool { name, parsed, .. }) => {
             let key = mapped(name, ctx)?.subject.as_deref()?;
-            step.arg(key).filter(|v| !v.is_empty())
+            first_text(&parsed[key]).filter(|v| !v.is_empty())
         }
         _ => step.arg(face?.subject.as_deref()?),
     }
+}
+
+/// 对象那一格的字：是字符串的照它；是数组的取第一个（同核心 `title.rs`：DeepSeek 的搜索一次带几句 `queries`，写第一句）。
+fn first_text(value: &Value) -> Option<&str> {
+    value
+        .as_str()
+        .or_else(|| value.as_array()?.first()?.as_str())
 }
 
 /// 供应商的工具名对上的核心工具。
