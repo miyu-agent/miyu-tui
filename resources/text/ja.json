@@ -1089,7 +1089,7 @@
       "conflict": "Changed elsewhere just now (now {current}); your changes are kept, reopen and save again",
       "offline": "コアに接続していません",
       "not_custom": "Only models added with n can be deleted",
-      "fixed_pool": "固定のプールは削除できません。編集画面でメンバーと呼び出し方を変更できます",
+      "fixed_pool": "固定のプールは削除できません。編集画面でメンバーと割り当て方式を変更できます",
       "members_hint": "Untick members in the pool editor (Enter)",
       "nothing_here": "Nothing to delete on this page",
       "no_new": "Nothing to add on this page",
