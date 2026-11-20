@@ -63,7 +63,9 @@ fn status(page: &Settings, texts: &Texts) -> (String, Style, bool) {
     if page.loading() && !(page.on_menu && page.more.schema.is_some()) {
         return (texts.status("loading"), theme::dim(), false);
     }
-    if page.on_menu {
+    // 模型、池的数目只属于「供应商和模型」那几页：别的页（软件包的设置、软件包三页、人格……）照它写，写的是供应商页选中的那一家
+    // （2026-11-20 主人本机验收第 10 条：语音输入的设置页底下一直写「暂无模型」）。
+    if page.on_menu || page.more.section.is_some() {
         return (String::new(), Style::new(), false);
     }
     let text = match page.nav.page {
