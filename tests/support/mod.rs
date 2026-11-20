@@ -337,11 +337,12 @@ impl Tui {
     }
 
     /// 配置页主菜单上挪到名字是 `name` 的那一项、回车进去：照选中那一行（左边的 `┃`；没有颜色可靠的、纯 ASCII 主题是行首的箭头 `❯`、`>`）认，不数第几项
-    /// （2026-10-14 主菜单加了「外观」，数行的全错一位）。清单没读到以前菜单短几项，挪过头的往回找。
+    /// （2026-10-14 主菜单加了「外观」，数行的全错一位）。清单没读到以前菜单短几项，挪过头的往回找。回车以后等到那一行收掉（进了
+    /// 那一页）才交回：主菜单的说明里也写着页里的字，回车那一帧晚到时接着等页里的字会当场过，后面的按键落在主菜单上。
     pub fn open_menu(&mut self, name: &str) {
         self.wait_for(name);
-        let picked = |tui: &Self| {
-            tui.lines().iter().any(|l| {
+        let picked = |lines: &[String]| {
+            lines.iter().any(|l| {
                 l.split_once(['┃', '|'])
                     .map(|(_, rest)| rest)
                     .or_else(|| l.trim_start().strip_prefix(['❯', '>']))
@@ -351,8 +352,9 @@ impl Tui {
         };
         for key in [b"j", b"k"] {
             for _ in 0..12 {
-                if picked(self) {
+                if picked(&self.lines()) {
                     self.key(b"\r");
+                    self.wait_until(&format!("进了「{name}」"), |l| !picked(l));
                     return;
                 }
                 self.key(key);

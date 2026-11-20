@@ -100,13 +100,12 @@ fn jump_reads_the_earlier_pages_of_an_old_session_without_scrolling_up() {
     tui.type_text("第 1 句");
     tui.pump(Duration::from_millis(300));
     tui.key(b"\r");
-    tui.pump(Duration::from_millis(500));
-    let lines = tui.lines();
-    let at = lines
-        .iter()
-        .position(|l| l.contains("┃ 第 1 句"))
-        .unwrap_or_else(|| panic!("没跳到第 1 句：\n{}", lines.join("\n")));
-    assert!(at <= 2, "第 1 句顶到最上面：\n{}", lines.join("\n"));
+    // 等到要的样子真出来再看，不照固定的几百毫秒：机器忙时回车以后那一帧晚到。
+    tui.wait_until("跳到第 1 句、顶到最上面", |l| {
+        l.iter()
+            .position(|l| l.contains("┃ 第 1 句"))
+            .is_some_and(|at| at <= 2)
+    });
 }
 
 /// 排期第 15 条（2026-11-02 项目主人）：侧边栏「跳转消息」列这个会话里你说的话，新的在下（发版前 check 第 18 条，2026-11-09
