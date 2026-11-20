@@ -1,4 +1,4 @@
-//! 在一条连接上说 JSON-RPC 2.0，一行一条（`docs/designs/04-核心协议.md` P1）。
+//! 在一条连接上说 JSON-RPC 2.0，一行一条（`internal/designs/04-核心协议.md` P1）。
 //!
 //! 照 `crates/miyu-cli/src/rpc.rs` 的做法：读另起一个任务，等回应时来的推送留着，之后照先后交出去。
 //! 那边的是 crate 私有的，演示程序用不上，只好照着写一份最小的。

@@ -1,6 +1,6 @@
 //! 终端界面的演示程序：全屏，底下一个圆角输入框，连上重制版的核心跟她说话。
 //!
-//! 设计见仓库的 `docs/designs/13-终端界面.md`；连核心的走法照 `miyu ask`（`docs/blueprint/cli/ask.md`）。
+//! 设计见仓库的 `internal/designs/13-终端界面.md`；连核心的走法照 `miyu ask`（`internal/blueprint/cli/ask.md`）。
 
 mod app;
 mod ascii;

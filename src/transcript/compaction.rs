@@ -10,7 +10,7 @@ use crate::core::Compaction;
 use crate::meter;
 use crate::rng::Rng;
 
-/// 内核在摘要请求调了工具、接着改走隔离式时，原话末尾写的（`docs/blueprint/compaction.md` 第三条第 7 条）。
+/// 内核在摘要请求调了工具、接着改走隔离式时，原话末尾写的（`internal/blueprint/compaction.md` 第三条第 7 条）。
 const ISOLATING: &str = "trying again without tools";
 
 impl Transcript {

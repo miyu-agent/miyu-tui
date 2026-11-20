@@ -1,6 +1,6 @@
 //! 把核心推来的一条事件读成界面关心的几样。纯函数，不碰连接，好测。
 //!
-//! 事件的写法见 `docs/blueprint/kernel/events.md`，样本在 `docs/designs/samples/`。
+//! 事件的写法见 `internal/blueprint/kernel/events.md`，样本在 `internal/designs/samples/`。
 
 use serde_json::Value;
 
