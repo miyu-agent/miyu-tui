@@ -463,7 +463,7 @@
     "purposes": {
       "title": "titles",
       "recap": "recaps",
-      "vision": "vision"
+      "vision": "multimodal"
     },
     "quota_title": "{provider} quota",
     "quota_minutes": "resets in {n}m",
@@ -870,12 +870,12 @@
     ],
     "uses": [
       "Default text model",
-      "Default vision model",
+      "Default multimodal model",
       "Semantic model"
     ],
     "use_notes": [
       "Used when a turn names no model",
-      "Reads images when the chat model can't",
+      "Provides multimodal input when the chat model doesn't support it",
       "Improves search quality for memories, knowledge bases and the like"
     ],
     "detail": [

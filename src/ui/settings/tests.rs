@@ -422,6 +422,7 @@ mod catalog;
 mod choice_names;
 mod dialog_sides;
 mod group_note;
+mod multimodal;
 mod option_notice;
 mod package_provider;
 mod page_scroll;
