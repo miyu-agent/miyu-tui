@@ -53,7 +53,7 @@ pub(super) fn draw(
     let entry = &t.entries[k];
     let row = Rect::new(area.x, area.y, area.width, 1);
     // 先把这一行清空再写：只盖字的话，句子后面露出底下正文那一行剩下的字（2026-11-05 验收）。
-    frame.render_widget(ratatui::widgets::Clear, row);
+    super::wide::cover(frame.buffer_mut(), row);
     frame.buffer_mut().set_style(row, theme::panel());
     let bar = &seen.config.layout.user_bar;
     let lead = format!("{} ", bar.trim_end());
@@ -74,7 +74,7 @@ pub(super) fn draw(
         .set_line(area.x, area.y, &line, area.width);
     // 下面空一行（照正文的底色），正文从第三行露起。
     let gap = Rect::new(area.x, area.y + 1, area.width, 1);
-    frame.render_widget(ratatui::widgets::Clear, gap);
+    super::wide::cover(frame.buffer_mut(), gap);
     screen.areas.pinned = row;
     screen.pinned = Some(entry.id);
 }

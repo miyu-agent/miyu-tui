@@ -381,3 +381,42 @@ fn a_package_for_other_systems_says_it_is_not_supported_here() {
     );
     assert!(!row("塔罗").contains("不支持"), "{lines:?}");
 }
+
+#[test]
+fn the_popup_covers_a_wide_character_on_its_left_edge() {
+    // 2026-11-20 主人本机验收第 5 条：背后列表的中文字跨在弹窗左边上，弹窗第一列露出半个字、没有弹窗的底色。
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    let mut term = Terminal::new(TestBackend::new(80, 30)).unwrap();
+    let mut ask = crate::settings::pages::store::AskView::default();
+    term.draw(|frame| {
+        let stage = frame.area();
+        // 弹窗 72 宽、从第 4 列起；背后的字从第 1 列起，第 3 列的字跨到第 4 列。
+        for y in 0..stage.height {
+            frame
+                .buffer_mut()
+                .set_string(1, y, "游戏破解抖音下载", ratatui::style::Style::new());
+        }
+        let lines = vec![
+            ratatui::text::Line::raw("要安装 1 个软件包："),
+            ratatui::text::Line::raw("继续？ [Y/n]"),
+        ];
+        super::popup::draw(frame, stage, lines, (true, &mut ask), (&[], None), &words());
+        crate::ui::wide::tidy(frame.buffer_mut());
+    })
+    .unwrap();
+    let buf = term.backend().buffer();
+    let panel = crate::theme::panel().bg.unwrap();
+    let rows: Vec<u16> = (0..30).filter(|&y| buf[(10, y)].bg == panel).collect();
+    assert!(!rows.is_empty(), "画出了弹窗");
+    for y in rows {
+        assert_eq!(
+            buf[(3, y)].symbol().width(),
+            1,
+            "第 {y} 行：左边的字不跨进弹窗"
+        );
+        assert_eq!(buf[(4, y)].symbol(), " ", "第 {y} 行");
+        assert_eq!(buf[(4, y)].bg, panel, "第 {y} 行：弹窗第一列是弹窗的底");
+    }
+}

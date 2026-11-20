@@ -8,7 +8,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, Paragraph};
+use ratatui::widgets::{Block, Paragraph};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -141,7 +141,7 @@ pub fn draw(frame: &mut Frame, outer: Rect, text: Rect, chrome: Chrome, lines: V
     if lines.is_empty() || outer.height == 0 {
         return;
     }
-    frame.render_widget(Clear, outer);
+    super::wide::cover(frame.buffer_mut(), outer);
     if outer.height >= FRAMED {
         frame.render_widget(block(chrome), outer);
     }

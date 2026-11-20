@@ -6,7 +6,7 @@ use std::time::Instant;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, Paragraph};
+use ratatui::widgets::{Block, Paragraph};
 use unicode_width::UnicodeWidthStr;
 
 use super::rows::clip;
@@ -134,7 +134,8 @@ pub fn toast(
         .collect();
     let (left, right) = row;
     let rows = Rect::new(left, area.y, right.saturating_sub(left), area.height);
-    frame.render_widget(Clear, rows.intersection(frame.area()).union(area));
+    let under = rows.intersection(frame.area()).union(area);
+    super::wide::cover(frame.buffer_mut(), under);
     let block = Block::bordered()
         .border_set(crate::sheet::read(|s| s.frame.toast.set()))
         .border_style(theme::notice_border(notice.good));

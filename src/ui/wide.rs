@@ -6,7 +6,26 @@
 //! 空白时比对不重写，留下一格残色（2026-10-01 命令列表选中行的蓝底）。
 
 use ratatui::buffer::{Buffer, CellDiffOption};
+use ratatui::layout::Rect;
 use unicode_width::UnicodeWidthStr;
+
+/// 窗、框、提示盖在 `rect` 上之前先清地方：里面的格子清空（同 ratatui 的 `Clear`）；左边一格写着宽字、后半跨进来的，那个字
+/// 换成空白（带着它原来的样子）。不换的话比对时宽字后面那一格不写，终端上窗的第一列露着半个字；[`tidy`] 还会把那一格清成
+/// 宽字的空白，窗的底色也没了（2026-11-20 主人本机验收第 5 条：软件包页回车弹出的框被左边列表的中文字顶穿）。
+pub fn cover(buf: &mut Buffer, rect: Rect) {
+    let rect = rect.intersection(buf.area);
+    for y in rect.top()..rect.bottom() {
+        for x in rect.left()..rect.right() {
+            buf[(x, y)].reset();
+        }
+        if rect.x > buf.area.x {
+            let left = &mut buf[(rect.x - 1, y)];
+            if left.symbol().width() > 1 && left.diff_option != CellDiffOption::Skip {
+                left.set_symbol(" ");
+            }
+        }
+    }
+}
 
 /// 每个宽字后面那几格不是空白的，照 ratatui 自己写宽字时的做法清掉。图占着的格子不碰。
 pub fn tidy(buf: &mut Buffer) {
@@ -39,7 +58,22 @@ mod tests {
     use ratatui::text::Line;
     use ratatui::widgets::{Paragraph, Widget};
 
-    use super::tidy;
+    use super::{cover, tidy};
+
+    #[test]
+    fn covering_a_cell_blanks_the_wide_character_that_reaches_into_it() {
+        let area = Rect::new(0, 0, 6, 1);
+        let mut buf = Buffer::empty(area);
+        let red = Style::new().fg(Color::Red);
+        buf.set_string(0, 0, "游戏破", red);
+        // 「戏」在第 2、3 格：从第 3 格起盖，它跨进来。
+        cover(&mut buf, Rect::new(3, 0, 3, 1));
+        tidy(&mut buf);
+        let row: Vec<&str> = (0..6).map(|x| buf[(x, 0)].symbol()).collect();
+        assert_eq!(row, ["游", " ", " ", " ", " ", " "]);
+        assert_eq!(buf[(2, 0)].fg, Color::Red, "换成的空白带着原来的样子");
+        assert_eq!(buf[(3, 0)].fg, Color::Reset, "盖住的格子是空的");
+    }
 
     #[test]
     fn a_wide_character_drawn_over_a_line_owns_the_next_cell() {

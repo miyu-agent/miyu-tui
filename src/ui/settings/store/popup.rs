@@ -7,7 +7,6 @@ use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier};
 use ratatui::text::Line;
-use ratatui::widgets::Clear;
 
 use super::{asking_window, wrap};
 use crate::settings::pages::store::{AskView, StoreTexts};
@@ -58,7 +57,7 @@ pub(super) fn draw(
     frame
         .buffer_mut()
         .set_style(behind, theme::faint().bg(Color::Reset));
-    frame.render_widget(Clear, outer);
+    crate::ui::wide::cover(frame.buffer_mut(), outer);
     frame.buffer_mut().set_style(outer, theme::panel());
     let inner = Rect::new(outer.x + 2, outer.y + 1, inner_w, height - 2);
     for (n, line) in wrapped.iter().take(rows).enumerate() {
