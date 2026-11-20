@@ -2,9 +2,11 @@
 //!
 //! - `cargo xtask notices`：照发布的四个平台的依赖图重新生成第三方许可证清单 `THIRD-PARTY-LICENSES.txt`（[`notices`]），随发行包发。
 //! - `cargo xtask licenses`：查第三方依赖的许可证都能和 AGPL-3.0-or-later 合在一起发（[`licenses`]），清单是最新的；CI 跑它。
+//! - `cargo xtask privacy`：查被 git 跟踪的文本里没有带真实用户名的路径（[`privacy`]）；CI 跑它。
 
 mod licenses;
 mod notices;
+mod privacy;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -36,8 +38,20 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         }
+        Some("privacy") => {
+            let problems = privacy::check(&root);
+            if problems.is_empty() {
+                println!("私密路径：通过");
+                ExitCode::SUCCESS
+            } else {
+                for problem in &problems {
+                    eprintln!("{problem}");
+                }
+                ExitCode::FAILURE
+            }
+        }
         _ => {
-            eprintln!("用法：cargo xtask notices | cargo xtask licenses");
+            eprintln!("用法：cargo xtask notices | cargo xtask licenses | cargo xtask privacy");
             ExitCode::from(2)
         }
     }
