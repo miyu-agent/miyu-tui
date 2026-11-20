@@ -108,7 +108,10 @@ fn a_command_no_one_knows_is_refused_by_the_core_and_not_put_back() {
     tui.type_text("/nosuchthing");
     tui.key(b"\x1b");
     tui.key(b"\r");
-    tui.pump(Duration::from_millis(500));
+    // 等到要的样子真出来再看，不照固定的几百毫秒：机器忙时回车以后那一帧晚到。
+    tui.wait_until("核心说的「命令不存在」", |l| {
+        support::has(l, "命令不存在")
+    });
     // 弹核心说的那一句（`unknown_command` 的原话恰好也是「命令不存在」；终端自己的那句字已经去掉了）；打的字不回到输入框
     // （2026-10-23 项目主人：「输入不存在的命令不应该把命令再回填到输入框」）。
     assert!(tui.shows("命令不存在"), "{}", tui.lines().join("\n"));
@@ -172,7 +175,9 @@ fn loop_from_the_core_is_listed_and_taken_by_the_core() {
     tui.key(b"\x7f\x7f\x7f");
     let start = tui.record_from_here();
     tui.say("/loop 10m 看一眼 CI");
-    tui.pump(Duration::from_millis(1500));
+    // 先等交出去（输入框里没有了，等到要的样子真出来再看，不照固定的几百毫秒：机器忙时回车以后那一帧晚到），再看一阵有没有弹「命令不存在」。
+    tui.wait_until("交出去", |l| !support::input_in(l).contains("/loop"));
+    tui.pump(Duration::from_millis(1000));
     let frames = support::frames(start, &tui.recorded());
     assert!(
         frames

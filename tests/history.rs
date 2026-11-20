@@ -120,12 +120,15 @@ fn ctrl_r_shows_times_a_preview_and_a_search_row_and_typing_filters() {
         tui.lines().join("\n")
     );
     tui.key(b"\r");
-    tui.pump(Duration::from_millis(300));
-    assert!(
-        input(&tui).contains("帮我跑一下门禁") && !tui.shows("历史  1 条"),
-        "填进输入框、列表关了：\n{}",
-        tui.lines().join("\n")
-    );
+    // 等到要的样子真出来再看，不照固定的几百毫秒：机器忙时回车以后那一帧晚到。
+    tui.wait_until("填进输入框、列表关了", |l| {
+        let input = l
+            .iter()
+            .find(|l| l.contains('❯'))
+            .cloned()
+            .unwrap_or_default();
+        input.contains("帮我跑一下门禁") && !support::has(l, "历史  1 条")
+    });
 }
 
 /// 发版前 check 第 52 条（2026-11-12 项目主人：「Ctrl+R 打开的历史的列表有点太矮了……预览框默认只有一行，导致会因为内容

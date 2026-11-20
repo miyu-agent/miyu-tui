@@ -442,14 +442,10 @@ fn the_mascot_item_offers_the_built_in_one_first() {
         .unwrap_or_default();
     assert!(row.contains("内置"), "{}", tui.lines().join("\n"));
     tui.key(b"\r");
-    tui.pump(std::time::Duration::from_millis(300));
-    assert!(
-        tui.lines()
-            .iter()
-            .any(|l| l.contains("内置") && !l.contains('┃')),
-        "选择窗第一行「内置」：\n{}",
-        tui.lines().join("\n")
-    );
+    // 等到要的样子真出来再看，不照固定的几百毫秒：机器忙时回车以后那一帧晚到。
+    tui.wait_until("选择窗第一行「内置」", |l| {
+        l.iter().any(|l| l.contains("内置") && !l.contains('┃'))
+    });
 }
 
 #[test]
