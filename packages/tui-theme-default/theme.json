@@ -138,7 +138,7 @@
     "prompt": "❯ ",
     "tick_mark": "✓ ",
     "level_icons": {
-      "full": "⏵⏵ ",
+      "full": "▣ ",
       "read_only": "⏸ "
     },
     "undo_icon": "↶ ",
