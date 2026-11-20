@@ -1,4 +1,4 @@
-//! 撤销、恢复的回应里给人看的几样（`docs/blueprint/protocol/undo.md`「回应」）。这几样由核心算，头照着写。
+//! 撤销、恢复的回应里给人看的几样（`internal/blueprint/protocol/undo.md`「回应」）。这几样由核心算，头照着写。
 
 use serde_json::Value;
 

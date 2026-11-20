@@ -1,4 +1,4 @@
-//! 核心推来的提问、确认，和作答交回去的形状（核心 D-1 `session.answer`、D-2 `ask_user`）（`docs/designs/samples/events/` 的 `question.asked`、
+//! 核心推来的提问、确认，和作答交回去的形状（核心 D-1 `session.answer`、D-2 `ask_user`）（`internal/designs/samples/events/` 的 `question.asked`、
 //! `tool.approval_requested`、`question.answered`、`tool.approval_decided`）。
 //!
 //! 读的时候不拒认不得的字段：核心加了字段，头照旧能读。

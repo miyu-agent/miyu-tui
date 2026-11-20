@@ -1,4 +1,4 @@
-//! 一个命令写成核心的方法和参数（`docs/blueprint/protocol.md`「方法」）。
+//! 一个命令写成核心的方法和参数（`internal/blueprint/protocol.md`「方法」）。
 
 use serde_json::json;
 
