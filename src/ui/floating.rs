@@ -186,13 +186,7 @@ fn paint<H: Copy>(
 ) {
     // 先把格子整个清掉（字色、修饰都不留，不然窗里的字带着后面那页的暗色），再铺底色。
     let buf = frame.buffer_mut();
-    for y in rect.y..rect.bottom() {
-        for x in rect.x..rect.right() {
-            if let Some(cell) = buf.cell_mut(Position::new(x, y)) {
-                cell.reset();
-            }
-        }
-    }
+    crate::ui::wide::cover(buf, rect);
     buf.set_style(rect, theme::panel());
     let inner = Rect::new(
         rect.x + 2,

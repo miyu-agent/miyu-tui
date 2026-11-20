@@ -46,13 +46,7 @@ pub fn draw(
     let buf = frame.buffer_mut();
     buf.set_style(area, Style::new().add_modifier(Modifier::DIM));
     // 先把格子整个清掉（后面调暗的修饰不留到窗里），再铺底色。
-    for y in rect.y..rect.bottom() {
-        for x in rect.x..rect.right() {
-            if let Some(cell) = buf.cell_mut(Position::new(x, y)) {
-                cell.reset();
-            }
-        }
-    }
+    crate::ui::wide::cover(buf, rect);
     buf.set_style(rect, theme::panel());
     let inner = body(rect);
     let at_row = |y: u16| Rect::new(inner.x, y, inner.width, 1);

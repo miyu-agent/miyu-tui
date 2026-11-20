@@ -145,3 +145,45 @@ fn hints_that_do_not_fit_are_dropped_whole() {
         assert!(whole.contains(&shown.as_str()), "{width} 列：「{shown}」");
     }
 }
+
+#[test]
+fn a_window_covers_a_wide_character_on_its_left_edge() {
+    // 同软件包页的弹窗（2026-11-20 主人本机验收第 5 条）：背后的中文字跨在窗的左边上，窗第一列不能露出半个字。
+    let mut lines: Lines<()> = Lines::default();
+    lines.body.push(Body {
+        line: Line::from("row"),
+        focused: false,
+        hit: None,
+    });
+    let mut term = Terminal::new(TestBackend::new(40, 14)).unwrap();
+    term.draw(|frame| {
+        let area = frame.area();
+        // 窗 30 宽、从第 5 列起；背后的字从第 0 列起，第 4 列的字跨到第 5 列。
+        for y in 0..area.height {
+            frame.buffer_mut().set_string(
+                0,
+                y,
+                "一二三四五六七八九十",
+                ratatui::style::Style::new(),
+            );
+        }
+        centered(
+            frame,
+            area,
+            (30, 12),
+            &mut lines,
+            (&mut Vec::new(), |_| ()),
+            &mut Caret::default(),
+        );
+        crate::ui::wide::tidy(frame.buffer_mut());
+    })
+    .unwrap();
+    let buf = term.backend().buffer();
+    let panel = crate::theme::panel().bg.unwrap();
+    let rows: Vec<u16> = (0..14).filter(|&y| buf[(10, y)].bg == panel).collect();
+    assert!(!rows.is_empty(), "画出了窗");
+    for y in rows {
+        assert_eq!(buf[(4, y)].symbol().len(), 1, "第 {y} 行：左边的字不跨进窗");
+        assert_eq!(buf[(5, y)].bg, panel, "第 {y} 行：窗第一列是窗的底");
+    }
+}

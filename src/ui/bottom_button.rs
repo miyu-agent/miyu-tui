@@ -6,7 +6,6 @@
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::text::Span;
-use ratatui::widgets::Clear;
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::{Screen, Seen};
@@ -41,7 +40,7 @@ pub fn draw(frame: &mut Frame, seen: &Seen, shown: &Screen) -> Rect {
     } else {
         theme::dim()
     };
-    frame.render_widget(Clear, at);
+    super::wide::cover(frame.buffer_mut(), at);
     frame.render_widget(Span::styled(text, style), at);
     at
 }
