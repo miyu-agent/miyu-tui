@@ -64,6 +64,12 @@ jobs:
       - name: 许可证
         if: runner.os == 'Linux'
         run: cargo xtask licenses
+      # 被 git 跟踪的文本里不许有带真实用户名的路径（xtask/src/privacy.rs，照核心的同名门禁）。
+      - name: 私密路径
+        if: runner.os == 'Linux'
+        run: |
+          cargo test --locked -p xtask privacy
+          cargo xtask privacy
 
   # 量尺（蓝图 `tui.md`「量尺」，设计 23 的预算；2026-10-15 项目主人定进 CI、超预算就拦、不打倍数）：空闲唤醒、内存、打开长
   # 会话的峰值、热启动到首页输入框。只在 Linux 上量（`/proc`），照发出去的样子用 release 编，一个一个跑，不和别的测试抢核。
