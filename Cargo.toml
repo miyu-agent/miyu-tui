@@ -16,7 +16,7 @@ jiff = "0.2"
 # （工具结果那一句 `Said`、会话编号、模板）。`wallpaper`：主题「跟随壁纸」找桌面壁纸、matugen 那一份颜色（蓝图「主题」的
 # 「跟随壁纸」），和网页同一个来处；核心施工 X-29 从网页仓库搬进核心仓库。
 # `view`：视图流的条目、推送、会话状态（核心 V-D），终端换照视图流画用（`view_stream.rs`）。
-miyu-client = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626", features = ["wallpaper", "view"] }
+miyu-client = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb", features = ["wallpaper", "view"] }
 # 她的回答按 Markdown 画（蓝图 tui.md「她的回答：Markdown」）；旧版用的也是它。
 pulldown-cmark = { version = "0.13", default-features = false }
 # 编辑、写入的差异按行比：和 crates/miyu-endpoint 用的是同一个。
@@ -77,17 +77,18 @@ crossterm_winapi = "0.9.1"
 # 伪终端里的端到端测试（`tests/pty.rs`，蓝图「守着它的」）：测试进程里起一个照剧本回话的核心（和端点的测试同一套），
 # 在伪终端里起真的界面连上去，读屏幕、发按键。只在测试里用。
 [dev-dependencies]
-miyu-core = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626" }
-miyu-endpoint = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626" }
-miyu-models = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626" }
-miyu-session = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626", features = ["testkit"] }
+# `testkit`：测具照发行包的样子拼配置用的 `Packaged::as_released`，核心 AU-P1d 起只在这个特性下编。
+miyu-core = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb", features = ["testkit"] }
+miyu-endpoint = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb" }
+miyu-models = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb" }
+miyu-session = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb", features = ["testkit"] }
 # 测试照钉住的那份核心检出读出厂资源、协议样本（设计 32 第四节第 3 条）。
-miyu-client = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626", features = ["testkit"] }
-miyu-tool = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626", features = ["testkit"] }
+miyu-client = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb", features = ["testkit"] }
+miyu-tool = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb", features = ["testkit"] }
 # 伪终端测试里拼核心、开套接字、读包清单还要这几样（设计 32 第四节第 2 条：先照原样，以后改黑盒）。
-miyu-ipc = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626" }
-miyu-kernel = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626" }
-miyu-store = { git = "https://github.com/miyu-agent/miyu", rev = "15d1e28464c7d4df22f2f213b7d9aeba7400e626" }
+miyu-ipc = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb" }
+miyu-kernel = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb" }
+miyu-store = { git = "https://github.com/miyu-agent/miyu", rev = "29bdb6616179a1532ac896e82964fe091a320acb" }
 portable-pty = "0.9"
 vt100 = "0.16"
 
