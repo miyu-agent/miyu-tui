@@ -174,11 +174,11 @@ pub fn input_in(lines: &[String]) -> String {
         .unwrap_or_default()
 }
 
-/// 有一轮的收尾行：开放权限的图标 `⏵⏵ ` 后面紧跟时间（底栏是 `⏵⏵ 开放权限`）。原来等 `▣  `（工作区的图标后面空两格），
-/// LV-3 去掉了工作区一级。
+/// 有一轮的收尾行：开放权限的图标 `▣ ` 后面紧跟时间（底栏是 `▣ 开放权限`，后面跟的是字，不算）。LV-3 以前等的是工作区的
+/// `▣  `（图标后面空两格）；2026-11-20 开放权限的图标从 `⏵⏵` 换成 `▣`。
 pub fn done_in(lines: &[String]) -> bool {
     lines.iter().any(|l| {
-        l.split("⏵⏵ ")
+        l.split("▣ ")
             .skip(1)
             .any(|rest| rest.starts_with(|c: char| c.is_ascii_digit()))
     })

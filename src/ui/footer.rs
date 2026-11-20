@@ -18,7 +18,7 @@ use crate::ui::widget::{Kind, Spot};
 /// 左右两段之间至少空几列。
 const GAP: usize = 2;
 
-/// 画那一行。左边 `⏵⏵ 工作区 · deepseek-flash deepseek`；右边是每秒 token · 上下文 · `Σ7.0k(C49%)`，
+/// 画那一行。左边 `▣ 开放权限 · deepseek-flash deepseek`；右边是每秒 token · 上下文 · `Σ7.0k(C49%)`，
 /// 还不知道的那一格不写。有后台命令在跑时，中间的空当正中是后台按钮（`tui.md`「后台命令、子代理和侧边栏」第 1 条）；
 /// 返回按钮的位置。
 ///
@@ -460,7 +460,7 @@ fn model_spans(model: String, endpoint: &str, how: Model) -> Vec<Span<'static>> 
     spans
 }
 
-/// 权限级别那一格写什么、后面接模型那一格用什么隔开：写字的是「⏵⏵ 开放权限」接 ` · `；窄了只留图标的是「⏵⏵」接一个空格，
+/// 权限级别那一格写什么、后面接模型那一格用什么隔开：写字的是「▣ 开放权限」接 ` · `；窄了只留图标的是「▣」接一个空格，
 /// 不留 ` · `（2026-10-19 项目主人：字收掉了，那个点也收掉）。没有图标的照旧写字。
 fn level_label(icon: Option<&str>, name: &str, named: bool) -> (String, String) {
     match icon {
