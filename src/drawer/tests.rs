@@ -18,7 +18,7 @@ fn typed(d: &mut Drawer, text: &str) {
     }
 }
 
-/// 核心推的样本（`docs/designs/samples/events/`）：照它的 `body` 读。
+/// 核心推的样本（`internal/designs/samples/events/`）：照它的 `body` 读。
 fn sample<T: serde::de::DeserializeOwned>(jsonl: &str) -> T {
     let event: serde_json::Value = serde_json::from_str(jsonl.lines().next().unwrap()).unwrap();
     serde_json::from_value(event["body"].clone()).unwrap()
@@ -27,7 +27,7 @@ fn sample<T: serde::de::DeserializeOwned>(jsonl: &str) -> T {
 /// 钉住的那份核心检出里的协议样本（设计 32 第四节第 3 条）。
 fn events(name: &str) -> String {
     let path = std::path::Path::new(miyu_client::WORKSPACE_ROOT)
-        .join("docs/designs/samples/events")
+        .join("internal/designs/samples/events")
         .join(name);
     std::fs::read_to_string(&path).expect("核心检出里有这份样本")
 }

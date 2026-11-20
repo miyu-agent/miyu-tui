@@ -63,7 +63,7 @@ fn a_picked_option_carries_the_images_of_its_question() {
 fn an_approval_takes_images_only_on_dont_allow() {
     // 钉住的核心检出里的协议样本（同 `tests.rs`）。
     let path = std::path::Path::new(miyu_client::WORKSPACE_ROOT)
-        .join("docs/designs/samples/events/tool.approval_requested.jsonl");
+        .join("internal/designs/samples/events/tool.approval_requested.jsonl");
     let line = std::fs::read_to_string(path).expect("核心检出里有这份样本");
     let event: serde_json::Value = serde_json::from_str(line.lines().next().unwrap()).unwrap();
     let approval: Approval = serde_json::from_value(event["body"].clone()).unwrap();
