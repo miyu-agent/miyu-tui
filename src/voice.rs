@@ -15,7 +15,7 @@ pub mod clips;
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Texts {
-    /// 出错码（`error.data.code`，核心 `docs/reference/bus.md`）对应的一句；表里没有的照 `failed`。
+    /// 出错码（`error.data.code`，核心 `docs/zh/reference/bus.md`）对应的一句；表里没有的照 `failed`。
     pub codes: HashMap<String, String>,
     /// 别的错：`{why}` 是核心的原话。
     pub failed: String,
