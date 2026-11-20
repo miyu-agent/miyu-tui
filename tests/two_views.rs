@@ -53,3 +53,24 @@ fn a_second_view_opened_mid_turn_keeps_the_turn_open_and_keeps_up() {
     first.wait_for("接着说完了。");
     second.wait_for("接着说完了。");
 }
+
+/// 另一个终端新开的会话答完了：这边不弹「回答完了」（核心 HV-1：开着它的那个头负责）。2026-11-20 量内存时撞见：答得快的一轮
+/// 在开会话的终端说「开着它」以前就答完了，别的终端个个当成后台会话弹一条，十个窗口各说一句弹了 90 条。
+#[test]
+fn a_session_answered_in_another_terminal_is_not_announced_here() {
+    let home = Home::new(Script::new([Play::Says("答完了。")]));
+    let mut here = home.tui("zh_CN.UTF-8");
+    here.wait_for("开放权限");
+    let mut there = home.tui("zh_CN.UTF-8");
+    there.wait_for("开放权限");
+    there.say("在吗");
+    there.wait_for("答完了。");
+    // 这边照会话列表看到那个会话忙过又答完：等它推过来。
+    here.pump(Duration::from_secs(3));
+    let log = std::fs::read_to_string(support::notify_log(home.root())).unwrap_or_default();
+    assert!(
+        !log.lines()
+            .any(|l| l.starts_with("notify-send") || l.starts_with("osascript")),
+        "开着它的是另一个终端，这边不弹：\n{log}"
+    );
+}
