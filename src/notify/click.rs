@@ -1,9 +1,7 @@
 //! 点了通知切到那个会话（蓝图 `tui.md`「系统通知」第 8 条，核心 J-3 中）：每次新开会话的定时跑完了，弹的通知点开切过去。
 //! kitty 照 OSC 99 的 `a=focus,report` 回一句 `99;i=<编号>;`（读按键那一头截下来，`reader/replies.rs`），编号里写着会话；
-//! Linux 的 `notify-send` 带一个默认动作、`--wait` 等它，点了印出动作名。macOS 的 `osascript`、OSC 9 没有回话，点了不切。
+//! Linux 的 `notify-send` 带一个默认动作、`--wait` 等它，点了印出动作名（`waiting.rs`）。macOS 的 `osascript`、OSC 9 没有回话，点了不切。
 
-use std::io::Read;
-use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
 /// 叫醒主循环。
@@ -60,45 +58,6 @@ impl Clicked {
     }
 }
 
-/// `notify-send` 带默认动作的参数：插在 `--` 前面。
-pub fn action_args(label: &str) -> [String; 3] {
-    ["-A".into(), format!("default={label}"), "--wait".into()]
-}
-
-/// 跑带动作的 `notify-send`，另起一个线程等：点了（印出 `default`）放进 `clicked`。拉不起来的、这一版 `notify-send` 不认
-/// 动作（退出码不是 0、什么都没印）的照不带动作再弹一次（`plain`）。
-pub fn spawn_waiting(
-    program: String,
-    args: Vec<String>,
-    plain: Vec<String>,
-    (clicked, session): (Clicked, String),
-) {
-    if !super::system::guard(&program) {
-        return;
-    }
-    std::thread::spawn(move || {
-        let child = Command::new(&program)
-            .args(&args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn();
-        let Ok(mut child) = child else {
-            return;
-        };
-        let mut said = String::new();
-        if let Some(out) = child.stdout.as_mut() {
-            drop(out.read_to_string(&mut said));
-        }
-        let fine = child.wait().is_ok_and(|s| s.success());
-        if said.trim() == "default" {
-            clicked.push(session);
-        } else if !fine && said.trim().is_empty() {
-            super::system::spawn(&program, &plain);
-        }
-    });
-}
-
 #[cfg(test)]
 mod tests {
     use super::{Clicked, clicked, kitty_id};
@@ -121,53 +80,6 @@ mod tests {
         assert_eq!(clicked("99;i=miyu-4242;"), None);
         assert_eq!(clicked("11;rgb:1a1a/1b1b/2626"), None);
         assert_eq!(clicked("99;i=miyu-s-;"), None);
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn a_click_on_a_waiting_system_notice_is_queued_and_a_refusal_is_not() {
-        // 冒充 `notify-send`：点了的印 `default`，关掉的什么都不印。放在临时目录里（测试里只许拉起临时目录的程序，`system::guard`），
-        // 转给 `sh` 跑参数里的那一句。
-        use std::os::unix::fs::PermissionsExt;
-        let dir = std::env::temp_dir().join(format!("miyu-click-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        // 测试完（连断言失败）删掉：`/tmp` 是内存盘，原来每跑一遍留一个（2026-11-13 审计）。
-        struct Gone(std::path::PathBuf);
-        impl Drop for Gone {
-            fn drop(&mut self) {
-                drop(std::fs::remove_dir_all(&self.0));
-            }
-        }
-        let _gone = Gone(dir.clone());
-        let fake = dir.join("fake-notify-send");
-        std::fs::write(&fake, "#!/bin/sh\nexec /bin/sh \"$@\"\n").unwrap();
-        std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).unwrap();
-        let fake = fake.display().to_string();
-        let (tx, rx) = std::sync::mpsc::channel();
-        let mut queue = Clicked::default();
-        queue.set_wake(std::sync::Arc::new(move || if tx.send(()).is_err() {}));
-        let sh = |script: &str| vec!["-c".to_string(), script.to_string()];
-        super::spawn_waiting(
-            fake.clone(),
-            sh("echo default"),
-            sh("true"),
-            (queue.clone(), "s-1".into()),
-        );
-        rx.recv_timeout(std::time::Duration::from_secs(10))
-            .expect("点了叫醒主循环");
-        assert_eq!(queue.take(), ["s-1"]);
-        super::spawn_waiting(
-            fake,
-            sh("exit 0"),
-            sh("true"),
-            (queue.clone(), "s-2".into()),
-        );
-        assert!(
-            rx.recv_timeout(std::time::Duration::from_millis(500))
-                .is_err(),
-            "关掉、没点的不切"
-        );
-        assert!(queue.take().is_empty());
     }
 
     #[test]

@@ -13,6 +13,7 @@ mod mascot_icon;
 mod osc;
 mod sound;
 mod system;
+mod waiting;
 
 use std::path::PathBuf;
 
@@ -140,6 +141,8 @@ pub struct Notifier {
     who: Option<Who>,
     /// 点了的通知要切过去的会话（第 8 条，`click.rs`）。
     clicked: Clicked,
+    /// 等点击的 `notify-send`：丢掉（界面退出）时全部结束（`waiting.rs`）。
+    waiting: waiting::Waiting,
 }
 
 impl Notifier {
@@ -167,6 +170,7 @@ impl Notifier {
             title: None,
             who: None,
             clicked: Clicked::default(),
+            waiting: waiting::Waiting::default(),
             look,
             texts,
         }
@@ -303,11 +307,11 @@ impl Notifier {
                     system::command(&self.look.app, title, body, picture.as_deref());
                 // 点了打开会话只有 `notify-send` 的 `--action` 等得到（macOS 的 osascript、Windows 的 Toast 都等不到点）
                 match session.filter(|_| cfg!(all(unix, not(target_os = "macos")))) {
+                    // 同一个会话只留最新一条在等，等点击有时限，界面退出时全部结束（`waiting.rs`）。
                     Some(session) => {
-                        let mut args = click::action_args(&self.texts.open).to_vec();
-                        args.extend(plain.iter().cloned());
                         let clicked = (self.clicked.clone(), session);
-                        click::spawn_waiting(program, args, plain, clicked);
+                        self.waiting
+                            .show(&program, &self.texts.open, plain, clicked);
                     }
                     None => {
                         system::spawn(&program, &plain);

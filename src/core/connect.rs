@@ -101,6 +101,7 @@ pub(super) async fn fresh(rpc: &mut Rpc, chosen: &Chosen) -> Result<(String, Joi
         other => other,
     };
     let (id, moved) = create(rpc, chosen).await.map_err(unsent)?;
+    view(rpc, &id).await.map_err(unsent)?;
     let mut joined = subscribe(rpc, &id).await.map_err(unsent)?;
     joined.moved = moved;
     Ok((id, joined))
@@ -117,6 +118,20 @@ async fn create(rpc: &mut Rpc, chosen: &Chosen) -> Result<(String, Option<Moved>
     let id = created["session"].as_str().unwrap_or_default().to_string();
     let given = params["cwd"].as_str().unwrap_or_default();
     Ok((id, moved(given, created["cwd"].as_str())))
+}
+
+/// 开好的会话先说「开着它」（`session.viewing`，核心 HV-1），等到回应再订阅、说第一句：别的头照会话列表的 `viewed` 不替它弹
+/// 「回答完了」。原来要等界面下一拍（`app/viewing.rs`）才说，答得快的一轮（假模型、一句话的回答）在那之前就答完了，别的终端个个
+/// 当成后台会话弹一条（2026-11-20 量内存时撞见：十个窗口各说一句，弹了 90 条）。界面那一拍照旧再说一遍，核心看是同一个不推。
+/// 核心拒了的（旧核心没有这个方法）照旧往下走。
+async fn view(rpc: &mut Rpc, session: &str) -> Result<(), Update> {
+    match rpc
+        .call("session.viewing", json!({"session": session}))
+        .await
+    {
+        Ok(_) | Err(Failure::Refused(_)) => Ok(()),
+        Err(failure) => Err(refused(failure)),
+    }
 }
 
 /// 交的工作目录、核心实际用的（两个都是给人看的写法，家目录写成 `~`）。
