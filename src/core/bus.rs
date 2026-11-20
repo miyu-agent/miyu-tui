@@ -1,4 +1,4 @@
-//! 总线（核心 BUS-2，`docs/reference/bus.md`）：连上就订 `bus` 流，回应和 `bus.changed` 都是整份名字，照换；掉了队重新订。
+//! 总线（核心 BUS-2，`docs/zh/reference/bus.md`）：连上就订 `bus` 流，回应和 `bus.changed` 都是整份名字，照换；掉了队重新订。
 //! 终端只看哪些名字可用（`ready`），语音照它画麦克风、列命令（`crate::voice`，设计 20）。
 
 use serde_json::{Value, json};

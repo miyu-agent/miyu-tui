@@ -1,4 +1,4 @@
-//! 人打的 `/dream` 跟着看整理（核心 R-21，`docs/reference/memory.md`「`memory.dream`」；蓝图 `tui.md`「整理记忆」）：订阅这个
+//! 人打的 `/dream` 跟着看整理（核心 R-21，`docs/zh/reference/memory.md`「`memory.dream`」；蓝图 `tui.md`「整理记忆」）：订阅这个
 //! 会话那一间的 `memory` 流，整理完退订。日志里开始合、合完、没合成的三行和不落盘的 `memory.dreaming` 读成
 //! [`Change`] 交给界面；每开始合一批，照编号取一次正文（`memory.list` 带作废的），浮过去、删掉的原文照它写。
 
