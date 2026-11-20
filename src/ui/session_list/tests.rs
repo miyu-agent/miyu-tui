@@ -227,7 +227,7 @@ fn a_narrow_box_keeps_the_title_and_the_tokens_and_shortens_the_directory() {
 fn a_long_directory_keeps_its_last_two_levels() {
     assert_eq!(short_path("~/src/miyu", 24), "~/src/miyu");
     assert_eq!(
-        short_path("/tmp/claude-1000/-home-shorin/scratchpad/work", 24),
+        short_path("/tmp/sandbox-123/-home-me/scratchpad/work", 24),
         "…/scratchpad/work"
     );
     let home = std::env::var("HOME").unwrap_or_default();

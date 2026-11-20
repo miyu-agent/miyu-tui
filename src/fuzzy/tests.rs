@@ -54,17 +54,17 @@ fn closer_and_word_start_matches_rank_first_and_ties_keep_their_order() {
 
 #[test]
 fn whole_pieces_match_in_any_order_but_rank_after_ordered_matches() {
-    // 2026-10-19 项目主人：`clinedeepseek` 搜得到，`deepseekcline` 搜不到。
-    let model = "clinepass/deepseek-v4.1-flash";
-    assert!(hit("deepseekcline", [model]));
-    assert!(hit("flashcline", [model]));
+    // 2026-10-19 项目主人：`relaydeepseek` 搜得到，`deepseekrelay` 搜不到。
+    let model = "relaypass/deepseek-v4.1-flash";
+    assert!(hit("deepseekrelay", [model]));
+    assert!(hit("flashrelay", [model]));
     assert!(
-        score("clinedeepseek", [model]) > score("deepseekcline", [model]),
+        score("relaydeepseek", [model]) > score("deepseekrelay", [model]),
         "照先后对上的分高"
     );
-    assert!(!hit("deepseekcline", ["deepseek-v4.1-flash"]), "每截都要有");
+    assert!(!hit("deepseekrelay", ["deepseek-v4.1-flash"]), "每截都要有");
     assert!(!hit("kees", ["deepseek"]), "一个字一个字乱序的不算");
-    let ranked = rank("deepseekcline", vec!["deepseek-v4.1-flash", model], |s| {
+    let ranked = rank("deepseekrelay", vec!["deepseek-v4.1-flash", model], |s| {
         vec![*s]
     });
     assert_eq!(ranked, [model]);
@@ -81,7 +81,7 @@ fn marks_point_at_the_matched_letters_in_each_field() {
     assert!(marks("zzz", "Claude").is_empty());
     // 切成几截才对上的：每截原样出现的那一处。
     assert_eq!(
-        marks("clinedeepseek", "clinepass/deepseek-v4"),
+        marks("relaydeepseek", "relaypass/deepseek-v4"),
         [0, 1, 2, 3, 4, 10, 11, 12, 13, 14, 15, 16, 17]
     );
     assert!(marks("", "anything").is_empty());

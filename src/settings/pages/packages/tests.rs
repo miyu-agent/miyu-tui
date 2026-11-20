@@ -160,7 +160,7 @@ fn a_package_page_names_its_author_origin_and_upstream() {
     let config = Config::builtin().unwrap();
     let words = &config.text.settings.more.package_from;
     let got = json!({"packages": [
-        {"package": "memes", "author": "shorin", "from": "official",
+        {"package": "memes", "author": "miyu-agent", "from": "official",
          "upstream": "https://github.com/miyu-agent/miyu-memes"},
         {"package": "net", "from": "shipped"},
         {"package": "bare"}]});
@@ -168,7 +168,7 @@ fn a_package_page_names_its_author_origin_and_upstream() {
     page.more.origins = super::super::packages::origins(&got);
     assert_eq!(
         page.more.origin_line("memes", words).as_deref(),
-        Some("shorin · 官方软件源 · github.com/miyu-agent/miyu-memes")
+        Some("miyu-agent · 官方软件源 · github.com/miyu-agent/miyu-memes")
     );
     assert_eq!(
         page.more.origin_line("net", words).as_deref(),
@@ -185,7 +185,7 @@ fn a_package_page_names_its_author_origin_and_upstream() {
 
 #[test]
 fn the_origin_follows_how_the_package_came() {
-    // 核心 PK-6（2026-11-06 core1）：每项多 `source`，社区的不当成官方；旧核心没有的照 `from`。
+    // 核心 PK-6（2026-11-06）：每项多 `source`，社区的不当成官方；旧核心没有的照 `from`。
     let config = Config::builtin().unwrap();
     let words = &config.text.settings.more.package_from;
     let got = json!({"packages": [

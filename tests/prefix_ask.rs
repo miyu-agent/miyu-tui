@@ -87,7 +87,7 @@ fn a_changed_prefix_is_asked_and_send_anyway_or_cancel() {
 #[cfg(target_os = "linux")]
 const SEEING: &str = "[providers.fake]\ndriver = \"openai-chat\"\nbase_url = \"http://127.0.0.1:9/v1\"\n\n[providers.fake.models.m]\ninputs = [\"text\", \"image\"]\n\n[models]\nchat = \"fake/m\"\n";
 
-/// core1 11-06 核：被 `prefix_changing` 拒的那句核心什么都没记，重发要照原样带着附件（已经传好的 blob 引用，不再上传）。
+/// 11-06 核心的会话核过：被 `prefix_changing` 拒的那句核心什么都没记，重发要照原样带着附件（已经传好的 blob 引用，不再上传）。
 #[test]
 #[cfg(target_os = "linux")]
 fn a_message_with_a_picture_keeps_it_when_sent_anyway() {

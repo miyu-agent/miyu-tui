@@ -367,7 +367,7 @@ fn left_line(spans: Vec<Span<'_>>, width: u16) -> Line<'static> {
 enum Model {
     /// 模型编号接暗色的供应商名。
     Full,
-    /// 模型编号只写最后一段（`clinepass/cline-pass/deepseek-v4.1-flash` 写 `deepseek-v4.1-flash`），供应商名照写。
+    /// 模型编号只写最后一段（`relaypass/relay-pass/deepseek-v4.1-flash` 写 `deepseek-v4.1-flash`），供应商名照写。
     Short,
     /// 只写最后一段，供应商名也收掉（最窄的时候）。
     Bare,

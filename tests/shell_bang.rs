@@ -38,7 +38,7 @@ fn a_bang_command_runs_in_the_session_and_she_answers() {
     assert_eq!(screen.matches("退出码 0").count(), 2, "{screen}");
 }
 
-/// 核心 XG-1 下（2026-11-06 core1）：会话里没有内置 shell 的，`!` 发出去回 `shell_unavailable`：弹提示「这个会话不能跑命令」，
+/// 核心 XG-1 下（2026-11-06）：会话里没有内置 shell 的，`!` 发出去回 `shell_unavailable`：弹提示「这个会话不能跑命令」，
 /// 不写进正文，打的命令放回框里。
 #[test]
 fn a_bang_command_without_a_shell_says_so_and_keeps_the_command() {

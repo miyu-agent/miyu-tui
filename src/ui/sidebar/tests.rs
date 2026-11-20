@@ -142,14 +142,14 @@ fn compactions_and_cache_breaks_show_only_once_they_happen() {
 #[test]
 fn a_long_directory_breaks_after_a_slash_and_never_leaves_one_alone() {
     let lines = super::wrap_path(
-        "/tmp/claude-1000/-home-shorin-Documents-github-Miyu/fbb4de14-613a-4306-bb73-84c0bd837ed0/scratchpad/work",
+        "/tmp/sandbox-123/-home-me-Documents-github-Miyu-app/fbb4de14-613a-4306-bb73-84c0bd837ed0/scratchpad/work",
         34,
     );
     assert_eq!(
         lines,
         [
-            "/tmp/claude-1000/",
-            "-home-shorin-Documents-github-Miyu",
+            "/tmp/sandbox-123/",
+            "-home-me-Documents-github-Miyu-app",
             "/fbb4de14-613a-4306-bb73-84c0bd837",
             "ed0/scratchpad/work",
         ]

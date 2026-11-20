@@ -239,7 +239,7 @@ fn the_semantic_step_shows_only_with_the_package() {
 
 #[test]
 fn keeping_the_semantic_setting_as_it_is_writes_nothing() {
-    // 同网页（2026-10-18 shorin-ee）：选的和现在的一样不写系统配置；没写过的算「是」。
+    // 同网页（2026-10-18）：选的和现在的一样不写系统配置；没写过的算「是」。
     let texts = texts();
     let t0 = Instant::now();
     let mut oobe = fresh(t0);
