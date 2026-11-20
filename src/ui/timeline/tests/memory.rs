@@ -39,12 +39,12 @@ fn opened(step: Step) -> Vec<String> {
 fn opening_remember_shows_what_was_remembered_not_the_reply_to_the_model() {
     let got = opened(tool(
         "remember",
-        json!({"class": "fact", "text": "shorin 最喜欢的动物是猫。"}),
+        json!({"class": "fact", "text": "alice 最喜欢的动物是猫。"}),
         "Saved as m9.",
         0,
     ));
     assert!(
-        got.iter().any(|l| l.contains("shorin 最喜欢的动物是猫。")),
+        got.iter().any(|l| l.contains("alice 最喜欢的动物是猫。")),
         "{got:?}"
     );
     assert!(got.iter().all(|l| !l.contains("Saved as")), "{got:?}");

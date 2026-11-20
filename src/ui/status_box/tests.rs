@@ -13,7 +13,7 @@ fn opened() -> Facts {
         preset: Some("全部功能".into()),
         level: Some("工作区".into()),
         cwd: "~/src".into(),
-        model: Some(("deepseek-v4.1-flash".into(), "magpie".into())),
+        model: Some(("deepseek-v4.1-flash".into(), "gateway".into())),
         effort: Some("high".into()),
         window: Some(1_000_000),
         speed: Some(76.4),
@@ -131,7 +131,7 @@ fn a_session_that_changed_models_lists_each_model_under_usage() {
     let mut facts = opened();
     facts.models = vec![
         (
-            "magpie/deepseek-v4.1-flash".into(),
+            "gateway/deepseek-v4.1-flash".into(),
             92_000,
             Some("¥0.61".into()),
         ),
@@ -144,7 +144,7 @@ fn a_session_that_changed_models_lists_each_model_under_usage() {
         .position(|l| l.contains("各模型"))
         .unwrap_or_else(|| panic!("{text}"));
     assert!(
-        lines[at].contains("magpie/deepseek-v4.1-flash · 92k · ¥0.61"),
+        lines[at].contains("gateway/deepseek-v4.1-flash · 92k · ¥0.61"),
         "{text}"
     );
     assert!(lines[at + 1].contains("relay/glm-5 · 16.7k"), "{text}");

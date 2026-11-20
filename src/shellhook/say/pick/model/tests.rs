@@ -10,7 +10,7 @@ use crate::shellhook::words::Words;
 
 fn flash() -> Choice {
     Choice {
-        reference: "magpie/deepseek-v4.1-flash".into(),
+        reference: "gateway/deepseek-v4.1-flash".into(),
         name: "DeepSeek V4.1 Flash".into(),
         detail: String::new(),
         state: ChoiceState::Ok,
@@ -21,7 +21,7 @@ fn flash() -> Choice {
 fn a_terminal_that_has_not_talked_yet_can_still_pick_the_model_for_its_first_session() {
     let config = Config::builtin().unwrap();
     let words = Words::of("zh").unwrap();
-    let mut pick = ModelPick::new(Some("magpie/deepseek-v4.1-flash"), &words);
+    let mut pick = ModelPick::new(Some("gateway/deepseek-v4.1-flash"), &words);
     assert!(!pick.needs_session(), "列表、换默认用不着终端会话");
     let mut turn = Turn::new(String::new(), None, Look::new(None));
     // 只问不开、核心回 `session: null`：这个终端还没说过话。
@@ -51,7 +51,7 @@ fn a_terminal_that_has_not_talked_yet_can_still_pick_the_model_for_its_first_ses
     }
     assert_eq!(
         chat.as_deref(),
-        Some("magpie/deepseek-v4.1-flash"),
+        Some("gateway/deepseek-v4.1-flash"),
         "换新会话的默认"
     );
 }

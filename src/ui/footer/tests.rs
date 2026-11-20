@@ -79,7 +79,7 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
     let full = || {
         vec![
             Span::raw("▣ 工作区 · "),
-            Span::raw("clinepass/cline-pass/deepseek-v4.1-flash dev · max"),
+            Span::raw("relaypass/relay-pass/deepseek-v4.1-flash dev · max"),
         ]
     };
     let short = || {
@@ -107,7 +107,7 @@ fn a_crowded_line_shortens_the_model_before_dropping_numbers() {
         "41 tok/s · 342.6k/1M(32.7%) · Σ27.5M(C97.3%) · ¥0.12"
     );
     let (left, _, _) = split(lefts(), cells(), 0, 140);
-    assert!(left.to_string().contains("clinepass/"), "宽的照旧写全");
+    assert!(left.to_string().contains("relaypass/"), "宽的照旧写全");
     // 再窄：速度、花费先丢，权限级别的字还在。
     let (left, right, _) = split(lefts(), cells(), 0, 82);
     assert_eq!(left.to_string(), "▣ 工作区 · deepseek-v4.1-flash dev · max");
@@ -164,17 +164,17 @@ fn an_icon_only_level_drops_the_dot_too() {
 #[test]
 fn a_shortened_model_keeps_the_provider_name_until_last() {
     // 2026-10-19 项目主人：宽度不够时供应商信息也可以隐藏；2026-10-23 改成最后才收（「最后再缩，而不是一开始就缩」）。
-    let model = || "clinepass/cline-pass/deepseek-v4.1-flash".to_string();
+    let model = || "relaypass/relay-pass/deepseek-v4.1-flash".to_string();
     assert_eq!(
-        shown(model_spans(model(), "magpie", Model::Full)),
-        "clinepass/cline-pass/deepseek-v4.1-flash magpie"
+        shown(model_spans(model(), "gateway", Model::Full)),
+        "relaypass/relay-pass/deepseek-v4.1-flash gateway"
     );
     assert_eq!(
-        shown(model_spans(model(), "magpie", Model::Short)),
-        "deepseek-v4.1-flash magpie"
+        shown(model_spans(model(), "gateway", Model::Short)),
+        "deepseek-v4.1-flash gateway"
     );
     assert_eq!(
-        shown(model_spans(model(), "magpie", Model::Bare)),
+        shown(model_spans(model(), "gateway", Model::Bare)),
         "deepseek-v4.1-flash"
     );
 }

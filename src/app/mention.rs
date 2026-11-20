@@ -62,7 +62,7 @@ impl App {
         Some(Action::None)
     }
 
-    /// 按键模式是 Vim（发版前 check 16，2026-11-09 项目主人：「列表里能用 j/k 选」，经 core1 转）：打字时 `Esc` 进列表里选；
+    /// 按键模式是 Vim（发版前 check 16，2026-11-09 项目主人：「列表里能用 j/k 选」）：打字时 `Esc` 进列表里选；
     /// 选的时候 `j` `k` 上下、`h` `l` 同 `←` `→`、`/` 筛，别的字不进输入框，`Esc` 关；筛的时候打的字接在词后面，`Enter`
     /// 筛好了回去选，`Esc` 不筛了、词换回按 `/` 以前的。交回 `None` 的照不是 Vim 的办（`↑` `↓`、`Tab`、`Enter` 都一样）。
     fn mention_vim(&mut self, key: KeyEvent, found: &Found) -> Option<Option<Action>> {

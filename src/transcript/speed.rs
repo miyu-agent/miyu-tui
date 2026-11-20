@@ -2,7 +2,7 @@
 //! 收尾那一行写这一轮的（「正文」，2026-10-26 项目主人）。
 
 /// 首字到结束不到这么多毫秒的，当是网关攒齐了一口气发过来的，这一次没有速度（核心 `miyu_view::status::BURST_MS`，2026-11-11
-/// 项目主人报 magpie 上 haiku 写出 1249500 tok/s：首字和结束只差几毫秒）。终端不依赖 `miyu-view`，照抄它的数，两处要一样。
+/// 项目主人报 中转上 haiku 写出 1249500 tok/s：首字和结束只差几毫秒）。终端不依赖 `miyu-view`，照抄它的数，两处要一样。
 const BURST_MS: u64 = 100;
 /// 算出来每秒超过这么多个 token 的同样不算（核心 `BURST_RATE`；真流式的 p95 在每秒 260 到 3400 个之间）。
 const BURST_RATE: u64 = 5_000;
@@ -71,7 +71,7 @@ mod tests {
         assert_eq!(speed.average(), Some(200.0));
     }
 
-    /// 第 42 条（2026-11-11 项目主人：magpie 上 haiku 写出 1249500 tok/s）：一口气到的那一次不算，不换掉上一次、不进平均；
+    /// 第 42 条（2026-11-11 项目主人：中转上 haiku 写出 1249500 tok/s）：一口气到的那一次不算，不换掉上一次、不进平均；
     /// 快但确实流过来的照算。同核心 `miyu_view::Speed::of` 的那几条例子。
     #[test]
     fn a_reply_that_arrived_all_at_once_has_no_speed() {

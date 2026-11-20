@@ -90,7 +90,7 @@ fn without_a_preview_the_title_takes_the_folder_name_and_other_asks_are_not_this
 
 #[test]
 fn the_state_directory_says_where_and_how_big_when_the_core_tells() {
-    // 核心 PK-4（11-05 core1）：`state` 从真假改成 `{path, size}`；旧核心的 `true` 照旧只写「状态目录」，没有的不写。
+    // 核心 PK-4（11-05）：`state` 从真假改成 `{path, size}`；旧核心的 `true` 照旧只写「状态目录」，没有的不写。
     let both = ("状态目录", "状态目录 {path}（{size}）");
     let home = std::env::home_dir().unwrap_or_default();
     let path = home.join(".miyu/var/lib/xx").display().to_string();
@@ -109,7 +109,7 @@ fn the_state_directory_says_where_and_how_big_when_the_core_tells() {
 
 #[test]
 fn removing_says_whether_the_config_directory_stays_or_goes() {
-    // 核心 PK-5（11-05 core1）：预览带 `config: {path, kept}`，留着写留在哪、`purge` 的写会删掉哪；没有这一格的不写。
+    // 核心 PK-5（11-05）：预览带 `config: {path, kept}`，留着写留在哪、`purge` 的写会删掉哪；没有这一格的不写。
     let home = std::env::home_dir().unwrap_or_default();
     let path = home.join(".miyu/etc/im").display().to_string();
     let row = |config: serde_json::Value| {
@@ -134,7 +134,7 @@ fn removing_says_whether_the_config_directory_stays_or_goes() {
 
 #[test]
 fn removing_a_system_package_says_the_files_stay() {
-    // 核心 SD-1（11-05 core1）：卸系统安装的只记一笔、文件不动；主人定写一行提示。
+    // 核心 SD-1（11-05）：卸系统安装的只记一笔、文件不动；主人定写一行提示。
     let rows = |layer: &str| {
         let preview = json!({"package": "im", "layer": layer});
         planned(json!({"tool": "package", "remove": "im", "preview": preview}))
@@ -150,7 +150,7 @@ fn removing_a_system_package_says_the_files_stay() {
 
 #[test]
 fn installing_says_where_from_which_capabilities_are_held_and_the_notice() {
-    // 核心 PK-3 上（11-06 core1）：来源、批过的标「已批准」、社区的「注意」。
+    // 核心 PK-3 上（11-06）：来源、批过的标「已批准」、社区的「注意」。
     let got = planned(json!({"tool": "package", "install": "/home/alice/tarot", "preview": {
         "package": "tarot", "version": "1.0.0", "source": "community", "feed": "official",
         "capabilities": [{"id": "net", "name": "联网", "held": true}, {"id": "fs", "name": "读文件"}],

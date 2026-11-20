@@ -363,7 +363,7 @@ fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
                 "groups": [{"id": "im", "name": "接入通讯平台", "page": "packages"}],
                 "items": [item]}),
             "package.list" => json!({"packages": [{"package": "im", "name": "接入通讯平台",
-                "author": "shorin", "from": "official", "upstream": "https://github.com/miyu-agent/miyu-im"}]}),
+                "author": "miyu-agent", "from": "official", "upstream": "https://github.com/miyu-agent/miyu-im"}]}),
             _ => json!({"secrets": []}),
         };
         page.answer(tag, Ok(got), &config.text.settings);
@@ -376,7 +376,7 @@ fn a_package_page_has_a_gap_under_its_origin_line_and_the_upstream_is_a_link() {
         .iter()
         .position(|l| l.contains("github.com/miyu-agent/miyu-im"))
         .expect("那一行");
-    assert!(lines[at].contains("shorin · 官方软件源 · "), "{text}");
+    assert!(lines[at].contains("miyu-agent · 官方软件源 · "), "{text}");
     assert!(lines[at - 2].contains("软件包 › 接入通讯平台"), "{text}");
     assert_eq!(lines[at - 1].trim(), "", "和面包屑之间空一行：\n{text}");
     assert_eq!(lines[at + 1].trim(), "", "下面空一行：\n{text}");

@@ -232,7 +232,7 @@ fn the_program_is_recorded_by_its_link_on_path_not_its_versioned_real_path() {
 #[cfg(unix)]
 #[test]
 fn the_forwarding_program_wins_and_is_recorded_by_its_link_on_path() {
-    // 排期第 47 条（core1 11-05，设计 60 系统源分包）：终端在包文件夹里、旁边没有 `miyu`；核心转交时设的 `MIYU_PROGRAM` 是
+    // 排期第 47 条（11-05，设计 60 系统源分包）：终端在包文件夹里、旁边没有 `miyu`；核心转交时设的 `MIYU_PROGRAM` 是
     // 解开链接以后的真实位置（`/usr/lib/miyu/miyu`），钩子里写 PATH 上指着它的那个链接（`/usr/bin/miyu`）。
     let dir = Dir::new("forwarded");
     let (lib, bin, tui) = (
