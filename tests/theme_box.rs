@@ -57,7 +57,12 @@ fn the_theme_command_opens_a_list_previews_and_writes_the_choice() {
     tui.wait_for("● 自动");
     tui.key(b"\x1b[B");
     tui.key(b"\r");
-    tui.pump(Duration::from_millis(800));
+    // 等到要的样子真出来再看，不照固定的几百毫秒：机器忙时回车以后那一帧晚到：先等框关了，再等写进系统配置。
+    tui.wait_until("框关了", |l| !support::has(l, "● 自动"));
+    let end = std::time::Instant::now() + support::WAIT;
+    while !home.settings().contains("theme = \"terminal\"") && std::time::Instant::now() < end {
+        tui.pump(Duration::from_millis(50));
+    }
     assert!(
         home.settings().contains("theme = \"terminal\""),
         "定下的写进系统配置：{}",
