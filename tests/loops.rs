@@ -21,13 +21,17 @@ fn a_loop_shows_above_the_input_and_in_the_sidebar() {
     tui.say("/loop 10m 看一眼 CI");
     // 记号照图标那一套，出厂 nerd 是钟（2026-11-02 项目主人）。
     tui.wait_for("\u{f017} ");
+    // 交进来的那一句画成一行，打头的钟也照这一套（ACC-1121-#2：原来写死 `plain` 的 `◷`）。
+    tui.wait_for("\u{f017} 循环 · 继续");
     // 要做的那几个字和「每 10 分钟」不一定一起读到：等两样都在了再看。
     tui.wait_for_all(&["每 10 分钟 · 下次", "看一眼 CI"]);
     assert!(tui.shows("看一眼 CI"), "{}", tui.lines().join("\n"));
     // 停掉：那一段和那一截都不画了。
     tui.say("/loop off");
     let end = std::time::Instant::now() + support::WAIT;
-    while tui.shows("每 10 分钟") || tui.shows("\u{f017} ") {
+    // 输入框上面那一截没了；交进来过的那一行「循环 · 继续」留在正文里。
+    let tag = |l: &String| l.contains("\u{f017} ") && !l.contains("循环 · 继续");
+    while tui.shows("每 10 分钟") || tui.lines().iter().any(tag) {
         assert!(
             std::time::Instant::now() < end,
             "停了还在：\n{}",
