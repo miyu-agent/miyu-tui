@@ -1,6 +1,7 @@
 //! `/usage` 一页怎么排（2026-11-17 验收）：按会话的列表很长时框不占大半屏（第 5 条），套餐额度上面有标题（第 6 条）。
 
 use ratatui::text::Line;
+use serde_json::json;
 
 use super::{Sources, page_lines};
 use crate::app::UsageData;
@@ -106,4 +107,32 @@ fn the_quota_windows_have_a_title_above_them() {
     let with = page(&config, &data, (0, 0), 50);
     assert_eq!(with[2], "OpenCode Go 额度情况", "照供应商的名字：{with:?}");
     assert!(with[3].starts_with("5 小时"), "{with:?}");
+}
+
+/// 用途照核心给的 `purpose_name`（ACC-1121-#3：「多模态」改名照核心的字表）；旧核心没给的照终端自己的字。
+#[test]
+fn purposes_are_named_by_the_core_when_it_names_them() {
+    let config = Config::builtin().unwrap();
+    let mut data = data(1);
+    let usage = json!({"uncached": 900, "cache_read": 0, "cache_write": 0, "output": 0});
+    let small = json!({"uncached": 100, "cache_read": 0, "cache_write": 0, "output": 0});
+    data.models = Some(Ok(crate::core::usage_rows(&json!({"rows": [
+        {"model": "deepseek/deepseek-flash", "requests": 2, "usage": usage}]}))));
+    data.purposes = Some(Ok(crate::core::usage_rows(&json!({"rows": [
+        {"purpose": null, "purpose_name": "主对话", "requests": 1, "usage": usage},
+        {"purpose": "vision", "purpose_name": "多模态模型", "requests": 1, "usage": small}]}))));
+    let models = page(&config, &data, (2, 0), 50);
+    assert!(
+        models
+            .iter()
+            .any(|l| l.contains("主对话 90%") && l.contains("多模态模型 10%")),
+        "{models:#?}"
+    );
+    data.purposes = Some(Ok(crate::core::usage_rows(&json!({"rows": [
+        {"purpose": "vision", "requests": 1, "usage": small}]}))));
+    let models = page(&config, &data, (2, 0), 50);
+    assert!(
+        models.iter().any(|l| l.contains("多模态 100%")),
+        "{models:#?}"
+    );
 }

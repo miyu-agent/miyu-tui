@@ -231,9 +231,11 @@ fn purpose_line(src: &Sources<'_>, rows: &[UsageRow], width: u16) -> Line<'stati
         if i > 0 {
             spans.push(Span::styled(crate::sheet::sep(), theme::dim()));
         }
-        let name = match &r.purpose {
-            None => texts.main_purpose.clone(),
-            Some(p) => texts.purposes.get(p).cloned().unwrap_or_else(|| p.clone()),
+        // 名字照核心给的 `purpose_name`（ACC-1121-#3）；老核心没给的照终端自己的字，再没有的照 `purpose` 原样。
+        let name = match (&r.purpose_name, &r.purpose) {
+            (Some(name), _) => name.clone(),
+            (None, None) => texts.main_purpose.clone(),
+            (None, Some(p)) => texts.purposes.get(p).cloned().unwrap_or_else(|| p.clone()),
         };
         spans.push(Span::raw(format!("{name} ")));
         spans.push(Span::styled(
