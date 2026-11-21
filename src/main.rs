@@ -80,6 +80,7 @@ mod usage;
 mod view_stream;
 mod voice;
 mod widgets;
+mod zone;
 
 use std::io::{self, Write, stdout};
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -238,7 +239,7 @@ fn leave(keyboard: bool) -> io::Result<()> {
 fn run(
     terminal: &mut Screen,
     (config, core, (sender, incoming)): (
-        Config,
+        Box<Config>,
         core::Core,
         (mpsc::Sender<Incoming>, mpsc::Receiver<Incoming>),
     ),
@@ -273,7 +274,8 @@ fn run(
         sender.send(incoming).is_ok()
     });
     let human = human::Human::default();
-    let mut app = App::new(config, core, human, figures);
+    // 放在堆上：整个程序的状态二十来 KB，主循环一直开着，摸过的栈页一直算在终端头上（蓝图「量尺」的栈）。
+    let mut app = Box::new(App::new(config, core, human, figures));
     app.screen.pixel.cell = cell;
     // 跟随壁纸盯着的文件变了：叫醒主循环，这一拍再找（蓝图「主题」的「跟随壁纸」第 3 条）。
     // 头像的主色、壁纸在后台取好了：同样叫醒主循环，不每一拍醒来看（蓝图「空闲不醒」）。
@@ -459,14 +461,10 @@ fn frame(
     log.begin();
     let mut prep = Duration::ZERO;
     terminal.backend_mut().inner_mut().writer_mut().begin()?;
-    let drawn = terminal.draw(|frame| {
+    // 经 glyph_guard 画：交给后端以前，它从这一帧的缓冲里抄下宽度认不准的字相邻的那几格。
+    let drawn = glyph_guard::draw(terminal, |frame| {
         let at = started.map(|_| Instant::now());
         ui::draw(frame, app);
-        // 光标交给 ratatui：这一帧要显示时由它挪过去、显示。别每帧先藏再显：kitty 的输入法预编辑挂在
-        // 光标上，跟着藏/显，和输入框里的提示来回闪（2026-10-02 项目主人报的 fcitx5）。
-        if app.screen.caret.shown {
-            frame.set_cursor_position(app.screen.caret.at);
-        }
         ui::wide::tidy(frame.buffer_mut());
         theme::paint(frame.buffer_mut());
         theme::degrade(frame.buffer_mut(), depth);
@@ -475,6 +473,9 @@ fn frame(
             ascii::frame(frame.buffer_mut());
         }
         prep = at.map_or(Duration::ZERO, |t| t.elapsed());
+        // 光标交给 ratatui：这一帧要显示时由它挪过去、显示。别每帧先藏再显：kitty 的输入法预编辑挂在
+        // 光标上，跟着藏/显，和输入框里的提示来回闪（2026-10-02 项目主人报的 fcitx5）。
+        app.screen.caret.shown.then_some(app.screen.caret.at)
     });
     // 藏着的光标也挪到插入点：不留在这一帧最后写的格子（kitty 开了 `cursor_trail` 会拖尾）；显示着的
     // 那一下 ratatui 已经挪过、显示过了。

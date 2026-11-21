@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn each_language_picks_its_own_words() {
         let table = LanguageTable::builtin().unwrap();
-        let en = Config::load(&table.find("en").unwrap(), true).unwrap();
+        let en = *Config::load(&table.find("en").unwrap(), true).unwrap();
         let undo = en
             .commands
             .commands
@@ -180,14 +180,14 @@ mod tests {
             "英文的词"
         );
         assert_eq!(en.text.language_switched, "Interface language: English");
-        let zh = Config::load(&table.find("zh").unwrap(), true).unwrap();
+        let zh = *Config::load(&table.find("zh").unwrap(), true).unwrap();
         assert!(
             zh.commands
                 .commands
                 .iter()
                 .any(|c| c.summary.contains("撤销"))
         );
-        let ja = Config::load(&table.find("ja").unwrap(), false).unwrap();
+        let ja = *Config::load(&table.find("ja").unwrap(), false).unwrap();
         assert_eq!(ja.text.language_switched, "表示言語：日本語");
         assert_eq!(ja.language, table.find("ja").unwrap());
         assert!(

@@ -121,7 +121,7 @@ fn no_balance_draws_nothing() {
 fn every_language_has_the_balance_words() {
     for lang in ["en", "ja"] {
         let table = crate::language::LanguageTable::builtin().unwrap();
-        let config = Config::load(&table.find(lang).unwrap(), false).unwrap();
+        let config = *Config::load(&table.find(lang).unwrap(), false).unwrap();
         let b = balance(
             true,
             vec![item("USD", "1.00", "0"), item("CNY", "10.34", "2.00")],

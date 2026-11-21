@@ -161,7 +161,7 @@ struct Unsent {
 /// 整个程序的状态。
 pub struct App {
     /// 界面上的字和布局的数值。
-    pub config: Config,
+    pub config: Box<Config>,
     /// 系统通知、报给 herdr（蓝图「系统通知」）。
     pub notifier: Notifier,
     /// 开着的框和整屏页（`boxes.rs`，蓝图 `app.md`）。
@@ -372,6 +372,12 @@ impl App {
     /// 首页吉祥物那一块在：「首页形象」开着（吉祥物或者头像，被顶上去、走下来照它）。
     fn home_slot_shown(&self) -> bool {
         self.seen().home() && self.config.layout.mascot_home
+    }
+
+    /// 一大块回应换上了（给人看的字，`updates.rs`）：过 `trim_after_ms` 把堆里空着的还给系统（`trim.rs`）。
+    pub(super) fn trim_soon(&mut self) {
+        let after = Duration::from_millis(self.config.layout.trim_after_ms);
+        self.media.trim.soon(Instant::now(), after);
     }
 
     /// 到点了：收掉过期的提示。

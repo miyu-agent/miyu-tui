@@ -404,7 +404,7 @@ fn ruler_stream_reply() {
 fn ruler_first_local_time() {
     for n in 1..=3 {
         let start = Instant::now();
-        let time = jiff::Zoned::now().strftime("%H:%M").to_string();
+        let time = crate::zone::now().strftime("%H:%M").to_string();
         println!(
             "第 {n} 次取本地时间 {:.2}ms（{time}）",
             start.elapsed().as_secs_f64() * 1000.0

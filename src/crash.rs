@@ -16,7 +16,7 @@ pub fn record(info: &PanicHookInfo<'_>) -> Option<PathBuf> {
         .join("tui");
     fs::create_dir_all(&dir).ok()?;
     let path = dir.join("crash.log");
-    let time = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
+    let time = crate::zone::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
     let text = entry(
         &time,
         &info.to_string(),

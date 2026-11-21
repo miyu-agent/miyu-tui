@@ -4,7 +4,7 @@ use super::*;
 
 impl App {
     /// 刚启动时的样子：输入框空着，正文空着，核心在连。
-    pub fn new(config: Config, core: Core, human: Human, figures: Figures) -> Self {
+    pub fn new(config: Box<Config>, core: Core, human: Human, figures: Figures) -> Self {
         // 启动时的配置照系统语言读的（自动）：记下它，选回自动时用。
         let system_language = config.language.clone();
         let md_keep = config.layout.markdown_cache;

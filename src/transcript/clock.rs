@@ -48,7 +48,7 @@ impl Clock {
     /// 墙上的钟（收尾行写的时刻）。
     pub fn wall(&self) -> Zoned {
         self.at
-            .map_or_else(Zoned::now, |at| at.to_zoned(jiff::tz::TimeZone::system()))
+            .map_or_else(crate::zone::now, |at| at.to_zoned(crate::zone::local()))
     }
 
     /// 在读补发来的事件。

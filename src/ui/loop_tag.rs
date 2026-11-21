@@ -75,7 +75,7 @@ pub(crate) fn sidebar(
 pub(super) fn shown(app: &crate::app::App) -> Option<(String, String)> {
     let session = app.talk.transcript.session.as_deref();
     let session = session.filter(|_| app.talk.viewing_title().is_none());
-    let now = (Timestamp::now(), &TimeZone::system());
+    let now = (Timestamp::now(), &crate::zone::local());
     let mine = of(&app.link.loops, session);
     let text = tag(&mine, &app.config, now)?;
     Some((text, app.config.icons.loop_mark.clone()))

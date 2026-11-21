@@ -149,6 +149,8 @@ impl App {
             human.carry(&self.link.human);
             self.link.human = human;
             *self.media.row_cache.borrow_mut() = Default::default();
+            // 拆回应的临时块、换下的旧的留在连核心那个线程的分配区里：过一会儿还给系统（蓝图「量尺」堆的归还）。
+            self.trim_soon();
             return;
         }
         // 配置里的界面语言：照它换（`language.rs`）。

@@ -79,7 +79,7 @@ fn steps(pushes: Vec<Push>) -> Vec<crate::transcript::Step> {
 fn titled(steps: Vec<crate::transcript::Step>, language: &str, named: bool) -> Vec<String> {
     let table = crate::language::LanguageTable::builtin().unwrap();
     let mut f = Fixture::new();
-    f.config = Config::load(&table.find(language).unwrap(), false).unwrap();
+    f.config = *Config::load(&table.find(language).unwrap(), false).unwrap();
     f.human = crate::human::Human::from_resources(language);
     if named {
         f.human
@@ -219,7 +219,7 @@ fn deepseek_search_and_page_reads_are_titled_like_the_core_tools() {
             ),
         ] {
             let mut f = Fixture::new();
-            f.config = Config::load(&table.find(language).unwrap(), false).unwrap();
+            f.config = *Config::load(&table.find(language).unwrap(), false).unwrap();
             f.human = crate::human::Human::from_resources(language);
             f.human.add_providers(&BTreeMap::from([(
                 "deepseek".to_string(),

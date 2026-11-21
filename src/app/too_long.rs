@@ -19,7 +19,7 @@ impl App {
         }
         let most = self.config.attachments.max_mib * 1024 * 1024;
         if attach && full.len() <= most {
-            let name = pasted_name(&jiff::Zoned::now());
+            let name = pasted_name(&crate::zone::now());
             let note = self.config.text.too_long_attached.replace("{name}", &name);
             self.hint(note, true);
             return Ok(Some(Pasted { name, text: full }));

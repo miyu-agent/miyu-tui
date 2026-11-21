@@ -362,7 +362,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
                 start_pick::content(&app.seen(), kind, areas.text.width, max)
             });
             let drawer = app.talk.drawers.current.as_mut();
-            let parts = (&app.config, facts);
+            let parts = (&*app.config, facts);
             input_box::draw_box(
                 frame,
                 areas,
@@ -394,7 +394,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
                 start_pick::content(&app.seen(), kind, areas.text.width, max)
             });
             let drawer = app.talk.drawers.current.as_mut();
-            let parts = (&app.config, facts);
+            let parts = (&*app.config, facts);
             input_box::draw_box(
                 frame,
                 areas,

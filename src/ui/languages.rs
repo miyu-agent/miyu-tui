@@ -90,7 +90,7 @@ mod tests {
     #[test]
     fn a_manual_choice_is_marked_on_its_own_row() {
         let table = LanguageTable::builtin().unwrap();
-        let config = Config::load(&table.find("zh").unwrap(), false).unwrap();
+        let config = *Config::load(&table.find("zh").unwrap(), false).unwrap();
         let (rows, _) = text(&config, 0, 10);
         assert_eq!(rows[0], "❯ 自动（跟随系统：中文）");
         assert_eq!(rows[1], "● 中文", "{rows:?}");

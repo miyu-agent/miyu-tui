@@ -69,7 +69,7 @@ fn the_second_default_model_takes_its_name_from_the_cores_schema() {
 fn usage_names_the_multimodal_purpose_the_same_way() {
     let table = crate::language::LanguageTable::builtin().unwrap();
     let words = |lang: &str| {
-        let config = Config::load(&table.find(lang).unwrap(), false).unwrap();
+        let config = *Config::load(&table.find(lang).unwrap(), false).unwrap();
         config.text.usage.purposes["vision"].clone()
     };
     assert_eq!(words("zh"), "多模态");

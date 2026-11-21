@@ -15,7 +15,7 @@ pub fn note(text: &str) {
     if fs::create_dir_all(&dir).is_err() {
         return;
     }
-    let time = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
+    let time = crate::zone::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
     let line = format!("{time} {text}\n");
     let opened = OpenOptions::new()
         .create(true)

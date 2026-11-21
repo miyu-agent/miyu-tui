@@ -21,6 +21,11 @@ pub fn app_with_starts() -> (
     let config = Config::builtin().expect("出厂配置读得了");
     let (core, sent, starts) = crate::core::detached_with_starts();
     let figures = crate::figures::Figures::start(None, &config.figures, None, |_| true);
-    let app = App::new(config, core, crate::human::Human::default(), figures);
+    let app = App::new(
+        Box::new(config),
+        core,
+        crate::human::Human::default(),
+        figures,
+    );
     (app, sent, starts)
 }
