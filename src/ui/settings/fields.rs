@@ -64,7 +64,20 @@ pub(super) fn value(
             } else {
                 texts.option(current)
             };
-            let style = if at.is_none() { dim } else { Style::new() };
+            // 包给的、还没动的（接口照包给的那一个停着）也暗着写，同包给的字（核心 FX-11：包给的值是默认值，人能改）。
+            let given = row
+                .source
+                .as_deref()
+                .is_some_and(|s| s.starts_with(PACKAGE))
+                && form
+                    .initial
+                    .iter()
+                    .any(|r| r.field == row.field && r.val == row.val);
+            let style = if at.is_none() || given {
+                dim
+            } else {
+                Style::new()
+            };
             if focused {
                 let arrow = theme::accent();
                 (

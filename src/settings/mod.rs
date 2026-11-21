@@ -11,6 +11,7 @@ pub mod keys;
 pub mod merge;
 mod mouse;
 pub mod nav;
+pub mod needs;
 pub mod pages;
 pub mod popup;
 mod provider_test;
