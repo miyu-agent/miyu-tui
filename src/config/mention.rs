@@ -1,18 +1,20 @@
 //! `@` 文件列表的数值（`resources/mention.json`）和字（`text/zh.json` 的 `mention`），蓝图 `tui.md`「`@` 文件列表」。
 
-use serde::Deserialize;
-
 /// 问核心的节拍。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct MentionLook {
     /// 核心的清单还在建：隔多久再问一次（毫秒）。
     pub poll_ms: u64,
 }
 
+crate::from_json::record! { MentionLook, deny { poll_ms } }
+
 /// 列表上写的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct MentionTexts {
     /// 上边框的开头：`{query}` 打的字。
     pub title: String,
@@ -36,9 +38,16 @@ pub struct MentionTexts {
     pub filtering: String,
 }
 
+crate::from_json::record! {
+    MentionTexts, deny {
+        title, count, layer, indexing, partial, empty, hints, vim_hints, picking, filtering,
+    }
+}
+
 /// `$` 点名技能的列表上写的字（`text/zh.json` 的 `skill_word`，发版前 check 26）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct SkillWordTexts {
     /// 上边框的开头：`{query}` 打的字。
     pub title: String,
@@ -54,4 +63,10 @@ pub struct SkillWordTexts {
     pub picking: String,
     /// 按键模式是 Vim、按了 `/` 在筛时的。
     pub filtering: String,
+}
+
+crate::from_json::record! {
+    SkillWordTexts, deny {
+        title, count, empty, hints, vim_hints, picking, filtering,
+    }
 }

@@ -3,7 +3,6 @@
 
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 use unicode_width::UnicodeWidthStr;
 
 use super::panel::Chrome;
@@ -12,8 +11,9 @@ use crate::config::Config;
 use crate::theme;
 
 /// 帮助框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
@@ -26,6 +26,8 @@ pub struct Texts {
     /// 按键：每个是 `[键, 做什么]`。
     pub keys: Vec<[String; 2]>,
 }
+
+crate::from_json::record! { Texts, deny { title, hint, commands, keys_title, keys } }
 
 /// 框（标题、提示）和从第 `scroll` 行起露出来的最多 `max` 行。
 pub fn lines(

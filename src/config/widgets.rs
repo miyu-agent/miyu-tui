@@ -1,10 +1,9 @@
 //! 界面块的版面（`layout.json` 的 `widgets`，蓝图「界面块」第 4 条）：每个位置几块、一块几行，列表的记号。
 
-use serde::Deserialize;
-
 /// 每个位置的上限和列表的记号。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct WidgetLayout {
     /// 首页最多几块。
     pub home_blocks: usize,
@@ -22,9 +21,16 @@ pub struct WidgetLayout {
     pub marks: WidgetMarks,
 }
 
+crate::from_json::record! {
+    WidgetLayout, deny {
+        home_blocks, home_rows, home_total, sidebar_rows, status_cells, status_width, marks,
+    }
+}
+
 /// 列表一条前面的记号，连同后面的空格（照 `state`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct WidgetMarks {
     pub todo: String,
     pub doing: String,
@@ -32,3 +38,5 @@ pub struct WidgetMarks {
     pub failed: String,
     pub off: String,
 }
+
+crate::from_json::record! { WidgetMarks, deny { todo, doing, done, failed, off } }

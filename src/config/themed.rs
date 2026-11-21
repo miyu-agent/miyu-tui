@@ -1,8 +1,6 @@
 //! 资源文件盖上主题（蓝图 `tui.md`「主题」第 2 条）：`layout.json`、`timeline.json` 里的记号照主题那一节盖；换了主题照新的
 //! 重读这两份。
 
-use serde::Deserialize;
-
 use super::Config;
 
 impl Config {
@@ -26,12 +24,13 @@ impl Config {
 }
 
 /// `resources/<name>.json` 盖上主题里同名的那一节再读。
-pub(super) fn themed<T: for<'de> Deserialize<'de>>(
+pub(super) fn themed<T: crate::from_json::Read>(
     name: &str,
     json: &str,
     theme: &serde_json::Value,
 ) -> Result<T, String> {
     let value = crate::sheet::overlay(json, name, theme)
         .map_err(|e| format!("resources/{name}.json 读不懂：{e}"))?;
-    serde_json::from_value(value).map_err(|e| format!("resources/{name}.json 盖上主题读不懂：{e}"))
+    crate::from_json::from_value(value)
+        .map_err(|e| format!("resources/{name}.json 盖上主题读不懂：{e}"))
 }

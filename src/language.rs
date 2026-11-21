@@ -2,8 +2,6 @@
 //! 英文、日文。启动时照系统语言定，`/language` 开一个框选。界面上的字、命令的说明、运行状态行的词都照它换；工具的
 //! 显示名照它向核心要（`human.get`，`human.rs`）。
 
-use serde::Deserialize;
-
 /// 界面用哪种语言：表里的代码（`zh`、`en`、`ja`）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Language(String);
@@ -16,8 +14,9 @@ impl Language {
 }
 
 /// 语言表：有哪几种、认不出系统语言时用哪种。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct LanguageTable {
     /// 认不出系统语言时用的，也是别的资源缺了这种语言时退回的。
     pub fallback: String,
@@ -27,9 +26,12 @@ pub struct LanguageTable {
     pub languages: Vec<Entry>,
 }
 
+crate::from_json::record! { LanguageTable, deny { fallback, auto_summary, languages } }
+
 /// 表里的一种。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Entry {
     /// 代码：`text/<代码>.json`，`commands.json`、`pulse.json` 里的键。
     pub code: String,
@@ -39,6 +41,8 @@ pub struct Entry {
     pub locales: Vec<String>,
 }
 
+crate::from_json::record! { Entry, deny { code, name, locales } }
+
 impl LanguageTable {
     /// 读编译时带进来的那一份。
     ///
@@ -46,7 +50,7 @@ impl LanguageTable {
     ///
     /// JSON 写坏了、退回的那种不在表里时返回错误。
     pub fn builtin() -> Result<Self, String> {
-        let table: Self = serde_json::from_str(include_str!("../resources/languages.json"))
+        let table: Self = crate::from_json::from_str(include_str!("../resources/languages.json"))
             .map_err(|e| format!("resources/languages.json 读不懂：{e}"))?;
         for (what, code) in [
             ("退回的", &table.fallback),

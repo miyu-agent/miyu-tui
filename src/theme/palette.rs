@@ -1,8 +1,8 @@
 //! 主题文件（蓝图 `tui.md`「主题」）：一个语义色一格，值是 `#rrggbb`、`idx:N`、终端 16 色的名字，或 `default`；前面加
 //! `dim:` 的这一格另加「变暗」。
 
+use crate::from_json::{Kind, Node, Read, mismatch};
 use ratatui::style::Color;
-use serde::{Deserialize, Deserializer};
 
 /// 一个颜色：从主题文件的字读出来；后一个是要不要另加「变暗」（`dim:` 打头的，终端配色照旧 Miyu：思考是暗的亮绿，
 /// 2026-10-14）。
@@ -16,16 +16,29 @@ impl Tone {
     }
 }
 
-impl<'de> Deserialize<'de> for Tone {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let text = String::deserialize(deserializer)?;
-        let (dim, color) = match text.trim().strip_prefix("dim:") {
-            Some(color) => (true, color),
-            None => (false, text.as_str()),
-        };
-        parse(color)
-            .map(|c| Tone(c, dim))
-            .map_err(serde::de::Error::custom)
+/// 一格颜色的写法：`dim:` 打头的另加变暗。
+fn tone(text: &str) -> Result<Tone, String> {
+    let (dim, color) = match text.trim().strip_prefix("dim:") {
+        Some(color) => (true, color),
+        None => (false, text),
+    };
+    parse(color).map(|c| Tone(c, dim))
+}
+
+/// 旧读法（serde），只留在对照测试里（施工 LW-9）。
+#[cfg(test)]
+impl<'de> serde::Deserialize<'de> for Tone {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let text = <String as serde::Deserialize>::deserialize(deserializer)?;
+        tone(&text).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Read for Tone {
+    const KIND: &'static Kind = &Kind::Checked(|text| tone(text).map(|_| ()));
+
+    fn build(node: Node) -> Self {
+        tone(&String::build(node)).unwrap_or_else(|_| mismatch())
     }
 }
 
@@ -77,8 +90,9 @@ pub fn parse(text: &str) -> Result<Color, String> {
 }
 
 /// 一套主题：每个语义色的颜色。每一格用在哪，见蓝图「主题」的表。
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Palette {
     /// 边框、时间线、旁白、用量、占位字。
     pub dim: Tone,
@@ -200,6 +214,19 @@ pub struct Palette {
     pub text: Tone,
 }
 
+crate::from_json::record! {
+    Palette, deny {
+        dim, accent, workspace, full, read_only, picked, thought, thought_hover, shade, chip_bg,
+        chip_hover_bg, panel_bg, row_bg, row_dim_bg, heat, added, removed, diff_added_fg,
+        diff_added_bg, diff_removed_fg, diff_removed_bg, error, warn, good, md_heading, md_bold,
+        md_italic, md_code, md_link, md_url, md_image, md_quote, md_mark, md_table_head, md_math,
+        diagram_text, diagram_line, diagram_backdrop, side_title, hover, faint, on_accent,
+        mascot_head, mascot_ear, mascot_eye, mascot_fin, code_keyword, code_function, code_string,
+        code_number, code_comment, code_type, code_constant, code_property, code_operator,
+        code_macro, code_parameter, background, text,
+    }
+}
+
 /// 出厂的几套：名字和文件，一种配色一份深色、一份浅色（「主题」第 2 条）。加一套：放一个文件，在这里登记一行。
 pub const BUILTIN: [(&str, &str); 4] = [
     (
@@ -229,7 +256,7 @@ pub fn builtin() -> Result<Vec<(String, Palette)>, String> {
     BUILTIN
         .iter()
         .map(|(name, json)| {
-            serde_json::from_str(json)
+            crate::from_json::from_str(json)
                 .map(|p| ((*name).to_string(), p))
                 .map_err(|e| format!("resources/themes/{name}.json 读不懂：{e}"))
         })

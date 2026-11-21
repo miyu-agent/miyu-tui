@@ -1,10 +1,9 @@
 //! 开不了链接、文件时的提示（`text/zh.json` 的 `open`），蓝图 `tui.md`「她的回答：Markdown」第 10 条。
 
-use serde::Deserialize;
-
 /// 开不了时说什么。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct OpenTexts {
     /// 不开这种协议：`{url}` 地址。
     pub refused: String,
@@ -13,3 +12,5 @@ pub struct OpenTexts {
     /// 起不来打开它的程序：`{reason}` 原因。
     pub failed: String,
 }
+
+crate::from_json::record! { OpenTexts, deny { refused, missing, failed } }

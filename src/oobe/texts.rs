@@ -1,13 +1,14 @@
 //! 引导上的字（`text/<语言>.json` 的 `oobe`，蓝图 `tui.md`「第一次打开的引导」）：和网页的引导用一样的说法
 //! （2026-10-08 和网页的会话对过）。`{name}` 这样的占位由代码填。
 
+mod read;
+
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 /// 欢迎页。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Welcome {
     /// 标题，一个字一个字打出来。
     pub title: String,
@@ -18,8 +19,9 @@ pub struct Welcome {
 }
 
 /// 最下面一行暗色的按键提示。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Keys {
     /// 选一行的几屏。
     pub pick: String,
@@ -66,8 +68,9 @@ pub struct Keys {
 }
 
 /// 选一行的一步：标题、说明。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Heading {
     /// 标题。
     pub title: String,
@@ -76,22 +79,24 @@ pub struct Heading {
 }
 
 /// 语言那一步。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Language {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 第一行：跟随系统，`{name}` 是照系统认出来的那种。
     pub auto: String,
 }
 
 /// 图标那一步。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Icons {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 看得到图标。
     pub yes: String,
@@ -100,11 +105,12 @@ pub struct Icons {
 }
 
 /// 你喜欢的操作方式那一步（2026-10-21）：两行，名字后面暗色一句怎么用。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Controls {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 方向键。
     pub arrows: String,
@@ -117,10 +123,11 @@ pub struct Controls {
 }
 
 /// 金额用什么货币显示那一步。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Currency {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 没人设过时光标停的那一种（照界面语言）。
     pub default: String,
@@ -131,11 +138,12 @@ pub struct Currency {
 }
 
 /// AI 怎么认识你那一步。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Profile {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 三格的名字：回复语言、称呼、更多描述（可选），照 `profile::KEYS` 的先后。
     pub fields: [String; 3],
@@ -152,11 +160,12 @@ pub struct Profile {
 }
 
 /// 主题那一步。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Theme {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 几行的名字：明暗、配色、吉祥物、主色、铺底色。
     pub rows: [String; 5],
@@ -191,11 +200,12 @@ pub struct Theme {
 }
 
 /// 内置语义模型那一步（第 26b 条）：标题、说明、「是」「否」两行，没装的当场下载用的几句。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Semantic {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 「开」，后面暗色的一句。
     pub on: [String; 2],
@@ -206,8 +216,9 @@ pub struct Semantic {
 }
 
 /// 没装语义模型时当场下载的几句（第 26b 条，2026-10-19）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct SemanticDownload {
     /// 「是」后面接着写要下多大，`{size}`。
     pub size: String,
@@ -226,11 +237,12 @@ pub struct SemanticDownload {
 }
 
 /// 接模型那一步。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Model {
     /// 选一家：标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 读回来以前。
     pub loading: String,
@@ -331,11 +343,12 @@ pub struct Model {
 }
 
 /// 建人格那一步。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Persona {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 四格的名字：名字、具体人格提示词、示范对话、人设提醒短语。
     pub fields: Vec<String>,
@@ -366,11 +379,12 @@ pub struct Persona {
 }
 
 /// 选预设那一步。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Preset {
     /// 标题、说明。
-    #[serde(flatten)]
+    #[cfg_attr(test, serde(flatten))]
     pub head: Heading,
     /// 「自定义」。
     pub custom: String,
@@ -391,8 +405,9 @@ pub struct Preset {
 }
 
 /// 好了那一屏。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Done {
     /// 「好了」。
     pub title: String,
@@ -403,8 +418,9 @@ pub struct Done {
 }
 
 /// 整份。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 欢迎页。
     pub welcome: Welcome,

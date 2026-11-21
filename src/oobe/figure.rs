@@ -4,8 +4,6 @@
 
 use std::time::{Duration, Instant};
 
-use serde::Deserialize;
-
 /// 画什么。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Shown {
@@ -16,14 +14,17 @@ pub enum Shown {
 }
 
 /// 换的时候走多久、露多久（`oobe.json` 的 `swap`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Swap {
     /// 吉祥物走出去、走回来多久。
     pub walk_ms: u64,
     /// 头像从上往下露出来多久。
     pub reveal_ms: u64,
 }
+
+crate::from_json::record! { Swap, deny { walk_ms, reveal_ms } }
 
 /// 这一刻画成什么样。
 #[derive(Debug, Clone, Copy, PartialEq)]

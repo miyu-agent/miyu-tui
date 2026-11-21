@@ -2,15 +2,14 @@
 //! 换了推 `session.workspace_changed`。侧边栏「工作目录」照它写；推来换了的正文写一行。接上老会话时终端在别的目录不写
 //! （2026-10-18 项目主人：resume 不换工作区，也不用提示）。
 
-use serde::Deserialize;
-
 use super::{Kind, Transcript};
 use crate::config::Texts as AllTexts;
 use crate::local::home_short;
 
 /// 工作区那几句的字（`text/<语言>.json` 的 `workspace`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// `/workspace` 没带路径。
     pub need_path: String,
@@ -21,6 +20,8 @@ pub struct Texts {
     /// 开会话时核心换了工作目录（目录太宽，核心 WN-1）：提示行，`{given}` 交的、`{used}` 实际用的（照 `miyu ask`）。
     pub moved: String,
 }
+
+crate::from_json::record! { Texts, deny { need_path, pending, changed, moved } }
 
 impl Transcript {
     /// 推来换了工作区（哪个头换的都算）：记下，正文写一行暗色的「工作区换到 <目录>」。

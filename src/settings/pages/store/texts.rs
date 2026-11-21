@@ -2,14 +2,13 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 /// 一个按键提示：键、说什么。
 pub type Hint = [String; 2];
 
 /// 「软件包」三页的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct StoreTexts {
     /// 主菜单那一项和它底下那一行。
     pub entry: [String; 2],
@@ -52,6 +51,13 @@ pub struct StoreTexts {
     /// 按键提示：`source`、`typing`、`installed`、`backstage`、`confirm`、`confirm_scroll`（放不下要滚）、
     /// `confirm_remove`、`confirm_remove_scroll`（卸的弹窗是按钮，PK-5）、`running`。
     pub hints: HashMap<String, Vec<Hint>>,
+}
+
+crate::from_json::record! {
+    StoreTexts, deny {
+        entry, tabs, sort, sorts, search, states, loading_source, loading, empty, keys, values,
+        provides, programs, access, ask, status, hints,
+    }
 }
 
 impl StoreTexts {

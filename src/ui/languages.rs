@@ -3,15 +3,15 @@
 //! 右边暗色写「当前」；选中的照别的列表铺底。
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 
 use super::panel::{self, Chrome, Row};
 use crate::config::Config;
 use crate::language::Language;
 
 /// 框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
@@ -22,6 +22,8 @@ pub struct Texts {
     /// 换回自动以后提示的一句，`{name}` 同上。
     pub auto_switched: String,
 }
+
+crate::from_json::record! { Texts, deny { title, hint, auto, auto_switched } }
 
 /// 框（标题、提示）、排好的行、每一行是第几行（第 0 行自动）；选中第 `selected` 行，放不下 `max` 行时从离它最远的起少露。
 /// `system` 是启动时照系统认出来的那种，写在自动那一行的括号里。

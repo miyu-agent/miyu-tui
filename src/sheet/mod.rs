@@ -86,7 +86,7 @@ pub fn merged(pack: &Value) -> Value {
 ///
 /// 有一格不认识、值不对时，交回说哪一格的一句。
 pub fn parse(theme: &Value) -> Result<Sheet, String> {
-    serde_json::from_value(theme.clone()).map_err(|e| e.to_string())
+    crate::from_json::from_value(theme.clone()).map_err(|e| e.to_string())
 }
 
 /// 资源文件 `base`（`layout.json`、`timeline.json`）盖上主题里同名的那一节（`section`）。

@@ -3,7 +3,6 @@
 
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 use unicode_width::UnicodeWidthStr;
 
 use super::panel::{self, Chrome, Row};
@@ -14,8 +13,9 @@ use crate::model_list::ModelList;
 use crate::theme;
 
 /// 框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
@@ -41,6 +41,13 @@ pub struct Texts {
     pub no_key: String,
     /// 选了没有 key 的。
     pub refuse_no_key: String,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        title, count, query, hint, hint_vim, searching, loading, empty, cooling, cooling_bare,
+        no_key, refuse_no_key,
+    }
 }
 
 /// 框（标题、提示）、排好的行、每一行是对得上的第几个；`current` 是会话现在用的引用。

@@ -4,7 +4,6 @@
 //! 整份存。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use serde::Deserialize;
 use serde_json::Value;
 
 use super::schema::Item;
@@ -12,14 +11,17 @@ use crate::settings::popup::Popup;
 use crate::settings::{Settings, Texts};
 
 /// 勾选窗的字（`text/zh.json` 的 `settings.more.ticks`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct TicksTexts {
     /// 一个选项都没有。
     pub empty: String,
     /// 下面的按键提示。
     pub hints: Vec<[String; 2]>,
 }
+
+crate::from_json::record! { TicksTexts, deny { empty, hints } }
 
 /// 开着的勾选窗。
 #[derive(Debug, Clone, PartialEq, Eq)]

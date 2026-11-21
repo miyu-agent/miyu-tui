@@ -12,7 +12,6 @@ use std::collections::HashMap;
 
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 use unicode_width::UnicodeWidthStr;
 
 use super::panel::Chrome;
@@ -22,8 +21,9 @@ use crate::core::{Bill, SessionInfo, UsageRow};
 use crate::{money, theme};
 
 /// 用量框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
@@ -95,9 +95,19 @@ pub struct Texts {
     pub balance_exhausted: String,
 }
 
+crate::from_json::record! {
+    Texts, deny {
+        title, rates, tabs, total, today, requests, unpriced, loading, empty, failed, hint, below,
+        lifetime, peak, streak, streak_days, streak_best, longest, less, more, by_tokens, by_money,
+        weekdays, months, recent_peak, main_purpose, purposes, quota_title, quota_minutes,
+        quota_hours, quota_at, balance, balance_granted, balance_exhausted,
+    }
+}
+
 /// 框里几样图的尺寸（`layout.json` 的 `usage`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Look {
     /// 「最近 N 天」那一页几天（连今天）。
     pub recent_days: u16,
@@ -108,6 +118,8 @@ pub struct Look {
     /// 占比条几格长。
     pub share_cells: u16,
 }
+
+crate::from_json::record! { Look, deny { recent_days, weeks, bar_rows, share_cells } }
 
 /// 有几页：总览、最近 30 天、按模型、按会话。
 const TABS: usize = 4;

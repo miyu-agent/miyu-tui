@@ -1,16 +1,15 @@
 //! 选择窗、编辑窗写到哪（蓝图 `tui.md`「配置页」第 36 到 39 条）：配置项照旧写系统配置；改预设、改人格的一个键，
 //! 新建预设、新建人格（只填名字）另记，关窗时回到它的详情窗。预设、人格两边共用的几样小东西也在这里。
 
-use serde::Deserialize;
-
 use super::choose::{PersonaView, PresetView};
 use crate::core::Refusal;
 use crate::settings::popup::{Confirm, Delete, Popup};
 use crate::settings::{Settings, Tone};
 
 /// 删除、恢复出厂前问的字（人格、预设各一份）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct RemoveTexts {
     /// 自己建的：标题 `{name}`、一行话、按钮、取消。
     pub delete: [String; 4],
@@ -19,6 +18,8 @@ pub struct RemoveTexts {
     /// 没改过的出厂的：没有能删的。
     pub nothing: String,
 }
+
+crate::from_json::record! { RemoveTexts, deny { delete, restore, nothing } }
 
 /// 选择窗、编辑窗写到哪。
 #[derive(Debug, Clone, Default, PartialEq)]

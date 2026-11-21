@@ -17,7 +17,6 @@ use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 use unicode_width::UnicodeWidthStr;
 
 use crate::caret::Caret;
@@ -27,8 +26,9 @@ use crate::settings::{Hit, Settings, Texts};
 use crate::theme;
 
 /// 配置页的尺寸（`layout.json` 的 `settings`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Look {
     /// 宽占终端的百分之几。
     pub width_percent: u16,
@@ -54,6 +54,13 @@ pub struct Look {
     pub popup_wide: u16,
     /// 悬浮窗最高占终端的百分之几。
     pub popup_height_percent: u16,
+}
+
+crate::from_json::record! {
+    Look, deny {
+        width_percent, height_percent, narrow_below, provider_width, org_width, use_width,
+        pool_width, column_gap, menu_gap, popup_width, popup_wide, popup_height_percent,
+    }
 }
 
 /// 画一帧配置页。

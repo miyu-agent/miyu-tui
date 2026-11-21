@@ -7,14 +7,13 @@
 use std::process::{Command, Stdio};
 use std::sync::mpsc::{self, Sender};
 
-use serde::Deserialize;
-
 /// 关掉的环境变量。
 const OFF: &str = "MIYU_TUI_IME";
 
 /// 怎么问、怎么切（`layout.json` 的 `ime`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Look {
     /// 看这几个环境变量里有没有 `word`，有才切。
     pub detect_env: Vec<String>,
@@ -29,6 +28,8 @@ pub struct Look {
     /// 开回来的命令。
     pub on: Vec<String>,
 }
+
+crate::from_json::record! { Look, deny { detect_env, word, query, active, off, on } }
 
 /// 管输入法的那一头：界面告诉它进没进打字状态、终端在不在前台。
 #[derive(Debug, Default)]

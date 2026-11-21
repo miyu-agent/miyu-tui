@@ -10,84 +10,97 @@ mod tests;
 
 use std::collections::HashSet;
 
-use serde::Deserialize;
-
 use super::inline::Piece;
 use crate::theme;
 
 /// `code.json` 的样子。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Languages {
     /// 一种语言一条。
     pub languages: Vec<Language>,
 }
 
+crate::from_json::record! { Languages { languages } }
+
 /// 一种语言认什么。没写的都是不认。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Language {
     /// 名字和别名，照代码块开头写的那个认，不分大小写。
     pub names: Vec<String>,
     /// 关键字。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub keywords: Vec<String>,
     /// 关键字不分大小写（SQL、Dockerfile）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub ignore_case: bool,
     /// 内建类型（`i32`、`str`、`int`）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub types: Vec<String>,
     /// 常量（`true`、`None`、`nil`）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub constants: Vec<String>,
     /// 大写开头、带小写的名字当类型（`Vec`、`String`）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub capital_types: bool,
     /// 行注释的记号；空的是没有。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub comment: String,
     /// 块注释的头和尾（`/*`、`*/`），能跨行。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub block_comment: Option<[String; 2]>,
     /// 单引号括起来的也是字符串。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub single_quote_strings: bool,
     /// 反引号括起来的也是字符串。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub backtick_strings: bool,
     /// 三引号字符串（Python），能跨行。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub triple_quote_strings: bool,
     /// `名字!` 是宏（Rust）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub macros: bool,
     /// `#[…]` 是属性（Rust）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub attributes: bool,
     /// 一行打头的 `#名字` 是预处理指令（C/C++ 的 `#include`、`#define`）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub preprocessor: bool,
     /// `@名字` 是装饰器、注解。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub decorators: bool,
     /// `$名字`、`${…}`、`$(…)` 是变量（shell、PHP、Makefile）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub variables: bool,
     /// `-v`、`--force` 是命令的参数（shell）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub flags: bool,
     /// 键和值之间的记号（`:`、`=`）：一行打头（或 `{`、`,`、`-` 后面）紧跟这个记号的名字、字符串是键。空的是不认键。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub keys: String,
     /// 一行只有 `[段]` 的是段名（TOML、INI）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub sections: bool,
     /// `<标签 属性="…">`（HTML、XML）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub tags: bool,
     /// diff：`+` 开头的行是加的、`-` 开头的是删的。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub diff: bool,
+}
+
+crate::from_json::record! {
+    Language, deny {
+        names, keywords(default), ignore_case(default), types(default), constants(default),
+        capital_types(default), comment(default), block_comment(default),
+        single_quote_strings(default), backtick_strings(default), triple_quote_strings(default),
+        macros(default), attributes(default), preprocessor(default), decorators(default),
+        variables(default), flags(default), keys(default), sections(default), tags(default),
+        diff(default),
+    }
 }
 
 impl Languages {

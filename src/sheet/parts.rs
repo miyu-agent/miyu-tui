@@ -2,10 +2,10 @@
 
 use ratatui::style::Modifier;
 use ratatui::symbols::{border, line};
-use serde::Deserialize;
 
 /// 整张表（`layout`、`timeline` 两节读配置时盖，不在这里）。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 pub struct Sheet {
     /// 框线。
     pub frame: Frames,
@@ -17,13 +17,16 @@ pub struct Sheet {
     pub pick: Pick,
     /// 只画 ASCII（内置的纯 ASCII 主题写 `true`，check 13 ①）：界面字表、命令说明换成 ASCII、图标用 ASCII 那一套，画完一帧
     /// 剩下的符号换成 ASCII（`ascii.rs`）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub ascii: bool,
 }
 
+crate::from_json::record! { Sheet { frame, marks, text, pick, ascii(default) } }
+
 /// 选中的样子。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(rename_all = "lowercase"))]
 pub enum Pick {
     /// 整行铺底色（出厂）。
     Bar,
@@ -31,9 +34,12 @@ pub enum Pick {
     Mark,
 }
 
+crate::from_json::choice! { Pick { Bar = "bar", Mark = "mark" } }
+
 /// 框线的样子。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(rename_all = "lowercase"))]
 pub enum Line {
     /// 圆角。
     Rounded,
@@ -47,6 +53,17 @@ pub enum Line {
     Ascii,
     /// 不画线，只留出位置。
     None,
+}
+
+crate::from_json::choice! {
+    Line {
+        Rounded = "rounded",
+        Plain = "plain",
+        Double = "double",
+        Thick = "thick",
+        Ascii = "ascii",
+        None = "none",
+    }
 }
 
 /// ASCII 的框线。
@@ -118,8 +135,9 @@ impl Line {
 }
 
 /// 各处的框线。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Frames {
     /// 输入框。
     pub input: Line,
@@ -133,9 +151,12 @@ pub struct Frames {
     pub table: Line,
 }
 
+crate::from_json::record! { Frames, deny { input, boxes, toast, code, table } }
+
 /// 记号（行首两格宽的要照两格写）。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Marks {
     /// 列表里选中的那一行前面（两格宽）。
     pub pointer: String,
@@ -193,9 +214,17 @@ pub struct Marks {
     pub ring: [String; 5],
 }
 
+crate::from_json::record! {
+    Marks, deny {
+        pointer, on, off, now, ok, fail, ellipsis, caret, gap, next, sep, dash, rule, quote, bar,
+        side, secret, enter, swatch, heat, minus, task, chart, block, edge, fill, ring,
+    }
+}
+
 /// 任务列表的两种框（两格宽）。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Task {
     /// 没做。
     pub todo: String,
@@ -203,9 +232,12 @@ pub struct Task {
     pub done: String,
 }
 
+crate::from_json::record! { Task, deny { todo, done } }
+
 /// 一种修饰。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(rename_all = "lowercase"))]
 pub enum Mod {
     /// 加粗。
     Bold,
@@ -217,6 +249,16 @@ pub enum Mod {
     Dim,
     /// 反色。
     Reversed,
+}
+
+crate::from_json::choice! {
+    Mod {
+        Bold = "bold",
+        Italic = "italic",
+        Underline = "underline",
+        Dim = "dim",
+        Reversed = "reversed",
+    }
 }
 
 impl Mod {
@@ -235,8 +277,9 @@ impl Mod {
 }
 
 /// 各处的修饰。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Text {
     /// 回答里的标题（配置页弹窗的分组标题也是）。
     pub heading: Vec<Mod>,
@@ -260,4 +303,10 @@ pub struct Text {
     pub model: Vec<Mod>,
     /// 选区。
     pub selected: Vec<Mod>,
+}
+
+crate::from_json::record! {
+    Text, deny {
+        heading, title, strong, emphasis, link, quote, table_head, picked, level, model, selected,
+    }
 }

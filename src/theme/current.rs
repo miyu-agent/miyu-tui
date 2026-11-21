@@ -9,7 +9,7 @@ use super::palette::BUILTIN;
 
 /// 出厂的第一套。
 fn factory() -> Palette {
-    serde_json::from_str(BUILTIN[0].1).unwrap_or_else(|e| panic!("出厂主题读不懂：{e}"))
+    crate::from_json::from_str(BUILTIN[0].1).unwrap_or_else(|e| panic!("出厂主题读不懂：{e}"))
 }
 
 /// 照当前主题取一样东西。

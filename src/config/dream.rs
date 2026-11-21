@@ -1,10 +1,9 @@
 //! 人打的 `/dream` 整理时那一块（蓝图 `tui.md`「整理记忆」）：字在 `text/*.json` 的 `dream`，样子在 `layout.json` 的 `dream`。
 
-use serde::Deserialize;
-
 /// 整理时那一块的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct DreamTexts {
     /// 第一行（第 3 条）。
     pub title: String,
@@ -32,9 +31,17 @@ pub struct DreamTexts {
     pub esc_hint: String,
 }
 
+crate::from_json::record! {
+    DreamTexts, deny {
+        title, batch, outdated, repeat, worthless, summary, writing, tally, clock, summary_full,
+        backgrounded, esc_hint,
+    }
+}
+
 /// 整理时那一块的样子。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct DreamLook {
     /// 第一行打头的记号，连同后面的空格。
     pub mark: String,
@@ -88,4 +95,12 @@ pub struct DreamLook {
     pub receipt: String,
     /// 星星的位置照它定。
     pub seed: u64,
+}
+
+crate::from_json::record! {
+    DreamLook, deny {
+        mark, float, retired, revised, summary, reason_gap, float_ms, asleep, awake, wake_mark,
+        wake_ms, left_width, z_top, z_side, z_frame_ms, glyphs, soon, unlit, stars, star_cols,
+        twinkle_every, twinkle_ms, twinkle_lift, breathe_ms, receipt, seed,
+    }
 }

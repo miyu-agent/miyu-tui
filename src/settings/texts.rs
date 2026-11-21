@@ -1,13 +1,12 @@
 //! 配置页的字（`text/<语言>.json` 的 `settings`，蓝图「配置页」第 26 条）。`{name}` 这样的照名字换。
 
-use serde::Deserialize;
-
 /// 一个键、它做什么：按键提示的一格。
 pub type Hint = [String; 2];
 
 /// 配置页的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 面包屑头一段。
     pub title: String,
@@ -75,6 +74,15 @@ pub struct Texts {
     pub more: super::pages::Texts,
     /// 改了正在用的人格、预设那一句（`in_use.rs`）。
     pub in_use: super::in_use::InUseTexts,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        title, entry, entry_note, pages, cols, orgs, uses, use_notes, detail, pool_kind, tags,
+        pool_tag, pool_uses_head, pool_use_from, pool_names, gone, options, fields, hints, sources,
+        titles, buttons, button_keys, popup_hints, pick, catalog, confirm, status, errors, empty,
+        key_hints, more, in_use,
+    }
 }
 
 impl Texts {

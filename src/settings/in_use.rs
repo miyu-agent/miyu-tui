@@ -5,14 +5,14 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
 use serde_json::Value;
 
 use super::{Settings, Waiting};
 
 /// 问要不要压缩那一句的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct InUseTexts {
     /// 改了正在用的人格（项目主人原话，人格版）。
     pub persona: String,
@@ -21,6 +21,8 @@ pub struct InUseTexts {
     /// 两行：是、否。
     pub buttons: [String; 2],
 }
+
+crate::from_json::record! { InUseTexts, deny { persona, preset, buttons } }
 
 /// 人格还是预设。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

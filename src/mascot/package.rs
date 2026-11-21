@@ -69,7 +69,7 @@ pub fn read(bytes: &[u8]) -> Result<Look, String> {
             }
         }
     }
-    let look: Look = serde_json::from_value(base).map_err(|e| e.to_string())?;
+    let look: Look = crate::from_json::from_value(base).map_err(|e| e.to_string())?;
     check(&look)?;
     Ok(look)
 }

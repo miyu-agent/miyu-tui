@@ -1,8 +1,6 @@
 //! 写了几种语言的资源（蓝图 `tui.md`「界面语言」）：界面上的字一种语言一份（`text/<代码>.json`），命令的说明、运行状态行
 //! 的词在同一份 JSON 里每种语言各写一份，读的时候挑界面语言那一种，读出来和只写一种的一样。
 
-use serde::Deserialize;
-
 use crate::language::{Language, LanguageTable};
 
 /// 每种语言界面上的字，编译时带进来。加一种语言在这里加一行，代码和 `languages.json` 的对得上（测试查）。
@@ -37,7 +35,7 @@ pub(super) fn summary(language: &Language) -> Result<super::timeline::Summary, S
     let (name, json) = text(language)?;
     let value: serde_json::Value =
         serde_json::from_str(json).map_err(|e| format!("resources/{name} 读不懂：{e}"))?;
-    serde_json::from_value(value.get("summary").cloned().unwrap_or_default())
+    crate::from_json::from_value(value.get("summary").cloned().unwrap_or_default())
         .map_err(|e| format!("resources/{name} 的 summary 读不懂：{e}"))
 }
 
@@ -51,7 +49,7 @@ pub(super) fn shown(json: &str) -> std::borrow::Cow<'_, str> {
     }
 }
 
-pub(super) fn localized<T: for<'de> Deserialize<'de>>(
+pub(super) fn localized<T: crate::from_json::Read>(
     name: &str,
     json: &str,
     language: &Language,
@@ -60,11 +58,11 @@ pub(super) fn localized<T: for<'de> Deserialize<'de>>(
     let mut value: serde_json::Value =
         serde_json::from_str(json).map_err(|e| format!("resources/{name} 读不懂：{e}"))?;
     pick(&mut value, language.code(), table);
-    serde_json::from_value(value).map_err(|e| format!("resources/{name} 读不懂：{e}"))
+    crate::from_json::from_value(value).map_err(|e| format!("resources/{name} 读不懂：{e}"))
 }
 
 /// 一层层找只拿语言代码做键的对象，换成 `code` 那一种（没写的退回表里退回的那种）。
-fn pick(value: &mut serde_json::Value, code: &str, table: &LanguageTable) {
+pub(super) fn pick(value: &mut serde_json::Value, code: &str, table: &LanguageTable) {
     match value {
         serde_json::Value::Object(map) if is_localized(map, table) => {
             let chosen = map.get(code).or_else(|| map.get(&table.fallback)).cloned();

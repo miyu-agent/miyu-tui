@@ -3,11 +3,11 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
 use serde_json::Value;
 
 /// 时间线收起那一行的几种说法。两个的是 `[一个的写法, 几个的写法]`，`{count}` 是几个。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Summary {
     /// 跑过命令：打头的那一格。
     pub ran: [String; 2],
@@ -51,14 +51,23 @@ pub struct Summary {
     pub thought_for: String,
 }
 
+crate::from_json::record! {
+    Summary {
+        ran, used, made, edits, tools, thoughts, errors, spawned, messaged, messaged_sessions,
+        agents, messages, remembered, memories, searched, searches, fetched, pages, reports,
+        thought_for,
+    }
+}
+
 /// 时间线的样子：工具的分类、转圈、预览几行。头自己定的（`13-终端界面.md` 第三节的表：图标、连接行归终端界面）。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Timeline {
     /// 哪几件工具算哪一类（`command`、`edit`），没写的算工具。图标在 `resources/icons/`（蓝图「图标」）。
     pub kinds: HashMap<String, ToolKind>,
     /// 供应商侧工具（模型在供应商那边自己跑的，事件里的 `hosted_tool`）对上的核心工具：照核心 `resources/core/view.json`
     /// 的 `hosted` 抄的，标题照对上的那件写显示名、对象；对不上的写原名、没有对象（核心 `view.md`「供应商侧工具」）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub hosted: HashMap<String, Hosted>,
     /// 对象是本机路径的几件工具：标题里的路径文件真在的，点了用系统的打开方式开（蓝图「时间线」第 7a 条）。
     pub path_tools: Vec<String>,
@@ -87,24 +96,35 @@ pub struct Timeline {
     pub expand: Expand,
     /// 点开一步画什么，没写的画结果的原文（蓝图「时间线」第 8 条；2026-10-17 项目主人：记忆、知识库的结果是给模型看的
     /// 英文，点开要画给人看的）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub bodies: HashMap<String, Body>,
 }
 
+crate::from_json::record! {
+    Timeline {
+        kinds, hosted(default), path_tools, session_arg, spinner, spinner_ms, preview_rows,
+        thought_rows, line, queued, limit_live, omitted, fold, expand, bodies(default),
+    }
+}
+
 /// 一件供应商侧工具对上的核心工具（`timeline.json` 的 `hosted`）。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 pub struct Hosted {
     /// 核心那件工具的名字，例如 `web_search`。
-    #[serde(rename = "as")]
+    #[cfg_attr(test, serde(rename = "as"))]
     pub core: String,
     /// 对象看供应商那件工具的哪个参数；拿不准的不写。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub subject: Option<String>,
 }
 
+crate::from_json::record! { Hosted { core("as"), subject(default) } }
+
 /// 点开一步画的东西（`timeline.json` 的 `bodies`）。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(rename_all = "snake_case"))]
 pub enum Body {
     /// 点不开：标题那一句就够了。
     None,
@@ -122,6 +142,19 @@ pub enum Body {
     Message,
     /// 问顾问（`advisor`，核心 ADV-2，设计 69）：问的话（`question`），空一行，顾问的回答照 Markdown 画。
     Advice,
+}
+
+crate::from_json::choice! {
+    Body {
+        None = "none",
+        Arg(String) = "arg",
+        Diff([String; 2]) = "diff",
+        Memories = "memories",
+        Hits = "hits",
+        Page = "page",
+        Message = "message",
+        Advice = "advice",
+    }
 }
 
 impl Timeline {
@@ -189,8 +222,9 @@ impl Timeline {
 }
 
 /// 一件工具在时间线上算哪一类：数收起那一行、画预览和差异照它。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(rename_all = "snake_case"))]
 pub enum ToolKind {
     /// 执行命令：标题写短标题，下面预览命令。
     Command,
@@ -208,9 +242,22 @@ pub enum ToolKind {
     Fetch,
 }
 
+crate::from_json::choice! {
+    ToolKind {
+        Command = "command",
+        Edit = "edit",
+        Agent = "agent",
+        Message = "message",
+        Remember = "remember",
+        Search = "search",
+        Fetch = "fetch",
+    }
+}
+
 /// 时间线里哪几样默认铺开全文（`timeline.json` 的 `expand`，蓝图「时间线」第 18 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Expand {
     /// 思考。
     pub thought: bool,
@@ -219,6 +266,8 @@ pub struct Expand {
     /// 编辑、写入的差异。
     pub edit: bool,
 }
+
+crate::from_json::record! { Expand, deny { thought, command, edit } }
 
 #[cfg(test)]
 mod tests {

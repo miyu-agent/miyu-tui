@@ -4,7 +4,6 @@
 //! 一对一对的列表（`dialogs.rs`）。`d` 先问再删。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
-use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::choose::{LineEdit, PersonaView};
@@ -18,8 +17,9 @@ use crate::settings::{Settings, Texts, Tone, Waiting};
 pub const PROMPTS: [&str; 2] = ["persona", "reminders"];
 
 /// 改人格的字（`text/zh.json` 的 `settings.more.persona_edit`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct EditTexts {
     /// 删除、恢复出厂前问的。
     pub remove: RemoveTexts,
@@ -37,6 +37,12 @@ pub struct EditTexts {
     pub conflict: String,
     /// 读原文的时候。
     pub reading: String,
+}
+
+crate::from_json::record! {
+    EditTexts, deny {
+        remove, deleted, restored, avatar, avatar_set, avatar_path, conflict, reading,
+    }
 }
 
 /// 人格的窗里能改的一行，照画的先后。

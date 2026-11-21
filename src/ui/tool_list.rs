@@ -5,7 +5,6 @@
 //! 先读成 [`Tool`]（[`read`]），再排（[`rows`]）：排的那一半不碰界面，单元测试直接给数。
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 use serde_json::Value;
 use unicode_width::UnicodeWidthStr;
 
@@ -14,8 +13,9 @@ use crate::app::Seen;
 use crate::theme;
 
 /// 框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 框线上写的，`{n}` 是一共几件。
     pub title: String,
@@ -28,6 +28,8 @@ pub struct Texts {
     /// 下边框的按键提示。
     pub hint: String,
 }
+
+crate::from_json::record! { Texts, deny { title, loading, empty, count, hint } }
 
 /// 一件工具：名字和它从哪来。
 #[derive(Debug, Clone, PartialEq, Eq)]

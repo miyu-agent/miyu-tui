@@ -3,13 +3,12 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 use super::CompactionMotion;
 use crate::core::Level;
 
 /// 布局的数值。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Layout {
     /// 输入框和正文占窗口宽度的百分之几，跟着窗口一起变宽。
     pub width_percent: u16,
@@ -42,16 +41,16 @@ pub struct Layout {
     /// 侧边栏「文件修改」最多列几个文件，多的写「还有 N 个」（check 9，2026-11-13）。
     pub sidebar_files: usize,
     /// 侧边栏挂哪几件、什么先后、最多几行（`tui.side`，「挂载位」第 2 条）；没配的照出厂。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub side: Vec<super::slots::Slot>,
     /// 底栏两段挂哪几件、什么先后（`tui.footer`，「挂载位」第 4 条 SL-2）；没配的照出厂。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub footer: Vec<super::slots::Slot>,
     /// 输入框上面那一块挂哪几件、什么先后、最多几行（`tui.above`，「挂载位」第 4 条 SL-2）；没配的照出厂。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub above: Vec<super::slots::Slot>,
     /// 正文顶上挂哪几件（`tui.top`，排期第 16 条）；没配的照出厂。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub top: Vec<super::slots::Slot>,
     /// 按键模式是 Vim（蓝图「按键」表「按键模式」那一行）：会话列表、`/model` 里 `j`、`k` 挪，`/` 才搜；`false` 是方向键。
     pub vim: bool,
@@ -180,6 +179,24 @@ pub struct Layout {
     pub done_gap: HashMap<Level, String>,
 }
 
+crate::from_json::record! {
+    Layout {
+        width_percent, settings, ime, narrow_below, home_max_width, sidebar_from, sidebar_width,
+        mascot_home, bar, compaction, dream, mascot_sidebar, sidebar_sessions, sidebar_jumps,
+        sidebar_files, side(default), footer(default), above(default), top(default), vim, auto_pick,
+        agent_rows, output, todo_marks, widgets, side_gap, top_gap, pad_left, pad_right,
+        compact_below, compact_pad_left, compact_pad_right, compact_side_gap, paste_fold_lines,
+        paste_fold_chars, max_rows, double_click_ms, esc_window_ms, drawer_keep_rows, currencies,
+        usage, drawer_preview, notice_ms, frame_ms, key_burst_ms, markdown_cache, slow_frame_ms,
+        relayout_budget_ms, trim_rows, trim_after_ms, reconnect_ms, dots, shimmer, icons,
+        level_cycle, level_icons, prompt, queued_mark, goal_mark, menu_rows, history_rows,
+        jump_flash_ms, session_rows, session_cwd_width, session_title_width, tick_mark,
+        history_preview_rows, history_keep, user_bar, recap_mark, title_max, undo_icon,
+        link_cover_rows, link_icon_cols, current_mark, side_here_mark, side_done_mark,
+        undo_restored_mark, undo_left_mark, done_icon, done_gap,
+    }
+}
+
 impl Layout {
     /// 吉祥物的两个开关在终端软件包里的名字（`tui/package.toml`，「后台命令、子代理和侧边栏」第 7 条）。
     pub const MASCOT_KEYS: [&'static str; 2] = ["tui.mascot_home", "tui.mascot_sidebar"];
@@ -254,7 +271,8 @@ impl Layout {
 }
 
 /// 运行状态行的流光明暗：主题的 `accent` 打底，一道亮光从左往右扫过。颜色不变，只变明暗。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Shimmer {
     /// 亮光从头扫到尾要几秒。
     pub sweep_seconds: f64,
@@ -266,9 +284,12 @@ pub struct Shimmer {
     pub lift: f64,
 }
 
+crate::from_json::record! { Shimmer { sweep_seconds, band, dim, lift } }
+
 /// 运行状态行词后面的点（`layout.json` 的 `dots`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Dots {
     /// 点是哪个字。
     pub mark: String,
@@ -276,9 +297,12 @@ pub struct Dots {
     pub count: usize,
 }
 
+crate::from_json::record! { Dots, deny { mark, count } }
+
 /// 进度条的两种格（`layout.json` 的 `bar`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Bar {
     /// 几格。
     pub width: usize,
@@ -288,9 +312,12 @@ pub struct Bar {
     pub empty: String,
 }
 
+crate::from_json::record! { Bar, deny { width, full, empty } }
+
 /// 待办每一项前面的记号（`layout.json` 的 `todo_marks`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct TodoMarks {
     /// 没做。
     pub pending: String,
@@ -300,9 +327,12 @@ pub struct TodoMarks {
     pub done: String,
 }
 
+crate::from_json::record! { TodoMarks, deny { pending, active, done } }
+
 /// 后台命令的输出怎么读、露几行（蓝图「后台命令、子代理和侧边栏」第 3、5 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct OutputLook {
     /// 面板里点开一条露最后几行。
     pub panel_rows: usize,
@@ -313,6 +343,8 @@ pub struct OutputLook {
     /// 制表符换成几个空格。
     pub tab: usize,
 }
+
+crate::from_json::record! { OutputLook, deny { panel_rows, note_lines, poll_ms, tab } }
 
 /// 侧边栏列几个的值：数（发版前 check 第 23 条起），或者旧清单的 `"8"` 这样的字；别的读不成。
 fn count(value: &serde_json::Value) -> Option<usize> {

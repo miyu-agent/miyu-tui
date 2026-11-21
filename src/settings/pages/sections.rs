@@ -24,8 +24,9 @@ pub struct Section {
 }
 
 /// 分组用到的字（`text/*.json` 的 `settings.more.sections`）。
-#[derive(Debug, Clone, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct SectionTexts {
     /// 组名后面写的：默认、已改。
     pub marks: [String; 2],
@@ -34,6 +35,8 @@ pub struct SectionTexts {
     /// `D` 问的那一句：标题 `{name}`、一行话；按钮同恢复一项的。
     pub unset: [String; 2],
 }
+
+crate::from_json::record! { SectionTexts, deny { marks, hints, unset } }
 
 /// 包的编号和组编号中间的记号。
 const SEP: char = '#';

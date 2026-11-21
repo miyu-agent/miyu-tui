@@ -4,15 +4,14 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 use crate::config::Texts;
 use crate::core::CallError;
 
 /// 知道还要等多久的出错（核心 3-5 四补的 `retry_after_ms`，2026-10-22 项目主人交给核心的：429 那句带上还要等多久）：
 /// 状态码那句换成带 `{wait}` 的，模型都在冷却的也接一句；不写绝对的时刻。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct RetryAfter {
     /// 状态码 → 带 `{wait}` 的人话；没写的状态码照 `status_hints`。
     pub hints: HashMap<String, String>,
@@ -24,6 +23,8 @@ pub struct RetryAfter {
     pub hours: [String; 2],
     pub days: [String; 2],
 }
+
+crate::from_json::record! { RetryAfter, deny { hints, cooling, seconds, minutes, hours, days } }
 
 /// 还要等多久写成字：不到 1 分钟写秒，不到 1 小时写分钟（向上取整），不到 1 天写小时（四舍五入，至少 1），再长写天
 /// （四舍五入，至少 1）。

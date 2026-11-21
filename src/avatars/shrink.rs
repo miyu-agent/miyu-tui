@@ -8,14 +8,14 @@ use std::path::{Path, PathBuf};
 
 use image::imageops::FilterType;
 use image::{DynamicImage, ImageFormat, ImageReader, Rgb, RgbImage};
-use serde::Deserialize;
 
 /// 出厂的数值。
 const SHIPPED: &str = include_str!("../../resources/avatar.json");
 
 /// 缩到多大。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Look {
     /// 最长边最多几个像素。
     pub max_side: u32,
@@ -26,13 +26,20 @@ pub struct Look {
     /// 原图最多读几个字节：再大的不读、原样交，由核心照原话拒（review D2）。
     pub max_read_bytes: u64,
     /// 缩小的那份写在哪个目录；`None` 是系统的临时目录（测试里换成自己的）。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub out: Option<PathBuf>,
+}
+
+crate::from_json::record! {
+    Look, deny {
+        max_side, max_bytes, jpeg_quality, max_read_bytes,
+    }
+    skip { out }
 }
 
 /// 读出厂的数值；读不出的是 `None`（那就不缩，原样交）。
 pub fn shipped() -> Option<Look> {
-    serde_json::from_str(SHIPPED).ok()
+    crate::from_json::from_str(SHIPPED).ok()
 }
 
 /// 要交给 `blob.put` 的那份：照出厂的数值缩，用不着缩、缩不成的是原来那份。

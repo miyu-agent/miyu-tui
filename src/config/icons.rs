@@ -5,19 +5,18 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 /// 一套图标。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Icons {
     /// 这一套叫什么（文件名，不写在文件里）。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub name: String,
     /// 每件工具的图标；没登记的照它的包的图标，再没有的用 `tool`。
     pub tools: HashMap<String, String>,
     /// Lucide 图标名到这一套的字形：包清单 `[package] icon` 写的是 Lucide 名。普通字符那一套不写（一律 `tool`）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub lucide: HashMap<String, String>,
     /// 没登记的工具的图标。
     pub tool: String,
@@ -32,21 +31,30 @@ pub struct Icons {
     /// 视频卡片封面下的播放标记（蓝图「链接卡片」第 3 条）。
     pub video: String,
     /// 要人留意的一句前面的记号，连同它后面的空格（人格、预设框里「切换前会先压缩」，2026-10-23 项目主人定黄字加 ⚠）。
-    #[serde(default = "warn_mark")]
+    #[cfg_attr(test, serde(default = "warn_mark"))]
     pub warn: String,
     /// fork 出来的子代理名字前面的分叉记号，连同它后面的空格（2026-10-26 项目主人）；没写的套件不画。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub fork: String,
     /// 展示的卡片前面的种类图标：`html`、`markdown`、`code`、`pdf`、`text`、`file`（蓝图「展示」第 4 条，2026-10-17 项目主人
     /// 要的）；没写的这一套不画。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub files: HashMap<String, String>,
     /// 输入框上面那一截循环打头的记号，连同它后面的空格（「循环」第 2 条，2026-11-02 项目主人要时钟）；没写的套件写 `~ `。
-    #[serde(rename = "loop", default = "loop_mark")]
+    #[cfg_attr(test, serde(rename = "loop", default = "loop_mark"))]
     pub loop_mark: String,
     /// 输入框外面右边的麦克风（一格宽，「语音」第 2 条，2026-11-10 项目主人要麦克风图标）；没写的套件画 `o`。
-    #[serde(default = "mic_mark")]
+    #[cfg_attr(test, serde(default = "mic_mark"))]
     pub mic: String,
+}
+
+crate::from_json::record! {
+    Icons, deny {
+        tools, lucide(default), tool, think, error, pin, stash, video, warn(default = warn_mark),
+        fork(default), files(default), loop_mark("loop", default = loop_mark),
+        mic(default = mic_mark),
+    }
+    skip { name }
 }
 
 impl Icons {
@@ -83,7 +91,7 @@ pub fn builtin() -> Result<Vec<Icons>, String> {
     BUILTIN
         .iter()
         .map(|(name, json)| {
-            serde_json::from_str::<Icons>(json)
+            crate::from_json::from_str::<Icons>(json)
                 .map(|icons| Icons {
                     name: (*name).to_string(),
                     ..icons

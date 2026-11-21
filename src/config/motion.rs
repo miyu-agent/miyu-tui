@@ -1,10 +1,9 @@
 //! 压缩那一行的进度条怎么动（`layout.json` 的 `compaction`，蓝图 `tui.md`「正文」第 9 条）。
 
-use serde::Deserialize;
-
 /// 进度条按整格一顿一顿地追真实的字数、最前面那格闪、过一会儿整行呼吸。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct CompactionMotion {
     /// 真实的字数够多亮几格了，随机停多久再追，毫秒，`[最短, 最长]`。
     pub pause_ms: [u64; 2],
@@ -26,4 +25,11 @@ pub struct CompactionMotion {
     pub finish_ms: u64,
     /// 走满以后停多久再换成结果，毫秒。
     pub finish_hold_ms: u64,
+}
+
+crate::from_json::record! {
+    CompactionMotion, deny {
+        pause_ms, step_cells, cap_percent, blink_hz, blink_low, breathe_after_ms, breathe_period_ms,
+        breathe_lift, finish_ms, finish_hold_ms,
+    }
 }

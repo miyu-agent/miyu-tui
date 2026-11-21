@@ -1,10 +1,9 @@
 //! 贴在输入框上面的几块面板上的字（`text/zh.json`；蓝图 `tui.md`「输入历史列表」）。
 
-use serde::Deserialize;
-
 /// 输入历史列表上的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct HistoryTexts {
     /// 标题。
     pub title: String,
@@ -36,9 +35,17 @@ pub struct HistoryTexts {
     pub none: String,
 }
 
+crate::from_json::record! {
+    HistoryTexts, deny {
+        title, count, placeholder, empty, lines, more, hints, hints_vim, searching, now, minutes,
+        hours, days, none,
+    }
+}
+
 /// 斜杠命令列表上的字（蓝图「斜杠命令列表」第 3 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct MenuTexts {
     /// 标题。
     pub title: String,
@@ -46,9 +53,12 @@ pub struct MenuTexts {
     pub count: String,
 }
 
+crate::from_json::record! { MenuTexts, deny { title, count } }
+
 /// 框下面那一行用量那一格的字（蓝图「框下面那一行」用量那一格，反馈 1102 第 22 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct UsageCellTexts {
     /// 卡住：最近一次压缩失败、自动压缩暂停了，用量到了压缩线。
     pub failed: String,
@@ -61,3 +71,5 @@ pub struct UsageCellTexts {
     /// 累计后面紧跟的缓存命中率（2026-11-10 项目主人：「xxxM(C99%)」）：`{percent}` 是命中 ÷ 输入。
     pub hit: String,
 }
+
+crate::from_json::record! { UsageCellTexts, deny { failed, over, compact, compacting, hit } }

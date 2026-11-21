@@ -3,7 +3,6 @@
 //! 抽屉不跳；抽屉的字少于 `side_min` 列时挪到选项下面。
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 use unicode_width::UnicodeWidthStr;
 
 use super::View;
@@ -12,8 +11,9 @@ use crate::drawer::{Drawer, Item, Texts};
 use crate::theme;
 
 /// 预览面板怎么摆（`layout.json` 的 `drawer_preview`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Look {
     /// 抽屉的字够这么多列才左右并排，不够的面板放在选项下面。
     pub side_min: u16,
@@ -28,6 +28,8 @@ pub struct Look {
     /// 预览里的制表符照几列的制表位展开。
     pub tab: usize,
 }
+
+crate::from_json::record! { Look, deny { side_min, gap, divider, pad, rows, tab } }
 
 /// 选项那一块：这一页有文字画时带上选中那一项的预览。
 pub fn body(d: &Drawer, texts: &Texts, look: &Look, width: u16, v: &mut View) {

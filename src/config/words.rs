@@ -1,10 +1,9 @@
 //! 几块界面的字：回顾、改名、后台任务和别处来的话、换模型和冷却（`text/<语言>.json` 里各一格）。
 
-use serde::Deserialize;
-
 /// 回顾的字（蓝图「回顾」）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct RecapTexts {
     /// 正文里那一段，`{text}` 是核心给的那一句。
     pub label: String,
@@ -12,9 +11,12 @@ pub struct RecapTexts {
     pub working: String,
 }
 
+crate::from_json::record! { RecapTexts, deny { label, working } }
+
 /// 改名的字（蓝图「改名」）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct RenameTexts {
     /// 改成了，`{title}` 是新标题。
     pub done: String,
@@ -28,9 +30,12 @@ pub struct RenameTexts {
     pub too_long: String,
 }
 
+crate::from_json::record! { RenameTexts, deny { done, retitling, failed, removed, too_long } }
+
 /// `/compact-line` 的字（核心 CT-1，蓝图「会话的压缩触发线」）：`{n}` 是百分之几；`_bare` 是读不到配置的值时用的。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct CompactLineTexts {
     pub set_to: String,
     pub off: String,
@@ -44,9 +49,16 @@ pub struct CompactLineTexts {
     pub not_open: String,
 }
 
+crate::from_json::record! {
+    CompactLineTexts, deny {
+        set_to, off, off_bare, pinned, system, system_bare, range, not_open,
+    }
+}
+
 /// 后台命令、子代理、待办的字（蓝图「后台命令、子代理和侧边栏」）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct JobTexts {
     /// 框下面那一行的后台按钮，`{count}` 在跑的命令数。
     pub button: String,
@@ -170,9 +182,23 @@ pub struct JobTexts {
     pub todo_more: String,
 }
 
+crate::from_json::record! {
+    JobTexts, deny {
+        button, title, active, hint, running, done, failed, stopped, done_note, failed_note,
+        stopped_note, agent_note, ok_mark, fail_mark, stop_mark, main, more, killed, undone,
+        restarted, timed_out, too_large, too_chatty, lines_note, lines_mark, no_output, more_ended,
+        less_ended, killed_note, agent_stopped_note, why_undone, why_restarted, why_timed_out,
+        why_too_large, why_too_chatty, doing_thinking, doing_replying, from_person, from_person_at,
+        heads, external, external_speaker, external_manager, poke, from_main, from_session,
+        from_session_untitled, peer_who, peer_who_untitled, peer_idle, peer_expired, peer_gone,
+        peer_other, from_agent, from_harness, received, child_tag, finished, todo, todo_more,
+    }
+}
+
 /// 换模型、冷却的字（蓝图「配置与模型」第 2、7 条，核心 8-9）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct ModelTexts {
     /// 出错换到别的端点，`{from}` → `{to}`（端点/模型）。
     pub failover: String,
@@ -184,9 +210,12 @@ pub struct ModelTexts {
     pub replaced: String,
 }
 
+crate::from_json::record! { ModelTexts, deny { failover, cooling, cooling_until, replaced } }
+
 /// 撤销点开以后，改回的每个文件后面写的：照结局（`protocol/undo.md` 的 `outcome`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct UndoFileTexts {
     /// 改回了。
     pub restored: String,
@@ -210,6 +239,12 @@ pub struct UndoFileTexts {
     pub more: String,
 }
 
+crate::from_json::record! {
+    UndoFileTexts, deny {
+        restored, changed, missing, occupied, gone, unsaved, unavailable, failed, other, more,
+    }
+}
+
 impl UndoFileTexts {
     /// 这个结局写什么。
     pub fn outcome(&self, outcome: &str) -> &str {
@@ -228,8 +263,9 @@ impl UndoFileTexts {
 }
 
 /// 人用 `!` 跑命令的字（蓝图「人自己跑命令 `!`」，排期第 21 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct ShellTexts {
     /// 框空着时写的。
     pub placeholder: String,
@@ -249,9 +285,16 @@ pub struct ShellTexts {
     pub aborted: String,
 }
 
+crate::from_json::record! {
+    ShellTexts, deny {
+        placeholder, no_attachments, running, exited, signal, timed_out, interrupted, aborted,
+    }
+}
+
 /// 前缀要变时问人的框（蓝图「前缀要变」，排期第 59 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct PrefixTexts {
     /// 框的标题。
     pub title: String,
@@ -262,3 +305,18 @@ pub struct PrefixTexts {
     /// 三个按钮：直接发送、压缩上下文并发送、取消。
     pub buttons: [String; 3],
 }
+
+crate::from_json::record! { PrefixTexts, deny { title, files, more, buttons } }
+
+/// 她发出去的图画不成时（终端显示不了图、读不成）那一行打头的，后面跟 `alt`（蓝图「她发的图」）。
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
+pub struct SentTexts {
+    /// 表情包：`[表情包]`。
+    pub sticker: String,
+    /// 别的图：`[图片]`。
+    pub image: String,
+}
+
+crate::from_json::record! { SentTexts, deny { sticker, image } }

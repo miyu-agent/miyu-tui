@@ -137,8 +137,9 @@ const OWN_GROUPS: [(&str, &str, &str); 7] = [
 ];
 
 /// 另分的那几组的名字（`text/zh.json` 的 `settings.more.own_groups`）。
-#[derive(Debug, Clone, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct OwnGroups {
     /// 主题（2026-10-21：框线、记号这些，`tui.look`）。
     pub look: String,
@@ -153,6 +154,8 @@ pub struct OwnGroups {
     /// 交互（按键模式这些，2026-10-21 项目主人：「按键模式」应在「交互」这个标题下）。
     pub keys: String,
 }
+
+crate::from_json::record! { OwnGroups, deny { look, theme, timeline, mascot, icons, keys } }
 
 impl OwnGroups {
     /// 照组的编号取名字。

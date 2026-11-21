@@ -2,7 +2,6 @@
 //! 人格一行，只写名字（没有的写编号）；默认的那个右边暗色写「默认」；写错的暗着、后面黄字写原因，选不了。
 
 use ratatui::text::Span;
-use serde::Deserialize;
 
 use super::panel::{self, Chrome, Row};
 use crate::app::new_session::Kind;
@@ -10,8 +9,9 @@ use crate::core::Persona;
 use crate::theme;
 
 /// 人格框和人格那一行的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
@@ -49,6 +49,14 @@ pub struct Texts {
     pub tokens: String,
     /// 占 0 个 token 的（「无功能」）右边写的。
     pub no_tokens: String,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        title, loading, hint, default_mark, none, no_tools, none_note, switch_note, busy, switched,
+        preset_switched, chosen, preset_title, preset_need, cant_edit, preset_chosen, tokens,
+        no_tokens,
+    }
 }
 
 /// 框（标题照是人格还是预设、提示）、排好的行、每一行是第几个。`current` 是现在用的那一个（无人格是空的编号）：开着会话的

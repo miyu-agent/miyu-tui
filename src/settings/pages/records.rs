@@ -4,7 +4,6 @@
 //! 明文先留在这一条上（带 [`PLAIN`] 记号，只在终端里），存的时候先存进密钥库、再换成引用（`draft.rs`）。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
-use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
 use super::choose::{Choose, LineEdit};
@@ -19,8 +18,9 @@ use crate::settings::{Settings, Texts};
 pub const PLAIN: &str = "\u{0}plain";
 
 /// 记录列表的字（`text/zh.json` 的 `settings.more.records`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct RecordTexts {
     /// 没有标题的一条：`{n}` 从 1 数。
     pub nth: String,
@@ -31,6 +31,8 @@ pub struct RecordTexts {
     /// 表单窗的按键提示。
     pub form_hints: Vec<[String; 2]>,
 }
+
+crate::from_json::record! { RecordTexts, deny { nth, empty, hints, form_hints } }
 
 /// 开着的列表窗。
 #[derive(Debug, Clone, PartialEq)]
