@@ -23,13 +23,18 @@ fn page_with(config: &Config, schema: &Value) -> Settings {
     page
 }
 
-/// 默认模型页、光标在第二项（多模态）上的样子。
-fn second_use(config: &Config, schema: &Value) -> String {
+/// 默认模型页、光标在第 `at` 项上的样子。
+fn use_at(config: &Config, schema: &Value, at: isize) -> String {
     let mut page = page_with(config, schema);
     page.on_menu = false;
     page.nav.page_step(true);
-    page.nav.vertical(1, &page.view);
+    page.nav.vertical(at, &page.view);
     screen(&mut page, config, 120, 30).0
+}
+
+/// 默认模型页、光标在第二项（多模态）上的样子。
+fn second_use(config: &Config, schema: &Value) -> String {
+    use_at(config, schema, 1)
 }
 
 /// 核心的清单：`models.vision` 叫 `name`。
@@ -70,4 +75,28 @@ fn usage_names_the_multimodal_purpose_the_same_way() {
     assert_eq!(words("zh"), "多模态");
     assert_eq!(words("en"), "multimodal");
     assert_eq!(words("ja"), "マルチモーダル");
+}
+
+/// ACC-1121-#3（核心那边传话：对话那一行也照核心的字表，网页同）：默认文本模型那一行的名字、用途一句照 `models.chat` 的
+/// `name`、`description`；老核心没有这一项的照终端的字。
+#[test]
+fn the_chat_row_takes_its_name_and_note_from_the_cores_schema() {
+    let config = Config::builtin().unwrap();
+    let schema = json!({"pages": [{"id": "models", "name": "模型"}], "groups": [{"id": "uses", "name": "用途", "page": "models"}],
+        "items": [{"key": "models.chat", "type": "reference", "control": "text", "layers": ["system"],
+                   "name": "主对话的模型", "description": "新会话默认用的模型。", "page": "models", "group": "uses"}]});
+    let text = use_at(&config, &schema, 0);
+    assert!(
+        text.contains("主对话的模型") && text.contains("新会话默认用的模型。"),
+        "{text}"
+    );
+    assert!(
+        !text.contains("默认文本模型") && !text.contains("回合未指定模型时使用"),
+        "{text}"
+    );
+    let old = use_at(&config, &json!({"secrets": []}), 0);
+    assert!(
+        old.contains("默认文本模型") && old.contains("回合未指定模型时使用"),
+        "{old}"
+    );
 }

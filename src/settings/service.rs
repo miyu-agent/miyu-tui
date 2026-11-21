@@ -70,6 +70,7 @@ pub fn add_row(schema: &mut Schema, words: &Words, known: bool) {
         layers: vec!["system".to_string()],
         default: Value::Bool(false),
         name: words.name.clone(),
+        description: None,
         page,
         group: KEY.to_string(),
         package: String::new(),

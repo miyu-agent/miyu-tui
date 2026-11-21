@@ -92,8 +92,9 @@ fn the_config_page_starts_on_its_own_edits_a_model_and_saves_to_the_settings() {
     wait_settings(&home, &mut tui, "window = 200000");
     tui.wait_for("已保存");
     // 默认模型页：换成池，存。
+    // 第一行的名字照核心清单里 `models.chat` 的（ACC-1121-#3）。
     tui.key(b".");
-    tui.wait_for("默认文本模型");
+    tui.wait_for("主对话的模型");
     tui.key(b"\r");
     tui.wait_for("模型池");
     // 开窗选中现在用的那个；池在最上面。选了就存。
