@@ -15,7 +15,7 @@ fn the_protected_commands_group_shows_its_note_and_its_switches_save() {
     tui.wait_for("显示");
     tui.open_menu("隐私与安全");
     // 说明和五个开关在组名下面：等到最后一个开关也画出来再读。
-    let lines = tui.wait_for_all(&["受保护的命令", "完全放开时也会先询问你", "容器使用宿主设备"]);
+    let lines = tui.wait_for_all(&["受保护的命令", "执行之前也会先向你确认", "容器使用宿主设备"]);
     let at = |word: &str| {
         lines
             .iter()
@@ -29,8 +29,8 @@ fn the_protected_commands_group_shows_its_note_and_its_switches_save() {
     );
     // 组名下面是核心给的说明（暗色，折行写全），再是五个开关。
     assert!(
-        at("受保护的命令") < at("完全放开时也会先询问你")
-            && at("完全放开时也会先询问你") < at("破坏性 git 操作"),
+        at("受保护的命令") < at("执行之前也会先向你确认")
+            && at("执行之前也会先向你确认") < at("破坏性 git 操作"),
         "{}",
         lines.join("\n")
     );

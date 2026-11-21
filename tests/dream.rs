@@ -41,9 +41,9 @@ fn dream_from_the_home_page_shows_the_block_and_a_receipt_that_opens() {
     tui.say("你好");
     tui.wait_for("好的。");
     tui.say("/remember 用户住在上海");
-    tui.wait_for("记下了：用户住在上海");
+    tui.wait_for("已添加记忆：用户住在上海");
     tui.say("/remember 用户搬到杭州了");
-    tui.wait_for("记下了：用户搬到杭州了");
+    tui.wait_for("已添加记忆：用户搬到杭州了");
     tui.say("/new");
     tui.pump(Duration::from_millis(500));
     tui.say("/dream");
@@ -99,7 +99,7 @@ fn dreaming_forever(tui: &mut support::Tui) {
     tui.say("你好");
     tui.wait_for("好的。");
     tui.say("/remember 用户住在杭州");
-    tui.wait_for("记下了：用户住在杭州");
+    tui.wait_for("已添加记忆：用户住在杭州");
     tui.say("/new");
     tui.pump(Duration::from_millis(500));
     tui.say("/dream");
