@@ -67,7 +67,8 @@ fn the_goal_is_kept_as_it_was_last_pushed() {
     assert_eq!(t.goal, None);
 }
 
-/// 循环交进来的那句画成暗色一行「◷ 循环 · 继续」，不画成你说的话（2026-11-17 项目主人验收第 3 条）。
+/// 循环交进来的那句画成暗色一行「◷ 循环 · 继续」，不画成你说的话（2026-11-17 项目主人验收第 3 条）；钟画的时候照图标那一套
+/// （`ui/rows/loop_round_tests.rs`）。
 #[test]
 fn a_wake_is_a_dim_line_not_your_words() {
     let mut t = Transcript::default();
@@ -80,8 +81,8 @@ fn a_wake_is_a_dim_line_not_your_words() {
     assert_eq!(
         lines,
         [
-            (Kind::Goal, "循环 · 继续", Some("◷ ")),
-            (Kind::Goal, "循环 · 继续", Some("◷ "))
+            (Kind::Loop, "循环 · 继续", None),
+            (Kind::Loop, "循环 · 继续", None)
         ]
     );
     assert_eq!(t.entries[0].seq, Some(30), "开轮时照序号归到那一轮");
