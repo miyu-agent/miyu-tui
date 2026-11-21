@@ -46,7 +46,7 @@ impl App {
     }
 
     /// 开第 `id` 条展示的文件；后来同一个路径又展示过的开最新的那一份（第 5 条）。照 `path` 直接开（核心 SW-1：内容不进核心，
-    /// 终端和核心同一台机器）；改过、没了的弹「文件已变」「文件已不在」。
+    /// 终端和核心同一台机器）；改过、没了的弹「文件已更改」「文件已不存在」。
     fn open_shown(&mut self, id: u64) {
         let entries = &self.talk.transcript.entries;
         let Some(path) = entries

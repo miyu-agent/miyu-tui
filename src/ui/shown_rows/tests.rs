@@ -1,4 +1,4 @@
-//! 她给人看的文件（蓝图「展示」第 3–5 条；核心 SW-1 起照 `path` 读，改过、没了的写「文件已变」「文件已不在」）。
+//! 她给人看的文件（蓝图「展示」第 3–5 条；核心 SW-1 起照 `path` 读，改过、没了的写「文件已更改」「文件已不存在」）。
 
 use std::path::{Path, PathBuf};
 
@@ -95,7 +95,7 @@ fn a_file_is_a_card_with_its_icon_kind_size_and_lines() {
     drop(std::fs::remove_dir_all(&dir));
 }
 
-/// 核心 SW-1：内容不进核心，展示以后文件改了、删了，卡片最后一行写「文件已变」「文件已不在」。
+/// 核心 SW-1：内容不进核心，展示以后文件改了、删了，卡片最后一行写「文件已更改」「文件已不存在」。
 #[test]
 fn a_changed_or_missing_file_says_so_on_its_card() {
     let f = Fixture::new();
@@ -103,9 +103,9 @@ fn a_changed_or_missing_file_says_so_on_its_card() {
     let path = dir.join("a.html");
     std::fs::write(&path, "<p>hi</p>").unwrap();
     let changed = at(1, &path, "text/html", 999, None);
-    assert_eq!(texts(&changed, &f, false).last().unwrap(), "文件已变");
+    assert_eq!(texts(&changed, &f, false).last().unwrap(), "文件已更改");
     let gone = shown(2, "b.html", "text/html", 9, None);
-    assert_eq!(texts(&gone, &f, false).last().unwrap(), "文件已不在");
+    assert_eq!(texts(&gone, &f, false).last().unwrap(), "文件已不存在");
     drop(std::fs::remove_dir_all(&dir));
 }
 

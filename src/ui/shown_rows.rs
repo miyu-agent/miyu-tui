@@ -136,7 +136,7 @@ fn card(file: &Shown, unopened: Option<&str>, replaced: bool, ctx: &Ctx) -> Vec<
             }
         }
         None => {
-            // 后来又展示过的：最后一行写「已更新」，点它开的是最新那一版（第 5 条）；文件改过、没了的写「文件已变」「文件已不在」
+            // 后来又展示过的：最后一行写「已更新」，点它开的是最新那一版（第 5 条）；文件改过、没了的写「文件已更改」「文件已不存在」
             // （核心 SW-1，黄字）。
             let (last, style) = match crate::shown_files::find(file) {
                 crate::shown_files::Found::Changed if !replaced => (&words.changed, theme::warn()),
