@@ -105,7 +105,7 @@ pub(super) async fn serve(
                     Command::Watch(session) => {
                         let fresh = Some(&session) != link.main.as_ref() && link.watched.insert(session.clone());
                         if fresh {
-                            match watch(rpc, &session, None).await {
+                            match watch(rpc, &session, FRESH).await {
                                 Ok(id) => awaiting.insert(id, Awaiting::Watch(session)),
                                 Err(_) => return Served::Lost,
                             };
@@ -445,13 +445,23 @@ async fn send(
     }
 }
 
-/// 订阅另一个会话，不等回应（回应里的限额由 `take` 交给界面）。重连时带 `after`：从读到的那一条往后补。
+/// 新订一个会话（子代理）从哪一条往后补：从头（LM-24，2026-11-21）。不带 `after` 的订阅只收订阅以后的推送，子代理订阅以前
+/// 已经开始的那一步（正在跑的一条命令）补不上，子代理状态行一直不写它在做什么（终端重开、接上子代理还在跑的会话时）。
+const FRESH: Option<u64> = Some(0);
+
+/// 订阅另一个会话，不等回应（回应里的限额由 `take` 交给界面）。带 `after` 的从那一条往后补：新订的照 [`FRESH`]，重连的从读到
+/// 的那一条。
 async fn watch(rpc: &mut Rpc, session: &str, after: Option<u64>) -> io::Result<String> {
+    rpc.send("subscribe", watch_params(session, after)).await
+}
+
+/// 订阅另一个会话的参数。
+fn watch_params(session: &str, after: Option<u64>) -> serde_json::Value {
     let mut params = json!({"session": session, "stream": "events"});
     if let Some(after) = after {
         params["after"] = json!(after);
     }
-    rpc.send("subscribe", params).await
+    params
 }
 
 /// 退订一个会话。
