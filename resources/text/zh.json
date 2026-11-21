@@ -1495,7 +1495,7 @@
         "both": "两项都需填写"
       },
       "no_persona": "无人格",
-      "unpicked": "不选",
+      "unpicked": "继承默认设置",
       "follow_new": "跟随新会话设置",
       "builtin_mascot": "内置",
       "default_look": "默认主题",

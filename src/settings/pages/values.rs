@@ -34,7 +34,7 @@ pub fn inherited(item: &Item, data: &Data, texts: &Texts) -> Option<String> {
 pub const PICKED_KINDS: [&str; 3] = ["persona", "preset", "knowledge"];
 
 /// 没设时跟着新会话走的两项（核心 8-33：终端集成会话的人格、预设，不设的照默认人格、默认预设）：没设写「跟随新会话设置」，
-/// 不写「不选」（发版前 check 第 21 条，2026-11-09 项目主人）。
+/// 不写「继承默认设置」（发版前 check 第 21 条，2026-11-09 项目主人）。
 const FOLLOWS_NEW: [&str; 2] = ["terminal.persona", "terminal.preset"];
 
 /// 选人格、预设、知识库的项没设时写什么、选择窗第一行叫什么。

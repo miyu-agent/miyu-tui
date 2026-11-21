@@ -1495,7 +1495,7 @@
         "both": "両方とも入力してください"
       },
       "no_persona": "人格なし",
-      "unpicked": "選択しない",
+      "unpicked": "デフォルト設定を継承",
       "follow_new": "新しいセッションと同じ",
       "builtin_mascot": "内蔵",
       "default_look": "デフォルトテーマ",
