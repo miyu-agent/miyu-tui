@@ -129,7 +129,7 @@ fn items(col: Col, page: &Settings, texts: &Texts) -> (String, Vec<Item>, String
             let rows = USES
                 .iter()
                 .enumerate()
-                .map(|(i, _)| item(texts.uses[i].clone(), String::new()));
+                .map(|(i, _)| item(page.use_name(i, texts), String::new()));
             (title(3), rows.collect(), empty)
         }
         Col::Pool => {

@@ -290,7 +290,7 @@ fn pick_lines(lines: &mut Lines, pick: &Pick, page: &Settings, texts: &Texts, wi
     } else {
         String::new()
     };
-    lines.title(texts.uses[at].clone(), sub);
+    lines.title(page.use_name(at, texts), sub);
     let search = if pick.typing || !pick.search.is_empty() {
         Line::raw(format!(" / {}", pick.search))
     } else {
