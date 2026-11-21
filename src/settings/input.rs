@@ -283,7 +283,7 @@ impl Settings {
             .enumerate()
         {
             if used.as_deref().is_some_and(&uses) {
-                users.push(texts.uses[i].clone());
+                users.push(self.use_name(i, texts));
             }
         }
         for pool in &self.view.pools {
