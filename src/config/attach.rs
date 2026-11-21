@@ -3,11 +3,10 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 /// 认得的几种附件。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct AttachLook {
     /// 文件块上的名字最多几列，多的中间截掉（一个汉字两列）。
     pub file_name_cols: usize,
@@ -17,9 +16,12 @@ pub struct AttachLook {
     pub kinds: Vec<AttachKindLook>,
 }
 
+crate::from_json::record! { AttachLook, deny { file_name_cols, max_mib, kinds } }
+
 /// 块上写的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct AttachTexts {
     /// 附件：种类的名字到块上写的，`{n}` 这一种的第几个。
     pub labels: HashMap<String, String>,
@@ -35,15 +37,20 @@ pub struct AttachTexts {
     pub refused: String,
 }
 
+crate::from_json::record! { AttachTexts, deny { labels, file, folder, names, path_only, refused } }
+
 /// 一种附件。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct AttachKindLook {
     /// `image`、`pdf`、`audio`、`video`：块上写的照它在 `attach.labels` 里找。
     pub name: String,
     /// 认哪些扩展名：小写，不带点。
     pub extensions: Vec<String>,
 }
+
+crate::from_json::record! { AttachKindLook, deny { name, extensions } }
 
 #[cfg(test)]
 mod tests {

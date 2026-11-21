@@ -1,10 +1,9 @@
 //! 长期目标的字（`text/zh.json` 的 `goal`；蓝图 `tui.md`「长期目标」）。
 
-use serde::Deserialize;
-
 /// 长期目标的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct GoalTexts {
     /// 它开的一轮那一行前面的记号，连同它后面的空格：暗色（第 4 条）。
     pub mark: String,
@@ -39,4 +38,11 @@ pub struct GoalTexts {
     pub box_tokens: String,
     /// 浮窗里状态后面接的恢复次数，`{n}`（核心 GOAL-1，同网页的说法）。
     pub resumes: String,
+}
+
+crate::from_json::record! {
+    GoalTexts, deny {
+        mark, round, some_round, none, label, running, waiting, paused, blocked, rounds,
+        rounds_limited, completed, box_title, box_hint, box_keys, box_tokens, resumes,
+    }
 }

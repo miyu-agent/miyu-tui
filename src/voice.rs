@@ -4,7 +4,6 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
 use serde_json::Value;
 
 use crate::core::Refusal;
@@ -12,8 +11,9 @@ use crate::core::Refusal;
 pub mod clips;
 
 /// 给人看的字（`text/<语言>.json` 的 `voice`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 出错码（`error.data.code`，核心 `docs/zh/reference/bus.md`）对应的一句；表里没有的照 `failed`。
     pub codes: HashMap<String, String>,
@@ -35,6 +35,13 @@ pub struct Texts {
     pub clip_unknown: String,
     /// 放不了（没有能放声音的软件包、终端不认的格式）。
     pub unplayable: String,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        codes, failed, unclear, no_speech, nothing_to_read, auto, auto_tag, clip_marks,
+        clip_unknown, unplayable,
+    }
 }
 
 /// 麦克风那一格在哪一步：不在听（暗）、在听（红）、停了在等字（转圈）。

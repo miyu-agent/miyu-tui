@@ -1,8 +1,6 @@
 //! shellhook 给人看的字：一种语言一份（`resources/shellhook/text/<代码>.json`），界面语言照终端界面的认法（蓝图 `tui.md`
 //! 「界面语言」）。
 
-use serde::Deserialize;
-
 /// 每种语言的字，编译时带进来；和终端界面的 `text/` 一样多（测试查）。
 pub const TEXTS: &[(&str, &str)] = &[
     ("zh", include_str!("../../resources/shellhook/text/zh.json")),
@@ -11,8 +9,9 @@ pub const TEXTS: &[(&str, &str)] = &[
 ];
 
 /// 一种语言的字。`{path}`、`{shell}`、`{program}` 印的时候换掉。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Words {
     pub installed: String,
     pub updated: String,
@@ -103,14 +102,31 @@ pub struct Words {
     pub slash_no_match: String,
 }
 
+crate::from_json::record! {
+    Words, deny {
+        installed, updated, foreign, removed, not_installed, old_hook, old_block, old_file,
+        old_unclosed, old_unreadable, old_cleaned_block, old_cleaned_file, old_cleaned_link,
+        old_failed, old_failed_kept, old_backup_differs, unknown_shell, status_installed,
+        status_missing, status_foreign, status_stale, no_program, ps_policy, no_session, too_long,
+        too_long_attached, unknown_command, stale_hook, renewed, units, slash_skipped,
+        slash_pending, slash_new, slash_model, slash_theme, slash_effort, slash_restored,
+        slash_sessions, slash_persona, slash_preset, doctor_ok, doctor_bad, doctor_core_ok,
+        doctor_core_bad, doctor_truecolor_ok, doctor_truecolor_bad, doctor_colors_ok,
+        doctor_colors_bad, doctor_clip_ok, doctor_clip_bad, slash_ambiguous, slash_no_match,
+    }
+}
+
 /// 分钟、小时、天的写法，`{n}` 换成数。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Units {
     pub minutes: String,
     pub hours: String,
     pub days: String,
 }
+
+crate::from_json::record! { Units, deny { minutes, hours, days } }
 
 impl Words {
     /// 照环境认界面语言，取那一份。
@@ -135,7 +151,8 @@ impl Words {
             .find(|(c, _)| *c == code)
             .or_else(|| TEXTS.first())
             .ok_or("resources/shellhook/text/ 一份都没有")?;
-        serde_json::from_str(json).map_err(|e| format!("resources/shellhook/text/{name}.json：{e}"))
+        crate::from_json::from_str(json)
+            .map_err(|e| format!("resources/shellhook/text/{name}.json：{e}"))
     }
 }
 
@@ -146,4 +163,17 @@ pub fn fill(template: &str, values: &[(&str, &str)]) -> String {
         .fold(template.to_string(), |text, (name, value)| {
             text.replace(&format!("{{{name}}}"), value)
         })
+}
+
+#[cfg(test)]
+mod same {
+    #[test]
+    fn words_read_the_same_as_serde() {
+        // 施工 LW-9：新读法和 serde 派生的旧读法逐份比，再加写坏的样本。
+        for (code, json) in super::TEXTS {
+            let label = format!("shellhook/text/{code}.json");
+            let (count, broken) = crate::from_json::tests::resource::<super::Words>(&label, json);
+            assert!(count > 0 && broken > 0, "{label}");
+        }
+    }
 }

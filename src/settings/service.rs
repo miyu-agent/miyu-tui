@@ -2,7 +2,6 @@
 //! 开着是系统服务管理器那边的事：开配置页时问一次（`miyu service status`），`Enter` 当场装上、拿掉，不走草稿、不发
 //! `config.set`。命令在后台跑（`crate::service`），跑完 App 交回来（[`Settings::service_replied`]）。
 
-use serde::Deserialize;
 use serde_json::Value;
 
 use super::pages::schema::{GENERAL, Group, Item, Schema};
@@ -13,8 +12,9 @@ use crate::service::{Reply, Verb};
 pub const KEY: &str = "tui.service";
 
 /// 这一组、这一行的字和状态行的话。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Words {
     /// 组名。
     pub group: String,
@@ -31,6 +31,12 @@ pub struct Words {
     /// 不知道家目录、Windows 上设了数据根（核心的 `no_home`、`data_root_on_windows`）。
     pub no_home: String,
     pub windows: String,
+}
+
+crate::from_json::record! {
+    Words, deny {
+        group, name, enabling, disabling, enabled, disabled, failed, no_home, windows,
+    }
 }
 
 /// 清单读来以后加上这一行：通用页最后一组。通用页都没有的（核心旧）、不知道核心程序在哪的（`known` 是假）不加。

@@ -1,12 +1,11 @@
 //! 排版要用的几样资料：代码怎么着色、公式怎么转写、要写的几个字。
 
-use serde::Deserialize;
-
 use super::{Languages, Math};
 
 /// Markdown 里要写的几个字（`text/zh.json` 的 `markdown`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Labels {
     /// 图片那一行的开头：`[图片: `。
     pub image: String,
@@ -17,6 +16,8 @@ pub struct Labels {
     /// 无序列表的记号：第一层、第二层、第三层起。
     pub bullets: [String; 3],
 }
+
+crate::from_json::record! { Labels, deny { image, details, details_marks, bullets } }
 
 /// 排版要用的几样。
 pub struct Kit<'a> {

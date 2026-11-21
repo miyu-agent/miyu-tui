@@ -1,14 +1,14 @@
 //! 装、卸软件包，打开扩展的确认（蓝图 `tui.md`「确认和提问的抽屉」第 3 条，核心 F-10 下）：照 `miyu pkg install` 印的那一份写，
 //! 问题行是做哪一件，下面几行是包含、读不成、需要、一并删除、配置、大小，照 `detail.preview`（核心看一眼的回应）。
 
-use serde::Deserialize;
 use serde_json::Value;
 
 use super::event::Detail;
 
 /// 这几行上的字（`text/zh.json` 的 `drawer.package`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct PackageTexts {
     /// 问题行：安装、装回卸掉的出厂包、卸载、打开扩展，`{id}`。
     pub install: String,
@@ -90,6 +90,16 @@ pub struct PackageTexts {
     pub files: [String; 2],
     /// 一行里几样之间隔开的。
     pub separator: String,
+}
+
+crate::from_json::record! {
+    PackageTexts, deny {
+        install, restore, remove, enable, replacing, replacing_unknown, programs, command, page,
+        mascot, connection, settings, mcp, skill, script, slash, includes, hosted, skipped, needs,
+        also_deletes, size, skipped_item, deleted_settings, state_dir, state_path, config,
+        config_kept, config_purge, settings_kept, config_join, from, sources, held, notice,
+        notice_join, note, distro_note, files, separator,
+    }
 }
 
 /// 写出来的样子：问题行，下面几行。

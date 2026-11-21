@@ -3,7 +3,6 @@
 //! 开关，平铺在功能下面）。预设页 `a` 填名字就建好；预设的窗里名字、每一个功能、每一件工具，改一项存一项；`d` 先问再删。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::choose::{LineEdit, PresetView};
@@ -15,8 +14,9 @@ use crate::settings::popup::{Delete, Popup};
 use crate::settings::{Settings, Texts, Tone, Waiting};
 
 /// 改预设的字（`text/zh.json` 的 `settings.more.preset_edit`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct EditTexts {
     /// 删除、恢复出厂前问的。
     pub remove: RemoveTexts,
@@ -25,6 +25,8 @@ pub struct EditTexts {
     /// 删了自己改的那一份，回到出厂的样子。
     pub restored: String,
 }
+
+crate::from_json::record! { EditTexts, deny { remove, deleted, restored } }
 
 /// 预设的窗里能改的一行，照画的先后。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

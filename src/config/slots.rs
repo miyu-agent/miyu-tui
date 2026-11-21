@@ -2,21 +2,23 @@
 //! （`tui.side` 这种，配置页不画），一条一个部件：名字、显不显示、最多几行。这里只管读和排先后，不知道有哪些部件：出厂的
 //! 先后由画那一处交进来。
 
-use serde::Deserialize;
 use serde_json::Value;
 
 /// 配置里写的一条。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 pub struct Slot {
     /// 部件名（`recent`、`pkg:<包>/<块>` 这种）。
     pub part: String,
     /// 显示，没写的显示（开关正着说，核心 UX-1；原来是 `hidden`，2026-11-18 发版前改，不认旧写法）。
-    #[serde(default = "shown")]
+    #[cfg_attr(test, serde(default = "shown"))]
     pub shown: bool,
     /// 最多显示几行；0 是不限。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub rows: u16,
 }
+
+crate::from_json::record! { Slot { part, shown(default = shown), rows(default) } }
 
 fn shown() -> bool {
     true
@@ -58,7 +60,7 @@ pub fn read(got: &Value, key: &str) -> Vec<Slot> {
         .as_array()
         .into_iter()
         .flatten()
-        .filter_map(|item| serde_json::from_value::<Slot>(item.clone()).ok())
+        .filter_map(|item| crate::from_json::from_value::<Slot>(item.clone()).ok())
         .filter(|slot| !slot.part.is_empty())
         .collect()
 }

@@ -2,20 +2,22 @@
 //! 一个样子。一种配色一行，写配置页里的那个名字；打开时的那一种右边暗色写「当前」；选中的照别的列表铺底。
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 
 use super::panel::{self, Chrome, Row};
 use crate::config::Config;
 
 /// 框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
     /// 下边框的按键提示。
     pub hint: String,
 }
+
+crate::from_json::record! { Texts, deny { title, hint } }
 
 /// 框（标题、提示）、排好的行、每一行是第几种；`options` 是列出来的几种配色（配置项的值），`current` 是打开时用着的那种，
 /// 选中第 `selected` 行，放不下 `max` 行时从离它最远的起少露。

@@ -2,11 +2,10 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 /// 抽屉上的字和记号。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 顶上一行谁在问，`{who}`。
     pub asking: String,
@@ -84,4 +83,15 @@ pub struct Texts {
     pub cancel_hint: String,
     /// 不允许并写了理由，`{reason}`。
     pub denied_with: String,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        asking, guard, hazard, auto_deny, preview, agent, elsewhere, answered_tab, review_tab,
+        pointer, unchecked, checked, other, notes_label, decisions, reason_hint, reason_key,
+        command_above, command_below, keys_scroll, keys_scroll_preview, preview_below, access,
+        access_other, package, unanswered, keys, keys_multi, keys_approve, keys_review, keys_edit,
+        keys_reason, keys_tabs, answered_head, answered_line, notes_suffix, cancel_hint,
+        denied_with,
+    }
 }

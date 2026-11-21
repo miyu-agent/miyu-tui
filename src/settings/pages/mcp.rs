@@ -10,7 +10,6 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::More;
@@ -18,8 +17,9 @@ use crate::core::Refusal;
 use crate::settings::{Settings, Texts, Tone, Waiting};
 
 /// 这一页的字（`text/zh.json` 的 `settings.more.mcp`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct McpTexts {
     /// 主菜单那一项和它底下那一行。
     pub entry: [String; 2],
@@ -49,6 +49,13 @@ pub struct McpTexts {
     pub failed: String,
     /// 按键提示。
     pub hints: Vec<[String; 2]>,
+}
+
+crate::from_json::record! {
+    McpTexts, deny {
+        entry, states, tools, login, logout, leaving, left, not_logged_in, asking, opened,
+        no_browser, unregistered, failed, hints,
+    }
 }
 
 /// 列表里的一个服务。

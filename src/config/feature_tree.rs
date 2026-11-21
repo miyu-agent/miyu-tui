@@ -2,14 +2,15 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 /// 功能树的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct FeatureTreeTexts {
     /// 一组什么都没有时写的，照组的 `kind`（`skills`、`scripts`、`mcp`）；别的种类照 `other`。
     pub empty: HashMap<String, String>,
     /// 写了但这台机器没装的功能，名字后面黄字。
     pub missing: String,
 }
+
+crate::from_json::record! { FeatureTreeTexts, deny { empty, missing } }

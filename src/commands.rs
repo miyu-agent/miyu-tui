@@ -3,69 +3,84 @@
 //!
 //! 加命令只登记：写进清单，`run` 选下面几种之一；要新的一种才动代码。
 
-use serde::Deserialize;
-
 /// 全部斜杠命令，照清单里的先后。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Commands {
     /// 一条条。
     pub commands: Vec<Spec>,
     /// 命令被拒时，这几种原因码弹核心的原话（带 `data.why` 的照它），不写进正文（蓝图「长期目标」第 2 条）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub hinted_refusals: Vec<String>,
     /// 核心认的、终端自己没有的那几条（`command.catalog` 读来的，`app/catalog.rs` 放进来）：接在后面列、照样能打。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub core: Vec<Spec>,
     /// 核心的清单到过了。没到之前认不出的 `/名字 字` 也交给核心认，不当一句话发给她（2026-10-30：刚连上就打 `/loop 10m`，
     /// 清单还没回来，整句当话发出去了）。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub core_known: bool,
     /// 能用 `$` 点名的技能（`command.catalog` 顶层的 `skills`，核心 SK-1，发版前 check 26）：不在命令列表里。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub skills: Vec<crate::core::CoreSkill>,
     /// 总线上可用的名字（`bus.list`，核心 BUS-2）：写了 `needs` 的命令照它列（语音，设计 20）。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub bus: Vec<String>,
 }
 
+crate::from_json::record! {
+    Commands {
+        commands, hinted_refusals(default),
+    }
+    skip { core, core_known, skills, bus }
+}
+
 /// 一条命令。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Spec {
     /// 名字，不带 `/`。
     pub name: String,
     /// 别名：打它一样执行，筛的时候也算（`/undo` 的 `rewind`）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub aliases: Vec<String>,
     /// 列表里名字后面那一句（终端自己的说法；核心清单也列了这个名字的照核心的，见 [`Spec::said`]）。
     pub summary: String,
     /// 核心清单里同名那一条的说明（`command.catalog` 的 `summary`，照连接的语言）：属于核心的命令（`/stop`、`/clear`、`/goal`……）
     /// 照它写，终端不另写一份（2026-11-13 主人验收 1113：`/stop` 写的还是终端自己那句旧说明，核心 11-09 早改了）。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub core_summary: Option<String>,
     /// 做什么。
     pub run: Run,
     /// 名字后面空一格能接参数（`/compact 要求`，蓝图「斜杠命令列表」第 5 条）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub args: bool,
     /// 名字后面跟什么的提示（核心清单里模板的 `argument-hint`，例如 `<路径>`）：列表里名字后面暗色写着。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub argument: Option<String>,
     /// 扩展的整页带的命令：打了就开这一页（核心清单的 `opens`，蓝图「界面块」第 10 条）。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub opens: Option<crate::widgets::PageRef>,
     /// 几种写法（核心清单的 `usage`，O-6 四补）：`/help` 一行一种；命令列表照旧一条一行（2026-10-17 项目主人定）。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub usage: Vec<(String, String)>,
     /// 跟着核心的包的命令（`/goal` 跟着长期目标那个包）：核心清单回来了却没列它（包卸掉了，核心 BS-1下下），列表里不列，
     /// 打了交给核心说不认得（同别的不存在的命令，不放回输入框）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub follows_core: bool,
     /// 照上一条藏起来了（[`Commands::take_core`]）。
-    #[serde(skip)]
+    #[cfg_attr(test, serde(skip))]
     pub gone: bool,
     /// 总线上要有这个名字可用才列、才能打（`/voice-input` 要 `stt`，设计 20 第七节）。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub needs: Option<String>,
+}
+
+crate::from_json::record! {
+    Spec {
+        name, aliases(default), summary, run, args(default), argument(default),
+        follows_core(default), needs(default),
+    }
+    skip { core_summary, opens, usage, gone }
 }
 
 /// 回车时输入框里那一行是什么（蓝图「斜杠命令列表」第 4、5 条）。
@@ -80,8 +95,9 @@ pub enum Line<'a> {
 }
 
 /// 命令做什么。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(rename_all = "snake_case"))]
 pub enum Run {
     /// 撤销上一轮（`session.revert`）。
     Revert,
@@ -161,6 +177,50 @@ pub enum Run {
     AutoRead,
     /// 核心认的命令（命令模板、扩展声明的）：整行交给核心（`command.run`，核心 X-14）。
     Core,
+}
+
+crate::from_json::choice! {
+    Run {
+        Revert = "revert",
+        Unrevert = "unrevert",
+        Redo = "redo",
+        Edit = "edit",
+        Compact = "compact",
+        Recap = "recap",
+        Rename = "rename",
+        Goal = "goal",
+        Sessions = "sessions",
+        Jump = "jump",
+        Files = "files",
+        Persona = "persona",
+        Preset = "preset",
+        Workspace = "workspace",
+        Model = "model",
+        Config = "config",
+        Connect = "connect",
+        Effort = "effort",
+        New = "new",
+        Delete = "delete",
+        Clear = "clear",
+        Stop = "stop",
+        Usage = "usage",
+        Status = "status",
+        ToolList = "tool_list",
+        Context = "context",
+        CompactLine = "compact_line",
+        Copy = "copy",
+        Theme = "theme",
+        Icons = "icons",
+        Images = "images",
+        Quit = "quit",
+        Help = "help",
+        Language = "language",
+        Export = "export",
+        VoiceInput = "voice_input",
+        ReadAloud = "read_aloud",
+        AutoRead = "auto_read",
+        Core = "core",
+    }
 }
 
 impl Spec {

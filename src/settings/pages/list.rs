@@ -3,7 +3,6 @@
 //! 当场存。按键和示范对话列表共用 [`crate::pairs::list_key`]。终端不认识哪个包，照 `config.schema` 的类型画。
 
 use ratatui::crossterm::event::KeyEvent;
-use serde::Deserialize;
 use serde_json::Value;
 
 use super::choose::LineEdit;
@@ -14,8 +13,9 @@ use crate::settings::popup::Popup;
 use crate::settings::{Settings, Texts, Tone};
 
 /// 列表窗的字（`text/zh.json` 的 `settings.more.list`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct ListTexts {
     /// 一条都没有。
     pub empty: String,
@@ -24,6 +24,8 @@ pub struct ListTexts {
     /// 下面的按键提示。
     pub hints: Vec<[String; 2]>,
 }
+
+crate::from_json::record! { ListTexts, deny { empty, whole, hints } }
 
 /// 开着的列表窗。
 #[derive(Debug, Clone, PartialEq, Eq)]

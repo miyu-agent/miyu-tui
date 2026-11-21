@@ -1,11 +1,10 @@
 //! 吉祥物的模型和数值（`resources/mascot.json`，蓝图 `tui.md`「空会话的首页」第 5–7 条）。
 //! 长度都以头的半径为 1：x 往右、y 往上、z 朝着看的人。
 
-use serde::Deserialize;
-
 /// 吉祥物的一块：头、耳朵、鳍，和画在脸上的眼睛。颜色照它取。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(rename_all = "snake_case"))]
 pub enum Part {
     /// 头，连脸上的锯齿线。
     Head,
@@ -17,9 +16,12 @@ pub enum Part {
     Eye,
 }
 
+crate::from_json::choice! { Part { Head = "head", Ear = "ear", Fin = "fin", Eye = "eye" } }
+
 /// 一个椭球：头、一只耳朵或一片鳍。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Shape {
     /// 是哪一块。
     pub part: Part,
@@ -30,11 +32,17 @@ pub struct Shape {
     /// 绕 z 轴歪多少，弧度，逆时针为正。
     pub tilt: f64,
     /// 左右各一个：照 x 镜像再放一个，歪的方向也反过来。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub mirror: bool,
     /// 跟着头转几成：头、耳朵 1；鳍长在身上，只跟一点（不写是 1）。
-    #[serde(default = "whole")]
+    #[cfg_attr(test, serde(default = "whole"))]
     pub follow: f64,
+}
+
+crate::from_json::record! {
+    Shape, deny {
+        part, center, radii, tilt, mirror(default), follow(default = whole),
+    }
 }
 
 fn whole() -> f64 {
@@ -42,8 +50,9 @@ fn whole() -> f64 {
 }
 
 /// 肚子上的圈（纹路，2026-09-30 项目主人定）：圆角矩形的一圈线，圈里是身子，不挖空。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Belly {
     /// 中心的 x、y。
     pub center: [f64; 2],
@@ -55,9 +64,12 @@ pub struct Belly {
     pub ring: f64,
 }
 
+crate::from_json::record! { Belly, deny { center, half, round, ring } }
+
 /// 脸：画在头的正面，位置用头朝前时的 x、y。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Face {
     /// 眼睛：每只一条线段，两头的 x、y。
     pub eyes: Vec<[[f64; 2]; 2]>,
@@ -77,9 +89,16 @@ pub struct Face {
     pub belly: Belly,
 }
 
+crate::from_json::record! {
+    Face, deny {
+        eyes, eye_width, eye_mark, line, line_width, line_mark, mouth_gap, belly,
+    }
+}
+
 /// 嘴怎么动（蓝图「空会话的首页」第 9 条）：张多大都是 0 合着、1 张到最大，照半衰期缓着变。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct MouthLook {
     /// 平常张多大。
     pub rest: f64,
@@ -101,9 +120,16 @@ pub struct MouthLook {
     pub walk: f64,
 }
 
+crate::from_json::record! {
+    MouthLook, deny {
+        rest, half_life_ms, frame_ms, yawn, yawn_ms, yawn_half_life_ms, hop, hop_ms, walk,
+    }
+}
+
 /// 转头的数值。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Gaze {
     /// 左右最多转几度。
     pub max_yaw: f64,
@@ -119,9 +145,16 @@ pub struct Gaze {
     pub pointer_settle_ms: u64,
 }
 
+crate::from_json::record! {
+    Gaze, deny {
+        max_yaw, max_pitch, distance, half_life_ms, frame_ms, pointer_settle_ms,
+    }
+}
+
 /// 待机小动作的数值（`tui.md`「空会话的首页」第 8 条）。`[最小, 最大]` 的每次在里面随机。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Idle {
     /// 多久没按键、没动鼠标算没人动。
     pub after_ms: u64,
@@ -156,9 +189,18 @@ pub struct Idle {
     pub twitch_tilt: [f64; 2],
 }
 
+crate::from_json::record! {
+    Idle, deny {
+        after_ms, awake_ms, frame_ms, blink_every_ms, blink_ms, double_blink, double_gap_ms,
+        glance_hold_ms, glance_yaw, glance_pitch, glance_home, glance_half_life_ms, twitch_every_ms,
+        twitch_ms, twitch_tilt,
+    }
+}
+
 /// 被列表顶上去以后走回原处的数值（`tui.md`「空会话的首页」第 4 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Perch {
     /// 列表关了先停多久。
     pub settle_ms: u64,
@@ -166,9 +208,12 @@ pub struct Perch {
     pub row_ms: u64,
 }
 
+crate::from_json::record! { Perch, deny { settle_ms, row_ms } }
+
 /// 整个吉祥物（`resources/mascot.json`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Look {
     /// 画出来占几列。
     pub cols: u16,
@@ -199,19 +244,27 @@ pub struct Look {
     /// 转头。
     pub gaze: Gaze,
     /// 吉祥物包写的颜色（蓝图「吉祥物包」第 4 条）：写了的盖过主题的 `mascot_*`；内置的不写。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     pub colors: Colors,
     /// 画成像素图（通知的图标，`notify/mascot_icon.rs`）时用的脸：格子少，眼睛、锯齿线、肚子上的圈要另调（照网页
     /// `packages/mascot` 那一份）；没写的照 `face`。
     /// 2026-11-10 起没有通知画它了（`notify/mod.rs`），吉祥物包里写了的照旧能读。
-    #[serde(default)]
+    #[cfg_attr(test, serde(default))]
     #[cfg_attr(not(test), allow(dead_code))]
     pub pixel_face: Option<Face>,
 }
 
+crate::from_json::record! {
+    Look, deny {
+        cols, rows, radius, cell_aspect, center_row, ramp, light, ambient, shapes, face, mouth,
+        idle, perch, gaze, colors(default), pixel_face(default),
+    }
+}
+
 /// 吉祥物各块的颜色：写法同主题文件。
-#[derive(Debug, Clone, Default, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, Default)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Colors {
     /// 头，连脸上的锯齿线。
     pub head: Option<crate::theme::Tone>,
@@ -222,6 +275,8 @@ pub struct Colors {
     /// 鳍。
     pub fin: Option<crate::theme::Tone>,
 }
+
+crate::from_json::record! { Colors, deny { head, ear, eye, fin } }
 
 impl Colors {
     /// 这一块写了的颜色；没写的是 `None`（照主题）。

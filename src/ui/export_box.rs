@@ -3,7 +3,6 @@
 //! Markdown 的第二步选复制还是存成文件，存档直接存。
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 
 use super::panel::{self, Chrome, Row};
 use crate::app::{ExportBox, Preview, Use};
@@ -11,8 +10,9 @@ use crate::config::Config;
 use crate::theme;
 
 /// 框里的字（`text/zh.json` 的 `export`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的；第二步是 `{use}` 后面接的那一截。
     pub title: String,
@@ -38,6 +38,13 @@ pub struct Texts {
     pub saved: String,
     /// 还没开会话。
     pub no_session: String,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        title, step_title, hints, uses, bundle_note, estimate, estimating, too_big, actions, copied,
+        saved, no_session,
+    }
 }
 
 /// 框（标题、提示）、排好的行、每一行是第几项；选中第 `selected` 行，放不下 `max` 行时离它远的少露。

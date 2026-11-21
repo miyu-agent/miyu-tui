@@ -5,12 +5,12 @@
 
 use std::time::{Duration, Instant};
 
-use serde::Deserialize;
 use unicode_width::UnicodeWidthStr;
 
 /// 一档：这一轮跑了 `after` 秒以后用这些词。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Tier {
     /// 这一轮跑了几秒以后用这一档。
     pub after: u64,
@@ -18,9 +18,12 @@ pub struct Tier {
     pub words: Vec<String>,
 }
 
+crate::from_json::record! { Tier, deny { after, words } }
+
 /// 词库（`resources/pulse.json`）。范围都是 `[最小, 最大]` 毫秒，每换上一个词在里面随机定一次。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Words {
     /// 一个词至少停多久：一阵事件完了，没停够也要等停够再换。
     pub dwell_ms: [u64; 2],
@@ -31,6 +34,8 @@ pub struct Words {
     /// 各档，照 `after` 从小到大。
     pub tiers: Vec<Tier>,
 }
+
+crate::from_json::record! { Words, deny { dwell_ms, quiet_ms, idle_ms, tiers } }
 
 impl Words {
     /// 最宽的词占几列：后面的用时照它留位置，换了长短不一的词不左右跳。

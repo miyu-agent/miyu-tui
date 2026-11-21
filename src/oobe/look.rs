@@ -1,11 +1,10 @@
 //! 引导的数值（`resources/oobe.json`，蓝图 `tui.md`「第一次打开的引导」第 8–12 条）：吉祥物多大、内容多宽、
 //! 开场的时间线、星点、换一步滑多久、吉祥物的反应。
 
-use serde::Deserialize;
-
 /// 欢迎页上的吉祥物。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Welcome {
     /// 最多放大几倍。
     pub scale: f64,
@@ -15,9 +14,12 @@ pub struct Welcome {
     pub gap: u16,
 }
 
+crate::from_json::record! { Welcome, deny { scale, height, gap } }
+
 /// 中间几步的版面。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Stage {
     /// 内容最宽几列。
     pub content_width: u16,
@@ -30,9 +32,12 @@ pub struct Stage {
     pub max_height: u16,
 }
 
+crate::from_json::record! { Stage, deny { content_width, margin, gap, max_height } }
+
 /// 开场的时间线（第 8 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Intro {
     /// 转一整圈多久。
     pub spin_ms: u64,
@@ -58,9 +63,17 @@ pub struct Intro {
     pub sub_ms: u64,
 }
 
+crate::from_json::record! {
+    Intro, deny {
+        spin_ms, spin_swing, fade_ms, settle_ms, twitch_ms, twitch_tilt, blink_ms, blink_gap_ms,
+        type_ms, talk, sub_ms,
+    }
+}
+
 /// 星点（第 8、11 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Stars {
     /// 开场冒出几颗。
     pub count: usize,
@@ -80,9 +93,16 @@ pub struct Stars {
     pub frame_ms: u64,
 }
 
+crate::from_json::record! {
+    Stars, deny {
+        count, gather_ms, lead_ms, linger, twinkle_ms, scatter_ms, marks, frame_ms,
+    }
+}
+
 /// 吉祥物的反应（第 10 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct React {
     /// 跳一下多久。
     pub hop_ms: u64,
@@ -120,9 +140,17 @@ pub struct React {
     pub type_ear_ms: u64,
 }
 
+crate::from_json::record! {
+    React, deny {
+        hop_ms, hop_rows, hop_mouth, shake_ms, shakes, shake_yaw, droop, look_up, blink_ms,
+        blink_gap_ms, name_ms, hop_ear, tilt, tilt_hold_ms, tilt_ease_ms, type_ear, type_ear_ms,
+    }
+}
+
 /// 引导里吉祥物闲着时比首页勤（第 10 条）：盖在 `mascot.json` 的待机小动作上的几项，闲着时摇头顺带歪一点头。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Idle {
     /// 多久没人动算闲着。
     pub after_ms: u64,
@@ -136,9 +164,16 @@ pub struct Idle {
     pub glance_roll: f64,
 }
 
+crate::from_json::record! {
+    Idle, deny {
+        after_ms, glance_hold_ms, glance_yaw, twitch_every_ms, glance_roll,
+    }
+}
+
 /// 好了那一屏（第 11 条）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Done {
     /// 从左边走回中间多久。
     pub walk_ms: u64,
@@ -152,9 +187,12 @@ pub struct Done {
     pub stars: Stars,
 }
 
+crate::from_json::record! { Done, deny { walk_ms, spin_ms, reveal_ms, leave_ms, stars } }
+
 /// 浮在一步上面的窗（第 21a 条）：大编辑浮窗、示范对话。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Popup {
     /// 占窗口宽度的几成。
     pub width: f64,
@@ -164,9 +202,12 @@ pub struct Popup {
     pub max_width: u16,
 }
 
+crate::from_json::record! { Popup, deny { width, height, max_width } }
+
 /// 整份 `oobe.json`。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Look {
     /// 欢迎页的吉祥物。
     pub welcome: Welcome,
@@ -199,6 +240,14 @@ pub struct Look {
     /// 建人格时头像的小图几行高（第 21 条）。
     pub avatar_rows: u16,
 }
+
+crate::from_json::record! {
+    Look, deny {
+        welcome, stage, intro, stars, slide_ms, react, idle, done, swap, popup, frame_ms,
+        sample_icons, welcome_wait_ms, catalog_limit, avatar_rows,
+    }
+}
+
 impl Look {
     /// 这一屏的星点照哪一套：好了那一屏照 `done.stars`，开场照 `stars`。
     pub fn stars_for(&self, done: bool) -> &Stars {

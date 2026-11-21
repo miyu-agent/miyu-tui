@@ -37,7 +37,6 @@ mod values;
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
 use serde_json::Value;
 
 use choose::{Choice, Choose};
@@ -332,8 +331,9 @@ impl More {
 }
 
 /// 提示窗的字（`settings.more.notice`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct NoticeTexts {
     /// 唯一的按钮：「知道了」。
     pub button: String,
@@ -341,9 +341,12 @@ pub struct NoticeTexts {
     pub hints: Vec<[String; 2]>,
 }
 
+crate::from_json::record! { NoticeTexts, deny { button, hints } }
+
 /// 新几页的字（`text/zh.json` 的 `settings.more`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 主菜单「人格」那一项和它底下那一行（写清它决定什么：AI 的人格和记忆）。
     pub personas: [String; 2],
@@ -443,6 +446,17 @@ pub struct Texts {
     pub sections: sections::SectionTexts,
     /// 「软件包」三页（第 43c 条）。
     pub store: store::StoreTexts,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        personas, presets, preset_detail, origins, toggle, secret, no_editor, list_sep, bad_number,
+        unset, nothing_to_unset, default_mark, no_personas, loading, no_persona, unpicked,
+        follow_new, builtin_mascot, default_look, ascii_look, mascot_missing, package_off,
+        seed_unset, own_groups, service, appearance, choice_names, edit_hint, cant_edit,
+        unavailable, notice, detail, hints, preset_edit, persona_edit, dialogs, custom_model, combo,
+        sheet_hints, list, records, create, ticks, package_from, mcp, slider_hints, sections, store,
+    }
 }
 
 #[cfg(test)]

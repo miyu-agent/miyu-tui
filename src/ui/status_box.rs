@@ -6,7 +6,6 @@
 //! 先从界面收齐要写的（[`facts`]），再排（[`items`]、[`rows`]）：排的那一半不碰界面，单元测试直接给数。
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 use unicode_width::UnicodeWidthStr;
 
 use super::panel::{self, Chrome};
@@ -18,8 +17,9 @@ use crate::theme;
 use crate::transcript::{StepKind, ToolState, Transcript};
 
 /// 框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 还没开会话时框线上写的。
     pub new_title: String,
@@ -55,9 +55,17 @@ pub struct Texts {
     pub hint: String,
 }
 
+crate::from_json::record! {
+    Texts, deny {
+        new_title, keys, effort, window, average, context, compactions, compaction_line, pin, cap,
+        total, split, aux, breaks, memory, hint,
+    }
+}
+
 /// 左边一列的名字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Keys {
     pub id: String,
     pub persona: String,
@@ -72,6 +80,13 @@ pub struct Keys {
     pub cost: String,
     pub models: String,
     pub memory: String,
+}
+
+crate::from_json::record! {
+    Keys, deny {
+        id, persona, preset, level, cwd, model, context, compaction, usage, hit, cost, models,
+        memory,
+    }
 }
 
 /// 框里要写的，从界面收齐的。

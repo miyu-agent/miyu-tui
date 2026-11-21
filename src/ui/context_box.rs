@@ -8,7 +8,6 @@
 use std::collections::BTreeMap;
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 use serde_json::Value;
 
 use super::panel::{self, Chrome};
@@ -27,8 +26,9 @@ pub use sections::Tail;
 pub use uses::read_uses;
 
 /// 框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 框线上写的。
     pub title: String,
@@ -69,14 +69,24 @@ pub struct Texts {
     pub stuck_over: String,
 }
 
+crate::from_json::record! {
+    Texts, deny {
+        title, loading, used, used_only, to_line, past_line, cap, pin, estimated, totals, columns,
+        sum, uses, hint, context, spent, hit, compactions, breaks, times, stuck_failed, stuck_over,
+    }
+}
+
 /// 按用途那张表的列名：次数、token（四种加起来）、花费。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Columns {
     pub requests: String,
     pub tokens: String,
     pub cost: String,
 }
+
+crate::from_json::record! { Columns, deny { requests, tokens, cost } }
 
 /// 读回来的一样：还没回来是 `None`，拒了的是核心的原话。
 pub type Loaded<T> = Option<Result<T, String>>;

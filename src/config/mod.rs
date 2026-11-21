@@ -5,8 +5,6 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 use crate::commands::Commands;
 use crate::core::Level;
 use crate::language::{Language, LanguageTable};
@@ -38,6 +36,7 @@ mod timeline;
 mod unread;
 mod widgets;
 mod words;
+mod words_read;
 
 pub use attach::{AttachLook, AttachTexts};
 pub use dream::{DreamLook, DreamTexts};
@@ -58,12 +57,13 @@ pub use timeline::{Body, Hosted, Summary, Timeline, ToolKind};
 pub use unread::UnreadTexts;
 pub use widgets::{WidgetLayout, WidgetMarks};
 pub use words::{
-    CompactLineTexts, JobTexts, ModelTexts, PrefixTexts, RecapTexts, RenameTexts, ShellTexts,
-    UndoFileTexts,
+    CompactLineTexts, JobTexts, ModelTexts, PrefixTexts, RecapTexts, RenameTexts, SentTexts,
+    ShellTexts, UndoFileTexts,
 };
 
 /// 界面上给人看的字。`{count}` 这样的占位由代码填。
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
 pub struct Texts {
     /// 输入框空着时轮换的提示（蓝图「输入框」第 9 条）。
     pub tips: Vec<String>,
@@ -481,19 +481,11 @@ impl Config {
     }
 }
 
-fn parse<T: for<'de> Deserialize<'de>>(name: &str, json: &str) -> Result<T, String> {
-    serde_json::from_str(json).map_err(|e| format!("resources/{name} 读不懂：{e}"))
+fn parse<T: crate::from_json::Read>(name: &str, json: &str) -> Result<T, String> {
+    crate::from_json::from_str(json).map_err(|e| format!("resources/{name} 读不懂：{e}"))
 }
 
-/// 她发出去的图画不成时（终端显示不了图、读不成）那一行打头的，后面跟 `alt`（蓝图「她发的图」）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SentTexts {
-    /// 表情包：`[表情包]`。
-    pub sticker: String,
-    /// 别的图：`[图片]`。
-    pub image: String,
-}
-
+#[cfg(test)]
+mod same;
 #[cfg(test)]
 mod tests;

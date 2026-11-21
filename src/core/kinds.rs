@@ -1,18 +1,19 @@
 //! 协议里几样有固定取值的字：权限级别、工具结果的状态、一轮结束的原因。读推送时就换成类型，
 //! 之后代码里只比类型，不拿字符串比（`00-设计理念.md` 第四节「依赖与接口的规矩」第 5 条）。
 
-use serde::Deserialize;
-
 /// 实际的权限级别：完全放开，或者开着只读（`kernel/events-bodies.md` 的 `permission`）。工作区那一级去掉了（LV-3，
 /// 2026-11-09 项目主人定：只要只读和完全放开两种）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(rename_all = "snake_case"))]
 pub enum Level {
     /// 完全放开（界面上叫「开放权限」）。
     Full,
     /// 只读。
     ReadOnly,
 }
+
+crate::from_json::choice! { Level { Full = "full", ReadOnly = "read_only" } }
 
 impl Level {
     /// 协议里常用的那一级（`permission.level`）：只有 `full` 是完全放开，别的取值照核心按最严的算、读成只读（核心 AUD-4，

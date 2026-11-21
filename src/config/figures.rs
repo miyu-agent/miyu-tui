@@ -1,10 +1,9 @@
 //! 正文里的图（`resources/figures.json`，蓝图 `tui.md`「图片、公式和 mermaid 图」第 3 条）：多大、记几张、用什么字体。
 
-use serde::Deserialize;
-
 /// 正文里的图怎么画。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct FigureLook {
     /// 一张图最多占几行：只防病态，不为塞进一屏。
     pub max_rows: u16,
@@ -28,9 +27,17 @@ pub struct FigureLook {
     pub zoom_keep: usize,
 }
 
+crate::from_json::record! {
+    FigureLook, deny {
+        max_rows, room, picture_room, preview_room, sticker_room, fonts, max_file_bytes, math_scale,
+        keep, zoom_keep,
+    }
+}
+
 /// 一张图最多占多大：窗口高度的几分之几、正文宽度的几分之几，写成 `[分子, 分母]`。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Room {
     /// 最多窗口高度的几分之几。
     pub height: [u16; 2],
@@ -39,6 +46,8 @@ pub struct Room {
     /// 窗口再矮也至少给几行。
     pub min_rows: u16,
 }
+
+crate::from_json::record! { Room, deny { height, width, min_rows } }
 
 impl Room {
     /// 正文 `cols` 列宽、窗口 `screen_rows` 行高时，最多几列宽、几行高。

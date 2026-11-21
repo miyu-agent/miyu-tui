@@ -25,6 +25,7 @@ mod figures;
 mod focus;
 mod frame_log;
 mod frame_output;
+mod from_json;
 mod fuzzy;
 mod glyph_guard;
 mod history;
@@ -124,8 +125,7 @@ fn fullscreen(launch: startup::Launch) -> io::Result<()> {
     if startup::early(&launch) {
         return Ok(());
     }
-    // 配置先读：读不懂就别进全屏，错误照原样打在终端里。
-    // 界面语言照系统语言（蓝图「界面语言」）。
+    // 配置先读：读不懂就别进全屏，错误照原样打在终端里。界面语言照系统语言（蓝图「界面语言」）。
     let table = language::LanguageTable::builtin().map_err(io::Error::other)?;
     let language = table.detect(|name| std::env::var(name).ok());
     // 启动时是自动：照系统语言（蓝图「界面语言」）。

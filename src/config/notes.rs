@@ -1,10 +1,9 @@
 //! 正文里几种旁白上的字（`text/zh.json`；蓝图 `tui.md`「正文」第 9 条）。
 
-use serde::Deserialize;
-
 /// 压缩那几行（照 `miyu ask` 的写法，`cli/ask.md`「压缩那一行」）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct CompactionTexts {
     /// 提前在后台开始压时弹的提示（「正文」第 9 条）。
     pub triggered: String,
@@ -32,4 +31,11 @@ pub struct CompactionTexts {
     pub paused_too_large: String,
     /// 暂停了：别的、缺了次数或序号的。
     pub paused: String,
+}
+
+crate::from_json::record! {
+    CompactionTexts, deny {
+        triggered, progress, written, percent, done, done_mark, cleared, failed, called_a_tool,
+        isolating, paused_failures, paused_too_large, paused,
+    }
 }

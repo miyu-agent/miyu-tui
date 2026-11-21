@@ -2,7 +2,6 @@
 //! 一个样子。第一行「默认（供应商定）」，下面照这个模型的几级一级一行；配置的默认那一级前面一个强调色的 `●`。
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 
 use super::panel::{self, Chrome, Row};
 use crate::config::Config;
@@ -10,8 +9,9 @@ use crate::core::Efforts;
 use crate::theme;
 
 /// 框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的，`{model}` 是模型的显示名。
     pub title: String,
@@ -27,6 +27,12 @@ pub struct Texts {
     pub none: String,
     /// 用的是模型池，不让改（2026-10-02 项目主人定）。
     pub need_model: String,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        title, loading_title, hint, default, loading, none, need_model,
+    }
 }
 
 /// 框、排好的行、每一行是第几行（第 0 行默认）。`target` 是 `None` 的还在等核心。

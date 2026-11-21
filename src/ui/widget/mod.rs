@@ -12,7 +12,6 @@ mod wrap;
 
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 
 pub use page::{PageFrame, draw as page};
 pub use place::{Kind, Spot, draw_home, home, home_rows, sidebar, status};
@@ -22,8 +21,9 @@ use crate::theme;
 use crate::widgets::{Action, Block, Segment, Tone};
 
 /// 界面块上的字（`text/<语言>.json` 的 `widget`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 列表里做完的收成的那一行，`{count}`。
     pub folded: String,
@@ -37,6 +37,12 @@ pub struct Texts {
     pub not_running: String,
     /// 整页最下面的按键提示：一项是键、做什么。
     pub page_keys: Vec<[String; 2]>,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        folded, more, more_blocks, loading, not_running, page_keys,
+    }
 }
 
 /// 画在哪：侧边栏里内容缩进两格、普通的字照暗（自带的内容一律暗），小标题蓝色。

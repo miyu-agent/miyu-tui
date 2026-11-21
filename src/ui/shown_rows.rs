@@ -3,7 +3,6 @@
 
 use ratatui::style::Modifier;
 use ratatui::text::Span;
-use serde::Deserialize;
 
 use super::figure_rows;
 use super::rows::{Ctx, Row, clip};
@@ -13,8 +12,9 @@ use crate::theme;
 use crate::transcript::Entry;
 
 /// 展示那几行的字（`text/zh.json` 的 `shown`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct ShownTexts {
     /// 种类的说法：`html`、`pdf`、`markdown`、`text`、`file`。
     pub kinds: std::collections::HashMap<String, String>,
@@ -30,6 +30,12 @@ pub struct ShownTexts {
     pub changed: String,
     /// 文件没了（核心 SW-1 的 `file_gone`）。
     pub gone: String,
+}
+
+crate::from_json::record! {
+    ShownTexts, deny {
+        kinds, lines, open, updated, no_program, changed, gone,
+    }
 }
 
 /// 正文里这一条排成的行。

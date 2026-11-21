@@ -7,14 +7,13 @@ use std::cell::Cell;
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 /// 嵌套的上限：公式是模型写的，递归没有上限就是一个爆栈的口子。超了的原样交回。
 pub(super) const MAX_NESTING: usize = 64;
 
 /// 公式的对照表（`resources/math.json`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Math {
     /// 命令名（不带 `\`）到写出来的字，例如 `alpha` → `α`，`sin` → ` sin `。
     pub symbols: HashMap<String, String>,
@@ -30,6 +29,12 @@ pub struct Math {
     pub ignored: Vec<String>,
     /// 写成一个空格的命令：`\quad`、`\qquad`。
     pub spaces: Vec<String>,
+}
+
+crate::from_json::record! {
+    Math, deny {
+        symbols, superscripts, subscripts, accents, text, ignored, spaces,
+    }
 }
 
 /// 把一段 LaTeX 转成一行 Unicode；多个空白并成一个。

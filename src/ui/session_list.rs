@@ -5,7 +5,6 @@
 //! 看不出来，右边的「当前」不够显眼；2026-10-16 起不另占一列，左边不再空一大块）。
 
 use ratatui::text::{Line, Span};
-use serde::Deserialize;
 
 use super::panel::{self, Chrome, Row};
 
@@ -18,8 +17,9 @@ use crate::theme;
 use unicode_width::UnicodeWidthStr;
 
 /// 框里的字。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct Texts {
     /// 上边框写的。
     pub title: String,
@@ -69,6 +69,14 @@ pub struct Texts {
     pub groups: [String; 5],
     /// 编号后面那一列：一共用了多少 token，`{tokens}`。
     pub tokens: String,
+}
+
+crate::from_json::record! {
+    Texts, deny {
+        title, count, query, terminal, hint, hint_vim, searching, loading, empty, now, minutes,
+        hours, days, ticked, delete_again, delete_many, deleted_many, deleted, asking,
+        delete_running, pinned, unpinned, groups, tokens,
+    }
 }
 
 /// 哪个会话是正在用的，哪几个有确认、提问在等你（「确认和提问的抽屉」第 10 条），哪几个做完了还没看。

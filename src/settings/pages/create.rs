@@ -3,7 +3,6 @@
 //! 名字；id 空着的照旧让核心起（`preset-<n>`、`persona-<n>`），写了的照核心的写法先查一遍、和已有的重了当场说。
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
-use serde::Deserialize;
 use serde_json::json;
 
 use super::persona_edit::change;
@@ -13,8 +12,9 @@ use crate::settings::popup::Popup;
 use crate::settings::{Settings, Texts};
 
 /// 两格窗的字（`text/zh.json` 的 `settings.more.create`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct CreateTexts {
     /// 窗的标题：新建预设、新建人格。
     pub titles: [String; 2],
@@ -30,6 +30,12 @@ pub struct CreateTexts {
     pub id_taken: String,
     /// 写了 id、已有的列表还没读到（查不了重没重）。
     pub id_unchecked: String,
+}
+
+crate::from_json::record! {
+    CreateTexts, deny {
+        titles, sides, id_hint, name_missing, id_bad, id_taken, id_unchecked,
+    }
 }
 
 /// 建的是哪一种。

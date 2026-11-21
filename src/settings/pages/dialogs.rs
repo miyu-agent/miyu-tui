@@ -4,7 +4,6 @@
 //! 版本。
 
 use ratatui::crossterm::event::KeyEvent;
-use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::choose::PersonaView;
@@ -16,8 +15,9 @@ use crate::settings::popup::Popup;
 use crate::settings::{Settings, Texts, Tone, Waiting};
 
 /// 示范对话的字（`text/zh.json` 的 `settings.more.dialogs`）。
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize, PartialEq))]
+#[cfg_attr(test, serde(deny_unknown_fields))]
 pub struct DialogTexts {
     /// 列表窗的标题。
     pub title: String,
@@ -32,6 +32,8 @@ pub struct DialogTexts {
     /// 有一格空着按了 `Enter`。
     pub both: String,
 }
+
+crate::from_json::record! { DialogTexts, deny { title, empty, add, edit, sides, both } }
 
 pub use crate::pairs::Pair;
 
