@@ -42,6 +42,8 @@ pub struct Item {
     pub default: Value,
     /// 名字。
     pub name: String,
+    /// 给人看的说明（`description`，照连接的语言）；没写的是 `None`。默认模型页那几行的用途一句照它（`settings/use_names.rs`）。
+    pub description: Option<String>,
     /// 在哪一页。
     pub page: String,
     /// 哪一组。
@@ -381,6 +383,7 @@ fn read_item(i: &Value) -> Item {
             .collect(),
         default: i["default"].clone(),
         name: text(&i["name"]),
+        description: said(&i["description"]),
         page: text(&i["page"]),
         group: text(&i["group"]),
         package: text(&i["package"]),
