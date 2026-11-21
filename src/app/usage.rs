@@ -41,7 +41,7 @@ pub struct UsageData {
 impl App {
     /// 打开 `/usage`：要五样，没回来以前那一页写「正在读用量…」。
     pub(super) fn open_usage(&mut self) {
-        let now = jiff::Zoned::now();
+        let now = crate::zone::now();
         let offset = offset_text(now.offset().seconds());
         self.boxes.usage = Some(UsageData {
             total: None,

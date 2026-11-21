@@ -25,7 +25,7 @@ pub(super) fn page(
 ) -> Vec<Line<'static>> {
     let days = usage::days(rows, src.currency);
     // 看着的会话有套餐额度的（核心 QU-1）：顶上一行一个窗口，空一行再接四个数。
-    let now = (jiff::Timestamp::now(), &jiff::tz::TimeZone::system());
+    let now = (jiff::Timestamp::now(), &crate::zone::local());
     let (block, edge) = crate::sheet::read(|s| (s.marks.block.clone(), s.marks.edge.clone()));
     let glyphs = super::quota::Glyphs {
         block: &block,

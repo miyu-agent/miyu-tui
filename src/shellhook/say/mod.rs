@@ -123,7 +123,7 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
         {
             return held(session, &ask, &turn_text, words);
         }
-        let name = crate::core::pasted_name(&jiff::Zoned::now());
+        let name = crate::core::pasted_name(&crate::zone::now());
         session.note(note(&crate::shellhook::words::fill(
             &words.too_long_attached,
             &[("name", &name)],
@@ -264,7 +264,9 @@ pub fn pick(which: Pick<'_>, words: &Words, shell: Option<u32>) -> io::Result<Ex
 pub fn config() -> io::Result<crate::config::Config> {
     let table = crate::language::LanguageTable::builtin().map_err(io::Error::other)?;
     let language = table.detect(|name| std::env::var(name).ok());
-    crate::config::Config::load(&language, true).map_err(io::Error::other)
+    crate::config::Config::load(&language, true)
+        .map(|config| *config)
+        .map_err(io::Error::other)
 }
 
 /// 暗色的一行，缩进同她的回答。

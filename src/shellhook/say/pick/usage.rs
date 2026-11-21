@@ -40,7 +40,7 @@ impl UsageShow {
                 models: None,
                 sessions: None,
                 purposes: None,
-                today: jiff::Zoned::now().date(),
+                today: crate::zone::now().date(),
                 rates: Vec::new(),
                 quota: Vec::new(),
                 balance: None,
@@ -74,7 +74,7 @@ impl UsageShow {
 
 impl Picker for UsageShow {
     fn start(&mut self, core: &Core) {
-        let now = jiff::Zoned::now();
+        let now = crate::zone::now();
         let offset = crate::app::usage::offset_text(now.offset().seconds());
         for kind in [
             UsageKind::Total,

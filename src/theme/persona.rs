@@ -5,6 +5,7 @@
 
 use material_colors::blend::harmonize;
 use material_colors::color::Rgb;
+use material_colors::dynamic_color::DynamicScheme;
 use material_colors::hct::Hct;
 use material_colors::palette::TonalPalette;
 use material_colors::scheme::variant::SchemeContent;
@@ -28,7 +29,7 @@ pub fn hex(seed: &str) -> Option<u32> {
 /// 高亮、标题、代码着色其余几格）色相往主色最多转 15°（`harmonize`），认得出是哪一种；吉祥物也跟着换。
 pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
     let source = Rgb::from_u32(seed);
-    let s = SchemeContent::new(Hct::new(source), dark, Some(0.0)).scheme;
+    let s = scheme(source, dark);
     let neutral = &s.neutral_palette;
     let variant = &s.neutral_variant_palette;
     let primary = &s.primary_palette;
@@ -122,6 +123,26 @@ pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
         background: like(neutral, b.background),
         text: like(neutral, b.text),
     }
+}
+
+/// 照主色生成 MD3 的配色（`SchemeContent`，对比度 0）。
+///
+/// 另起一个线程算，算好的交回来：它里面的冷暖表（`TemperatureCache`，362 个色相）连同拷贝放在栈上，一帧约 44 KB；在主线程上
+/// 算，摸过的栈页一直算在终端头上（蓝图「量尺」的栈，2026-11-22 LW-7）。换配色时才算（起来时、主色变了），多起一个线程不碍事。
+/// 线程起不来的就在这个线程上算，配色一样。
+fn scheme(source: Rgb, dark: bool) -> DynamicScheme {
+    let make = move || SchemeContent::new(Hct::new(source), dark, Some(0.0)).scheme;
+    std::thread::scope(|scope| {
+        match std::thread::Builder::new()
+            .name("palette".into())
+            .spawn_scoped(scope, make)
+        {
+            Ok(running) => running
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic)),
+            Err(_) => make(),
+        }
+    })
 }
 
 #[cfg(test)]

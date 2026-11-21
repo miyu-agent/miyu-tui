@@ -159,7 +159,7 @@ impl Part<Side<'_, '_>> for Loops {
 
     fn lay(&mut self, side: &Side, width: u16) -> Laid {
         let seen = side.seen;
-        let at_now = (jiff::Timestamp::now(), &jiff::tz::TimeZone::system());
+        let at_now = (jiff::Timestamp::now(), &crate::zone::local());
         let mine =
             super::super::loop_tag::of(&seen.link.loops, seen.talk.transcript.session.as_deref());
         Laid::Lines(super::super::loop_tag::sidebar(

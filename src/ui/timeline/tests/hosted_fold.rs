@@ -48,7 +48,7 @@ fn deepseek_round() -> Vec<Step> {
 fn folded(steps: Vec<Step>, code: &str, auto: bool) -> Vec<String> {
     let table = LanguageTable::builtin().unwrap();
     let mut f = Fixture::new();
-    f.config = Config::load(&table.find(code).unwrap(), auto).unwrap();
+    f.config = *Config::load(&table.find(code).unwrap(), auto).unwrap();
     text(&rows(0, &segment(steps, None), &f.ctx()))
 }
 

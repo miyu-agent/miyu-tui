@@ -203,7 +203,7 @@ pub fn lines(
             .max(column.min(TITLE_MIN)),
     );
     // 没打字时照最近动静分段，段前一行段头（第 10 条）；露出来的一截从一段中间开始的也先写段头。
-    let tz = jiff::tz::TimeZone::system();
+    let tz = crate::zone::local();
     let today = now.to_zoned(tz.clone()).date();
     let grouped = list.query.is_empty();
     let mut last_group = None;

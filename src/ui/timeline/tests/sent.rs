@@ -88,7 +88,7 @@ fn a_segment_that_only_sends_one_sticker_is_named_by_the_sending_tool() {
 fn a_chosen_language_names_the_sending_tool_in_that_language() {
     let mut f = fixture();
     let table = LanguageTable::builtin().unwrap();
-    f.config = Config::load(&table.find("zh").unwrap(), false).unwrap();
+    f.config = *Config::load(&table.find("zh").unwrap(), false).unwrap();
     let t0 = Instant::now();
     let fold = |steps| text(&rows(0, &segment(steps, None), &f.ctx()));
     assert_eq!(

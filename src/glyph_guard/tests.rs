@@ -154,7 +154,14 @@ fn frame(top: u16, reply: &str) -> Vec<(u16, String)> {
 /// 打头是中文（宽字盖着图标右边那一格）。
 const REPLIES: [&str; 2] = ["  I see 她的回答", "  她的回答写在这里"];
 
-/// 一帧帧画 `frames`（每一帧几行字），交回界面排的最后一帧。
+/// 把一帧的几行字画上。
+fn lay(f: &mut ratatui::Frame, lines: &[(u16, String)]) {
+    for (y, text) in lines {
+        f.render_widget(Line::raw(text.clone()), Rect::new(0, *y, W, 1));
+    }
+}
+
+/// 不包这一层，一帧帧画 `frames`（每一帧几行字），交回界面排的最后一帧。
 fn draw_all<B: ratatui::backend::Backend>(
     t: &mut Terminal<B>,
     frames: &[Vec<(u16, String)>],
@@ -162,12 +169,25 @@ fn draw_all<B: ratatui::backend::Backend>(
     let mut last = None;
     for lines in frames {
         let done = t
-            .draw(|f| {
-                for (y, text) in lines {
-                    f.render_widget(Line::raw(text.clone()), Rect::new(0, *y, W, 1));
-                }
-            })
+            .draw(|f| lay(f, lines))
             .unwrap_or_else(|_| panic!("画得出来"));
+        last = Some(done.buffer.clone());
+    }
+    last.unwrap()
+}
+
+/// 包着这一层，照界面画的走法（[`super::draw`]）一帧帧画，交回界面排的最后一帧。
+fn draw_guarded<B: ratatui::backend::Backend>(
+    t: &mut Terminal<Guarded<B>>,
+    frames: &[Vec<(u16, String)>],
+) -> Buffer {
+    let mut last = None;
+    for lines in frames {
+        let done = super::draw(t, |f| {
+            lay(f, lines);
+            None
+        })
+        .unwrap_or_else(|_| panic!("画得出来"));
         last = Some(done.buffer.clone());
     }
     last.unwrap()
@@ -187,7 +207,7 @@ fn shown(
     let (last, bytes) = if guarded {
         let mut t = Terminal::with_options(Guarded::new(plain), options()).unwrap();
         (
-            draw_all(&mut t, frames),
+            draw_guarded(&mut t, frames),
             t.backend_mut().inner_mut().writer().clone(),
         )
     } else {
@@ -266,20 +286,12 @@ fn what_was_sent_survives_when_the_record_has_to_grow() {
 }
 
 #[test]
-fn the_record_answers_blank_outside_and_keeps_cells_when_it_grows() {
-    use ratatui::buffer::Cell;
-
-    let mut shadow = super::Shadow::default();
-    assert!(shadow.get((0, 0)).is_none(), "什么都没送过");
-    shadow.fit(3, 2);
-    let mut a = Cell::default();
-    a.set_symbol("a");
-    shadow.set((2, 1), a.clone());
-    shadow.fit(5, 4);
-    assert_eq!(shadow.get((2, 1)), Some(&a), "重排以后原样在原来的行列");
-    assert_eq!(shadow.get((4, 3)), Some(&Cell::default()), "新出来的是空白");
-    assert!(shadow.get((5, 0)).is_none(), "右边出了界");
-    assert!(shadow.get((0, 4)).is_none(), "下边出了界");
-    shadow.fit(1, 1);
-    assert_eq!((shadow.width, shadow.height), (5, 4), "放得下就不缩");
+fn the_cell_right_of_a_new_glyph_is_rewritten_with_what_it_holds() {
+    // 第二帧图标换上来，右边那一格（`b`）两帧一样、ratatui 不送：这一层照这一帧的缓冲把 `b` 原样补写，不写成空白。
+    let frames = [
+        vec![(1, "  ab 已思考".to_string())],
+        vec![(1, format!("  {ATOM}b 已思考"))],
+    ];
+    let (screen, want) = shown(true, (1, false), &frames);
+    assert_eq!(screen, want);
 }

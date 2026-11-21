@@ -12,7 +12,7 @@ use crate::ui::test_support::Fixture;
 fn folded(code: &str, auto: bool) -> Vec<String> {
     let table = LanguageTable::builtin().unwrap();
     let mut f = Fixture::new();
-    f.config = Config::load(&table.find(code).unwrap(), auto).unwrap();
+    f.config = *Config::load(&table.find(code).unwrap(), auto).unwrap();
     let t0 = Instant::now();
     let seg = segment(
         vec![

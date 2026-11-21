@@ -25,6 +25,11 @@ impl Trim {
         }
     }
 
+    /// 一大块回应换上了、旧的和拆它的临时块放掉了（给人看的字，`app/updates.rs`）：`after` 以后还一次。
+    pub fn soon(&mut self, now: Instant, after: Duration) {
+        self.due = Some(now + after);
+    }
+
     /// 下一次要醒来还的时刻。
     pub fn deadline(&self) -> Option<Instant> {
         self.due
