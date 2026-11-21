@@ -37,7 +37,9 @@ mod replay;
 mod request;
 mod rpc;
 mod schedules;
-pub use schedules::{Change as LoopChange, Every as LoopEvery, Loop, apply as apply_loops};
+pub use schedules::{
+    Change as LoopChange, Every as LoopEvery, Loop, apply as apply_loops, newly_held,
+};
 mod serve;
 mod session_effort;
 mod sessions;

@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::{Change, Every, Loop, apply, changed, lost, table};
+use super::{Change, Every, Loop, apply, changed, lost, newly_held, table};
 
 fn item(id: &str) -> serde_json::Value {
     json!({"id": id, "when": {"every": 600}, "prompt": "看看 CI", "target": {"session": "s-1"},
@@ -27,6 +27,7 @@ fn only_loops_on_a_session_are_kept() {
             next: Some("2026-10-30T04:07:00Z".parse().unwrap()),
             paused: false,
             prompt: "看看 CI".into(),
+            last: None,
         }
     );
     assert_eq!(got.len(), 3, "定时任务不算");
@@ -74,4 +75,33 @@ fn changes_replace_add_and_remove_one_by_one() {
     assert!(lost(
         &json!({"method": "resync", "params": {"stream": "schedules"}})
     ));
+}
+
+#[test]
+fn only_a_fresh_held_round_on_the_viewed_session_counts() {
+    // ACC-1121-#1：核心只记下、没开轮的那一次（`last.result` 是 `held`）提示一句；整张、别的会话、同一次又推一遍的不算。
+    let entry = |session: &str, last: serde_json::Value| {
+        json!({"id": "t7", "when": {}, "prompt": "继续", "target": {"session": session},
+               "loop": "dynamic", "last": last})
+    };
+    let held = json!({"at": "2026-11-20T13:42:01.477Z", "result": "held", "session": "s-1"});
+    let one = |session, last| {
+        changed(&json!({"method": "schedules.changed", "params": {"id": "t7", "entry": entry(session, last)}}))
+            .unwrap()
+    };
+    let mut loops = table(&json!({"schedules": [entry("s-1", serde_json::Value::Null)]}));
+    assert!(newly_held(&loops, &one("s-1", held.clone()), Some("s-1")));
+    assert!(
+        !newly_held(&loops, &one("s-1", held.clone()), Some("s-2")),
+        "别的会话"
+    );
+    let ran = json!({"at": "2026-11-20T13:42:01.477Z", "result": "ran"});
+    assert!(!newly_held(&loops, &one("s-1", ran), Some("s-1")), "开了轮");
+    let whole = Change::All(table(&json!({"schedules": [entry("s-1", held.clone())]})));
+    assert!(!newly_held(&loops, &whole, Some("s-1")), "刚订上的整张");
+    apply(&mut loops, one("s-1", held.clone()));
+    assert!(
+        !newly_held(&loops, &one("s-1", held), Some("s-1")),
+        "同一次又推一遍"
+    );
 }

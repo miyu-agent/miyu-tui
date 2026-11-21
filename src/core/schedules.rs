@@ -18,6 +18,8 @@ pub struct Loop {
     pub paused: bool,
     /// 交进会话的那句话。
     pub prompt: String,
+    /// 上一次交进会话的那一刻和结果（`last` 的 `at`、`result`：`ran`、`queued`、`held`、`skipped:…`）；还没交过的没有。
+    pub last: Option<(String, String)>,
 }
 
 /// 循环多久一次。
@@ -85,6 +87,23 @@ pub fn apply(loops: &mut Vec<Loop>, change: Change) {
     }
 }
 
+/// 这一项变化是看着的会话（`viewing`）上的循环刚交了一次、只记下没开轮（`last.result` 是 `held`，核心 SC-1：比如还能恢复
+/// 撤销时）。整张（刚订上）的不算，上一次就是这一次的（别的字段变了又推一遍）不算。
+pub fn newly_held(loops: &[Loop], change: &Change, viewing: Option<&str>) -> bool {
+    let Change::One(id, Some(now)) = change else {
+        return false;
+    };
+    let held = now
+        .last
+        .as_ref()
+        .is_some_and(|(_, result)| result == "held");
+    let before = loops
+        .iter()
+        .find(|l| &l.id == id)
+        .and_then(|l| l.last.as_ref());
+    held && Some(now.session.as_str()) == viewing && before != now.last.as_ref()
+}
+
 /// 一项：带 `loop`（`fixed`、`dynamic`）、跑在已有会话上的才算。
 fn entry(item: &Value) -> Option<Loop> {
     let time = |v: &Value| v.as_str().and_then(|t| t.parse().ok());
@@ -105,6 +124,10 @@ fn entry(item: &Value) -> Option<Loop> {
         next: time(&item["next"]),
         paused: item["paused"] == true,
         prompt: item["prompt"].as_str().unwrap_or_default().to_string(),
+        last: item["last"]["at"]
+            .as_str()
+            .zip(item["last"]["result"].as_str())
+            .map(|(at, result)| (at.to_string(), result.to_string())),
         every,
     })
 }
