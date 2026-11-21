@@ -352,7 +352,7 @@ impl App {
                 _ => (said, ""),
             };
             if command != "clear" && !said.is_empty() {
-                self.receipt(text.to_string(), tail.to_string());
+                self.receipt(command, text.to_string(), tail.to_string());
             }
             return;
         }

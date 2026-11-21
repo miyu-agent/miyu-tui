@@ -44,7 +44,7 @@ fn a_loop_shows_above_the_input_and_in_the_sidebar() {
 #[test]
 fn a_loop_round_held_by_a_restorable_undo_says_so() {
     // ACC-1121-#1（2026-11-20 主人本机）：撤销了一轮、还能恢复时，核心只记下循环这一轮、不开（`last.result` 是 `held`），
-    // 界面上什么都没有，看着像循环没了。现在底下提示一句。
+    // 界面上什么都没有，看着像循环没了。核心 FX-12 起 `/loop` 的回执自己说循环先不跑，终端不再另写那一句（2026-11-21 core1）。
     let home = Home::with_tools(Script::new([Play::Says("在。")]), "");
     let mut tui = home.tui("zh_CN.UTF-8");
     tui.wait_for("开放权限");
@@ -53,5 +53,11 @@ fn a_loop_round_held_by_a_restorable_undo_says_so() {
     tui.say("/undo");
     tui.wait_for("已撤销");
     tui.say("/loop 10m 看一眼 CI");
-    tui.wait_for("循环这一轮没开始");
+    tui.wait_for("循环暂不运行");
+    tui.pump(std::time::Duration::from_millis(1000));
+    assert!(
+        !tui.shows("循环这一轮没开始"),
+        "回执说了，不另写：\n{}",
+        tui.lines().join("\n")
+    );
 }

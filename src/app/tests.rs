@@ -100,6 +100,7 @@ mod esc_pairs;
 mod files_page;
 mod goal;
 mod jump_older;
+mod loop_held;
 mod models_changed;
 mod notices;
 mod pools;

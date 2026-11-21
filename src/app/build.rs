@@ -111,6 +111,7 @@ impl App {
                 bill_asked: None,
                 voice: Default::default(),
                 loops: Vec::new(),
+                loops_sent: super::loops::Sent::default(),
             },
             typing: super::typing::Typing {
                 input,
