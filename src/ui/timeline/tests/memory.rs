@@ -134,7 +134,7 @@ fn a_folded_segment_counts_remembering_on_its_own() {
 
 #[test]
 fn the_remember_title_keeps_its_result_line() {
-    // 记住单算一类以后，标题照旧接结果那一句（「记住 · 内容 · 记成 m9」）。
+    // 记住单算一类以后，标题照旧接结果那一句（「记住 · 内容 · 已保存为 m9」，核心 WD-4 起的说法）。
     let mut f = Fixture::new();
     f.human = crate::human::Human::from_resources("zh");
     let mut step = tool("remember", json!({"text": "猫"}), "Saved as m9.", 0);
@@ -148,7 +148,7 @@ fn the_remember_title_keeps_its_result_line() {
     let seg = segment(vec![step, search], Some(true));
     let got = text(&rows(0, &seg, &f.ctx()));
     assert!(
-        got.iter().any(|l| l.contains("记住 · 猫 · 记成 m9")),
+        got.iter().any(|l| l.contains("记住 · 猫 · 已保存为 m9")),
         "{got:?}"
     );
 }

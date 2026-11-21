@@ -33,7 +33,7 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
     let mut tui = home.tui_with("zh_CN.UTF-8", &[ASK, ASK_PRESET]);
     tui.wait_for("请选择人格");
     // 列表的几行、写错的后面的原因不一定和海盗一起读到：等到都在了再看。
-    tui.wait_for_all(&["海盗", "broken", "不认识的键"]);
+    tui.wait_for_all(&["海盗", "broken", "未知的键"]);
     assert!(tui.shows("broken"), "写错的也列着（选不了）");
     let broken = tui
         .lines()
@@ -42,7 +42,7 @@ fn every_new_session_asks_for_a_persona_first_and_the_chosen_one_goes_into_the_s
         .unwrap_or_default();
     // 原因照界面语言说（核心 P-3 再补，2026-10-08 起列表的 `problem` 照连接的语言给）。
     assert!(
-        broken.contains("不认识的键"),
+        broken.contains("未知的键"),
         "写错的后面写核心给的原因：{broken}"
     );
     // 框开着时打的字哪都不进（蓝图「新会话：人格、工作区」第 1c 条，2026-11-02 项目主人改），框里照旧选。
