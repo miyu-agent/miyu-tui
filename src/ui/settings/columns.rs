@@ -412,9 +412,23 @@ fn embedding_now(page: &Settings) -> Line<'static> {
     Line::styled(text, if unset { theme::dim() } else { Style::new() })
 }
 
-/// 左边暗色的名字、右边的字，一行一样。
-fn put_lines(frame: &mut Frame, area: Rect, lines: Vec<(String, Line)>) {
+/// 左边暗色的名字、右边的字，一行一样；最后一样（用途一句）放不下的折行写全，接着的几行左边不写名字（ACC-1121-#3）。
+fn put_lines(frame: &mut Frame, area: Rect, mut lines: Vec<(String, Line)>) {
     let label_width = lines.iter().map(|(l, _)| l.width()).max().unwrap_or(0) as u16 + 2;
+    if let Some((label, last)) = lines.pop() {
+        let said = last.to_string();
+        let room = area.width.saturating_sub(label_width).max(1);
+        let pieces = crate::input::wrap_words(&said, room);
+        if pieces.is_empty() {
+            lines.push((label, last));
+        } else {
+            let mut label = label;
+            for piece in pieces {
+                let text = said[piece.start..piece.end].trim_end().to_string();
+                lines.push((std::mem::take(&mut label), Line::styled(text, last.style)));
+            }
+        }
+    }
     for (i, (label, line)) in lines.into_iter().enumerate() {
         let y = area.y + i as u16;
         if y >= area.bottom() {

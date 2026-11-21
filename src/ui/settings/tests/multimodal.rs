@@ -100,3 +100,41 @@ fn the_chat_row_takes_its_name_and_note_from_the_cores_schema() {
         "{old}"
     );
 }
+
+/// 多模态、语义模型两行的用途一句也照核心清单里那一项的 `description`（ACC-1121-#3，2026-11-21：网页同，主人要两个头都照
+/// 核心的字表）；老核心没有的照终端的字（上面两条）。
+#[test]
+fn every_rows_note_comes_from_the_cores_schema() {
+    let config = Config::builtin().unwrap();
+    let item = |key: &str, kind: &str, name: &str, said: &str| {
+        json!({"key": key, "type": kind, "control": "text", "layers": ["system"], "name": name,
+               "description": said, "page": "models", "group": "uses"})
+    };
+    let schema = json!({"pages": [{"id": "models", "name": "模型"}], "groups": [{"id": "uses", "name": "用途", "page": "models"}],
+        "items": [item("models.vision", "model", "多模态模型", "核心写的多模态说明。"),
+                  item("models.embedding", "model_or", "语义模型", "核心写的语义模型说明。")]});
+    let vision = use_at(&config, &schema, 1);
+    assert!(vision.contains("核心写的多模态说明。"), "{vision}");
+    assert!(
+        !vision.contains("在对话模型不支持多模态时提供多模态能力"),
+        "{vision}"
+    );
+    let embedding = use_at(&config, &schema, 2);
+    assert!(embedding.contains("核心写的语义模型说明。"), "{embedding}");
+}
+
+/// 用途一句长的折行写全，不截掉（ACC-1121-#3：核心的说明比终端原来的长）。
+#[test]
+fn a_long_note_wraps_in_the_detail_column() {
+    let config = Config::builtin().unwrap();
+    let said = "新会话默认用的模型，写成供应商斜杠模型，也能写成一个模型池的名字，前面加一个记号。这一句后面还有尾巴。";
+    let schema = json!({"pages": [{"id": "models", "name": "模型"}], "groups": [{"id": "uses", "name": "用途", "page": "models"}],
+        "items": [{"key": "models.chat", "type": "reference", "control": "text", "layers": ["system"],
+                   "name": "主对话的模型", "description": said, "page": "models", "group": "uses"}]});
+    let text = use_at(&config, &schema, 0);
+    assert!(text.contains("新会话默认用的模型"), "{text}");
+    assert!(
+        text.contains("这一句后面还有尾巴。"),
+        "折行写全，最后几个字也在：{text}"
+    );
+}
