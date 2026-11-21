@@ -169,7 +169,7 @@
     "sticker": "[Sticker]",
     "image": "[Image]"
   },
-  "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "Text", "file": "File"}, "lines": "{n} lines", "open": "Click to open", "updated": "updated", "no_program": "No program can open it: {path}", "changed": "File changed", "gone": "File no longer exists"},
+  "shown": {"kinds": {"html": "HTML", "pdf": "PDF", "markdown": "Markdown", "text": "Text", "file": "File"}, "lines": "{n} lines", "open": "Click to open", "updated": "updated", "no_program": "No program can open it: {path}", "changed": "The file has changed", "gone": "The file no longer exists"},
   "mascot_failed": "Mascot package unreadable, using the built-in mascot",
   "look_failed": "Theme package unreadable, using the default theme",
   "console_cjk": "The Linux console can't show Chinese or Japanese: you can switch the interface language to English in settings",
@@ -300,7 +300,7 @@
     "paused_too_large": "· Entry {entry} is too large and fills the context right after compaction; auto-compaction is paused",
     "paused": "· Auto-compaction is paused: compact manually, switch models, or start a new session"
   },
-  "unread": {"read_only": "The session log is broken at line {line}; only the part before it can be viewed and the session can't continue. Start a new session to go on.", "read_only_somewhere": "The session log is broken; only the part before it can be viewed and the session can't continue. Start a new session to go on.", "read_only_placeholder": "This session is view-only. Type /new to start a new one", "unavailable_retry": "The session can't be read right now; retrying in {wait}", "unavailable_gave_up": "The session can't be read right now. Please try again later"},
+  "unread": {"read_only": "The session log is broken at line {line}; only the part before it can be viewed and the session can't continue. Start a new session to go on.", "read_only_somewhere": "The session log is broken; only the part before the broken line can be viewed and the session can't continue. Start a new session to go on.", "read_only_placeholder": "This session is view-only. Type /new to start a new one", "unavailable_retry": "The session can't be read right now; retrying in {wait}", "unavailable_gave_up": "The session can't be read right now. Please try again later"},
   "error_classes": {
     "output_limit": "Reply exceeded the output limit",
     "retryable": "Temporary error",

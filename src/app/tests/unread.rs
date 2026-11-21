@@ -113,7 +113,7 @@ fn a_session_broken_in_the_middle_says_where_and_stays_view_only() {
         .iter()
         .map(|e| e.text.clone())
         .collect();
-    let line = "会话日志第 7 行坏了，只能看到这一行以前的内容，不能接着聊。要继续请新开一个会话。";
+    let line = "会话日志第 7 行已损坏，只能查看这一行之前的内容，不能继续对话。如果要继续，请新建一个会话。";
     assert_eq!(
         said.iter().filter(|t| t.as_str() == line).count(),
         1,

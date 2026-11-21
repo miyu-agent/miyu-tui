@@ -43,7 +43,7 @@
     {
       "name": "stop",
       "summary": {
-        "zh": "停止此会话所有处理中的东西",
+        "zh": "停止这个会话中所有正在运行的任务",
         "en": "Stop everything running in the session",
         "ja": "セッションで動いているものをすべて止める"
       },

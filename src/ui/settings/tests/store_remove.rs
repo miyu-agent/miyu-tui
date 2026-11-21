@@ -1,4 +1,4 @@
-//! 卸载的弹窗（PK-5）：最下面一排按钮，不写「继续？」；配置那一行照停着的按钮写留在哪、会删掉哪；点按钮就是按下去。
+//! 卸载的弹窗（PK-5）：最下面一排按钮，不写「继续？」；配置那一行照停着的按钮写保留在哪、将删除哪；点按钮就是按下去。
 
 use ratatui::layout::Position;
 use serde_json::json;
@@ -38,12 +38,12 @@ fn the_remove_popup_has_buttons_and_says_where_the_config_goes() {
         text.contains("[ 卸载 ]  [ 卸载并删除配置 ]  [ 取消 ]"),
         "{text}"
     );
-    assert!(text.contains("配置 : 留在 ~/.miyu/etc/im"), "{text}");
+    assert!(text.contains("配置 : 保留在 ~/.miyu/etc/im"), "{text}");
     assert!(!text.contains("继续？"), "按钮代替「继续？」：\n{text}");
     assert!(text.contains("←/→ 选择"), "按键提示：\n{text}");
     press(&mut p, &config, ratatui::crossterm::event::KeyCode::Right);
     let (text, _) = screen(&mut p, &config, 90, 24);
-    assert!(text.contains("配置 : 会删掉 ~/.miyu/etc/im"), "{text}");
+    assert!(text.contains("配置 : 将删除 ~/.miyu/etc/im"), "{text}");
     let without = &mut asking(&config, false);
     let (text, _) = screen(without, &config, 90, 24);
     assert!(text.contains("[ 卸载 ]  [ 取消 ]"), "{text}");
@@ -78,7 +78,7 @@ fn clicking_a_button_presses_it() {
     assert_eq!(sent, [json!({"package": "im", "purge": true})]);
 }
 
-/// 核心 PK-5补：只有设置项、没有配置目录的也给三个按钮，写「N 项设置留在配置里」。
+/// 核心 PK-5补：只有设置项、没有配置目录的也给三个按钮，写「N 项设置保留在配置中」。
 #[test]
 fn settings_alone_still_offer_the_purge_button() {
     let config = Config::builtin().unwrap();
@@ -88,5 +88,5 @@ fn settings_alone_still_offer_the_purge_button() {
     }
     let (text, _) = screen(&mut p, &config, 90, 24);
     assert!(text.contains("[ 卸载并删除配置 ]"), "{text}");
-    assert!(text.contains("配置 : 2 项设置留在配置里"), "{text}");
+    assert!(text.contains("配置 : 2 项设置保留在配置中"), "{text}");
 }
