@@ -40,4 +40,6 @@ pub struct Link {
     pub voice: crate::voice::Voice,
     /// 唤醒表里跑在已有会话上的循环（`schedules` 流，蓝图「循环」）：输入框上面、侧边栏照看着的会话挑。
     pub loops: Vec<crate::core::Loop>,
+    /// 打了 `/loop` 以后新出现的循环：它交的第一次由核心的回执说（`loops.rs`）。
+    pub loops_sent: super::loops::Sent,
 }

@@ -35,11 +35,13 @@ impl App {
             return;
         }
         self.dream_start(line);
+        self.loop_sent(line);
         self.link.core.send(Command::Slash(line.to_string()));
     }
 
     /// 交给核心的那一行被拒：只弹核心的原话（去掉句末的句号；扩展的原话在下一行）。
     pub(super) fn slash_refused(&mut self, message: &str) {
+        self.link.loops_sent.waiting = false;
         let said = message.trim_end().trim_end_matches(['。', '.']);
         if !said.is_empty() {
             self.hint(said.to_string(), false);
