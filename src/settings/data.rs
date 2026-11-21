@@ -47,6 +47,8 @@ pub struct Provider {
     pub models: Vec<Model>,
     /// 用不了的原因（`problem`）。
     pub problem: Option<String>,
+    /// 这一家真要的 key、地址（核心 FX-11 `needs`）：窗里只画有的；老核心、扩展没装的没有，照旧都画。
+    pub needs: Option<super::needs::Needs>,
 }
 
 /// 一个模型。
@@ -254,6 +256,7 @@ fn provider(p: &Value) -> Provider {
         }),
         models,
         problem: p["problem"].as_str().map(str::to_string),
+        needs: super::needs::Needs::read(&p["needs"]),
         id,
     }
 }

@@ -331,7 +331,7 @@ pub fn provider(
         },
     );
     key.inherit = Some(if key_set { "key_set" } else { "key_unset" }.to_string());
-    let rows = vec![
+    let mut rows = vec![
         id_row,
         Row::text(Field::Name, name.unwrap_or_default())
             .inherit(p.map(|p| p.shown().to_string()), None),
@@ -355,6 +355,10 @@ pub fn provider(
         ),
         key,
     ];
+    // 这一家没有的项不画（核心 FX-11 的 `needs`，主人本机验收第 8 条：软件包带的 Antigravity 写着地址、认证、密钥）。
+    if let Some(needs) = p.and_then(|p| p.needs) {
+        rows.retain(|r| needs.shows(r.field));
+    }
     let mut form = Form::new(Target::Provider(id.map(str::to_string)), rows, Vec::new());
     if id.is_some() {
         form.focus = Focus::Row(1); // 已有的先停在显示名称，编号往上挪一格才改得到（免得手快改到）。
