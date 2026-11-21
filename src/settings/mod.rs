@@ -17,6 +17,7 @@ mod provider_test;
 mod saving;
 pub mod service;
 pub mod texts;
+mod use_names;
 
 #[cfg(test)]
 pub mod test_support;

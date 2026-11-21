@@ -177,6 +177,8 @@ pub struct UsageRow {
     pub session: Option<String>,
     /// 按用途分的：`title`、`recap`、`vision`……；主请求、摘要请求的是 `None`。
     pub purpose: Option<String>,
+    /// 按用途分的：核心给的这个用途给人看的名字（`purpose_name`，照连接的语言；核心 UP-3）；老核心、没名字的是 `None`。
+    pub purpose_name: Option<String>,
     /// 按 `use` 分的（核心 CX-1 上）：`main`、`compaction`、`subagent`、`recap`、`title`、`memory`、`other`。
     pub used_for: Option<String>,
     /// 发出去的请求数。
@@ -230,6 +232,7 @@ pub fn rows(result: &Value) -> Vec<UsageRow> {
                 model: row["model"].as_str().map(str::to_string),
                 session: row["session"].as_str().map(str::to_string),
                 purpose: row["purpose"].as_str().map(str::to_string),
+                purpose_name: row["purpose_name"].as_str().map(str::to_string),
                 used_for: row["use"].as_str().map(str::to_string),
                 requests: row["requests"].as_u64().unwrap_or_default(),
                 tokens: split.uncached + split.cache_read + split.cache_write + split.output,
