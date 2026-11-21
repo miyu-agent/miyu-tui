@@ -241,6 +241,7 @@ impl App {
     /// 回车发出去的字：是命令就执行；像命令、终端又没有这个命令的交给核心，被拒的只弹核心的原话（`tui.md`「斜杠命令列表」
     /// 第 4 条）；别的发给她。
     pub(super) fn submit(&mut self, draft: Draft) {
+        self.forget_esc();
         // 跑命令的模式：照命令发，斜杠打头的也不当命令（`shell_send.rs`）。
         if self.typing.input.shell() {
             return self.submit_shell(draft);

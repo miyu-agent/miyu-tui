@@ -96,6 +96,7 @@ mod bill;
 mod context_cap;
 mod drawer_rows;
 mod effort;
+mod esc_pairs;
 mod files_page;
 mod goal;
 mod jump_older;

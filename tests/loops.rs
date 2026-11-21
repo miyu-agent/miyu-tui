@@ -36,3 +36,18 @@ fn a_loop_shows_above_the_input_and_in_the_sidebar() {
         tui.pump(std::time::Duration::from_millis(100));
     }
 }
+
+#[test]
+fn a_loop_round_held_by_a_restorable_undo_says_so() {
+    // ACC-1121-#1（2026-11-20 主人本机）：撤销了一轮、还能恢复时，核心只记下循环这一轮、不开（`last.result` 是 `held`），
+    // 界面上什么都没有，看着像循环没了。现在底下提示一句。
+    let home = Home::with_tools(Script::new([Play::Says("在。")]), "");
+    let mut tui = home.tui("zh_CN.UTF-8");
+    tui.wait_for("开放权限");
+    tui.say("在吗");
+    tui.wait_for("在。");
+    tui.say("/undo");
+    tui.wait_for("已撤销");
+    tui.say("/loop 10m 看一眼 CI");
+    tui.wait_for("循环这一轮没开始");
+}

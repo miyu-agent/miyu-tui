@@ -51,6 +51,7 @@ mod keys;
 mod language;
 mod link;
 mod look;
+mod loops;
 mod lost;
 mod mascot;
 mod mascot_pick;
@@ -196,6 +197,16 @@ impl App {
             && !self.talk.drawers.open()
             && self.typing.input.editor.selection().is_none()
             && self.screen.view.select.is_none()
+            && !self.screen.side_select.active()
+    }
+
+    /// 两下 `Esc` 记着的上一下作废：发出去一句、这一下被别处收了（ACC-1121-#1）。提示框里还写着「再按一次」的一起收掉。
+    fn forget_esc(&mut self) {
+        self.typing.esc_at = None;
+        let hint = &self.config.text.esc_hint;
+        if self.typing.notice.as_ref().is_some_and(|n| &n.text == hint) {
+            self.typing.notice = None;
+        }
     }
 
     /// 退出程序前收尾：输入法还原成进来时的样子（`ime.rs`）。人退出的才向 herdr 退还窗格；终端挂断（读终端的那一头断了，
@@ -209,8 +220,18 @@ impl App {
         self.save_look();
     }
 
-    /// 处理一个终端事件。
+    /// 处理一个终端事件。两下 `Esc` 只数归输入框的那几下（`keys.rs` 的 `esc`、`stop_agents.rs`）：这一下 `Esc` 被列表、选区、
+    /// 抽屉、别的页收了（记着的上一下没动），上一下作废，不和下一下凑成两下（ACC-1121-#1）。
     pub fn handle(&mut self, event: Event) {
+        let esc = matches!(&event, Event::Key(k) if k.code == KeyCode::Esc && k.kind != KeyEventKind::Release);
+        let before = self.typing.esc_at;
+        self.dispatch(event);
+        if esc && self.typing.esc_at == before {
+            self.forget_esc();
+        }
+    }
+
+    fn dispatch(&mut self, event: Event) {
         self.mascot.heard(&event, Instant::now());
         // 引导开着：按键、鼠标、粘贴都归它（`oobe.rs`）。
         if self.boxes.oobe.is_some() {
