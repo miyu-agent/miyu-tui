@@ -332,7 +332,7 @@ fn detail(frame: &mut Frame, area: Rect, page: &Settings, texts: &Texts) {
         lines.push((texts.detail[0].clone(), embedding_now(page)));
         lines.push((
             texts.detail[5].clone(),
-            Line::styled(texts.use_notes[at].clone(), theme::dim()),
+            Line::styled(page.use_note(at, texts), theme::dim()),
         ));
         return put_lines(frame, area, lines);
     }
@@ -387,7 +387,7 @@ fn detail(frame: &mut Frame, area: Rect, page: &Settings, texts: &Texts) {
     }
     lines.push((
         texts.detail[5].clone(),
-        Line::styled(texts.use_notes[at].clone(), theme::dim()),
+        Line::styled(page.use_note(at, texts), theme::dim()),
     ));
     put_lines(frame, area, lines);
 }
