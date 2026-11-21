@@ -21,15 +21,14 @@ impl Transcript {
     }
 
     /// 循环到点交进来的那一句（序号 `seq`）落了盘：不照原文画（交进去的是给模型看的英文），画一行「◷ 循环 · 继续」（2026-11-17
-    /// 项目主人验收第 3 条，同网页）。和长期目标开的一轮那一行一个样子，开轮时照序号归到那一轮。
-    pub(super) fn wake(&mut self, seq: u64, words: &[String; 2]) {
+    /// 项目主人验收第 3 条，同网页）。和长期目标开的一轮那一行一个样子，开轮时照序号归到那一轮；打头的钟画的时候照图标那一套
+    /// （`ui/rows.rs`，ACC-1121-#2），不记在这里。
+    pub(super) fn wake(&mut self, seq: u64, words: &str) {
         self.finish_segment();
         let id = self.fresh_id();
-        let text = words[1].clone();
         self.entries.push(Entry {
             seq: Some(seq),
-            mark: Some(words[0].clone()),
-            ..Entry::new(id, Kind::Goal, text)
+            ..Entry::new(id, Kind::Loop, words.to_string())
         });
     }
 }
