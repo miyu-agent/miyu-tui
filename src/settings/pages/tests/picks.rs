@@ -93,15 +93,23 @@ fn personas_and_knowledge_bases_are_picked_from_their_lists() {
         "那一行写名字"
     );
     page.change("packages/draw", 0, &texts());
-    assert_eq!(labels(&page), ["不选", "美羽", "开发"], "第一行不选");
+    assert_eq!(
+        labels(&page),
+        ["继承默认设置", "美羽", "开发"],
+        "第一行继承默认设置"
+    );
     page.popup = None;
     page.change("packages/draw", 1, &texts());
-    assert_eq!(labels(&page), ["不选", "笔记", "docs"], "没名字的照编号");
+    assert_eq!(
+        labels(&page),
+        ["继承默认设置", "笔记", "docs"],
+        "没名字的照编号"
+    );
 }
 
 #[test]
 fn a_preset_item_is_picked_from_the_presets_and_none_unsets_it() {
-    // 排期第 41 条（核心 e9c2b52cd）：`type = "preset"` 照 `preset.list` 选（「无工具」不是文件，不列），「不选」交 `null`。
+    // 排期第 41 条（核心 e9c2b52cd）：`type = "preset"` 照 `preset.list` 选（「无工具」不是文件，不列），「继承默认设置」交 `null`。
     let mut page = opened(None);
     let item = page.more.schema.as_ref().unwrap().items[4].clone();
     assert_eq!(
@@ -120,11 +128,11 @@ fn a_preset_item_is_picked_from_the_presets_and_none_unsets_it() {
             page.more.named_item(&item),
             &texts().more
         ),
-        "不选",
-        "没设的写不选"
+        "继承默认设置",
+        "没设的写继承默认设置"
     );
     page.change("packages/draw", 4, &texts());
-    assert_eq!(labels(&page), ["不选", "全部"]);
+    assert_eq!(labels(&page), ["继承默认设置", "全部"]);
     page.take_asks();
     press(&mut page, KeyCode::Up);
     press(&mut page, KeyCode::Enter);
@@ -135,7 +143,7 @@ fn a_preset_item_is_picked_from_the_presets_and_none_unsets_it() {
         .expect("存了");
     let change = &set.2["changes"][0];
     assert_eq!(change["key"], "draw.preset");
-    assert_eq!(change["value"], Value::Null, "不选：去掉这一项");
+    assert_eq!(change["value"], Value::Null, "继承默认设置：去掉这一项");
 }
 
 #[test]
@@ -238,7 +246,7 @@ fn a_model_field_in_a_record_comes_back_to_the_form() {
 }
 
 /// 发版前 check 第 21 条（2026-11-09 项目主人：「`不选`的意思应该是`跟随新会话设置`」）：终端集成会话的人格没设，写「跟随新会话
-/// 设置」，选择窗第一行也是它；别的包的人格项照旧「不选」。
+/// 设置」，选择窗第一行也是它；别的包的人格项照旧「继承默认设置」。
 #[test]
 fn the_terminal_session_persona_unset_follows_new_sessions() {
     let mut page = opened(None);
@@ -257,7 +265,7 @@ fn the_terminal_session_persona_unset_follows_new_sessions() {
 }
 
 /// 默认人格、默认预设（核心 CK-1 起类型是 `persona`、`preset`，原来是名字）照旧照列表选：默认人格第一行「无人格」；默认预设
-/// 不多出「不选」（出厂是 `full`，去掉这一项还是它）。
+/// 不多出「继承默认设置」（出厂是 `full`，去掉这一项还是它）。
 #[test]
 fn the_default_persona_and_preset_typed_as_picks_keep_their_lists() {
     let mut page = opened(None);
@@ -265,5 +273,5 @@ fn the_default_persona_and_preset_typed_as_picks_keep_their_lists() {
     assert_eq!(labels(&page), ["无人格", "美羽", "开发"]);
     page.popup = None;
     page.change("packages/draw", 8, &texts());
-    assert_eq!(labels(&page), ["全部"], "默认预设没有「不选」");
+    assert_eq!(labels(&page), ["全部"], "默认预设没有「继承默认设置」");
 }
