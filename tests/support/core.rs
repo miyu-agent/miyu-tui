@@ -78,6 +78,9 @@ impl Running {
                     let core = Arc::new(build(&root, Arc::clone(&script), now, opened.token));
                     // 照开关拉起开着的扩展，和真核心起来时一样（界面块的测试装了扩展，`tests/widgets.rs`）。
                     core.start_extensions();
+                    // 唤醒表也照真核心起来（ACC-1121-#1：原来不起，`/loop` 收下了却从不到点，循环交进会话的那一句测不到）。
+                    // 核心没了它下一次醒来就收手，句柄不用留。
+                    drop(core.start_schedules());
                     if report.send(()).is_err() {
                         return;
                     }

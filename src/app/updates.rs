@@ -125,7 +125,7 @@ impl App {
         }
         // 唤醒表里的循环变了：改手上那一份，下一帧照它画（「循环」）。
         if let Update::Loops(change) = &update {
-            crate::core::apply_loops(&mut self.link.loops, change.clone());
+            self.loops_changed(change.clone());
             return;
         }
         // 工具目录变了：照现在的语言重取给人看的字，新装的脚本、MCP、扩展工具的显示名跟着换（核心 9-8 七补）；重取软件包
@@ -352,7 +352,7 @@ impl App {
                 _ => (said, ""),
             };
             if command != "clear" && !said.is_empty() {
-                self.hint_keeping(text.to_string(), tail.to_string(), false);
+                self.receipt(text.to_string(), tail.to_string());
             }
             return;
         }

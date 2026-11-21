@@ -15,6 +15,7 @@ fn one(id: &str, session: &str, every: LoopEvery, next: Option<&str>) -> Loop {
         next: next.map(|t| t.parse().unwrap()),
         paused: false,
         prompt: "继续查询天气\n第二行不写".into(),
+        last: None,
     }
 }
 
