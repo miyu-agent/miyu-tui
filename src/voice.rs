@@ -113,7 +113,8 @@ pub fn unheard(result: &Value, texts: &Texts) -> String {
     }
 }
 
-/// 出错时说的一句：照 `data.code` 挑表里的；表里没有的照 `failed` 写核心的原话。
+/// 出错时说的一句：照 `data.code` 挑表里的；表里没有的照 `failed` 写原话：包自己写的原因（`data.message`）在前，没写的照
+/// 核心顶上的 `message`（总线的「方法执行失败」，ACC-1121-#4）。
 pub fn said(refusal: &Refusal, texts: &Texts) -> String {
     // 包自己的错在 `data.code`；没有包提供（`no_provider`）这类总线的错是原因码本身。
     let code = refusal.data["code"]
@@ -122,7 +123,13 @@ pub fn said(refusal: &Refusal, texts: &Texts) -> String {
         .unwrap_or_default();
     match texts.codes.get(code) {
         Some(line) => line.clone(),
-        None => texts.failed.replace("{why}", &refusal.message),
+        None => {
+            let why = refusal.data["message"].as_str();
+            let why = why.filter(|w| !w.trim().is_empty());
+            texts
+                .failed
+                .replace("{why}", why.unwrap_or(&refusal.message))
+        }
     }
 }
 
@@ -180,5 +187,27 @@ mod tests {
             data: json!({"name": "stt"}),
         };
         assert_eq!(said(&no_provider, &texts), "没有装语音软件包");
+    }
+
+    /// 2026-11-20 主人本机验收：包的真原因在 `data.message`，顶上的 `message` 只是总线的「方法执行失败」。
+    #[test]
+    fn the_packages_own_reason_comes_before_the_bus_message() {
+        let texts = Config::builtin().unwrap().text.voice;
+        let refusal = |data| Refusal {
+            reason: Some("method_failed".into()),
+            message: "方法执行失败".into(),
+            data,
+        };
+        let engine = refusal(json!({"code": "engine_failed", "message": "模型文件读不了"}));
+        assert_eq!(
+            said(&engine, &texts),
+            texts.failed.replace("{why}", "模型文件读不了")
+        );
+        // 包没写原因的：照旧写总线的原话。
+        let bare = refusal(json!({"code": "engine_failed"}));
+        assert_eq!(
+            said(&bare, &texts),
+            texts.failed.replace("{why}", "方法执行失败")
+        );
     }
 }
