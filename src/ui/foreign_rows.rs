@@ -171,4 +171,35 @@ mod tests {
         assert_eq!(body.links().len(), 1, "块能点");
         assert_eq!(body.links()[0].2, "/tmp/晚霞.png");
     }
+
+    /// 2026-11-22 主人：循环到点那一轮「原先不是类似用户消息的形式吗？tui 的话左侧竖线是灰色的」：灰竖线、暗字
+    /// 「循环 · 那一句」，点开看全文；AI 挂的定时触发写「定时触发 · 那一句」。
+    #[test]
+    fn a_loop_round_is_drawn_like_words_from_elsewhere() {
+        use crate::core::{Push, Update};
+        let f = Fixture::new();
+        let mut t = Transcript::default();
+        for (seq, looping) in [(30, true), (40, false)] {
+            let woke = Push::Wake {
+                seq,
+                text: Some("看一眼时间".into()),
+                looping,
+            };
+            t.update(Update::Push(woke), &f.config.text);
+        }
+        let drawn = |i: usize| text(&crate::ui::user_rows::rows(i, &t.entries[i], &f.ctx()));
+        assert_eq!(drawn(0), ["┃", "┃ 循环 · 看一眼时间", "┃"]);
+        assert_eq!(drawn(1), ["┃", "┃ 定时触发 · 看一眼时间", "┃"]);
+        let rows = crate::ui::user_rows::rows(0, &t.entries[0], &f.ctx());
+        assert!(
+            rows[1]
+                .line
+                .spans
+                .iter()
+                .filter(|s| !s.content.is_empty())
+                .all(|s| s.style == theme::dim()),
+            "竖线、字都暗：{:?}",
+            rows[1].line.spans
+        );
+    }
 }

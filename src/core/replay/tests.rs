@@ -42,10 +42,10 @@ fn shape(pushes: &[Push]) -> Vec<String> {
 
 #[test]
 fn what_a_person_said_is_drawn_as_yours_with_its_time() {
-    // 到点的定时任务、循环交进来的也照你说的画（2026-10-27 项目主人：「不用有什么特别的显示」）。
+    // 人建的定时任务到点交进来的也照你说的画（2026-10-27 项目主人：「不用有什么特别的显示」）。
     for by in [
         json!({"kind": "person"}),
-        json!({"kind": "schedule", "schedule": "t3"}),
+        json!({"kind": "schedule", "schedule": "t3", "person": true}),
     ] {
         let mut replay = Replay::default();
         let user = json!({"seq":41,"at":"2026-09-25T07:04:05.123Z","kind":"message.user","by":by,
@@ -167,7 +167,7 @@ fn a_replayed_undo_draws_its_line_and_a_restore_or_redo_takes_it_away() {
     );
 }
 
-/// 循环交进来的那句补发时也画循环那一行旁白，不照你说的画（2026-11-17 项目主人验收第 3 条）；人敲 `/loop` 当场开的第一轮
+/// 循环交进来的那句补发时也画成循环那一行（灰竖线），不照你说的画（2026-11-17 项目主人验收第 3 条）；人敲 `/loop` 当场开的第一轮
 /// 补发时照人敲的那一行画（核心 FX-15）。
 #[test]
 fn a_replayed_wake_is_the_wake_line() {
@@ -179,7 +179,8 @@ fn a_replayed_wake_is_the_wake_line() {
     assert!(
         got.contains(&Push::Wake {
             seq: 41,
-            words: Some("No new instructions.".into())
+            text: Some("No new instructions.".into()),
+            looping: true
         }),
         "{got:?}"
     );

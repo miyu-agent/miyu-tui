@@ -20,15 +20,16 @@ impl Transcript {
         });
     }
 
-    /// 循环到点交进来的那一句（序号 `seq`）落了盘：不当你的话画，画暗色一行旁白 `words`（「◷ 循环 · <那一句的第一行>」，出厂的
-    /// 英文写「由 AI 自己决定」；2026-11-17 项目主人验收第 3 条、11-22 补，同网页）。和长期目标开的一轮那一行一个样子，开轮时照序号归到那一轮；打头的钟画的时候照图标那一套
-    /// （`ui/rows.rs`，ACC-1121-#2），不记在这里。
-    pub(super) fn wake(&mut self, seq: u64, words: &str) {
+    /// 循环、AI 挂的定时触发到点交进来的那一句（序号 `seq`）落了盘：照别处来的话画（`ui/foreign_rows.rs`），左边灰竖线、暗字
+    /// 「<from> · <那一句>」，点开看全文；开轮时照序号归到那一轮（2026-11-22 主人：「原先不是类似用户消息的形式吗？tui 的话左侧
+    /// 竖线是灰色的」，照 LiteMiyu）。
+    pub(super) fn wake(&mut self, seq: u64, from: String, text: String) {
         self.finish_segment();
         let id = self.fresh_id();
         self.entries.push(Entry {
             seq: Some(seq),
-            ..Entry::new(id, Kind::Loop, words.to_string())
+            from: Some(from),
+            ..Entry::new(id, Kind::User, text)
         });
     }
 }

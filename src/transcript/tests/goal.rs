@@ -67,34 +67,42 @@ fn the_goal_is_kept_as_it_was_last_pushed() {
     assert_eq!(t.goal, None);
 }
 
-/// 循环交进来的那句画成暗色一行旁白「◷ 循环 · <那一句的第一行>」，出厂的那句写「由 AI 自己决定」，不画成你说的话
-/// （2026-11-17 项目主人验收第 3 条，2026-11-22 补）；钟画的时候照图标那一套（`ui/rows/loop_round_tests.rs`）。
+/// 循环、AI 挂的定时触发交进来的那句照别处来的话画：来处是「循环」「定时触发」，字是那一句，出厂的那句写「由 AI 自己决定」
+/// （2026-11-22 主人：画成用户消息的样子、左边竖线灰色）；开轮时照序号归到那一轮。
 #[test]
-fn a_wake_is_a_dim_line_not_your_words() {
+fn a_wake_is_drawn_like_words_from_elsewhere() {
     let mut t = Transcript::default();
     apply(
         &mut t,
         vec![
             Push::Wake {
                 seq: 30,
-                words: Some("看一眼时间".into()),
+                text: Some("看一眼时间\n再看一眼 CI".into()),
+                looping: true,
             },
             Push::Wake {
                 seq: 31,
-                words: None,
+                text: None,
+                looping: true,
+            },
+            Push::Wake {
+                seq: 32,
+                text: Some("该提醒了".into()),
+                looping: false,
             },
         ],
     );
     let lines: Vec<(Kind, &str, Option<&str>)> = t
         .entries
         .iter()
-        .map(|e| (e.kind.clone(), e.text.as_str(), e.mark.as_deref()))
+        .map(|e| (e.kind.clone(), e.text.as_str(), e.from.as_deref()))
         .collect();
     assert_eq!(
         lines,
         [
-            (Kind::Loop, "循环 · 看一眼时间", None),
-            (Kind::Loop, "循环 · 由 AI 自己决定", None)
+            (Kind::User, "看一眼时间\n再看一眼 CI", Some("循环")),
+            (Kind::User, "由 AI 自己决定", Some("循环")),
+            (Kind::User, "该提醒了", Some("定时触发"))
         ]
     );
     assert_eq!(t.entries[0].seq, Some(30), "开轮时照序号归到那一轮");
