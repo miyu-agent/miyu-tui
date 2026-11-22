@@ -91,12 +91,14 @@ pub enum Push {
         /// 第几轮。
         round: Option<u32>,
     },
-    /// 循环到点交进来的那一句落了盘（`by` 是 `{kind: "schedule", loop}`）：序号，那一句的第一行（出厂的那句是 `None`）。
+    /// 循环、AI 自己挂的定时触发到点交进来的那一句落了盘（`by` 是 `schedule`，不是人建的任务）：序号、那一句、是不是循环。
     Wake {
         /// 那一句的序号。
         seq: u64,
-        /// 那一句的第一行；光打 `/loop` 交的出厂英文（`by.builtin`，核心 FX-15）不写，是 `None`。
-        words: Option<String>,
+        /// 那一句的字；光打 `/loop` 交的出厂英文（`by.builtin`，核心 FX-15）不写，是 `None`。
+        text: Option<String>,
+        /// 循环交的（`by.loop`）；不是的是 AI 挂的定时触发（核心 FX-21 的 `schedule_next`）。
+        looping: bool,
     },
     /// 长期目标现在的样子（订阅回应里的 `goal`、推来的 `goal.changed`，核心 X-8 补）：`None` 是没有目标、清掉了。
     Goal(Option<Goal>),

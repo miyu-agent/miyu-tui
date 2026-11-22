@@ -105,8 +105,8 @@ fn job_effects_reports_and_foreign_messages_are_read() {
     assert_eq!(foreign(harness).1, Sender::Harness("claude-code".into()));
     let session = json!({"kind": "session", "id": "s-child"});
     assert_eq!(foreign(session).1, Sender::Session("s-child".into()));
-    // 到点的定时任务交进来的照你说的话画（2026-10-27 项目主人），不写「收到你在其他端发送的消息」。
-    let schedule = json!({"kind": "schedule", "schedule": "t3"});
+    // 人建的定时任务交进来的照你说的话画（2026-10-27 项目主人），不写「收到你在其他端发送的消息」。
+    let schedule = json!({"kind": "schedule", "schedule": "t3", "person": true});
     assert_eq!(
         plain(crate::core::push::read(
             &said(schedule, "schedule/t3/1"),
@@ -118,15 +118,16 @@ fn job_effects_reports_and_foreign_messages_are_read() {
             attached: Vec::new(),
         }]
     );
-    // 循环交进来的那句不当你的话画，画暗色一行旁白，带上这一句的第一行（2026-11-22 项目主人）；光打 `/loop` 交的出厂英文
-    // （`by.builtin`，核心 FX-15）不带字。
+    // 循环交进来的那句不当你的话画，带上这一句（2026-11-22 项目主人）；光打 `/loop` 交的出厂英文（`by.builtin`，核心 FX-15）
+    // 不带字。
     for looped in ["fixed", "dynamic"] {
         let by = json!({"kind": "schedule", "schedule": "t3", "loop": looped});
         assert_eq!(
             plain(crate::core::push::read(&said(by, "schedule/t3/1"), &mine)),
             [Push::Wake {
                 seq: 12,
-                words: Some("看看测试".into())
+                text: Some("看看测试".into()),
+                looping: true
             }],
             "{looped}"
         );
@@ -139,7 +140,18 @@ fn job_effects_reports_and_foreign_messages_are_read() {
         )),
         [Push::Wake {
             seq: 12,
-            words: None
+            text: None,
+            looping: true
+        }]
+    );
+    // AI 自己挂的定时触发（核心 FX-21：没有 `loop`、没有 `person`）也不当你的话画。
+    let once = json!({"kind": "schedule", "schedule": "t4"});
+    assert_eq!(
+        plain(crate::core::push::read(&said(once, "schedule/t4/1"), &mine)),
+        [Push::Wake {
+            seq: 12,
+            text: Some("看看测试".into()),
+            looping: false
         }]
     );
 }

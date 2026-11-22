@@ -15,29 +15,31 @@ pub(super) fn round(event: &Value, seq: u64) -> Option<Push> {
     Some(Push::GoalRound { seq, round })
 }
 
-/// 循环到点交进来的那一句（`by` 是 `{kind: "schedule", loop}`，核心 J-2、LO-1；`loop` 是 `fixed`、`dynamic`）读成
-/// 「循环 · <那一句的第一行>」那一行，序号是 `seq`；出厂的那句（`by.builtin`）不带字。不带 `loop` 的定时任务交的是人写的那句，
-/// 人敲 `/loop` 当场开的第一轮带着人敲的那一行（`body.command`，核心 FX-15），都是 `None`（照你说的画）。
+/// 到点交进来、不是人写的那一句（`by` 是 `schedule`）：循环（`by.loop` 是 `fixed`、`dynamic`，核心 J-2、LO-1）、AI 自己挂的
+/// 定时触发（没有 `loop`、没有 `person`，核心 FX-21）读成 [`Push::Wake`]，序号是 `seq`；出厂的那句（`by.builtin`）不带字。
+/// 人建的定时任务（`by.person`）交的是人写的那句，人敲 `/loop` 当场开的第一轮带着人敲的那一行（`body.command`，核心 FX-15），
+/// 都是 `None`（照你说的画）。
 pub fn wake(event: &Value, seq: u64) -> Option<Push> {
     let by = &event["by"];
-    by["loop"].as_str().filter(|_| by["kind"] == "schedule")?;
-    if super::typed_text(&event["body"]).is_some() {
+    if by["kind"] != "schedule" || super::typed_text(&event["body"]).is_some() {
         return None;
     }
-    let words = (by["builtin"] != true)
-        .then(|| first_line(&event["body"]))
-        .flatten();
-    Some(Push::Wake { seq, words })
+    let looping = by["loop"].is_string();
+    if !looping && by["person"] == true {
+        return None;
+    }
+    let text = (by["builtin"] != true).then(|| words(&event["body"]));
+    Some(Push::Wake { seq, text, looping })
 }
 
-/// 这一句的字的第一行（去掉前后空白）；没有字的是 `None`。
-fn first_line(body: &Value) -> Option<String> {
+/// 这一句的字（几段字照先后用换行接起来，去掉前后空白）。
+fn words(body: &Value) -> String {
     super::blocks(body)
         .filter_map(|b| b["text"].as_str())
-        .flat_map(str::lines)
-        .map(str::trim)
-        .find(|line| !line.is_empty())
-        .map(str::to_string)
+        .collect::<Vec<_>>()
+        .join("\n")
+        .trim()
+        .to_string()
 }
 
 /// 核心造的命令编号 `goal-<第几轮>-<UUID>` 里的第几轮（核心 X-8 补定的约定；FX-2 起后一段是每一轮新造的 UUIDv7，原来是毫秒，

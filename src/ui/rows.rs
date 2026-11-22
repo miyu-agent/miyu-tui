@@ -409,9 +409,7 @@ pub(super) fn md_row(line: MdLine, ctx: &Ctx) -> Row {
 fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     let layout = &ctx.config.layout;
     let (slot, style) = match entry.kind {
-        Kind::Note | Kind::Done | Kind::Older | Kind::Goal | Kind::Loop => {
-            (ctx.blank_slot(), theme::dim())
-        }
+        Kind::Note | Kind::Done | Kind::Older | Kind::Goal => (ctx.blank_slot(), theme::dim()),
         Kind::Answered => (
             Span::styled(layout.user_bar.clone(), theme::dim()),
             theme::dim(),
@@ -433,8 +431,6 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
     let (mark, mark_style) = match entry.kind {
         Kind::Recap => (layout.recap_mark.as_str(), theme::dim()),
         Kind::Goal => (entry.mark.as_deref().unwrap_or_default(), theme::dim()),
-        // 循环那一行的钟照图标那一套（ACC-1121-#2：原来记在字表里，写死 `plain` 的 `◷`）。
-        Kind::Loop => (ctx.config.icons.loop_mark.as_str(), theme::dim()),
         _ => (entry.mark.as_deref().unwrap_or_default(), theme::good()),
     };
     let mark_width = u16::try_from(mark.width()).unwrap_or(0);
@@ -465,7 +461,5 @@ fn text_rows(entry: &Entry, ctx: &Ctx) -> Vec<Row> {
         .collect()
 }
 
-#[cfg(test)]
-mod loop_round_tests;
 #[cfg(test)]
 mod tests;
