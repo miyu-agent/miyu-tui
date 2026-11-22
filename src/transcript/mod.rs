@@ -399,7 +399,14 @@ impl Transcript {
             Push::Settled(interrupted) => self.settle_hosted(interrupted),
             // 别处来的话、后台任务：界面照会话、任务表先办了（`app/sessions.rs`），正文不直接收。
             Push::GoalRound { seq, round } => self.goal_round(seq, round, &texts.goal),
-            Push::Wake { seq } => self.wake(seq, &texts.loops.round),
+            Push::Wake { seq, words } => {
+                let loops = &texts.loops;
+                let line = words.map_or_else(
+                    || loops.builtin.clone(),
+                    |w| loops.round.replace("{words}", &w),
+                );
+                self.wake(seq, &line);
+            }
             Push::Goal(goal) => self.goal = goal,
             Push::Foreign(_)
             | Push::JobStarted(_)

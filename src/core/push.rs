@@ -91,8 +91,13 @@ pub enum Push {
         /// 第几轮。
         round: Option<u32>,
     },
-    /// 循环到点交进来的那一句落了盘（`by` 是 `{kind: "schedule", loop}`）：序号。
-    Wake { seq: u64 },
+    /// 循环到点交进来的那一句落了盘（`by` 是 `{kind: "schedule", loop}`）：序号，那一句的第一行（出厂的那句是 `None`）。
+    Wake {
+        /// 那一句的序号。
+        seq: u64,
+        /// 那一句的第一行；光打 `/loop` 交的出厂英文（`by.builtin`，核心 FX-15）不写，是 `None`。
+        words: Option<String>,
+    },
     /// 长期目标现在的样子（订阅回应里的 `goal`、推来的 `goal.changed`，核心 X-8 补）：`None` 是没有目标、清掉了。
     Goal(Option<Goal>),
     /// 派出去一个后台任务（工具结果 `effects` 里的 `job.started`）。

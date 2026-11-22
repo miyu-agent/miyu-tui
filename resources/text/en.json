@@ -243,7 +243,7 @@
     "paused": "Paused",
     "next": "Next {time}",
     "dynamic": "Dynamic interval",
-    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"], "round": "Loop · continue",
+    "every": ["Every {n} s", "Every {n} min", "Every {n} h", "Every {n} d"], "round": "Loop · {words}", "builtin": "Loop · AI decides",
     "held": "Loop round not started: an undo can still be restored. /restore or send a message to continue"
   },
   "files": {"title": "Changed files", "count": "{n} files", "more": "{n} more", "none": "No files changed in this session yet", "hints": [["↑/↓", "switch file"], ["PgUp/PgDn", "scroll"], ["Esc", "back"]]},

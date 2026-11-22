@@ -29,7 +29,8 @@ fn wait_gone(tui: &mut support::Tui, text: &str) {
     }
 }
 
-/// 首页打 `/goal <目标>` 先开会话（第 3 条）；核心开的续轮画成暗色一行，续轮消息的原文不露（第 4 条）。
+/// 首页打 `/goal <目标>` 先开会话（第 3 条）；当场开的第一轮照你敲的那一行画成你发的话（核心 FX-15，2026-11-22 项目主人：「我发
+/// 什么消息，显示就该是什么消息」），续轮照旧画成暗色一行、续轮消息的原文不露（第 4 条，`src/core/push/tests/jobs.rs`）。
 #[test]
 fn a_goal_set_on_the_home_page_opens_a_session_and_its_round_is_one_line() {
     let home = Home::with_tools(Script::new([completes(), Play::Says("测试都写完了。")]), "");
@@ -37,9 +38,16 @@ fn a_goal_set_on_the_home_page_opens_a_session_and_its_round_is_one_line() {
     tui.wait_for("开放权限");
     tui.say("/goal 把测试写完");
     tui.wait_for("已设定长期目标：把测试写完");
-    tui.wait_for("● 长期目标 · 第 1 轮");
     tui.wait_for("测试都写完了。");
     let screen = tui.lines().join("\n");
+    assert!(
+        tui.shows("/goal 把测试写完"),
+        "第一轮是你敲的那一行：\n{screen}"
+    );
+    assert!(
+        !screen.contains("长期目标 · 第 1 轮"),
+        "第一轮不画旁白：\n{screen}"
+    );
     assert!(
         !screen.contains("goal_round") && !screen.contains("收到消息"),
         "不当别处来的话画：\n{screen}"

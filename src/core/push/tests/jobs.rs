@@ -118,13 +118,53 @@ fn job_effects_reports_and_foreign_messages_are_read() {
             attached: Vec::new(),
         }]
     );
-    // 循环交进来的那句不照原文画，画「循环 · 继续」那一行（2026-11-17 项目主人验收第 3 条：不是你发的，还是英文）。
+    // 循环交进来的那句不当你的话画，画暗色一行旁白，带上这一句的第一行（2026-11-22 项目主人）；光打 `/loop` 交的出厂英文
+    // （`by.builtin`，核心 FX-15）不带字。
     for looped in ["fixed", "dynamic"] {
         let by = json!({"kind": "schedule", "schedule": "t3", "loop": looped});
         assert_eq!(
             plain(crate::core::push::read(&said(by, "schedule/t3/1"), &mine)),
-            [Push::Wake { seq: 12 }],
+            [Push::Wake {
+                seq: 12,
+                words: Some("看看测试".into())
+            }],
             "{looped}"
+        );
+    }
+    let builtin = json!({"kind": "schedule", "schedule": "t3", "loop": "dynamic", "person": true, "builtin": true});
+    assert_eq!(
+        plain(crate::core::push::read(
+            &said(builtin, "schedule/t3/1"),
+            &mine
+        )),
+        [Push::Wake {
+            seq: 12,
+            words: None
+        }]
+    );
+}
+
+/// 人敲 `/loop`、`/goal <目标>` 当场开的第一轮带着人敲的那一行（`body.command`，核心 FX-15）：照那一行画成你发的话，
+/// 不画循环、长期目标的那一行旁白（2026-11-22 项目主人：「我发什么消息，显示就该是什么消息」）。
+#[test]
+fn the_first_round_a_typed_loop_or_goal_opens_is_your_words() {
+    let mine = |c: &str| c == "tui-1";
+    let typed = |by: serde_json::Value, line: &str| {
+        json!({"seq": 12, "kind": "message.user", "by": by, "cause": "schedule/t2/1",
+            "body": {"blocks": [{"type": "text", "text": "看看 CI"}],
+                "command": {"name": line.split(' ').next().unwrap_or_default().trim_start_matches('/'), "text": line}}})
+    };
+    let looped = json!({"kind": "schedule", "schedule": "t2", "loop": "fixed", "person": true});
+    let goal = json!({"kind": "module", "id": "goal"});
+    for (by, line) in [(looped, "/loop 5m 看看 CI"), (goal, "/goal 把测试修绿")] {
+        assert_eq!(
+            plain(crate::core::push::read(&typed(by, line), &mine)),
+            [Push::Said {
+                seq: 12,
+                text: line.into(),
+                attached: Vec::new(),
+            }],
+            "{line}"
         );
     }
 }

@@ -44,7 +44,7 @@ impl Replay {
         match kind {
             "message.assistant" => self.pending = Some(event.clone()),
             // 人发的算你说的（哪个头发的补发时认不出来），到点的定时任务交进来的也是（`push/jobs.rs` 的 `said`）；循环交进来的
-            // 那句照「循环 · 继续」那一行画（`push/goal.rs` 的 `wake`）；别的会话、别的 harness 发的照平常画成别处来的话。
+            // 那句照循环那一行旁白画（`push/goal.rs` 的 `wake`）；别的会话、别的 harness 发的照平常画成别处来的话。
             "message.user"
                 if matches!(event["by"]["kind"].as_str(), Some("person" | "schedule"))
                     && push::wake(event, 0).is_none() =>
