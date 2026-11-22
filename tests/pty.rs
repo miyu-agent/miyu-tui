@@ -94,8 +94,8 @@ fn up_and_down_walk_the_history_past_recorded_commands() {
 }
 
 #[test]
-fn the_folded_line_follows_the_interface_language_on_auto_too() {
-    // 2026-11-22 主人定：收起那一行照界面那一种语言写，自动（跟系统）时也一样（原先自动时写英文，撤了）。
+fn a_manually_chosen_language_writes_the_folded_line_in_it() {
+    // 2026-10-01 项目主人定：界面语言自动时收起那一行英文，手动选了哪种照哪种。
     let home = Home::new(Script::new([Play::Thinks {
         thinking: "想一想怎么回。",
         text: "好。",
@@ -104,16 +104,14 @@ fn the_folded_line_follows_the_interface_language_on_auto_too() {
     tui.wait_for("开放权限");
     tui.say("在吗");
     tui.wait_for_done();
-    tui.wait_for("思考了");
-    assert!(!tui.shows("Thought for"), "{}", tui.lines().join("\n"));
+    tui.wait_for("Thought for");
     tui.say("/language");
     tui.wait_for("自动（跟随系统：中文）");
     tui.key(DOWN);
-    tui.key(DOWN);
     tui.key(b"\r");
-    // 换成英文整屏重画：等到旧的那句也没了再看。
-    tui.wait_for_instead("Thought for", "思考了");
-    assert!(!tui.shows("思考了"), "{}", tui.lines().join("\n"));
+    // 换了语言整屏重画：等到旧的那句也没了再看。
+    tui.wait_for_instead("思考了", "Thought for");
+    assert!(!tui.shows("Thought for"), "{}", tui.lines().join("\n"));
 }
 
 #[test]

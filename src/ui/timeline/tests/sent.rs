@@ -39,7 +39,7 @@ fn tool(name: &str, sent: usize, t0: Instant, start: u64) -> Step {
     step
 }
 
-/// 中文界面、自动。表情包的两件工具属于 `memes`，`read` 属于出厂的包，`fetch` 属于别的包，
+/// 中文界面、自动（收起那一行英文）。表情包的两件工具属于 `memes`，`read` 属于出厂的包，`fetch` 属于别的包，
 /// `bare` 不在目录里。
 fn fixture() -> Fixture {
     let mut f = Fixture::new();
@@ -63,8 +63,8 @@ fn a_segment_that_only_sends_one_sticker_is_named_by_the_sending_tool() {
     let fold = |steps| text(&rows(0, &segment(steps, None), &f.ctx()));
     assert_eq!(
         fold(vec![tool("meme_send", 1, t0, 0)]),
-        ["  发送表情包 · 1s"],
-        "自动时也整行中文：显示名照一步的标题取名的规矩（2026-11-22 主人定）"
+        ["  Send a sticker · 1s"],
+        "自动时整行英文：显示名也取英文那一份（2026-10-16 项目主人验 T-260）"
     );
     assert_eq!(
         fold(vec![
@@ -72,15 +72,15 @@ fn a_segment_that_only_sends_one_sticker_is_named_by_the_sending_tool() {
             tool("meme_search", 0, t0, 1),
             tool("meme_send", 1, t0, 2)
         ]),
-        ["  发送表情包 · 1 次思考 · 3s"],
+        ["  Send a sticker · 1 thought · 3s"],
         "先搜再发也算，想过的照旧接在后面"
     );
     let mut unnamed = tool("meme_send", 1, t0, 0);
     unnamed.display.clear();
     assert_eq!(
         fold(vec![unnamed]),
-        ["  发送表情包 · 1s"],
-        "没记下的照这一刻的工具表"
+        ["  meme_send · 1s"],
+        "没记下英文的写工具名，不拿界面语言的工具表凑"
     );
 }
 
@@ -116,7 +116,7 @@ fn other_packages_more_pictures_or_no_package_still_count_tools() {
     let fold = |steps| text(&rows(0, &segment(steps, None), &f.ctx()));
     assert_eq!(
         fold(vec![tool("read", 0, t0, 0), tool("meme_send", 1, t0, 1)]),
-        ["  用了 2 个工具 · 2s"],
+        ["  Used 2 tools · 2s"],
         "混了别的包的工具"
     );
     assert_eq!(
@@ -124,21 +124,21 @@ fn other_packages_more_pictures_or_no_package_still_count_tools() {
             tool("meme_send", 1, t0, 0),
             tool("meme_send", 1, t0, 1)
         ]),
-        ["  用了 2 个工具 · 2s"],
+        ["  Used 2 tools · 2s"],
         "发了不止一张"
     );
     assert_eq!(
         fold(vec![tool("meme_search", 0, t0, 0)]),
-        ["  用了 1 个工具 · 1s"],
+        ["  Used 1 tool · 1s"],
         "一张都没发"
     );
     assert_eq!(
         fold(vec![tool("bare", 1, t0, 0)]),
-        ["  用了 1 个工具 · 1s"],
+        ["  Used 1 tool · 1s"],
         "没有包编号的不算"
     );
     assert_eq!(
         fold(vec![tool("fetch", 0, t0, 0), tool("meme_send", 1, t0, 1)]),
-        ["  用了 2 个工具 · 2s"]
+        ["  Used 2 tools · 2s"]
     );
 }

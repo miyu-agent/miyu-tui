@@ -28,7 +28,7 @@ fn a_narrow_folded_line_clips_the_title_and_keeps_the_time() {
     assert!(line.width() <= 30, "{line:?} 超出了 30 列");
     assert!(line.contains('…'), "短标题截掉加 …：{line:?}");
     assert!(
-        line.trim_end().ends_with(" · 1 次思考 · 2s"),
+        line.trim_end().ends_with(" · 1 thought · 2s"),
         "次数和用时留着：{line:?}"
     );
 }
