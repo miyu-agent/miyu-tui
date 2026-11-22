@@ -21,7 +21,7 @@ impl Transcript {
     }
 
     /// 循环、AI 挂的定时触发到点交进来的那一句（序号 `seq`）落了盘：照别处来的话画（`ui/foreign_rows.rs`），左边灰竖线、暗字
-    /// 「<from> · <那一句>」，点开看全文；开轮时照序号归到那一轮（2026-11-22 主人：「原先不是类似用户消息的形式吗？tui 的话左侧
+    /// 「来处 · 那一句」，点开看全文；开轮时照序号归到那一轮（2026-11-22 主人：「原先不是类似用户消息的形式吗？tui 的话左侧
     /// 竖线是灰色的」，照 LiteMiyu）。
     pub(super) fn wake(&mut self, seq: u64, from: String, text: String) {
         self.finish_segment();
