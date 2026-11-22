@@ -184,6 +184,7 @@ impl Transcript {
         self.unnamed.clear();
         self.finish_segment();
         self.settle_leftovers();
+        self.tighten();
         (took, self.failure.take())
     }
 
