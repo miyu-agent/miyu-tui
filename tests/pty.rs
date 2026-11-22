@@ -59,7 +59,7 @@ fn an_undone_turn_takes_its_recap_along_and_restore_brings_it_back() {
     tui.say("/recap");
     tui.wait_for("回顾：讲到第二轮。");
     tui.say("/undo");
-    tui.wait_for("已撤销");
+    tui.wait_for("已撤回");
     tui.pump(Duration::from_millis(1000));
     assert!(!tui.shows("回顾："), "{}", tui.lines().join("\n"));
     // 撤销把那句整段选中放回输入框（「输入框」）：直接打命令就换掉它。
@@ -206,19 +206,19 @@ fn commands_that_change_nothing_only_flash_a_notice() {
     tui.say("在吗");
     tui.wait_for_done();
     tui.say("/undo");
-    tui.wait_for("已撤销");
+    tui.wait_for("已撤回");
     tui.pump(Duration::from_millis(500));
     tui.say("/undo");
-    tui.wait_for("没有可撤销的回合");
+    tui.wait_for("没有可撤回的回合");
     tui.pump(Duration::from_millis(2600));
-    assert!(!tui.shows("没有可撤销的回合"), "{}", tui.lines().join("\n"));
+    assert!(!tui.shows("没有可撤回的回合"), "{}", tui.lines().join("\n"));
     tui.say("/restore");
     tui.wait_for("好。");
     tui.pump(Duration::from_millis(500));
     tui.say("/restore");
-    tui.wait_for("没有可恢复的撤销");
+    tui.wait_for("没有可恢复的撤回");
     tui.pump(Duration::from_millis(2600));
-    assert!(!tui.shows("没有可恢复的撤销"), "{}", tui.lines().join("\n"));
+    assert!(!tui.shows("没有可恢复的撤回"), "{}", tui.lines().join("\n"));
 }
 
 #[cfg(unix)]

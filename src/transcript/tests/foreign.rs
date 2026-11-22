@@ -30,7 +30,7 @@ fn foreign_lines_carry_where_they_came_from_and_stay_through_an_undo() {
     );
     assert!(t.last_said().is_none(), "别处来的话开的那一轮不能重做");
     apply(&mut t, vec![Push::Reverted(vec![4])]);
-    assert!(!users(&t)[0].2, "撤销不带走它");
+    assert!(!users(&t)[0].2, "撤回不带走它");
     // 你自己的话落盘：序号配给你说的那句，不配给别处来的。
     t.user("我也看看".into(), Vec::new());
     apply(&mut t, vec![Push::UserMessage(8)]);

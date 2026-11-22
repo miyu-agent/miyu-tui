@@ -308,7 +308,7 @@ mod tests {
                 false,
                 JobReason::Undone,
                 None,
-                "后台命令已停止 · cargo test · 撤销时已停止",
+                "后台命令已停止 · cargo test · 撤回时已停止",
             ),
             (
                 "j4",

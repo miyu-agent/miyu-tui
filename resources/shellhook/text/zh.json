@@ -54,5 +54,5 @@
   "doctor_colors_bad": "读取不到终端的颜色：配色跟随终端时只使用终端的 16 色（tmux 等需要开启透传）",
   "doctor_clip_ok": "Ctrl+V 读剪贴板用 {tool}",
   "doctor_clip_bad": "找不到读剪贴板的命令（{tools}）：Ctrl+V 只能用终端自己的粘贴",
-  "slash_restored": "恢复了刚才撤销的那一轮"
+  "slash_restored": "恢复了刚才撤回的那一轮"
 }

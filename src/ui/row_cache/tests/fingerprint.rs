@@ -42,7 +42,7 @@ fn files_arriving_for_the_undo_line_rebuild_it() {
     // review C5（2026-10-11）：撤销的回应和改回的文件是两个事件，中间画过一帧的话「改回 N 个文件」一直不出现。
     let f = Fixture::new();
     let mut t = Transcript::default();
-    t.note(Kind::Undo, "已撤销".into());
+    t.note(Kind::Undo, "已撤回".into());
     t.entries[0].undo = Some(crate::core::Report::default());
     let ctx = f.ctx();
     let cache = RefCell::new(RowCache::default());

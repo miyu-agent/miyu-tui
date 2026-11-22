@@ -135,7 +135,7 @@ mod tests {
         assert_eq!(text[0], "命令");
         assert!(
             text.iter()
-                .any(|l| l.starts_with("  /undo · /rewind") && l.contains("撤销上一轮")),
+                .any(|l| l.starts_with("  /undo · /rewind") && l.contains("撤回上一轮")),
             "别名写在一起"
         );
         assert!(

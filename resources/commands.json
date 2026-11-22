@@ -7,7 +7,7 @@
         "rewind"
       ],
       "summary": {
-        "zh": "撤销上一轮并还原改过的文件",
+        "zh": "撤回上一轮并还原改过的文件",
         "en": "Undo the last turn and revert the files it changed",
         "ja": "直前のやり取りを取り消し、変更されたファイルを元に戻す"
       },
@@ -16,7 +16,7 @@
     {
       "name": "restore",
       "summary": {
-        "zh": "恢复刚才撤销的那一轮",
+        "zh": "恢复刚才撤回的那一轮",
         "en": "Bring back the turn you just undid",
         "ja": "直前に取り消したやり取りを復元する"
       },

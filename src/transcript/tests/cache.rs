@@ -39,7 +39,7 @@ fn the_call_after_a_compaction_or_an_undo_is_excused_once() {
         &mut t,
         vec![Push::Reverted(vec![10]), sent(15, true), sent(18, false)],
     );
-    assert_eq!(t.cache.breaks, 1, "撤销以后那一次不算");
+    assert_eq!(t.cache.breaks, 1, "撤回以后那一次不算");
 }
 
 #[test]

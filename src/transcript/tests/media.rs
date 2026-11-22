@@ -57,7 +57,7 @@ fn a_sent_picture_comes_after_its_step_and_folds_the_segment_like_a_reply() {
     );
     assert!(
         t.entries[1..].iter().all(|e| e.turn == Some(1)),
-        "跟着这一轮撤销、恢复"
+        "跟着这一轮撤回、恢复"
     );
     // 再想、再调工具的另起一段，不接回收起的那段。
     apply(
@@ -73,5 +73,5 @@ fn a_sent_picture_comes_after_its_step_and_folds_the_segment_like_a_reply() {
         ],
     );
     assert_eq!(t.entries[3].kind, Kind::Steps);
-    assert!(t.entries.iter().all(|e| e.hidden), "撤销了这一轮跟着藏起来");
+    assert!(t.entries.iter().all(|e| e.hidden), "撤回了这一轮跟着藏起来");
 }
