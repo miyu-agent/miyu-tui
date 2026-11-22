@@ -94,7 +94,9 @@ fn the_sidebar_writes_how_often_when_and_what() {
     let cron = one("t3", "s", LoopEvery::Cron("0 8 * * *".into()), None);
     let mut hourly = one("t4", "s", LoopEvery::Seconds(7_200), None);
     hourly.paused = true;
-    let lines = sidebar(&[&fixed, &dynamic, &cron, &hourly], &config, at, 40);
+    // AI 挂的一次定时触发（核心 FX-21）
+    let once = one("t5", "s", LoopEvery::Once, Some("2026-10-30T15:00:00Z"));
+    let lines = sidebar(&[&fixed, &dynamic, &cron, &hourly, &once], &config, at, 40);
     assert_eq!(
         text(&lines),
         [
@@ -106,6 +108,8 @@ fn the_sidebar_writes_how_often_when_and_what() {
             "  0 8 * * *",
             "  继续查询天气",
             "  每 2 小时 · 已暂停",
+            "  继续查询天气",
+            "  定时触发 · 下次 15:00",
             "  继续查询天气",
         ]
     );
