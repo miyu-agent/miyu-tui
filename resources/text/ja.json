@@ -896,6 +896,7 @@
     "pool_tag": "{how} · {n}",
     "pool_uses_head": "用途", "pool_use_from": "{name}（{package}）",
     "gone": "（存在しない）",
+    "withdrawn": "（プロバイダーが提供を終了）",
     "options": {
       "": "自動",
       "on": "オン",

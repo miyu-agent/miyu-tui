@@ -164,12 +164,12 @@ fn items(col: Col, page: &Settings, texts: &Texts) -> (String, Vec<Item>, String
             let pool = page.nav.pool(view);
             let members = pool.map(|p| p.members.clone()).unwrap_or_default();
             let rows = members.into_iter().enumerate().map(|(i, r)| {
-                let gone = view.model(&r).is_none();
-                let suffix = if gone { texts.gone.as_str() } else { "" };
+                // 对不上的接在后面、标红：那一家不提供了，或者连那一家都没有
+                let suffix = texts.lost(view.lost(&r));
                 Item {
                     text: format!("{}  {r}{suffix}", i + 1),
                     tag: String::new(),
-                    bad: gone,
+                    bad: !suffix.is_empty(),
                 }
             });
             let empty = if pool.is_some() {
@@ -339,14 +339,20 @@ fn detail(frame: &mut Frame, area: Rect, page: &Settings, texts: &Texts) {
     let reference = used.unwrap_or_default();
     let pool = reference.strip_prefix('@').and_then(|n| view.pool(n));
     let model = view.model(&reference).map(|(_, m)| m);
-    let gone = !reference.is_empty() && pool.is_none() && model.is_none();
-    let now = if gone { theme::error() } else { Style::new() };
-    let shown = if gone {
-        format!("{reference}{}", texts.gone)
+    let suffix = if reference.is_empty() || pool.is_some() {
+        ""
     } else {
-        reference.clone()
+        texts.lost(view.lost(&reference))
     };
-    lines.push((texts.detail[0].clone(), Line::styled(shown, now)));
+    let now = if suffix.is_empty() {
+        Style::new()
+    } else {
+        theme::error()
+    };
+    lines.push((
+        texts.detail[0].clone(),
+        Line::styled(format!("{reference}{suffix}"), now),
+    ));
     if let Some(p) = pool {
         let how = texts.option(p.strategy.as_deref().unwrap_or_default());
         lines.push((
@@ -359,14 +365,15 @@ fn detail(frame: &mut Frame, area: Rect, page: &Settings, texts: &Texts) {
             } else {
                 String::new()
             };
-            let style = if view.model(m).is_some() {
+            let suffix = texts.lost(view.lost(m));
+            let style = if suffix.is_empty() {
                 Style::new()
             } else {
                 theme::error()
             };
             let line = Line::from(vec![
                 Span::styled(format!("{}  ", i + 1), theme::dim()),
-                Span::styled(m.clone(), style),
+                Span::styled(format!("{m}{suffix}"), style),
             ]);
             lines.push((label, line));
         }

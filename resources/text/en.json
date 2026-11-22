@@ -896,6 +896,7 @@
     "pool_tag": "{how} · {n}",
     "pool_uses_head": "Used for", "pool_use_from": "{name} ({package})",
     "gone": " (gone)",
+    "withdrawn": " (no longer offered by the provider)",
     "options": {
       "": "Auto",
       "on": "On",

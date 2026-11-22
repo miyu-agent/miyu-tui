@@ -114,12 +114,16 @@ pub(super) fn value(
             (spans, 0)
         }
         Val::Member {
-            reference, gone, ..
+            reference, lost, ..
         } => {
             let order = form.members.iter().position(|m| m == reference);
             let mark = order.map_or("[ ]".to_string(), |i| format!("[{}]", i + 1));
-            let style = if *gone { theme::error() } else { Style::new() };
-            let gone_text = if *gone { texts.gone.as_str() } else { "" };
+            let gone_text = texts.lost(*lost);
+            let style = if gone_text.is_empty() {
+                Style::new()
+            } else {
+                theme::error()
+            };
             (
                 vec![
                     Span::raw(format!("{mark} ")),

@@ -42,7 +42,7 @@ pub fn pool(view: &Data, name: Option<&str>) -> Form {
             rows.push(member(
                 reference,
                 model.is_some_and(|m| m.sees()),
-                model.is_none(),
+                view.lost(reference),
             ));
         }
         if !others.is_empty() {
@@ -50,18 +50,18 @@ pub fn pool(view: &Data, name: Option<&str>) -> Form {
         }
     }
     for m in others {
-        rows.push(member(&m.reference, m.sees(), false));
+        rows.push(member(&m.reference, m.sees(), None));
     }
     Form::new(Target::Pool(name.map(str::to_string)), rows, members)
 }
 
-fn member(reference: &str, sees: bool, gone: bool) -> Row {
+fn member(reference: &str, sees: bool, lost: Option<crate::settings::data::Lost>) -> Row {
     Row::new(
         Field::Member,
         Val::Member {
             reference: reference.to_string(),
             sees,
-            gone,
+            lost,
         },
     )
 }

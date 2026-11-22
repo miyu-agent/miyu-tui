@@ -124,14 +124,14 @@ pub enum Val {
         /// 每个勾没勾。
         on: Option<Vec<bool>>,
     },
-    /// 池的一个成员：引用、能收图、已经不存在。
+    /// 池的一个成员：引用、能收图、对不上的为什么。
     Member {
         /// 引用。
         reference: String,
         /// 能收图。
         sees: bool,
-        /// 不存在了。
-        gone: bool,
+        /// 对不上的为什么（`Data::lost`），对得上的是 `None`。
+        lost: Option<crate::settings::data::Lost>,
     },
     /// 只读的字。
     Fixed(String),
