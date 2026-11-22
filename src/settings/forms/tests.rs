@@ -143,7 +143,13 @@ fn pool_members_keep_the_order_they_were_ticked_and_gone_members_come_first() {
         .iter()
         .find(|r| matches!(r.val, Val::Member { .. }))
         .unwrap();
-    assert!(matches!(&first_member.val, Val::Member { gone: true, .. }));
+    assert!(matches!(
+        &first_member.val,
+        Val::Member {
+            lost: Some(crate::settings::data::Lost::Absent),
+            ..
+        }
+    ));
     form.members.retain(|m| m != "dev/flash");
     form.members.push("relay/gpt-oss".into());
     apply(&form, &data, &data, &mut draft).unwrap();

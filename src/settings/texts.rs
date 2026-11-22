@@ -38,8 +38,10 @@ pub struct Texts {
     pub pool_use_from: String,
     /// 固定的三个池给人看的名字：池名 → 名字（`flagship` 旗舰、`normal` 日常、`lite` 轻量，`pools.rs`）。
     pub pool_names: std::collections::HashMap<String, String>,
-    /// 引用失效时接在后面的。
+    /// 引用失效时接在后面的：连那一家都没有的。
     pub gone: String,
+    /// 引用失效时接在后面的：那一家还在、它的模型列表里没有这个模型的。
+    pub withdrawn: String,
     /// 选项的说法：选项值 → 给人看的（`rotate`、`pin`、驱动的「自动」、`secret`、`env`、思考的「默认」、`text` 这些）。
     pub options: std::collections::HashMap<String, String>,
     /// 每一项的名字：字段名 → 给人看的。
@@ -79,7 +81,7 @@ pub struct Texts {
 crate::from_json::record! {
     Texts, deny {
         title, entry, entry_note, pages, cols, orgs, uses, use_notes, detail, pool_kind, tags,
-        pool_tag, pool_uses_head, pool_use_from, pool_names, gone, options, fields, hints, sources,
+        pool_tag, pool_uses_head, pool_use_from, pool_names, gone, withdrawn, options, fields, hints, sources,
         titles, buttons, button_keys, popup_hints, pick, catalog, confirm, status, errors, empty,
         key_hints, more, in_use,
     }
@@ -116,6 +118,15 @@ impl Texts {
             .get(name)
             .cloned()
             .unwrap_or_else(|| name.to_string())
+    }
+
+    /// 引用对不上时接在后面的（`Data::lost`），对得上的是空的。
+    pub fn lost(&self, why: Option<super::data::Lost>) -> &str {
+        match why {
+            None => "",
+            Some(super::data::Lost::Withdrawn) => &self.withdrawn,
+            Some(super::data::Lost::Absent) => &self.gone,
+        }
     }
 
     /// 空着时暗着写的。

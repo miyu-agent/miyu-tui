@@ -214,3 +214,38 @@ fn the_pool_form_keeps_its_head_while_members_scroll() {
         );
     }
 }
+
+/// 2026-11-22 主人定：上游的列表是什么样就显示什么样，核心不再列已经没有的模型，头自己比对。池里写着、那一家的列表里没有的成员
+/// 接「（供应商已不提供此模型）」、标红（连那一家都没有的照旧「（不存在）」，见 `settings::forms::tests`）。
+#[test]
+fn a_member_the_provider_no_longer_offers_says_so() {
+    let config = Config::builtin().unwrap();
+    let mut list = crate::settings::test_support::model_list();
+    list["providers"][1]["models"]
+        .as_array_mut()
+        .unwrap()
+        .remove(0);
+    let mut p = Settings::open(false, true);
+    for (tag, method, _) in p.take_asks() {
+        let got = match method {
+            "model.list" => list.clone(),
+            "config.get" => crate::settings::test_support::config_all(),
+            _ => json!({"secrets": []}),
+        };
+        p.answer(tag, Ok(got), &config.text.settings);
+    }
+    press(&mut p, &config, KeyCode::Enter);
+    p.nav.page_step(true);
+    p.nav.page_step(true);
+    let (text, _) = screen(&mut p, &config, 160, 30);
+    assert!(
+        text.lines()
+            .any(|l| l.contains("2  relay/cline/deepseek-v4（供应商已不提供此模型）")),
+        "那一家不提供了：\n{text}"
+    );
+    assert!(
+        text.lines()
+            .any(|l| l.contains("1  dev/flash") && !l.contains("（")),
+        "好的成员照旧：\n{text}"
+    );
+}

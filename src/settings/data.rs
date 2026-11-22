@@ -66,6 +66,15 @@ pub struct Model {
     pub table: String,
 }
 
+/// 配置里写着的模型引用对不上的两种（`Data::lost`）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Lost {
+    /// 那一家还在，它的模型列表里没有这个模型：供应商已经不提供了。
+    Withdrawn,
+    /// 连那一家都没有。
+    Absent,
+}
+
 /// 一个模型池。
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Pool {
@@ -170,6 +179,22 @@ impl Data {
                 .iter()
                 .find(|m| m.reference == reference)
                 .map(|m| (p, m))
+        })
+    }
+
+    /// 引用对不上的为什么，对得上的是 `None`。那一家还在、它的模型列表里没有这个的是 `Withdrawn`（2026-11-22 主人定：
+    /// 上游的列表是什么样就显示什么样，核心不再列已经没有的模型，头自己比对），连那一家都没有的是 `Absent`。
+    pub fn lost(&self, reference: &str) -> Option<Lost> {
+        if self.model(reference).is_some() {
+            return None;
+        }
+        let provider = reference
+            .split_once('/')
+            .and_then(|(id, _)| self.provider(id));
+        Some(if provider.is_some() {
+            Lost::Withdrawn
+        } else {
+            Lost::Absent
         })
     }
 
