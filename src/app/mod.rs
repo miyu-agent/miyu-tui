@@ -221,12 +221,22 @@ impl App {
     }
 
     /// 处理一个终端事件。两下 `Esc` 只数归输入框的那几下（`keys.rs` 的 `esc`、`stop_agents.rs`）：这一下 `Esc` 被列表、选区、
-    /// 抽屉、别的页收了（记着的上一下没动），上一下作废，不和下一下凑成两下（ACC-1121-#1）。
+    /// 抽屉、别的页收了（记着的上一下没动），上一下作废，不和下一下凑成两下（ACC-1121-#1）。两下中间按了别的键、粘贴了一段，
+    /// 上一下也作废（2026-11-22 查出：按一下、打几个字、再按一下原来也算连着两下）。
     pub fn handle(&mut self, event: Event) {
         let esc = matches!(&event, Event::Key(k) if k.code == KeyCode::Esc && k.kind != KeyEventKind::Release);
+        let other = match &event {
+            Event::Key(k) => {
+                k.code != KeyCode::Esc
+                    && k.kind != KeyEventKind::Release
+                    && !matches!(k.code, KeyCode::Modifier(_))
+            }
+            Event::Paste(_) => true,
+            _ => false,
+        };
         let before = self.typing.esc_at;
         self.dispatch(event);
-        if esc && self.typing.esc_at == before {
+        if (esc && self.typing.esc_at == before) || (other && self.typing.esc_at.is_some()) {
             self.forget_esc();
         }
     }
