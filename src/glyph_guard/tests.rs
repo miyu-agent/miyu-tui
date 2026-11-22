@@ -6,21 +6,27 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::Line;
+use ratatui::widgets::Widget;
 use ratatui::{TerminalOptions, Viewport};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use super::{Guarded, shaky};
+use super::shaky;
+use crate::screen::wire::{Wire, frame as screen_frame};
+use crate::screen::{SEGMENT, Screen};
 
-const W: u16 = 24;
-const H: u16 = 6;
+pub(super) const W: u16 = 24;
+pub(super) const H: u16 = 6;
 /// 思考的图标（md-atom）。
-const ATOM: &str = "\u{f0768}";
+pub(super) const ATOM: &str = "\u{f0768}";
 
 /// 一个只认挪光标、打字的终端：`wide` 是它把这种字当几格。宽字盖掉一半的时候整个字清掉（常见终端的做法）。
 /// `overflow`：当一格算、字形却画出两格宽（手机上那个终端）：右边那一格留着半个字形（残影），那一格重写了才没。
+/// `emoji`：带 VS16 的 emoji 当几格：kitty 当两格（`U+FE0F` 来了把前一个字撑宽、光标再往右一格），有的终端当一格（不清
+/// 后面那一格）。写到行尾以后再写字，折到下一行开头（同真的终端）。
 struct Model {
     wide: usize,
     overflow: bool,
+    emoji: usize,
     cells: Vec<Vec<String>>,
     ghosts: std::collections::HashSet<(usize, usize)>,
     at: (usize, usize),
@@ -30,10 +36,11 @@ struct Model {
 const GHOST: &str = "◐";
 
 impl Model {
-    fn new(wide: usize, overflow: bool) -> Self {
+    fn new((wide, overflow, emoji): Kind) -> Self {
         Self {
             wide,
             overflow,
+            emoji,
             cells: vec![vec![" ".to_string(); usize::from(W)]; usize::from(H)],
             ghosts: std::collections::HashSet::new(),
             at: (0, 0),
@@ -60,7 +67,14 @@ impl Model {
     }
 
     fn print(&mut self, c: char) {
+        if c == '\u{FE0F}' {
+            return self.vs16();
+        }
         let w = self.width(c);
+        if self.at.0 + w > usize::from(W) && self.at.1 + 1 < usize::from(H) {
+            // 写到行尾了：折到下一行开头。
+            self.at = (0, self.at.1 + 1);
+        }
         let (x, y) = self.at;
         if x + w > usize::from(W) {
             return;
@@ -77,6 +91,21 @@ impl Model {
             self.cells[y][x + k] = String::new();
         }
         self.at.0 += w;
+    }
+
+    /// `U+FE0F` 跟在前一个字后面：照一格画的终端只把它记在那一格里；kitty 把那个字撑成两格，后面那一格算它的后半，
+    /// 光标再往右一格。
+    fn vs16(&mut self) {
+        let (x, y) = self.at;
+        let Some(prev) = x.checked_sub(1) else {
+            return;
+        };
+        self.cells[y][prev].push('\u{FE0F}');
+        if self.emoji == 2 && x < usize::from(W) {
+            self.split(x, y);
+            self.cells[y][x] = String::new();
+            self.at.0 += 1;
+        }
     }
 
     fn feed(&mut self, bytes: &[u8]) {
@@ -120,6 +149,9 @@ impl Model {
                     GHOST
                 } else if cell.is_empty() && x > 0 && shaky(&row[x - 1]) {
                     " "
+                } else if x > 0 && row[x - 1].ends_with('\u{FE0F}') && cell == " " {
+                    // 照一格画带 VS16 的 emoji 的终端：它后面那一格是空的（界面那里是它盖住的后半）。
+                    ""
                 } else {
                     cell.as_str()
                 }
@@ -176,53 +208,64 @@ fn draw_all<B: ratatui::backend::Backend>(
     last.unwrap()
 }
 
-/// 包着这一层，照界面画的走法（[`super::draw`]）一帧帧画，交回界面排的最后一帧。
-fn draw_guarded<B: ratatui::backend::Backend>(
-    t: &mut Terminal<Guarded<B>>,
-    frames: &[Vec<(u16, String)>],
-) -> Buffer {
+/// 照界面画的走法（画面那一层，变了的行整行重写、经这一层送）一帧帧画，交回界面排的最后一帧和写出去的字节。
+/// `parks` 里是哪几帧以前先放掉画面的缓冲（那一帧照段比）。
+fn draw_guarded(frames: &[Vec<(u16, String)>], parks: &[usize]) -> (Buffer, Vec<u8>) {
+    let mut screen = Screen::new(Wire::new(W, H));
     let mut last = None;
-    for lines in frames {
-        let done = super::draw(t, |f| {
-            lay(f, lines);
+    let mut bytes = Vec::new();
+    for (n, lines) in frames.iter().enumerate() {
+        if parks.contains(&n) {
+            screen.park();
+        }
+        let (buf, sent) = screen_frame(&mut screen, |buf| {
+            for (y, text) in lines {
+                Line::raw(text.clone()).render(Rect::new(0, *y, W, 1), buf);
+            }
             None
-        })
-        .unwrap_or_else(|_| panic!("画得出来"));
-        last = Some(done.buffer.clone());
+        });
+        bytes.extend(sent);
+        last = Some(buf);
     }
-    last.unwrap()
+    (last.unwrap(), bytes)
 }
 
 /// 照 `guarded` 包不包这一层画 `frames`，交回模拟终端（这种字当 `wide` 格，`overflow` 见 [`Model`]）里每一行和界面排
 /// 的每一行。
-fn shown(
+fn shown(guarded: bool, kind: Kind, frames: &[Vec<(u16, String)>]) -> (Vec<String>, Vec<String>) {
+    shown_with(guarded, &[], kind, frames)
+}
+
+/// 同 [`shown`]，`parks` 见 [`draw_guarded`]。
+pub(super) fn shown_with(
     guarded: bool,
-    (wide, overflow): (usize, bool),
+    parks: &[usize],
+    kind: Kind,
     frames: &[Vec<(u16, String)>],
 ) -> (Vec<String>, Vec<String>) {
     let options = || TerminalOptions {
         viewport: Viewport::Fixed(Rect::new(0, 0, W, H)),
     };
-    let plain = CrosstermBackend::new(Vec::<u8>::new());
     let (last, bytes) = if guarded {
-        let mut t = Terminal::with_options(Guarded::new(plain), options()).unwrap();
-        (
-            draw_guarded(&mut t, frames),
-            t.backend_mut().inner_mut().writer().clone(),
-        )
+        draw_guarded(frames, parks)
     } else {
+        let plain = CrosstermBackend::new(Vec::<u8>::new());
         let mut t = Terminal::with_options(plain, options()).unwrap();
         (draw_all(&mut t, frames), t.backend().writer().clone())
     };
-    let mut model = Model::new(wide, overflow);
+    let mut model = Model::new(kind);
     model.feed(&bytes);
     let screen = (0..usize::from(H)).map(|y| model.row(y)).collect();
     let want = (0..H).map(|y| intended(&last, y)).collect();
     (screen, want)
 }
 
-/// 三种终端：照一格画的（kitty）、当两格的、当一格算却画出两格宽的。
-const TERMINALS: [(usize, bool); 3] = [(1, false), (2, false), (1, true)];
+/// 四种终端：kitty（这种字照一格画、带 VS16 的 emoji 两格）、这种字当两格的、当一格算却画出两格宽的、带 VS16 的
+/// emoji 照一格画的。
+pub(super) const TERMINALS: [Kind; 4] = [(1, false, 2), (2, false, 2), (1, true, 2), (1, false, 1)];
+
+/// 一种模拟终端：这种字当几格、画不画出两格宽、带 VS16 的 emoji 当几格（见 [`Model`]）。
+pub(super) type Kind = (usize, bool, usize);
 
 /// 思考那一行往上推三回（每一回整体往上一行）。
 fn push_up(reply: &str) -> Vec<Vec<(u16, String)>> {
@@ -232,7 +275,7 @@ fn push_up(reply: &str) -> Vec<Vec<(u16, String)>> {
 #[test]
 fn without_the_guard_the_other_two_kinds_of_terminal_go_wrong() {
     // 修以前的样子：当两格的错开一格，画出两格宽的留下半个字形。
-    for kind in &TERMINALS[1..] {
+    for kind in &TERMINALS[1..3] {
         let (screen, want) = shown(false, *kind, &push_up(REPLIES[0]));
         assert_ne!(
             screen, want,
@@ -258,7 +301,7 @@ fn the_atom_stays_when_only_the_cell_on_its_right_changes() {
         vec![(1, format!("  {ATOM} 已思考"))],
         vec![(1, format!("  {ATOM}·已思考"))],
     ];
-    let (screen, _) = shown(true, (2, false), &frames);
+    let (screen, _) = shown(true, (2, false, 2), &frames);
     assert!(screen[1].contains(ATOM), "{screen:?}");
 }
 
@@ -271,9 +314,9 @@ fn only_the_supplementary_private_use_planes_count_and_never_a_picture_cell() {
 }
 
 #[test]
-fn what_was_sent_survives_when_the_record_has_to_grow() {
-    // 头一帧只送到第 2 行，记着的只分到那么大；第二帧送到最底下一行、又改了图标右边那一格：记着的照新的大小重排，
-    // 图标还得照原样补回来。
+fn the_atom_survives_when_another_row_changes_in_the_same_frame() {
+    // 第二帧最底下一行也变了、又改了图标右边那一格：两行一起重写，图标还得照原样补回来（原来守的是记着的格子照新的
+    // 大小重排，LW-17 起不记了，情形照旧守着）。
     let frames = [
         vec![(1, format!("  {ATOM} 已思考"))],
         vec![
@@ -281,17 +324,86 @@ fn what_was_sent_survives_when_the_record_has_to_grow() {
             (H - 1, "x".repeat(usize::from(W))),
         ],
     ];
-    let (screen, _) = shown(true, (2, false), &frames);
+    let (screen, _) = shown(true, (2, false, 2), &frames);
     assert!(screen[1].contains(ATOM), "{screen:?}");
 }
 
 #[test]
 fn the_cell_right_of_a_new_glyph_is_rewritten_with_what_it_holds() {
-    // 第二帧图标换上来，右边那一格（`b`）两帧一样、ratatui 不送：这一层照这一帧的缓冲把 `b` 原样补写，不写成空白。
+    // 第二帧图标换上来，右边那一格（`b`）两帧一样：整行重写时照这一帧的缓冲把 `b` 原样补写，不写成空白。
     let frames = [
         vec![(1, "  ab 已思考".to_string())],
         vec![(1, format!("  {ATOM}b 已思考"))],
     ];
-    let (screen, want) = shown(true, (1, false), &frames);
+    let (screen, want) = shown(true, (1, false, 2), &frames);
     assert_eq!(screen, want);
+}
+
+/// 第 1 行：`x` 那一格写 `glyph`，别的格子照 `fill`（左边一段、右边一段各一种字母），`right` 是它右边那一格。
+fn placed(x: usize, glyph: &str, right: char, fill: (char, char)) -> Vec<(u16, String)> {
+    let mut cells: Vec<String> = (0..usize::from(W))
+        .map(|i| if i < SEGMENT { fill.0 } else { fill.1 }.to_string())
+        .collect();
+    cells[x] = glyph.into();
+    cells[x + 1] = right.into();
+    vec![(1, cells.concat())]
+}
+
+#[test]
+fn glyphs_at_either_side_of_a_segment_boundary_stay_whole() {
+    // 这种字在画面第一段的最后一格、第二段的第一格（`SEGMENT` 格一段）。它自己变（出现、换成别的、消失），
+    // 它右边那一格变，它左右两段里别的格子变：三种终端里屏上都和界面排的一样。
+    for x in [SEGMENT - 1, SEGMENT] {
+        let cases: [Vec<Vec<(u16, String)>>; 6] = [
+            // 右边那一格变了（字后面照规矩是空格；换成点）。
+            vec![
+                placed(x, ATOM, ' ', ('a', 'b')),
+                placed(x, ATOM, '·', ('a', 'b')),
+            ],
+            // 它出现。
+            vec![
+                placed(x, "c", ' ', ('a', 'b')),
+                placed(x, ATOM, ' ', ('a', 'b')),
+            ],
+            // 它换成别的字、再换回来。
+            vec![
+                placed(x, ATOM, ' ', ('a', 'b')),
+                placed(x, "c", ' ', ('a', 'b')),
+                placed(x, ATOM, ' ', ('a', 'b')),
+            ],
+            // 它换成别的字就停在那里（当一格算、画出两格宽的终端里，右边那一格留着半个字形，得跟着重写）。
+            vec![
+                placed(x, ATOM, ' ', ('a', 'b')),
+                placed(x, "c", ' ', ('a', 'b')),
+            ],
+            // 只有它左边那一段变了。
+            vec![
+                placed(x, ATOM, ' ', ('a', 'b')),
+                placed(x, ATOM, ' ', ('d', 'b')),
+            ],
+            // 只有它右边那一段变了。
+            vec![
+                placed(x, ATOM, ' ', ('a', 'b')),
+                placed(x, ATOM, ' ', ('a', 'e')),
+            ],
+        ];
+        for (n, frames) in cases.iter().enumerate() {
+            // 活跃时逐格比、放掉以后醒来照段比，两条路都走。
+            for (kind, parks) in TERMINALS
+                .into_iter()
+                .flat_map(|k| [(k, vec![]), (k, vec![1, 2])])
+            {
+                let (screen, want) = shown_with(true, &parks, kind, frames);
+                if n == 0 && kind == (2, false, 2) {
+                    // 当两格的终端里字的后半就盖在右边那一格上，点显示不出来；字得还在（同上面那条）。
+                    assert!(screen[1].contains(ATOM), "第 {x} 格，{screen:?}");
+                } else {
+                    assert_eq!(
+                        screen, want,
+                        "第 {x} 格，第 {n} 种，{kind:?}，放掉 {parks:?}"
+                    );
+                }
+            }
+        }
+    }
 }

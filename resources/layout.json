@@ -45,6 +45,7 @@
   "keep_screens": 4,
   "trim_rows": 200,
   "trim_after_ms": 2000,
+  "screen_park_ms": 2000,
   "reconnect_ms": [
     500,
     5000

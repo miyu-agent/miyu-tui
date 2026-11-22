@@ -26,6 +26,8 @@ tokio = { version = "1", features = ["io-util", "macros", "rt", "sync"] }
 # 全屏界面的框架；按键、鼠标经它转出来的 crossterm 读。
 # writer_mut 用来提交已经准备好的完整帧；版本由 Cargo.lock 钉住。
 ratatui = { version = "0.30", features = ["unstable-backend-writer"] }
+# 画面每一行的指纹（`screen.rs`）：快哈希，种子固定。ratatui 经 hashbrown 本来就带进来的同一版。
+foldhash = { version = "0.2", default-features = false }
 # 读按键的线程照事件流等、没事时一直睡着（`reader.rs`）：给 ratatui 带的那份 crossterm 打开 event-stream，
 # 它的事件流是 futures-core 的 `Stream`。
 crossterm = { version = "0.29", default-features = false, features = ["event-stream"] }

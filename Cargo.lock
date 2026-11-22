@@ -2619,6 +2619,7 @@ dependencies = [
  "crossterm",
  "crossterm_winapi",
  "filedescriptor",
+ "foldhash",
  "futures-core",
  "image",
  "jiff",

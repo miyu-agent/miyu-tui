@@ -25,8 +25,11 @@ fn short_mascot(home: &Home) -> String {
 const MASCOT_ON: &str = "[tui]\nmascot_home = true\nmascot_sidebar = true\n";
 
 /// 等醒着的那一阵、哈欠、转回正前方都过去，再量 [`QUIET`] 这么久：一个字节都不写，线程一次都不醒。
+///
+/// 先等的那一段要盖过画面放掉缓冲的那一下：最后一帧画完过 `screen_park_ms`（`layout.json`，2000 毫秒），主循环醒一次
+/// 放掉缓冲、不画（蓝图「每一帧」），只醒这一次。原来只等 3 秒，那一下会落进量的那 2 秒里（2026-11-23 LW-17）。
 fn assert_quiet(tui: &mut Tui, what: &str) {
-    tui.pump(Duration::from_secs(3));
+    tui.pump(Duration::from_secs(5));
     let before = tui.wakeups();
     tui.record();
     tui.pump(QUIET);

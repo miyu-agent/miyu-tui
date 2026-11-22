@@ -61,6 +61,7 @@ mod pulse;
 mod reader;
 mod rng;
 mod scratch;
+mod screen;
 mod scrollbar;
 mod service;
 mod session_list;
@@ -100,10 +101,8 @@ use app::App;
 use config::Config;
 use incoming::{Incoming, dispatch};
 
-/// 全屏终端：每一帧的输出由 frame_output 暂存到准备完成；宽度认不准的字照 glyph_guard 送。
-type Screen = ratatui::Terminal<
-    glyph_guard::Guarded<ratatui::backend::CrosstermBackend<frame_output::Output<io::Stdout>>>,
->;
+/// 全屏终端：活跃时逐格比、闲了放掉缓冲（screen）；输出由 frame_output 暂存到准备完成。
+type Screen = screen::Screen<ratatui::backend::CrosstermBackend<frame_output::Output<io::Stdout>>>;
 
 fn main() -> io::Result<std::process::ExitCode> {
     // `miyu shellhook …`：核心转交成 `miyu-tui shellhook …`，不进全屏（图纸 `shellhook.md`）。
@@ -188,7 +187,7 @@ fn fullscreen(launch: startup::Launch) -> io::Result<()> {
 
 /// 换一块新画布；帧外的输出不暂存。
 fn screen() -> io::Result<Screen> {
-    ratatui::Terminal::new(glyph_guard::Guarded::new(
+    Ok(screen::Screen::new(
         ratatui::backend::CrosstermBackend::new(frame_output::Output::new(stdout())),
     ))
 }
@@ -310,21 +309,20 @@ fn run(
     let log_path = std::env::var_os("MIYU_TUI_FRAME_LOG").map(std::path::PathBuf::from);
     let slow = Duration::from_millis(app.config.layout.slow_frame_ms);
     let mut log = frame_log::FrameLog::open(log_path.as_deref(), slow);
+    // 画完过一阵没再画：放掉画面的缓冲，只留指纹（蓝图「每一帧」）。
+    let mut parking = screen::idle::Parking::new(app.config.layout.screen_park_ms);
     while !app.quit {
         app.tell_main_session();
         frame(terminal, &mut app, &mut pointer, depth, &mut log)?;
         let drawn_at = Instant::now();
+        parking.drawn(drawn_at);
         // 这一帧整屏空着在等 `ui.welcomed`：问到了当场画首页，不等下一拍（蓝图「每一帧」；2026-10-15 冷启动查出，空着的
         // 那一帧画在连上之前，首页要等它后面的一拍，白等三十毫秒）。
         let waiting = app.seen().welcome_pending(drawn_at);
         let arrived = |app: &App| waiting && !app.seen().welcome_pending(Instant::now());
-        let wait = app.deadline().map_or(Duration::from_secs(3600), |d| {
-            d.saturating_duration_since(Instant::now())
-        });
-        let mut next = match incoming.recv_timeout(wait) {
-            Ok(message) => Some(message),
-            Err(RecvTimeoutError::Timeout) => None,
-            Err(RecvTimeoutError::Disconnected) => break,
+        let Ok(mut next) = parking.wait(terminal, app.deadline(), |w| incoming.recv_timeout(w))
+        else {
+            break;
         };
         let mut urgent = false;
         while let Some(message) = next {
@@ -409,14 +407,13 @@ fn reenter(screen: &mut Screen, keyboard: bool) -> io::Result<()> {
     Ok(())
 }
 
-/// 整屏擦一遍：kitty 的图全删掉（认不得的终端这一句可能印成字，紧接着就清屏了），清屏，换一块新画布，下一帧整屏重画。
+/// 整屏擦一遍：kitty 的图全删掉（认不得的终端这一句可能印成字，紧接着就清屏了），清屏，下一帧整屏重画。
 fn wipe(screen: &mut Screen) -> io::Result<()> {
     use std::io::Write;
     let mut out = stdout();
     out.write_all(b"\x1b_Ga=d,d=A,q=2\x1b\\")?;
-    execute!(out, terminal::Clear(terminal::ClearType::All))?;
-    *screen = self::screen()?;
-    Ok(())
+    out.flush()?;
+    screen.clear()
 }
 
 /// 让出终端给编辑器：关掉鼠标、粘贴、键盘协议和原始模式，读按键的停下；编辑器退出了回全屏（它自己离开了备用屏的
@@ -460,9 +457,9 @@ fn frame(
     let started = log.on().then(Instant::now);
     log.begin();
     let mut prep = Duration::ZERO;
-    terminal.backend_mut().inner_mut().writer_mut().begin()?;
-    // 经 glyph_guard 画：交给后端以前，它从这一帧的缓冲里抄下宽度认不准的字相邻的那几格。
-    let drawn = glyph_guard::draw(terminal, |frame| {
+    terminal.backend_mut().writer_mut().begin()?;
+    // 只写变了的格子（闲了放掉过缓冲的，醒来这一帧照段写）；宽度认不准的字照 glyph_guard 送。
+    let drawn = terminal.draw(|frame| {
         let at = started.map(|_| Instant::now());
         ui::draw(frame, app);
         ui::wide::tidy(frame.buffer_mut());
@@ -473,20 +470,20 @@ fn frame(
             ascii::frame(frame.buffer_mut());
         }
         prep = at.map_or(Duration::ZERO, |t| t.elapsed());
-        // 光标交给 ratatui：这一帧要显示时由它挪过去、显示。别每帧先藏再显：kitty 的输入法预编辑挂在
+        // 光标交给画面那一层：这一帧要显示时由它挪过去、显示。别每帧先藏再显：kitty 的输入法预编辑挂在
         // 光标上，跟着藏/显，和输入框里的提示来回闪（2026-10-02 项目主人报的 fcitx5）。
         app.screen.caret.shown.then_some(app.screen.caret.at)
     });
     // 藏着的光标也挪到插入点：不留在这一帧最后写的格子（kitty 开了 `cursor_trail` 会拖尾）；显示着的
-    // 那一下 ratatui 已经挪过、显示过了。
-    let drawn = drawn.map(|_| ()).and_then(|()| {
-        let out = terminal.backend_mut().inner_mut().writer_mut();
+    // 那一下画面那一层已经挪过、显示过了。
+    let drawn = drawn.and_then(|()| {
+        let out = terminal.backend_mut().writer_mut();
         caret::park(app.screen.caret, out)?;
         app.screen.pixel.sync(out)?;
         pointer.set(app.pointing(), out)
     });
     // 画面、图片和光标都准备好了才送出；画失败了也带上同步结尾。
-    terminal.backend_mut().inner_mut().writer_mut().finish()?;
+    terminal.backend_mut().writer_mut().finish()?;
     // 系统通知的转义序列（kitty 的 OSC 99、OSC 9）：画完一帧再写，一条一次写完，不被别的输出劈开（「系统通知」第 4 条）。
     let mut out = stdout();
     for sequence in app.notifier.outbox() {
