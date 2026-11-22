@@ -60,7 +60,7 @@ fn the_undo_line_just_says_undone() {
     let rows = super::entry_rows(0, &t.entries[0], &f.ctx());
     let head = rows[0].line.to_string();
     assert!(
-        head.contains("已撤销 · /restore 恢复 · 第一行") && !head.contains("轮"),
+        head.contains("已撤回 · /restore 恢复 · 第一行") && !head.contains("轮"),
         "{head}"
     );
 }
@@ -101,7 +101,7 @@ fn undoing_a_clear_says_so_under_the_undo_line() {
     assert!(
         lines
             .iter()
-            .any(|l| l.contains("已撤销清空，上下文恢复到清空前")),
+            .any(|l| l.contains("已撤回清空，上下文恢复到清空前")),
         "{lines:?}"
     );
 }
@@ -124,12 +124,12 @@ fn undoing_a_compaction_says_so_under_the_undo_line() {
     assert_eq!(lines.len(), 2, "{lines:?}");
     assert_eq!(
         lines[1].trim(),
-        "已撤销压缩，上下文恢复到压缩前",
+        "已撤回压缩，上下文恢复到压缩前",
         "几次都是这一句"
     );
     assert_eq!(
         rows[1].target, rows[0].target,
-        "和撤销那一行是一条，点它一样点开"
+        "和撤回那一行是一条，点它一样点开"
     );
     t.entries[0].undo.as_mut().unwrap().compactions = 0;
     assert_eq!(
@@ -269,7 +269,7 @@ fn an_opened_undo_lists_each_file_and_opens_a_diff_on_click() {
     let rows = super::entry_rows(0, &t.entries[0], &f.ctx());
     let head = rows[0].line.to_string();
     assert!(
-        head.contains("已撤销 · 已还原 1 个文件 · /restore 恢复 · 改一下"),
+        head.contains("已撤回 · 已还原 1 个文件 · /restore 恢复 · 改一下"),
         "{head}"
     );
     t.entries[0].open = true;

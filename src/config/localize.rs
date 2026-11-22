@@ -183,7 +183,7 @@ mod tests {
             zh.commands
                 .commands
                 .iter()
-                .any(|c| c.summary.contains("撤销"))
+                .any(|c| c.summary.contains("撤回"))
         );
         let ja = *Config::load(&table.find("ja").unwrap(), false).unwrap();
         assert_eq!(ja.text.language_switched, "表示言語：日本語");
