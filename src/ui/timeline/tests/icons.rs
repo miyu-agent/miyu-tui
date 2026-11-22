@@ -69,7 +69,7 @@ fn another_icon_set_redraws_the_steps_already_laid_out() {
         &cache,
         crate::ui::row_cache::Plan::all(),
     )
-    .iter()
+    .present()
     .map(|r| r.line.to_string())
     .collect();
     assert!(before.iter().any(|l| l.contains(&f.config.icons.think)));
@@ -80,7 +80,7 @@ fn another_icon_set_redraws_the_steps_already_laid_out() {
         &cache,
         crate::ui::row_cache::Plan::all(),
     )
-    .iter()
+    .present()
     .map(|r| r.line.to_string())
     .collect();
     assert_eq!(cache.borrow().rebuilt, 1, "换了一套：排好的也重排");

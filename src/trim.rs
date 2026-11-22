@@ -12,6 +12,8 @@ pub struct Trim {
     peak: usize,
     /// 到点还。
     due: Option<Instant>,
+    /// 上次还以后，离视口远的消息一共放掉了多少行（[`Trim::shed`]）。
+    shed: usize,
 }
 
 impl Trim {
@@ -21,6 +23,16 @@ impl Trim {
             self.peak = rows;
         } else if self.peak - rows >= drop.max(1) {
             self.peak = rows;
+            self.due = Some(now + after);
+        }
+    }
+
+    /// 离视口远的消息这一拍放掉了 `rows` 行（正文一共几行没变，[`Trim::rows`] 看不到这一笔）：攒够 `drop` 行，`after`
+    /// 以后还一次；长会话一打开、滚过一大段以后放掉的那几 MB 就是这样还给系统的。
+    pub fn shed(&mut self, rows: usize, now: Instant, drop: usize, after: Duration) {
+        self.shed += rows;
+        if rows > 0 && self.shed >= drop.max(1) {
+            self.shed = 0;
             self.due = Some(now + after);
         }
     }

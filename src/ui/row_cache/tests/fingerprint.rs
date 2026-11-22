@@ -28,7 +28,7 @@ fn only_the_screen_height_changing_rebuilds_entries_with_figures() {
     let cache = RefCell::new(RowCache::default());
     let rows = build(&t.entries, &ctx, &cache, Plan::all());
     assert!(
-        rows.iter()
+        rows.present()
             .any(|r| r.figure().is_some() || r.figure_pending),
         "第一条带图"
     );

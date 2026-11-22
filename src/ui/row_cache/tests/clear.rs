@@ -50,7 +50,7 @@ fn shed_rows_keep_their_geometry_and_hand_out_nothing() {
     }
     assert!(rows.get(0).is_some());
     assert!(shed.get(0).is_none());
-    assert_eq!(shed.iter().count(), 0);
+    assert_eq!(shed.present().count(), 0);
     assert_eq!(shed.window(0, rows.len()).count(), 0);
 }
 
@@ -69,7 +69,7 @@ fn a_parked_view_lets_go_of_its_rows_and_selection_but_stays_where_it_was() {
     view.select = Some(((1, 0), (2, 4)));
     view.park();
     assert_eq!(view.rows.len(), total, "一共几行还答得出");
-    assert_eq!(view.rows.iter().count(), 0, "行放掉了");
+    assert_eq!(view.rows.present().count(), 0, "行放掉了");
     assert_eq!(view.select, None, "选中的一段指着的行不在了，放开");
     assert_eq!((view.top, view.first), (Some(3), 3), "停在哪照旧记着");
 }

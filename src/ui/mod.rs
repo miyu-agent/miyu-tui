@@ -92,6 +92,8 @@ mod rulers;
 #[cfg(test)]
 mod rulers_huge;
 #[cfg(test)]
+mod rulers_keep;
+#[cfg(test)]
 mod rulers_live;
 #[cfg(test)]
 mod test_support;

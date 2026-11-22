@@ -104,7 +104,7 @@ pub(crate) use vim::step as vim_step;
 mod workspace;
 
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 
@@ -437,6 +437,8 @@ impl App {
         let after = Duration::from_millis(layout.trim_after_ms);
         let rows = self.screen.view.rows.len();
         self.media.trim.rows(rows, now, layout.trim_rows, after);
+        let shed = self.media.row_cache.borrow_mut().take_shed();
+        self.media.trim.shed(shed, now, layout.trim_rows, after);
         if self.media.trim.take(now) {
             crate::trim::release();
         }

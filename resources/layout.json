@@ -42,6 +42,7 @@
   "markdown_cache": 8,
   "slow_frame_ms": 8,
   "relayout_budget_ms": 8,
+  "keep_screens": 4,
   "trim_rows": 200,
   "trim_after_ms": 2000,
   "reconnect_ms": [

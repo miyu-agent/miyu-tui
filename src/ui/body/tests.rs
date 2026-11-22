@@ -6,6 +6,7 @@ use crate::body_view::BodyView;
 use crate::ui::rows::Row;
 
 mod floor;
+mod keep;
 
 fn rows(n: usize) -> crate::ui::row_cache::Rows {
     crate::ui::row_cache::Rows::of_blank(&[(n, None)])
