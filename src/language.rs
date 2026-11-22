@@ -20,13 +20,11 @@ impl Language {
 pub struct LanguageTable {
     /// 认不出系统语言时用的，也是别的资源缺了这种语言时退回的。
     pub fallback: String,
-    /// 界面语言是自动时，时间线收起那一行用哪种的说法（蓝图「时间线」第 17 条）。
-    pub auto_summary: String,
     /// 有哪几种，`/language` 的框照这个顺序列。
     pub languages: Vec<Entry>,
 }
 
-crate::from_json::record! { LanguageTable, deny { fallback, auto_summary, languages } }
+crate::from_json::record! { LanguageTable, deny { fallback, languages } }
 
 /// 表里的一种。
 #[derive(Debug, Clone)]
@@ -52,13 +50,11 @@ impl LanguageTable {
     pub fn builtin() -> Result<Self, String> {
         let table: Self = crate::from_json::from_str(include_str!("../resources/languages.json"))
             .map_err(|e| format!("resources/languages.json 读不懂：{e}"))?;
-        for (what, code) in [
-            ("退回的", &table.fallback),
-            ("自动时收起行用的", &table.auto_summary),
-        ] {
-            if table.find(code).is_none() {
-                return Err(format!("resources/languages.json：{what} {code} 不在表里"));
-            }
+        if table.find(&table.fallback).is_none() {
+            return Err(format!(
+                "resources/languages.json：退回的 {} 不在表里",
+                table.fallback
+            ));
         }
         Ok(table)
     }

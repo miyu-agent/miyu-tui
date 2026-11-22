@@ -112,24 +112,21 @@ fn a_folded_segment_counts_remembering_on_its_own() {
     let search = |start| tool("memory_search", json!({"query": "猫"}), "", start);
     assert_eq!(
         fold(vec![thought(t0, 0), remember(1)]),
-        ["  Remembered 1 memory · 1 thought · 2s"]
+        ["  记住了 1 条 · 1 次思考 · 2s"]
     );
-    assert_eq!(
-        fold(vec![remember(0), remember(1)]),
-        ["  Remembered 2 memories · 2s"]
-    );
+    assert_eq!(fold(vec![remember(0), remember(1)]), ["  记住了 2 条 · 2s"]);
     assert_eq!(
         fold(vec![remember(0), search(1)]),
-        ["  Remembered 1 memory · 1 tool · 2s"],
+        ["  记住了 1 条 · 1 个工具 · 2s"],
         "搜记忆不单算（项目主人：「搜搜记忆就不用了」）"
     );
-    assert_eq!(fold(vec![search(0)]), ["  Used 1 tool · 1s"]);
+    assert_eq!(fold(vec![search(0)]), ["  用了 1 个工具 · 1s"]);
     // 出错的没记成：算工具，不写 Remembered（同编辑；和核心的 group summary 一样）。
     let mut failed = remember(0);
     if let StepKind::Tool { state, .. } = &mut failed.kind {
         *state = ToolState::Done(ToolStatus::Error);
     }
-    assert_eq!(fold(vec![failed]), ["  Used 1 tool · 1 err · 1s"]);
+    assert_eq!(fold(vec![failed]), ["  用了 1 个工具 · 1 个出错 · 1s"]);
 }
 
 #[test]

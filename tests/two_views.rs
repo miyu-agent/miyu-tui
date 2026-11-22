@@ -38,7 +38,7 @@ fn a_second_view_opened_mid_turn_keeps_the_turn_open_and_keeps_up() {
     // 接进来以前她已经说出来的（核心 9-8 八补：订阅时补推正在流的块）：后开的也有，那一段照她开口收起，和先开的一样。
     second.wait_for_line("…");
     assert!(
-        first.shows("Used 1 tool") && second.shows("Used 1 tool"),
+        first.shows("用了 1 个工具") && second.shows("用了 1 个工具"),
         "两边一样：\n{}\n---\n{}",
         first.lines().join("\n"),
         second.lines().join("\n")

@@ -37,7 +37,7 @@ fn the_folded_line_counts_the_reports_and_the_open_one_shows_where_it_came() {
     let folded = text(&rows(0, &segment(steps.clone(), None), &ctx));
     assert_eq!(
         folded,
-        ["  Ran 2 commands · 1 thought · 1 background command finished · 3s"]
+        ["  执行了 2 条命令 · 1 次思考 · 1 个后台命令完成 · 3s"]
     );
     let open = rows(0, &segment(steps, Some(true)), &ctx);
     let lines = text(&open);

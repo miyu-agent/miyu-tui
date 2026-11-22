@@ -1,4 +1,5 @@
-//! 收起那一行跟着界面语言（蓝图 `tui.md`「时间线」第 17 条，2026-10-01 项目主人定）：自动时英文，手动选了哪种照哪种。
+//! 收起那一行跟着界面语言（蓝图 `tui.md`「时间线」第 17 条）：自动（跟系统）时也照界面那一种，不再写英文（2026-11-22 主人定；
+//! 原先 2026-10-01 定的自动时英文撤了）。
 
 use std::time::Instant;
 
@@ -26,14 +27,12 @@ fn folded(code: &str, auto: bool) -> Vec<String> {
 }
 
 #[test]
-fn the_folded_line_follows_a_chosen_language_but_stays_english_on_auto() {
-    let english = ["  Ran 2 commands · 1 thought · 3s"];
-    assert_eq!(folded("zh", true), english, "自动：英文，和正文分开");
-    assert_eq!(folded("ja", true), english);
-    assert_eq!(folded("zh", false), ["  执行了 2 条命令 · 1 次思考 · 3s"]);
-    assert_eq!(
-        folded("ja", false),
-        ["  コマンドを 2 件実行 · 思考 1 回 · 3s"]
-    );
-    assert_eq!(folded("en", false), english);
+fn the_folded_line_follows_the_interface_language_on_auto_too() {
+    let zh = ["  执行了 2 条命令 · 1 次思考 · 3s"];
+    let ja = ["  コマンドを 2 件実行 · 思考 1 回 · 3s"];
+    assert_eq!(folded("zh", true), zh, "自动也照界面那一种");
+    assert_eq!(folded("ja", true), ja);
+    assert_eq!(folded("zh", false), zh);
+    assert_eq!(folded("ja", false), ja);
+    assert_eq!(folded("en", true), ["  Ran 2 commands · 1 thought · 3s"]);
 }
