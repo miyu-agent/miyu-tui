@@ -26,11 +26,16 @@ pub struct Diagrams {
     waiting: HashSet<String>,
     /// 还没发的。
     ask: Vec<String>,
+    /// 被问过几次：排一条正文前后各看一眼，变了就是这一条用到了账（[`Diagrams::asked`]）。
+    asked: u64,
+    /// 账变过几次（图回来、核心断开各加一）：用到账的条目照它重排（[`Diagrams::revision`]）。
+    revision: u64,
 }
 
 impl Diagrams {
     /// 这份源码的图；没问过的记进单子。
     pub fn diagram(&mut self, source: &str) -> Asked<'_> {
+        self.asked += 1;
         if let Some(got) = self.got.get(source) {
             return got.as_ref().map_or(Asked::Refused, Asked::Got);
         }
@@ -38,6 +43,16 @@ impl Diagrams {
             self.ask.push(source.to_string());
         }
         Asked::Waiting
+    }
+
+    /// 账被问过几次：正文按条缓存排好的行，排一条前后各看一眼，变了的那一条记成用到了账（`ui/row_cache`）。
+    pub fn asked(&self) -> u64 {
+        self.asked
+    }
+
+    /// 账变过几次：用到账的条目照它重排，没用到的照旧用记着的行（施工 LW-24）。
+    pub fn revision(&self) -> u64 {
+        self.revision
     }
 
     /// 把单子交出去发。
@@ -52,12 +67,14 @@ impl Diagrams {
 
     /// 核心交回了一张。
     pub fn got(&mut self, source: String, svg: Option<Rendered>) {
+        self.revision += 1;
         self.waiting.remove(&source);
         self.got.insert(source, svg);
     }
 
     /// 核心断开了：还没回来的不会回来了，下次排到时再问。
     pub fn lost(&mut self) {
+        self.revision += 1;
         self.waiting.clear();
         self.ask.clear();
     }

@@ -12,6 +12,7 @@ use crate::transcript::{Chip, JobMark, Kind, Segment, Step, StepKind, ToolState,
 use crate::ui::rows::Target;
 use crate::ui::test_support::{Fixture, fresh_rows};
 
+mod books;
 mod clear;
 mod fingerprint;
 mod keep;

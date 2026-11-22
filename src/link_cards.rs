@@ -4,6 +4,7 @@
 //! 要到的卡片记进缓存目录里的 `cards-v2.json`（最近的 [`KEEP`] 个网址），图照内容的哈希存成文件（`core/links.rs`）：重启
 //! 以后照记着的直接画，不先显示成链接再换（2026-10-02 项目主人报）。
 
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
@@ -37,6 +38,10 @@ pub struct LinkCards {
     file: Option<PathBuf>,
     /// 记着的卡片的网址，照要到的先后（多了从前面丢）。
     order: Vec<String>,
+    /// 被问过几次（卡片、文件、读不读得成都算）：排一条正文前后各看一眼，变了就是这一条用到了账（[`LinkCards::asked`]）。
+    asked: Cell<u64>,
+    /// 账变过几次（卡片回来、图存成文件、核心断开各加一）：用到账的条目照它重排（[`LinkCards::revision`]）。
+    revision: u64,
 }
 
 impl LinkCards {
@@ -67,6 +72,7 @@ impl LinkCards {
 
     /// 这个网址的卡片；没要过的记进单子，还没回来、要不到的是 `None`。
     pub fn card(&mut self, url: &str) -> Option<&Card> {
+        self.asked.set(self.asked.get() + 1);
         if !self.cards.contains_key(url) {
             self.cards.insert(url.to_string(), Asked::Waiting);
             self.ask_cards.push(url.to_string());
@@ -79,6 +85,7 @@ impl LinkCards {
 
     /// 这个 blob 存成的文件；没要过的记进单子，还没回来、读不成的是 `None`。
     pub fn file(&mut self, blob: &str) -> Option<&Path> {
+        self.asked.set(self.asked.get() + 1);
         if !self.blobs.contains_key(blob) {
             // 以前存过的（缓存目录里有）：直接用，不再要。
             let kept = self
@@ -92,6 +99,16 @@ impl LinkCards {
             self.blobs.insert(blob.to_string(), kept);
         }
         self.blobs.get(blob).and_then(|p| p.as_deref())
+    }
+
+    /// 账被问过几次：正文按条缓存排好的行，排一条前后各看一眼，变了的那一条记成用到了账（`ui/row_cache`）。
+    pub fn asked(&self) -> u64 {
+        self.asked.get()
+    }
+
+    /// 账变过几次：用到账的条目照它重排，没用到的照旧用记着的行（施工 LW-24）。
+    pub fn revision(&self) -> u64 {
+        self.revision
     }
 
     /// 单子上有没有还没发的。
@@ -109,6 +126,7 @@ impl LinkCards {
 
     /// 核心交回了一张卡片（`None` 是要不到）。
     pub fn got_card(&mut self, url: String, card: Option<Card>) {
+        self.revision += 1;
         let keep = card.is_some();
         self.cards.insert(url.clone(), Asked::Got(card));
         if keep {
@@ -146,6 +164,7 @@ impl LinkCards {
 
     /// 一个 blob 存成了文件（`None` 是读不成）。
     pub fn saved(&mut self, blob: String, path: Option<PathBuf>) {
+        self.revision += 1;
         if path.is_none() {
             self.unreadable.insert(blob.clone());
         }
@@ -161,12 +180,14 @@ impl LinkCards {
 
     /// 这个 blob 回来了、读不成。
     pub fn unreadable(&self, blob: &str) -> bool {
+        self.asked.set(self.asked.get() + 1);
         self.unreadable.contains(blob)
     }
 
     /// 核心断开了（review B5，2026-10-11）：要了还没回来的不会回来了，忘掉，下次排到时再要；还没发的单子扔掉，重排时
     /// 照样记上。没存成文件的 blob 分不清是在等还是读不成，一起再要一次。
     pub fn lost(&mut self) {
+        self.revision += 1;
         self.cards
             .retain(|_, asked| !matches!(asked, Asked::Waiting));
         self.blobs.retain(|_, path| path.is_some());
