@@ -38,6 +38,27 @@ fn only_loops_on_a_session_are_kept() {
     assert_eq!(got[2].every, Every::Cron("*/5 * * * *".into()));
 }
 
+/// 核心 FX-21：AI 用 `schedule_next` 挂的一次（`by` 是 `model`、`when` 是 `at`、没有 `loop`）也算，侧边栏写「定时触发」；
+/// 人建的一次（`by` 是 `person`）照旧不算。
+#[test]
+fn a_one_off_trigger_the_ai_set_is_kept() {
+    let got = table(&json!({"schedules": [
+        {"id": "t5", "when": {"at": "2026-11-23T04:07:00.000Z"}, "prompt": "该看结果了", "target": {"session": "s-1"},
+            "by": {"kind": "model", "session": "s-1"}, "recurring": false, "paused": false, "next": "2026-11-23T04:07:00.000Z"},
+        {"id": "t6", "when": {"at": "2026-11-23T04:07:00.000Z"}, "prompt": "喝水", "target": {"session": "s-1"},
+            "by": {"kind": "person"}, "recurring": false, "paused": false}
+    ]}));
+    assert_eq!(got.len(), 1, "{got:?}");
+    assert_eq!(
+        (got[0].id.as_str(), got[0].every.clone(), got[0].next),
+        (
+            "t5",
+            Every::Once,
+            Some("2026-11-23T04:07:00Z".parse().unwrap())
+        )
+    );
+}
+
 #[test]
 fn changes_replace_add_and_remove_one_by_one() {
     let mut loops = table(&json!({"schedules": [item("t1")]}));

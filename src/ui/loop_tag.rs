@@ -107,7 +107,7 @@ fn fit(text: &str, mark: &str, room: usize) -> Option<String> {
         .map(str::to_string)
 }
 
-/// 多久一次：固定间隔照秒数挑最大的整单位写（600 秒写「每 10 分钟」），cron 原样，动态的写「动态间隔」。
+/// 多久一次：固定间隔照秒数挑最大的整单位写（600 秒写「每 10 分钟」），cron 原样，动态的写「动态间隔」，AI 挂的一次写「定时触发」。
 fn every(every: &LoopEvery, config: &Config) -> String {
     let texts = &config.text.loops;
     match every {
@@ -121,6 +121,7 @@ fn every(every: &LoopEvery, config: &Config) -> String {
         }
         LoopEvery::Cron(cron) => cron.clone(),
         LoopEvery::Dynamic => texts.dynamic.clone(),
+        LoopEvery::Once => texts.once.clone(),
     }
 }
 

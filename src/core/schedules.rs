@@ -31,6 +31,8 @@ pub enum Every {
     Cron(String),
     /// 动态间隔：每一轮结束时定下一次。
     Dynamic,
+    /// AI 用 `schedule_next` 挂的一次定时触发（核心 FX-21：`by` 是 `model`、`when` 是 `at`、没有 `loop`），到点交一次就删。
+    Once,
 }
 
 /// 唤醒表的变化。
@@ -101,15 +103,21 @@ pub fn newly_held(loops: &[Loop], change: &Change, viewing: Option<&str>) -> boo
         .iter()
         .find(|l| &l.id == id)
         .and_then(|l| l.last.as_ref());
-    held && Some(now.session.as_str()) == viewing && before != now.last.as_ref()
+    // 「循环这一轮没开始」只说循环（AI 挂的一次定时触发不算）
+    held && now.every != Every::Once
+        && Some(now.session.as_str()) == viewing
+        && before != now.last.as_ref()
 }
 
-/// 一项：带 `loop`（`fixed`、`dynamic`）、跑在已有会话上的才算。
+/// 一项：带 `loop`（`fixed`、`dynamic`）的循环、AI 挂的一次定时触发（核心 FX-21），跑在已有会话上的才算；人建的定时任务不算。
 fn entry(item: &Value) -> Option<Loop> {
     let time = |v: &Value| v.as_str().and_then(|t| t.parse().ok());
-    let every = match item["loop"].as_str()? {
-        "dynamic" => Every::Dynamic,
-        _ => match (
+    let once = item["by"]["kind"] == "model" && item["when"]["at"].is_string();
+    let every = match item["loop"].as_str() {
+        None if once => Every::Once,
+        None => return None,
+        Some("dynamic") => Every::Dynamic,
+        Some(_) => match (
             item["when"]["every"].as_u64(),
             item["when"]["cron"].as_str(),
         ) {
