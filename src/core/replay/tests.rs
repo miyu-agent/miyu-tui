@@ -167,7 +167,8 @@ fn a_replayed_undo_draws_its_line_and_a_restore_or_redo_takes_it_away() {
     );
 }
 
-/// 循环交进来的那句补发时也画「循环 · 继续」那一行，不照你说的画（2026-11-17 项目主人验收第 3 条）。
+/// 循环交进来的那句补发时也画循环那一行旁白，不照你说的画（2026-11-17 项目主人验收第 3 条）；人敲 `/loop` 当场开的第一轮
+/// 补发时照人敲的那一行画（核心 FX-15）。
 #[test]
 fn a_replayed_wake_is_the_wake_line() {
     let mut replay = Replay::default();
@@ -175,7 +176,13 @@ fn a_replayed_wake_is_the_wake_line() {
         "by":{"kind": "schedule", "schedule": "t3", "loop": "dynamic"}, "cause":"schedule/t3/1",
         "body":{"blocks":[{"type":"text","text":"No new instructions."}]}});
     let got = replay.read(&user);
-    assert!(got.contains(&Push::Wake { seq: 41 }), "{got:?}");
+    assert!(
+        got.contains(&Push::Wake {
+            seq: 41,
+            words: Some("No new instructions.".into())
+        }),
+        "{got:?}"
+    );
     assert!(
         !got.iter().any(|p| matches!(p, Push::Said { .. })),
         "{got:?}"

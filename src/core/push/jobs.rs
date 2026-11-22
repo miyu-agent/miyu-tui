@@ -240,8 +240,9 @@ pub(super) fn said(event: &Value, mine: &dyn Fn(&str) -> bool) -> Option<Push> {
         text.join("\n")
     };
     // 到点的定时任务、循环交进来的（核心 J-1 上）：照你说的话画（2026-10-27 项目主人：「不用有什么特别的显示，正常和用户
-    // 消息类似发出去就行」）。
-    if by["kind"] == "schedule" {
+    // 消息类似发出去就行」）。人敲 `/goal <目标>` 当场开的第一轮（模块发的，带着人敲的那一行，核心 FX-15）也一样：你发的是什么，
+    // 显示的就是什么（2026-11-22 项目主人）。
+    if by["kind"] == "schedule" || (by["kind"] == "module" && typed.is_some()) {
         return Some(Push::Said {
             seq,
             text: typed.unwrap_or_else(text),
