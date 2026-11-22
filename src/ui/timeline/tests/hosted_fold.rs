@@ -57,7 +57,7 @@ fn hosted_searches_and_page_reads_fold_like_the_core_summary() {
     // 同一份数据在网页上照核心的 `summary` 写成这一句（中文、日文照核心的字表）。
     assert_eq!(
         folded(deepseek_round(), "zh", true),
-        ["  Searched the web 2 times · 3 pages · 1 tool · 6s"],
+        ["  搜索了 2 次网络 · 3 个网页 · 1 个工具 · 6s"],
         "原来供应商侧工具都按别的工具数，写成 Used 6 tools"
     );
     assert_eq!(

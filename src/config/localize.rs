@@ -26,19 +26,6 @@ pub(super) fn text(language: &Language) -> Result<(String, &'static str), String
         })
 }
 
-/// `language` 那一份里收起那一行的说法（界面语言是自动时借用，蓝图「时间线」第 17 条）。
-///
-/// # Errors
-///
-/// 这种语言没编进来，或者那一份的 `summary` 写坏了。
-pub(super) fn summary(language: &Language) -> Result<super::timeline::Summary, String> {
-    let (name, json) = text(language)?;
-    let value: serde_json::Value =
-        serde_json::from_str(json).map_err(|e| format!("resources/{name} 读不懂：{e}"))?;
-    crate::from_json::from_value(value.get("summary").cloned().unwrap_or_default())
-        .map_err(|e| format!("resources/{name} 的 summary 读不懂：{e}"))
-}
-
 /// 写了几种语言的（只拿表里的语言代码做键的一格）挑 `language` 那一种，再照 `T` 读（命令的说明、运行状态行的词）。
 /// 界面上的字的原文（JSON）：纯 ASCII 主题下先换成 ASCII（`ascii.rs`，check 13 ①），别的原样。换主题时重读（`app/language.rs`）。
 pub(super) fn shown(json: &str) -> std::borrow::Cow<'_, str> {

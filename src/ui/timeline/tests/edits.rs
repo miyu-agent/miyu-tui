@@ -22,19 +22,22 @@ fn a_refused_edit_is_an_error_and_adds_no_lines() {
     assert!(refused.failed(), "被拒的算出错：图标换成叉、整行红");
     let seg = segment(vec![edit(t0, 0), refused.clone()], None);
     let got = rows(0, &seg, &f.ctx());
-    assert_eq!(text(&got), ["  Used 1 tool · 1 edit +2 -1 · 1 err · 2s"]);
+    assert_eq!(
+        text(&got),
+        ["  用了 1 个工具 · 1 处编辑 +2 -1 · 1 个出错 · 2s"]
+    );
     let err = got[0]
         .line
         .spans
         .iter()
-        .find(|s| s.content == "1 err")
+        .find(|s| s.content == "1 个出错")
         .unwrap();
     assert_eq!(err.style, theme::error(), "出错的那一格红");
     // 只想了一下、写入被拒：照样写出来，不收成 `Thought for`（真模型实测：原来试过写入这件事都看不见了）。
     let seg = segment(vec![thought(t0, 0), refused], None);
     assert_eq!(
         text(&rows(0, &seg, &f.ctx())),
-        ["  Used 1 tool · 1 thought · 1 err · 2s"]
+        ["  用了 1 个工具 · 1 次思考 · 1 个出错 · 2s"]
     );
 }
 
@@ -44,7 +47,7 @@ fn a_folded_edit_carries_its_added_and_removed_lines() {
     let t0 = Instant::now();
     let seg = segment(vec![thought(t0, 0), edit(t0, 1)], None);
     let rows = rows(0, &seg, &f.ctx());
-    assert_eq!(text(&rows), ["  Made 1 edit +2 -1 · 1 thought · 2s"]);
+    assert_eq!(text(&rows), ["  编辑了 1 处 +2 -1 · 1 次思考 · 2s"]);
     let spans = &rows[0].line.spans;
     assert!(
         spans

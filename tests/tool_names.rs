@@ -66,16 +66,16 @@ fn a_finished_step_keeps_the_name_recorded_in_its_result_after_the_tool_is_gone(
     );
 }
 
-/// 她开口以后那一段收起成「Used 2 tools」：点一下铺开，等一步一行的标题写出显示名。
+/// 她开口以后那一段收起成「用了 2 个工具」：点一下铺开，等一步一行的标题写出显示名。
 fn opened_steps(tui: &mut support::Tui) {
-    tui.wait_for("Used 2 tools");
+    tui.wait_for("用了 2 个工具");
     let (y, line) = tui
         .lines()
         .into_iter()
         .enumerate()
-        .find(|(_, l)| l.contains("Used 2 tools"))
+        .find(|(_, l)| l.contains("用了 2 个工具"))
         .expect("有收起的那一行");
-    let x = line.find("Used").map_or(10, |b| line[..b].chars().count());
+    let x = line.find("用了").map_or(10, |b| line[..b].chars().count());
     tui.key(format!("\x1b[<0;{};{}M", x + 2, y + 1).as_bytes());
     tui.key(format!("\x1b[<0;{};{}m", x + 2, y + 1).as_bytes());
     tui.wait_for("掷骰子");

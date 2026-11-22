@@ -323,7 +323,7 @@ pub struct Texts {
     pub to_bottom: String,
     /// 预览放不下时最后一行，`{count}` 是省略了几行。
     pub omitted: String,
-    /// 时间线收起那一行的字：界面语言是自动时换成语言表 `auto_summary` 那一种（英文），手动选了哪种照哪种（蓝图「时间线」第 17 条）。
+    /// 时间线收起那一行的字：照界面那一种语言，自动（跟系统）时也一样（蓝图「时间线」第 17 条，2026-11-22 主人定）。
     pub summary: Summary,
     /// 第一次打开的引导上的字（蓝图「第一次打开的引导」）。
     pub oobe: crate::oobe::Texts,
@@ -368,7 +368,7 @@ pub struct Config {
     pub language_table: LanguageTable,
     /// 这一份照哪种语言读的。
     pub language: Language,
-    /// 界面语言是自动（跟系统）的，不是手动选的：收起那一行照 `language_table.auto_summary` 那一种（蓝图「界面语言」）。
+    /// 界面语言是自动（跟系统）的，不是手动选的（`/language` 框里亮哪一档、个人设置写 `auto`）。
     pub auto: bool,
 }
 
@@ -413,10 +413,6 @@ impl Config {
         // 测试不看跑测试的终端是哪种（设计 5.3）。
         let var = |name: &str| (!cfg!(test)).then(|| std::env::var(name).ok()).flatten();
         crate::tips::fit(&mut text.tips, &mut text.home_placeholder, cfg!(unix), var);
-        // 自动时收起那一行照语言表定的那一种（英文）；手动选了哪种照哪种（蓝图「时间线」第 17 条）。
-        if auto && let Some(summary_language) = table.find(&table.auto_summary) {
-            text.summary = localize::summary(&summary_language)?;
-        }
         // 记号照现在的主题盖在 layout.json、timeline.json 上（蓝图「主题」第 2 条）。
         let theme = crate::sheet::whole();
         let layout: Layout = themed::themed(
@@ -464,20 +460,6 @@ impl Config {
             language: language.clone(),
             auto,
         })
-    }
-
-    /// 时间线收起那一行照哪种语言写：自动时是语言表的 `auto_summary`（英文），手动选了哪种是哪种（蓝图「时间线」第 17 条）。
-    pub fn summary_language(&self) -> &str {
-        if self.auto
-            && self
-                .language_table
-                .find(&self.language_table.auto_summary)
-                .is_some()
-        {
-            &self.language_table.auto_summary
-        } else {
-            self.language.code()
-        }
     }
 }
 
