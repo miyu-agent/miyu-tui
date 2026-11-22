@@ -34,7 +34,7 @@ impl Caret {
     }
 }
 
-/// 画完一帧：藏着的光标挪到 `caret.at`。显示着的这一帧已经交给 ratatui（`glyph_guard::draw` 交回的位置），
+/// 画完一帧：藏着的光标挪到 `caret.at`。显示着的这一帧已经交给画面那一层（`screen::Screen::draw` 交回的位置），
 /// 它画完会先显示、再挪过去；这里不写，免得每帧多藏/显一次。
 ///
 /// # Errors

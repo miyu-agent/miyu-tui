@@ -117,6 +117,8 @@ pub struct Layout {
     pub trim_rows: usize,
     /// 少了以后过多少毫秒还。
     pub trim_after_ms: u64,
+    /// 画完一帧过这么多毫秒没再画，放掉画面的缓冲、只留指纹（`screen.rs`，蓝图「每一帧」）；0 是不放。
+    pub screen_park_ms: u64,
     /// 连不上核心时隔多久再试，`[最短, 最长]` 毫秒，每次翻倍（蓝图「连核心」第 7 条）。
     pub reconnect_ms: [u64; 2],
     /// 运行状态行词后面的三个点：一直在，和词一起被流光扫（`tui.md`「运行状态行和排队的消息」第 2 条）。
@@ -191,7 +193,8 @@ crate::from_json::record! {
         compact_below, compact_pad_left, compact_pad_right, compact_side_gap, paste_fold_lines,
         paste_fold_chars, max_rows, double_click_ms, esc_window_ms, drawer_keep_rows, currencies,
         usage, drawer_preview, notice_ms, frame_ms, key_burst_ms, markdown_cache, slow_frame_ms,
-        relayout_budget_ms, keep_screens, trim_rows, trim_after_ms, reconnect_ms, dots, shimmer, icons,
+        relayout_budget_ms, keep_screens, trim_rows, trim_after_ms, screen_park_ms, reconnect_ms, dots,
+        shimmer, icons,
         level_cycle, level_icons, prompt, queued_mark, goal_mark, menu_rows, history_rows,
         jump_flash_ms, session_rows, session_cwd_width, session_title_width, tick_mark,
         history_preview_rows, history_keep, user_bar, recap_mark, title_max, undo_icon,
