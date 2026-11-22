@@ -14,91 +14,6 @@ use super::rows::{self, Ctx, Row, Target};
 use crate::theme;
 use crate::transcript::{Entry, Step, StepKind, ToolState};
 
-/// 这一帧的全部行：一条一块，共享记着的那一份。
-#[derive(Debug, Clone, Default)]
-pub struct Rows {
-    chunks: Vec<Rc<[Row]>>,
-    /// 每一块结束在第几行（不含）。
-    ends: Vec<usize>,
-    /// 每一块是第几条的（条目间的空行、等她第一个字的那几行不是哪一条的）。
-    owners: Vec<Option<usize>>,
-}
-
-impl Rows {
-    /// 一共几行。
-    pub fn len(&self) -> usize {
-        self.ends.last().copied().unwrap_or(0)
-    }
-
-    /// 一行都没有。
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// 第 `i` 行。
-    pub fn get(&self, i: usize) -> Option<&Row> {
-        let k = self.ends.partition_point(|&end| end <= i);
-        let start = if k == 0 { 0 } else { self.ends[k - 1] };
-        self.chunks.get(k)?.get(i - start)
-    }
-
-    /// 从头到尾每一行。
-    pub fn iter(&self) -> impl Iterator<Item = &Row> {
-        self.chunks.iter().flat_map(|chunk| chunk.iter())
-    }
-
-    /// 从第 `first` 行起的 `n` 行，带着行号：只画视口里的，不从头数过去。
-    pub fn window(&self, first: usize, n: usize) -> impl Iterator<Item = (usize, &Row)> {
-        (first..first.saturating_add(n).min(self.len())).filter_map(|i| Some((i, self.get(i)?)))
-    }
-
-    /// 放掉行、只留几何（施工 LW-20）：一共几行、每一条从第几行到第几行照旧答得出，[`Rows::get`]、[`Rows::window`]、
-    /// [`Rows::iter`] 交回空的。停放着的会话用：它的视口切回来时只照上一帧的行号换算位置，不读行里的字。
-    pub fn shed(&mut self) {
-        self.chunks = Vec::new();
-    }
-
-    pub(super) fn push(&mut self, chunk: Rc<[Row]>) {
-        self.push_owned(chunk, None);
-    }
-
-    fn push_owned(&mut self, chunk: Rc<[Row]>, owner: Option<usize>) {
-        if chunk.is_empty() {
-            return;
-        }
-        let end = self.len() + chunk.len();
-        self.chunks.push(chunk);
-        self.ends.push(end);
-        self.owners.push(owner);
-    }
-
-    /// 属于条目的有几行：末尾不属于哪一条的（等第一个字时转着的那几行）不算；一行都不属于条目的照全部算。
-    pub fn content_len(&self) -> usize {
-        self.owners
-            .iter()
-            .rposition(Option::is_some)
-            .map_or_else(|| self.len(), |k| self.ends[k])
-    }
-
-    /// 第 `row` 行是第几条的；落在条目间空行上的，照它下面那一条。
-    pub fn entry_at(&self, row: usize) -> Option<usize> {
-        let k = self.ends.partition_point(|&end| end <= row);
-        self.owners.get(k..)?.iter().find_map(|o| *o)
-    }
-
-    /// 第 `entry` 条的最后一行后面是第几行（不含）；没有这一条的是 `None`。
-    pub fn end_of(&self, entry: usize) -> Option<usize> {
-        let k = self.owners.iter().rposition(|o| *o == Some(entry))?;
-        Some(self.ends[k])
-    }
-
-    /// 第 `entry` 条从第几行起。
-    pub fn start_of(&self, entry: usize) -> Option<usize> {
-        let k = self.owners.iter().position(|o| *o == Some(entry))?;
-        Some(if k == 0 { 0 } else { self.ends[k - 1] })
-    }
-}
-
 /// 这一帧怎么排（蓝图「正文」第 8 条）：要整份重排时一帧最多花多久，先排哪一条附近的。
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Plan {
@@ -116,56 +31,117 @@ impl Plan {
     }
 }
 
-impl From<Vec<Row>> for Rows {
-    fn from(rows: Vec<Row>) -> Self {
-        let mut out = Self::default();
-        out.push(rows.into());
-        out
+/// 记着的一条：指纹、排好的行（离视口远的放掉了，只剩行数，施工 LW-22）、一共几行、排出来带不带图。
+#[derive(Debug)]
+struct Kept {
+    key: u64,
+    rows: Option<Rc<[Row]>>,
+    len: usize,
+    figures: bool,
+}
+
+impl Kept {
+    /// 拼进这一帧的那一块：有行的用行，放掉了的只给行数。
+    fn piece(&self) -> Piece {
+        match &self.rows {
+            Some(rows) => Piece::Rows(rows.clone()),
+            None => Piece::Len(self.len),
+        }
     }
 }
 
-/// 记着的行：条目的编号到（指纹、排好的行、排出来带不带图）。
+/// 这一帧一条拼进去的：排好的行，或者只有行数（施工 LW-22）。
+enum Piece {
+    Rows(Rc<[Row]>),
+    Len(usize),
+}
+
+/// 记着的行：条目的编号到记着的那一条。
 #[derive(Debug, Default)]
 pub struct RowCache {
-    entries: HashMap<u64, (u64, Rc<[Row]>, bool)>,
+    entries: HashMap<u64, Kept>,
     /// 上一帧重排了几条（测试、量尺看）。
     pub rebuilt: usize,
-    /// 上一帧没轮到、先用旧行的有几条：还有的话下一帧接着排（`App::deadline`）。
+    /// 上一帧没轮到、先用旧行（或者旧的行数）的有几条：还有的话下一帧接着排（`App::deadline`）。
     pub stale: usize,
+    /// 上一帧先用旧行的是哪几条（编号）：补行（[`fill`]）现排了的不再算。
+    stale_ids: HashSet<u64>,
     /// 上一帧重排的是哪几条（编号）。
     fresh: HashSet<u64>,
+    /// 放掉了、还没报给归还堆那一处的行数（[`shed_far`] 攒着，[`RowCache::take_shed`] 取走）：放掉行不改正文一共几行，
+    /// 归还堆照行数少没少判断时看不到这一笔。
+    shed: usize,
 }
 
 impl RowCache {
+    /// 上次取走以后放掉了多少行：取走以后从 0 重新攒。
+    pub fn take_shed(&mut self) -> usize {
+        std::mem::take(&mut self.shed)
+    }
+
     /// 编号 `id` 的那一条上一帧重排过。
     #[cfg(test)]
     pub fn fresh(&self, id: u64) -> bool {
         self.fresh.contains(&id)
     }
+
+    /// 记着的每一条还留着的行（量尺、测试数留着多少）。
+    #[cfg(test)]
+    pub fn kept_rows(&self) -> impl Iterator<Item = &[Row]> {
+        self.entries.values().filter_map(|k| k.rows.as_deref())
+    }
+
+    /// 记着几条（有行的、只剩行数的都算）。
+    #[cfg(test)]
+    pub fn kept_len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// 排第 `i` 条（编号 `entry.id`）并记下来，交回排好的行。`figures` 是这一帧开始时图做好了几张。
+    fn lay(&mut self, i: usize, entry: &Entry, ctx: &Ctx, figures: u64) -> Rc<[Row]> {
+        self.rebuilt += 1;
+        self.fresh.insert(entry.id);
+        let rows: Rc<[Row]> = rows::entry_rows(i, entry, ctx).into();
+        let has_figures = rows
+            .iter()
+            .any(|r| r.figure().is_some() || r.figure_pending);
+        if let Some(key) = fingerprint(i, entry, ctx, has_figures.then_some(figures)) {
+            let kept = Kept {
+                key,
+                rows: Some(rows.clone()),
+                len: rows.len(),
+                figures: has_figures,
+            };
+            self.entries.insert(entry.id, kept);
+        }
+        rows
+    }
 }
 
 /// 把看得见的正文排成行，一条之间空一行；没变的条目用记着的。和整份重排（测试里的 `fresh_rows`）排出来的一模一样。
-/// 要重排的多、`plan` 给了预算的，照预算排视口附近的几条，没轮到的先用旧行，记进 `stale`，下一帧接着排。
+/// 要重排的多、`plan` 给了预算的，照预算排视口附近的几条，没轮到的先用旧行，记进 `stale`，下一帧接着排。记着的只剩
+/// 行数的（离视口远、放掉了，[`shed_far`]）照样拼进去，只占几行、没有行；视口附近要的由 [`fill`] 当场排出来。
 pub fn build(entries: &[Entry], ctx: &Ctx, cache: &RefCell<RowCache>, plan: Plan) -> Rows {
     let figures = ctx.figures.borrow().revision();
     let mut cache = cache.borrow_mut();
     cache.rebuilt = 0;
     cache.stale = 0;
+    cache.stale_ids.clear();
     cache.fresh.clear();
     let blank: Rc<[Row]> = Rc::from(vec![ctx.row(ctx.blank_slot(), Vec::new())]);
     let shown: Vec<usize> = (0..entries.len())
         .filter(|&i| rows::shown(&entries[i]))
         .collect();
     // 先看哪几条能直接用记着的，别的记下来要排。
-    let mut chunks: Vec<Option<Rc<[Row]>>> = vec![None; shown.len()];
+    let mut chunks: Vec<Option<Piece>> = (0..shown.len()).map(|_| None).collect();
     let mut todo = Vec::new();
     for (k, &i) in shown.iter().enumerate() {
         let entry = &entries[i];
         // 图做好了几张只算上次排出来带图的条目（没记着的照样算上，反正要排）。
-        let with_figures = cache.entries.get(&entry.id).is_none_or(|kept| kept.2);
+        let with_figures = cache.entries.get(&entry.id).is_none_or(|kept| kept.figures);
         let key = fingerprint(i, entry, ctx, with_figures.then_some(figures));
         match (key, cache.entries.get(&entry.id)) {
-            (Some(key), Some((old, rows, _))) if *old == key => chunks[k] = Some(rows.clone()),
+            (Some(key), Some(kept)) if kept.key == key => chunks[k] = Some(kept.piece()),
             _ => todo.push(k),
         }
     }
@@ -180,36 +156,28 @@ pub fn build(entries: &[Entry], ctx: &Ctx, cache: &RefCell<RowCache>, plan: Plan
         let i = shown[k];
         let entry = &entries[i];
         let over = cache.rebuilt > 0 && plan.budget.is_some_and(|b| start.elapsed() >= b);
-        // 预算用完了：记着旧行、不是在进行的，这一帧先用旧行。
+        // 预算用完了：记着旧行（或者旧的行数）、不是在进行的，这一帧先用旧的。
         let stale = over
-            .then(|| cache.entries.get(&entry.id).map(|kept| kept.1.clone()))
+            .then(|| cache.entries.get(&entry.id).map(Kept::piece))
             .flatten()
             .filter(|_| fingerprint(i, entry, ctx, None).is_some());
-        if let Some(rows) = stale {
+        if let Some(piece) = stale {
             cache.stale += 1;
-            chunks[k] = Some(rows);
+            cache.stale_ids.insert(entry.id);
+            chunks[k] = Some(piece);
             continue;
         }
-        cache.rebuilt += 1;
-        cache.fresh.insert(entry.id);
-        let rows: Rc<[Row]> = rows::entry_rows(i, entry, ctx).into();
-        let has_figures = rows
-            .iter()
-            .any(|r| r.figure().is_some() || r.figure_pending);
-        if let Some(key) = fingerprint(i, entry, ctx, has_figures.then_some(figures)) {
-            cache
-                .entries
-                .insert(entry.id, (key, rows.clone(), has_figures));
-        }
-        chunks[k] = Some(rows);
+        chunks[k] = Some(Piece::Rows(cache.lay(i, entry, ctx, figures)));
     }
     let mut out = Rows::default();
     for (chunk, &i) in chunks.into_iter().zip(&shown) {
         if !out.is_empty() {
             out.push(blank.clone());
         }
-        if let Some(chunk) = chunk {
-            out.push_owned(chunk, Some(i));
+        match chunk {
+            Some(Piece::Rows(rows)) => out.push_owned(rows, Some(i)),
+            Some(Piece::Len(len)) => out.push_len(len, i),
+            None => {}
         }
     }
     // 不在了的（撤销后又被删掉、排队退回的）不留着。
@@ -329,11 +297,17 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
 }
 
 /// 点中的东西属于第几条。
-fn owner(target: Target) -> usize {
+pub(crate) fn owner(target: Target) -> usize {
     match target {
         Target::Segment(i) | Target::Step(i, _) | Target::Entry(i) | Target::Details(i, _) => i,
     }
 }
+
+mod chunks;
+mod keep;
+
+pub use chunks::Rows;
+pub use keep::{fill, shed_far};
 
 #[cfg(test)]
 mod test_support;

@@ -34,8 +34,8 @@ pub enum BodyAction {
     Open(String),
 }
 
-/// 正文区的状态。
-#[derive(Debug, Default)]
+/// 正文区的状态。可以复制一份：画的时候在副本上试算视口（`ui/body/keep.rs`）。
+#[derive(Debug, Default, Clone)]
 pub struct BodyView {
     /// 第一行露出的是第几行；`None` 是跟着最新的。
     pub top: Option<usize>,
@@ -437,10 +437,14 @@ impl BodyView {
     }
 
     fn first_row_of(&self, target: Target) -> usize {
-        self.rows
-            .iter()
-            .position(|r| r.target == Some(target))
-            .unwrap_or(self.first)
+        self.rows.row_of(target).unwrap_or(self.first)
+    }
+
+    /// 选区（连同按下还没拖的那一点）盖到的行（施工 LW-22）：复制要读，这几行所在的条目不放掉、没有行的先排出来。
+    pub fn held(&self) -> Option<std::ops::Range<usize>> {
+        let ends = self.select.map(|(a, b)| [a.0, b.0]).into_iter().flatten();
+        let rows: Vec<usize> = ends.chain(self.press.map(|p| p.0)).collect();
+        Some(*rows.iter().min()?..rows.iter().max()? + 1)
     }
 
     /// 屏幕坐标对应的行和列；不在正文区里的是 `None`。

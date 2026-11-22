@@ -110,6 +110,9 @@ pub struct Layout {
     pub slow_frame_ms: u64,
     /// 整份重排时一帧最多花多少毫秒，没排完的下几帧接着排（蓝图「正文」第 8 条）。
     pub relayout_budget_ms: u64,
+    /// 正文排好的行只留视口上下各几屏，再远的条目放掉行、只留行数，滚近了再排（蓝图「正文」第 8 条，施工 LW-22）；
+    /// 0 是全部留着。
+    pub keep_screens: usize,
     /// 正文比最多时少了这么多行（收起大块、换会话、清空），过 `trim_after_ms` 把堆里空着的还给系统（`trim.rs`）。
     pub trim_rows: usize,
     /// 少了以后过多少毫秒还。
@@ -188,7 +191,7 @@ crate::from_json::record! {
         compact_below, compact_pad_left, compact_pad_right, compact_side_gap, paste_fold_lines,
         paste_fold_chars, max_rows, double_click_ms, esc_window_ms, drawer_keep_rows, currencies,
         usage, drawer_preview, notice_ms, frame_ms, key_burst_ms, markdown_cache, slow_frame_ms,
-        relayout_budget_ms, trim_rows, trim_after_ms, reconnect_ms, dots, shimmer, icons,
+        relayout_budget_ms, keep_screens, trim_rows, trim_after_ms, reconnect_ms, dots, shimmer, icons,
         level_cycle, level_icons, prompt, queued_mark, goal_mark, menu_rows, history_rows,
         jump_flash_ms, session_rows, session_cwd_width, session_title_width, tick_mark,
         history_preview_rows, history_keep, user_bar, recap_mark, title_max, undo_icon,

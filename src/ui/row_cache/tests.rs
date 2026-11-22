@@ -14,6 +14,7 @@ use crate::ui::test_support::{Fixture, fresh_rows};
 
 mod clear;
 mod fingerprint;
+mod keep;
 
 /// 你说的话里的一块：块上的字、原文、附件的种类（附件的文件另给）。
 fn chip(label: &str, full: &str, kind: Option<&str>) -> Chip {
@@ -74,10 +75,10 @@ fn cached_rows_match_a_fresh_build() {
         let cached = build(&t.entries, &ctx, &cache, Plan::all());
         assert_eq!(cached.len(), fresh.len());
         assert_eq!(
-            lines(cached.iter().map(|r| r.line.to_string())),
+            lines(cached.present().map(|r| r.line.to_string())),
             lines(fresh.iter().map(|r| r.line.to_string()))
         );
-        let targets: Vec<Option<Target>> = cached.iter().map(|r| r.target).collect();
+        let targets: Vec<Option<Target>> = cached.present().map(|r| r.target).collect();
         assert_eq!(targets, fresh.iter().map(|r| r.target).collect::<Vec<_>>());
         assert_eq!(
             cached.get(fresh.len() - 1).unwrap().plain(),
@@ -166,7 +167,7 @@ fn entries_are_known_by_id_not_position() {
     t.entries.remove(0);
     let cached = build(&t.entries, &ctx, &cache, Plan::all());
     let fresh = fresh_rows(&t.entries, &ctx);
-    let targets: Vec<Option<Target>> = cached.iter().map(|r| r.target).collect();
+    let targets: Vec<Option<Target>> = cached.present().map(|r| r.target).collect();
     assert_eq!(targets, fresh.iter().map(|r| r.target).collect::<Vec<_>>());
 }
 
@@ -395,13 +396,13 @@ fn a_details_title_opens_and_closes_its_reply() {
     let cache = RefCell::new(RowCache::default());
     let plain = |t: &Transcript, ctx: &crate::ui::rows::Ctx| -> Vec<String> {
         build(&t.entries, ctx, &cache, Plan::all())
-            .iter()
+            .present()
             .map(|r| r.plain())
             .collect()
     };
     let target = Target::Details(0, 0);
     let shut = build(&t.entries, &f.ctx(), &cache, Plan::all());
-    let title = shut.iter().find(|r| r.target == Some(target)).unwrap();
+    let title = shut.present().find(|r| r.target == Some(target)).unwrap();
     assert_eq!(title.plain(), "点我展开", "标题那一行能点，记号不复制");
     assert!(!plain(&t, &f.ctx()).iter().any(|l| l.contains("里面的字")));
     // 点一下：记在这一条上，缓存着的也重排。
@@ -411,7 +412,7 @@ fn a_details_title_opens_and_closes_its_reply() {
     let mut ctx = f.ctx();
     ctx.hover = Some(target);
     let lit = build(&t.entries, &ctx, &cache, Plan::all());
-    let row = lit.iter().find(|r| r.target == Some(target)).unwrap();
+    let row = lit.present().find(|r| r.target == Some(target)).unwrap();
     assert!(
         row.line
             .spans
@@ -455,7 +456,7 @@ fn a_full_relayout_is_spread_over_frames_starting_near_the_viewport() {
     let spread = build(&t.entries, &ctx, &cache, tight);
     let fresh = fresh_rows(&t.entries, &ctx);
     assert_eq!(
-        lines(spread.iter().map(|r| r.line.to_string())),
+        lines(spread.present().map(|r| r.line.to_string())),
         lines(fresh.iter().map(|r| r.line.to_string()))
     );
     // 翻上去看着第 3 条：先排它。

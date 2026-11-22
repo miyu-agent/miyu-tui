@@ -80,23 +80,32 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     if let Some(dream) = seen.talk.dream.as_ref().filter(|d| d.shown_in(viewing)) {
         rows.push(super::dream_rows::rows(dream, &ctx, std::time::Instant::now()).into());
     }
-    // 还算在看的那段回答：长过视口时停在它的开头（`tui.md`「正文」第 1 条）。在写的那段一律算；写完了的（后面只有收尾
-    // 那一行），上一帧开头还露着才算：后到的图、卡片把它撑高时停住，一口气整段到的、补发来的照旧跟着最新的。
-    let latest = seen.talk.transcript.reading().and_then(|(i, writing)| {
-        let entry = &seen.talk.transcript.entries[i];
-        let start = rows.start_of(i).filter(|_| super::rows::shown(entry))?;
-        Some((entry.id, start, writing))
-    });
-    if let Some(pinned) = pinned {
-        screen
-            .view
-            .unpin(pinned, &seen.talk.transcript.entries, |i| rows.start_of(i));
-    }
-    screen.view.reading = still_reading(&screen.view, latest);
-    screen.view.latest = latest.map(|(id, start, _)| (id, start));
-    let settled = seen.media.row_cache.borrow().stale == 0;
-    screen.view.live = seen.talk.transcript.running.is_some();
-    let first = first_row(&rows, area, &mut screen.view, settled);
+    // 视口照几何定（施工 LW-22，`body/keep.rs`）：离视口远的条目只有行数，视口附近只有行数的当场排出来，补出来的行数
+    // 变了的照补好的重算。还算在看的那段回答：长过视口时停在它的开头（`tui.md`「正文」第 1 条）。在写的那段一律算；写完了
+    // 的（后面只有收尾那一行），上一帧开头还露着才算：后到的图、卡片把它撑高时停住，一口气整段到的、补发来的照旧跟着最新的。
+    let transcript = &seen.talk.transcript;
+    let lay = keep::Lay {
+        entries: &transcript.entries,
+        ctx: &ctx,
+        cache: &seen.media.row_cache,
+    };
+    let anchor = screen.view.anchor.map(|(t, _)| row_cache::owner(t));
+    let geometry = |rows: &Rows, view: &mut crate::body_view::BodyView| {
+        let latest = transcript.reading().and_then(|(i, writing)| {
+            let entry = &transcript.entries[i];
+            let start = rows.start_of(i).filter(|_| super::rows::shown(entry))?;
+            Some((entry.id, start, writing))
+        });
+        if let Some(pinned) = pinned {
+            view.unpin(pinned, &transcript.entries, |i| rows.start_of(i));
+        }
+        view.reading = still_reading(view, latest);
+        view.latest = latest.map(|(id, start, _)| (id, start));
+        view.live = transcript.running.is_some();
+        let settled = seen.media.row_cache.borrow().stale == 0;
+        first_row(rows, area, view, settled)
+    };
+    let first = keep::place(&mut rows, &mut screen.view, area, &lay, geometry);
     let height = usize::from(area.height);
     let indent = u16::try_from(ctx.indent.width()).unwrap_or(0);
     let shade = shade_span(area, indent, ctx.width);
@@ -131,7 +140,16 @@ pub fn draw(frame: &mut Frame, areas: Areas, seen: &Seen, screen: &mut Screen) {
     });
     // 往上翻过时顶上钉一行你说的那句话（排期第 16 条，`pinned.rs`）。
     super::pinned::draw(frame, area, (&rows, first), seen, screen);
-    // 鼠标、复制照这一帧的行；共享记着的那一份，不复制。
+    // 离视口远的放掉行、只留行数（施工 LW-22）；后面只再读视口里的行。鼠标、复制照这一帧的行；共享记着的那一份，不复制。
+    let keep_screens = seen.config.layout.keep_screens;
+    keep::shed(
+        &mut rows,
+        &screen.view,
+        (first, height),
+        keep_screens,
+        anchor,
+        &lay,
+    );
     screen.view.rows = rows.clone();
     screen.view.older_shown =
         crate::body_view::BodyView::older_on_top(&rows, first, &seen.talk.transcript.entries);
@@ -347,17 +365,18 @@ fn first_row(
     // 这一帧点开、收起了一样东西：它在上一帧的第几行（底边照它挪，见下面）。
     let mut toggled = None;
     if let Some((target, y)) = view.anchor.take()
-        && let Some(i) = rows.iter().position(|r| r.target == Some(target))
+        && let Some(i) = rows.row_of(target)
     {
-        toggled = view.rows.iter().position(|r| r.target == Some(target));
+        // 上一帧那一条的行放掉了的，照找不到办：底边不跟着它挪（施工 LW-22；点得到的那一条上一帧在视口里，照常有行）。
+        toggled = view.rows.row_of(target);
         let mut top = i.saturating_sub(usize::from(y.saturating_sub(area.y)));
         // 展开的内容长到视口外面了：往上推到露出来，最多推到被点的那一行顶到最上面（2026-10-02 项目主人报：
         // 最底下那一行点开以后什么都看不见）。
-        let end = i + rows
-            .iter()
-            .skip(i)
-            .take_while(|r| r.target.is_some_and(|t| same_block(t, target)))
-            .count();
+        let end = i
+            + (i..rows.len())
+                .map_while(|j| rows.get(j))
+                .take_while(|r| r.target.is_some_and(|t| same_block(t, target)))
+                .count();
         if end > top + height {
             top = (end - height).min(i);
         }
@@ -459,6 +478,7 @@ fn first_row(
 }
 
 mod flash;
+mod keep;
 
 #[cfg(test)]
 mod tests;

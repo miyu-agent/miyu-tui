@@ -306,7 +306,7 @@ fn ruler_memory() {
     let built_kb = anon_kb();
     let md = ctx.md.borrow().len();
     let row: usize = rows
-        .iter()
+        .present()
         .map(|r| {
             std::mem::size_of::<crate::ui::rows::Row>() + spans(&r.line.spans) + r.plain().len()
         })

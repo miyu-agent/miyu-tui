@@ -29,3 +29,18 @@ fn a_small_drop_does_nothing() {
     trim.rows(290, t0, 200, AFTER);
     assert_eq!(trim.deadline(), Some(t0 + AFTER), "从最多时算起少了 210 行");
 }
+
+#[test]
+fn rows_shed_far_from_the_viewport_add_up_to_a_release() {
+    let t0 = Instant::now();
+    let mut trim = Trim::default();
+    trim.shed(120, t0, 200, AFTER);
+    assert_eq!(trim.deadline(), None, "还没攒够");
+    trim.shed(0, t0, 200, AFTER);
+    assert_eq!(trim.deadline(), None, "这一拍没放的不算");
+    trim.shed(90, t0, 200, AFTER);
+    assert_eq!(trim.deadline(), Some(t0 + AFTER), "攒够 200 行：两秒后还");
+    assert!(trim.take(t0 + AFTER));
+    trim.shed(50, t0, 200, AFTER);
+    assert_eq!(trim.deadline(), None, "还过以后从头攒");
+}
