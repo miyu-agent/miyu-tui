@@ -1,6 +1,6 @@
 //! 量尺（`RULER_TURNS=300 cargo test --release ruler_keep -- --ignored --nocapture`）：长会话只留视口附近几屏排好的行
 //! （施工 LW-22，蓝图「正文」第 8 条）。照 App 的做法画（测试终端，整帧 `ui::draw`），和全部留着（`keep_screens` 0）
-//! 比（翻页、回到底部照按键做的调视口的方法，测试里的界面没连核心、按键被开场的框收走）：按条记着的行留着多少条、合计多少字节；逐行滚、翻页、跳远、记着的行整份清空（来一张链接卡片）各一帧花多久。
+//! 比（翻页、回到底部照按键做的调视口的方法，测试里的界面没连核心、按键被开场的框收走）：按条记着的行留着多少条、合计多少字节；逐行滚、翻页、跳远、记着的行整份清空、来一张链接卡片（施工 LW-24）各一帧花多久。
 //! 只打数字，不断言。`RULER_TURNS` 不给的三档都量（30、150、300）。
 
 use std::time::{Duration, Instant};
@@ -170,13 +170,31 @@ fn ruler_keep() {
                 bar(&mut app, y);
                 jump.push(frame(&mut app, &mut term));
             }
-            // 来一张链接卡片：记着的行整份清空（`app/cards.rs`），下一帧全部重排。
+            // 记着的行整份清空（给人看的字、包的图标换了，`app/updates.rs`），下一帧全部重排。
             app.screen.view.follow();
             frame(&mut app, &mut term);
             *app.media.row_cache.borrow_mut() = Default::default();
             let cleared = frame(&mut app, &mut term);
+            // 来一张链接卡片（施工 LW-24）：最后加一条只有一个链接的回答，排的时候问了账；卡片回来以后那一帧只重排
+            // 问过账的条目（原来和上面一样整份清空）。
+            app.talk
+                .transcript
+                .note(Kind::Reply, "https://a.dev/x".into());
+            frame(&mut app, &mut term);
+            frame(&mut app, &mut term);
+            let card = crate::core::Card {
+                title: "A 的文章".into(),
+                site: "a.dev".into(),
+                ..crate::core::Card::default()
+            };
+            app.media
+                .cards
+                .borrow_mut()
+                .got_card("https://a.dev/x".into(), Some(card));
+            let carded = frame(&mut app, &mut term);
+            let relaid = app.media.row_cache.borrow().rebuilt;
             println!(
-                "  逐行滚 {}；翻页 {}；跳远 {}；整份清空以后那一帧 {cleared:.2}ms",
+                "  逐行滚 {}；翻页 {}；跳远 {}；整份清空以后那一帧 {cleared:.2}ms；来一张链接卡片以后那一帧 {carded:.2}ms、重排 {relaid} 条",
                 stats(&wheel),
                 stats(&page),
                 stats(&jump)

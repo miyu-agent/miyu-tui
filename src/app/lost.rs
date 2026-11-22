@@ -35,9 +35,9 @@ impl App {
         for parked in self.talk.parked.values_mut() {
             parked.transcript.lost();
         }
-        // 卡片、图：没回来的忘掉，排好的行扔掉，重排时再要（排好的行里记着占位，不重排就不会再问）。
+        // 卡片、图：没回来的忘掉，重排时再要。排好的行里记着占位，不重排就不会再问：两本账各记一次变动，排的时候
+        // 问过账的条目下一帧重排（`ui/row_cache`，施工 LW-24），没问过的用记着的行。
         self.media.cards.borrow_mut().lost();
         self.media.diagrams.borrow_mut().lost();
-        *self.media.row_cache.borrow_mut() = Default::default();
     }
 }

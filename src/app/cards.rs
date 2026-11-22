@@ -1,5 +1,5 @@
 //! 链接卡片的收发（蓝图 `tui.md`「链接卡片」第 2、4 条）：排正文时记进单子的卡片、图，主循环每一帧以后发给核心；回来了记进
-//! 账、扔掉排好的行重排（卡片换掉了那一行链接）。
+//! 账；排的时候问过账的条目照账变过几次重排（卡片换掉了那一行链接），别的条目用记着的行（`ui/row_cache`，施工 LW-24）。
 
 use super::App;
 use crate::core::{Command, Update};
@@ -21,7 +21,7 @@ impl App {
         self.media.cards.borrow().pending()
     }
 
-    /// 卡片、图回来了：记进账，排好的行扔掉重排。是这两种的交回 `true`。
+    /// 卡片、图回来了：记进账（用到账的条目下一帧重排）。是这两种的交回 `true`。
     pub(super) fn card_update(&mut self, update: &mut Option<Update>) -> bool {
         match update.take() {
             Some(Update::LinkCard { url, card }) => {
@@ -35,7 +35,6 @@ impl App {
                 return false;
             }
         }
-        *self.media.row_cache.borrow_mut() = Default::default();
         true
     }
 }

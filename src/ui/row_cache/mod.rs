@@ -31,13 +31,28 @@ impl Plan {
     }
 }
 
-/// 记着的一条：指纹、排好的行（离视口远的放掉了，只剩行数，施工 LW-22）、一共几行、排出来带不带图。
+/// 记着的一条：指纹、排好的行（离视口远的放掉了，只剩行数，施工 LW-22）、一共几行、排出来带不带图、排的时候问没问过
+/// 链接卡片和 mermaid 图的账（施工 LW-24）。
 #[derive(Debug)]
 struct Kept {
     key: u64,
     rows: Option<Rc<[Row]>>,
     len: usize,
     figures: bool,
+    books: bool,
+}
+
+/// 两本账（链接卡片、mermaid 图）各被问过几次：排一条前后各看一眼，变了就是这一条用到了账。
+fn asked(ctx: &Ctx) -> (u64, u64) {
+    (ctx.cards.borrow().asked(), ctx.diagrams.borrow().asked())
+}
+
+/// 两本账各变过几次：用到账的条目把它算进指纹，卡片、图回来了只重排这几条。
+fn books(ctx: &Ctx) -> (u64, u64) {
+    (
+        ctx.cards.borrow().revision(),
+        ctx.diagrams.borrow().revision(),
+    )
 }
 
 impl Kept {
@@ -101,16 +116,23 @@ impl RowCache {
     fn lay(&mut self, i: usize, entry: &Entry, ctx: &Ctx, figures: u64) -> Rc<[Row]> {
         self.rebuilt += 1;
         self.fresh.insert(entry.id);
+        let before = asked(ctx);
         let rows: Rc<[Row]> = rows::entry_rows(i, entry, ctx).into();
+        let uses_books = asked(ctx) != before;
         let has_figures = rows
             .iter()
             .any(|r| r.figure().is_some() || r.figure_pending);
-        if let Some(key) = fingerprint(i, entry, ctx, has_figures.then_some(figures)) {
+        let with = With {
+            figures: has_figures.then_some(figures),
+            books: uses_books.then(|| books(ctx)),
+        };
+        if let Some(key) = fingerprint(i, entry, ctx, with) {
             let kept = Kept {
                 key,
                 rows: Some(rows.clone()),
                 len: rows.len(),
                 figures: has_figures,
+                books: uses_books,
             };
             self.entries.insert(entry.id, kept);
         }
@@ -137,9 +159,13 @@ pub fn build(entries: &[Entry], ctx: &Ctx, cache: &RefCell<RowCache>, plan: Plan
     let mut todo = Vec::new();
     for (k, &i) in shown.iter().enumerate() {
         let entry = &entries[i];
-        // 图做好了几张只算上次排出来带图的条目（没记着的照样算上，反正要排）。
-        let with_figures = cache.entries.get(&entry.id).is_none_or(|kept| kept.figures);
-        let key = fingerprint(i, entry, ctx, with_figures.then_some(figures));
+        // 图做好了几张只算上次排出来带图的条目，两本账变过几次只算上次排的时候问过账的（没记着的照样算上，反正要排）。
+        let kept = cache.entries.get(&entry.id);
+        let with = With {
+            figures: kept.is_none_or(|kept| kept.figures).then_some(figures),
+            books: kept.is_none_or(|kept| kept.books).then(|| books(ctx)),
+        };
+        let key = fingerprint(i, entry, ctx, with);
         match (key, cache.entries.get(&entry.id)) {
             (Some(key), Some(kept)) if kept.key == key => chunks[k] = Some(kept.piece()),
             _ => todo.push(k),
@@ -160,7 +186,7 @@ pub fn build(entries: &[Entry], ctx: &Ctx, cache: &RefCell<RowCache>, plan: Plan
         let stale = over
             .then(|| cache.entries.get(&entry.id).map(Kept::piece))
             .flatten()
-            .filter(|_| fingerprint(i, entry, ctx, None).is_some());
+            .filter(|_| fingerprint(i, entry, ctx, With::default()).is_some());
         if let Some(piece) = stale {
             cache.stale += 1;
             cache.stale_ids.insert(entry.id);
@@ -186,9 +212,17 @@ pub fn build(entries: &[Entry], ctx: &Ctx, cache: &RefCell<RowCache>, plan: Plan
     out
 }
 
+/// 只有一部分条目才算进指纹的：图做好了几张（带图的条目）、两本账变过几次（排的时候问过账的条目，施工 LW-24）。
+#[derive(Debug, Clone, Copy, Default)]
+struct With {
+    figures: Option<u64>,
+    books: Option<(u64, u64)>,
+}
+
 /// 这一条和排版条件的指纹：变了就重排。在进行的那一段（还有步骤在转圈、在走表）、正在压缩的那一行（行首在转圈）
 /// 是 `None`，每帧重排。
-fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Option<u64> {
+fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, with: With) -> Option<u64> {
+    let figures = with.figures;
     if let Some(segment) = &entry.segment
         && (!segment.finished || segment.steps.iter().any(Step::busy))
     {
@@ -218,6 +252,8 @@ fn fingerprint(i: usize, entry: &Entry, ctx: &Ctx, figures: Option<u64>) -> Opti
         ctx.figures.borrow().off(),
         // 图占几行照屏高算（三分之一屏）：只改窗口高度时带图的也要重排（review C4，2026-10-11）。
         figures.map(|_| ctx.screen_rows),
+        // 链接卡片、图、mermaid 图回来了：排的时候问过账的条目重排（卡片换掉那一行链接、图占的行数变了）。
+        with.books,
     )
         .hash(&mut h);
     ctx.hover.filter(|t| owner(*t) == i).hash(&mut h);
