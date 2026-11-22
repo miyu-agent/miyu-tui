@@ -52,6 +52,12 @@ impl Rows {
         (first..first.saturating_add(n).min(self.len())).filter_map(|i| Some((i, self.get(i)?)))
     }
 
+    /// 放掉行、只留几何（施工 LW-20）：一共几行、每一条从第几行到第几行照旧答得出，[`Rows::get`]、[`Rows::window`]、
+    /// [`Rows::iter`] 交回空的。停放着的会话用：它的视口切回来时只照上一帧的行号换算位置，不读行里的字。
+    pub fn shed(&mut self) {
+        self.chunks = Vec::new();
+    }
+
     pub(super) fn push(&mut self, chunk: Rc<[Row]>) {
         self.push_owned(chunk, None);
     }

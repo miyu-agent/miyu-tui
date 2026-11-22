@@ -105,6 +105,13 @@ pub struct Pinned {
 }
 
 impl BodyView {
+    /// 这个会话停放起来了（施工 LW-20）：上一帧的行只留几何（[`Rows::shed`]），选中的一段放开（它指着的行不在了）。
+    /// 视口停在哪、底边到哪这些照旧留着，切回来时照它们换算。
+    pub fn park(&mut self) {
+        self.rows.shed();
+        self.select = None;
+    }
+
     /// 处理一个落在正文区上（或者从正文区开始拖）的鼠标事件。
     pub fn mouse(&mut self, event: MouseEvent) -> BodyAction {
         if self.bar_mouse(event) {

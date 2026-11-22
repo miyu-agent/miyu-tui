@@ -397,11 +397,12 @@ impl App {
             return;
         };
         next.transcript.link = self.talk.transcript.link.clone();
-        let old = Parked {
+        let mut old = Parked {
             transcript: std::mem::replace(&mut self.talk.transcript, next.transcript),
             board: std::mem::replace(&mut self.talk.board, next.board),
             view: std::mem::replace(&mut self.screen.view, next.view),
         };
+        old.view.park();
         // 停放着的时候收起、变短了的，底边照换上来的这一份重算（同 `switch.rs` 的 `swap_in`）。
         self.screen.view.settle();
         self.talk.parked.insert(current.clone(), old);
@@ -411,6 +412,7 @@ impl App {
         self.link.core.send(Command::View(target));
         // 行缓存照条目编号认，两份正文的编号会撞：换了就重排。
         *self.media.row_cache.borrow_mut() = Default::default();
+        self.media.md_cache.borrow_mut().clear();
         self.boxes.panel = None;
     }
 }

@@ -87,6 +87,11 @@ impl MdCache {
         lines
     }
 
+    /// 全丢掉（施工 LW-20）：换了一个会话，记着的是上一个会话的回答，照第几条认已经对不上、只是占着。
+    pub fn clear(&mut self) {
+        self.kept = HashMap::new();
+    }
+
     /// 记着几篇。
     #[cfg(test)]
     pub fn len(&self) -> usize {
@@ -121,6 +126,22 @@ mod tests {
         cache.lines(1, (2, 10), 80, render);
         cache.lines(1, (2, 10), 60, render);
         assert_eq!(renders.get(), 6, "字、宽度变了都重排");
+    }
+
+    #[test]
+    fn clearing_forgets_every_reply() {
+        let renders = Cell::new(0);
+        let render = || {
+            renders.set(renders.get() + 1);
+            Vec::new()
+        };
+        let mut cache = MdCache::new(4);
+        cache.lines(0, (1, 10), 80, render);
+        cache.lines(1, (1, 10), 80, render);
+        cache.clear();
+        assert_eq!(cache.len(), 0);
+        cache.lines(0, (1, 10), 80, render);
+        assert_eq!(renders.get(), 3, "清过以后同一篇要重排");
     }
 
     /// 几 MB 以上的一篇不记：每次现排，原来记着的（流式时还小）丢掉。

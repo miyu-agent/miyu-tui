@@ -100,3 +100,57 @@ fn nothing_cut_changes_nothing_and_thoughts_are_left_alone() {
     });
     assert_eq!(thought.as_deref(), Some("想一想 user<x>"));
 }
+
+#[test]
+fn a_finished_turn_keeps_no_spare_room_in_what_was_streamed() {
+    // 施工 LW-20：回答、思考是一小截一小截接上去的，容量照翻倍长；一轮到头收紧到实际长度。
+    let mut t = Transcript::default();
+    let mut pushes = vec![
+        Push::TurnStarted(1, None),
+        Push::BlockStart {
+            index: 0,
+            block: Block::Reasoning,
+        },
+    ];
+    for _ in 0..300 {
+        pushes.push(Push::Delta {
+            index: 0,
+            text: "想一想这一步。".into(),
+        });
+    }
+    pushes.push(Push::BlockEnd(0));
+    pushes.push(Push::BlockStart {
+        index: 1,
+        block: Block::Text,
+    });
+    for _ in 0..300 {
+        pushes.push(Push::Delta {
+            index: 1,
+            text: "一小截回答，".into(),
+        });
+    }
+    pushes.push(Push::BlockEnd(1));
+    apply(&mut t, pushes);
+    let reply = t.entries.iter().rfind(|e| e.kind == Kind::Reply).unwrap();
+    assert!(
+        reply.text.capacity() > reply.text.len(),
+        "流式的时候容量比字多"
+    );
+    apply(
+        &mut t,
+        vec![Push::TurnEnded(crate::core::EndReason::Completed)],
+    );
+    let reply = t.entries.iter().rfind(|e| e.kind == Kind::Reply).unwrap();
+    assert_eq!(reply.text.capacity(), reply.text.len(), "回答收紧了");
+    let thought = t
+        .entries
+        .iter()
+        .filter_map(|e| e.segment.as_ref())
+        .flat_map(|s| s.steps.iter())
+        .find_map(|s| match &s.kind {
+            StepKind::Thought { text } => Some(text),
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(thought.capacity(), thought.len(), "思考收紧了");
+}

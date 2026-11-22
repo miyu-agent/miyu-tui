@@ -154,6 +154,24 @@ impl Transcript {
         self.entries.len() - 1
     }
 
+    /// 一轮到头：这一轮流式攒的字（回答、思考、调工具的参数）收紧到实际长度（施工 LW-20）。字是一小截一小截接上去的，
+    /// 容量照翻倍长，收尾时平均空着三四成；这一轮以后它们不再变长。从最后一条往回收到你说的那句话为止。
+    pub(super) fn tighten(&mut self) {
+        for entry in self.entries.iter_mut().rev() {
+            entry.text.shrink_to_fit();
+            for step in entry.segment.iter_mut().flat_map(|s| s.steps.iter_mut()) {
+                match &mut step.kind {
+                    StepKind::Thought { text } => text.shrink_to_fit(),
+                    StepKind::Tool { args, .. } => args.shrink_to_fit(),
+                    StepKind::Report { .. } => {}
+                }
+            }
+            if entry.kind == super::Kind::User {
+                break;
+            }
+        }
+    }
+
     /// 收起在进行的那一段（说话就收起）。
     pub(super) fn finish_segment(&mut self) {
         let now = self.clock.now();
