@@ -109,7 +109,7 @@ fn a_folded_segment_is_one_line_ending_with_its_time() {
     );
     assert_eq!(
         text(&rows(0, &seg, &f.ctx())),
-        ["  执行了 2 条命令 · 1 次思考 · 3s"]
+        ["  Ran 2 commands · 1 thought · 3s"]
     );
 }
 
@@ -118,7 +118,10 @@ fn a_lone_command_names_the_folded_line_and_turns_red_when_it_failed() {
     let f = Fixture::new();
     let t0 = Instant::now();
     let seg = segment(vec![thought(t0, 0), command(t0, 1, ToolStatus::Ok)], None);
-    assert_eq!(text(&rows(0, &seg, &f.ctx())), ["  列目录 · 1 次思考 · 2s"]);
+    assert_eq!(
+        text(&rows(0, &seg, &f.ctx())),
+        ["  列目录 · 1 thought · 2s"]
+    );
     let failed = segment(
         vec![thought(t0, 0), command(t0, 1, ToolStatus::Error)],
         None,
@@ -127,7 +130,7 @@ fn a_lone_command_names_the_folded_line_and_turns_red_when_it_failed() {
     assert!(
         row.line
             .to_string()
-            .contains("列目录 · 1 次思考 · 1 个出错 · 2s")
+            .contains("列目录 · 1 thought · 1 err · 2s")
     );
     assert_eq!(row.line.spans.last().unwrap().style, theme::error());
 }
@@ -140,7 +143,7 @@ fn a_lone_command_leads_the_folded_line_beside_an_edit() {
     let seg = segment(vec![command(t0, 0, ToolStatus::Ok), edit(t0, 1)], None);
     assert_eq!(
         text(&rows(0, &seg, &f.ctx())),
-        ["  列目录 · 1 处编辑 +2 -1 · 2s"]
+        ["  列目录 · 1 edit +2 -1 · 2s"]
     );
 }
 
@@ -156,7 +159,7 @@ fn a_command_without_a_title_still_folds_by_counts() {
     let seg = segment(vec![no_title, edit(t0, 1)], None);
     assert_eq!(
         text(&rows(0, &seg, &f.ctx())),
-        ["  执行了 1 条命令 · 1 处编辑 +2 -1 · 2s"]
+        ["  Ran 1 command · 1 edit +2 -1 · 2s"]
     );
 }
 
@@ -167,7 +170,7 @@ fn a_command_beside_an_edit_is_not_wholly_red() {
     let t0 = Instant::now();
     let seg = segment(vec![command(t0, 0, ToolStatus::Error), edit(t0, 1)], None);
     let got = rows(0, &seg, &f.ctx());
-    assert_eq!(text(&got), ["  列目录 · 1 处编辑 +2 -1 · 1 个出错 · 2s"]);
+    assert_eq!(text(&got), ["  列目录 · 1 edit +2 -1 · 1 err · 2s"]);
     assert_eq!(
         got[0].line.spans.last().unwrap().style,
         theme::dim(),
@@ -177,7 +180,7 @@ fn a_command_beside_an_edit_is_not_wholly_red() {
         .line
         .spans
         .iter()
-        .find(|s| s.content == "1 个出错")
+        .find(|s| s.content == "1 err")
         .unwrap();
     assert_eq!(err.style, theme::error(), "出错那一格照旧红");
 }
@@ -200,7 +203,7 @@ fn an_open_segment_lists_its_steps_with_icons_and_connectors() {
     assert_eq!(
         text(&rows),
         [
-            "  执行了 2 条命令 · 1 次思考 · 1 个出错 · 3s".to_string(),
+            "  Ran 2 commands · 1 thought · 1 err · 3s".to_string(),
             "  │".into(),
             format!("  {} 已思考 · 1.0s · 4", icons.think),
             "  │ 先看看目录".into(),
@@ -411,7 +414,7 @@ fn a_folded_thought_only_segment_is_just_its_time() {
     let only = segment(vec![done], None);
     assert_eq!(
         text(&rows(0, &only, &f.ctx())),
-        ["  思考了 2s"],
+        ["  Thought for 2s"],
         "不接思考的字"
     );
 }

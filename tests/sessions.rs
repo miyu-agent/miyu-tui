@@ -76,7 +76,7 @@ fn starting_in_the_most_recent_session_draws_what_was_said_before() {
     again.wait_for("以前的回答。");
     assert!(again.shows("┃ 以前说的话"), "{}", again.lines().join("\n"));
     again.wait_for_done();
-    again.wait_for("思考了");
+    again.wait_for("Thought for");
 }
 
 #[test]

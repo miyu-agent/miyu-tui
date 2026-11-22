@@ -1,4 +1,4 @@
-//! 收起那一行（蓝图 `tui.md`「时间线」第 17 条）：照界面那一种语言，不带箭头，末尾接这一段的用时。
+//! 收起那一行（蓝图 `tui.md`「时间线」第 17 条）：永远英文，不带箭头，末尾接这一段的用时。
 //!
 //! - 只想过：`Thought for 26s`（本来就带时间）；
 //! - 做事的只有一条命令（思考不算）、有短标题：`List target project dirs · 1 thought · 3s`；
@@ -182,10 +182,18 @@ fn sending(segment: &Segment, ctx: &Ctx) -> Option<String> {
     named.filter(|_| sent == 1)
 }
 
-/// 收起那一行里一件工具的显示名：照一步的标题取名的规矩（收起那一行和界面同一种语言，2026-11-22 主人定）。
+/// 收起那一行里一件工具的显示名，和这一行的字同一种语言：界面语言是自动、收起那一行写英文时（2026-10-16 项目主人验
+/// T-260：原来写成「发送表情包 · 2 thoughts」），照调用那一刻记下的英文那一份，没有的写工具名（核心给的工具表是界面语言
+/// 那一种，不拿它凑）；和界面同一种语言的照一步的标题取名的规矩。
 fn shown_name(name: &str, step: &crate::transcript::Step, ctx: &Ctx) -> String {
-    ctx.human
-        .step_name(name, &step.display, ctx.config.language.code())
+    let lang = ctx.config.summary_language();
+    if lang == ctx.config.language.code() {
+        return ctx.human.step_name(name, &step.display, lang);
+    }
+    step.display
+        .get(lang)
+        .cloned()
+        .unwrap_or_else(|| name.to_string())
 }
 
 /// 这一行能写几列：去掉行首两格槽。

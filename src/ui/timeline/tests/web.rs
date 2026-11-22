@@ -34,20 +34,23 @@ fn a_folded_segment_counts_searches_and_fetched_pages_on_their_own() {
     let fetch = |start| tool("web_fetch", ToolStatus::Ok, start);
     assert_eq!(
         fold(vec![thought(t0, 0), search(1), fetch(2)]),
-        ["  搜索了 1 次网络 · 1 个网页 · 1 次思考 · 3s"]
+        ["  Searched the web 1 time · 1 page · 1 thought · 3s"]
     );
-    assert_eq!(fold(vec![search(0), search(1)]), ["  搜索了 2 次网络 · 2s"]);
-    assert_eq!(fold(vec![fetch(0), fetch(1)]), ["  抓取了 2 个网页 · 2s"]);
+    assert_eq!(
+        fold(vec![search(0), search(1)]),
+        ["  Searched the web 2 times · 2s"]
+    );
+    assert_eq!(fold(vec![fetch(0), fetch(1)]), ["  Fetched 2 pages · 2s"]);
     let other = tool("grep", ToolStatus::Ok, 2);
     assert_eq!(
         fold(vec![search(0), fetch(1), other]),
-        ["  搜索了 1 次网络 · 1 个网页 · 1 个工具 · 3s"],
+        ["  Searched the web 1 time · 1 page · 1 tool · 3s"],
         "别的工具照旧算 tools"
     );
     // 出错的没搜成：算工具（同记住）。
     assert_eq!(
         fold(vec![tool("web_search", ToolStatus::Error, 0)]),
-        ["  用了 1 个工具 · 1 个出错 · 1s"]
+        ["  Used 1 tool · 1 err · 1s"]
     );
 }
 
