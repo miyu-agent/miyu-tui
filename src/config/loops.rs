@@ -26,3 +26,13 @@ pub struct LoopTexts {
 }
 
 crate::from_json::record! { LoopTexts, deny { title, paused, next, dynamic, every, round, builtin, held } }
+
+impl LoopTexts {
+    /// 到点那一轮的旁白：带着这一轮交进来的那句的第一行写 `round`，光打 `/loop` 的（没有原文）写 `builtin`。
+    pub fn round_line(&self, words: Option<String>) -> String {
+        words.map_or_else(
+            || self.builtin.clone(),
+            |w| self.round.replace("{words}", &w),
+        )
+    }
+}
