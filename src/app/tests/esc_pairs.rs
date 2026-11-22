@@ -78,3 +78,26 @@ fn sending_a_line_forgets_the_first_escape() {
     press(&mut app, KeyCode::Esc);
     assert_eq!(interrupts(&mut sent), 0, "发出去以后按的是新的第一下");
 }
+
+/// 两下 `Esc` 中间按了别的键（打了字、挪了光标、粘贴了一段）：上一下作废，后一下只是新的第一下（2026-11-22 查出：原来只有
+/// `Esc` 自己设、取记着的那一下，按一下、打几个字、再按一下也被当成连着两下，打断并撤掉这一轮）。
+#[test]
+fn another_key_between_two_escapes_breaks_the_pair() {
+    let (mut app, mut sent) = answering();
+    press(&mut app, KeyCode::Esc);
+    press(&mut app, KeyCode::Char('a'));
+    press(&mut app, KeyCode::Esc);
+    assert_eq!(interrupts(&mut sent), 0, "中间打了字：后一下只是第一下");
+    press(&mut app, KeyCode::Esc);
+    assert_eq!(interrupts(&mut sent), 1, "接着再按一下才打断");
+    let (mut app, mut sent) = answering();
+    press(&mut app, KeyCode::Esc);
+    press(&mut app, KeyCode::Left);
+    press(&mut app, KeyCode::Esc);
+    assert_eq!(interrupts(&mut sent), 0, "中间挪了光标也一样");
+    let (mut app, mut sent) = answering();
+    press(&mut app, KeyCode::Esc);
+    app.handle(Event::Paste("贴一段".into()));
+    press(&mut app, KeyCode::Esc);
+    assert_eq!(interrupts(&mut sent), 0, "中间粘贴了一段也一样");
+}
