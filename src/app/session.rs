@@ -122,7 +122,8 @@ impl App {
         match old.session.clone() {
             Some(session) if keep => {
                 self.talk.left.push(session.clone());
-                let view = std::mem::take(&mut self.screen.view);
+                let mut view = std::mem::take(&mut self.screen.view);
+                view.park();
                 let parked = super::sessions::Parked {
                     transcript: old,
                     board,
@@ -141,6 +142,7 @@ impl App {
         self.screen.view = Default::default();
         self.boxes.panel = None;
         *self.media.row_cache.borrow_mut() = Default::default();
+        self.media.md_cache.borrow_mut().clear();
         // 换上的是一份空的正文：新会话的首页照配置的开局级别画（切会话的随后整份换掉）。
         self.talk.level_picked = false;
         self.show_default_level();
