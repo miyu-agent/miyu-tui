@@ -14,6 +14,8 @@ use futures_core::Stream;
 use ratatui::crossterm::event::EventStream;
 use tokio::sync::Notify;
 
+#[cfg(target_os = "linux")]
+mod hangup;
 mod replies;
 pub use replies::Read;
 use replies::Replies;
@@ -32,6 +34,9 @@ pub struct Reader {
 impl Reader {
     /// 起一个线程读终端的事件，交给 `send`；`send` 交回假（主循环不收了）或者终端读不了时收工。
     pub fn spawn(send: impl Fn(Read) -> bool + Send + 'static) -> Self {
+        // 终端挂断了 crossterm 读不出来也不报错，原地空转：另起一条看挂断的（`reader/hangup.rs`）。
+        #[cfg(target_os = "linux")]
+        hangup::watch();
         let reader = Self::default();
         let (paused, knock, idle) = (
             reader.paused.clone(),

@@ -263,6 +263,11 @@ impl Home {
         )
     }
 
+    /// 同 [`Home::tui`]，界面经 `program` 起（参数 `args`）：测外面套了一层的（例如先忽略挂断信号的 shell）。
+    pub fn tui_via(&self, lang: &str, program: &str, args: &[&str]) -> Tui {
+        Tui::program(&self.dir, &self.work, lang, &[], args, program)
+    }
+
     /// 同 [`Home::tui`]，另外带几个环境变量。
     pub fn tui_with(&self, lang: &str, env: &[(&str, &str)]) -> Tui {
         Tui::spawn(&self.dir, &self.work, lang, env, &[])
