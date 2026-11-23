@@ -59,7 +59,7 @@ ratex-render = { version = "0.1.14", features = ["embed-fonts"] }
 
 # RaTeX 第一次找中文字体时往 stderr 打字，全屏会被搅乱：那一下把 stderr 临时指到空设备（蓝图「图片、公式和 mermaid 图」第 7 条）；
 # Ctrl+Z 挂起时给自己发 SIGTSTP（蓝图「按键」）；启动时问终端 16 色，轮询标准输入等回话（蓝图「主题」第 10 条）。
-# 用它的安全接口，演示程序不写 unsafe。crossterm 已经带着它。
+# 用它的安全接口，演示程序不写 unsafe。crossterm 已经带着它。Linux 上另等终端挂断（`reader/hangup.rs`）。
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "1", features = ["stdio", "process", "event"] }
 
@@ -93,6 +93,10 @@ miyu-kernel = { git = "https://github.com/miyu-agent/miyu", rev = "088e099ac0dad
 miyu-store = { git = "https://github.com/miyu-agent/miyu", rev = "088e099ac0dadb6fe642352780e06eb2db917692" }
 portable-pty = "0.9"
 vt100 = "0.16"
+
+# 伪终端测试关窗以前把终端的 VEOF 关掉（`tests/support/hangup.rs`）：portable-pty 放下写的那一头时照它往里写回车加 Ctrl+D。
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+rustix = { version = "1", features = ["fs", "termios"] }
 
 # 和仓库工作区的 lints 一样（根目录 Cargo.toml），演示程序也照这套规矩。
 [lints.rust]
