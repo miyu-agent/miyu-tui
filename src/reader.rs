@@ -1,7 +1,7 @@
 //! 读按键的线程（蓝图 `tui.md`「她的回答：Markdown」第 10 条）：一直读终端的事件送进主循环；让出终端给编辑器时能
 //! 停下，不跟编辑器抢键。没有事件时一直睡着，不定时醒来看要不要停（蓝图「空闲不醒」第 2 条）：照 crossterm
 //! 的事件流等，要它停下时敲一下；扔掉事件流时 crossterm 用它自带的叫醒，让在等终端的那一下也收手。终端往输入里回的话
-//! （OSC）不当按键，截下来另交（`reader/replies.rs`）。
+//! （OSC）不当按键，截下来另交（`reader/replies.rs`）；不发括号粘贴的终端粘进来的一串按键认成粘贴（`reader/burst.rs`）。
 
 use std::future::poll_fn;
 use std::io::ErrorKind;
@@ -14,9 +14,11 @@ use futures_core::Stream;
 use ratatui::crossterm::event::EventStream;
 use tokio::sync::Notify;
 
+mod burst;
 #[cfg(target_os = "linux")]
 mod hangup;
 mod replies;
+use burst::Burst;
 pub use replies::Read;
 use replies::Replies;
 
@@ -85,17 +87,27 @@ impl Reader {
     }
 }
 
-/// 读到有人敲门为止，交回真；`send` 不收了、终端读不了交回假。
+/// 读到有人敲门为止，交回真；`send` 不收了、终端读不了交回假。终端的回话先截下（`reader/replies.rs`），一口气到的
+/// 一串按键再认是不是粘贴（`reader/burst.rs`）。
 async fn read_until_knocked(send: &impl Fn(Read) -> bool, knock: &Notify) -> bool {
     let mut events = EventStream::new();
     let mut replies = Replies::default();
+    let mut burst = Burst::default();
     let hand = |out: Vec<Read>| out.into_iter().all(send);
+    let through = |burst: &mut Burst, reads: Vec<Read>| {
+        let now = Instant::now();
+        reads
+            .into_iter()
+            .flat_map(|read| burst.feed(read, now))
+            .collect::<Vec<_>>()
+    };
     loop {
         let holding = replies.holding();
+        let until = burst.deadline();
         tokio::select! {
             got = poll_fn(|cx| std::pin::Pin::new(&mut events).poll_next(cx)) => match got {
                 Some(Ok(event)) => {
-                    if !hand(replies.feed(event)) {
+                    if !hand(through(&mut burst, replies.feed(event))) {
                         return false;
                     }
                 }
@@ -104,11 +116,27 @@ async fn read_until_knocked(send: &impl Fn(Read) -> bool, knock: &Notify) -> boo
                 _ => return false,
             },
             () = tokio::time::sleep(replies::WAIT), if holding => {
-                if !hand(replies.expire()) {
+                if !hand(through(&mut burst, replies.expire())) {
                     return false;
                 }
             }
-            () = knock.notified() => return hand(replies.expire()),
+            () = sleep_until(until), if until.is_some() => {
+                if !hand(burst.expire()) {
+                    return false;
+                }
+            }
+            () = knock.notified() => {
+                let mut out = through(&mut burst, replies.expire());
+                out.extend(burst.expire());
+                return hand(out);
+            }
         }
+    }
+}
+
+/// 等到 `until`；没有的当场就到（只在有的时候等）。
+async fn sleep_until(until: Option<Instant>) {
+    if let Some(until) = until {
+        tokio::time::sleep_until(tokio::time::Instant::from_std(until)).await;
     }
 }
