@@ -11,7 +11,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use futures_core::Stream;
-use ratatui::crossterm::event::EventStream;
+use ratatui::crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyModifiers};
 use tokio::sync::Notify;
 
 mod burst;
@@ -107,7 +107,7 @@ async fn read_until_knocked(send: &impl Fn(Read) -> bool, knock: &Notify) -> boo
         tokio::select! {
             got = poll_fn(|cx| std::pin::Pin::new(&mut events).poll_next(cx)) => match got {
                 Some(Ok(event)) => {
-                    if !hand(through(&mut burst, replies.feed(event))) {
+                    if !hand(through(&mut burst, replies.feed(backspace_from_ctrl_h(event)))) {
                         return false;
                     }
                 }
@@ -131,6 +131,24 @@ async fn read_until_knocked(send: &impl Fn(Read) -> bool, knock: &Notify) -> boo
                 return hand(out);
             }
         }
+    }
+}
+
+/// 有的终端把退格键发成 `Ctrl+H`（0x08），crossterm 读成 `Ctrl` 加 `h`，原来哪都不认、删不了字（2026-11-25 查出）：
+/// 当成退格（readline 的老规矩），输入框、shell 里答话、配置页的框照退格办，碰到块整块删。开了 kitty 键盘协议的终端
+/// 退格另有一码，有意按 `Ctrl+H` 的也是退格。
+fn backspace_from_ctrl_h(event: Event) -> Event {
+    match event {
+        Event::Key(key)
+            if key.code == KeyCode::Char('h') && key.modifiers == KeyModifiers::CONTROL =>
+        {
+            Event::Key(KeyEvent {
+                code: KeyCode::Backspace,
+                modifiers: KeyModifiers::NONE,
+                ..key
+            })
+        }
+        other => other,
     }
 }
 

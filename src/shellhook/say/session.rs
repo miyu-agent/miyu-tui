@@ -6,8 +6,8 @@ use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 use ratatui::crossterm::event::{
-    DisableFocusChange, EnableFocusChange, Event, KeyboardEnhancementFlags,
-    PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    DisableBracketedPaste, DisableFocusChange, EnableBracketedPaste, EnableFocusChange, Event,
+    KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
 };
 use ratatui::text::Line;
 
@@ -76,6 +76,9 @@ impl Session {
         }
         // 终端在不在前台：不在时回答好了、在等你确认弹通知（同全屏「系统通知」，2026-10-20 项目主人验收要的）。
         ratatui::crossterm::execute!(io::stdout(), EnableFocusChange)?;
+        // 括号粘贴（同全屏）：粘进来的多行字是一次粘贴，中间的回车不当插话（2026-11-25 查出原来没开，多行粘贴在任何终端上
+        // 都拆成几次插话）。收工、出错时关（`RawMode`）；shell 读下一行以前自己会再开。
+        ratatui::crossterm::execute!(io::stdout(), EnableBracketedPaste)?;
         let reader = crate::reader::Reader::spawn(move |read| match read {
             crate::reader::Read::Event(event) => sender.send(Incoming::Key(event)).is_ok(),
             // 终端往输入里回的话（`reader/replies.rs`）：shell 里用不上，不当按键。
@@ -458,7 +461,7 @@ fn notifier(config: &Config) -> Notifier {
     )
 }
 
-/// 原始模式、键盘协议：收工、出错都关上，不把 shell 留在原始模式里。
+/// 原始模式、键盘协议、括号粘贴：收工、出错都关上，不把 shell 留在原始模式里。
 struct RawMode {
     /// 开了 kitty 键盘协议。
     keyboard: bool,
@@ -473,6 +476,10 @@ impl Drop for RawMode {
                 PopKeyboardEnhancementFlags
             ));
         }
+        drop(ratatui::crossterm::execute!(
+            io::stdout(),
+            DisableBracketedPaste
+        ));
         if ratatui::crossterm::terminal::disable_raw_mode().is_err() {}
     }
 }
