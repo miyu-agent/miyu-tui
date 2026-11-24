@@ -83,6 +83,14 @@ fn a_return_right_after_one_key_is_still_a_return() {
 }
 
 #[test]
+fn a_return_only_at_the_end_still_sends() {
+    // 字打完紧跟一个回车（语音输入、自动输入的工具这样发一句）：照原样交回，回车照旧是发送。
+    let mut burst = Burst::default();
+    let typed = keys("hello\r");
+    assert_eq!(feed_all(&mut burst, typed.clone(), Duration::ZERO), typed);
+}
+
+#[test]
 fn a_return_with_text_right_behind_it_still_sends() {
     // 回车打头不算一串：发出去以后马上又进来的字是下一句，不和回车并成一段。
     let mut burst = Burst::default();

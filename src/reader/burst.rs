@@ -3,9 +3,11 @@
 //! 用户报）。Unix 上不发括号粘贴的终端也一样。
 //!
 //! 这里照到达的快慢认：一个写字的键（字、回车、Tab）先攒着，[`CHAR_GAP`] 里来了下一个的接着攒，一串里相邻两个都在
-//! [`STREAM_GAP`] 以内就算一口气到的；停下来以后，攒了至少 [`LEAST`] 个、里面有回车的，整串当一次粘贴交回（回车是换行、
-//! 不是发送），别的照原样一个一个交回。人打字两个键之间少有快过 8 毫秒的，回车更不会紧跟在字后面这么快，正常打字认不成
-//! 粘贴；一串不从回车开始（打头的回车是发送）；没有回车的一串照原样交回，打得快的、输入法一次上屏的字都和原来一样。每个写字的键最多晚 [`CHAR_GAP`] 交出去。
+//! [`STREAM_GAP`] 以内就算一口气到的；停下来以后，攒了至少 [`LEAST`] 个、有回车而且回车后面还跟着字的，整串当一次粘贴
+//! 交回（回车是换行、不是发送），别的照原样一个一个交回。人打字两个键之间少有快过 8 毫秒的，回车更不会紧跟在字后面这么快，
+//! 正常打字认不成粘贴。一串不从回车开始（打头的回车是发送）；回车只在最后的（字打完紧跟一个回车：语音输入、自动输入的
+//! 工具这样发一句）照原样交回、回车照旧是发送，同 LiteMiyu 的 `unbracketed.rs`；没有回车的一串照原样交回，打得快的、
+//! 输入法一次上屏的字都和原来一样。每个写字的键最多晚 [`CHAR_GAP`] 交出去。
 //!
 //! 门槛照 Codex 的同一处（`codex-rs/tui/src/bottom_pane/paste_burst.rs`：相邻 8 毫秒、至少 3 个，Windows 上一串的间隔放宽
 //! 到 60 毫秒，「Windows 上见过更慢的粘贴」）。
@@ -32,8 +34,10 @@ pub struct Burst {
     held: Vec<Event>,
     /// 这一串写出来的字。
     text: String,
-    /// 有没有回车。
+    /// 攒到回车了（还没见它后面跟字）。
     newline: bool,
+    /// 有回车后面跟着字：是粘贴。
+    lines: bool,
     /// 上一个是回车（认 `\r\n`）。
     returned: bool,
     /// 最后一个键什么时候到的。
@@ -87,7 +91,8 @@ impl Burst {
         self.returned = false;
         let text = std::mem::take(&mut self.text);
         let held = std::mem::take(&mut self.held);
-        if std::mem::take(&mut self.newline) && held.len() >= LEAST {
+        self.newline = false;
+        if std::mem::take(&mut self.lines) && held.len() >= LEAST {
             return vec![Read::Event(Event::Paste(text))];
         }
         held.into_iter().map(Read::Event).collect()
@@ -96,7 +101,10 @@ impl Burst {
     /// 攒进一个键。Windows 上粘进来的 `\r\n` 是一个回车跟一个 `\n`：只算一个换行。
     fn add(&mut self, event: Event, piece: Piece) {
         match piece {
-            Piece::Char(c) => self.text.push(c),
+            Piece::Char(c) => {
+                self.text.push(c);
+                self.lines |= self.newline;
+            }
             Piece::Newline if self.returned => {}
             Piece::Return | Piece::Newline => {
                 self.text.push('\n');
