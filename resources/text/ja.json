@@ -37,6 +37,7 @@
   "copy_failed": "コピーに失敗：{reason}",
   "nothing_to_copy": "コピーできる返信がまだありません",
   "connecting": "コアに接続中…",
+  "core_starting": "コアはまだ起動中です…",
   "no_core_bin": "コアが起動していません：起動時に MIYU_CORE_BIN を miyu のプログラムに設定してください",
   "core_failed": "コアに接続できません：{reason}",
   "reconnecting": "コアとの接続が切れました、再接続中…",

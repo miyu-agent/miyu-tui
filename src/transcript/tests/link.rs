@@ -92,3 +92,26 @@ fn a_new_session_clears_the_page_but_keeps_the_link_and_the_model() {
         "条目编号接着往上数：排好的行按编号缓存"
     );
 }
+
+/// 连核心慢了（核心 CS-6）：还在连、在重连的换成「核心还在启动」，连上了回到连着；连着的、连不上的不动。
+#[test]
+fn a_slow_core_is_shown_as_starting_until_it_answers() {
+    let texts = Config::builtin().unwrap().text;
+    let mut t = Transcript::default();
+    assert_eq!(t.link, Link::Connecting);
+    t.update(Update::Starting, &texts);
+    assert_eq!(t.link, Link::Starting);
+    t.update(Update::Ready("s1".into()), &texts);
+    assert_eq!(t.link, Link::Ready);
+    t.update(Update::Starting, &texts);
+    assert_eq!(t.link, Link::Ready, "连着的不动：上一次连的回调晚到了");
+    t.update(Update::Disconnected, &texts);
+    t.update(Update::Starting, &texts);
+    assert_eq!(t.link, Link::Starting);
+    t.update(Update::Reconnected, &texts);
+    assert_eq!(t.link, Link::Ready);
+    t.update(Update::Down("起不来".into()), &texts);
+    t.update(Update::Starting, &texts);
+    assert_eq!(t.link, Link::Down("起不来".into()), "连不上的照旧写原因");
+    assert_eq!(texts.core_starting, "核心还在启动…");
+}

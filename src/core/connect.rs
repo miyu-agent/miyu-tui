@@ -17,7 +17,12 @@ use super::{StartRefusal, Update};
 
 /// 连上、握手：给了 `MIYU_CORE_BIN` 的，核心没在跑就拉起来（[`reach`]）；没给的只连。连上以前出的错（找数据根、建骨架、连核心、
 /// 拉起核心）带着核心给的说法交给界面照它的语言说（核心 EN-1、EN-2，[`StartRefusal`]）。
-pub(super) async fn connect(starting: Starting, head: super::Head) -> Result<Rpc, Update> {
+/// 从开始连算起过了 3 秒还没连上，叫一次 `slow`（核心 CS-6）。
+pub(super) async fn connect(
+    starting: Starting,
+    head: super::Head,
+    slow: &(dyn Fn() + Send + Sync),
+) -> Result<Rpc, Update> {
     let env = Env::current();
     let core_bin = std::env::var_os("MIYU_CORE_BIN")
         .map(|bin| crate::local::expand_home(bin, std::env::home_dir().as_deref()));
@@ -26,7 +31,7 @@ pub(super) async fn connect(starting: Starting, head: super::Head) -> Result<Rpc
         .map_err(|e| StartRefusal::update(Some(e.said()), e.to_string(), bin))?;
     root.prepare()
         .map_err(|e| StartRefusal::update(e.said(), e.to_string(), bin))?;
-    let (connection, token) = reach(&root, core_bin, starting).await?;
+    let (connection, token) = reach(&root, core_bin, starting, slow).await?;
     let mut rpc = Rpc::new(connection);
     // 有确认、提问的抽屉：说这一头有人能当场回答（核心 D-1，`session.answer`）。
     let hello = json!({
@@ -54,10 +59,12 @@ pub(super) enum Starting {
 }
 
 /// 连上核心（还没握手），交回连接和本机令牌：给了核心程序的，没在跑就照 `starting` 拉起来（[`Starting`]）；没给的只连。
+/// 拉起的、过了 3 秒还没好的叫一次 `slow`（核心 CS-6）。
 pub(super) async fn reach(
     root: &DataRoot,
     core_bin: Option<PathBuf>,
     starting: Starting,
+    slow: &(dyn Fn() + Send + Sync),
 ) -> Result<(Connection, String), Update> {
     let Some(bin) = core_bin else {
         return miyu_client::connect::connect(root)
@@ -74,8 +81,8 @@ pub(super) async fn reach(
         core
     };
     let reached = match starting {
-        Starting::Asked => miyu_client::connect::connect_or_start(root, core).await,
-        Starting::Auto => miyu_client::connect::reconnect_or_start(root, core).await,
+        Starting::Asked => miyu_client::connect::connect_or_start_waiting(root, core, slow).await,
+        Starting::Auto => miyu_client::connect::reconnect_or_start_waiting(root, core, slow).await,
     };
     reached.map_err(|e| start_failed(e, &path))
 }
@@ -304,11 +311,11 @@ mod tests {
             .enable_all()
             .build()
             .unwrap();
-        match runtime.block_on(super::reach(&root, bin(), super::Starting::Auto)) {
+        match runtime.block_on(super::reach(&root, bin(), super::Starting::Auto, &|| {})) {
             Err(Update::StartRefused(r)) => assert_eq!(r.said.key, "core/start/stopped_by_user"),
             other => panic!("自己重连不拉起人停的核心：{:?}", other.map(drop)),
         }
-        match runtime.block_on(super::reach(&root, bin(), super::Starting::Asked)) {
+        match runtime.block_on(super::reach(&root, bin(), super::Starting::Asked, &|| {})) {
             Err(Update::Missing(path)) => assert!(path.ends_with("miyu"), "{path}"),
             other => panic!("人要用的照拉起：{:?}", other.map(drop)),
         }

@@ -10,7 +10,7 @@ crate::from_json::record! {
         tool_list, context_box, settings, drawer, paste_label, attach, mention, skill_word,
         clipboard_unreadable, clipboard_text_only, attach_deny_only, answer_files_lost,
         clipboard_empty, home_placeholder, archived_placeholder, levels, done, speed, copied,
-        copy_failed, nothing_to_copy, connecting, no_core_bin, core_failed, reconnecting, turn_cut,
+        copy_failed, nothing_to_copy, connecting, core_starting, no_core_bin, core_failed, reconnecting, turn_cut,
         missing_core, not_connected, start_core, switching, crash_saved, notify, refused,
         interrupted, failed, reason_with, status_hints, retry_after, retry, older, older_failed,
         exit_hint, input_cleared, too_long, too_long_attached, editing, open, esc_hint,

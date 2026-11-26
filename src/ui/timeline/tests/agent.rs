@@ -45,7 +45,7 @@ fn an_agent_step_says_the_job_then_the_description_and_opens_on_the_prompt() {
         &f.ctx(),
     ));
     assert!(
-        lines.iter().any(|l| l.ends_with("派子代理 · j10 · 查文档")),
+        lines.iter().any(|l| l.ends_with("子代理 · j10 · 查文档")),
         "{lines:?}"
     );
     assert!(

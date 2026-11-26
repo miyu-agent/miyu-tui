@@ -36,10 +36,10 @@ fn a_step_on_another_session_names_it_by_its_short_id() {
     };
     let other = json!({"query": "暗号", "session": "0192f3a0-1111-7abc-8def-001122334455"});
     let shown = title(other);
-    assert!(shown.contains("翻记录 · 暗号 · 会话 22334455"), "{shown}");
+    assert!(shown.contains("翻历史 · 暗号 · 会话 22334455"), "{shown}");
     let here = title(json!({"query": "暗号"}));
     assert!(
-        here.contains("翻记录 · 暗号") && !here.contains("会话"),
+        here.contains("翻历史 · 暗号") && !here.contains("会话"),
         "{here}"
     );
 }
@@ -65,7 +65,7 @@ fn a_message_to_another_session_names_it_by_its_short_id() {
     );
     let steps = vec![thought(t0, 0), send];
     let shown = text(&rows(0, &segment(steps, Some(true)), &f.ctx())).join("\n");
-    // 显示名照核心（FG-1 起 send_message 叫「发消息」）。
-    assert!(shown.contains("发消息 · 会话 22334455"), "{shown}");
+    // 显示名照核心（FG-1 起 send_message 叫「发消息」，核心 b3eb8af90 起叫「跨会话消息」）。
+    assert!(shown.contains("跨会话消息 · 会话 22334455"), "{shown}");
     assert!(!shown.contains("0192f3a0"), "{shown}");
 }

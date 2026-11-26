@@ -37,6 +37,7 @@
   "copy_failed": "Couldn't copy: {reason}",
   "nothing_to_copy": "No reply to copy yet",
   "connecting": "Connecting to the core…",
+  "core_starting": "The core is still starting…",
   "no_core_bin": "The core isn't running: when starting, set MIYU_CORE_BIN to the miyu program",
   "core_failed": "Can't connect to the core: {reason}",
   "reconnecting": "Lost the core, reconnecting…",

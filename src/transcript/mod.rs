@@ -230,6 +230,7 @@ impl Transcript {
                 self.link = Link::Down(texts.missing_core.replace("{path}", &path));
             }
             Update::Reconnected => self.link = Link::Ready,
+            Update::Starting => self.link.slow(),
             // 另外订阅着的会话推来的：界面照会话分给那个会话的正文（`app/sessions.rs`）。
             // 改名成了只弹提示（界面那头办了），标题照推送换。
             Update::Elsewhere { .. }

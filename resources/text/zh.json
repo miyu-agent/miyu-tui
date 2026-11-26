@@ -37,6 +37,7 @@
   "copy_failed": "复制失败：{reason}",
   "nothing_to_copy": "没有可复制的回答",
   "connecting": "正在连接核心…",
+  "core_starting": "核心还在启动…",
   "no_core_bin": "核心未运行：设置 MIYU_CORE_BIN 指向 miyu",
   "core_failed": "连不上核心：{reason}",
   "reconnecting": "核心已断开，正在重新连接…",

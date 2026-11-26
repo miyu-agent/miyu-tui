@@ -13,6 +13,8 @@ pub enum Update {
     Missing(String),
     /// 断开以后又连上了，接着订阅着原来那个会话（第 7 条）。
     Reconnected,
+    /// 连核心过了 3 秒还没好，接着等（核心 CS-6，最多 10 分钟）：一次连只交一次。
+    Starting,
     /// 主会话不存在了（在别处删了；`--resume` 的编号不对）：读页、补发、重连订阅时核心说的。不再对着它，下一句话开新会话
     /// （review B3，2026-10-11 项目主人定）。
     SessionGone(String),

@@ -8,7 +8,7 @@ pub fn spawn(
     reconnect: [u64; 2],
     start: Start,
     head: Head,
-    notify: impl Fn(Update) -> bool + Send + 'static,
+    notify: impl Fn(Update) -> bool + Send + Sync + 'static,
 ) -> Core {
     let (commands, receiver) = mpsc::unbounded_channel();
     let (starts, asked) = mpsc::unbounded_channel();
@@ -46,7 +46,7 @@ async fn run(
     ),
     mut wait: Backoff,
     (start, head): (Start, Head),
-    notify: &impl Fn(Update) -> bool,
+    notify: &(impl Fn(Update) -> bool + Sync),
 ) {
     let recent = start == Start::Usual;
     let resume = match start {
@@ -62,7 +62,12 @@ async fn run(
     loop {
         // 连不上一直试；这期间界面发的命令在通道里排着，连上再发（第 1、7 条）。
         let mut rpc = loop {
-            match connect(starting, head).await {
+            // 连核心慢了（过 3 秒）告诉界面一声，接着等（核心 CS-6）
+            let slow = || {
+                // 界面关了的，下面连完照常发现
+                let _told = notify(Update::Starting);
+            };
+            match connect(starting, head, &slow).await {
                 Ok(connected) => break connected,
                 Err(update) => {
                     starting = Starting::Auto;
