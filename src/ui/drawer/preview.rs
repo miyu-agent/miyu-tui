@@ -129,6 +129,10 @@ fn options_width(d: &Drawer, texts: &Texts, width: u16) -> u16 {
     let widest = (0..d.pages())
         .map(|page| {
             let mut one = d.clone();
+            // 别的页没在写字：照它们没在编辑的样子量。
+            if page != d.tab {
+                one.editing = None;
+            }
             one.tab = page;
             let list = items::choices(&one, texts, half);
             list.lines.iter().map(Line::width).max().unwrap_or(0)
@@ -162,6 +166,7 @@ fn side_by_side(list: Block, panel: Vec<Line<'static>>, left: u16, look: &Look) 
     let mut out = Block {
         focus: list.focus,
         cursor: list.cursor,
+        field: list.field,
         ..Block::default()
     };
     let mut lines = list.lines.into_iter();

@@ -96,9 +96,11 @@ fn other_edits_in_place_and_the_keys_say_only_save_and_leave() {
     press(&mut d, KeyCode::Enter);
     let v = view(&d, &texts(), &look(), 60, false);
     let (row, col) = v.cursor.expect("编辑时有光标");
+    // 2026-11-27：写字的地方在「输入其他答案」那一行下面、和标题对齐（原来标题换成写的字，断言的是同一行）。
+    assert_eq!(text(&v.lines[row - 1]), "› 2. 输入其他答案");
     assert_eq!(
         text(&v.lines[row]),
-        "› 2. 输入其他答案",
+        "     输入其他答案",
         "还没打字：暗色写提示"
     );
     assert_eq!(col, 5, "光标落在 › 和序号后面");
@@ -106,7 +108,7 @@ fn other_edits_in_place_and_the_keys_say_only_save_and_leave() {
     press(&mut d, KeyCode::Char('好'));
     let v = view(&d, &texts(), &look(), 60, false);
     let (row, col) = v.cursor.unwrap();
-    assert_eq!((text(&v.lines[row]).as_str(), col), ("› 2. 好", 7));
+    assert_eq!((text(&v.lines[row]).as_str(), col), ("     好", 7));
     // 退出编辑：照写的字，不加「自定义：」（2026-10-20 项目主人）。
     press(&mut d, KeyCode::Esc);
     assert!(
@@ -411,6 +413,8 @@ fn a_short_drawer_shows_fewer_command_rows_but_keeps_the_blank_lines() {
 }
 
 mod countdown;
+mod field;
+mod field_rows;
 mod guard;
 mod preview;
 mod shown_command;

@@ -4,6 +4,7 @@
 mod event;
 pub mod expiry;
 mod keys;
+pub use keys::ctrl_edit;
 mod package;
 /// 多少字节写成给人看的（引导下载语义模型也用，同软件包页）。
 pub use package::{ConfigWords, config_item, size, state_item};
@@ -15,15 +16,18 @@ mod image_tests;
 #[cfg(test)]
 mod tests;
 
+use std::cell::Cell;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
+
+use crate::input::Field;
 
 mod asks;
 
 pub use asks::Asks;
 pub use event::{Answer, Answered, Approval, Asked, Decided, Decision, Pasted, Question};
 pub use package::{PackageTexts, Plan};
-pub use report::{Report, inline, said};
+pub use report::{Report, said};
 pub use texts::Texts;
 
 /// 问的是什么。
@@ -82,6 +86,9 @@ pub enum Step {
 /// 确认要跑的命令一次露几行，多的滚着看（`ui/drawer/command.rs`，2026-10-22 项目主人）。
 pub const COMMAND_ROWS: usize = 8;
 
+/// 写字的地方最多长到几行，再多就在里面滚（2026-11-27）；抽屉矮的时候更少，见 [`Drawer::fit_field`]。
+pub const FIELD_ROWS: usize = 6;
+
 /// 一个抽屉。
 #[derive(Debug, Clone)]
 pub struct Drawer {
@@ -104,10 +111,10 @@ pub struct Drawer {
     pub cursor: Vec<usize>,
     /// 每一页勾上了哪几个选项（能多选的）。
     pub checked: Vec<Vec<bool>>,
-    /// 每一页「输入其他答案」写的字；确认是「不允许」的理由。
-    pub typed: Vec<String>,
+    /// 每一页「输入其他答案」写的字；确认是「不允许」的理由。和输入框同一个编辑器（`input/field.rs`，2026-11-27）。
+    pub typed: Vec<Field>,
     /// 每一页按 `n` 写的补充。
-    pub notes: Vec<String>,
+    pub notes: Vec<Field>,
     /// 每一页贴的图（确认的是「不允许」的）：字下面一行小块，字删空了再按 `Backspace` 删最后一张（2026-10-22 项目主人）。
     pub images: Vec<Vec<Pasted>>,
     /// 每一道的回答；还没答的是 `None`。
@@ -124,6 +131,9 @@ pub struct Drawer {
     pub command_rows: usize,
     /// 命令一次露几行：最多 [`COMMAND_ROWS`]，抽屉放不下时画的时候收窄（空行、问题留着，命令能滚）。
     pub command_window: usize,
+    /// 写字的地方这一帧最多露几行：量抽屉多高的时候（`ui/drawer` 的 `rows`，只拿得到它的引用）照抽屉能用的高度定，画的时候
+    /// 照它排，量和画排出来一样高。
+    pub field_rows: Cell<usize>,
 }
 
 impl Drawer {
@@ -188,8 +198,8 @@ impl Drawer {
             tab: 0,
             cursor: vec![0; pages],
             checked,
-            typed: vec![String::new(); pages],
-            notes: vec![String::new(); pages],
+            typed: vec![Field::default(); pages],
+            notes: vec![Field::default(); pages],
             images: vec![Vec::new(); pages],
             answers: vec![None; pages],
             editing: None,
@@ -198,6 +208,30 @@ impl Drawer {
             command_top: 0,
             command_rows: 0,
             command_window: COMMAND_ROWS,
+            field_rows: Cell::new(FIELD_ROWS),
+        }
+    }
+
+    /// 抽屉最高 `height` 行：写字的地方最多露 [`FIELD_ROWS`] 行，也不超过一半（至少一行），上面的问题、选项和下面的按键提示
+    /// 留得下。
+    pub fn fit_field(&self, height: usize) -> usize {
+        let rows = (height / 2).clamp(1, FIELD_ROWS);
+        self.field_rows.set(rows);
+        rows
+    }
+
+    /// 正在写的那一处；没在编辑是 `None`。
+    pub fn field_mut(&mut self) -> Option<&mut Field> {
+        match self.editing? {
+            Edit::Notes => self.notes.get_mut(self.tab),
+            Edit::Other | Edit::Reason => self.typed.get_mut(self.tab),
+        }
+    }
+
+    /// 粘贴进正在写的那一处：插在光标处，大段的照 `rule` 收成一块（同输入框）；没在编辑不收。
+    pub fn paste(&mut self, text: &str, rule: &crate::input::PasteRule) {
+        if let Some(field) = self.field_mut() {
+            field.paste(text, rule);
         }
     }
 
@@ -292,7 +326,8 @@ impl Drawer {
         let answers = (0..self.pages())
             .map(|p| {
                 let mut a = self.answers[p].clone().unwrap_or_default();
-                let notes = self.notes[p].trim();
+                let notes = self.notes[p].full();
+                let notes = notes.trim();
                 a.notes = (!notes.is_empty()).then(|| notes.to_string());
                 // 只贴了图的那道也算答了（核心 Q-A）。
                 a.files.clone_from(&self.images[p]);

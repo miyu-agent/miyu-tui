@@ -5,6 +5,15 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use super::{Answer, Decided, Decision, Drawer, Edit, Item, Outcome, Pasted, Step};
 
+/// 写字时带 `Ctrl` 也归抽屉的编辑键（全屏、终端无缝集成两处共用）：`Ctrl+J` 换行，`Ctrl+A` 回到开头，`Ctrl+W`、
+/// `Ctrl+Backspace` 按词删，`Ctrl+←` `Ctrl+→` 按词跳，同输入框（2026-11-27，`input/field.rs`）。
+pub fn ctrl_edit(code: KeyCode) -> bool {
+    matches!(
+        code,
+        KeyCode::Char('j' | 'a' | 'w') | KeyCode::Left | KeyCode::Right | KeyCode::Backspace
+    )
+}
+
 impl Drawer {
     /// 按一下（抽屉开着时按键都先归它）。
     pub fn key(&mut self, key: KeyEvent) -> Step {
@@ -118,10 +127,10 @@ impl Drawer {
         self.pick(index)
     }
 
-    /// 编辑时的按键：`Enter` 保存，`Shift+Enter`、`Alt+Enter`、`Ctrl+J` 换行，`Esc` 退出编辑（「输入其他答案」的字留着，补充的清空：
-    /// 2026-10-20 项目主人：「esc 之后应该清空补充内容而不是还留着，因为 esc 可能代表着要换选项」）。
+    /// 编辑时的按键：`Enter` 保存，`Esc` 退出编辑（「输入其他答案」的字留着，补充的清空：2026-10-20 项目主人：「esc 之后应该
+    /// 清空补充内容而不是还留着，因为 esc 可能代表着要换选项」）。别的键照输入框编辑（2026-11-27，`input/field.rs`）：
+    /// `Shift+Enter`、`Alt+Enter`、`Ctrl+J` 换行，左右、上下、`Home` `End`、按词跳、按词删在光标处改。
     fn edit_key(&mut self, edit: Edit, key: KeyEvent) -> Step {
-        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let newline = key
             .modifiers
             .intersects(KeyModifiers::SHIFT | KeyModifiers::ALT);
@@ -136,16 +145,12 @@ impl Drawer {
                 }
                 self.editing = None;
             }
-            KeyCode::Enter if newline => text.push('\n'),
-            KeyCode::Char('j') if ctrl => text.push('\n'),
-            KeyCode::Enter => return self.save(edit),
+            KeyCode::Enter if !newline => return self.save(edit),
             // 字删空了再按删最后一张图（2026-10-22 项目主人照推荐定）；补充的字不管图。
-            KeyCode::Backspace if text.is_empty() && edit != Edit::Notes => self.unattach(),
-            KeyCode::Backspace => {
-                text.pop();
+            KeyCode::Backspace if text.text().is_empty() && edit != Edit::Notes => self.unattach(),
+            _ => {
+                text.key(key);
             }
-            KeyCode::Char(c) if !ctrl => text.push(c),
-            _ => {}
         }
         Step::Stay
     }
@@ -153,7 +158,7 @@ impl Drawer {
     /// 编辑时按 `Enter`：「其他」单选的就答了这一道，多选的算勾上；补充只是存下；理由交「不允许」。
     fn save(&mut self, edit: Edit) -> Step {
         self.editing = None;
-        let typed = self.typed[self.tab].trim().to_string();
+        let typed = self.typed[self.tab].full().trim().to_string();
         match edit {
             Edit::Notes => Step::Stay,
             Edit::Reason => Step::Done(Outcome::Decided(Decided {
@@ -289,7 +294,8 @@ impl Drawer {
     fn gathered(&self) -> Option<Answer> {
         let question = self.question_at(self.tab)?;
         let label = |i: usize| question.options[i].label.clone();
-        let typed = self.typed[self.tab].trim();
+        let typed = self.typed[self.tab].full();
+        let typed = typed.trim();
         let text = (!typed.is_empty()).then(|| typed.to_string());
         let picked: Vec<String> = self.checked[self.tab]
             .iter()

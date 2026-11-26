@@ -7,24 +7,24 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use super::App;
 use crate::core::Command;
-use crate::drawer::{Drawer, Edit, Outcome, Report, Step};
+use crate::drawer::{Drawer, Outcome, Report, Step};
 use crate::transcript::{JobMark, Kind};
 
 impl App {
-    /// 抽屉开着时按键先归它，带 `Ctrl` 的照旧归外面（复制、退出），编辑时的 `Ctrl+J` 换行除外（第 4 条）。
+    /// 抽屉开着时按键先归它，带 `Ctrl` 的照旧归外面（复制、退出），编辑时的编辑键除外（第 4 条，[`crate::drawer::ctrl_edit`]）。
     /// 拿了交回 `true`。
     pub(super) fn drawer_key(&mut self, key: KeyEvent) -> bool {
         // PgUp、PgDn 归正文：翻上去看，抽屉让开（「确认和提问的抽屉」第 4a 条，2026-10-26 项目主人：原来翻不了页）。
         if !self.talk.drawers.open() || matches!(key.code, KeyCode::PageUp | KeyCode::PageDown) {
             return false;
         }
-        let newline = self.talk.drawers.editing() && key.code == KeyCode::Char('j');
+        let editing = self.talk.drawers.editing() && crate::drawer::ctrl_edit(key.code);
         // `Ctrl+↑` `Ctrl+↓`、`Ctrl+J` `Ctrl+K` 滚命令那一块（`drawer/keys.rs`）。
         let scroll = matches!(
             key.code,
             KeyCode::Up | KeyCode::Down | KeyCode::Char('j' | 'k')
         );
-        if key.modifiers.contains(KeyModifiers::CONTROL) && !newline && !scroll {
+        if key.modifiers.contains(KeyModifiers::CONTROL) && !editing && !scroll {
             return false;
         }
         // 抽屉滑下去了、让开了（正文翻上去看，`body_view/slide.rs`）：这一下先回到最底下、抽屉回原位，不当答案用掉，免得
@@ -47,17 +47,22 @@ impl App {
         true
     }
 
-    /// 抽屉开着时粘贴：正在写的（「其他」、补充、理由）接进去；没在编辑不收。
+    /// 抽屉开着时粘贴：正在写的（「其他」、补充、理由）插在光标处，大段的照输入框的规矩收成一块（2026-11-27）；没在编辑不收。
     pub(super) fn drawer_paste(&mut self, text: &str) {
-        let Some(d) = self.talk.drawers.current.as_mut() else {
-            return;
-        };
-        let tab = d.tab;
-        match d.editing {
-            Some(Edit::Notes) => d.notes[tab].push_str(text),
-            Some(Edit::Other | Edit::Reason) => d.typed[tab].push_str(text),
-            None => {}
+        let rule = self.typing.input.paste_rule();
+        if let Some(d) = self.talk.drawers.current.as_mut() {
+            d.paste(text, rule);
         }
+    }
+
+    /// 鼠标在抽屉里按下：落在正在写的那几行字上的，光标挪过去（同输入框），交回 `true`；别处交回 `false`，照点中第几项算。
+    pub(super) fn drawer_field_click(&mut self, at: ratatui::layout::Position) -> bool {
+        self.talk
+            .drawers
+            .current
+            .as_mut()
+            .and_then(crate::drawer::Drawer::field_mut)
+            .is_some_and(|field| field.click(at))
     }
 
     /// 点中抽屉的第几项。
