@@ -27,13 +27,19 @@ pub fn cover(buf: &mut Buffer, rect: Rect) {
     }
 }
 
+/// 一格的字占几列，照 unicode-width 对整个字串算的那样：一个字节的字（ASCII，空格、控制字符在内）它一定算 1，不查表
+/// （每帧整屏每一格都要问一次，大多是 ASCII）；别的照查。
+fn symbol_width(symbol: &str) -> usize {
+    if symbol.len() == 1 { 1 } else { symbol.width() }
+}
+
 /// 每个宽字后面那几格不是空白的，照 ratatui 自己写宽字时的做法清掉。图占着的格子不碰。
 pub fn tidy(buf: &mut Buffer) {
     let area = buf.area;
     for y in area.top()..area.bottom() {
         let mut x = area.left();
         while x < area.right() {
-            let width = u16::try_from(buf[(x, y)].symbol().width()).unwrap_or(1);
+            let width = u16::try_from(symbol_width(buf[(x, y)].symbol())).unwrap_or(1);
             let style = buf[(x, y)].style();
             for k in 1..width {
                 let Some(next) = buf.cell_mut((x + k, y)) else {
@@ -58,7 +64,7 @@ mod tests {
     use ratatui::text::Line;
     use ratatui::widgets::{Paragraph, Widget};
 
-    use super::{cover, tidy};
+    use super::{cover, symbol_width, tidy};
 
     #[test]
     fn covering_a_cell_blanks_the_wide_character_that_reaches_into_it() {
@@ -115,6 +121,91 @@ mod tests {
             written.contains(&1),
             "盖掉宽字时后面那格也重写：{written:?}"
         );
+    }
+
+    #[test]
+    fn the_one_byte_shortcut_gives_what_unicode_width_gives() {
+        // BO-T2：一个字节的字不查表。每一个一字节的字（0x00 到 0x7F，控制字符在内）和查表的结果一样。
+        use unicode_width::UnicodeWidthStr;
+        for byte in 0u8..=0x7f {
+            let symbol = char::from(byte).to_string();
+            assert_eq!(symbol_width(&symbol), symbol.width(), "{byte:#04x}");
+        }
+    }
+
+    #[test]
+    fn tidying_a_mixed_screen_matches_the_table_lookup_cell_by_cell() {
+        // 一屏混着中文、emoji、ASCII、控制字符、组合字符、空格子、图占着的格子：走快路的 tidy 和每格都查表的原来那份
+        // 逐格相同（字、样子、比对的选项）。
+        use ratatui::buffer::{Cell, CellDiffOption};
+        use unicode_width::UnicodeWidthStr;
+        fn old_tidy(buf: &mut Buffer) {
+            let area = buf.area;
+            for y in area.top()..area.bottom() {
+                let mut x = area.left();
+                while x < area.right() {
+                    let width = u16::try_from(buf[(x, y)].symbol().width()).unwrap_or(1);
+                    let style = buf[(x, y)].style();
+                    for k in 1..width {
+                        let Some(next) = buf.cell_mut((x + k, y)) else {
+                            break;
+                        };
+                        if next.diff_option != CellDiffOption::Skip {
+                            next.reset();
+                            next.set_style(style);
+                        }
+                    }
+                    x += width.max(1);
+                }
+            }
+        }
+        let area = Rect::new(0, 0, 23, 6);
+        let mut buf = Buffer::empty(area);
+        let symbols = [
+            "a",
+            "中",
+            "x",
+            "👩‍💻",
+            "\u{7}",
+            " ",
+            "🇨🇳",
+            "e\u{301}",
+            "\t",
+            "\u{1b}",
+            "❤️",
+            "─",
+            "",
+            "ｱ",
+            "ﾞ",
+            "\r",
+            "\n",
+            "\u{7f}",
+            "国",
+            "~",
+            "⚠️",
+            "👍🏽",
+            "Z",
+        ];
+        let colors = [Color::Red, Color::Blue, Color::Reset, Color::Rgb(1, 2, 3)];
+        for y in 0..area.height {
+            for x in 0..area.width {
+                let k = usize::from(x * 7 + y * 3);
+                let cell: &mut Cell = &mut buf[(x, y)];
+                cell.set_symbol(symbols[k % symbols.len()])
+                    .set_style(Style::new().fg(colors[k % 4]).bg(colors[(k + 1) % 4]));
+                if k % 11 == 0 {
+                    cell.set_diff_option(CellDiffOption::Skip);
+                }
+            }
+        }
+        let mut old = buf.clone();
+        old_tidy(&mut old);
+        tidy(&mut buf);
+        for y in 0..area.height {
+            for x in 0..area.width {
+                assert_eq!(buf[(x, y)], old[(x, y)], "第 {y} 行第 {x} 格");
+            }
+        }
     }
 
     #[test]
