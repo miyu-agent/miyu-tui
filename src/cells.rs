@@ -29,14 +29,6 @@ fn clip_marked(text: &str, width: usize, mark: &str) -> String {
     out
 }
 
-/// 放进 `width` 列：放不下的留后面那截（看得到最新写的），不加记号。抽屉里写字的地方原来照它只留末尾一截，2026-11-27 换成
-/// 输入框的编辑器以后程序里没人用了，只留给测试对照（删不删待定）。
-#[cfg(test)]
-pub fn tail(text: &str, width: usize) -> String {
-    let (kept, _) = last_cols(text, width);
-    kept
-}
-
 /// 放进 `width` 列：放不下的从前面截掉、打头写 `…`（路径的末段最有用）。
 pub fn tail_marked(text: &str, width: usize) -> String {
     if text.width() <= width {
