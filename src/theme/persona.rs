@@ -27,7 +27,17 @@ pub fn hex(seed: &str) -> Option<u32> {
 /// 底、正文、面板、粗体、行内代码、公式从中性色板，暗字、边框、引用、斜体、图里的字线、代码注释和运算符从中性变体，
 /// 强调色、链接、表头、热度图从主色，标签的底、思考从次色，选中、图片从第三色。有含义的颜色（出错、增删、警告、成功、权限级别、
 /// 高亮、标题、代码着色其余几格）色相往主色最多转 15°（`harmonize`），认得出是哪一种；吉祥物也跟着换。
+///
+/// 同一个底子、主色、深浅连着来的，交回上一次算好的那一套（`persona_memo.rs`）：起来时三件事各挑一次主题，三次的这三样
+/// 一样，不用每次在「palette」线程里重算。
 pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
+    super::persona_memo::get_or_make(base, seed, dark, || make(base, seed, dark))
+}
+
+/// 照主色真算一套（[`overlay`] 的正文）。
+fn make(base: &Palette, seed: u32, dark: bool) -> Palette {
+    #[cfg(test)]
+    MADE.set(MADE.get() + 1);
     let source = Rgb::from_u32(seed);
     let s = scheme(source, dark);
     let neutral = &s.neutral_palette;
@@ -125,6 +135,12 @@ pub fn overlay(base: &Palette, seed: u32, dark: bool) -> Palette {
     }
 }
 
+// 这个测试线程里真算过几套（测试看记着的那一份管不管用）。
+#[cfg(test)]
+thread_local! {
+    static MADE: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 /// 照主色生成 MD3 的配色（`SchemeContent`，对比度 0）。
 ///
 /// 另起一个线程算，算好的交回来：它里面的冷暖表（`TemperatureCache`，362 个色相）连同拷贝放在栈上，一帧约 44 KB；在主线程上
@@ -152,7 +168,7 @@ mod tests {
     use material_colors::color::Rgb;
     use material_colors::hct::Hct;
 
-    use super::{hex, overlay};
+    use super::{MADE, hex, make, overlay};
     use crate::theme::Tone;
     use crate::theme::builtin;
 
@@ -206,6 +222,48 @@ mod tests {
                 .min(360.0 - (error.0 - before.0).abs());
             assert!(turned <= 15.5, "{name} 出错的红只偏一点：{turned}");
             assert!((error.2 - before.2).abs() < 1.0, "{name} 出错的红亮度不变");
+        }
+    }
+
+    #[test]
+    fn the_same_inputs_again_reuse_the_last_palette() {
+        // 起来时三件事各挑一次主题，交给 overlay 的底子、主色、深浅一样（BO-T1 核对过）：第二次起不再真算。
+        let themes = builtin().unwrap();
+        let (_, base) = themes
+            .iter()
+            .find(|(n, _)| n == "tokyonight-night")
+            .unwrap();
+        let before = MADE.get();
+        let first = overlay(base, 0xcd3131, true);
+        assert_eq!(MADE.get(), before + 1, "头一次真算");
+        let again = overlay(base, 0xcd3131, true);
+        let third = overlay(base, 0xcd3131, true);
+        assert_eq!(MADE.get(), before + 1, "同样的输入不再算");
+        assert_eq!(again, first);
+        assert_eq!(third, first);
+        assert_eq!(first, make(base, 0xcd3131, true), "记着的和真算的逐格相同");
+    }
+
+    #[test]
+    fn changed_inputs_are_made_again_and_match_a_fresh_make() {
+        let themes = builtin().unwrap();
+        let named = |name: &str| themes.iter().find(|(n, _)| n == name).unwrap().1.clone();
+        let (night, day) = (named("tokyonight-night"), named("tokyonight-day"));
+        let mut tinted = night.clone();
+        tinted.accent = Tone::of(Color::Rgb(1, 2, 3));
+        // 换主色、换深浅、换底子（哪怕只差一格）、再换回来，每一步都照新的真算，结果和直接算的一样。
+        for (base, seed, dark) in [
+            (&night, 0xcd3131, true),
+            (&night, 0x2fab34, true),
+            (&night, 0x2fab34, false),
+            (&day, 0x2fab34, false),
+            (&tinted, 0x2fab34, false),
+            (&night, 0xcd3131, true),
+        ] {
+            let before = MADE.get();
+            let got = overlay(base, seed, dark);
+            assert_eq!(MADE.get(), before + 1, "{seed:06x} {dark} 换了输入要重算");
+            assert_eq!(got, make(base, seed, dark));
         }
     }
 

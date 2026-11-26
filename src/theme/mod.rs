@@ -11,6 +11,7 @@ mod ground;
 mod motion;
 mod palette;
 pub mod persona;
+mod persona_memo;
 pub mod seed_hold;
 pub mod seeds;
 mod shimmer;
