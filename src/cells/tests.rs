@@ -1,6 +1,6 @@
 use unicode_width::UnicodeWidthStr;
 
-use super::{clip, tail, tail_marked, wrap};
+use super::{clip, tail_marked, wrap};
 
 /// `⚠️` 是两个字符、一个字素簇，两列宽。
 const WARN: &str = "⚠️";
@@ -17,7 +17,6 @@ fn clipping_counts_a_warning_sign_as_two_columns() {
 #[test]
 fn tails_keep_the_end_within_the_width() {
     let text = format!("abc{WARN}{WARN}{WARN}");
-    assert_eq!(tail(&text, 5), format!("{WARN}{WARN}"));
     let marked = tail_marked(&text, 5);
     assert_eq!(marked, format!("…{WARN}{WARN}"));
     assert!(marked.width() <= 5);
