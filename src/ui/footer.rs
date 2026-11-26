@@ -380,6 +380,7 @@ fn left<'a>(seen: &Seen<'a>, model: Model, named: bool) -> Vec<Span<'a>> {
     let t = &seen.talk.transcript;
     match &t.link {
         Link::Connecting => vec![Span::styled(text.connecting.as_str(), theme::dim())],
+        Link::Starting => vec![Span::styled(text.core_starting.as_str(), theme::dim())],
         Link::Reconnecting => vec![Span::styled(text.reconnecting.as_str(), theme::warn())],
         // 整句红字折行写在输入框上面（`above.rs`），这里只写前面那一截。
         Link::Down(reason) | Link::Stopped(reason) => {

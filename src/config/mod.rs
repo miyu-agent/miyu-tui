@@ -159,6 +159,8 @@ pub struct Texts {
     pub nothing_to_copy: String,
     /// 还在连核心。
     pub connecting: String,
+    /// 连核心过了 3 秒还没好，接着等（核心 CS-6，口径同核心 `core/start/slow`）。
+    pub core_starting: String,
     /// 核心没在跑，也没说怎么拉起来。
     pub no_core_bin: String,
     /// 连不上核心，`{reason}` 是原因。
