@@ -6,6 +6,7 @@ mod attach;
 mod desk;
 mod dropped;
 mod editor;
+mod field;
 mod mouse;
 mod pasted;
 mod place;
@@ -28,6 +29,7 @@ pub use desk::Desk;
 
 pub use dropped::{Dropped, dropped, quoted};
 pub use editor::Editor;
+pub use field::Field;
 pub use pasted::{Block, Draft, PasteRule, Sent};
 pub use saved::{Saved, place};
 pub use wrap::{VisualLine, locate, offset_at, pieces, tail_pieces, wrap, wrap_words};
@@ -147,6 +149,11 @@ impl InputBox {
         self.paste_rule = rule;
     }
 
+    /// 大段粘贴收成一块的门槛和写法：抽屉里写字的地方照同一条（`field.rs`）。
+    pub fn paste_rule(&self) -> &PasteRule {
+        &self.paste_rule
+    }
+
     /// 这个会话的模型收不了的那几种附件（「输入框」第 12 条「照模型收」）。
     pub fn set_refused(&mut self, kinds: Vec<String>) {
         self.refused = kinds;
@@ -194,14 +201,7 @@ impl InputBox {
         let lines = self.lines(area.width);
         let (row, _) = locate(self.editor.text(), &lines, self.editor.cursor());
         let rows = usize::from(area.height.max(1));
-        if self.follow {
-            if row < self.scroll {
-                self.scroll = row;
-            } else if row >= self.scroll + rows {
-                self.scroll = row + 1 - rows;
-            }
-        }
-        self.scroll = self.scroll.min(lines.len().saturating_sub(rows));
+        self.scroll = field::keep_in_view(self.scroll, (row, rows, lines.len()), self.follow);
         self.scroll
     }
 
@@ -223,7 +223,6 @@ impl InputBox {
     pub fn key(&mut self, key: KeyEvent) -> Action {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-        let alt = key.modifiers.contains(KeyModifiers::ALT);
         self.follow = true;
         // 字变了，悬停着的块的位置可能不对了：等鼠标再动一下重新认。
         self.hover = None;
@@ -233,18 +232,19 @@ impl InputBox {
         if self.shell_key(key) {
             return Action::None;
         }
-        let action = self.edit_key(key, ctrl, shift, alt);
+        let action = self.edit_key(key, ctrl, shift);
         // 头一个字打成了 `!`：进跑命令的模式（`shell.rs`）。
         self.absorb_bang();
         action
     }
 
     /// 照按键改框里的字（[`InputBox::key`] 分出来的）。
-    fn edit_key(&mut self, key: KeyEvent, ctrl: bool, shift: bool, alt: bool) -> Action {
+    fn edit_key(&mut self, key: KeyEvent, ctrl: bool, shift: bool) -> Action {
+        // 打字、换行、左右、按词跳、按词删、退格、删除：和抽屉里写字的地方同一套（`field.rs`）。
+        if field::edit(&mut self.editor, key) {
+            return Action::None;
+        }
         match key.code {
-            // Shift+Enter 要终端报得出来（kitty 键盘协议）；报不出来的终端用 Alt+Enter 或 Ctrl+J。
-            KeyCode::Enter if shift || alt => self.editor.insert("\n"),
-            KeyCode::Char('j') if ctrl => self.editor.insert("\n"),
             KeyCode::Enter => {
                 if self.editor.text().trim().is_empty() {
                     return Action::None;
@@ -256,18 +256,7 @@ impl InputBox {
             // Ctrl+Shift+C 在认得 kitty 键盘协议的终端里报成大写的 C。
             KeyCode::Char('c' | 'C') if ctrl => return self.ctrl_c(),
             KeyCode::Char('d') if ctrl && self.editor.is_empty() => return Action::Quit,
-            // 回到输入框开头（2026-09-30 项目主人改：原来是全选）。
-            KeyCode::Char('a') if ctrl => self.editor.move_to(0, false),
             KeyCode::Char('s') if ctrl => self.swap_stash(),
-            KeyCode::Char('w') if ctrl => self.editor.delete_word(),
-            KeyCode::Backspace if ctrl || alt => self.editor.delete_word(),
-            KeyCode::Left if ctrl => self.editor.word_left(shift),
-            KeyCode::Right if ctrl => self.editor.word_right(shift),
-            KeyCode::Char(c) if !ctrl => self.editor.insert(c.encode_utf8(&mut [0; 4])),
-            KeyCode::Backspace => self.editor.backspace(),
-            KeyCode::Delete => self.editor.delete(),
-            KeyCode::Left => self.editor.left(shift),
-            KeyCode::Right => self.editor.right(shift),
             KeyCode::Up => self.vertical(-1, shift),
             KeyCode::Down => self.vertical(1, shift),
             KeyCode::Home => self.line_edge(false, shift),
@@ -305,13 +294,7 @@ impl InputBox {
     pub fn paste(&mut self, text: &str) {
         self.goal_col = None;
         self.follow = true;
-        let clean = editor::clean(text);
-        if self.paste_rule.folds(&clean) {
-            let label = self.paste_rule.label(&clean);
-            self.editor.insert_block(label, clean);
-        } else {
-            self.editor.insert(&clean);
-        }
+        field::paste_into(&mut self.editor, &self.paste_rule, text);
         self.absorb_bang();
     }
 
@@ -362,16 +345,17 @@ impl InputBox {
 
     fn vertical(&mut self, delta: isize, extend: bool) {
         let lines = self.lines(self.area.width);
-        let text = self.editor.text();
-        let (row, col) = locate(text, &lines, self.editor.cursor());
-        let goal = *self.goal_col.get_or_insert(col);
-        let target = row.checked_add_signed(delta).filter(|&r| r < lines.len());
-        let pos = match target {
-            Some(r) => offset_at(text, &lines, r, goal),
-            // 第一行再往上、最后一行再往下：翻输入历史；按着 Shift 的照旧到开头、结尾。
-            None if !extend => return self.browse(delta),
-            None if delta < 0 => 0,
-            None => text.len(),
+        if field::vertical(&mut self.editor, &lines, &mut self.goal_col, delta, extend) {
+            return;
+        }
+        // 第一行再往上、最后一行再往下：翻输入历史；按着 Shift 的照旧到开头、结尾。
+        if !extend {
+            return self.browse(delta);
+        }
+        let pos = if delta < 0 {
+            0
+        } else {
+            self.editor.text().len()
         };
         self.editor.move_to(pos, extend);
     }
@@ -478,9 +462,6 @@ impl InputBox {
 
     fn line_edge(&mut self, end: bool, extend: bool) {
         let lines = self.lines(self.area.width);
-        let (row, _) = locate(self.editor.text(), &lines, self.editor.cursor());
-        let line = lines[row];
-        self.editor
-            .move_to(if end { line.end } else { line.start }, extend);
+        field::line_edge(&mut self.editor, &lines, end, extend);
     }
 }

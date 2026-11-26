@@ -454,3 +454,6 @@ fn drawers_from_another_session_are_held_until_its_tree_is_viewed() {
     drawers.drop_held("b");
     assert!(!drawers.open() && drawers.held_owners().is_empty());
 }
+
+mod editing;
+mod paste;

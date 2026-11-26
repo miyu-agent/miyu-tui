@@ -5,7 +5,8 @@ use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
 use super::View;
-use crate::drawer::{Decision, Drawer, Edit, Item, Texts, inline, said};
+use super::field::{self, Spot, indented, settled};
+use crate::drawer::{Decision, Drawer, Edit, Item, Texts, said};
 use crate::input::pieces;
 use crate::theme;
 
@@ -20,6 +21,8 @@ pub struct Block {
     pub focus: (usize, usize),
     /// 编辑时光标的行、列。
     pub cursor: Option<(usize, u16)>,
+    /// 编辑时写字的那一块在哪。
+    pub field: Option<Spot>,
 }
 
 impl Block {
@@ -34,6 +37,12 @@ impl Block {
         v.focus = (at + self.focus.0, at + self.focus.1);
         if let Some((row, col)) = self.cursor {
             v.cursor = Some((at + row, col));
+        }
+        if let Some(spot) = self.field {
+            v.field = Some(Spot {
+                row: at + spot.row,
+                ..spot
+            });
         }
         v.lines.extend(self.lines);
         v.items.extend(self.items);
@@ -91,7 +100,7 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
     };
     let checked = match item {
         Item::Choice(i) => d.checked[tab].get(i) == Some(&true),
-        Item::Other => !typed.trim().is_empty(),
+        Item::Other => !typed.is_blank(),
         Item::Decision(_) => false,
     };
     let mark = if checked {
@@ -115,7 +124,7 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
     }
     let lead = pointer.width() + number.width() + marker.map_or(0, |m| m.width());
     let room = usize::from(width).saturating_sub(lead);
-    // 在写的那一项：标题换成写的字（「其他」），或者标题后面空两格接写的字（理由）；光标跟在字后面。
+    // 在写的那一项：「其他」下面一块写字的地方，和标题对齐；理由接在标题后面空两格。和输入框同一个编辑器（2026-11-27）。
     let editing = active
         && matches!(
             (d.editing, item),
@@ -131,9 +140,9 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
                 option.and_then(|o| o.description.as_ref().map(clean)),
             )
         }
-        Item::Other if editing => (String::new(), None),
-        // 写好了的照写的字，不加「自定义：」（2026-10-20 项目主人：「编辑完成后不需要『自定义』」）。
-        Item::Other if !typed.trim().is_empty() => (inline(typed), None),
+        // 写好了的照写的字，不加「自定义：」（2026-10-20 项目主人：「编辑完成后不需要『自定义』」）；在写的照旧写「输入其他答案」，
+        // 字写在下面。
+        Item::Other if !editing && !typed.is_blank() => (typed.text().to_string(), None),
         Item::Other => (texts.other.clone(), None),
         Item::Decision(decision) => {
             let at = Decision::ALL
@@ -143,11 +152,12 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
             (texts.decisions[at].clone(), None)
         }
     };
-    // 放不下的标题折行、不截（2026-11-02 项目主人）；在写的那一项标题后面接着写字，照旧截。
-    let mut labels = if editing {
-        vec![super::clip(&label, col(room))]
-    } else {
-        folded(&label, col(room))
+    // 放不下的标题折行、不截（2026-11-02 项目主人）；在写理由的「不允许」后面接着写字，照旧截。写好的「其他」照原文的换行
+    // 分行、折行，最多几行（`field.rs` 的 `settled`；原来换行写成 `↵` 挤在一行里）。
+    let mut labels = match item {
+        Item::Other if !editing && !typed.is_blank() => settled(&label, col(room)),
+        Item::Decision(_) if editing => vec![super::clip(&label, col(room))],
+        _ => folded(&label, col(room)),
     }
     .into_iter();
     let label = labels.next().unwrap_or_default();
@@ -162,33 +172,43 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
             ])
         })
         .collect();
-    if editing {
-        let (gap, hint) = match item {
-            Item::Other => ("", &texts.other),
-            _ => ("  ", &texts.reason_hint),
-        };
-        spans.push(Span::raw(gap));
-        used += gap.width();
-        let room = usize::from(width).saturating_sub(used + 1);
-        if item == Item::Other || typed.is_empty() {
-            let shown = tail(&inline_raw(typed), room);
-            b.cursor = Some((b.lines.len(), col(used + shown.width())));
-            if shown.is_empty() {
-                spans.push(Span::styled(tail(hint, room), theme::dim()));
-            } else {
-                spans.push(Span::raw(shown));
-            }
-        } else {
-            // 理由能分行（2026-10-22 项目主人：「理由不支持换行」）：第一行接在「不允许」后面，换了行的、写长了的往下对齐
-            // 接着写，光标跟在最后。
-            let rows = reason_rows(typed, room);
-            let last = rows.last().map_or(0, |r| r.width());
-            b.cursor = Some((b.lines.len() + rows.len() - 1, col(used + last)));
-            let mut rows = rows.into_iter();
-            spans.push(Span::raw(rows.next().unwrap_or_default()));
-            let indent = " ".repeat(used);
-            more.extend(rows.map(|r| Line::from(vec![Span::raw(indent.clone()), Span::raw(r)])));
-        }
+    // 「其他」写字的那几行：接在标题下面，和标题对齐（2026-11-27，照 LiteMiyu）。
+    let mut below = Vec::new();
+    let cap = d.field_rows.get();
+    if editing && item == Item::Other {
+        let room = col(usize::from(width).saturating_sub(lead + 1)).max(1);
+        let rows = field::rows(typed, room, cap, &texts.other);
+        let first = b.lines.len() + 1 + more.len();
+        b.cursor = Some((first + rows.cursor.0, col(lead) + rows.cursor.1));
+        b.field = Some(Spot {
+            row: first,
+            col: col(lead),
+            width: room,
+            rows: rows.lines.len(),
+            top: rows.top,
+            skip: 0,
+        });
+        below.extend(rows.lines.into_iter().map(|r| indented(lead, r)));
+    } else if editing {
+        // 理由能分行（2026-10-22 项目主人：「理由不支持换行」）：第一行接在「不允许」后面空两格，换了行的、写长了的往下
+        // 对齐接着写。
+        spans.push(Span::raw("  "));
+        used += 2;
+        let room = col(usize::from(width).saturating_sub(used + 1)).max(1);
+        let rows = field::rows(typed, room, cap, &texts.reason_hint);
+        let first = b.lines.len();
+        b.cursor = Some((first + rows.cursor.0, col(used) + rows.cursor.1));
+        b.field = Some(Spot {
+            row: first,
+            col: col(used),
+            width: room,
+            rows: rows.lines.len(),
+            top: rows.top,
+            skip: 0,
+        });
+        let mut rows = rows.lines.into_iter();
+        spans.extend(rows.next().unwrap_or_default());
+        more.extend(rows.map(|r| indented(used, r)));
     }
     // 光标停在「不允许」上、还没在写：后面暗色写怎么写理由（2026-10-22 项目主人：「鼠标移动到不允许，然后出现 n 键
     // 输入理由」）。
@@ -199,7 +219,7 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
         ));
     }
     b.push(Line::from(spans), Some(index));
-    for line in more {
+    for line in more.into_iter().chain(below) {
         b.push(line, Some(index));
     }
     if let Some(description) = description.filter(|s| !s.trim().is_empty()) {
@@ -211,11 +231,12 @@ fn item_lines(d: &Drawer, texts: &Texts, width: u16, index: usize, item: Item, b
     }
 }
 
-/// 按 `n` 写的补充：有字或者正在写时，选项下面一行 `补充  字`。
+/// 按 `n` 写的补充：有字或者正在写时，选项下面 `补充  字`；写长了的、换了行的往下和第一行的字对齐（2026-11-27，同
+/// 「其他」）。
 pub fn notes(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     let text = &d.notes[d.tab];
     let editing = d.editing == Some(Edit::Notes);
-    if text.trim().is_empty() && !editing {
+    if text.is_blank() && !editing {
         return;
     }
     let lead = format!(
@@ -223,15 +244,34 @@ pub fn notes(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
         " ".repeat(texts.pointer.width()),
         texts.notes_label
     );
-    let room = usize::from(width).saturating_sub(lead.width() + 1);
-    let shown = tail(&inline_raw(text), room);
-    if editing {
-        v.cursor = Some((v.lines.len(), col(lead.width() + shown.width())));
+    let lw = lead.width();
+    let room = col(usize::from(width).saturating_sub(lw + 1)).max(1);
+    let rows: Vec<Vec<Span<'static>>> = if editing {
+        // 补充没有现成的提示语：空着只写「补充」。
+        let rows = field::rows(text, room, d.field_rows.get(), "");
+        v.cursor = Some((v.lines.len() + rows.cursor.0, col(lw) + rows.cursor.1));
+        v.field = Some(Spot {
+            row: v.lines.len(),
+            col: col(lw),
+            width: room,
+            rows: rows.lines.len(),
+            top: rows.top,
+            skip: 0,
+        });
+        rows.lines
+    } else {
+        settled(text.text(), room)
+            .into_iter()
+            .map(|r| vec![Span::raw(r)])
+            .collect()
+    };
+    let mut rows = rows.into_iter();
+    let mut first = vec![Span::styled(lead, theme::dim())];
+    first.extend(rows.next().unwrap_or_default());
+    v.push(Line::from(first), None);
+    for row in rows {
+        v.push(indented(lw, row), None);
     }
-    v.push(
-        Line::from(vec![Span::styled(lead, theme::dim()), Span::raw(shown)]),
-        None,
-    );
 }
 
 /// 「确认」页：一道一行 `短名：回答`，短名加粗、回答暗，没答的红色「未回答」。
@@ -255,21 +295,6 @@ pub fn review(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
     }
 }
 
-/// 写的字排成一行：换行写成 `↵`，前后的空白照留（光标跟着）。
-/// 理由排成的几行：照换行分开，长的照 `room` 折行；空行照样占一行。
-fn reason_rows(text: &str, room: usize) -> Vec<String> {
-    let room = u16::try_from(room).unwrap_or(u16::MAX).max(1);
-    let mut out = Vec::new();
-    for line in text.split('\n') {
-        let parts = pieces(line, room);
-        if parts.is_empty() {
-            out.push(String::new());
-        }
-        out.extend(parts.into_iter().map(|(piece, _)| piece));
-    }
-    out
-}
-
 /// 照 `room` 列折好的几行（至少一行），每一行去掉行尾的空白：正文的折行把满了的那一格空白留在行尾，多占一列，
 /// 抽屉里并排时中线会错开（2026-11-02 项目主人报）。
 pub(super) fn folded(text: &str, room: u16) -> Vec<String> {
@@ -281,15 +306,6 @@ pub(super) fn folded(text: &str, room: u16) -> Vec<String> {
         out.push(String::new());
     }
     out
-}
-
-fn inline_raw(text: &str) -> String {
-    text.replace(['\r', '\n'], &crate::sheet::mark(|m| &m.enter))
-}
-
-/// 放进 `width` 列：放不下的留后面那截（看得到最新写的）。
-fn tail(text: &str, width: usize) -> String {
-    crate::cells::tail(text, width)
 }
 
 fn col(n: usize) -> u16 {

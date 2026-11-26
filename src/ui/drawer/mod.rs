@@ -3,6 +3,7 @@
 //! 右边的文字画在 `preview.rs`。
 
 mod command;
+mod field;
 mod items;
 mod preview;
 
@@ -38,6 +39,8 @@ pub struct View {
     pub head: usize,
     /// 前面那几行里放不下时也不裁的：谁在问、标签、问题行（2026-10-22：长命令把问题顶没了）。
     pub pinned: usize,
+    /// 编辑时写字的那一块在哪（`field.rs`）：画的时候记回去，鼠标照它放光标。
+    pub field: Option<field::Spot>,
 }
 
 impl View {
@@ -190,6 +193,8 @@ fn head(d: &Drawer, texts: &Texts, width: u16, v: &mut View) {
 
 /// 抽屉要几行：排出来的行数，最多 `max`。
 pub fn rows(d: &Drawer, texts: &Texts, look: &PreviewLook, width: u16, max: u16) -> u16 {
+    // 写字的地方最多露几行照抽屉能用的高度定，这一帧画的时候照同一个数排（`Drawer::fit_field`）。
+    d.fit_field(usize::from(max));
     // 按键提示只有一行，换不换「j/k」行数一样。
     let n = view(d, texts, look, width, false).lines.len();
     u16::try_from(n).unwrap_or(u16::MAX).min(max).max(1)
@@ -235,6 +240,18 @@ pub fn fit(v: View, height: usize, scroll: &mut usize) -> View {
     } else if last >= start + room {
         start = (last + 1).saturating_sub(room);
     }
+    // 在写字：光标那一行一定露着（选中那一项连写字的几行高过能露的、补充写在选项下面的时候）。
+    if let Some(row) = v
+        .cursor
+        .and_then(|(row, _)| row.checked_sub(v.head))
+        .filter(|&row| row < body_len)
+    {
+        if row < start {
+            start = row;
+        } else if row >= start + room {
+            start = (row + 1).saturating_sub(room);
+        }
+    }
     *scroll = start;
     // 留下的行在原来的第几行：钉住的几行、问题的后半截、选项的一段、按键提示。
     let pinned = v.pinned.min(top);
@@ -246,6 +263,19 @@ pub fn fit(v: View, height: usize, scroll: &mut usize) -> View {
         .collect();
     let at = |row: usize| kept.iter().position(|&k| k == row);
     let cursor = v.cursor.and_then(|(row, col)| at(row).map(|r| (r, col)));
+    // 写字的那一块露出来的几行（裁掉了头几行的从露着的第一行算起）。
+    let field = v.field.and_then(|spot| {
+        let (r, k) = (spot.row..spot.row + spot.rows).find_map(|k| at(k).map(|r| (r, k)))?;
+        let rows = (k..spot.row + spot.rows)
+            .take_while(|&k| at(k).is_some())
+            .count();
+        Some(field::Spot {
+            row: r,
+            rows,
+            skip: k - spot.row,
+            ..spot
+        })
+    });
     View {
         lines: kept.iter().map(|&k| v.lines[k].clone()).collect(),
         items: kept.iter().map(|&k| v.items[k]).collect(),
@@ -253,6 +283,7 @@ pub fn fit(v: View, height: usize, scroll: &mut usize) -> View {
         head: top,
         pinned,
         cursor,
+        field,
     }
 }
 
@@ -299,6 +330,17 @@ pub fn draw(
     let shown = usize::from(area.height);
     v.lines.truncate(shown);
     v.items.truncate(shown);
+    // 写字的那一块画在屏幕上哪里：记回去，下一帧照它少滚，鼠标照它放光标（往下滑着、底下裁掉的几行不算）。
+    if let (Some(spot), Some(f)) = (v.field, d.field_mut()) {
+        let rows = spot.rows.min(shown.saturating_sub(spot.row));
+        let place = Rect::new(
+            area.x + spot.col,
+            area.y + u16::try_from(spot.row).unwrap_or(u16::MAX),
+            spot.width,
+            u16::try_from(rows).unwrap_or(0),
+        );
+        f.place(place, spot.top, spot.skip);
+    }
     if let Some((row, col)) = v.cursor.filter(|(row, _)| *row < shown) {
         let x = area.x + col.min(area.width.saturating_sub(1));
         caret.put(

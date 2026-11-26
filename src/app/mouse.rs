@@ -95,6 +95,10 @@ impl App {
                 }
                 return Action::None;
             }
+            // 点在正在写的字上：光标挪过去（2026-11-27，`input/field.rs`）。
+            if matches!(mouse.kind, MouseEventKind::Down(_)) && self.drawer_field_click(at) {
+                return Action::None;
+            }
             let row = usize::from(at.y - self.screen.areas.text.y);
             if let Some(index) = self.screen.drawer_rows.get(row).copied().flatten() {
                 match mouse.kind {

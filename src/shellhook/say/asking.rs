@@ -139,7 +139,8 @@ impl Asking {
         let key = crate::app::vim_step(key, !self.drawers.editing() && !scrolls);
         // 按键模式开着、没在写字：`j`、`k` 也当 `↓`、`↑`（同全屏）。
         let key = crate::app::vim::plain(key, config.layout.vim && !self.drawers.editing());
-        let newline = self.drawers.editing() && key.code == KeyCode::Char('j');
+        // 写字时的编辑键（`Ctrl+J` 换行、`Ctrl+A`、`Ctrl+W`、按词跳删）归抽屉，同全屏。
+        let newline = self.drawers.editing() && crate::drawer::ctrl_edit(key.code);
         let scroll = scrolls && matches!(key.code, KeyCode::Char('j' | 'k'));
         if crate::app::is_paste(&key) {
             self.clipboard(config);
@@ -201,19 +202,12 @@ impl Asking {
         }
     }
 
-    /// 粘贴：正在写的（其他答案、补充、理由）接进去。
+    /// 粘贴：正在写的（其他答案、补充、理由）插在光标处，照原样不收成块（同原来接在末尾时的字，2026-11-27 起插在光标处）。
     pub fn paste(&mut self, text: &str) -> bool {
         let Some(d) = self.drawers.current.as_mut() else {
             return false;
         };
-        let tab = d.tab;
-        match d.editing {
-            Some(crate::drawer::Edit::Notes) => d.notes[tab].push_str(text),
-            Some(crate::drawer::Edit::Other | crate::drawer::Edit::Reason) => {
-                d.typed[tab].push_str(text)
-            }
-            None => {}
-        }
+        d.paste(text, &crate::input::PasteRule::never());
         true
     }
 
