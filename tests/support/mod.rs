@@ -272,6 +272,9 @@ impl Tui {
         if has(b"\x1b[6n") {
             self.answer(b"\x1b[1;1R");
         }
+        if has(b"\x1b[5n") {
+            self.answer(b"\x1b[0n");
+        }
         if let Some(recording) = &mut self.recording {
             recording.extend_from_slice(data);
         }

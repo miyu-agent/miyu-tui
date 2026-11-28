@@ -113,6 +113,11 @@ function __miyu_on_prompt --on-event fish_prompt
         end
         rm -f -- $leftover
     end
+    # 找不到命令交给她时敲的字（fish_command_not_found）：放回命令行。
+    if set -q __miyu_typed_back
+        commandline -i -- $__miyu_typed_back
+        set -e __miyu_typed_back
+    end
     # 前台跑着命令的时候来的后台回报：回到提示符再印（提示符还没画，不用擦）。
     while set -q __miyu_report_pending
         __miyu_report
@@ -323,6 +328,10 @@ function fish_command_not_found
         set text (string join ' ' -- $argv)
         string match -qr '[\n\r]' -- $text; and return 127
     end
-    printf '%s' "$text" | __miyu_shellhook say --shell fish --shell-pid $fish_pid
+    # 她答话时提前敲的字：回到提示符时放回命令行（2026-11-28 审计 F3：原来没带 --leftover，读走就丢了）。
+    set -l leftover (mktemp -t miyu-shellhook.XXXXXX)
+    printf '%s' "$text" | __miyu_shellhook say --shell fish --shell-pid $fish_pid --leftover $leftover
+    test -s "$leftover"; and set -g __miyu_typed_back (string collect < $leftover)
+    rm -f -- $leftover
     return 127
 end
