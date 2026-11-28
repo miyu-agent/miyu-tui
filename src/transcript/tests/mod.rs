@@ -26,6 +26,7 @@ mod recap;
 mod redo;
 mod report_order;
 mod said_at;
+mod shape;
 mod shell;
 mod shown;
 mod switched;

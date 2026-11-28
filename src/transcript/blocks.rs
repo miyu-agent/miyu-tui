@@ -6,6 +6,10 @@ use serde_json::Value;
 use super::{Kind, Segment, Slot, Step, StepKind, ToolState, Transcript};
 use crate::core::Block;
 
+/// 参数照标准写法规整的几件（核心 ED-3，同核心 ACP 的 `acp/tool.rs`）：对象是 `file_path` 的读、写、改文件。别的工具的
+/// `path` 是它们自己的标准名，供应商侧工具另走 `hosted.rs`，都不碰。
+const FILE_TOOLS: [&str; 3] = ["read", "edit", "write"];
+
 impl Transcript {
     /// 一块开始了：回答另起一条，收起前面那一段；思考、调工具记进在进行的那一段。
     pub(super) fn open_block(&mut self, block: Block) -> Slot {
@@ -125,12 +129,18 @@ impl Transcript {
         match &mut step.kind {
             StepKind::Thought { .. } => step.stop_at(now),
             StepKind::Tool {
+                name,
                 args,
                 parsed,
                 state,
                 ..
             } if *state == ToolState::Preparing => {
                 *parsed = serde_json::from_str(args).unwrap_or(Value::Null);
+                // 读、写、改文件的参数先照标准写法规整（核心 ED-3）：`path`、`oldText` 这些别名，顶层直接写一处、`edits`
+                // 写成一个对象的都认，差异、合计、侧栏的文件修改、标题里的路径照它算。原文（`args`）不动。
+                if FILE_TOOLS.contains(&name.as_str()) {
+                    miyu_client::events::shape::standard_value(parsed);
+                }
                 *state = ToolState::Running;
             }
             StepKind::Tool { .. } | StepKind::Report { .. } => {}
