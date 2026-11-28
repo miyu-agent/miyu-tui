@@ -46,6 +46,7 @@ mod mention;
 mod menu;
 mod meter;
 mod model_list;
+mod modes;
 mod money;
 mod note;
 mod notify;
@@ -58,6 +59,7 @@ mod pixel_mouse;
 mod pointer;
 mod pools;
 mod pulse;
+mod quit_signals;
 mod reader;
 mod rng;
 mod scratch;
@@ -88,11 +90,6 @@ use std::io::{self, Write, stdout};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
-use ratatui::crossterm::event::{
-    DisableBracketedPaste, DisableFocusChange, DisableMouseCapture, EnableBracketedPaste,
-    EnableFocusChange, EnableMouseCapture, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags,
-    PushKeyboardEnhancementFlags,
-};
 use ratatui::crossterm::{cursor, execute, terminal};
 
 use miyu_client::places::Env;
@@ -111,7 +108,12 @@ fn main() -> io::Result<std::process::ExitCode> {
         return Ok(shellhook::main(args.skip(1).collect()));
     }
     match startup::parse() {
-        Ok(launch) => fullscreen(launch).map(|()| std::process::ExitCode::SUCCESS),
+        Ok(launch) => {
+            let done = fullscreen(launch);
+            // 是收到要结束的信号退的：收拾完了照那个信号结束（`quit_signals.rs`）。
+            quit_signals::end();
+            done.map(|()| std::process::ExitCode::SUCCESS)
+        }
         Err(code) => Ok(code),
     }
 }
@@ -145,7 +147,7 @@ fn fullscreen(launch: startup::Launch) -> io::Result<()> {
     // 挪到框里（2026-10-22 项目主人：「光标是从左上角移动到输入框」）。
     execute!(stdout(), cursor::Hide).inspect_err(|_| ratatui::restore())?;
     let mut terminal = screen().inspect_err(|_| ratatui::restore())?;
-    let keyboard = match enter() {
+    let keyboard = match modes::enter() {
         Ok(keyboard) => keyboard,
         Err(e) => {
             ratatui::restore();
@@ -158,7 +160,7 @@ fn fullscreen(launch: startup::Launch) -> io::Result<()> {
     let saved = config.text.crash_saved.clone();
     std::panic::set_hook(Box::new(move |info| {
         // 已经在崩了，收拾失败也只能说一声，接着把崩溃信息交给原来的处理。
-        if let Err(e) = leave(keyboard) {
+        if let Err(e) = modes::leave(keyboard) {
             eprintln!("终端没收拾干净：{e}");
         }
         previous(info);
@@ -167,6 +169,12 @@ fn fullscreen(launch: startup::Launch) -> io::Result<()> {
             eprintln!("{}", saved.replace("{path}", &path.display().to_string()));
         }
     }));
+    // 收到要结束的信号（`kill`、`pkill`、`timeout`）：叫主循环照常退，到点没退完的当场还原终端（`quit_signals.rs`）。
+    let to_quit = sender.clone();
+    quit_signals::install(
+        Some(Box::new(move || to_quit.send(Incoming::Quit).is_ok())),
+        Box::new(move |out| modes::restore_now(out, keyboard)),
+    );
     // 问终端能不能显示图：进了全屏、还没开始读按键的时候问（蓝图「图片、公式和 mermaid 图」第 1 条）。
     let graphics = figures::terminal::probe();
     // 问终端的字色、底色：明暗「自动」照它挑深浅（蓝图「主题」第 3 条），终端配色照它推底色；同样在开始读按键之前问。
@@ -180,8 +188,11 @@ fn fullscreen(launch: startup::Launch) -> io::Result<()> {
         keyboard,
         launch,
     );
-    leave(keyboard)?;
+    modes::leave(keyboard)?;
     ratatui::restore();
+    // 起来时藏了光标（上面 `cursor::Hide`）：最后一帧没在显示光标的，退出以后 shell 里也看不见，这里明着亮回来（2026-11-28
+    // 审计第 4 条的测试照出来的：收到信号叫主循环退的也走这一条）。
+    execute!(stdout(), cursor::Show)?;
     result
 }
 
@@ -190,46 +201,6 @@ fn screen() -> io::Result<Screen> {
     Ok(screen::Screen::new(
         ratatui::backend::CrosstermBackend::new(frame_output::Output::new(stdout())),
     ))
-}
-
-/// 打开鼠标、括号粘贴；终端认得 kitty 键盘协议就打开，Shift+Enter 才分得出来。
-/// 返回有没有打开键盘协议，退出时照着关。光标的样子不碰，跟终端自己的设置（`tui.md`「输入框」第 4 条）。
-fn enter() -> io::Result<bool> {
-    let keyboard = terminal::supports_keyboard_enhancement().unwrap_or(false);
-    modes_on(keyboard)?;
-    Ok(keyboard)
-}
-
-/// 打开鼠标、括号粘贴，`keyboard` 为真时再打开 kitty 键盘协议。
-fn modes_on(keyboard: bool) -> io::Result<()> {
-    // 焦点上报：终端报在不在前台，系统通知照它（蓝图「系统通知」第 2 条）。
-    execute!(
-        stdout(),
-        EnableMouseCapture,
-        EnableBracketedPaste,
-        EnableFocusChange
-    )?;
-    if keyboard {
-        execute!(
-            stdout(),
-            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
-        )?;
-    }
-    Ok(())
-}
-
-fn leave(keyboard: bool) -> io::Result<()> {
-    pointer::reset(&mut stdout())?;
-    pixel_mouse::PixelMouse::default().reset(&mut stdout())?;
-    if keyboard {
-        execute!(stdout(), PopKeyboardEnhancementFlags)?;
-    }
-    execute!(
-        stdout(),
-        DisableMouseCapture,
-        DisableBracketedPaste,
-        DisableFocusChange
-    )
 }
 
 /// 主循环：画一帧，等事件；一次把攒着的都处理完再画，空闲时不重画。
@@ -386,8 +357,10 @@ fn run(
 /// 只停自己：核心在自己的进程组里，照常在后台跑。
 #[cfg(unix)]
 fn suspend(screen: &mut Screen, keyboard: bool) -> io::Result<()> {
-    leave(keyboard)?;
+    modes::leave(keyboard)?;
     ratatui::restore();
+    // 挂起期间回到 shell：光标要看得见（同退出时）。
+    execute!(stdout(), cursor::Show)?;
     rustix::process::kill_process(rustix::process::getpid(), rustix::process::Signal::TSTP)?;
     // 到这里已经 `fg` 回来了。
     reenter(screen, keyboard)
@@ -402,7 +375,7 @@ fn reenter(screen: &mut Screen, keyboard: bool) -> io::Result<()> {
         terminal::EnterAlternateScreen,
         terminal::Clear(terminal::ClearType::All)
     )?;
-    modes_on(keyboard)?;
+    modes::on(keyboard)?;
     *screen = self::screen()?;
     Ok(())
 }
@@ -427,12 +400,13 @@ fn edit(
     file: &std::path::Path,
 ) -> io::Result<()> {
     reader.pause();
-    leave(keyboard)?;
+    modes::leave(keyboard)?;
     // 不离开备用屏：离开会露出底下 shell 的内容，光标先飞到左下角再飞进编辑器（2026-09-30 项目主人）。这一帧留着，
     // 光标藏起来，等编辑器自己画上来。
     execute!(stdout(), cursor::Hide)?;
     terminal::disable_raw_mode()?;
-    let ran = editor::run(editor, file);
+    // 等编辑器时终端里按的 `Ctrl+C` 交给编辑器办，界面不退（同 `system(3)`，`quit_signals.rs`）。
+    let ran = quit_signals::yielded(|| editor::run(editor, file));
     let back = reenter(screen, keyboard);
     reader.resume();
     ran.and(back)

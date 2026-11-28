@@ -27,6 +27,8 @@ fn resources() -> PathBuf {
 
 pub mod clipboard;
 mod core;
+#[cfg(unix)]
+mod ending;
 mod fakes;
 #[cfg(target_os = "linux")]
 mod hangup;
