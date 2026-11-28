@@ -7,7 +7,10 @@ __miyu_shellhook() {
 }
 
 command_not_found_handler() {
-    if [[ ! -o interactive ]]; then
+    # 只接人在提示符上敲、回车交给 zsh 执行的那一行（`__miyu_ran`），找不到的是那一行的首词、输出直接到终端的才交给她：
+    # 启动文件、提示符、precmd、命令替换、管道、函数和脚本里找不到的命令照 zsh 原样报错（2026-11-28 审计 F1：原来只看是不是
+    # 交互式，提示符里调了没装的命令的每画一次提示符就交一轮）。
+    if [[ ! -o interactive || ! -t 1 || -z $__miyu_ran || $1 != "${(Q)$(__miyu_head "$__miyu_ran")}" ]]; then
         print -u2 "zsh: command not found: $1"
         return 127
     fi
@@ -28,6 +31,8 @@ command_not_found_handler() {
 # 当场在这个小部件里交给她（同 fzf 的小部件：先 `zle -I`，程序自己用终端）；多行的交给程序判。别的照 zsh 原样执行。
 # 交给她的那一行留在屏幕上、照普通的字色，进历史；她答完，提前敲的字放回命令行。
 typeset -g __miyu_busy= __miyu_editing=
+# 回车交给 zsh 执行的那一行：找不到命令时照它认是不是人敲的（precmd 里清掉）。
+typeset -g __miyu_ran=
 
 # 首词：跳过前面的 `变量=值`。
 __miyu_head() {
@@ -69,6 +74,7 @@ __miyu_accept_line() {
     fi
     local head
     head=$(__miyu_head "$buffer")
+    __miyu_ran=$buffer
     if [[ $buffer != *$'\n'* ]]; then
         if ! __miyu_plain "$head" || __miyu_is_command "$head"; then
             zle .accept-line
@@ -171,6 +177,7 @@ TRAPUSR1() {
 }
 
 __miyu_precmd() {
+    __miyu_ran=
     if [[ -n $__miyu_report_pending ]]; then
         __miyu_report_pending=
         __miyu_shellhook report --shell zsh --shell-pid $$ && print

@@ -7,13 +7,14 @@ __miyu_shellhook() {
 }
 
 command_not_found_handle() {
-    case $- in
-        *i*) ;;
-        *)
-            printf 'bash: %s: command not found\n' "$1" >&2
-            return 127
-            ;;
-    esac
+    # 只接人在提示符上敲、回车交给 bash 执行的那一行（`__miyu_ran`），找不到的是那一行的首词、输出直接到终端的才交给她：
+    # 启动文件、提示符、PROMPT_COMMAND、命令替换、管道、函数和脚本里找不到的命令照 bash 原样报错（2026-11-28 审计 F1：原来
+    # 只看是不是交互式，启动文件末尾的 `eval "$(没装的工具 init bash)"` 把她的回答当代码执行了，提示符里调了没装的命令的
+    # 每画一次提示符就交一轮）。
+    if [[ $- != *i* || ! -t 1 || -z $__miyu_ran || $1 != "$(__miyu_head "$__miyu_ran")" ]]; then
+        printf 'bash: %s: command not found\n' "$1" >&2
+        return 127
+    fi
     # $$ 是这个 bash（这里在子 shell 里也不变）：后台回报交回它。
     printf '%s' "$*" | __miyu_shellhook say --shell bash --shell-pid $$
     # 程序收工时不亮光标（亮早了停在最后一行末尾闪一下），这里亮。
@@ -30,6 +31,8 @@ command_not_found_handle() {
 __miyu_busy=
 __miyu_editing=
 __miyu_report_pending=
+# 回车交给 bash 执行的那一行：找不到命令时照它认是不是人敲的（画下一个提示符时清掉）。
+__miyu_ran=
 
 # 首词：跳过前面的 `变量=值`。
 __miyu_head() {
@@ -76,6 +79,7 @@ __miyu_accept_line() {
     # 放回来，原来先判成命令、回车就执行了）。清空了的照原样。
     if [[ -z $__miyu_editing || $READLINE_LINE != *[![:space:]]* ]] && ! __miyu_is_talk "$READLINE_LINE"; then
         __miyu_editing=
+        __miyu_ran=$READLINE_LINE
         bind '"\C-x\C-b": accept-line'
         return
     fi
@@ -133,6 +137,7 @@ __miyu_paste() {
 # 在编辑的那一句：Ctrl+C 清了命令行、执行了别的命令（都会画新的提示符），就不算在编辑了。
 __miyu_prompt() {
     __miyu_editing=
+    __miyu_ran=
 }
 PROMPT_COMMAND="__miyu_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 

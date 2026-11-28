@@ -173,8 +173,14 @@ function __miyu_execute_or_continue
         commandline -i \n
         commandline -f repaint
     else
+        # 交给 fish 执行的那一行：找不到命令时照它认是不是人敲的（跑完清掉）。
+        set -g __miyu_ran (commandline -b | string collect)
         commandline -f execute
     end
+end
+
+function __miyu_ran_done --on-event fish_postexec
+    set -e __miyu_ran
 end
 
 function __miyu_buffer_is_multiline
@@ -300,21 +306,23 @@ bind -M insert enter __miyu_accept_line
 bind -M insert \r __miyu_accept_line
 
 function fish_command_not_found
-    status is-interactive; or return 127
-
-    set -l current_line (status current-commandline 2>/dev/null | string collect)
-    if test -n "$current_line"; and not string match -qr '[\n\r]' -- "$current_line"
-        set -l top_command (__miyu_first_command "$current_line")
-        if test -z "$top_command"; or not type -q -- "$top_command"
-            printf '%s' "$current_line" | __miyu_shellhook say --shell fish --shell-pid $fish_pid
-            return 127
-        end
+    # 只接人在提示符上敲、回车交给 fish 执行的那一行（`__miyu_ran`），找不到的是那一行的首词、又不在命令替换里的才交给她
+    # （fish 交给这个函数的标准输出本来就不是终端，不能照 bash、zsh 看 `-t 1`，实测 fish 4.9）：
+    # 启动文件、提示符、事件处理、命令替换、管道、函数和脚本里找不到的命令照 fish 原样报错（2026-11-28 审计 F1：原来只看是不是
+    # 交互式，`没装的工具 init fish | source` 把她的回答交给了 source，提示符里调了没装的命令的每画一次提示符就交一轮）。
+    set -l head
+    set -q __miyu_ran; and set head (__miyu_first_token_raw "$__miyu_ran")
+    if not status is-interactive; or status is-command-substitution; or test -z "$head"; or test "$argv[1]" != "$head"
+        functions -q __fish_default_command_not_found_handler
+        and __fish_default_command_not_found_handler $argv
+        return 127
     end
 
-    set -l command $argv
-    test (count $command) -eq 0; and return 127
-    set -l text (string join ' ' -- $command)
-    string match -qr '[\n\r]' -- $text; and return 127
+    set -l text "$__miyu_ran"
+    if string match -qr '[\n\r]' -- "$text"
+        set text (string join ' ' -- $argv)
+        string match -qr '[\n\r]' -- $text; and return 127
+    end
     printf '%s' "$text" | __miyu_shellhook say --shell fish --shell-pid $fish_pid
     return 127
 end
