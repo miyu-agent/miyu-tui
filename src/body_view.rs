@@ -365,7 +365,9 @@ impl BodyView {
         let bar = self.bar();
         let a = self.area;
         let on = bar.is_some() && self.on_bar_column(event.column, event.row);
-        let y = event.row.clamp(a.y, a.bottom().saturating_sub(1)) - a.y;
+        // 不用 `clamp`：正文区被挤成 0 行高（`y = 1, h = 0`）时下界大过上界，`clamp` 当场 panic（审计 2026-11-28 第 8 条）；
+        // 先压上界再抬下界，0 行高的算第 0 行。
+        let y = event.row.min(a.bottom().saturating_sub(1)).max(a.y) - a.y;
         // 带小数的第几行：按像素报的照像素，按格报的照那一格当中。
         let yf = self
             .pixel_y
@@ -463,7 +465,8 @@ impl BodyView {
             return None;
         }
         let row = row.clamp(a.y, a.bottom() - 1);
-        let column = column.clamp(a.x, a.right().saturating_sub(1));
+        // 0 列宽时 `clamp(x, x - 1)` 同样 panic（同上），照上面先压后抬。
+        let column = column.min(a.right().saturating_sub(1)).max(a.x);
         let r = (self.first + usize::from(row - a.y)).min(self.rows.len() - 1);
         Some((r, column - a.x))
     }

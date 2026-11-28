@@ -118,7 +118,8 @@ impl InputBox {
     fn offset_under(&self, column: u16, row: u16) -> usize {
         let lines = self.lines(self.area.width);
         let a = self.area;
-        let r = usize::from(row.clamp(a.y, a.bottom().saturating_sub(1)) - a.y) + self.scroll;
+        // 不用 `clamp`：1 行高的窗口里文字区排成 `y = 1, h = 0`，下界大过上界当场 panic（审计 2026-11-28 第 8 条）。
+        let r = usize::from(row.min(a.bottom().saturating_sub(1)).max(a.y) - a.y) + self.scroll;
         if row < a.y {
             return offset_at(self.editor.text(), &lines, self.scroll, 0);
         }

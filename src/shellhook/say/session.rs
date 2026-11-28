@@ -74,6 +74,12 @@ impl Session {
             )?;
             raw.keyboard = true;
         }
+        // 被 `kill`、`timeout` 结束时照样还原上面开的，再照信号结束（`quit_signals.rs`，2026-11-28 审计第 4 条）。
+        let keyboard = raw.keyboard;
+        crate::quit_signals::install(
+            None,
+            Box::new(move |out| crate::modes::restore_line(out, keyboard)),
+        );
         // 终端在不在前台：不在时回答好了、在等你确认弹通知（同全屏「系统通知」，2026-10-20 项目主人验收要的）。
         ratatui::crossterm::execute!(io::stdout(), EnableFocusChange)?;
         // 括号粘贴（同全屏）：粘进来的多行字是一次粘贴，中间的回车不当插话（2026-11-25 查出原来没开，多行粘贴在任何终端上

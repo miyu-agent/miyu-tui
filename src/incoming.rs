@@ -15,6 +15,8 @@ pub enum Incoming {
     Figure(figures::Done),
     /// 只是叫醒：跟随壁纸盯着的文件变了，这一拍再找（`theme/wallpaper.rs`）。
     Wake,
+    /// 收到要结束的信号：照常退出（`quit_signals.rs`）。
+    Quit,
 }
 
 /// 收一条：终端的事件、核心的消息、做好的图。
@@ -25,5 +27,6 @@ pub fn dispatch(app: &mut App, message: Incoming) {
         Incoming::Core(update) => app.core(update),
         Incoming::Figure(done) => app.media.figures.borrow_mut().done(done),
         Incoming::Wake => app.woken(),
+        Incoming::Quit => app.quit = true,
     }
 }

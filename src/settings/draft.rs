@@ -19,7 +19,7 @@ pub enum Change {
 }
 
 /// 没存的改动。
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Draft {
     changes: BTreeMap<String, Change>,
     /// 要写引用的那一项的键 → 新贴的明文（只在这里和发 `secret.set` 那一刻）：供应商的 `providers.<编号>.key`，别的密钥项
@@ -134,6 +134,54 @@ impl Draft {
         *self = Self::default();
     }
 
+    /// 这一份照 `named`（已经存进密钥库、引用写进这一次 `config.set` 的）发出去的样子：还没存的 key 不算发出去了。
+    pub fn sending(&self, named: &[(String, String)]) -> Draft {
+        let mut sent = self.clone();
+        sent.secrets
+            .retain(|key, _| named.iter().any(|(k, _)| k == key));
+        sent
+    }
+
+    /// 只带一次改供应商编号的草稿（发出去以后记着，回话时照它算还剩什么）。
+    pub fn renaming(rename: Option<(String, String)>) -> Draft {
+        Draft {
+            rename,
+            ..Draft::default()
+        }
+    }
+
+    /// 发出去 `sent` 以后又改的（2026-11-28 审计第 3 条：保存在途时又改的一项原来跟着回话一起清掉，从没发出去）。`old`
+    /// 是发 `sent` 时读来的；`base` 是核心那头现在存着的：存成了的是 `old` 叠上 `sent`，没存成的还是 `old`。交回照 `base`
+    /// 还要改的：人现在要的和 `sent` 发的不一样的那几项（改回原来的值也算），连同之后才贴的 key、才加的供应商、模型、池。
+    pub fn since(&self, sent: &Draft, old: &Data, base: &Data) -> Draft {
+        let mut left = Draft::default();
+        let touched: BTreeSet<&String> = self.changes.keys().chain(sent.changes.keys()).collect();
+        for key in touched {
+            let want = self.value(key, old);
+            if want == sent.value(key, old) {
+                continue;
+            }
+            match want {
+                Some(value) => left.set(key, value.clone(), base),
+                None => left.unset(key, base),
+            }
+        }
+        left.secrets = self
+            .secrets
+            .iter()
+            .filter(|(key, value)| sent.secrets.get(*key) != Some(value))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        left.new_providers = later(&self.new_providers, &sent.new_providers);
+        left.new_models = later(&self.new_models, &sent.new_models);
+        left.new_pools = later(&self.new_pools, &sent.new_pools);
+        left.rename = self
+            .rename
+            .clone()
+            .filter(|r| sent.rename.as_ref() != Some(r));
+        left
+    }
+
     /// 草稿里写成值的每一项（拼出界面上看的那一份用）。
     pub fn sets(&self) -> impl Iterator<Item = (&str, &Value)> {
         self.changes.iter().filter_map(|(k, c)| match c {
@@ -216,6 +264,14 @@ impl Draft {
             .collect();
         json!({"changes": changes})
     }
+}
+
+/// `now` 里 `before` 没有的，照原来的先后。
+fn later<T: Clone + PartialEq>(now: &[T], before: &[T]) -> Vec<T> {
+    now.iter()
+        .filter(|x| !before.contains(x))
+        .cloned()
+        .collect()
 }
 
 /// 照 `.` 分段，引号里的点不算。

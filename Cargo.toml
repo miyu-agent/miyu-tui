@@ -62,6 +62,9 @@ ratex-render = { version = "0.1.14", features = ["embed-fonts"] }
 # 用它的安全接口，演示程序不写 unsafe。crossterm 已经带着它。Linux 上另等终端挂断（`reader/hangup.rs`）。
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "1", features = ["stdio", "process", "event"] }
+# 被 `kill`、`pkill`、`timeout` 结束（SIGTERM、SIGINT、SIGHUP、SIGQUIT）时先还原终端再照信号结束（`quit_signals.rs`，2026-11-28
+# 审计第 4 条，照 LiteMiyu 的做法）。crossterm 已经带着它；用它的安全接口。
+signal-hook = { version = "0.3", default-features = false, features = ["iterator"] }
 
 # macOS 上盯 shell 退出（`shellhook/say/follow.rs`，审计 #076）：kqueue 的 `EVFILT_PROC` 等它退出，不轮询。rustix 的 `kevent` 是
 # unsafe 的，用这个的安全接口；依赖树里本来就有（notify 在 BSD 上用的那份）。
