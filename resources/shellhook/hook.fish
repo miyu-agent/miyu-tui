@@ -113,6 +113,11 @@ function __miyu_on_prompt --on-event fish_prompt
         end
         rm -f -- $leftover
     end
+    # 找不到命令交给她时敲的字（fish_command_not_found）：放回命令行。
+    if set -q __miyu_typed_back
+        commandline -i -- $__miyu_typed_back
+        set -e __miyu_typed_back
+    end
     # 前台跑着命令的时候来的后台回报：回到提示符再印（提示符还没画，不用擦）。
     while set -q __miyu_report_pending
         __miyu_report
@@ -173,8 +178,14 @@ function __miyu_execute_or_continue
         commandline -i \n
         commandline -f repaint
     else
+        # 交给 fish 执行的那一行：找不到命令时照它认是不是人敲的（跑完清掉）。
+        set -g __miyu_ran (commandline -b | string collect)
         commandline -f execute
     end
+end
+
+function __miyu_ran_done --on-event fish_postexec
+    set -e __miyu_ran
 end
 
 function __miyu_buffer_is_multiline
@@ -251,6 +262,13 @@ function __miyu_accept_line
         return
     end
 
+    # /edit 放回来的那一句（在编辑）：不管首词像不像命令都交给她（2026-11-28 审计 F2：在全屏里说的「touch 报错日志 之后……」
+    # 放回来，原来先判成命令、回车就执行了）。
+    if set -q __miyu_editing
+        __miyu_hand_to_ai "$buffer"
+        return
+    end
+
     if not __miyu_buffer_is_multiline "$buffer"
         # 单行本来靠 fish_command_not_found 兜底，但 fish 是先展开再找命令：话里带个没匹配上的通配符，fish 在展开时就报错，
         # 兜底永远不触发。首词是普通词又不是任何命令时提前接管。
@@ -293,21 +311,27 @@ bind -M insert enter __miyu_accept_line
 bind -M insert \r __miyu_accept_line
 
 function fish_command_not_found
-    status is-interactive; or return 127
-
-    set -l current_line (status current-commandline 2>/dev/null | string collect)
-    if test -n "$current_line"; and not string match -qr '[\n\r]' -- "$current_line"
-        set -l top_command (__miyu_first_command "$current_line")
-        if test -z "$top_command"; or not type -q -- "$top_command"
-            printf '%s' "$current_line" | __miyu_shellhook say --shell fish --shell-pid $fish_pid
-            return 127
-        end
+    # 只接人在提示符上敲、回车交给 fish 执行的那一行（`__miyu_ran`），找不到的是那一行的首词、又不在命令替换里的才交给她
+    # （fish 交给这个函数的标准输出本来就不是终端，不能照 bash、zsh 看 `-t 1`，实测 fish 4.9）：
+    # 启动文件、提示符、事件处理、命令替换、管道、函数和脚本里找不到的命令照 fish 原样报错（2026-11-28 审计 F1：原来只看是不是
+    # 交互式，`没装的工具 init fish | source` 把她的回答交给了 source，提示符里调了没装的命令的每画一次提示符就交一轮）。
+    set -l head
+    set -q __miyu_ran; and set head (__miyu_first_token_raw "$__miyu_ran")
+    if not status is-interactive; or status is-command-substitution; or test -z "$head"; or test "$argv[1]" != "$head"
+        functions -q __fish_default_command_not_found_handler
+        and __fish_default_command_not_found_handler $argv
+        return 127
     end
 
-    set -l command $argv
-    test (count $command) -eq 0; and return 127
-    set -l text (string join ' ' -- $command)
-    string match -qr '[\n\r]' -- $text; and return 127
-    printf '%s' "$text" | __miyu_shellhook say --shell fish --shell-pid $fish_pid
+    set -l text "$__miyu_ran"
+    if string match -qr '[\n\r]' -- "$text"
+        set text (string join ' ' -- $argv)
+        string match -qr '[\n\r]' -- $text; and return 127
+    end
+    # 她答话时提前敲的字：回到提示符时放回命令行（2026-11-28 审计 F3：原来没带 --leftover，读走就丢了）。
+    set -l leftover (mktemp -t miyu-shellhook.XXXXXX)
+    printf '%s' "$text" | __miyu_shellhook say --shell fish --shell-pid $fish_pid --leftover $leftover
+    test -s "$leftover"; and set -g __miyu_typed_back (string collect < $leftover)
+    rm -f -- $leftover
     return 127
 end

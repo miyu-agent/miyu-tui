@@ -6,16 +6,26 @@ __miyu_shellhook() {
     @PROGRAM@ shellhook --hook @HOOK@ "$@"
 }
 
+# 找不到命令、后台回报这两条路上提前敲的字（2026-11-28 审计 F3）：那时不在 readline 里，放不回命令行，程序先写进这个 shell
+# 在信箱目录里的一份，画下一个提示符时问终端一句状态（`\e[5n`），终端答的 `\e[0n` 当成一个键交给 __miyu_put_back 放回命令行。
+# 认不出信箱目录的（@SPOOL@ 是空的）不收。起来时清掉同一个进程号留下的旧的。
+__miyu_typed_file=
+[[ -n @SPOOL@ ]] && __miyu_typed_file=@SPOOL@/$$-typed
+[[ -e $__miyu_typed_file ]] && rm -f -- "$__miyu_typed_file"
+
 command_not_found_handle() {
-    case $- in
-        *i*) ;;
-        *)
-            printf 'bash: %s: command not found\n' "$1" >&2
-            return 127
-            ;;
-    esac
-    # $$ 是这个 bash（这里在子 shell 里也不变）：后台回报交回它。
-    printf '%s' "$*" | __miyu_shellhook say --shell bash --shell-pid $$
+    # 只接人在提示符上敲、回车交给 bash 执行的那一行（`__miyu_ran`），找不到的是那一行的首词、输出直接到终端的才交给她：
+    # 启动文件、提示符、PROMPT_COMMAND、命令替换、管道、函数和脚本里找不到的命令照 bash 原样报错（2026-11-28 审计 F1：原来
+    # 只看是不是交互式，启动文件末尾的 `eval "$(没装的工具 init bash)"` 把她的回答当代码执行了，提示符里调了没装的命令的
+    # 每画一次提示符就交一轮）。
+    if [[ $- != *i* || ! -t 1 || -z $__miyu_ran || $1 != "$(__miyu_head "$__miyu_ran")" ]]; then
+        printf 'bash: %s: command not found\n' "$1" >&2
+        return 127
+    fi
+    # $$ 是这个 bash（这里在子 shell 里也不变）：后台回报交回它。这里在为这条命令分出来的子进程里，提前敲的字写进这个
+    # shell 的那一份（上面），回到提示符再放回去。
+    [[ -n $__miyu_typed_file && ! -d ${__miyu_typed_file%/*} ]] && mkdir -p -- "${__miyu_typed_file%/*}"
+    printf '%s' "$*" | __miyu_shellhook say --shell bash --shell-pid $$ ${__miyu_typed_file:+--leftover "$__miyu_typed_file"}
     # 程序收工时不亮光标（亮早了停在最后一行末尾闪一下），这里亮。
     printf '\e[?25h'
     # 收尾行和下一个提示符之间空一行（fish 的提示符自带，bash 的不一定：2026-10-20 验收贴在一起）。
@@ -30,6 +40,8 @@ command_not_found_handle() {
 __miyu_busy=
 __miyu_editing=
 __miyu_report_pending=
+# 回车交给 bash 执行的那一行：找不到命令时照它认是不是人敲的（画下一个提示符时清掉）。
+__miyu_ran=
 
 # 首词：跳过前面的 `变量=值`。
 __miyu_head() {
@@ -72,8 +84,11 @@ __miyu_is_talk() {
 }
 
 __miyu_accept_line() {
-    if ! __miyu_is_talk "$READLINE_LINE"; then
+    # /edit 放回来的那一句（在编辑）：不管首词像不像命令都交给她（2026-11-28 审计 F2：在全屏里说的「touch 报错日志 之后……」
+    # 放回来，原来先判成命令、回车就执行了）。清空了的照原样。
+    if [[ -z $__miyu_editing || $READLINE_LINE != *[![:space:]]* ]] && ! __miyu_is_talk "$READLINE_LINE"; then
         __miyu_editing=
+        __miyu_ran=$READLINE_LINE
         bind '"\C-x\C-b": accept-line'
         return
     fi
@@ -102,7 +117,7 @@ __miyu_accept_line() {
     # 答话时来的后台回报：答完印。
     if [[ -n $__miyu_report_pending ]]; then
         __miyu_report_pending=
-        __miyu_shellhook report --shell bash --shell-pid $$ && printf '\n'
+        __miyu_report_typed && printf '\n'
         printf '\e[?25h'
     fi
     __miyu_busy=
@@ -111,6 +126,8 @@ __miyu_accept_line() {
     READLINE_LINE=
     [[ -s $leftover ]] && READLINE_LINE=$(<"$leftover")
     READLINE_POINT=${#READLINE_LINE}
+    # 印回报时敲的：接在后面。
+    __miyu_put_back
     # /edit 放回来的：旁边有一份 .redo 标记，记着「在编辑」，下一次回车替换上一轮重来。
     if [[ -e $leftover.redo ]]; then
         __miyu_editing=1
@@ -130,7 +147,34 @@ __miyu_paste() {
 
 # 在编辑的那一句：Ctrl+C 清了命令行、执行了别的命令（都会画新的提示符），就不算在编辑了。
 __miyu_prompt() {
+    # 排在后面的 PROMPT_COMMAND（提示符主题）还要看上一条命令的退出码：照原样交回去。
+    local status=$?
     __miyu_editing=
+    __miyu_ran=
+    # 找不到命令、后台回报时敲的字等着放回命令行：问终端一句，它答的那个「键」到了 readline 就放（上面）。
+    [[ -e $__miyu_typed_file ]] && printf '\e[5n'
+    return $status
+}
+
+# 印后台回报：印的时候敲的字写进这个 shell 的那一份（上面）。
+__miyu_report_typed() {
+    [[ -n $__miyu_typed_file && ! -d ${__miyu_typed_file%/*} ]] && mkdir -p -- "${__miyu_typed_file%/*}"
+    __miyu_shellhook report --shell bash --shell-pid $$ ${__miyu_typed_file:+--leftover "$__miyu_typed_file"}
+}
+
+# 放回那一份里提前敲的字：给了 before 的（终端答话到了，期间又敲了字）接在已有的前面，没给的接在后面。
+__miyu_put_back() {
+    [[ -e $__miyu_typed_file ]] || return 0
+    local typed
+    typed=$(<"$__miyu_typed_file")
+    rm -f -- "$__miyu_typed_file"
+    if [[ -n $1 ]]; then
+        READLINE_LINE=$typed$READLINE_LINE
+        READLINE_POINT=$((READLINE_POINT + ${#typed}))
+    else
+        READLINE_LINE+=$typed
+        READLINE_POINT=${#READLINE_LINE}
+    fi
 }
 PROMPT_COMMAND="__miyu_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 
@@ -149,6 +193,8 @@ for __miyu_map in emacs vi-insert vi-command; do
     bind -m "$__miyu_map" '"\C-x\C-b": accept-line'
     bind -m "$__miyu_map" '"\C-m": "\C-x\C-a\C-x\C-b"'
     bind -m "$__miyu_map" -x '"\C-v": __miyu_paste'
+    # 终端答 `\e[5n` 的那一句（见 __miyu_prompt）。
+    bind -m "$__miyu_map" -x '"\e[0n": __miyu_put_back before'
 done
 for __miyu_map in emacs vi-insert; do
     bind -m "$__miyu_map" -x '"\C-j": __miyu_newline'
@@ -164,7 +210,7 @@ __miyu_report() {
         __miyu_report_pending=1
         return
     fi
-    __miyu_shellhook report --shell bash --shell-pid $$ && printf '\n'
+    __miyu_report_typed && printf '\n'
     printf '\e[?25h'
 }
 trap '__miyu_report' USR1

@@ -39,7 +39,10 @@ pub fn render(shell: Shell, program: &Path) -> String {
         .replace(PROGRAM, &shell.quote(program))
         .replace("@HOOK@", &stamp());
     if !shell.powershell() {
-        return text;
+        // bash、zsh 找不到命令、后台回报那几条路上提前敲的字先放在信箱目录里，回到提示符再放回命令行（2026-11-28 审计 F3）。
+        // 认不出信箱目录的写空的：脚本就不收那几条路上敲的字，不往临时目录这种别人也写得进的地方写。
+        let spool = super::say::spool::dir().map_or_else(|| "''".to_string(), |d| shell.quote(&d));
+        return text.replace("@SPOOL@", &spool);
     }
     // PowerShell 没有信号可等：画提示符时自己看信箱（`say/spool.rs`），这里告诉它在哪。认不出的写一个不在的地方，不印回报。
     let spool = super::say::spool::dir()

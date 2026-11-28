@@ -89,7 +89,7 @@ pub fn run(
     if let Some(path) = leftover
         && !typed.is_empty()
     {
-        std::fs::write(path, typed)?;
+        super::hand_back(path, &typed)?;
     }
     Ok(ExitCode::SUCCESS)
 }

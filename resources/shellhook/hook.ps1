@@ -77,7 +77,9 @@ Set-PSReadLineKeyHandler -Key Enter -BriefDescription MiyuAcceptLine -ScriptBloc
     $buffer = $null
     $cursor = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$buffer, [ref]$cursor)
-    if (-not (__miyu_is_talk $buffer)) {
+    # /edit 放回来的那一句（在编辑）：不管头一个词像不像命令都交给她（2026-11-28 审计 F2，同别的 shell）。清空了的照原样。
+    $editing = $global:__miyu_editing -and -not [string]::IsNullOrWhiteSpace($buffer)
+    if (-not $editing -and -not (__miyu_is_talk $buffer)) {
         $global:__miyu_editing = $false
         [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
         return
@@ -111,7 +113,8 @@ Set-PSReadLineKeyHandler -Key Enter -BriefDescription MiyuAcceptLine -ScriptBloc
     [void](__miyu_run $arguments)
     # 程序收工时不亮光标（亮早了停在最后一行末尾闪一下），这里亮；收尾行和下一个提示符之间空一行。
     [Console]::Write("$e[?25h`n")
-    __miyu_report_now
+    # 答话时来的后台回报接着印，印的时候敲的字接在同一份文件后面，一起放回命令行（2026-11-28 审计 F3）。
+    __miyu_report_now $leftover
     $back = ''
     if ((Test-Path -LiteralPath $leftover) -and (Get-Item -LiteralPath $leftover).Length -gt 0) {
         $back = [IO.File]::ReadAllText($leftover, [Text.UTF8Encoding]::new($false))
@@ -146,10 +149,16 @@ Set-PSReadLineKeyHandler -Chord Ctrl+j -Function AddLine
 
 # 后台回报（设计 22 第七节「后台任务和回报」）：PowerShell 没有信号可等，每次画提示符时看一眼这个 shell 的信箱，有的印出来。
 # 停在提示符上来的回报要等下一次画提示符（回车、Ctrl+C）才印（同 bash）。
-function global:__miyu_report_now {
+# 给了 `$leftover` 的（回车交给她那一下里）：印的时候敲的字写进那份文件。画提示符时印的不给：那时 PSReadLine 还没开始读这一行，
+# 放不回命令行。
+function global:__miyu_report_now([string] $leftover) {
     $box = Join-Path @SPOOL@ "$PID.jsonl"
     if ((Test-Path -LiteralPath $box) -and (Get-Item -LiteralPath $box).Length -gt 0) {
-        if ((__miyu_run @('report', '--shell', '@SHELL@', '--shell-pid', "$PID")) -eq 0) {
+        $arguments = @('report', '--shell', '@SHELL@', '--shell-pid', "$PID")
+        if ($leftover) {
+            $arguments += @('--leftover', $leftover)
+        }
+        if ((__miyu_run $arguments) -eq 0) {
             [Console]::Write("`n")
         }
         [Console]::Write("$($global:__miyu_esc)[?25h")

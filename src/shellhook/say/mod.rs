@@ -50,7 +50,7 @@ fn held(mut session: Session, ask: &Ask, text: &str, words: &Words) -> io::Resul
     )))?;
     session.finish()?;
     if let Some(path) = &ask.leftover {
-        std::fs::write(path, ask.text.trim_end_matches(['\n', '\r']))?;
+        hand_back(path, ask.text.trim_end_matches(['\n', '\r']))?;
     }
     Ok(ExitCode::FAILURE)
 }
@@ -152,7 +152,7 @@ pub fn run(ask: Ask, words: &Words) -> io::Result<ExitCode> {
     if let Some(path) = &ask.leftover
         && !turn.typed.is_empty()
     {
-        std::fs::write(path, turn.typed.hand_back())?;
+        hand_back(path, &turn.typed.hand_back())?;
     }
     // 早先派的、盯后台的也记了的，这里已经印过的拿掉。
     if let Some(shell) = ask.shell {
@@ -285,4 +285,28 @@ fn renewed_line(since: jiff::Timestamp, words: &Words) -> Line<'static> {
         format!("  {text}"),
         Style::default().patch(crate::theme::dim()),
     ))
+}
+
+/// 交还给 shell 的字写进脚本给的那份文件（`--leftover`）：接在已有的后面，没有的建。bash、zsh 找不到命令、后台回报那几条路
+/// 共用这个 shell 的一份，等回到提示符才放回命令行，中间先后写了两回的不互相盖掉（2026-11-28 审计 F3）。
+pub(crate) fn hand_back(path: &std::path::Path, text: &str) -> io::Result<()> {
+    std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?
+        .write_all(text.as_bytes())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn handed_back_keys_follow_what_is_already_there() {
+        let dir = std::env::temp_dir().join(format!("miyu-tui-hand-back-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("建得了");
+        let path = dir.join("typed");
+        super::hand_back(&path, "ab").expect("写得进去");
+        super::hand_back(&path, "c").expect("写得进去");
+        assert_eq!(std::fs::read_to_string(&path).expect("读得到"), "abc");
+        drop(std::fs::remove_dir_all(&dir));
+    }
 }
