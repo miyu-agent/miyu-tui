@@ -194,7 +194,8 @@ fn paint<H: Copy>(
         rect.width.saturating_sub(4),
         rect.height.saturating_sub(2),
     );
-    if let Some((title, sub)) = &lines.title {
+    // 标题写在窗里第一行：窗矮到只剩上下边（1 行高的窗口里）时那一行在窗外、可能在缓冲区外，不写（审计 2026-11-28 第 9 条）。
+    if let Some((title, sub)) = lines.title.as_ref().filter(|_| inner.height > 0) {
         buf.set_string(
             inner.x,
             inner.y,

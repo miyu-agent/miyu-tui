@@ -69,7 +69,9 @@ pub fn draw(frame: &mut Frame, page: &mut Settings, config: &Config, caret: &mut
     let texts = &config.text.settings;
     page.hits.clear();
     let area = frame.area();
-    let stage = stage(area, look);
+    let Some(stage) = stage(area, look) else {
+        return;
+    };
     if page.on_menu {
         pages::menu(frame, stage, page, texts, look.menu_gap);
     } else if page.more.section == Some(crate::settings::pages::Section::Store) {
@@ -98,26 +100,34 @@ pub fn draw(frame: &mut Frame, page: &mut Settings, config: &Config, caret: &mut
     }
 }
 
-/// 整块放在哪：宽、高各占八成居中；窄屏用满宽，左右留一列。
-pub(crate) fn stage(area: Rect, look: &Look) -> Rect {
+/// 窗口小于这么多行、列时整页（配置页、扩展整页）不画，空着，放大了照原样画回来（审计 2026-11-28 第 9 条：原来 1 行、0 行
+/// 高时面包屑、包页面作者那一行、弹窗标题照「上边加几行」写到缓冲区外，ratatui 的 `set_stringn` 不查纵坐标，一画就 panic；
+/// 照 LiteMiyu 配置页的 6 行 20 列）。
+const SMALLEST: (u16, u16) = (20, 6);
+
+/// 整块放在哪：宽、高各占八成居中；窄屏用满宽，左右留一列。窗口小于 [`SMALLEST`] 的是 `None`，整页不画。
+pub(crate) fn stage(area: Rect, look: &Look) -> Option<Rect> {
+    if area.width < SMALLEST.0 || area.height < SMALLEST.1 {
+        return None;
+    }
     if area.width < look.narrow_below {
         let x = area.x + area.width.min(1);
         let height = area.height.saturating_sub(2);
-        return Rect::new(
+        return Some(Rect::new(
             x,
             area.y + area.height.min(1),
             area.width.saturating_sub(2),
             height,
-        );
+        ));
     }
     let width = area.width * look.width_percent / 100;
     let height = area.height * look.height_percent / 100;
-    Rect::new(
+    Some(Rect::new(
         area.x + (area.width - width) / 2,
         area.y + (area.height - height) / 2,
         width,
         height,
-    )
+    ))
 }
 
 /// 「供应商和模型」：面包屑、分页、几栏、状态行、细线、两行按键提示。

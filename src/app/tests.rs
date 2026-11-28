@@ -115,6 +115,7 @@ mod status;
 mod switching;
 mod terminal_back;
 mod theme_auto;
+mod tiny_window;
 mod too_long;
 mod unread;
 mod unseen;

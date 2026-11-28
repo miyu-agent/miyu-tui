@@ -24,7 +24,9 @@ pub struct PageFrame {
 /// 画整页。
 pub fn draw(frame: &mut Frame, view: &PageView, seen: &Seen, screen: &mut Screen) {
     let area = frame.area();
-    let stage = crate::ui::settings::stage(area, &seen.config.layout.settings);
+    let Some(stage) = crate::ui::settings::stage(area, &seen.config.layout.settings) else {
+        return;
+    };
     let texts = &seen.config.text.widget;
     let target = &view.target;
     let block = seen
