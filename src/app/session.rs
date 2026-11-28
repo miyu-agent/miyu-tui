@@ -38,13 +38,14 @@ impl App {
     /// 任务都报完了再退订（「后台命令、子代理和侧边栏」）；没有的马上退订，连它的子代理一起。
     pub(super) fn new_session(&mut self) {
         self.leave_child();
-        let keep = self.talk.busy_here();
+        let (keep, park) = self.stop_opening();
         // 底栏先照旧写原来的模型、思考强度，等核心交回默认的再换（2026-10-02 项目主人报：开新会话底栏闪一下；手动
         // 换的就是新会话的默认，多半一样）。
         let shown = self.talk.transcript.footer_model();
         self.link.core.send(Command::New { keep });
         self.swap_desk(None);
-        self.park_current(keep);
+        self.park_current(park);
+        self.prune();
         self.talk.transcript.keep_footer_model(shown);
         // 空会话的底栏照默认的聊天模型写（`effort.rs`）。
         self.refresh_effort();
@@ -52,6 +53,22 @@ impl App {
         self.forget_picks();
         // 工作区回到终端所在的目录（第 4 条）。
         self.forget_workspace();
+    }
+
+    /// `/new` 时还在切过去（要切的会话还没读完）：不切了，交回给核心的 `keep` 和原来看着的那个停不停放（2026-11-28 审计
+    /// 第 2 条：原来照旧切的样子办，核心那头对着的已经是要切的那个，`/new` 把它退订，补完的那一下不会来，`opening` 一直
+    /// 留着，界面一直「正在切换会话」）。核心那头对着的是要切的那个、还没换上来：不留着订阅它，停放着等补发的空正文也不要；
+    /// 原来看着的那个照切走那一刻说的办（核心那头那时已经照它留着或者退订了），空下来了的随后照常退订。没在切的照正在看的忙不忙。
+    fn stop_opening(&mut self) -> (bool, bool) {
+        let Some((opening, keep)) = self.talk.opening.take() else {
+            let keep = self.talk.busy_here();
+            return (keep, keep);
+        };
+        self.talk.asks.forget(&opening);
+        if let Some(parked) = self.talk.parked.remove(&opening) {
+            self.drop_children(&parked.board);
+        }
+        (false, keep)
     }
 
     /// `/delete`（发版前 check 12，2026-11-09 项目主人：「直接删除当前会话并去到新建会话的页面」）：不再问一次；

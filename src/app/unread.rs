@@ -74,6 +74,11 @@ impl App {
         let texts = &self.config.text;
         if tries >= TRIES {
             self.hint(texts.unread.unavailable_gave_up.clone(), false);
+            // 切过去还在补发的：不再试了也换上来（「会话列表」第 5 条「补发不成也换上来」；2026-11-28 审计第 2 条：原来
+            // `opening` 一直留着，界面一直「正在切换会话」）。
+            if self.talk.opening(&session) {
+                self.opened();
+            }
             return;
         }
         let seconds = WAIT.as_secs();

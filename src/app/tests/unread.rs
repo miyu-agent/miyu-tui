@@ -133,3 +133,22 @@ fn a_session_broken_in_the_middle_says_where_and_stays_view_only() {
         .collect();
     assert_eq!(said.iter().filter(|t| t.as_str() == line).count(), 1);
 }
+
+#[test]
+fn a_session_switched_to_that_cannot_be_read_is_swapped_in_after_giving_up() {
+    // 2026-11-28 审计第 2 条（b）：切过去一直读不了，试满以后原来只弹提示，`opening` 一直留着，界面一直「正在切换会话」。
+    // 照「补发不成也换上来，弹原因」（蓝图「会话列表」第 5 条）。
+    let (mut app, mut sent) = app();
+    app.talk.transcript.session = Some("s-two".into());
+    app.switch_session("s-one".into());
+    for _ in 0..=TRIES {
+        app.core(Update::SessionUnavailable {
+            session: "s-one".into(),
+            page: true,
+        });
+        app.reread_due(Instant::now() + WAIT);
+    }
+    rereads(&mut sent);
+    assert!(!app.switching(), "不再一直在切");
+    assert_eq!(app.talk.transcript.session.as_deref(), Some("s-one"));
+}
