@@ -202,6 +202,10 @@ pub struct Settings {
     again: bool,
     secrets_left: usize,
     named: Vec<(String, String)>,
+    /// 在途的那一次发出去的草稿和请求（`saving.rs`）：回话以后照它分出这之间又改的（2026-11-28 审计第 3 条）。
+    sent: Option<(Draft, Value)>,
+    /// 在途时又要存过（里头是存成了关不关窗）：回话以后接着存这之间又改的。
+    queued: Option<bool>,
     /// 交给编辑器的那一份提示词（`pages/persona_edit.rs`）：编辑器退出以后照它存。
     prompt: Option<pages::persona_edit::PromptEdit>,
     /// 刚读到、要交给编辑器的：`App` 拿走一次（[`Settings::take_prompt`]）。
@@ -384,6 +388,8 @@ impl Settings {
         self.again = false;
         self.secrets_left = 0;
         self.close_after_save = false;
+        self.sent = None;
+        self.queued = None;
         self.say(texts.status("offline"), Tone::Bad);
     }
 
