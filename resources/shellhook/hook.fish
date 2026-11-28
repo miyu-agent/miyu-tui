@@ -251,6 +251,13 @@ function __miyu_accept_line
         return
     end
 
+    # /edit 放回来的那一句（在编辑）：不管首词像不像命令都交给她（2026-11-28 审计 F2：在全屏里说的「touch 报错日志 之后……」
+    # 放回来，原来先判成命令、回车就执行了）。
+    if set -q __miyu_editing
+        __miyu_hand_to_ai "$buffer"
+        return
+    end
+
     if not __miyu_buffer_is_multiline "$buffer"
         # 单行本来靠 fish_command_not_found 兜底，但 fish 是先展开再找命令：话里带个没匹配上的通配符，fish 在展开时就报错，
         # 兜底永远不触发。首词是普通词又不是任何命令时提前接管。

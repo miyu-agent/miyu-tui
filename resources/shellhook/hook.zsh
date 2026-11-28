@@ -61,6 +61,12 @@ __miyu_accept_line() {
         zle .accept-line
         return
     fi
+    # /edit 放回来的那一句（在编辑）：不管首词像不像命令都交给她（2026-11-28 审计 F2：在全屏里说的「touch 报错日志 之后……」
+    # 放回来，原来先判成命令、回车就执行了）。
+    if [[ -n $__miyu_editing ]]; then
+        __miyu_hand_to_ai "$buffer"
+        return
+    fi
     local head
     head=$(__miyu_head "$buffer")
     if [[ $buffer != *$'\n'* ]]; then

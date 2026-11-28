@@ -31,6 +31,8 @@ mod fakes;
 #[cfg(target_os = "linux")]
 mod hangup;
 mod home;
+#[cfg(unix)]
+pub mod shell;
 mod waits;
 
 #[allow(unused_imports, reason = "只有等两样都在了再断言的测试用")]
@@ -264,7 +266,7 @@ impl Tui {
                 .collect();
             self.answer(answer.as_bytes());
         }
-        if has(b"\x1b[c") {
+        if has(b"\x1b[c") || has(b"\x1b[0c") {
             self.answer(b"\x1b[?62c");
         }
         if has(b"\x1b[6n") {

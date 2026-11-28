@@ -72,7 +72,9 @@ __miyu_is_talk() {
 }
 
 __miyu_accept_line() {
-    if ! __miyu_is_talk "$READLINE_LINE"; then
+    # /edit 放回来的那一句（在编辑）：不管首词像不像命令都交给她（2026-11-28 审计 F2：在全屏里说的「touch 报错日志 之后……」
+    # 放回来，原来先判成命令、回车就执行了）。清空了的照原样。
+    if [[ -z $__miyu_editing || $READLINE_LINE != *[![:space:]]* ]] && ! __miyu_is_talk "$READLINE_LINE"; then
         __miyu_editing=
         bind '"\C-x\C-b": accept-line'
         return

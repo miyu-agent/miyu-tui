@@ -77,7 +77,9 @@ Set-PSReadLineKeyHandler -Key Enter -BriefDescription MiyuAcceptLine -ScriptBloc
     $buffer = $null
     $cursor = $null
     [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$buffer, [ref]$cursor)
-    if (-not (__miyu_is_talk $buffer)) {
+    # /edit 放回来的那一句（在编辑）：不管头一个词像不像命令都交给她（2026-11-28 审计 F2，同别的 shell）。清空了的照原样。
+    $editing = $global:__miyu_editing -and -not [string]::IsNullOrWhiteSpace($buffer)
+    if (-not $editing -and -not (__miyu_is_talk $buffer)) {
         $global:__miyu_editing = $false
         [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
         return
