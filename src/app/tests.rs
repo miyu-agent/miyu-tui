@@ -94,6 +94,7 @@ fn the_persona_box_opens_before_connecting_when_the_guide_was_done() {
 
 mod bill;
 mod context_cap;
+mod drawer_hover;
 mod drawer_rows;
 mod effort;
 mod esc_pairs;

@@ -120,6 +120,16 @@ impl Drawer {
         self.images.iter().map(Vec::len).sum()
     }
 
+    /// 鼠标停在第几项上：选中它；这一页没有这一项的（「确认」页一项都没有）不动。鼠标照上一帧的行表报第几项，这一帧
+    /// 以前点掉了最后一道、已经到了「确认」页的也会报来（审计 2026-11-28 第 1 条：原来直接下标 `cursor[tab]`，越界 panic）。
+    pub fn hover(&mut self, index: usize) {
+        if index < self.items(self.tab).len()
+            && let Some(cursor) = self.cursor.get_mut(self.tab)
+        {
+            *cursor = index;
+        }
+    }
+
     /// 点中第几项：等于移过去按 `Enter`（能多选的是勾上、取消）。
     pub fn click(&mut self, index: usize) -> Step {
         self.editing = None;

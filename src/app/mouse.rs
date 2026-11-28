@@ -104,7 +104,7 @@ impl App {
                 match mouse.kind {
                     MouseEventKind::Moved => {
                         if let Some(d) = self.talk.drawers.current.as_mut() {
-                            d.cursor[d.tab] = index;
+                            d.hover(index);
                         }
                     }
                     MouseEventKind::Down(_) => self.drawer_click(index),
