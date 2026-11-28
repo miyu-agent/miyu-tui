@@ -421,6 +421,7 @@ mod paste;
 mod recover;
 mod refused;
 mod skill;
+mod tiny;
 
 /// 选中的字（没选中是 `None`）。
 fn selected(i: &InputBox) -> Option<&str> {

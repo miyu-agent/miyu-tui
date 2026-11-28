@@ -147,3 +147,36 @@ fn the_scrollbar_shows_under_the_pointer_at_the_column_edge_and_drags_the_view()
     v.mouse(at(MouseEventKind::Moved, 45, 3));
     assert!(v.bar_hover, "停在贴边那一列：露出来");
 }
+
+#[test]
+fn mouse_on_a_zero_height_body_does_not_panic() {
+    // 审计 2026-11-28 第 8 条：按住期间正文区被挤成 0 行高（`y = 1`），松开、拖动那一下原来 `clamp(1, 0)` panic。
+    use ratatui::crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+    let mut v = BodyView {
+        area: Rect::new(0, 1, 80, 0),
+        ..view()
+    };
+    for kind in [
+        MouseEventKind::Drag(MouseButton::Left),
+        MouseEventKind::Up(MouseButton::Left),
+    ] {
+        v.mouse(MouseEvent {
+            kind,
+            column: 5,
+            row: 3,
+            modifiers: KeyModifiers::NONE,
+        });
+    }
+    // 0 列宽也一样：拖选贴边时横坐标原来也是 `clamp(x, x - 1)`。
+    let mut v = BodyView {
+        area: Rect::new(3, 0, 0, 10),
+        press: Some((0, 0)),
+        ..view()
+    };
+    v.mouse(MouseEvent {
+        kind: MouseEventKind::Drag(MouseButton::Left),
+        column: 1,
+        row: 2,
+        modifiers: KeyModifiers::NONE,
+    });
+}
